@@ -1,0 +1,17 @@
+title = "CareerOS secret scanning"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Generated dependency, build, cache, and browser-artifact directories"
+paths = [
+  '''(^|/)\.git/''',
+  '''(^|/)\.next/''',
+  '''(^|/)\.venv/''',
+  '''(^|/)\.data/''',
+  '''(^|/)node_modules/''',
+  '''(^|/)test-results/''',
+  '''(^|/)dist/''',
+  '''(^|/)__pycache__/''',
+]

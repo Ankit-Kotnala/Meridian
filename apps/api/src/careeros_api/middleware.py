@@ -1,0 +1,80 @@
+"""HTTP middleware that establishes a safe per-request logging context."""
+
+import re
+from collections.abc import Awaitable, Callable
+from time import perf_counter
+from uuid import uuid4
+
+import structlog
+from fastapi import FastAPI, Request, Response
+from structlog.contextvars import bind_contextvars, clear_contextvars
+
+REQUEST_ID_HEADER = "X-Request-ID"
+TRACE_ID_HEADER = "X-Trace-ID"
+_SAFE_REQUEST_ID = re.compile(r"^[A-Za-z0-9._-]{1,128}$")
+_TRACEPARENT = re.compile(
+    r"^(?P<version>[0-9a-f]{2})-"
+    r"(?P<trace_id>[0-9a-f]{32})-"
+    r"(?P<parent_id>[0-9a-f]{16})-"
+    r"(?P<flags>[0-9a-f]{2})$"
+)
+logger = structlog.get_logger(__name__)
+
+
+def _request_id(candidate: str | None) -> str:
+    if candidate is not None and _SAFE_REQUEST_ID.fullmatch(candidate):
+        return candidate
+    return str(uuid4())
+
+
+def _trace_id(traceparent: str | None) -> str:
+    """Extract a valid W3C trace ID or start a new trace context."""
+    if traceparent is not None:
+        match = _TRACEPARENT.fullmatch(traceparent)
+        if match is not None:
+            version = match.group("version")
+            trace_id = match.group("trace_id")
+            parent_id = match.group("parent_id")
+            if version != "ff" and trace_id != "0" * 32 and parent_id != "0" * 16:
+                return trace_id
+    return uuid4().hex
+
+
+def install_request_context_middleware(app: FastAPI) -> None:
+    """Add correlation IDs without logging query strings, headers, or bodies."""
+
+    @app.middleware("http")
+    async def request_context(
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
+        clear_contextvars()
+        request_id = _request_id(request.headers.get(REQUEST_ID_HEADER))
+        trace_id = _trace_id(request.headers.get("traceparent"))
+        bind_contextvars(request_id=request_id, trace_id=trace_id)
+        request.state.request_id = request_id
+        request.state.trace_id = trace_id
+        started_at = perf_counter()
+
+        try:
+            response = await call_next(request)
+        except Exception:
+            logger.exception(
+                "http_request_failed",
+                http_method=request.method,
+                http_path=request.url.path,
+            )
+            raise
+
+        duration_ms = round((perf_counter() - started_at) * 1000, 2)
+        response.headers[REQUEST_ID_HEADER] = request_id
+        response.headers[TRACE_ID_HEADER] = trace_id
+        logger.info(
+            "http_request_completed",
+            http_method=request.method,
+            http_path=request.url.path,
+            http_status=response.status_code,
+            duration_ms=duration_ms,
+        )
+        clear_contextvars()
+        return response

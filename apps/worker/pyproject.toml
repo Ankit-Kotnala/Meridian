@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling>=1.28,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "careeros-worker"
+version = "0.1.0"
+description = "CareerOS Celery worker"
+readme = "README.md"
+requires-python = ">=3.13,<3.15"
+dependencies = [
+  "celery[redis]==5.6.3",
+  "pydantic==2.13.4",
+  "pydantic-settings==2.14.2",
+  # Celery 5.6/Kombu currently constrains the Python Redis client to <6.5.
+  "redis==6.4.0",
+  "structlog==26.1.0",
+]
+
+[dependency-groups]
+dev = [
+  "mypy==2.3.0",
+  "pytest==9.1.1",
+  "ruff==0.15.21",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/careeros_worker"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-config --strict-markers"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "S", "SIM", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_unreachable = true
+pretty = true
+show_error_codes = true
+packages = ["careeros_worker"]
+mypy_path = "src"
+
+[[tool.mypy.overrides]]
+module = ["celery.*"]
+ignore_missing_imports = true

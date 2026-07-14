@@ -1,0 +1,16 @@
+{
+  "name": "@careeros/test-fixtures",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "seed": "tsx src/seed.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@careeros/config": "workspace:*",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3"
+  }
+}

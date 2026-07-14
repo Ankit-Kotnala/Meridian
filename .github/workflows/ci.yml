@@ -1,0 +1,159 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web-and-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.13.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  api:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: careeros
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: careeros
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U careeros -d careeros"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      CAREEROS_DATABASE_URL: postgresql+asyncpg://careeros:ci-only-password@127.0.0.1:5432/careeros
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.7"
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: uv sync --frozen --all-extras --dev
+      - run: uv run ruff format --check .
+      - run: uv run ruff check .
+      - run: uv run mypy
+      - run: uv run pytest
+      - run: uv run alembic upgrade head
+      - run: uv run alembic current
+      - run: uv run python -c "from careeros_api.main import app; assert app.openapi()"
+
+  worker:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/worker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.7"
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: uv sync --frozen --all-extras --dev
+      - run: uv run ruff format --check .
+      - run: uv run ruff check .
+      - run: uv run mypy
+      - run: uv run pytest
+      - run: uv run python -c "from careeros_worker.app import celery_app; assert celery_app.main == 'careeros_worker'"
+
+  browser-smoke:
+    runs-on: ubuntu-latest
+    needs: [web-and-contracts]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.13.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @careeros/web exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+
+  supply-chain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan the working tree for committed secrets
+        run: >-
+          docker run --rm --volume "$PWD:/repo:ro"
+          ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+          dir /repo --config /repo/.gitleaks.toml --redact --exit-code 1
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.13.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.7"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --audit-level high
+      - run: cd apps/api && uv run --with pip-audit pip-audit
+      - run: cd apps/worker && uv run --with pip-audit pip-audit
+
+  containers:
+    runs-on: ubuntu-latest
+    needs: [api, worker, web-and-contracts]
+    steps:
+      - uses: actions/checkout@v4
+      - run: cp .env.example .env
+      - run: docker compose config --quiet
+      - run: docker compose build api worker web
+      - name: Scan API image for fixable critical vulnerabilities
+        run: >-
+          docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock
+          anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d
+          careeros-api:latest --fail-on critical --only-fixed
+      - name: Scan worker image for fixable critical vulnerabilities
+        run: >-
+          docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock
+          anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d
+          careeros-worker:latest --fail-on critical --only-fixed
+      - name: Scan web image for fixable critical vulnerabilities
+        run: >-
+          docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock
+          anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d
+          careeros-web:latest --fail-on critical --only-fixed

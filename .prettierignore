@@ -1,0 +1,8 @@
+**/.next/
+**/.venv/
+**/node_modules/
+**/coverage/
+**/playwright-report/
+**/test-results/
+**/uv.lock
+pnpm-lock.yaml
