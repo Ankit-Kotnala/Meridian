@@ -6,7 +6,7 @@ chain is intentionally one-way:
 ```text
 apps/api Pydantic responses
   -> packages/contracts/openapi/careeros.openapi.json
-  -> packages/contracts/src/generated/schema.d.ts
+  -> packages/contracts/src/generated/schema.ts
   -> typed openapi-fetch client
 ```
 

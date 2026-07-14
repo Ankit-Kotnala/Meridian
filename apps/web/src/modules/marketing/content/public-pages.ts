@@ -175,13 +175,13 @@ export const publicPages = {
       ],
       [
         "Current status",
-        "This site is a Phase 0 technical and visual foundation. Product data, customer quotes, and dashboard identities shown here are fictional demos.",
+        "CareerOS now includes technical-preview account, session, onboarding, and consent controls. The public dashboard preview remains fictional and separate from protected account data.",
       ],
     ],
   },
   contact: {
     title: "Contact",
-    eyebrow: "Phase 0 preview",
+    eyebrow: "Technical preview",
     intro:
       "A production contact channel has not been connected yet. This placeholder prevents collecting messages before consent, retention, and support workflows are ready.",
     sections: [
@@ -195,7 +195,7 @@ export const publicPages = {
       ],
       [
         "Data requests",
-        "Account data export and deletion requests will be handled inside the protected product once identity features are implemented.",
+        "Self-service account export and deletion are not implemented yet. Do not treat this technical preview as a production system for personal career records.",
       ],
     ],
   },
@@ -203,11 +203,11 @@ export const publicPages = {
     title: "Terms placeholder",
     eyebrow: "Not yet production terms",
     intro:
-      "This Phase 0 page is a placeholder and is not a production legal agreement. Counsel-reviewed terms are required before public account creation.",
+      "This page is a placeholder and is not a production legal agreement. Counsel-reviewed terms are required before this technical preview can become a public production service.",
     sections: [
       [
         "No service agreement yet",
-        "The current product is a fictional-data technical preview and does not accept personal career content.",
+        "Account controls are available for technical verification, but production use and personal career content are not supported yet.",
       ],
       [
         "No hiring guarantees",
@@ -223,7 +223,7 @@ export const publicPages = {
     title: "Privacy policy placeholder",
     eyebrow: "Not yet a production privacy notice",
     intro:
-      "No personal resume workflow is active in Phase 0. A counsel-reviewed privacy notice and consent experience are required before collecting user career data.",
+      "The technical preview includes explicit consent controls but no personal resume workflow. A counsel-reviewed privacy notice is required before production collection of career data.",
     sections: [
       [
         "Planned default",
@@ -236,46 +236,6 @@ export const publicPages = {
       [
         "Transparency",
         "The production notice must describe purposes, providers, retention, security, legal bases, rights, and contact routes clearly.",
-      ],
-    ],
-  },
-  login: {
-    title: "Sign in is coming in Phase 1",
-    eyebrow: "No credentials collected in this preview",
-    intro:
-      "Authentication is intentionally not part of Phase 0. You can explore the fictional dashboard without entering an email address or password.",
-    sections: [
-      [
-        "Secure session design",
-        "Phase 1 will implement verified registration, secure cookies, rotation, invalidation, abuse protection, and session management.",
-      ],
-      [
-        "Protected routes",
-        "Real dashboard and career data routes will require a valid user session and server-side ownership checks.",
-      ],
-      [
-        "For now",
-        "Use the product demo to inspect the application shell and design direction. Every value in it is fictional.",
-      ],
-    ],
-  },
-  register: {
-    title: "Accounts are coming in Phase 1",
-    eyebrow: "Product preview only",
-    intro:
-      "CareerOS is not collecting registration details during the foundation phase. This keeps the boundary between a polished preview and a secure account system explicit.",
-    sections: [
-      [
-        "What comes next",
-        "Email verification, login, password recovery, session controls, Google OAuth integration, and account deletion.",
-      ],
-      [
-        "Onboarding",
-        "Users will review parsed career information, correct uncertainty, select target roles, and choose preferences before opening a real dashboard.",
-      ],
-      [
-        "Explore safely",
-        "The public demo contains no private information and does not accept uploads or personal details.",
       ],
     ],
   },

@@ -16,6 +16,7 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
+    "@careeros/contracts": "workspace:*",
     "@careeros/design-tokens": "workspace:*",
     "@careeros/ui": "workspace:*",
     "lucide-react": "1.24.0",
@@ -25,9 +26,9 @@
   },
   "devDependencies": {
     "@careeros/eslint-config": "workspace:*",
+    "@careeros/typescript-config": "workspace:*",
     "@playwright/test": "1.61.1",
     "@tailwindcss/postcss": "4.3.2",
-    "@careeros/typescript-config": "workspace:*",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.2",
     "@types/node": "24.10.1",

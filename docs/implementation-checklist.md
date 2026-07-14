@@ -1,7 +1,7 @@
 # CareerOS implementation checklist
 
 Status: living delivery checklist  
-Last reviewed: 2026-07-14
+Last reviewed: 2026-07-15
 
 This checklist expands `PLANS.md`. Check an item only when it is implemented in
 real application state and its required test passes. An interface, empty route,
@@ -115,34 +115,42 @@ earlier baseline evidence remains historical.
 
 ## Phase 1 — Authentication, Application Shell, and Onboarding
 
-Dependencies: Phase 0 green.
+Dependencies: Phase 0 green. Current status: implemented and locally verified;
+hosted CI is the final closeout gate.
 
-- [ ] Add users/profiles, hashed session/refresh material, OAuth accounts,
+- [x] Add users/profiles, hashed session/refresh material, OAuth accounts,
       organization/membership extension, consent, and audit models/migrations.
-- [ ] Implement email registration and enumeration-safe verification/resend.
-- [ ] Implement Argon2id login, secure HTTP-only cookie session/refresh rotation,
+- [x] Implement email registration and enumeration-safe verification/resend.
+- [x] Implement Argon2id login, secure HTTP-only cookie session/refresh rotation,
       reuse detection, logout/current/all-session invalidation, and session UI.
-- [ ] Implement enumeration-safe forgot/reset with short-lived single-use hashed
+- [x] Implement enumeration-safe forgot/reset with short-lived single-use hashed
       tokens; invalidate affected sessions on success.
-- [ ] Implement Google OAuth adapter with state, nonce, PKCE, exact redirects, and
+- [x] Implement Google OAuth adapter with state, nonce, PKCE, exact redirects, and
       safe account linking; deterministic local provider for tests.
-- [ ] Enforce CSRF, origin/CORS, rate/abuse controls, secure production cookie
+- [x] Enforce CSRF, origin/CORS, rate/abuse controls, secure production cookie
       settings, and no browser-readable persistent bearer token.
-- [ ] Add recent-auth hooks for future sensitive actions and future-compatible MFA
+- [x] Add recent-auth hooks for future sensitive actions and future-compatible MFA
       architecture without pretending MFA exists.
-- [ ] Build protected responsive AppShell, expanded/collapsed/mobile Sidebar,
+- [x] Build protected responsive AppShell, expanded/collapsed/mobile Sidebar,
       TopBar, active state, command search/notifications placeholders only when honest.
-- [ ] Convert dashboard from public fictional preview to protected real skeleton;
+- [x] Convert dashboard from public fictional preview to protected real skeleton;
       retain a separate explicit demo path only if product approves.
-- [ ] Implement resumable/skippable onboarding through account/guest choice,
+- [x] Implement resumable/skippable onboarding through account/guest choice,
       upload handoff, parsed review handoff, role/preferences, and dashboard; defer
       actual upload processing to Phase 2 without fake completion.
-- [ ] Build Settings skeleton for profile/account/sessions/consent with real state.
-- [ ] Pass anonymous, cross-user, session rotation/replay/fixation, CSRF, OAuth
+- [x] Build Settings skeleton for profile/account/sessions/consent with real state.
+- [x] Pass anonymous, cross-user, session rotation/replay/fixation, CSRF, OAuth
       collision, rate-limit, audit, keyboard, responsive, and e2e auth journey tests.
 
 Exit: a user can register, verify, log in, manage/rotate sessions, traverse
 onboarding, access protected shell, and log out; protected data fails closed.
+
+Evidence: migration `20260715_0002` upgrades, downgrades, and re-upgrades; 28
+backend, 34 API, 12 worker, 17 web, 8 UI, 3 contract, and 4 frontend-boundary
+tests pass; two real PostgreSQL/Redis integration workflows pass; and the isolated
+Playwright workflow passes 9 checks across desktop/mobile with one intentional
+desktop-only project exclusion. `scripts/verify-phase1.ps1` is the consolidated
+local gate. Exact closeout evidence and residual limitations live in `PLANS.md`.
 
 ## Phase 2 — Resume Upload, Parsing, and General Health
 

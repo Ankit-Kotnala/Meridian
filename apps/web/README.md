@@ -1,6 +1,7 @@
 # CareerOS web
 
-Next.js App Router frontend for the CareerOS Phase 0 public experience and fictional product preview.
+Next.js App Router frontend for the CareerOS public experience, Phase 1
+authentication/onboarding workspace, and isolated fictional product preview.
 
 ## Commands
 
@@ -15,11 +16,23 @@ pnpm --filter @careeros/web build
 pnpm --filter @careeros/web test:e2e
 ```
 
-The health endpoint is `GET /api/health`. `/dashboard` contains fictional demo fixtures only; authentication and real user data are intentionally deferred to Phase 1.
+The health endpoint is `GET /api/health`. Public auth routes include `/register`,
+`/verify-email`, `/login`, `/forgot-password`, `/reset-password`, and
+`/get-started`. `/dashboard`, `/onboarding`, `/settings`, `/settings/sessions`, and
+`/settings/consent` are protected and use persisted API state. The real dashboard
+intentionally renders an empty state until Phase 2; fictional fixtures are
+isolated at `/demo/dashboard`.
 
-The Dockerfile expects `apps/web` as its build context:
+Browser API traffic uses the strict same-origin `/api/v1/*` proxy. Its upstream
+base is server-only, redirects and forwarded headers are allowlisted, and session
+authority remains in HTTP-only API cookies. Do not introduce local-storage bearer
+tokens or memoize current-user lookups across requests. The package-level
+`test:e2e` command targets an already running web/API stack; use the repository's
+isolated full-stack runner for phase verification.
+
+The Dockerfile expects the repository root as its build context:
 
 ```bash
-docker build -t careeros-web apps/web
+docker build -f apps/web/Dockerfile -t careeros-web .
 docker run --rm -p 3000:3000 careeros-web
 ```

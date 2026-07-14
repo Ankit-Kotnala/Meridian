@@ -45,7 +45,7 @@ export function SiteHeader() {
           </Link>
           <Link
             className={cn(buttonStyles.base, buttonStyles.primary)}
-            href="/dashboard"
+            href="/demo/dashboard"
           >
             Explore the demo
             <ArrowRight aria-hidden="true" className="size-4" />
@@ -93,7 +93,7 @@ export function SiteHeader() {
               </Link>
               <Link
                 className={cn(buttonStyles.base, buttonStyles.primary)}
-                href="/dashboard"
+                href="/demo/dashboard"
                 onClick={() => setOpen(false)}
               >
                 View demo

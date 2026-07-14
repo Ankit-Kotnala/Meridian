@@ -7,7 +7,10 @@ from uuid import uuid4
 
 import structlog
 from fastapi import FastAPI, Request, Response
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from structlog.contextvars import bind_contextvars, clear_contextvars
+
+from careeros_api.problems import problem_response
 
 REQUEST_ID_HEADER = "X-Request-ID"
 TRACE_ID_HEADER = "X-Trace-ID"
@@ -19,6 +22,74 @@ _TRACEPARENT = re.compile(
     r"(?P<flags>[0-9a-f]{2})$"
 )
 logger = structlog.get_logger(__name__)
+
+
+class RequestBodyTooLarge(Exception):
+    """Internal control flow raised before an oversized request reaches a handler."""
+
+
+class RequestBodyLimitMiddleware:
+    """Enforce declared and streamed byte limits without buffering request bodies."""
+
+    def __init__(self, app: ASGIApp, max_body_bytes: int) -> None:
+        self._app = app
+        self._max_body_bytes = max_body_bytes
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self._app(scope, receive, send)
+            return
+
+        if self._declared_size(scope) > self._max_body_bytes:
+            await self._reject(scope, receive, send)
+            return
+
+        received_bytes = 0
+        response_started = False
+
+        async def limited_receive() -> Message:
+            nonlocal received_bytes
+            message = await receive()
+            if message["type"] == "http.request":
+                received_bytes += len(message.get("body", b""))
+                if received_bytes > self._max_body_bytes:
+                    raise RequestBodyTooLarge
+            return message
+
+        async def tracked_send(message: Message) -> None:
+            nonlocal response_started
+            if message["type"] == "http.response.start":
+                response_started = True
+            await send(message)
+
+        try:
+            await self._app(scope, limited_receive, tracked_send)
+        except RequestBodyTooLarge:
+            if response_started:
+                raise
+            await self._reject(scope, receive, send)
+
+    @staticmethod
+    def _declared_size(scope: Scope) -> int:
+        for name, value in scope.get("headers", ()):
+            if name.lower() != b"content-length":
+                continue
+            try:
+                return max(0, int(value.decode("ascii")))
+            except (UnicodeDecodeError, ValueError):
+                return 0
+        return 0
+
+    async def _reject(self, scope: Scope, receive: Receive, send: Send) -> None:
+        request = Request(scope)
+        response = problem_response(
+            request,
+            status_code=413,
+            code="payload_too_large",
+            title="Payload too large",
+            detail="The request body exceeds the allowed size.",
+        )
+        await response(scope, receive, send)
 
 
 def _request_id(candidate: str | None) -> str:

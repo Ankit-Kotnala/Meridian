@@ -17,6 +17,14 @@ database = [
   "asyncpg==0.31.0",
   "sqlalchemy[asyncio]==2.0.51",
 ]
+identity = [
+  "aiosmtplib==5.1.2",
+  "argon2-cffi==25.1.0",
+  "authlib==1.7.2",
+  "email-validator==2.3.0",
+  "httpx==0.28.1",
+  "redis==6.4.0",
+]
 migrations = [
   "alembic==1.18.5",
 ]
@@ -24,9 +32,16 @@ migrations = [
 [dependency-groups]
 dev = [
   "alembic==1.18.5",
+  "aiosmtplib==5.1.2",
+  "argon2-cffi==25.1.0",
+  "authlib==1.7.2",
   "asyncpg==0.31.0",
+  "email-validator==2.3.0",
+  "httpx==0.28.1",
   "mypy==2.3.0",
   "pytest==9.1.1",
+  "pytest-asyncio==1.4.0",
+  "redis==6.4.0",
   "ruff==0.15.21",
   "sqlalchemy[asyncio]==2.0.51",
 ]
@@ -37,6 +52,7 @@ packages = ["src/careeros"]
 [tool.pytest.ini_options]
 addopts = "-ra --strict-config --strict-markers"
 testpaths = ["tests"]
+asyncio_mode = "auto"
 
 [tool.ruff]
 target-version = "py313"
@@ -57,3 +73,7 @@ pretty = true
 show_error_codes = true
 packages = ["careeros"]
 mypy_path = "src"
+
+[[tool.mypy.overrides]]
+module = ["authlib", "authlib.*"]
+ignore_missing_imports = true
