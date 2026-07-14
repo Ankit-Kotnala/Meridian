@@ -18,22 +18,7 @@ Assert-LastExitCode "pnpm activation"
 pnpm install --frozen-lockfile
 Assert-LastExitCode "pnpm install"
 
-Push-Location "apps/api"
-try {
-    uv sync --frozen --all-extras --dev
-    Assert-LastExitCode "API dependency sync"
-}
-finally {
-    Pop-Location
-}
-
-Push-Location "apps/worker"
-try {
-    uv sync --frozen --all-extras --dev
-    Assert-LastExitCode "Worker dependency sync"
-}
-finally {
-    Pop-Location
-}
+uv sync --frozen --all-packages --all-groups
+Assert-LastExitCode "Python workspace dependency sync"
 
 Write-Host "CareerOS Phase 0 dependencies are ready."

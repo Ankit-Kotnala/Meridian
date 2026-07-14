@@ -1,0 +1,22 @@
+{
+  "name": "@careeros/eslint-config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./next": "./next.mjs",
+    "./react-library": "./react-library.mjs"
+  },
+  "files": [
+    "next.mjs",
+    "react-library.mjs",
+    "check-web-boundaries.mjs"
+  ],
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  },
+  "peerDependencies": {
+    "eslint": "^9.39.1",
+    "eslint-config-next": "^16.2.10"
+  }
+}

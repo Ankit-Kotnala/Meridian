@@ -3,10 +3,9 @@
 from functools import lru_cache
 from typing import Literal, Self
 
+from careeros.foundation.config import parse_async_postgresql_url
 from pydantic import AliasChoices, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from sqlalchemy.engine import make_url
-from sqlalchemy.exc import ArgumentError
 
 Environment = Literal["development", "test", "staging", "production"]
 LogFormat = Literal["json", "console"]
@@ -59,12 +58,7 @@ class Settings(BaseSettings):
     @field_validator("database_url")
     @classmethod
     def require_async_postgresql_url(cls, value: SecretStr) -> SecretStr:
-        try:
-            url = make_url(value.get_secret_value())
-        except ArgumentError as exc:
-            raise ValueError("database_url must be a valid SQLAlchemy URL") from exc
-        if url.drivername != "postgresql+asyncpg":
-            raise ValueError("database_url must use the postgresql+asyncpg driver")
+        parse_async_postgresql_url(value.get_secret_value())
         return value
 
     @model_validator(mode="after")
@@ -74,7 +68,7 @@ class Settings(BaseSettings):
             return self
 
         violations: list[str] = []
-        database_url = make_url(self.database_url.get_secret_value())
+        database_url = parse_async_postgresql_url(self.database_url.get_secret_value())
         if self.debug:
             violations.append("debug must be disabled")
         if "*" in self.trusted_hosts:

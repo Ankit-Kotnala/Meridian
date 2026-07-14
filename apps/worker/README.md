@@ -7,7 +7,8 @@ phases.
 ## Local commands
 
 ```bash
-uv sync --frozen
+uv sync --frozen --all-packages --all-groups
+cd apps/worker
 uv run celery --app careeros_worker.app:celery_app worker --loglevel=INFO
 uv run ruff format --check .
 uv run ruff check .

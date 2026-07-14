@@ -9,7 +9,7 @@
     "lint": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@careeros/config": "workspace:*",
+    "@careeros/typescript-config": "workspace:*",
     "tsx": "4.20.6",
     "typescript": "5.9.3"
   }

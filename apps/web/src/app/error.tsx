@@ -1,6 +1,6 @@
 "use client";
 
-import { ErrorState } from "@/components/ui/async-state";
+import { ErrorState } from "@careeros/ui";
 
 export default function ErrorPage({
   reset,

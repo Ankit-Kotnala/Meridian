@@ -31,8 +31,9 @@ feature.
 
 ## Phase 0 — Repository Foundation
 
-Dependencies: none. Current status: complete and verified locally on 2026-07-14;
-hosted CI must rerun after the working-tree fixes are committed.
+Dependencies: none. Current status: architecture alignment implemented and
+locally verified; hosted CI rerun pending; Phase 1 has not started. The earlier
+baseline evidence remains historical.
 
 ### Assessment and governance
 
@@ -40,58 +41,77 @@ hosted CI must rerun after the working-tree fixes are committed.
 - [x] Record that the initial repository was empty and preserve inspection evidence.
 - [x] Record assumptions, specification tensions, selected stack, Phase 0 boundary,
       dependencies, risks, and verification commands.
-- [x] Add repository-specific engineering rules in `AGENTS.md`.
-- [x] Add exact setup/health/quality instructions in `README.md`.
-- [x] Add product, architecture, security, scoring, AI, API, testing, and ADR docs.
+- [x] Align repository-specific engineering rules in `AGENTS.md` with the shared
+      backend, generated-contract, thin-app, and no-empty-scaffolding decisions.
+- [x] Align setup/health/quality instructions in `README.md` with the root
+      workspaces and rerun requirements.
+- [x] Update product, architecture, security, scoring, AI, API, testing, and ADR
+      documentation without erasing prior evidence.
 - [x] Create the all-phase checklist and progress plan.
+- [x] Add repository ownership, dependency-update, contribution templates, and
+      explicit secret/private-data/Terraform-state exclusions.
 
 ### Workspace and applications
 
-- [x] Pin pnpm 11.13.0/Node 24 and create a root workspace lockfile.
+- [x] Pin pnpm 11.13.0/Node 24 and verify the root workspace lockfile.
 - [x] Create `apps/web` with Next.js 16.2.10, React 19.2.7, strict TypeScript
       5.9.3, Tailwind 4.3.2, format/lint/type/test/build scripts.
 - [x] Create an accessible initial design system and a conspicuously fictional,
       unauthenticated dashboard preview; do not imply real scoring or persistence.
 - [x] Implement web `GET /api/health` and a container production start path.
-- [x] Create Python 3.13 uv-locked `apps/api` with FastAPI 0.138.2, Pydantic,
-      async SQLAlchemy/asyncpg, structured logging, and test/type/lint configuration.
+- [x] Create one Python 3.13 root uv workspace and lock containing thin
+      `apps/api`, thin `apps/worker`, and shared `packages/backend` members.
 - [x] Implement API `GET /health`, `GET /ready`, and `GET /api/v1/meta` with safe
       schemas; readiness checks required dependencies without leaking topology.
-- [x] Create Python 3.13 uv-locked `apps/worker` with Celery 5.6.3 and task
-      `careeros.worker.health.ping`; add a broker-backed health check.
-- [x] Establish `packages/ui`, `packages/contracts`, `packages/config`, and
-      `packages/test-fixtures` boundaries without empty misleading product APIs.
+- [x] Keep the Celery 5.6.3 worker thin, preserve task
+      `careeros.worker.health.ping`, and retain its broker-backed health check.
+- [x] Establish real `packages/backend`, generated `packages/contracts`, generic
+      `packages/ui`, `packages/design-tokens`, `packages/eslint-config`,
+      `packages/typescript-config`, and `packages/test-fixtures` boundaries.
+- [x] Move Alembic and shared database/logging primitives to
+      `packages/backend`; preserve revision `20260714_0001` and one migration head.
+- [x] Add backend forbidden-import tests and frontend module-boundary checks;
+      assert both Python deployables depend on backend and worker never imports API.
+- [x] Commit normalized OpenAPI and generated TypeScript schema artifacts, expose
+      a typed client wrapper, and fail on export or generation drift.
+- [x] Leave extension, future product modules/integrations, root system-test
+      suites, Terraform, and operations absent until their owning phases.
 
 ### Local platform and automation
 
-- [x] Create `.env.example` with documented local-only values and no real secret;
+- [x] Verify `.env.example` contains documented local-only values and no real secret;
       ignore actual environment files.
 - [x] Compose PostgreSQL/pgvector, Redis, MinIO, API, worker, and web with explicit
       health checks and dependency ordering.
 - [x] Initialize a private MinIO bucket safely and verify object-service readiness.
-- [x] Provide least-privilege runtime users and production-style start commands in
-      context-local Dockerfiles; do not ship development servers in runtime images.
-- [x] Implement non-destructive `make setup`, `dev`, `stop`, `format-check`,
+- [x] Preserve least-privilege runtime users and production-style start commands;
+      build Python images from a root context that includes shared backend files.
+- [x] Align non-destructive `make setup`, `dev`, `stop`, `format-check`,
       `lint`, `typecheck`, `test`, and `verify` targets.
 - [x] Keep `reset-db` explicitly destructive and documented; ensure Phase 0
       `migrate` only enables pgvector and `seed` only prints labeled fictional data
       rather than pretending domain persistence exists.
-- [x] Add CI for pinned install, format, lint, types, tests, web build, API import/
-      startup, Compose/container smoke where supported, and initial security scans.
+- [x] Align CI for frozen root installs, architecture and contract drift checks,
+      migration verification, format/lint/types/tests, builds, Compose/container
+      smoke, and existing security scans.
 - [x] Confirm all test runners discover at least one meaningful foundation test;
       zero-test success is not sufficient.
 
 ### Exit verification
 
-- [x] `make setup` succeeds from the documented prerequisite state.
+- [x] `make setup` succeeds through the documented PowerShell equivalent.
 - [x] `docker compose config --quiet` succeeds.
-- [x] `make dev` starts the platform.
+- [x] The documented Compose development path starts the platform.
 - [x] Web, API, worker, PostgreSQL, Redis, and MinIO report healthy.
 - [x] API readiness changes safely when a required dependency is removed.
-- [x] `make format-check`, `make lint`, `make typecheck`, `make test`, and
-      `make verify` all pass in the same revision.
+- [x] Root workspace, architecture, OpenAPI generation/drift, migration, and
+      container migration checks pass.
+- [x] The documented PowerShell equivalents of `make format-check`, `make lint`,
+      `make typecheck`, `make test`, and `make verify` all pass in this working tree.
 - [x] Record command results, changed files, remaining risks, and Phase 1 next step
       in `PLANS.md` before marking Phase 0 complete.
+- [~] Commit this aligned working tree and obtain a green hosted CI run for that
+  exact revision before marking Phase 0 complete.
 
 ## Phase 1 — Authentication, Application Shell, and Onboarding
 

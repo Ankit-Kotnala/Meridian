@@ -9,15 +9,16 @@ description = "CareerOS FastAPI service"
 readme = "README.md"
 requires-python = ">=3.13,<3.15"
 dependencies = [
-  "alembic==1.18.5",
-  "asyncpg==0.31.0",
+  "careeros-backend[database,migrations]==0.1.0",
   "fastapi==0.138.2",
   "pydantic==2.13.4",
   "pydantic-settings==2.14.2",
-  "sqlalchemy[asyncio]==2.0.51",
   "structlog==26.1.0",
   "uvicorn[standard]==0.51.0",
 ]
+
+[tool.uv.sources]
+careeros-backend = { workspace = true }
 
 [dependency-groups]
 dev = [

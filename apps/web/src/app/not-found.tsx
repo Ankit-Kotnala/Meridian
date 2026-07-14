@@ -1,8 +1,6 @@
 import Link from "next/link";
 
-import { EmptyState } from "@/components/ui/async-state";
-import { buttonStyles } from "@/components/ui/button";
-import { cn } from "@/lib/cn";
+import { buttonStyles, cn, EmptyState } from "@careeros/ui";
 
 export default function NotFound() {
   return (

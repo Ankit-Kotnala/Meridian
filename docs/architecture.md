@@ -14,6 +14,14 @@ the domain.
 The architecture described here is the target. `PLANS.md` is authoritative for
 what the current working tree actually implements.
 
+## Implementation alignment status
+
+The repository now implements the Phase 0 shared backend, root uv workspace,
+generated contract pipeline, thin deployable boundaries, and executable
+architecture checks described below. Their complete local gate passes in the
+aligned working tree. Phase 0 remains open until this tree is committed and that
+exact revision passes hosted CI; earlier baseline evidence remains historical.
+
 ## System principles
 
 1. **Evidence is upstream.** Career facts and evidence precede generated text.
@@ -56,33 +64,50 @@ after authorization and finalized by the API.
 
 ## Monorepo structure and ownership
 
-| Path                     | Responsibility                                                                        | Must not own                                                           |
-| ------------------------ | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `apps/web`               | Public and authenticated UI, accessibility, query/form state, server/client rendering | Database queries, object credentials, score formulas, grounding policy |
-| `apps/api`               | HTTP validation, authentication/authorization, orchestration, persistence, OpenAPI    | Long-running parsing/rendering, UI state                               |
-| `apps/worker`            | Celery app, task adapters, isolated async execution                                   | Independent domain rules that diverge from API services                |
-| `packages/ui`            | Shared design tokens now; reusable React component boundary when components stabilize | Product API calls or route-specific behavior                           |
-| `packages/contracts`     | Handwritten wire schemas now; generated client types after product OpenAPI stabilizes | Business persistence models or secrets                                 |
-| `packages/config`        | Shared non-secret build/tool defaults                                                 | Runtime credentials                                                    |
-| `packages/test-fixtures` | Fictional and hostile test assets/metadata                                            | Real user data                                                         |
-| `infra`                  | Container/deployment definitions and policies                                         | Product logic                                                          |
+| Path                         | Responsibility                                                                        | Must not own                                                           |
+| ---------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `apps/web`                   | Public and authenticated UI, accessibility, query/form state, server/client rendering | Database queries, object credentials, score formulas, grounding policy |
+| `apps/api`                   | Thin HTTP validation, authorization, composition, and OpenAPI delivery                | Domain rules, persistence implementations, worker process behavior     |
+| `apps/worker`                | Thin Celery process and task adapters for isolated async execution                    | HTTP composition or duplicated business rules                          |
+| `packages/backend`           | Shared Python foundation and phase-owned domain/application/infrastructure modules    | Imports from API/worker deployables or generic unowned helpers         |
+| `packages/ui`                | Generic accessible React primitives and reusable presentation components              | Product API calls, domain rules, or route-specific behavior            |
+| `packages/design-tokens`     | Shared colors, typography, spacing, radii, and shadows                                | Product state or feature behavior                                      |
+| `packages/contracts`         | Normalized OpenAPI artifact, generated TypeScript schema, and typed client wrapper    | Handwritten competing wire models, persistence models, or secrets      |
+| `packages/eslint-config`     | Shared frontend lint and dependency-boundary rules                                    | Runtime behavior or credentials                                        |
+| `packages/typescript-config` | Shared strict TypeScript compiler defaults                                            | Runtime behavior or credentials                                        |
+| `packages/test-fixtures`     | Fictional and hostile test assets/metadata                                            | Real user data                                                         |
+| `infra`                      | Container/deployment definitions and policies                                         | Product logic                                                          |
 
-Python domain/service packages may initially live with the API and be imported by
-the worker. Extract a shared Python package only when real reuse warrants its
-release and dependency overhead.
+The root uv workspace contains `apps/api`, `apps/worker`, and
+`packages/backend` with one committed lockfile. Both applications depend on the
+backend. The backend imports neither application, and the worker never imports
+the API. Container build contexts must include the root workspace while runtime
+images remain independently deployable.
+
+Within `packages/backend/src/careeros`, stable domain-independent primitives live
+under `foundation`. Each product capability is added under `modules/<feature>`
+only in its owning phase, with `domain`, `application`, `infrastructure`, `api`,
+`tasks`, and tests as real behavior requires. Provider SDKs stay under
+`integrations`. Domain code is framework-independent; application code depends on
+ports; infrastructure implements those ports; HTTP routes and worker tasks remain
+thin adapters. Cross-module reads use explicit services, query interfaces, or
+events rather than another module's tables.
+
+This superseding foundation decision is recorded in
+[ADR 0007](adr/0007-shared-modular-monolith-and-generated-contracts.md).
 
 ## Foundation technology
 
-| Concern      | Choice                                                          | Notes                                                                              |
-| ------------ | --------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| JS workspace | pnpm 11.13.0, Node.js 24                                        | One root lockfile; Corepack pins package-manager behavior                          |
-| Web          | Next.js 16.2.10, React 19.2.7, TypeScript 5.9.3, Tailwind 4.3.2 | App Router; strict types; server components by default where appropriate           |
-| Python       | Python 3.13, uv 0.11.21                                         | Independent API and worker locks/projects in Phase 0; compatible pins are explicit |
-| HTTP         | FastAPI 0.138.2, Pydantic                                       | OpenAPI contract and validation boundary                                           |
-| Persistence  | SQLAlchemy 2 async, asyncpg, Alembic                            | PostgreSQL is authoritative; migrations arrive with owning models                  |
-| Async work   | Celery 5.6.3, Redis locally                                     | Task envelopes require idempotency, ownership, retries/timeouts, traceability      |
-| Objects      | MinIO locally, S3-compatible production interface               | Private bucket, randomized keys, encryption and lifecycle policy                   |
-| Semantics    | pgvector when justified                                         | Retrieval aid only; not a substitute for relational provenance or scoring rules    |
+| Concern      | Choice                                                          | Notes                                                                           |
+| ------------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| JS workspace | pnpm 11.13.0, Node.js 24                                        | One root lockfile; Corepack pins package-manager behavior                       |
+| Web          | Next.js 16.2.10, React 19.2.7, TypeScript 5.9.3, Tailwind 4.3.2 | App Router; strict types; server components by default where appropriate        |
+| Python       | Python 3.13, uv 0.11.21                                         | One root workspace/lock for API, worker, and shared backend                     |
+| HTTP         | FastAPI 0.138.2, Pydantic                                       | OpenAPI contract and validation boundary                                        |
+| Persistence  | SQLAlchemy 2 async, asyncpg, Alembic                            | PostgreSQL is authoritative; migrations arrive with owning models               |
+| Async work   | Celery 5.6.3, Redis locally                                     | Task envelopes require idempotency, ownership, retries/timeouts, traceability   |
+| Objects      | MinIO locally, S3-compatible production interface               | Private bucket, randomized keys, encryption and lifecycle policy                |
+| Semantics    | pgvector when justified                                         | Retrieval aid only; not a substitute for relational provenance or scoring rules |
 
 ## Domain model
 
@@ -180,8 +205,11 @@ bomb, or unavailable required scanner fails safely. See the threat model.
 ## API and contract strategy
 
 - Product routes are versioned below `/api/v1`; health probes remain unversioned.
-- OpenAPI generated by the API is authoritative for wire shape. Generated clients
-  are reproducible artifacts, not parallel handwritten models.
+- OpenAPI generated by the API is authoritative for wire shape. Its normalized,
+  committed artifact lives under `packages/contracts/openapi`; pinned generation
+  produces the TypeScript schema consumed by a typed `openapi-fetch` wrapper. CI
+  rejects export or generation drift. Generated files are reproducible artifacts,
+  not parallel handwritten models.
 - Errors use a stable problem envelope with machine code, human-safe detail,
   field errors, and correlation ID.
 - Collection APIs use cursor pagination where datasets grow; every sort/filter is
@@ -265,15 +293,19 @@ Local Compose is not a production topology.
 
 ## Phase realization
 
-Phase 0 implements only the runtime seams: packages, health/meta endpoints,
-dependency connectivity, a fictional web preview, worker health, local services,
-test runners, and documentation. Each subsequent phase adds a maintainable
-vertical slice as mapped in `PLANS.md`; an interface or empty route is never used
-as evidence that its feature exists.
+Phase 0 implements only the runtime seams: the root workspaces, shared backend
+foundation, generated contracts, generic UI, health/meta endpoints, dependency
+connectivity, a fictional web preview, worker health, local services, test
+runners, and documentation. Each subsequent phase adds a maintainable vertical
+slice as mapped in `PLANS.md`; an interface, directory, or empty route is never
+used as evidence that its feature exists. The browser extension, product modules,
+provider integrations, Terraform, operations, and production workflows are
+created only in their owning phases.
 
 ## Architecture verification
 
-At foundation time:
+Phase 0 requires the following repository gates plus architecture-boundary,
+OpenAPI-generation drift, migration, and root-workspace checks:
 
 ```sh
 docker compose config --quiet
@@ -287,6 +319,9 @@ make test
 make verify
 ```
 
-Later phases add migration, ownership, hostile-document, grounding, score-golden,
-round-trip export, accessibility, load, deletion, and restore gates. The complete
-strategy is in `docs/testing-strategy.md`.
+The aligned working tree passes these local gates together. Exact evidence is
+recorded in `PLANS.md`; Phase 0 remains open until the tree is committed and the
+same revision passes hosted CI.
+Later phases add ownership, hostile-document, grounding, score-golden, round-trip
+export, accessibility, load, deletion, and restore gates. The complete strategy
+is in `docs/testing-strategy.md`.

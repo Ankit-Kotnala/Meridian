@@ -16,15 +16,18 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "generate": "openapi-typescript openapi/careeros.openapi.json --output src/generated/schema.d.ts --alphabetize",
+    "check-generated": "openapi-typescript openapi/careeros.openapi.json --output src/generated/schema.d.ts --alphabetize --check",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run src"
   },
   "dependencies": {
-    "zod": "4.4.3"
+    "openapi-fetch": "0.17.0"
   },
   "devDependencies": {
-    "@careeros/config": "workspace:*",
+    "@careeros/typescript-config": "workspace:*",
+    "openapi-typescript": "7.13.0",
     "typescript": "5.9.3",
     "vitest": "4.1.10"
   }

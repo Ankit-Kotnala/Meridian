@@ -1,9 +1,9 @@
 # CareerOS implementation plan
 
-Last updated: 2026-07-14  
+Last updated: 2026-07-15
 Plan owner: engineering  
-Current status: **Phase 0 complete in the working tree; Phase 1 not started;
-hosted CI rerun required after the next commit**
+Current status: **Phase 0 architecture alignment implemented and locally
+verified; hosted CI rerun pending; Phase 1 not started**
 
 ## Status legend
 
@@ -43,20 +43,41 @@ specification tensions.
 - [x] Repository assessment and explicit assumptions
 - [x] Repository rules, phase plan, setup documentation, architecture, product,
       security, scoring, grounding, API, testing, and ADR documentation
-- [x] pnpm monorepo and Python project skeletons
-- [x] Next.js web skeleton and accessible initial visual system
+- [x] pnpm monorepo and one root uv workspace for API, worker, and shared backend
+- [x] Thin Next.js routes/feature modules and accessible initial visual system
 - [x] FastAPI liveness, dependency readiness, and safe metadata endpoints
 - [x] Celery worker and deterministic health task
 - [x] PostgreSQL/pgvector, Redis, and MinIO local services
-- [x] Shared contracts/configuration/test-fixture package boundaries
-- [x] Dockerfiles, Compose, `.env.example`, and Make command interface
-- [x] CI foundation, formatting, lint, type checking, and initial tests
-- [x] Cross-service health verification
+- [x] Shared backend, generated contracts, generic UI/design tokens, strict
+      configuration, and fictional test-fixture package boundaries
+- [x] Dockerfiles, `compose.yaml`, `.env.example`, and Make command interface
+- [x] CI foundation plus architecture, contract-drift, and migration gates
+- [x] Cross-service health verification against the aligned working tree
 
-All Phase 0 scope and repository-wide exit gates passed on 2026-07-14. Phase 1
-remains intentionally unstarted. The latest hosted CI run targets the earlier
-initial commit; its two failures are fixed and reverified locally but cannot be
-rerun against uncommitted work.
+The earlier Phase 0 baseline passed its then-current local gates on 2026-07-14.
+The architecture addendum subsequently made a shared Python modular monolith,
+single root uv lock, generated OpenAPI schema, thin deployable applications, and
+executable dependency boundaries part of Phase 0. That alignment is implemented
+and its expanded local gates pass in the current working tree. Phase 0 remains
+open until the same revision is committed and hosted CI is green. Phase 1 remains
+intentionally unstarted.
+
+### Architecture-alignment work
+
+- [x] Make `packages/backend` the owner of shared Python foundation code and the
+      preserved Alembic revision graph.
+- [x] Make API and worker thin members of one root uv workspace and lock; forbid
+      backend-to-app, worker-to-API, and deployable persistence imports.
+- [x] Generate the committed TypeScript schema from normalized FastAPI OpenAPI,
+      expose a typed client wrapper, and fail on export or generation drift.
+- [x] Enforce thin web routes, feature-module ownership, and generic UI package
+      boundaries.
+- [x] Build Python images from the root context, run migrations without uv in the
+      runtime image, and verify fresh and existing-database upgrade paths.
+- [x] Re-run formatting, lint, type, unit, architecture, contract, migration,
+      build, browser, security, and Compose gates in the aligned working tree.
+- [~] Commit the aligned tree and obtain a green hosted CI rerun for that exact
+  revision.
 
 ### Explicitly deferred
 
@@ -69,6 +90,9 @@ rerun against uncommitted work.
   billing, admin, and production deployment (Phases 7–10)
 - Real customer testimonials, autonomous job submission, production secrets, and
   production data
+- Browser extension/job capture, empty backend modules or provider integrations,
+  root future-test trees, Terraform, and operations artifacts until their owning
+  phases
 
 The Phase 0 dashboard is an unauthenticated, clearly labeled fictional preview.
 It must not imply that authentication, persisted metrics, or product analysis is
@@ -77,15 +101,15 @@ implemented.
 ### Phase 0 dependencies
 
 ```text
-Pinned toolchains + env contract
+Pinned toolchains + root locks + env contract
           |
-          +--> PostgreSQL/Redis/MinIO --> API readiness
-          |                 |
-          |                 +---------> Celery health
+          +--> packages/backend --> thin API + thin worker
+          |           |                    |
+          |           +--> Alembic         +--> PostgreSQL/Redis/MinIO readiness
           |
-          +--> shared workspace/config --> web + API + worker builds
-                                      |
-                                      +--> Compose health + CI verification
+          +--> FastAPI OpenAPI --> generated contracts --> web modules
+          |
+          +--> architecture checks + Compose health + CI verification
 ```
 
 The verification gate depends on all branches. Documentation can be reviewed in
@@ -93,8 +117,8 @@ parallel but cannot turn a failing runtime gate green.
 
 ### Verification commands
 
-The following command interface was exercised during integration; the recorded
-results are under “Phase 0 evidence”:
+The following stable command interface is covered by the aligned local gate.
+Phase 0 still requires hosted CI evidence from the committed aligned revision:
 
 ```sh
 make setup
@@ -117,9 +141,11 @@ The worker health command uses Celery remote control through the broker and chec
 that the running worker can respond; the registered deterministic task is
 `careeros.worker.health.ping`.
 
-### Phase 0 evidence
+### Historical Phase 0 baseline evidence
 
-Evidence captured through 2026-07-14 22:20 IST against the current working tree:
+Evidence captured through 2026-07-14 22:20 IST against the pre-alignment working
+tree is preserved below. It does not establish that the current working tree
+passes.
 
 | Command / gate                        | Result | Evidence                                                                                                                                     |
 | ------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -137,11 +163,31 @@ Evidence captured through 2026-07-14 22:20 IST against the current working tree:
 | `make verify` / PowerShell equivalent | Pass   | The Make command graph was validated; `scripts/verify.ps1` completed the full non-runtime gate with exit code 0                              |
 | Hosted CI                             | Rerun  | Initial-commit run 29349892186 failed formatting and env-isolation checks; both are fixed locally, while browser/container jobs pass locally |
 
+### Aligned Phase 0 local evidence
+
+Evidence captured on 2026-07-14 against the current uncommitted working tree.
+This establishes local correctness but is not a substitute for hosted CI on a
+committed revision.
+
+| Command / gate                       | Result  | Evidence                                                                                                                                                                    |
+| ------------------------------------ | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts/setup.ps1`                  | Pass    | Frozen pnpm and root uv workspace installation completed                                                                                                                    |
+| Formatting and lock/contract drift   | Pass    | Prettier and `uv lock --check` passed; normalized OpenAPI remained stable under hostile ambient settings; generated schema matched                                          |
+| JavaScript lint, types, tests, build | Pass    | Turbo graph passed; contracts 3, ESLint config 4, UI 5, and web 4 tests; Next.js built 20 routes                                                                            |
+| Python lint, types, tests            | Pass    | Ruff and mypy passed; backend 16, API 20, and worker 12 tests passed                                                                                                        |
+| Containers and migrations            | Pass    | API, worker, and web images built; all six core services became healthy; Alembic upgraded twice and reported `20260714_0001 (head)`                                         |
+| Runtime and queue probes             | Pass    | Web/API endpoints returned HTTP 200 and the broker-backed Celery inspect ping returned `pong`                                                                               |
+| Dependency failure/recovery          | Pass    | Readiness returned HTTP 503 with PostgreSQL stopped and HTTP 200 after PostgreSQL recovered                                                                                 |
+| Browser checks                       | Pass    | Playwright passed 7 checks with 1 intentional desktop-only skip                                                                                                             |
+| Security gate                        | Pass    | Gitleaks, pnpm audit, and pip-audit passed; Grype's fixable-high gate passed with two documented exact-version exceptions                                                   |
+| `scripts/verify.ps1`                 | Pass    | Complete aligned local runtime gate finished with exit code 0                                                                                                               |
+| Hosted CI                            | Pending | Run 29355622190 covers committed pre-alignment code and failed only its stale web-container build; the aligned tree fixes that issue locally but has not yet been published |
+
 ## Roadmap and phase gates
 
 | Phase                                                       | Outcomes                                                                                                                           | Depends on  | Exit evidence                                                                                          |
 | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------ |
-| Phase 0 — Foundation                                        | Monorepo, local dependencies, web/API/worker skeletons, contracts, health, CI, docs                                                | None        | Setup/dev work; all services healthy; format, lint, types, tests pass                                  |
+| Phase 0 — Foundation                                        | Root workspaces, shared backend, thin deployables, generated contracts, local dependencies, health, CI, docs                       | None        | Architecture/contracts/migrations pass; setup/dev healthy; format, lint, types, tests pass             |
 | Phase 1 — Auth, shell, onboarding                           | Registration/verification/login/logout/reset, secure sessions, protected responsive shell, onboarding, dashboard/settings skeleton | Phase 0     | Auth journeys pass; anonymous/cross-user denial tests; accessible shell matches visual direction       |
 | Phase 2 — Upload, parsing, general health                   | Secure PDF/DOCX pipeline, local provider, canonical resume, parse review, deterministic health report, guest/save flows            | Phase 1     | Fixtures parse; malformed uploads fail safely; scores reproduce and explain; correction works          |
 | Phase 3 — Career profile, Evidence Vault, Achievement Inbox | Independent career CRUD, provenance graph, evidence states/attachments, guided capture and conflict checks                         | Phases 1–2  | Ownership/provenance tests; unsupported evidence excluded; user can maintain profile without resume    |
@@ -173,8 +219,9 @@ Detailed checkboxes live in `docs/implementation-checklist.md`.
 
 - The recommended architecture is treated as required unless an ADR documents a
   reason to differ.
-- pnpm 11.13.0 and Node 24 govern the JavaScript workspace. Python 3.13 projects
-  use uv. Lockfiles, not broad version ranges in this document, are authoritative.
+- pnpm 11.13.0 and Node 24 govern the JavaScript workspace. Python 3.13 API,
+  worker, and backend packages use one root uv workspace and lock. Lockfiles, not
+  broad version ranges in this document, are authoritative.
 - The API owns Phase 1 sessions and rotating hashed refresh tokens; Google OAuth
   is an adapter. No auth behavior is represented as complete in Phase 0.
 - PostgreSQL includes pgvector, but embeddings are introduced only for a measured
@@ -198,23 +245,24 @@ Detailed checkboxes live in `docs/implementation-checklist.md`.
 
 ## Risk register
 
-| ID  | Risk                                                              | Likelihood / impact | Mitigation and gate                                                                                                                          | Earliest owner phase   |
-| --- | ----------------------------------------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| R1  | Cross-tenant data exposure through IDOR or object keys            | Medium / Critical   | Ownership-scoped queries, policy tests, private buckets, audit events                                                                        | 1 and every data phase |
-| R2  | Malicious or resource-exhausting documents                        | High / Critical     | Signature/limit checks, scanning, isolated no-network worker, time/memory/CPU caps, hostile fixtures                                         | 2                      |
-| R3  | AI fabricates or is redirected by document instructions           | High / Critical     | Untrusted-content delimiters, strict schemas, evidence ledger, deterministic grounding, adversarial tests                                    | 5–6                    |
-| R4  | Score labels mislead users                                        | Medium / High       | Canonical disclaimer, deterministic versioned formulas, explanations, no probability language                                                | 2, 4, 5                |
-| R5  | PDF/DOCX looks correct but parses badly                           | High / High         | Constrained templates, searchable text, round-trip verification and blocking critical failures                                               | 7                      |
-| R6  | Dependency/toolchain churn breaks the greenfield baseline         | Medium / Medium     | Conservative pins, lockfiles, CI cache keys, scheduled upgrades in small changes                                                             | 0 onward               |
-| R7  | Queue retry duplicates work or cost                               | Medium / High       | Idempotency records, bounded retries/timeouts, job state machine, budgets and dead letters                                                   | 2 onward               |
-| R8  | Sensitive content leaks through logs/telemetry/providers          | Medium / Critical   | Data classification, default redaction, payload-free telemetry, provider minimization and consent                                            | 0 onward               |
-| R9  | Local Compose health hides production gaps                        | High / High         | Separate readiness, production threat review, load/restore/failure tests, protected deploy                                                   | 10                     |
-| R10 | Broad roadmap produces unfinished horizontal scaffolding          | High / Medium       | One vertical phase at a time, dependency gates, no completion on placeholders                                                                | Every phase            |
-| R11 | Public Phase 0 demo is mistaken for functional analysis           | Medium / Medium     | Persistent fictional-preview label; no upload/score claims or data persistence                                                               | 0–1                    |
-| R12 | Retention/deletion becomes inconsistent across stores             | Medium / High       | Data inventory, deletion tombstones/jobs, object/vector/backup policy and tests per entity                                                   | 1 onward               |
-| R13 | Provisional shared schemas drift from implemented OpenAPI         | Medium / High       | Treat only implemented OpenAPI schemas as live; reconcile/remove handwritten error/pagination scaffolding before Phase 1/product collections | 0–1                    |
-| R14 | Latest hosted CI run covers the earlier initial commit and failed | Low / Medium        | Run 29349892186 exposed formatting and env-isolation issues now fixed locally; require a green rerun before accepting any Phase 1 merge      | 0–1                    |
-| R15 | Newly disclosed upstream runtime findings lack supported patches  | Low / High          | Two exact-version Grype exceptions document reachability and removal conditions; refresh Python/Next base dependencies before Phase 1 merge  | 0–1                    |
+| ID  | Risk                                                             | Likelihood / impact | Mitigation and gate                                                                                                                       | Earliest owner phase   |
+| --- | ---------------------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| R1  | Cross-tenant data exposure through IDOR or object keys           | Medium / Critical   | Ownership-scoped queries, policy tests, private buckets, audit events                                                                     | 1 and every data phase |
+| R2  | Malicious or resource-exhausting documents                       | High / Critical     | Signature/limit checks, scanning, isolated no-network worker, time/memory/CPU caps, hostile fixtures                                      | 2                      |
+| R3  | AI fabricates or is redirected by document instructions          | High / Critical     | Untrusted-content delimiters, strict schemas, evidence ledger, deterministic grounding, adversarial tests                                 | 5–6                    |
+| R4  | Score labels mislead users                                       | Medium / High       | Canonical disclaimer, deterministic versioned formulas, explanations, no probability language                                             | 2, 4, 5                |
+| R5  | PDF/DOCX looks correct but parses badly                          | High / High         | Constrained templates, searchable text, round-trip verification and blocking critical failures                                            | 7                      |
+| R6  | Dependency/toolchain churn breaks the greenfield baseline        | Medium / Medium     | Conservative pins, lockfiles, CI cache keys, scheduled upgrades in small changes                                                          | 0 onward               |
+| R7  | Queue retry duplicates work or cost                              | Medium / High       | Idempotency records, bounded retries/timeouts, job state machine, budgets and dead letters                                                | 2 onward               |
+| R8  | Sensitive content leaks through logs/telemetry/providers         | Medium / Critical   | Data classification, default redaction, payload-free telemetry, provider minimization and consent                                         | 0 onward               |
+| R9  | Local Compose health hides production gaps                       | High / High         | Separate readiness, production threat review, load/restore/failure tests, protected deploy                                                | 10                     |
+| R10 | Broad roadmap produces unfinished horizontal scaffolding         | High / Medium       | One vertical phase at a time, dependency gates, no completion on placeholders                                                             | Every phase            |
+| R11 | Public Phase 0 demo is mistaken for functional analysis          | Medium / Medium     | Persistent fictional-preview label; no upload/score claims or data persistence                                                            | 0–1                    |
+| R12 | Retention/deletion becomes inconsistent across stores            | Medium / High       | Data inventory, deletion tombstones/jobs, object/vector/backup policy and tests per entity                                                | 1 onward               |
+| R13 | Generated contracts drift from implemented OpenAPI               | Medium / High       | FastAPI remains authoritative; pin normalized export/client generation and fail CI on either drift                                        | 0 onward               |
+| R14 | Latest hosted CI run covers pre-alignment code and failed        | Low / Medium        | Run 29355622190 passed five jobs but its stale web Dockerfile copied a nonexistent `public` directory; require a green alignment rerun    | 0–1                    |
+| R15 | Upstream runtime findings do not all have supported stable fixes | Low / High          | Two exact-version Grype exceptions document reachability and removal conditions; monitor remaining findings and refresh runtimes promptly | 0–1                    |
+| R16 | Workspace/migration move regresses runtime or existing databases | Medium / High       | One root lock, preserved revision IDs, fresh/existing upgrade tests, root-context image builds, and direct runtime Alembic verification   | 0                      |
 
 ## Change and verification protocol
 
@@ -232,7 +280,8 @@ At the end of every phase:
 
 ## Next phase
 
-When work is authorized to continue, begin **Phase 1: Authentication, Application
-Shell, and Onboarding**. Start with the identity/session data model, threat-model
-review, and cross-user authorization harness before building protected product
-pages. Phase 1 is not part of this revision.
+The next work is to commit the locally verified **Phase 0 architecture
+alignment** and obtain a green hosted CI run for that exact revision. Phase 1
+remains blocked until then. Only after Phase 0 closes should authentication, the
+application shell, and onboarding begin with the identity/session data model,
+threat-model review, and cross-user authorization harness.

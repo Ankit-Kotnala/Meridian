@@ -6,14 +6,17 @@ business-domain endpoints, or persistence models yet.
 ## Local commands
 
 ```bash
-uv sync --frozen
+uv sync --frozen --all-packages --all-groups
+cd apps/api
 uv run uvicorn careeros_api.main:app --reload --port 8000
-uv run alembic upgrade head
 uv run ruff format --check .
 uv run ruff check .
 uv run mypy src tests
 uv run pytest
 ```
+
+Migrations are owned by `packages/backend`. From the repository root, run
+`uv run --package careeros-backend alembic -c packages/backend/alembic.ini upgrade head`.
 
 Configuration uses `CAREEROS_`-prefixed environment variables. The default
 database URL is suitable only for local development. Production configuration

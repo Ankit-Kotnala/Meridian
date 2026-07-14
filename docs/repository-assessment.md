@@ -16,7 +16,7 @@ returned no files, and `.git` was absent. In particular, there were no:
 - existing product behavior to preserve.
 
 This is a greenfield repository assessment, not an assertion that later
-worktrees remain empty. `PLANS.md` records the integrated Phase 0 state.
+worktrees remain empty. `PLANS.md` records the current Phase 0 state.
 
 ## Inspection evidence
 
@@ -32,10 +32,17 @@ Test-Path .git
 attached brief (2,076 lines) was read in bounded sections so terminal truncation
 did not omit requirements.
 
+The subsequent repository-architecture addendum (1,457 lines) was also read in
+full on 2026-07-14. It made a shared Python backend, one root uv workspace,
+generated frontend contracts, thin deployable boundaries, and executable
+dependency checks part of the minimum foundation. The repository is aligning to
+that decision now; the earlier Phase 0 verification predates it.
+
 ## Specification conflicts and tensions
 
-No existing code conflicts with the specification. The specification itself has
-several tensions that require explicit interpretation:
+At the initial empty-repository assessment, no existing code conflicted with the
+original specification. The specification itself has several tensions that
+require explicit interpretation:
 
 | Tension                                                                                        | Resolution                                                                                                                                                       |
 | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -56,13 +63,16 @@ several tensions that require explicit interpretation:
 - Next.js 16.2.10 App Router, React 19.2.7, strict TypeScript 5.9.3, and Tailwind
   CSS 4.3.2.
 - Python 3.13 with uv 0.11.21; FastAPI 0.138.2, Pydantic, async
-  SQLAlchemy/asyncpg, and Alembic infrastructure.
+  SQLAlchemy/asyncpg, and Alembic infrastructure in one root workspace and lock.
+- A shared `packages/backend` modular monolith used by thin API and worker
+  applications; stable Phase 0 database, migration, configuration, and logging
+  primitives live in its foundation layer.
 - Celery 5.6.3 using Redis for the local broker and result backend.
 - PostgreSQL with pgvector, Redis, and MinIO through Docker Compose.
 - API-owned authentication in Phase 1: Argon2id, server-side sessions and rotating
   hashed refresh tokens in secure HTTP-only cookies, with a Google OAuth adapter.
-- OpenAPI as the wire-contract authority and generated TypeScript contracts once
-  product endpoints stabilize.
+- OpenAPI as the wire-contract authority, with a normalized committed artifact,
+  generated TypeScript types, and a typed client wrapper beginning in Phase 0.
 
 Major choices and their consequences are recorded in `docs/adr/`.
 
@@ -74,7 +84,8 @@ Phase 0 establishes a runnable and testable platform seam:
 - web, API, and worker skeletons with real health behavior;
 - local PostgreSQL, Redis, and MinIO;
 - environment contract, Make targets, Compose, CI, and initial test runners;
-- shared UI/contracts/config/fixture boundaries;
+- shared backend/contracts/UI/design-token/configuration/fixture boundaries;
+- architecture checks for backend and frontend dependency direction;
 - product, architecture, API, scoring, AI, security, test, and governance docs.
 
 Phase 0 does not claim registration, upload, parsing, scoring, generation,
@@ -123,8 +134,9 @@ The mitigations and owners are maintained in `PLANS.md` and
 
 ## Required verification
 
-The assessment itself is verified by the inventory above. Phase 0 was closed only
-after the following integrated checks passed; results are recorded in `PLANS.md`:
+The assessment itself is verified by the inventories above. The following checks
+passed for the earlier foundation baseline and are preserved in `PLANS.md` as
+historical evidence:
 
 ```sh
 make setup
@@ -141,3 +153,9 @@ make verify
 Health probes covered the web, API, worker, PostgreSQL, Redis, and MinIO. A missing
 tool, skipped suite, placeholder target, or failed health dependency must reopen
 the affected phase.
+
+The aligned working tree passes those checks together with the root uv workspace,
+forbidden-import architecture tests, normalized OpenAPI/generated-schema drift
+checks, single-head migration verification, and root-context API and worker image
+builds. Phase 0 remains open until this tree is committed and that exact revision
+passes hosted CI; Phase 1 must not begin before then.

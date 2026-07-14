@@ -1,8 +1,9 @@
 {
-  "extends": "../config/tsconfig.base.json",
+  "extends": "@careeros/typescript-config/base.json",
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src"
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.test.ts"]
 }

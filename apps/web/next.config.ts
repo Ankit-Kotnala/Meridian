@@ -34,6 +34,7 @@ const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
   reactStrictMode: true,
+  transpilePackages: ["@careeros/ui"],
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },

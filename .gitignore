@@ -2,10 +2,21 @@
 .env
 .env.*
 !.env.example
+*.pem
+*.key
+*.p12
+credentials.json
+service-account.json
+
+# Sensitive data must never enter source control
+real-user-resumes/
+production-database-dumps/
+raw-AI-request-logs/
 
 # JavaScript
 node_modules/
 .next/
+.turbo/
 out/
 coverage/
 playwright-report/
@@ -27,6 +38,13 @@ htmlcov/
 dist/
 build/
 *.log
+
+# Terraform local state and working directories
+.terraform/
+terraform.tfstate
+terraform.tfstate.*
+*.auto.tfvars
+*.auto.tfvars.json
 
 # Editors / operating systems
 .idea/
