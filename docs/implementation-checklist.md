@@ -31,9 +31,9 @@ feature.
 
 ## Phase 0 — Repository Foundation
 
-Dependencies: none. Current status: architecture alignment implemented and
-locally verified; hosted CI rerun pending; Phase 1 has not started. The earlier
-baseline evidence remains historical.
+Dependencies: none. Current status: complete. The aligned implementation passed
+its complete local gate and hosted CI run `29360385761` on commit `9558f33`; the
+earlier baseline evidence remains historical.
 
 ### Assessment and governance
 
@@ -110,8 +110,8 @@ baseline evidence remains historical.
       `make typecheck`, `make test`, and `make verify` all pass in this working tree.
 - [x] Record command results, changed files, remaining risks, and Phase 1 next step
       in `PLANS.md` before marking Phase 0 complete.
-- [~] Commit this aligned working tree and obtain a green hosted CI run for that
-  exact revision before marking Phase 0 complete.
+- [x] Commit this aligned working tree and obtain a green hosted CI run for that
+      exact revision before marking Phase 0 complete.
 
 ## Phase 1 — Authentication, Application Shell, and Onboarding
 

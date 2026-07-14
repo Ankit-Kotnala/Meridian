@@ -2,8 +2,8 @@
 
 Last updated: 2026-07-15
 Plan owner: engineering  
-Current status: **Phase 0 architecture alignment implemented and locally
-verified; hosted CI rerun pending; Phase 1 not started**
+Current status: **Phase 0 complete and verified locally and in hosted CI; Phase 1
+is the active next phase**
 
 ## Status legend
 
@@ -57,10 +57,9 @@ specification tensions.
 The earlier Phase 0 baseline passed its then-current local gates on 2026-07-14.
 The architecture addendum subsequently made a shared Python modular monolith,
 single root uv lock, generated OpenAPI schema, thin deployable applications, and
-executable dependency boundaries part of Phase 0. That alignment is implemented
-and its expanded local gates pass in the current working tree. Phase 0 remains
-open until the same revision is committed and hosted CI is green. Phase 1 remains
-intentionally unstarted.
+executable dependency boundaries part of Phase 0. That alignment is implemented,
+its expanded local gates pass, and commit `9558f33` passed hosted CI run
+`29360385761` on 2026-07-15. Phase 0 is complete.
 
 ### Architecture-alignment work
 
@@ -76,8 +75,8 @@ intentionally unstarted.
       runtime image, and verify fresh and existing-database upgrade paths.
 - [x] Re-run formatting, lint, type, unit, architecture, contract, migration,
       build, browser, security, and Compose gates in the aligned working tree.
-- [~] Commit the aligned tree and obtain a green hosted CI rerun for that exact
-  revision.
+- [x] Commit the aligned tree and obtain a green hosted CI rerun for that exact
+      revision.
 
 ### Explicitly deferred
 
@@ -117,8 +116,8 @@ parallel but cannot turn a failing runtime gate green.
 
 ### Verification commands
 
-The following stable command interface is covered by the aligned local gate.
-Phase 0 still requires hosted CI evidence from the committed aligned revision:
+The following stable command interface is covered by the aligned local gate and
+hosted CI run `29360385761` on committed revision `9558f33`:
 
 ```sh
 make setup
@@ -165,23 +164,23 @@ passes.
 
 ### Aligned Phase 0 local evidence
 
-Evidence captured on 2026-07-14 against the current uncommitted working tree.
-This establishes local correctness but is not a substitute for hosted CI on a
-committed revision.
+Local evidence was captured on 2026-07-14 and reconfirmed on 2026-07-15 before
+publishing commit `9558f33`. Hosted CI then verified that exact implementation
+revision.
 
-| Command / gate                       | Result  | Evidence                                                                                                                                                                    |
-| ------------------------------------ | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `scripts/setup.ps1`                  | Pass    | Frozen pnpm and root uv workspace installation completed                                                                                                                    |
-| Formatting and lock/contract drift   | Pass    | Prettier and `uv lock --check` passed; normalized OpenAPI remained stable under hostile ambient settings; generated schema matched                                          |
-| JavaScript lint, types, tests, build | Pass    | Turbo graph passed; contracts 3, ESLint config 4, UI 5, and web 4 tests; Next.js built 20 routes                                                                            |
-| Python lint, types, tests            | Pass    | Ruff and mypy passed; backend 16, API 20, and worker 12 tests passed                                                                                                        |
-| Containers and migrations            | Pass    | API, worker, and web images built; all six core services became healthy; Alembic upgraded twice and reported `20260714_0001 (head)`                                         |
-| Runtime and queue probes             | Pass    | Web/API endpoints returned HTTP 200 and the broker-backed Celery inspect ping returned `pong`                                                                               |
-| Dependency failure/recovery          | Pass    | Readiness returned HTTP 503 with PostgreSQL stopped and HTTP 200 after PostgreSQL recovered                                                                                 |
-| Browser checks                       | Pass    | Playwright passed 7 checks with 1 intentional desktop-only skip                                                                                                             |
-| Security gate                        | Pass    | Gitleaks, pnpm audit, and pip-audit passed; Grype's fixable-high gate passed with two documented exact-version exceptions                                                   |
-| `scripts/verify.ps1`                 | Pass    | Complete aligned local runtime gate finished with exit code 0                                                                                                               |
-| Hosted CI                            | Pending | Run 29355622190 covers committed pre-alignment code and failed only its stale web-container build; the aligned tree fixes that issue locally but has not yet been published |
+| Command / gate                       | Result | Evidence                                                                                                                            |
+| ------------------------------------ | ------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts/setup.ps1`                  | Pass   | Frozen pnpm and root uv workspace installation completed                                                                            |
+| Formatting and lock/contract drift   | Pass   | Prettier and `uv lock --check` passed; normalized OpenAPI remained stable under hostile ambient settings; generated schema matched  |
+| JavaScript lint, types, tests, build | Pass   | Turbo graph passed; contracts 3, ESLint config 4, UI 5, and web 4 tests; Next.js built 20 routes                                    |
+| Python lint, types, tests            | Pass   | Ruff and mypy passed; backend 16, API 20, and worker 12 tests passed                                                                |
+| Containers and migrations            | Pass   | API, worker, and web images built; all six core services became healthy; Alembic upgraded twice and reported `20260714_0001 (head)` |
+| Runtime and queue probes             | Pass   | Web/API endpoints returned HTTP 200 and the broker-backed Celery inspect ping returned `pong`                                       |
+| Dependency failure/recovery          | Pass   | Readiness returned HTTP 503 with PostgreSQL stopped and HTTP 200 after PostgreSQL recovered                                         |
+| Browser checks                       | Pass   | Playwright passed 7 checks with 1 intentional desktop-only skip                                                                     |
+| Security gate                        | Pass   | Gitleaks, pnpm audit, and pip-audit passed; Grype's fixable-high gate passed with two documented exact-version exceptions           |
+| `scripts/verify.ps1`                 | Pass   | Complete aligned local runtime gate finished with exit code 0                                                                       |
+| Hosted CI                            | Pass   | Run 29360385761 passed worker, API, supply-chain, web/contracts, browser-smoke, and container jobs against commit `9558f33`         |
 
 ## Roadmap and phase gates
 
@@ -260,7 +259,7 @@ Detailed checkboxes live in `docs/implementation-checklist.md`.
 | R11 | Public Phase 0 demo is mistaken for functional analysis          | Medium / Medium     | Persistent fictional-preview label; no upload/score claims or data persistence                                                            | 0–1                    |
 | R12 | Retention/deletion becomes inconsistent across stores            | Medium / High       | Data inventory, deletion tombstones/jobs, object/vector/backup policy and tests per entity                                                | 1 onward               |
 | R13 | Generated contracts drift from implemented OpenAPI               | Medium / High       | FastAPI remains authoritative; pin normalized export/client generation and fail CI on either drift                                        | 0 onward               |
-| R14 | Latest hosted CI run covers pre-alignment code and failed        | Low / Medium        | Run 29355622190 passed five jobs but its stale web Dockerfile copied a nonexistent `public` directory; require a green alignment rerun    | 0–1                    |
+| R14 | Hosted CI and local behavior diverge after architecture changes  | Low / Medium        | Run 29360385761 verified the aligned implementation; keep clean-checkout container, migration, browser, and supply-chain jobs required    | 0 onward               |
 | R15 | Upstream runtime findings do not all have supported stable fixes | Low / High          | Two exact-version Grype exceptions document reachability and removal conditions; monitor remaining findings and refresh runtimes promptly | 0–1                    |
 | R16 | Workspace/migration move regresses runtime or existing databases | Medium / High       | One root lock, preserved revision IDs, fresh/existing upgrade tests, root-context image builds, and direct runtime Alembic verification   | 0                      |
 
@@ -280,8 +279,8 @@ At the end of every phase:
 
 ## Next phase
 
-The next work is to commit the locally verified **Phase 0 architecture
-alignment** and obtain a green hosted CI run for that exact revision. Phase 1
-remains blocked until then. Only after Phase 0 closes should authentication, the
-application shell, and onboarding begin with the identity/session data model,
-threat-model review, and cross-user authorization harness.
+The next work is **Phase 1 — Authentication, Application Shell, and Onboarding**.
+Begin with the identity/session data model, threat-model controls, and cross-user
+authorization harness; then deliver registration, verification, login, recovery,
+session management, the protected responsive shell, and persisted onboarding as
+one production-quality vertical slice.

@@ -156,6 +156,6 @@ the affected phase.
 
 The aligned working tree passes those checks together with the root uv workspace,
 forbidden-import architecture tests, normalized OpenAPI/generated-schema drift
-checks, single-head migration verification, and root-context API and worker image
-builds. Phase 0 remains open until this tree is committed and that exact revision
-passes hosted CI; Phase 1 must not begin before then.
+checks, single-head migration verification, and root-context application image
+builds. Hosted CI run `29360385761` verified Phase 0 implementation commit
+`9558f33`, satisfying the prerequisite for Phase 1.

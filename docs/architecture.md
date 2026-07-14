@@ -18,9 +18,9 @@ what the current working tree actually implements.
 
 The repository now implements the Phase 0 shared backend, root uv workspace,
 generated contract pipeline, thin deployable boundaries, and executable
-architecture checks described below. Their complete local gate passes in the
-aligned working tree. Phase 0 remains open until this tree is committed and that
-exact revision passes hosted CI; earlier baseline evidence remains historical.
+architecture checks described below. Their complete local gate passes, and
+hosted CI run `29360385761` verified implementation commit `9558f33`; earlier
+baseline evidence remains historical.
 
 ## System principles
 
@@ -319,9 +319,8 @@ make test
 make verify
 ```
 
-The aligned working tree passes these local gates together. Exact evidence is
-recorded in `PLANS.md`; Phase 0 remains open until the tree is committed and the
-same revision passes hosted CI.
+The aligned tree passes these local gates together, and hosted CI verifies the
+committed implementation. Exact evidence is recorded in `PLANS.md`.
 Later phases add ownership, hostile-document, grounding, score-golden, round-trip
 export, accessibility, load, deletion, and restore gates. The complete strategy
 is in `docs/testing-strategy.md`.

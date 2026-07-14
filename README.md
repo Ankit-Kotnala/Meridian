@@ -13,19 +13,14 @@ claim under the user's control.
 
 ## Repository status
 
-**Phase 0 architecture alignment is implemented and locally verified; Phase 1
-has not started.** The aligned working tree now uses a shared Python modular
+**Phase 0 is complete and Phase 1 is next.** The aligned repository uses a shared Python modular
 monolith, one root uv workspace, generated API contracts, thin deployable
 applications, and executable dependency boundaries. The complete local runtime,
-browser, migration, and security gates pass. Phase 0 remains open because the
-aligned tree has not yet been committed and verified by hosted CI.
+browser, migration, and security gates pass.
 
-The latest hosted CI run (`29355622190`) covers committed pre-alignment code. Its
-API, worker, web/contracts, browser, and supply-chain jobs passed; its container
-job failed because the stale web Dockerfile copied a nonexistent `public`
-directory. The aligned working tree removes that copy and passes the expanded
-local gate. A hosted rerun on the alignment commit is still required before any
-Phase 1 work.
+Hosted CI run `29360385761` passed all six jobs against Phase 0 implementation
+commit `9558f33`, including API, worker, web/contracts, browser, supply-chain,
+and clean-checkout container/migration/image-scan verification.
 
 See [PLANS.md](PLANS.md) for current status, historical evidence, and phase gates.
 Do not infer that a planned endpoint or module is implemented from the
@@ -252,9 +247,8 @@ Invoke-WebRequest -UseBasicParsing http://localhost:8000/api/v1/meta
 ```
 
 The web, API, worker, PostgreSQL, Redis, and MinIO report healthy in the aligned
-working tree. Phase 0 remains open until this tree is committed and that exact
-revision passes hosted CI. Skipped, unavailable, or failing checks reopen the
-affected gate.
+tree. Hosted CI run `29360385761` verified the committed Phase 0 implementation.
+Skipped, unavailable, or failing checks reopen the affected gate.
 
 ## License and production use
 
