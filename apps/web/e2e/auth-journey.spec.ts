@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import path from "node:path";
 
 import {
   expect,
@@ -15,6 +16,10 @@ type MailpitSearchResponse = {
 const mailpitUrl = process.env.PLAYWRIGHT_MAILPIT_URL;
 const password = `${randomUUID()}-aA1!`;
 const secondaryDeviceLabel = "Browser on device";
+const resumeFixture = path.resolve(
+  process.cwd(),
+  "../../packages/test-fixtures/generated/fictional-resume.pdf",
+);
 
 function requireMailpitUrl(): string {
   if (!mailpitUrl) {
@@ -110,12 +115,74 @@ async function finishOnboarding(page: Page): Promise<void> {
   ).toBeVisible();
 }
 
+async function completeResumeHealth(page: Page): Promise<void> {
+  await page.goto("/resume-health/account");
+  await expect(
+    page.getByRole("heading", { name: "Resume Health", exact: true }),
+  ).toBeVisible();
+  await page.getByLabel("Resume file").setInputFiles(resumeFixture);
+  await page.getByRole("button", { name: "Upload and review" }).click();
+  await expect(page).toHaveURL(/\/resume-health\/account\/processing\//);
+  await expect(page).toHaveURL(/\/resume-health\/account\/review\//, {
+    timeout: 120_000,
+  });
+  await expect(
+    page.getByRole("heading", { name: "Review what CareerOS extracted" }),
+  ).toBeVisible();
+  const reviewedField = page.getByLabel(/^Reviewed /).first();
+  const correctedValue = `${await reviewedField.inputValue()} [E2E reviewed fixture]`;
+  await reviewedField.fill(correctedValue);
+  await expect(reviewedField).toHaveValue(correctedValue);
+  const correctionResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === "PATCH" &&
+      /\/api\/v1\/documents\/[^/]+\/canonical-resume(?:\?|$)/.test(
+        response.url(),
+      ) &&
+      response.ok(),
+  );
+  const analyze = page.getByRole("button", { name: "Save review and analyze" });
+  await analyze.focus();
+  await analyze.press("Enter");
+  const correctedCanonical = (await (
+    await correctionResponse
+  ).json()) as unknown;
+  expect(JSON.stringify(correctedCanonical)).toContain(correctedValue);
+  expect(correctedCanonical).toEqual(
+    expect.objectContaining({ correctedByUser: true }),
+  );
+  await expect(page).toHaveURL(/\/resume-health\/account\/processing\//);
+  await expect(page).toHaveURL(/\/resume-health\/account\/report\//, {
+    timeout: 120_000,
+  });
+  await expect(
+    page.getByRole("heading", { name: "Resume Health report" }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByText(/CareerOS scores are internal readiness measurements/i)
+      .first(),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole("img", { name: /Resume Health Score:/ })
+      .or(page.getByText("Score unavailable")),
+  ).toBeVisible();
+
+  await page.goto("/dashboard");
+  await expect(
+    page
+      .getByRole("img", { name: /Resume Health Score:/ })
+      .or(page.getByText("Score unavailable")),
+  ).toBeVisible();
+}
+
 test("a verified user completes honest onboarding and controls sessions", async ({
   browser,
   page,
   request,
 }, testInfo) => {
-  test.setTimeout(90_000);
+  test.setTimeout(240_000);
   const suffix = `${testInfo.project.name.replace(/[^a-z0-9]/gi, "-")}-${randomUUID()}`;
   const email = `e2e-${suffix}@e2e.invalid.example.com`;
   const displayName = `E2E ${testInfo.project.name}`;
@@ -167,6 +234,7 @@ test("a verified user completes honest onboarding and controls sessions", async 
     await expect(page).toHaveURL(/\/(dashboard|onboarding)$/);
 
     await finishOnboarding(page);
+    await completeResumeHealth(page);
 
     if (testInfo.project.name.includes("mobile")) {
       const openNavigation = page.getByRole("button", {

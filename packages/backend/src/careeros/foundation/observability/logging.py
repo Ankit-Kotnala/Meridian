@@ -6,6 +6,16 @@ from typing import Any, Protocol
 
 import structlog
 
+_PAYLOAD_BEARING_LIBRARY_LOGGERS = (
+    "aiobotocore",
+    "boto3",
+    "botocore",
+    "httpcore",
+    "httpx",
+    "urllib3",
+    "uvicorn.access",
+)
+
 
 class LoggingSettings(Protocol):
     """Read-only configuration surface implemented by both service settings models."""
@@ -45,6 +55,12 @@ def configure_logging(settings: LoggingSettings) -> None:
     root_logger.handlers.clear()
     root_logger.addHandler(handler)
     root_logger.setLevel(settings.log_level)
+
+    # Network client/access log messages can embed full URLs, query tokens, raw
+    # dynamic paths, or provider payloads. Application adapters emit their own
+    # allowlisted operational events, so these unstructured channels stay off.
+    for name in _PAYLOAD_BEARING_LIBRARY_LOGGERS:
+        logging.getLogger(name).disabled = True
 
     structlog.configure(
         processors=[

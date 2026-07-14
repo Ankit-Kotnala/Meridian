@@ -1,6 +1,6 @@
 # CareerOS testing strategy
 
-Status: Phase 1 consolidated local and hosted CI gates passed
+Status: Phase 2 local suites pass; hosted CI evidence pending
 Last reviewed: 2026-07-15
 
 ## Objectives
@@ -157,6 +157,79 @@ the assertion runs in the mobile project, so no required behavior is skipped.
 `scripts/verify-phase1.ps1` orchestrates the complete local gate and cleans its
 isolated containers, networks, volumes, images, and browser artifacts.
 
+## Resume Health test plan (Phase 2)
+
+- Backend domain tests cover exact owner cardinality, capability hashing and
+  constant-time verification, job transitions/cancellation/dead letter,
+  per-invocation fencing/lease recovery and stale-writer denial, fixed-point score
+  features, persisted feature values/contributions, insufficient-data behavior,
+  bounds, determinism, and two independently asserted golden score cases.
+- Service tests exercise the registered upload/parse/correct/analyze/delete
+  workflow, cross-user denial, guest expiry and explicit claim, account/guest
+  quotas, consent, scheduled retention deletion, outbox publication failure and
+  recovery/dead letter, durable object-cleanup retry/dead letter, busy-delivery
+  handling, claim denial during active/retryable work and lost-response replay,
+  no-op correction and history caps, infected/unavailable scanner handling,
+  retry exhaustion, stale published/lost-retry/expired-lease reconciliation,
+  processing/recovery budget exhaustion, and cancellation. In-memory adapters are
+  deterministic contract fakes; they do not replace the real-provider
+  integration layer.
+- Extractor tests use committed fictional clean PDF, DOCX, and image-only PDF
+  fixtures plus test-generated wrong-signature, malformed, encrypted, polyglot,
+  macro, traversal, expansion-entry, compression-ratio, and timeout inputs. The
+  fixtures and manifest are deterministic and contain no user data.
+- Integration tests use a migrated real PostgreSQL database for owner-scoped
+  repository/job state, private S3-compatible storage for signed upload/promote/
+  download/delete lifecycle, and real ClamAV with an isolated dynamically
+  assembled standard test signature. They fail rather than skip when the Phase 2
+  runner has not supplied its dependencies.
+- API tests cover real policy values, account authentication/owner scope, opaque
+  guest cookie scope and CSRF, neutral HMAC-signed per-source pre-auth/guest-upload
+  rate keys, invalid/absent production signals, correction/analysis rate classes,
+  exact idempotency/`If-Match` bounds, and score response feature-schema/value/
+  contribution/hash/disclaimer behavior. Worker tests cover strict queue
+  envelopes, allowlisted task publication, runtime failure mapping, fencing/busy
+  retry, bounded maintenance inputs, and secure configuration.
+- Web/UI tests cover filename/media/size validation, exact-origin direct upload,
+  byte progress and abort, same-page in-memory intent/finalize retry, loading/
+  empty/success/error states, processing and deletion semantics, immutable
+  correction review, insufficient data, stored measured values and weighted
+  contribution text equivalents, canonical disclaimer, keyboard interaction, and
+  accessible file/progress/tab/dialog/disclosure primitives.
+- Playwright extends the registered Mailpit/account journey through real PDF
+  upload, parse polling, source-preserving correction, reanalysis, report, and
+  dashboard. A separate guest journey covers upload/report, explicit save prompt,
+  and durable deletion without silently transferring data.
+
+The consolidated Phase 2 runner builds an isolated stack, migrates to
+`20260715_0003`, downgrades to `20260715_0002`, re-upgrades, runs real dependency
+integrations, asserts worker policy and anonymous-object denial, proves packaged
+API readiness fails closed while PostgreSQL is stopped and recovers after it is
+restarted, then runs the desktop/mobile journeys:
+
+```powershell
+.\scripts\verify-phase2.ps1
+```
+
+The same-revision local suites pass: 272 unit/API checks, 5 real provider
+integrations, and Playwright 10 passed with 2 intentional project exclusions and
+0 failures. Exact package counts are recorded in `PLANS.md`; hosted CI evidence
+remains pending. This section is not completion evidence.
+
+Security regressions additionally assert that local `web-edge` discards spoofed
+client-address/hop headers and overwrites them with its socket peer, the web
+container has no direct host-published port, identical normalized sources produce
+stable BFF signatures, production fails closed without a real signing secret, and
+HTTP failure/completion logs use route templates without request payloads or
+exception text. An exception-message canary uses normal test-server propagation,
+asserts the marker is absent from both logs and the generic no-store response,
+and proves the exception is not re-raised. Cloud-load-balancer trusted-hop
+behavior remains a deployment test because the local single-hop edge
+intentionally does not trust forwarded addresses.
+The separate source/dependency/image security gate also scans the pinned
+`web-edge` Node Alpine runtime; `verify-phase2.ps1` does not substitute for that
+scan.
+
 ## Backend test portfolio
 
 - **Domain/unit:** evidence state transitions, claim eligibility, job/application
@@ -196,8 +269,9 @@ access.
   application/interview/contact, export/deletion.
 - **Responsive:** large desktop, laptop, tablet, and representative narrow mobile;
   approval/review remains functional even when editing is desktop-optimized.
-- **Accessibility:** automated checks plus manual keyboard/screen-reader review of
-  each primary workflow. Automation alone does not prove WCAG 2.2 AA.
+- **Accessibility:** automated checks plus manual keyboard/rendered review of each
+  primary workflow; representative screen-reader review is required before
+  production release. Automation alone does not prove WCAG 2.2 AA.
 
 Visual regression may protect core shell/templates after the design stabilizes.
 It must mask dynamic timestamps/IDs and cannot replace semantic/accessibility tests.
@@ -231,11 +305,28 @@ symlink/path traversal archive, and EICAR scanner fixtures where the selected
 libraries/formats make them relevant. Malware fixtures run only in isolated
 approved test environments and are never executable.
 
+Phase 2 commits generated fictional one-column PDF, DOCX, and image-only PDF
+fixtures with a checksum manifest. Hostile PDF/DOCX/ZIP cases are assembled in
+isolated unit tests, and the scanner integration assembles the standard antivirus
+test signature at runtime rather than committing it. Two-column, header/footer,
+table-heavy, date-locale, concurrent-role, career-gap, long-resume, unusual-font,
+and bidirectional-Unicode corpus files remain future fixture-matrix coverage;
+they are not implied by the Phase 2 closeout suite.
+
+PDF fixtures exercise the authoritative page cap. The local `python-docx`
+extractor does not expose reliable rendered page count, so DOCX tests instead
+prove upload-byte, archive-entry, expanded-size/ratio, extracted-character/block,
+artifact-size, and runtime bounds. Layout-aware DOCX page-limit coverage waits
+for a rendering provider and must not be inferred from the PDF test.
+
 ## Scoring tests
 
 - Unit test each feature, cap, denominator, state credit, importance, gate,
   threshold, fixed-decimal aggregate, and half-up display rounding.
 - Golden fixtures calculate expected features/components/total independently.
+- Repository/API round trips preserve `resume-health-features/1`, every typed
+  feature value, and exact component feature score/weight/contribution basis
+  points; generated-contract parsers reject malformed or missing trace fields.
 - Property tests assert determinism, `[0,100]` bounds, weight total, no divide-by-
   zero/NaN, expected monotonic behavior, and idempotent reanalysis.
 - Assert unknown/missing/not-applicable differ; insufficient data returns no

@@ -1,5 +1,11 @@
 """Celery application factory and command-line entry point."""
 
+from careeros.modules.resume_health.application import (
+    CLEANUP_RESUME_TASK,
+    DISPATCH_OUTBOX_TASK,
+    PROCESS_RESUME_TASK,
+    RECONCILE_RESUME_TASK,
+)
 from celery import Celery
 
 from careeros_worker.base import SafeTask
@@ -45,11 +51,32 @@ def create_celery_app(settings: WorkerSettings | None = None) -> Celery:
         task_soft_time_limit=resolved.task_soft_time_limit_seconds,
         task_time_limit=resolved.task_time_limit_seconds,
         task_track_started=True,
+        task_routes={
+            PROCESS_RESUME_TASK: {"queue": "resume-health"},
+            DISPATCH_OUTBOX_TASK: {"queue": "maintenance"},
+            RECONCILE_RESUME_TASK: {"queue": "maintenance"},
+            CLEANUP_RESUME_TASK: {"queue": "maintenance"},
+        },
         timezone="UTC",
         worker_hijack_root_logger=False,
         worker_max_tasks_per_child=resolved.worker_max_tasks_per_child,
         worker_prefetch_multiplier=resolved.worker_prefetch_multiplier,
         worker_send_task_events=True,
+        worker_cancel_long_running_tasks_on_connection_loss=True,
+        beat_schedule={
+            "dispatch-resume-health-outbox": {
+                "task": DISPATCH_OUTBOX_TASK,
+                "schedule": 5.0,
+            },
+            "cleanup-expired-resume-health-data": {
+                "task": CLEANUP_RESUME_TASK,
+                "schedule": 300.0,
+            },
+            "reconcile-stale-resume-health-jobs": {
+                "task": RECONCILE_RESUME_TASK,
+                "schedule": float(resolved.resume_job_reconciliation_interval_seconds),
+            },
+        },
     )
     application.Task.max_retries = resolved.task_max_retries
     application.Task.retry_backoff_max = resolved.retry_backoff_max_seconds

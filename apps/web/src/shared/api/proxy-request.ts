@@ -1,3 +1,6 @@
+import { createHmac } from "node:crypto";
+import { isIP } from "node:net";
+
 const REQUEST_HEADERS = new Set([
   "accept",
   "accept-language",
@@ -10,6 +13,7 @@ const REQUEST_HEADERS = new Set([
   "tracestate",
   "user-agent",
   "x-csrf-token",
+  "x-guest-csrf",
   "x-request-id",
 ]);
 
@@ -29,6 +33,15 @@ const RESPONSE_HEADERS = new Set([
 const DEFAULT_TIMEOUT_MS = 10_000;
 const MIN_TIMEOUT_MS = 1_000;
 const MAX_TIMEOUT_MS = 30_000;
+const BFF_SIGNAL_CONTEXT = "careeros-bff-client-v1\0";
+const DEVELOPMENT_BFF_SIGNAL_SECRET =
+  "change-me-local-only-bff-client-signal-secret";
+const TRUSTED_CLIENT_IP_HEADERS = new Set([
+  "cf-connecting-ip",
+  "true-client-ip",
+  "x-forwarded-for",
+  "x-real-ip",
+]);
 
 type RouteContext = {
   params: Promise<{ path: string[] }>;
@@ -72,6 +85,47 @@ function forwardedRequestHeaders(source: Headers): Headers {
     if (REQUEST_HEADERS.has(name.toLowerCase())) headers.append(name, value);
   }
   return headers;
+}
+
+function signedClientSignal(source: Headers): string {
+  const trustedHeader =
+    process.env.API_TRUSTED_CLIENT_IP_HEADER ?? "x-forwarded-for";
+  if (!TRUSTED_CLIENT_IP_HEADERS.has(trustedHeader.toLowerCase())) {
+    throw new Error(
+      "API_TRUSTED_CLIENT_IP_HEADER is not an allowed edge header.",
+    );
+  }
+  const raw = source.get(trustedHeader)?.split(",", 1)[0]?.trim();
+  const address = normalizeClientAddress(raw);
+  const configuredSecret = process.env.API_BFF_CLIENT_SIGNAL_SECRET;
+  const secret = configuredSecret ?? DEVELOPMENT_BFF_SIGNAL_SECRET;
+  if (
+    Buffer.byteLength(secret, "utf8") < 32 ||
+    (new Set(["production", "staging"]).has(
+      process.env.CAREEROS_ENVIRONMENT ?? "development",
+    ) &&
+      (!configuredSecret || configuredSecret === DEVELOPMENT_BFF_SIGNAL_SECRET))
+  ) {
+    throw new Error(
+      "API_BFF_CLIENT_SIGNAL_SECRET must be a non-development value of at least 32 bytes.",
+    );
+  }
+  const encoded = Buffer.from(address, "ascii").toString("base64url");
+  const signature = createHmac("sha256", secret)
+    .update(BFF_SIGNAL_CONTEXT)
+    .update(address, "ascii")
+    .digest("hex");
+  return `v1.${encoded}.${signature}`;
+}
+
+function normalizeClientAddress(value: string | undefined): string {
+  const version = value ? isIP(value) : 0;
+  if (version === 4) return value as string;
+  if (version === 6) {
+    const hostname = new URL(`http://[${value}]/`).hostname;
+    return hostname.slice(1, -1);
+  }
+  return "unavailable";
 }
 
 function forwardedResponseHeaders(source: Headers): Headers {
@@ -136,8 +190,10 @@ export async function proxyApiRequest(
   }
 
   let destination: URL;
+  let clientSignal: string;
   try {
     destination = new URL(path, apiOrigin());
+    clientSignal = signedClientSignal(request.headers);
   } catch {
     return safeProblem(
       503,
@@ -148,9 +204,11 @@ export async function proxyApiRequest(
   destination.search = new URL(request.url).search;
 
   const hasBody = request.method !== "GET" && request.method !== "HEAD";
+  const headers = forwardedRequestHeaders(request.headers);
+  headers.set("X-CareerOS-Client-Signal", clientSignal);
   const init: StreamingRequestInit = {
     cache: "no-store",
-    headers: forwardedRequestHeaders(request.headers),
+    headers,
     method: request.method,
     redirect: "manual",
     signal: AbortSignal.timeout(timeoutMilliseconds()),

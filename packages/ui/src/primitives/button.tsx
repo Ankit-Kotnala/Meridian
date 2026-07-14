@@ -10,6 +10,8 @@ export const buttonStyles = {
     "border border-line bg-white text-foreground shadow-sm hover:border-primary/40 hover:bg-primary-soft/50",
   ghost: "text-muted hover:bg-slate-100 hover:text-foreground",
   dark: "bg-navy text-white hover:bg-navy-hover",
+  danger:
+    "bg-danger text-white shadow-[0_8px_24px_rgba(190,24,93,.18)] hover:bg-danger/90",
 } as const;
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {

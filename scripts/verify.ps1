@@ -75,7 +75,7 @@ docker compose config --quiet
 Assert-LastExitCode "Compose configuration"
 docker compose build api worker web
 Assert-LastExitCode "Application image build"
-docker compose up --detach --wait --wait-timeout 180
+docker compose up --detach --wait --wait-timeout 300
 Assert-LastExitCode "Application stack startup"
 docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
 Assert-LastExitCode "Container migration"

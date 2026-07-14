@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight, FileSearch, RefreshCcw, SearchCheck } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
@@ -14,6 +15,8 @@ import {
   LoadingSkeleton,
   Select,
   TextField,
+  buttonStyles,
+  cn,
 } from "@careeros/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
@@ -183,46 +186,63 @@ export function OnboardingView() {
         {state.currentStep === "resume" && (
           <EmptyState
             action={
-              <Button
-                loading={saving}
-                loadingLabel="Saving handoff…"
-                onClick={() =>
-                  void save({
-                    currentStep: "parsedReview",
-                    resumeHandoff: "skipped",
-                    skippedSteps: addSkipped(state, "resume"),
-                  })
-                }
-              >
-                Continue without a resume{" "}
-                <ArrowRight aria-hidden="true" className="size-4" />
-              </Button>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Link
+                  className={cn(buttonStyles.base, buttonStyles.primary)}
+                  href="/resume-health/account"
+                >
+                  Upload and review a resume
+                  <ArrowRight aria-hidden="true" className="size-4" />
+                </Link>
+                <Button
+                  loading={saving}
+                  loadingLabel="Saving handoff…"
+                  onClick={() =>
+                    void save({
+                      currentStep: "parsedReview",
+                      resumeHandoff: "skipped",
+                      skippedSteps: addSkipped(state, "resume"),
+                    })
+                  }
+                  variant="secondary"
+                >
+                  Continue without a resume
+                </Button>
+              </div>
             }
-            description="Secure PDF and DOCX admission begins in Phase 2. Continuing now records only that you skipped this handoff; it does not upload, parse, retain, or score a document."
-            title="Resume upload is not active yet"
+            description="Secure PDF and DOCX admission, parsed-field review, and deterministic Resume Health are available in your protected workspace. This optional onboarding handoff remains skippable."
+            title="Add a resume for review"
           />
         )}
 
         {state.currentStep === "parsedReview" && (
           <EmptyState
             action={
-              <Button
-                loading={saving}
-                loadingLabel="Saving handoff…"
-                onClick={() =>
-                  void save({
-                    currentStep: "preferences",
-                    parsedReviewHandoff: "skipped",
-                    skippedSteps: addSkipped(state, "parsedReview"),
-                  })
-                }
-              >
-                Continue to preferences{" "}
-                <ArrowRight aria-hidden="true" className="size-4" />
-              </Button>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Link
+                  className={cn(buttonStyles.base, buttonStyles.primary)}
+                  href="/resume-health/account"
+                >
+                  Open parsed resume review
+                </Link>
+                <Button
+                  loading={saving}
+                  loadingLabel="Saving handoff…"
+                  onClick={() =>
+                    void save({
+                      currentStep: "preferences",
+                      parsedReviewHandoff: "skipped",
+                      skippedSteps: addSkipped(state, "parsedReview"),
+                    })
+                  }
+                  variant="secondary"
+                >
+                  Continue to preferences
+                </Button>
+              </div>
             }
-            description="There is no parsed information to review because no document was accepted. Phase 2 will add uncertainty review before any parsed facts become usable."
-            title="Parsed review has no data yet"
+            description="Resume Health owns the real parsed document and correction workflow. Onboarding does not infer completion or create placeholder facts; you may review there or explicitly skip this optional handoff."
+            title="Review uncertain parsed information"
           />
         )}
 

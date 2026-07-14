@@ -33,5 +33,21 @@ export default async function PublicInformationRoute({
 }) {
   const { slug } = await params;
   if (!isPublicPageSlug(slug)) notFound();
-  return <PublicInformationPage page={publicPages[slug]} />;
+  return (
+    <PublicInformationPage
+      page={publicPages[slug]}
+      {...(slug === "resume-health"
+        ? {
+            primaryAction: {
+              href: "/resume-health/guest",
+              label: "Check one resume as a guest",
+            },
+            secondaryAction: {
+              href: "/resume-health/account",
+              label: "Open my Resume Health workspace",
+            },
+          }
+        : {})}
+    />
+  );
 }

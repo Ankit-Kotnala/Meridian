@@ -175,7 +175,7 @@ export const publicPages = {
       ],
       [
         "Current status",
-        "CareerOS now includes technical-preview account, session, onboarding, and consent controls. The public dashboard preview remains fictional and separate from protected account data.",
+        "CareerOS now includes technical-preview account controls plus secure resume upload, parsed-field correction, and deterministic Resume Health. The public dashboard preview remains fictional and separate from protected account data.",
       ],
     ],
   },
@@ -195,7 +195,7 @@ export const publicPages = {
       ],
       [
         "Data requests",
-        "Self-service account export and deletion are not implemented yet. Do not treat this technical preview as a production system for personal career records.",
+        "Individual resume deletion is available with the document workflow. Full account export and deletion are not implemented yet, so this remains a technical preview rather than a production service.",
       ],
     ],
   },
@@ -223,7 +223,7 @@ export const publicPages = {
     title: "Privacy policy placeholder",
     eyebrow: "Not yet a production privacy notice",
     intro:
-      "The technical preview includes explicit consent controls but no personal resume workflow. A counsel-reviewed privacy notice is required before production collection of career data.",
+      "The technical preview includes explicit consent controls and short-retention guest or private account resume processing. A counsel-reviewed privacy notice is still required before production collection of career data.",
     sections: [
       [
         "Planned default",

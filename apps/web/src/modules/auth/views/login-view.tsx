@@ -25,7 +25,13 @@ function safeReturnTo(value: string | null): string {
     /[\u0000-\u001f]/.test(value)
   )
     return "/dashboard";
-  const allowedRoots = ["/dashboard", "/onboarding", "/settings"];
+  const allowedRoots = [
+    "/dashboard",
+    "/onboarding",
+    "/settings",
+    "/resume-health/account",
+    "/resume-health/guest/report",
+  ];
   return allowedRoots.some(
     (root) =>
       value === root ||

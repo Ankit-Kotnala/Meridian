@@ -7,7 +7,9 @@ const localPort = new URL(baseURL).port || "3000";
 
 export default defineConfig({
   testDir: "./e2e",
-  testIgnore: fullStack ? [] : ["**/auth-journey.spec.ts"],
+  testIgnore: fullStack
+    ? []
+    : ["**/auth-journey.spec.ts", "**/resume-health-journey.spec.ts"],
   fullyParallel: !fullStack,
   forbidOnly: Boolean(process.env.CI),
   preserveOutput: fullStack ? "never" : "always",

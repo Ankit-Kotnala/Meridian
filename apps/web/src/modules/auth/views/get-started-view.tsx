@@ -8,7 +8,7 @@ import { AuthPageShell } from "../components/auth-page-shell";
 export function GetStartedView() {
   return (
     <AuthPageShell
-      description="Choose an account path now. The limited guest resume-health handoff remains unavailable until secure document processing ships in Phase 2."
+      description="Create a protected account or run one short-lived guest Resume Health check through the same secure document pipeline."
       eyebrow="Get started"
       title="Choose how to begin"
     >
@@ -44,9 +44,8 @@ export function GetStartedView() {
             Guest resume health
           </h2>
           <p className="mt-2 text-sm leading-6 text-muted">
-            Guest document upload is a Phase 2 feature. CareerOS does not
-            collect a resume before its secure upload and deletion controls are
-            implemented.
+            Upload one PDF or DOCX, review uncertain parsing, and receive a
+            limited report that expires unless you explicitly save it.
           </p>
           <Link
             className={cn(
@@ -54,14 +53,15 @@ export function GetStartedView() {
               buttonStyles.secondary,
               "mt-4 w-full",
             )}
-            href="/resume-health"
+            href="/resume-health/guest"
           >
-            Read how resume health will work
+            Check a resume as a guest
           </Link>
         </Card>
 
-        <Alert title="No upload is simulated" tone="info">
-          Skipping this handoff does not create a document, analysis, or score.
+        <Alert title="Real document state only" tone="info">
+          CareerOS displays a report only after a real document passes
+          admission, parsing, explicit review, and deterministic analysis.
         </Alert>
       </div>
     </AuthPageShell>

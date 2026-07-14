@@ -255,7 +255,7 @@ const faqs = [
   {
     question: "Is the dashboard on this site real user data?",
     answer:
-      "No. The public demo dashboard is made entirely from fictional fixtures and remains separate from protected accounts. Signed-in workspaces currently contain only account and onboarding state; resume data arrives in a later phase.",
+      "No. The public demo dashboard is made entirely from fictional fixtures and remains separate from protected accounts. Signed-in Resume Health workspaces and short-lived guest checks use their own persisted document state.",
   },
 ];
 
@@ -662,17 +662,17 @@ export function LandingPage() {
               Build an application system that remembers the truth.
             </h2>
             <p className="mx-auto mt-5 max-w-xl leading-7 text-slate-300">
-              Explore the fictional dashboard now. Real accounts, onboarding,
-              and protected workspaces follow in Phase 1.
+              Run a short-lived guest Resume Health check, or sign in to keep
+              reviewed documents and reports in your protected workspace.
             </p>
             <Link
               className={cn(
                 buttonStyles.base,
                 "mt-8 min-h-12 bg-white px-6 text-navy hover:bg-violet-50",
               )}
-              href="/demo/dashboard"
+              href="/resume-health/guest"
             >
-              Open the product demo{" "}
+              Check my resume{" "}
               <ArrowRight aria-hidden="true" className="size-4" />
             </Link>
           </div>

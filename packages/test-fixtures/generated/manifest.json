@@ -1,0 +1,14 @@
+{
+  "fictional-resume.docx": {
+    "bytes": 1662,
+    "sha256": "cfe2fc60343ba159754d15f68a80002bf0d5c316848d2c226c0ae6ba1e0180c4"
+  },
+  "fictional-resume.pdf": {
+    "bytes": 1305,
+    "sha256": "9b4133cdcfa969c5171792857b536ac5278afbf8c7c9c64b88f0fc357589f469"
+  },
+  "image-only.pdf": {
+    "bytes": 581,
+    "sha256": "f75a2ed47597fd48087f5784e26ba6462babdbb26daac8c4d836552acd1a644d"
+  }
+}
