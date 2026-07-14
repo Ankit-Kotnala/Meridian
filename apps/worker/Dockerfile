@@ -1,26 +1,21 @@
-FROM python:3.13-slim AS runtime
+FROM python:3.13-slim@sha256:bffeb7bd6a85767587059c6ba23e1e9122078e3aa3fa836099171b9bb5a9bb00 AS runtime
 
 ENV PATH="/app/.venv/bin:${PATH}" \
     PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    UV_CACHE_DIR=/tmp/uv-cache \
-    UV_COMPILE_BYTECODE=1 \
-    UV_LINK_MODE=copy
+    PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-RUN python -m pip install --no-cache-dir "uv==0.11.7" \
+RUN python -m pip install --no-cache-dir "uv==0.11.21" \
     && addgroup --system --gid 10001 app \
     && adduser --system --uid 10001 --ingroup app --home /nonexistent --no-create-home app
 
 COPY --chown=app:app pyproject.toml uv.lock README.md ./
 COPY --chown=app:app src ./src
 
-RUN uv sync --frozen --no-dev --no-editable \
+RUN UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy uv sync --frozen --no-dev --no-editable \
     && uv cache clean \
-    && install -d -o app -g app "${UV_CACHE_DIR}"
-
-ENV UV_NO_SYNC=1
+    && /usr/local/bin/python -m pip uninstall --yes uv
 
 USER app
 

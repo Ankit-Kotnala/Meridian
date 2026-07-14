@@ -31,7 +31,8 @@ feature.
 
 ## Phase 0 — Repository Foundation
 
-Dependencies: none. Current status: complete and verified on 2026-07-14.
+Dependencies: none. Current status: complete and verified locally on 2026-07-14;
+hosted CI must rerun after the working-tree fixes are committed.
 
 ### Assessment and governance
 

@@ -13,13 +13,18 @@ claim under the user's control.
 
 ## Repository status
 
-**Phase 0: Repository Foundation is complete and verified. Phase 1 has not
-started.** The local platform skeleton, health probes, shared contracts,
+**Phase 0: Repository Foundation is complete and verified in the current working
+tree. Phase 1 has not started.** The local platform skeleton, health probes, shared contracts,
 development infrastructure, initial design system, test harnesses, and governance
 documentation are implemented. User authentication, uploads, parsing, scoring,
 AI generation, and persisted product workflows are intentionally deferred to
 later phases. The dashboard is a prominently labeled fictional preview and is
 not yet a protected or data-backed product page.
+
+The latest hosted CI run covers the earlier initial commit and failed on a
+formatting issue plus a test that did not isolate the CI database environment.
+Both are fixed and pass locally; the hosted workflow must be rerun after these
+working-tree changes are committed, before any Phase 1 merge.
 
 See [PLANS.md](PLANS.md) for verified status and phase gates. Do not infer that a
 planned endpoint or module is implemented from the architecture documents.
@@ -58,7 +63,7 @@ quality checks run through the pinned host toolchains. Install:
 
 - Docker Engine/Desktop with Compose v2
 - Node.js 24 with Corepack
-- Python 3.13 and uv (CI pins uv 0.11.7)
+- Python 3.13 and uv (CI pins uv 0.11.21)
 - Git
 - either GNU Make plus a POSIX shell (WSL/Git Bash are suitable on Windows), or
   PowerShell and the checked-in scripts

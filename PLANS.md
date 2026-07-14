@@ -2,7 +2,8 @@
 
 Last updated: 2026-07-14  
 Plan owner: engineering  
-Current status: **Phase 0 complete; Phase 1 not started**
+Current status: **Phase 0 complete in the working tree; Phase 1 not started;
+hosted CI rerun required after the next commit**
 
 ## Status legend
 
@@ -53,7 +54,9 @@ specification tensions.
 - [x] Cross-service health verification
 
 All Phase 0 scope and repository-wide exit gates passed on 2026-07-14. Phase 1
-remains intentionally unstarted.
+remains intentionally unstarted. The latest hosted CI run targets the earlier
+initial commit; its two failures are fixed and reverified locally but cannot be
+rerun against uncommitted work.
 
 ### Explicitly deferred
 
@@ -116,22 +119,23 @@ that the running worker can respond; the registered deterministic task is
 
 ### Phase 0 evidence
 
-Evidence captured on 2026-07-14 against the current working tree:
+Evidence captured through 2026-07-14 22:20 IST against the current working tree:
 
-| Command / gate                        | Result | Evidence                                                                                                                |
-| ------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------- |
-| Repository inventory                  | Pass   | Empty workspace observed before implementation; Git initialized on `main`                                               |
-| `make setup`                          | Pass   | Clean Linux Node 24/uv image completed the Make target; native `scripts/setup.ps1` also completed with frozen lockfiles |
-| `make dev` runtime path               | Pass   | Its `docker compose up --build` path was built and started with detached wait; all six services became healthy          |
-| `docker compose config --quiet`       | Pass   | Compose configuration rendered without errors                                                                           |
-| Runtime health probes                 | Pass   | Web health, API liveness/readiness, and metadata returned HTTP 200                                                      |
-| Dependency failure/recovery           | Pass   | API readiness returned HTTP 503 with PostgreSQL stopped and HTTP 200 after recovery                                     |
-| Migration and queue health            | Pass   | Alembic revision `20260714_0001`, pgvector 0.8.5, and Celery broker-backed ping verified                                |
-| Format, lint, and type checks         | Pass   | Prettier, Ruff, strict TypeScript, and mypy completed with exit code 0                                                  |
-| Unit tests                            | Pass   | Web 9, contracts 6, API 19, and worker 12 tests passed                                                                  |
-| Production build and browser checks   | Pass   | Next.js built 20 routes; Playwright passed 7 checks with 1 intentional project-specific skip across desktop and mobile  |
-| Security and dependency scans         | Pass   | Gitleaks, Grype image scans, `pnpm audit`, and both `pip-audit` runs passed                                             |
-| `make verify` / PowerShell equivalent | Pass   | The Make command graph was validated; `scripts/verify.ps1` completed the full non-runtime gate with exit code 0         |
+| Command / gate                        | Result | Evidence                                                                                                                                     |
+| ------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Repository inventory                  | Pass   | Empty workspace observed before implementation; Git initialized on `main`                                                                    |
+| `make setup`                          | Pass   | Clean Linux Node 24/uv image completed the Make target; native `scripts/setup.ps1` also completed with frozen lockfiles                      |
+| `make dev` runtime path               | Pass   | Its `docker compose up --build` path was built and started with detached wait; all six services became healthy                               |
+| `docker compose config --quiet`       | Pass   | Compose configuration rendered without errors                                                                                                |
+| Runtime health probes                 | Pass   | Web health, API liveness/readiness, and metadata returned HTTP 200                                                                           |
+| Dependency failure/recovery           | Pass   | API readiness returned HTTP 503 with PostgreSQL stopped and HTTP 200 after recovery                                                          |
+| Migration and queue health            | Pass   | Alembic revision `20260714_0001`, pgvector 0.8.5, and Celery broker-backed ping verified                                                     |
+| Format, lint, and type checks         | Pass   | Prettier, Ruff, strict TypeScript, and mypy completed with exit code 0                                                                       |
+| Unit tests                            | Pass   | Web 9, contracts 6, API 19, and worker 12 tests passed                                                                                       |
+| Production build and browser checks   | Pass   | Next.js built 20 routes; Playwright passed 7 checks with 1 intentional project-specific skip across desktop and mobile                       |
+| Security and dependency scans         | Pass   | Gitleaks and dependency audits passed; Grype's fixable-high gate passed with two version-bound exceptions documented in `.grype.yaml`        |
+| `make verify` / PowerShell equivalent | Pass   | The Make command graph was validated; `scripts/verify.ps1` completed the full non-runtime gate with exit code 0                              |
+| Hosted CI                             | Rerun  | Initial-commit run 29349892186 failed formatting and env-isolation checks; both are fixed locally, while browser/container jobs pass locally |
 
 ## Roadmap and phase gates
 
@@ -183,7 +187,7 @@ Detailed checkboxes live in `docs/implementation-checklist.md`.
   optional for production uploads. Phase 2 must fail closed or quarantine when a
   required scanner is unavailable.
 - “Current stable dependencies” and reproducibility are reconciled by selecting
-  conservative stable compatible releases and committing exact lockfiles.
+  conservative stable compatible releases and tracking exact lockfiles.
 - Guest resume health will use an opaque, short-lived capability and strict
   retention; it must not weaken registered-user ownership boundaries.
 - The UI image directs hierarchy and visual language only. Its sample names,
@@ -194,22 +198,23 @@ Detailed checkboxes live in `docs/implementation-checklist.md`.
 
 ## Risk register
 
-| ID  | Risk                                                      | Likelihood / impact | Mitigation and gate                                                                                                                          | Earliest owner phase   |
-| --- | --------------------------------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| R1  | Cross-tenant data exposure through IDOR or object keys    | Medium / Critical   | Ownership-scoped queries, policy tests, private buckets, audit events                                                                        | 1 and every data phase |
-| R2  | Malicious or resource-exhausting documents                | High / Critical     | Signature/limit checks, scanning, isolated no-network worker, time/memory/CPU caps, hostile fixtures                                         | 2                      |
-| R3  | AI fabricates or is redirected by document instructions   | High / Critical     | Untrusted-content delimiters, strict schemas, evidence ledger, deterministic grounding, adversarial tests                                    | 5–6                    |
-| R4  | Score labels mislead users                                | Medium / High       | Canonical disclaimer, deterministic versioned formulas, explanations, no probability language                                                | 2, 4, 5                |
-| R5  | PDF/DOCX looks correct but parses badly                   | High / High         | Constrained templates, searchable text, round-trip verification and blocking critical failures                                               | 7                      |
-| R6  | Dependency/toolchain churn breaks the greenfield baseline | Medium / Medium     | Conservative pins, lockfiles, CI cache keys, scheduled upgrades in small changes                                                             | 0 onward               |
-| R7  | Queue retry duplicates work or cost                       | Medium / High       | Idempotency records, bounded retries/timeouts, job state machine, budgets and dead letters                                                   | 2 onward               |
-| R8  | Sensitive content leaks through logs/telemetry/providers  | Medium / Critical   | Data classification, default redaction, payload-free telemetry, provider minimization and consent                                            | 0 onward               |
-| R9  | Local Compose health hides production gaps                | High / High         | Separate readiness, production threat review, load/restore/failure tests, protected deploy                                                   | 10                     |
-| R10 | Broad roadmap produces unfinished horizontal scaffolding  | High / Medium       | One vertical phase at a time, dependency gates, no completion on placeholders                                                                | Every phase            |
-| R11 | Public Phase 0 demo is mistaken for functional analysis   | Medium / Medium     | Persistent fictional-preview label; no upload/score claims or data persistence                                                               | 0–1                    |
-| R12 | Retention/deletion becomes inconsistent across stores     | Medium / High       | Data inventory, deletion tombstones/jobs, object/vector/backup policy and tests per entity                                                   | 1 onward               |
-| R13 | Provisional shared schemas drift from implemented OpenAPI | Medium / High       | Treat only implemented OpenAPI schemas as live; reconcile/remove handwritten error/pagination scaffolding before Phase 1/product collections | 0–1                    |
-| R14 | CI workflow has not yet run on a hosted Git remote        | Low / Medium        | Local equivalents pass; require the first hosted workflow to pass before accepting any Phase 1 merge                                         | 1                      |
+| ID  | Risk                                                              | Likelihood / impact | Mitigation and gate                                                                                                                          | Earliest owner phase   |
+| --- | ----------------------------------------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| R1  | Cross-tenant data exposure through IDOR or object keys            | Medium / Critical   | Ownership-scoped queries, policy tests, private buckets, audit events                                                                        | 1 and every data phase |
+| R2  | Malicious or resource-exhausting documents                        | High / Critical     | Signature/limit checks, scanning, isolated no-network worker, time/memory/CPU caps, hostile fixtures                                         | 2                      |
+| R3  | AI fabricates or is redirected by document instructions           | High / Critical     | Untrusted-content delimiters, strict schemas, evidence ledger, deterministic grounding, adversarial tests                                    | 5–6                    |
+| R4  | Score labels mislead users                                        | Medium / High       | Canonical disclaimer, deterministic versioned formulas, explanations, no probability language                                                | 2, 4, 5                |
+| R5  | PDF/DOCX looks correct but parses badly                           | High / High         | Constrained templates, searchable text, round-trip verification and blocking critical failures                                               | 7                      |
+| R6  | Dependency/toolchain churn breaks the greenfield baseline         | Medium / Medium     | Conservative pins, lockfiles, CI cache keys, scheduled upgrades in small changes                                                             | 0 onward               |
+| R7  | Queue retry duplicates work or cost                               | Medium / High       | Idempotency records, bounded retries/timeouts, job state machine, budgets and dead letters                                                   | 2 onward               |
+| R8  | Sensitive content leaks through logs/telemetry/providers          | Medium / Critical   | Data classification, default redaction, payload-free telemetry, provider minimization and consent                                            | 0 onward               |
+| R9  | Local Compose health hides production gaps                        | High / High         | Separate readiness, production threat review, load/restore/failure tests, protected deploy                                                   | 10                     |
+| R10 | Broad roadmap produces unfinished horizontal scaffolding          | High / Medium       | One vertical phase at a time, dependency gates, no completion on placeholders                                                                | Every phase            |
+| R11 | Public Phase 0 demo is mistaken for functional analysis           | Medium / Medium     | Persistent fictional-preview label; no upload/score claims or data persistence                                                               | 0–1                    |
+| R12 | Retention/deletion becomes inconsistent across stores             | Medium / High       | Data inventory, deletion tombstones/jobs, object/vector/backup policy and tests per entity                                                   | 1 onward               |
+| R13 | Provisional shared schemas drift from implemented OpenAPI         | Medium / High       | Treat only implemented OpenAPI schemas as live; reconcile/remove handwritten error/pagination scaffolding before Phase 1/product collections | 0–1                    |
+| R14 | Latest hosted CI run covers the earlier initial commit and failed | Low / Medium        | Run 29349892186 exposed formatting and env-isolation issues now fixed locally; require a green rerun before accepting any Phase 1 merge      | 0–1                    |
+| R15 | Newly disclosed upstream runtime findings lack supported patches  | Low / High          | Two exact-version Grype exceptions document reachability and removal conditions; refresh Python/Next base dependencies before Phase 1 merge  | 0–1                    |
 
 ## Change and verification protocol
 

@@ -55,7 +55,7 @@ several tensions that require explicit interpretation:
 - pnpm 11.13.0 workspace on the Node.js 24 LTS line.
 - Next.js 16.2.10 App Router, React 19.2.7, strict TypeScript 5.9.3, and Tailwind
   CSS 4.3.2.
-- Python 3.13 with uv 0.11.7; FastAPI 0.138.2, Pydantic, async
+- Python 3.13 with uv 0.11.21; FastAPI 0.138.2, Pydantic, async
   SQLAlchemy/asyncpg, and Alembic infrastructure.
 - Celery 5.6.3 using Redis for the local broker and result backend.
 - PostgreSQL with pgvector, Redis, and MinIO through Docker Compose.

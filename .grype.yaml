@@ -1,0 +1,20 @@
+# CVE-2026-15308 was published on 2026-07-09. It is a CPU denial of service in
+# html.parser; Phase 0 does not parse untrusted HTML, and no supported CPython
+# 3.13 fix is available. The exact-version rule stops matching on a base-image
+# patch update and must be removed as soon as the 3.13 line ships a fix.
+#
+# GHSA-vxpw-j846-p89q affects the undici WebSocket client. Phase 0 has no
+# WebSocket client path, and Next.js 16.2.10 (the current stable release) vendors
+# undici 6.26.0. The exact-version rule must be removed when Next.js vendors
+# undici 6.27.0 or later.
+ignore:
+  - vulnerability: CVE-2026-15308
+    package:
+      name: python
+      version: 3.13.14
+      type: binary
+  - vulnerability: GHSA-vxpw-j846-p89q
+    package:
+      name: undici
+      version: 6.26.0
+      type: npm

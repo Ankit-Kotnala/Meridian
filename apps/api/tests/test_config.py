@@ -63,6 +63,7 @@ def test_database_requires_async_postgresql_driver() -> None:
 
 
 def test_compose_environment_aliases_are_supported(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("CAREEROS_DATABASE_URL", raising=False)
     monkeypatch.setenv("ENVIRONMENT", "test")
     monkeypatch.setenv("LOG_LEVEL", "WARNING")
     monkeypatch.setenv(

@@ -18,9 +18,9 @@ Use a production-oriented monorepo with these runtime applications:
 
 - `apps/web`: Node.js 24, pnpm 11.13.0, Next.js 16.2.10 App Router, React 19.2.7,
   TypeScript 5.9.3, and Tailwind CSS 4.3.2;
-- `apps/api`: Python 3.13/uv 0.11.7, FastAPI 0.138.2, Pydantic, async
+- `apps/api`: Python 3.13/uv 0.11.21, FastAPI 0.138.2, Pydantic, async
   SQLAlchemy/asyncpg, and Alembic infrastructure;
-- `apps/worker`: Python 3.13/uv 0.11.7 and Celery 5.6.3;
+- `apps/worker`: Python 3.13/uv 0.11.21 and Celery 5.6.3;
 - PostgreSQL with pgvector, Redis, and MinIO in local Docker Compose.
 
 Use a single pnpm workspace lockfile for JavaScript and committed uv lockfiles for

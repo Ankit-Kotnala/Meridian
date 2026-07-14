@@ -12,7 +12,7 @@ accessible user control, and replacement of external providers without rewriting
 the domain.
 
 The architecture described here is the target. `PLANS.md` is authoritative for
-what the current revision actually implements.
+what the current working tree actually implements.
 
 ## System principles
 
@@ -77,7 +77,7 @@ release and dependency overhead.
 | ------------ | --------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | JS workspace | pnpm 11.13.0, Node.js 24                                        | One root lockfile; Corepack pins package-manager behavior                          |
 | Web          | Next.js 16.2.10, React 19.2.7, TypeScript 5.9.3, Tailwind 4.3.2 | App Router; strict types; server components by default where appropriate           |
-| Python       | Python 3.13, uv 0.11.7                                          | Independent API and worker locks/projects in Phase 0; compatible pins are explicit |
+| Python       | Python 3.13, uv 0.11.21                                         | Independent API and worker locks/projects in Phase 0; compatible pins are explicit |
 | HTTP         | FastAPI 0.138.2, Pydantic                                       | OpenAPI contract and validation boundary                                           |
 | Persistence  | SQLAlchemy 2 async, asyncpg, Alembic                            | PostgreSQL is authoritative; migrations arrive with owning models                  |
 | Async work   | Celery 5.6.3, Redis locally                                     | Task envelopes require idempotency, ownership, retries/timeouts, traceability      |

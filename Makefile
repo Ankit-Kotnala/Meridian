@@ -77,9 +77,9 @@ security-scan:
 	cd apps/api && uv run --with pip-audit pip-audit
 	cd apps/worker && uv run --with pip-audit pip-audit
 	docker compose build api worker web
-	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d careeros-api:latest --fail-on critical --only-fixed
-	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d careeros-worker:latest --fail-on critical --only-fixed
-	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d careeros-web:latest --fail-on critical --only-fixed
+	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume careeros-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d careeros-api:latest --config /etc/grype.yaml --fail-on high --only-fixed
+	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume careeros-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d careeros-worker:latest --config /etc/grype.yaml --fail-on high --only-fixed
+	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume careeros-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d careeros-web:latest --config /etc/grype.yaml --fail-on high --only-fixed
 
 seed:
 	pnpm seed

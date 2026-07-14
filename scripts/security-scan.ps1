@@ -30,8 +30,10 @@ try {
     $Images = @("careeros-api:latest", "careeros-worker:latest", "careeros-web:latest")
     foreach ($Image in $Images) {
         docker run --rm --volume "/var/run/docker.sock:/var/run/docker.sock" `
+            --volume "${RepositoryRoot}/.grype.yaml:/etc/grype.yaml:ro" `
+            --volume "careeros-grype-cache:/root/.cache/grype" `
             anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d `
-            $Image --fail-on critical --only-fixed
+            $Image --config /etc/grype.yaml --fail-on high --only-fixed
         Assert-LastExitCode "Grype scan for $Image"
     }
 
