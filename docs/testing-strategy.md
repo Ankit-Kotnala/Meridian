@@ -1,6 +1,6 @@
 # CareerOS testing strategy
 
-Status: Phase 1 consolidated local gate passed; hosted CI closeout pending
+Status: Phase 1 consolidated local and hosted CI gates passed
 Last reviewed: 2026-07-15
 
 ## Objectives

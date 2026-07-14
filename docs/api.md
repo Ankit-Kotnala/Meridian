@@ -33,8 +33,8 @@ FastAPI OpenAPI document. The normalized artifact under
 `packages/contracts/src/generated` are committed review artifacts; neither is an
 independent contract authority. Problem, pagination, and product schemas are not
 published until corresponding Pydantic models and operations exist. The Phase 1
-tree passes both export and generation drift checks locally. Hosted CI must repeat
-those checks on the committed revision before Phase 1 closes.
+tree passes export and generation drift checks locally and in hosted CI run
+`29366505373` against commit `c4bdbe1`.
 
 ## Protocol and representation
 

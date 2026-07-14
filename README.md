@@ -13,14 +13,14 @@ claim under the user's control.
 
 ## Repository status
 
-**Phase 0 is complete. Phase 1 authentication, onboarding, and protected workspace
-are implemented and locally verified; hosted CI is the final closeout gate.** The
-repository uses a shared Python modular monolith, one root uv workspace, generated
-API contracts, thin deployable applications, and executable dependency boundaries.
+**Phase 1 authentication, onboarding, and the protected workspace are complete;
+Phase 2 resume upload, parsing, and general health is next.** The repository uses a
+shared Python modular monolith, one root uv workspace, generated API contracts,
+thin deployable applications, and executable dependency boundaries.
 
-Hosted CI run `29360385761` passed all six jobs against Phase 0 implementation
-commit `9558f33`, including API, worker, web/contracts, browser, supply-chain,
-and clean-checkout container/migration/image-scan verification.
+Hosted CI run `29366505373` passed GitGuardian plus all seven repository jobs
+against Phase 1 commit `c4bdbe1`, including API, worker, web/contracts, browser,
+auth E2E, supply-chain, and clean-checkout container/migration/image scanning.
 
 See [PLANS.md](PLANS.md) for current status, historical evidence, and phase gates.
 Do not infer that a planned endpoint or module is implemented from the
@@ -266,9 +266,9 @@ The Phase 1 gate passes formatting, lint, strict types, contract drift, unit and
 API tests, production builds, migration round-trip, all local service readiness,
 two real PostgreSQL/Redis identity integrations, and the primary desktop/mobile
 auth workflow. Playwright reports 9 passed, 1 intentional desktop-only project
-exclusion, and 0 failures. Hosted CI run `29360385761` remains the committed Phase
-0 evidence; Phase 1 hosted evidence is recorded in `PLANS.md` when the closeout
-branch passes. Skipped, unavailable, or failing required checks reopen the phase.
+exclusion, and 0 failures. Hosted CI run `29366505373` verifies the Phase 1 commit;
+the earlier Phase 0 evidence remains in `PLANS.md`. Skipped, unavailable, or
+failing required checks reopen the phase.
 
 ## License and production use
 

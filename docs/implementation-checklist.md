@@ -115,8 +115,8 @@ earlier baseline evidence remains historical.
 
 ## Phase 1 — Authentication, Application Shell, and Onboarding
 
-Dependencies: Phase 0 green. Current status: implemented and locally verified;
-hosted CI is the final closeout gate.
+Dependencies: Phase 0 green. Current status: complete. The consolidated local gate
+and hosted CI run `29366505373` passed against Phase 1 commit `c4bdbe1`.
 
 - [x] Add users/profiles, hashed session/refresh material, OAuth accounts,
       organization/membership extension, consent, and audit models/migrations.
