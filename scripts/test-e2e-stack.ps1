@@ -148,6 +148,16 @@ try {
     if (-not $WorkerContainer) {
         throw "Compose did not create the document worker."
     }
+    $SchedulerContainer = docker compose --project-name $ProjectName ps --quiet worker-scheduler
+    Assert-LastExitCode "Worker scheduler container lookup"
+    if (-not $SchedulerContainer) {
+        throw "Compose did not create the worker scheduler."
+    }
+    $SchedulerInspect = (docker inspect $SchedulerContainer | ConvertFrom-Json)[0]
+    Assert-LastExitCode "Worker scheduler health inspection"
+    if ($SchedulerInspect.State.Health.Status -ne "healthy") {
+        throw "Worker scheduler did not report healthy Celery Beat process state."
+    }
     $AdvertisedPolicy = Invoke-RestMethod -Uri "$PublicAppUrl/api/v1/guest/resume-health/upload-policy" -Method Get
     if ([int]$AdvertisedPolicy.maxPages -ne [int]$Overrides.DOCUMENT_MAX_PAGES) {
         throw "The API advertised page limit $($AdvertisedPolicy.maxPages), expected $($Overrides.DOCUMENT_MAX_PAGES)."
@@ -210,6 +220,10 @@ try {
     $MainSucceeded = $true
 }
 finally {
+    if (-not $MainSucceeded) {
+        docker compose --project-name $ProjectName ps --all
+        docker compose --project-name $ProjectName logs --no-color --tail 200
+    }
     docker compose --project-name $ProjectName down --volumes --remove-orphans --rmi local
     $CleanupExitCode = $LASTEXITCODE
     Pop-Location

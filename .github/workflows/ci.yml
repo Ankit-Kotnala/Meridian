@@ -187,7 +187,13 @@ jobs:
       - run: cp .env.example .env
       - run: docker compose config --quiet
       - run: docker compose build api worker web
-      - run: docker compose up --detach --wait --wait-timeout 300
+      - name: Start the Compose platform
+        run: |
+          if ! docker compose up --detach --wait --wait-timeout 300; then
+            docker compose ps --all
+            docker compose logs --no-color --tail 200
+            exit 1
+          fi
       - name: Verify the packaged Phase 2 migration path
         run: |
           docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
@@ -202,6 +208,9 @@ jobs:
           curl --fail --silent --show-error http://127.0.0.1:8000/api/v1/meta
           curl --fail --silent --show-error http://127.0.0.1:8025/api/v1/info
           docker compose exec -T worker celery --app careeros_worker.app:celery_app inspect ping --timeout 5
+          scheduler_id=$(docker compose ps --quiet worker-scheduler)
+          test -n "$scheduler_id"
+          test "$(docker inspect --format '{{.State.Health.Status}}' "$scheduler_id")" = healthy
       - name: Scan API image for fixable high vulnerabilities
         run: >-
           docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock

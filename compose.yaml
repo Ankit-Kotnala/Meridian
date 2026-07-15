@@ -285,7 +285,11 @@ services:
         "--pidfile=/tmp/careeros/celerybeat.pid",
       ]
     healthcheck:
-      disable: true
+      test: ["CMD", "python", "-m", "careeros_worker.scheduler_healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
     restart: unless-stopped
     networks: [backend]
 

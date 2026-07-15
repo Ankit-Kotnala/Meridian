@@ -94,6 +94,10 @@ export CAREEROS_TEST_CLAMAV_PORT="$CLAMAV_PORT"
 cleanup() {
   status=$?
   trap - EXIT HUP INT TERM
+  if [ "$status" -ne 0 ]; then
+    docker compose --project-name "$project_name" ps --all || true
+    docker compose --project-name "$project_name" logs --no-color --tail 200 || true
+  fi
   if ! docker compose --project-name "$project_name" down --volumes --remove-orphans --rmi local; then
     echo "Isolated E2E cleanup failed for Compose project $project_name." >&2
     if [ "$status" -eq 0 ]; then
@@ -131,6 +135,16 @@ docker compose --project-name "$project_name" up --detach --wait --wait-timeout 
 worker_container=$(docker compose --project-name "$project_name" ps --quiet worker)
 if [ -z "$worker_container" ]; then
   echo "Compose did not create the document worker." >&2
+  exit 1
+fi
+scheduler_container=$(docker compose --project-name "$project_name" ps --quiet worker-scheduler)
+if [ -z "$scheduler_container" ]; then
+  echo "Compose did not create the worker scheduler." >&2
+  exit 1
+fi
+scheduler_health=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$scheduler_container")
+if [ "$scheduler_health" != "healthy" ]; then
+  echo "Worker scheduler health is $scheduler_health, expected healthy Celery Beat process state." >&2
   exit 1
 fi
 advertised_pages=$(curl --fail --silent "http://127.0.0.1:${WEB_PORT}/api/v1/guest/resume-health/upload-policy" | node -e 'let input=""; process.stdin.on("data", chunk => input += chunk); process.stdin.on("end", () => process.stdout.write(String(JSON.parse(input).maxPages)));')

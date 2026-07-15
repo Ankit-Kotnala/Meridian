@@ -211,7 +211,7 @@ restarted, then runs the desktop/mobile journeys:
 .\scripts\verify-phase2.ps1
 ```
 
-The same-revision local suites pass: 272 unit/API checks, 5 real provider
+The same-revision local suites pass: 280 unit/API checks, 5 real provider
 integrations, and Playwright 10 passed with 2 intentional project exclusions and
 0 failures. Exact package counts are recorded in `PLANS.md`; hosted CI evidence
 remains pending. This section is not completion evidence.
