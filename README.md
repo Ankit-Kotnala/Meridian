@@ -13,16 +13,14 @@ claim under the user's control.
 
 ## Repository status
 
-**The Phase 2 resume upload, parsing, correction, and general-health vertical
-slice is implemented and locally verified; same-revision hosted CI is pending.**
-The preceding Phase 1 authentication/onboarding baseline remains verified. The
-repository uses a shared Python modular monolith, one root uv
+**Phase 2 resume upload, parsing, correction, and general health is complete and
+verified. Phase 3 is next and has not started.** The repository uses a shared
+Python modular monolith, one root uv
 workspace, generated API contracts, thin deployable applications, and executable
 dependency boundaries.
 
-Hosted CI run `29367040183` passed all eight repository checks against Phase 1
-evidence commit `baab8f7`. Phase 2 must not be described as complete until its
-hosted result is recorded in `PLANS.md` against the evidence revision.
+Hosted CI run `29378312134` passed every Phase 2 job against implementation
+commit `3b8d639`; prior Phase 1 evidence remains preserved at `baab8f7`.
 
 See [PLANS.md](PLANS.md) for current status, historical evidence, and phase gates.
 Do not infer that a planned endpoint or module is implemented from the
@@ -276,8 +274,7 @@ Read [AGENTS.md](AGENTS.md) before contributing. The principal references are:
 
 ## Verification status through Phase 2
 
-Phase 0 and Phase 1 have recorded same-revision local/hosted evidence. Phase 2's
-complete local gate passes; hosted evidence is pending. Exact current and
+Phases 0 through 2 have recorded local and hosted evidence. Exact current and
 historical results are recorded separately in `PLANS.md`; never infer a pass from
 the command list below:
 
@@ -312,8 +309,8 @@ The Phase 1 baseline at `baab8f7` remains verified by hosted run `29367040183`.
 The Phase 2 runner adds migration `20260715_0003`, real private object/scanner
 contracts, restricted async processing, deterministic score golden cases, and
 registered/guest desktop/mobile workflows. Its local counts and security/build
-results pass and are recorded in `PLANS.md`; the hosted run remains pending.
-Skipped, unavailable, or failing required checks keep the phase open.
+results pass and are recorded in `PLANS.md`. Hosted run `29378312134` passed the
+complete Phase 2 workflow on implementation commit `3b8d639`.
 
 ## License and production use
 

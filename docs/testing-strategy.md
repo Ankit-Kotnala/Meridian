@@ -1,6 +1,6 @@
 # CareerOS testing strategy
 
-Status: Phase 2 local suites pass; hosted CI evidence pending
+Status: Phase 2 local and hosted suites pass
 Last reviewed: 2026-07-15
 
 ## Objectives
@@ -213,8 +213,8 @@ restarted, then runs the desktop/mobile journeys:
 
 The same-revision local suites pass: 280 unit/API checks, 5 real provider
 integrations, and Playwright 10 passed with 2 intentional project exclusions and
-0 failures. Exact package counts are recorded in `PLANS.md`; hosted CI evidence
-remains pending. This section is not completion evidence.
+0 failures. Exact package counts and hosted run `29378312134` are recorded in
+`PLANS.md`; that plan remains the completion evidence.
 
 Security regressions additionally assert that local `web-edge` discards spoofed
 client-address/hop headers and overwrites them with its socket peer, the web

@@ -156,79 +156,77 @@ local gate. Exact closeout evidence and residual limitations live in `PLANS.md`.
 ## Phase 2 — Resume Upload, Parsing, and General Health
 
 Dependencies: Phase 1 identity/ownership; Phase 0 object/queue health. Current
-status: implementation and the complete local gate pass; hosted CI is pending.
-`[~]` below means implemented but not yet phase-closed.
+status: complete; local gates and hosted run `29378312134` pass.
 
-- [~] Migration `20260715_0003` adds exactly-one-owner guest sessions, upload
-  intents, source documents, derived artifacts, processing jobs/outbox/object
-  cleanup, fenced execution leases, immutable canonical snapshots, analyses with
-  feature schema/values/component contributions/findings, and redacted resume
-  audit events with constraints and ownership indexes.
-- [~] Private S3-compatible upload policy/intent/finalize uses exact expected
-  media/size, randomized staging and quarantine keys, signature checks,
-  account/guest quota, rate limiting, object promotion, durable deletion, and
-  audit without returning permanent credentials or a standalone/unsigned object
-  key; the staging key appears only inside its short-lived signed URL. Local `web-edge`
-  overwrites address headers from its socket peer before the unexposed web BFF
-  signs a neutral per-source API rate key; it is never authorization.
-- [~] Required ClamAV scanning fails closed. Local PDF/DOCX admission rejects
-  wrong-signature, malformed/encrypted/polyglot, macro, traversal, expansion,
-  PDF-page/universal-character-limit, malware, unavailable-scanner, and timeout
-  cases with safe codes. DOCX is bounded by byte/archive/expansion/character/
-  block/artifact limits because `python-docx` cannot provide authoritative
-  rendered page counts; layout-aware enforcement remains provider work.
-- [~] The worker runs non-root with a read-only filesystem, dropped capabilities,
-  no edge network, bounded CPU/memory/PIDs/time, a private randomized `noexec`
-  tmpfs path, and cleanup on normal/error exits. The current parser timeout
-  cannot kill its `asyncio.to_thread` thread; Celery/container limits mitigate
-  it, and per-parser subprocess isolation remains a documented hardening gap.
-- [~] Guarded local PDF/DOCX extraction produces plain text, ordered blocks,
-  source spans, confidence, parser warnings, authoritative PDF page count, and
-  image-only detection behind extractor/OCR/scanner/storage ports. DOCX has only
-  a nominal local page value because no renderer is present. OCR is a disabled
-  optional port, so image-only input returns insufficient data.
-- [~] The parser creates canonical sections/blocks as immutable revision 1.
-  Optimistic `If-Match` correction creates a successor snapshot, retains the
-  extracted original and spans, rejects an all-no-op update, and emits an audit
-  event. The API applies separate correction/analysis rate classes; the domain
-  caps canonical revisions and analysis history per document. Resume mutation
-  headers constrain `Idempotency-Key` to 8-128 `[A-Za-z0-9._:-]` characters and
-  `If-Match` to a quoted positive `int4` value no greater than `2147483647`.
-- [~] Parse, analyze, and delete jobs use owner-scoped state, request hashes,
-  idempotency, progress, cancellation, bounded retries, dead letter, safe
-  errors, trace IDs, allowlisted Celery payloads, per-invocation fencing, and a
-  lease longer than the worker hard timeout. Busy delivery retries, transactional
-  outbox dispatch, storage compensation, and retention cleanup all have durable,
-  bounded attempt/backoff/dead-letter state. A scheduled database-only reconciler
-  fences and requeues or dead-letters stale work within separate processing and
-  recovery budgets. Parse/analyze cancellation is cooperative; accepted deletion
-  is deliberately noncancellable.
-- [~] Resume Health `resume-health/1.0.0` / `resume-health-default/1` uses the
-  published fixed-point feature/component table, immutable snapshot binding,
-  persisted `resume-health-features/1` values and weighted contributions, feature
-  hash, exact golden expectations, findings, and no numeric value for image-only/
-  sparse input.
-- [~] Account and one-document/24-hour guest web flows implement direct upload,
-  real progress/cancel, processing polling, empty/loading/success/error,
-  plain-text/reading-order review, source-preserving correction, analysis,
-  report, explicit consented account claim, and durable deletion. Same-page
-  ambiguous transfer/finalize retry reuses in-memory intent/idempotency state;
-  reload recovery and resumable file transfer are not implemented.
-- [~] Reports show the canonical score disclaimer, components, findings, parser
-  warnings, stored measured values, and exact feature score/weight/contribution
-  details in keyboard-operable, color-independent disclosures; they never claim
-  an employer ATS score, hiring probability, or guarantee.
-- [~] Focused unit/component/API/worker/integration/E2E coverage exists for the
-  implemented fixture and threat matrix. The full format/lint/type/build,
-  migration round-trip, real PostgreSQL/Redis/MinIO/ClamAV, desktop/mobile
-  Playwright, container-policy, and separate security-scan gates pass; phase
-  close still requires all corresponding hosted CI jobs on the evidence revision.
+- [x] Migration `20260715_0003` adds exactly-one-owner guest sessions, upload
+      intents, source documents, derived artifacts, processing jobs/outbox/object
+      cleanup, fenced execution leases, immutable canonical snapshots, analyses with
+      feature schema/values/component contributions/findings, and redacted resume
+      audit events with constraints and ownership indexes.
+- [x] Private S3-compatible upload policy/intent/finalize uses exact expected
+      media/size, randomized staging and quarantine keys, signature checks,
+      account/guest quota, rate limiting, object promotion, durable deletion, and
+      audit without returning permanent credentials or a standalone/unsigned object
+      key; the staging key appears only inside its short-lived signed URL. Local `web-edge`
+      overwrites address headers from its socket peer before the unexposed web BFF
+      signs a neutral per-source API rate key; it is never authorization.
+- [x] Required ClamAV scanning fails closed. Local PDF/DOCX admission rejects
+      wrong-signature, malformed/encrypted/polyglot, macro, traversal, expansion,
+      PDF-page/universal-character-limit, malware, unavailable-scanner, and timeout
+      cases with safe codes. DOCX is bounded by byte/archive/expansion/character/
+      block/artifact limits because `python-docx` cannot provide authoritative
+      rendered page counts; layout-aware enforcement remains provider work.
+- [x] The worker runs non-root with a read-only filesystem, dropped capabilities,
+      no edge network, bounded CPU/memory/PIDs/time, a private randomized `noexec`
+      tmpfs path, and cleanup on normal/error exits. The current parser timeout
+      cannot kill its `asyncio.to_thread` thread; Celery/container limits mitigate
+      it, and per-parser subprocess isolation remains a documented hardening gap.
+- [x] Guarded local PDF/DOCX extraction produces plain text, ordered blocks,
+      source spans, confidence, parser warnings, authoritative PDF page count, and
+      image-only detection behind extractor/OCR/scanner/storage ports. DOCX has only
+      a nominal local page value because no renderer is present. OCR is a disabled
+      optional port, so image-only input returns insufficient data.
+- [x] The parser creates canonical sections/blocks as immutable revision 1.
+      Optimistic `If-Match` correction creates a successor snapshot, retains the
+      extracted original and spans, rejects an all-no-op update, and emits an audit
+      event. The API applies separate correction/analysis rate classes; the domain
+      caps canonical revisions and analysis history per document. Resume mutation
+      headers constrain `Idempotency-Key` to 8-128 `[A-Za-z0-9._:-]` characters and
+      `If-Match` to a quoted positive `int4` value no greater than `2147483647`.
+- [x] Parse, analyze, and delete jobs use owner-scoped state, request hashes,
+      idempotency, progress, cancellation, bounded retries, dead letter, safe
+      errors, trace IDs, allowlisted Celery payloads, per-invocation fencing, and a
+      lease longer than the worker hard timeout. Busy delivery retries, transactional
+      outbox dispatch, storage compensation, and retention cleanup all have durable,
+      bounded attempt/backoff/dead-letter state. A scheduled database-only reconciler
+      fences and requeues or dead-letters stale work within separate processing and
+      recovery budgets. Parse/analyze cancellation is cooperative; accepted deletion
+      is deliberately noncancellable.
+- [x] Resume Health `resume-health/1.0.0` / `resume-health-default/1` uses the
+      published fixed-point feature/component table, immutable snapshot binding,
+      persisted `resume-health-features/1` values and weighted contributions, feature
+      hash, exact golden expectations, findings, and no numeric value for image-only/
+      sparse input.
+- [x] Account and one-document/24-hour guest web flows implement direct upload,
+      real progress/cancel, processing polling, empty/loading/success/error,
+      plain-text/reading-order review, source-preserving correction, analysis,
+      report, explicit consented account claim, and durable deletion. Same-page
+      ambiguous transfer/finalize retry reuses in-memory intent/idempotency state;
+      reload recovery and resumable file transfer are not implemented.
+- [x] Reports show the canonical score disclaimer, components, findings, parser
+      warnings, stored measured values, and exact feature score/weight/contribution
+      details in keyboard-operable, color-independent disclosures; they never claim
+      an employer ATS score, hiring probability, or guarantee.
+- [x] Focused unit/component/API/worker/integration/E2E coverage exists for the
+      implemented fixture and threat matrix. The full format/lint/type/build,
+      migration round-trip, real PostgreSQL/Redis/MinIO/ClamAV, desktop/mobile
+      Playwright, container-policy, and separate security-scan gates pass; hosted CI
+      run `29378312134` passes all corresponding jobs.
 
 Exit: supported fixtures parse and can be corrected; scores reproduce/explain;
 malformed/hostile input fails safely; guest retention and user ownership hold.
 
-Pending closeout: publish and verify the evidence revision in hosted CI; do not
-change this phase to complete before that gate passes.
+Closeout evidence and residual limitations are recorded in `PLANS.md`.
 
 ## Phase 3 — Career Profile, Evidence Vault, and Achievement Inbox
 

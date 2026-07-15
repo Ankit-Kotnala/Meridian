@@ -1,6 +1,6 @@
 # CareerOS security threat model
 
-Status: Phase 2 resume-processing controls implemented and locally verified; hosted CI pending
+Status: Phase 2 resume-processing controls implemented and verified
 Method: asset/trust-boundary analysis with STRIDE-style threat enumeration  
 Last reviewed: 2026-07-15
 
@@ -359,8 +359,7 @@ protected-route denial on desktop and mobile. Exact counts and commands are in
   route-template payload-free logging; and registered/guest browser workflows.
 
 These controls and the same-revision local container, integration, E2E, and scan
-gates pass as recorded in `PLANS.md`. Hosted CI evidence remains the only Phase 2
-security closeout gate.
+gates pass as recorded in `PLANS.md`; hosted run `29378312134` also passes.
 
 ## Privacy, retention, and consent
 

@@ -2,8 +2,7 @@
 
 Last updated: 2026-07-15
 Plan owner: engineering  
-Current status: **Phase 2 vertical slice implemented and locally verified;
-same-revision hosted verification is pending**
+Current status: **Phase 2 complete; Phase 3 is next and not started**
 
 ## Status legend
 
@@ -245,65 +244,65 @@ literal from reachable PR history, and passes both gates.
 
 ## Phase 2 scope and status
 
-Current status: **implemented and locally verified; same-revision hosted
-verification is pending**. Items use `[~]` until the hosted gate is recorded.
-This section does not supersede a failed or skipped command.
+Current status: **complete**. Implementation commit `3b8d639` passed the complete
+local gate and hosted CI run `29378312134`. This section does not supersede a
+failed or skipped command.
 
 ### Implemented vertical slice
 
-- [~] Migration `20260715_0003` adds guest resume sessions, upload intents,
-  ownership-scoped source documents and derived artifacts, durable processing
-  jobs/outbox and object-cleanup records, immutable canonical snapshots, Resume
-  Health analyses, persisted feature values/component contributions/findings,
-  per-invocation execution leases, and redacted resume audit events with
-  constraints, foreign keys, indexes, and exactly-one-owner checks.
-- [~] Account and guest upload-policy/intent/finalize APIs issue short-lived
-  signed `PUT`s for randomized staging keys, enforce exact size/media/signature,
-  rate/quota/scope, and promote accepted bytes into private randomized
-  quarantine keys without returning permanent credentials or a standalone/
-  unsigned object-key field. The staging key is exposed only inside its
-  short-lived, operation-scoped signed URL.
-- [~] Required ClamAV and guarded local PDF/DOCX extraction run in the restricted
-  worker. Wrong-signature, malformed/encrypted/polyglot, macro, traversal,
-  expansion, PDF-page/universal-character-limit, timeout, malware, and
-  scanner-unavailable cases fail safely. Image-only input is identified; no OCR
-  adapter is enabled.
-- [~] Parse, analyze, and delete use durable owner-scoped jobs with idempotency,
-  progress, bounded retry/dead letter, safe errors, trace IDs,
-  an allowlisted queue envelope, a per-invocation fencing token, and an execution
-  lease longer than the worker hard timeout. A concurrent delivery receives a
-  delayed busy retry; an expired lease can be recovered without allowing its
-  stale predecessor to commit. Transactional outbox publication and object
-  cleanup both use bounded batches, durable attempts, backoff, and terminal
-  dead-letter state. Scheduled dispatch and retention maintenance use the same
-  worker application services. A scheduled database-only reconciler detects
-  stale published queue work, retryable failures with lost retries, and expired
-  running leases; it fences, republishes, or dead-letters them within separate
-  processing and recovery attempt budgets. Parse/analyze jobs support cooperative
-  cancellation; an accepted delete job is intentionally noncancellable.
-- [~] Extraction persists plain-text and reading-order artifacts plus canonical
-  sections/blocks with confidence and source spans. User correction requires
-  optimistic concurrency and creates an immutable successor snapshot without
-  changing the extracted source. Correction and analysis have separate
-  ownership-scoped rate classes; correction rejects an all-no-op request and the
-  domain caps canonical revisions and analysis history per document.
-- [~] Resume Health engine `resume-health/1.0.0` with configuration
-  `resume-health-default/1` uses the exact published fixed-point feature and
-  component formula. Each immutable analysis persists feature schema
-  `resume-health-features/1`, the complete typed feature values, each component's
-  weighted feature contributions, and a feature hash; it exposes deterministic
-  findings/explanations and returns insufficient data rather than a deceptive
-  zero.
-- [~] The account and short-retention guest web workflows implement direct upload
-  progress/abort, processing polling/cancel, document list/empty state,
-  plain-text and reading-order review, source-preserving correction, analysis,
-  report, explicit consented claim, and durable deletion with loading, empty,
-  success, and safe error states.
-- [~] Reports carry the canonical internal-measure disclaimer, real component and
-  finding data, and keyboard/mobile/color-independent accessible summaries.
-  Keyboard-operable disclosure panels expose the stored feature values and exact
-  score/weight/contribution trace rather than relying on color or a chart. No
-  working Phase 1 functionality is replaced with fixture or mock data.
+- [x] Migration `20260715_0003` adds guest resume sessions, upload intents,
+      ownership-scoped source documents and derived artifacts, durable processing
+      jobs/outbox and object-cleanup records, immutable canonical snapshots, Resume
+      Health analyses, persisted feature values/component contributions/findings,
+      per-invocation execution leases, and redacted resume audit events with
+      constraints, foreign keys, indexes, and exactly-one-owner checks.
+- [x] Account and guest upload-policy/intent/finalize APIs issue short-lived
+      signed `PUT`s for randomized staging keys, enforce exact size/media/signature,
+      rate/quota/scope, and promote accepted bytes into private randomized
+      quarantine keys without returning permanent credentials or a standalone/
+      unsigned object-key field. The staging key is exposed only inside its
+      short-lived, operation-scoped signed URL.
+- [x] Required ClamAV and guarded local PDF/DOCX extraction run in the restricted
+      worker. Wrong-signature, malformed/encrypted/polyglot, macro, traversal,
+      expansion, PDF-page/universal-character-limit, timeout, malware, and
+      scanner-unavailable cases fail safely. Image-only input is identified; no OCR
+      adapter is enabled.
+- [x] Parse, analyze, and delete use durable owner-scoped jobs with idempotency,
+      progress, bounded retry/dead letter, safe errors, trace IDs,
+      an allowlisted queue envelope, a per-invocation fencing token, and an execution
+      lease longer than the worker hard timeout. A concurrent delivery receives a
+      delayed busy retry; an expired lease can be recovered without allowing its
+      stale predecessor to commit. Transactional outbox publication and object
+      cleanup both use bounded batches, durable attempts, backoff, and terminal
+      dead-letter state. Scheduled dispatch and retention maintenance use the same
+      worker application services. A scheduled database-only reconciler detects
+      stale published queue work, retryable failures with lost retries, and expired
+      running leases; it fences, republishes, or dead-letters them within separate
+      processing and recovery attempt budgets. Parse/analyze jobs support cooperative
+      cancellation; an accepted delete job is intentionally noncancellable.
+- [x] Extraction persists plain-text and reading-order artifacts plus canonical
+      sections/blocks with confidence and source spans. User correction requires
+      optimistic concurrency and creates an immutable successor snapshot without
+      changing the extracted source. Correction and analysis have separate
+      ownership-scoped rate classes; correction rejects an all-no-op request and the
+      domain caps canonical revisions and analysis history per document.
+- [x] Resume Health engine `resume-health/1.0.0` with configuration
+      `resume-health-default/1` uses the exact published fixed-point feature and
+      component formula. Each immutable analysis persists feature schema
+      `resume-health-features/1`, the complete typed feature values, each component's
+      weighted feature contributions, and a feature hash; it exposes deterministic
+      findings/explanations and returns insufficient data rather than a deceptive
+      zero.
+- [x] The account and short-retention guest web workflows implement direct upload
+      progress/abort, processing polling/cancel, document list/empty state,
+      plain-text and reading-order review, source-preserving correction, analysis,
+      report, explicit consented claim, and durable deletion with loading, empty,
+      success, and safe error states.
+- [x] Reports carry the canonical internal-measure disclaimer, real component and
+      finding data, and keyboard/mobile/color-independent accessible summaries.
+      Keyboard-operable disclosure panels expose the stored feature values and exact
+      score/weight/contribution trace rather than relying on color or a chart. No
+      working Phase 1 functionality is replaced with fixture or mock data.
 
 ### Architecture decisions realized
 
@@ -358,23 +357,30 @@ head -> previous head -> new head plus a fresh bootstrap and single-head check.
 
 ### Local verification evidence
 
-Evidence was captured on 2026-07-15 from the frozen Phase 2 working tree. The
-implementation remains open only for the required same-revision hosted CI gate.
+Evidence was captured on 2026-07-15 from the frozen Phase 2 working tree.
+Implementation commit `3b8d639` passed hosted CI run `29378312134` after the
+complete local gate below.
 
-| Command / gate                                     | Status  | Evidence                                                                                                                                                                                                                                                |
-| -------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Frozen installs and lock checks                    | Pass    | Frozen pnpm and root uv workspace installs completed; `uv lock --check` and fixture manifest size/SHA-256 verification passed                                                                                                                           |
-| Formatting and lint                                | Pass    | Prettier, Ruff format/check, ESLint, and executable dependency-boundary checks passed                                                                                                                                                                   |
-| Strict type checking                               | Pass    | TypeScript and mypy passed for the web/contracts/UI and all Python packages                                                                                                                                                                             |
-| Unit and API tests                                 | Pass    | 280 tests passed: backend 88, API 67, worker 54, web 50, UI 12, contracts 3, boundary 4, and edge 2; the generic backend run's 5 explicit provider-environment skips were exercised separately below                                                    |
-| Contract drift and production builds               | Pass    | Normalized OpenAPI/generated TypeScript remained clean; Next.js built 31 routes/pages and all application images built                                                                                                                                  |
-| Migration and real integration                     | Pass    | Fresh bootstrap and `20260715_0002 -> 20260715_0003 -> 20260715_0002 -> 20260715_0003` passed; 5 real PostgreSQL/Redis/MinIO/ClamAV/provider integrations passed                                                                                        |
-| Primary E2E                                        | Pass    | Playwright passed 10 checks with 2 intentional project exclusions and 0 failures across registered/guest desktop/mobile workflows                                                                                                                       |
-| Accessibility and rendered review                  | Pass    | Automated semantics plus manual keyboard/rendered review covered desktop/mobile upload, selection, processing, structured/plain review, and report; labels, skip focus, tabs, disclosures, disclaimer, controls, and overflow passed; no console errors |
-| Runtime and dependency recovery                    | Pass    | Hardened Compose policy, worker and Beat scheduler health, anonymous MinIO denial, packaged readiness HTTP 503 while PostgreSQL was stopped, recovery to HTTP 200, and isolated cleanup passed                                                          |
-| Security scan                                      | Pass    | Separate Gitleaks and Node audits passed; pip-audit found no known vulnerability after `pypdf` 6.13.3; API, worker, web, and `web-edge` passed the Grype fixable-high gate subject to documented reachability exceptions                                |
-| `scripts/verify-phase2.ps1` / `make verify-phase2` | Pass    | Consolidated frozen-tree gate exited 0, including migration, integration, runtime, browser, build, and cleanup checks                                                                                                                                   |
-| Hosted CI                                          | Pending | all required jobs must pass on the exact Phase 2 evidence revision                                                                                                                                                                                      |
+| Command / gate                                     | Status | Evidence                                                                                                                                                                                                                                                |
+| -------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Frozen installs and lock checks                    | Pass   | Frozen pnpm and root uv workspace installs completed; `uv lock --check` and fixture manifest size/SHA-256 verification passed                                                                                                                           |
+| Formatting and lint                                | Pass   | Prettier, Ruff format/check, ESLint, and executable dependency-boundary checks passed                                                                                                                                                                   |
+| Strict type checking                               | Pass   | TypeScript and mypy passed for the web/contracts/UI and all Python packages                                                                                                                                                                             |
+| Unit and API tests                                 | Pass   | 280 tests passed: backend 88, API 67, worker 54, web 50, UI 12, contracts 3, boundary 4, and edge 2; the generic backend run's 5 explicit provider-environment skips were exercised separately below                                                    |
+| Contract drift and production builds               | Pass   | Normalized OpenAPI/generated TypeScript remained clean; Next.js built 31 routes/pages and all application images built                                                                                                                                  |
+| Migration and real integration                     | Pass   | Fresh bootstrap and `20260715_0002 -> 20260715_0003 -> 20260715_0002 -> 20260715_0003` passed; 5 real PostgreSQL/Redis/MinIO/ClamAV/provider integrations passed                                                                                        |
+| Primary E2E                                        | Pass   | Playwright passed 10 checks with 2 intentional project exclusions and 0 failures across registered/guest desktop/mobile workflows                                                                                                                       |
+| Accessibility and rendered review                  | Pass   | Automated semantics plus manual keyboard/rendered review covered desktop/mobile upload, selection, processing, structured/plain review, and report; labels, skip focus, tabs, disclosures, disclaimer, controls, and overflow passed; no console errors |
+| Runtime and dependency recovery                    | Pass   | Hardened Compose policy, worker and Beat scheduler health, anonymous MinIO denial, packaged readiness HTTP 503 while PostgreSQL was stopped, recovery to HTTP 200, and isolated cleanup passed                                                          |
+| Security scan                                      | Pass   | Separate Gitleaks and Node audits passed; pip-audit found no known vulnerability after `pypdf` 6.13.3; API, worker, web, and `web-edge` passed the Grype fixable-high gate subject to documented reachability exceptions                                |
+| `scripts/verify-phase2.ps1` / `make verify-phase2` | Pass   | Consolidated frozen-tree gate exited 0 in 199.8 seconds after hosted-failure repair, including migration, integration, runtime, browser, build, and cleanup checks                                                                                      |
+| Hosted CI                                          | Pass   | Run `29378312134` passed API, worker, web/contracts, supply-chain, browser-smoke, Resume Health E2E, and container/image jobs on implementation commit `3b8d639`; GitGuardian also passed                                                               |
+
+The first hosted attempt, run `29377566406`, showed that local Docker Compose
+5.1.1 tolerated a healthcheck-disabled Beat service while hosted Compose 2.38.2
+rejected it under `--wait`. The scheduler now has a PID/process-specific
+health probe, both E2E runners assert it explicitly, failure paths retain bounded
+diagnostics before cleanup, and the repaired local and hosted gates pass.
 
 ### Known limitations and deferred work
 
@@ -478,24 +484,24 @@ Detailed checkboxes live in `docs/implementation-checklist.md`.
 
 ## Risk register
 
-| ID  | Risk                                                             | Likelihood / impact | Mitigation and gate                                                                                                                                                                                              | Earliest owner phase   |
-| --- | ---------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| R1  | Cross-tenant data exposure through IDOR or object keys           | Medium / Critical   | Ownership-scoped queries, policy tests, private buckets, audit events                                                                                                                                            | 1 and every data phase |
-| R2  | Malicious or resource-exhausting documents                       | High / Critical     | Signature/limit checks, scanning, isolated no-network worker, time/memory/CPU caps, hostile fixtures                                                                                                             | 2                      |
-| R3  | AI fabricates or is redirected by document instructions          | High / Critical     | Untrusted-content delimiters, strict schemas, evidence ledger, deterministic grounding, adversarial tests                                                                                                        | 5–6                    |
-| R4  | Score labels mislead users                                       | Medium / High       | Canonical disclaimer, deterministic versioned formulas, explanations, no probability language                                                                                                                    | 2, 4, 5                |
-| R5  | PDF/DOCX looks correct but parses badly                          | High / High         | Constrained templates, searchable text, round-trip verification and blocking critical failures                                                                                                                   | 7                      |
-| R6  | Dependency/toolchain churn breaks the greenfield baseline        | Medium / Medium     | Conservative pins, lockfiles, CI cache keys, scheduled upgrades in small changes                                                                                                                                 | 0 onward               |
-| R7  | Queue retry duplicates work or cost                              | Medium / High       | Idempotency records, bounded retries/timeouts, job state machine, budgets and dead letters                                                                                                                       | 2 onward               |
-| R8  | Sensitive content leaks through logs/telemetry/providers         | Medium / Critical   | Data classification, default redaction, payload-free telemetry, provider minimization and consent                                                                                                                | 0 onward               |
-| R9  | Local Compose health hides production gaps                       | High / High         | Separate readiness, production threat review, load/restore/failure tests, protected deploy                                                                                                                       | 10                     |
-| R10 | Broad roadmap produces unfinished horizontal scaffolding         | High / Medium       | One vertical phase at a time, dependency gates, no completion on placeholders                                                                                                                                    | Every phase            |
-| R11 | Public demo is mistaken for functional analysis                  | Medium / Medium     | Isolate it at `/demo/dashboard`, retain the fictional-preview label, and keep it free of upload/score claims or account persistence                                                                              | 0–1                    |
-| R12 | Retention/deletion becomes inconsistent across stores            | Medium / High       | Data inventory, deletion tombstones/jobs, object/vector/backup policy and tests per entity                                                                                                                       | 1 onward               |
-| R13 | Generated contracts drift from implemented OpenAPI               | Medium / High       | FastAPI remains authoritative; pin normalized export/client generation and fail CI on either drift                                                                                                               | 0 onward               |
-| R14 | Hosted CI and local behavior diverge after architecture changes  | Low / Medium        | Runs 29360385761 and 29367040183 verify foundation and Phase 1; Phase 2 local gates pass and its hosted evidence is pending; retain clean contract-output, container, migration, browser, and supply-chain gates | 0 onward               |
-| R15 | Upstream runtime findings do not all have supported stable fixes | Low / High          | Two exact-version Grype exceptions document reachability and removal conditions; monitor remaining findings and refresh runtimes promptly                                                                        | 0–1                    |
-| R16 | Workspace/migration move regresses runtime or existing databases | Medium / High       | One root lock, preserved revision IDs, fresh/existing upgrade tests, root-context image builds, and direct runtime Alembic verification                                                                          | 0                      |
+| ID  | Risk                                                             | Likelihood / impact | Mitigation and gate                                                                                                                                                                                                                       | Earliest owner phase   |
+| --- | ---------------------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| R1  | Cross-tenant data exposure through IDOR or object keys           | Medium / Critical   | Ownership-scoped queries, policy tests, private buckets, audit events                                                                                                                                                                     | 1 and every data phase |
+| R2  | Malicious or resource-exhausting documents                       | High / Critical     | Signature/limit checks, scanning, isolated no-network worker, time/memory/CPU caps, hostile fixtures                                                                                                                                      | 2                      |
+| R3  | AI fabricates or is redirected by document instructions          | High / Critical     | Untrusted-content delimiters, strict schemas, evidence ledger, deterministic grounding, adversarial tests                                                                                                                                 | 5–6                    |
+| R4  | Score labels mislead users                                       | Medium / High       | Canonical disclaimer, deterministic versioned formulas, explanations, no probability language                                                                                                                                             | 2, 4, 5                |
+| R5  | PDF/DOCX looks correct but parses badly                          | High / High         | Constrained templates, searchable text, round-trip verification and blocking critical failures                                                                                                                                            | 7                      |
+| R6  | Dependency/toolchain churn breaks the greenfield baseline        | Medium / Medium     | Conservative pins, lockfiles, CI cache keys, scheduled upgrades in small changes                                                                                                                                                          | 0 onward               |
+| R7  | Queue retry duplicates work or cost                              | Medium / High       | Idempotency records, bounded retries/timeouts, job state machine, budgets and dead letters                                                                                                                                                | 2 onward               |
+| R8  | Sensitive content leaks through logs/telemetry/providers         | Medium / Critical   | Data classification, default redaction, payload-free telemetry, provider minimization and consent                                                                                                                                         | 0 onward               |
+| R9  | Local Compose health hides production gaps                       | High / High         | Separate readiness, production threat review, load/restore/failure tests, protected deploy                                                                                                                                                | 10                     |
+| R10 | Broad roadmap produces unfinished horizontal scaffolding         | High / Medium       | One vertical phase at a time, dependency gates, no completion on placeholders                                                                                                                                                             | Every phase            |
+| R11 | Public demo is mistaken for functional analysis                  | Medium / Medium     | Isolate it at `/demo/dashboard`, retain the fictional-preview label, and keep it free of upload/score claims or account persistence                                                                                                       | 0–1                    |
+| R12 | Retention/deletion becomes inconsistent across stores            | Medium / High       | Data inventory, deletion tombstones/jobs, object/vector/backup policy and tests per entity                                                                                                                                                | 1 onward               |
+| R13 | Generated contracts drift from implemented OpenAPI               | Medium / High       | FastAPI remains authoritative; pin normalized export/client generation and fail CI on either drift                                                                                                                                        | 0 onward               |
+| R14 | Hosted CI and local behavior diverge after architecture changes  | Low / Medium        | Runs 29360385761, 29367040183, and 29378312134 verify foundation through Phase 2; Beat liveness is now asserted consistently across Compose versions; retain clean contract-output, container, migration, browser, and supply-chain gates | 0 onward               |
+| R15 | Upstream runtime findings do not all have supported stable fixes | Low / High          | Two exact-version Grype exceptions document reachability and removal conditions; monitor remaining findings and refresh runtimes promptly                                                                                                 | 0–1                    |
+| R16 | Workspace/migration move regresses runtime or existing databases | Medium / High       | One root lock, preserved revision IDs, fresh/existing upgrade tests, root-context image builds, and direct runtime Alembic verification                                                                                                   | 0                      |
 
 ## Change and verification protocol
 
@@ -513,11 +519,9 @@ At the end of every phase:
 
 ## Next phase
 
-The Phase 2 implementation and local verification gate passed. Phase closeout and
-Phase 3 remain blocked until this evidence tree is committed and every required
-hosted CI job passes that exact revision.
+Phase 2 is verified and complete. The next planned phase has not started.
 
-After Phase 2 is verified, the next phase is **Phase 3 — Career Profile, Evidence
+The next phase is **Phase 3 — Career Profile, Evidence
 Vault, and Achievement Inbox**. It begins with independent owned career entities
 and a provenance/evidence graph. Resume import and corrections may propose
 profile changes, but they cannot overwrite career truth. Every factual claim and

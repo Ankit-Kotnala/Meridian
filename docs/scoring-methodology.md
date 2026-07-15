@@ -1,6 +1,6 @@
 # CareerOS scoring methodology
 
-Status: Resume Health v1 implemented and locally verified; hosted CI pending
+Status: Resume Health v1 implemented and verified
 Last reviewed: 2026-07-15
 
 ## Required interpretation
@@ -470,5 +470,5 @@ remain Phase 5 work. Resume Health v1 must not be reused as any of those scores.
 
 The implementation, focused golden tests, and repository-wide local format,
 lint, type, unit, integration, container, migration, browser, accessibility, and
-security gates pass. Phase 2 remains open until hosted CI verifies the evidence
-revision recorded in `PLANS.md`.
+security gates pass. Hosted run `29378312134` verifies the Phase 2 implementation;
+the evidence is recorded in `PLANS.md`.

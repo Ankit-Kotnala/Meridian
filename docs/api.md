@@ -1,6 +1,6 @@
 # CareerOS API conventions and route plan
 
-Status: Phase 2 Resume Health API implemented and locally verified; hosted CI pending
+Status: Phase 2 Resume Health API implemented and verified
 Base path for product APIs: `/api/v1`  
 Last reviewed: 2026-07-15
 
@@ -697,8 +697,8 @@ Phase 2's consolidated gate is implemented as:
 
 It includes generated-contract drift, migration `20260715_0003` round trip,
 real PostgreSQL/Redis/MinIO/ClamAV integration, restricted worker runtime, and the
-registered and guest Resume Health browser journeys. The local same-revision gate
-passes; hosted evidence remains pending in `PLANS.md`.
+registered and guest Resume Health browser journeys. Local gates and hosted run
+`29378312134` pass as recorded in `PLANS.md`.
 
 Tests assert exact safe response schemas and problems, correlation IDs, readiness
 failure under dependency loss, no secret leakage, stable operation IDs, OpenAPI
@@ -715,4 +715,4 @@ immutable correction/version conflicts, job/idempotency state, and score
 version/hash/disclaimer output. Real storage/scanner/repository contracts and
 registered/guest browser workflows run through the isolated Phase 2 project. The
 local result is API 67 and contracts 3 with clean generated-contract drift; full
-counts are recorded in `PLANS.md` and hosted evidence remains pending.
+counts and hosted evidence are recorded in `PLANS.md`.

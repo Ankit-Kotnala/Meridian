@@ -1,6 +1,6 @@
 # CareerOS architecture
 
-Status: accepted target architecture; Phase 2 locally verified and awaiting hosted CI
+Status: accepted target architecture; Phase 2 implemented and verified
 Last reviewed: 2026-07-15
 
 ## Architectural objective
@@ -21,8 +21,8 @@ identity boundary, and a Phase 2 Resume Health module used by thin API and worke
 adapters. Phase 2 adds generated HTTP contracts, one ownership-scoped persistence
 model, private object storage, a transactional job outbox, isolated document
 processing, and deterministic scoring without changing the dependency direction.
-Historical evidence, passing Phase 2 local gates, and the pending hosted closeout
-gate are recorded in `PLANS.md`.
+Historical evidence and passing Phase 2 local/hosted gates are recorded in
+`PLANS.md`.
 
 ## System principles
 
@@ -421,11 +421,10 @@ make verify
 Phase 2 additionally uses `scripts/verify-phase2.ps1` (or
 `make verify-phase2`) for migration `20260715_0003`, real storage/scanner
 contracts, durable worker processing, and registered/guest Playwright journeys.
-The complete local gate passes against the frozen Phase 2 tree and is recorded in
-`PLANS.md`; the phase remains open until hosted CI passes its evidence revision.
+The complete local gate and hosted CI run `29378312134` pass against the Phase 2
+implementation and are recorded in `PLANS.md`.
 
-The Phase 0/1 baselines passed their aligned local and hosted gates. Phase 2
-remains open only for hosted evidence. Later phases add grounding, role/job score
-golden, round-trip export,
+The Phase 0/1 baselines and Phase 2 passed their aligned local and hosted gates.
+Later phases add grounding, role/job score golden, round-trip export,
 load, account-wide deletion, backup, and restore gates. The complete strategy is
 in `docs/testing-strategy.md`.
