@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: help setup dev stop format format-check lint typecheck test contracts-check test-integration test-e2e test-e2e-stack build security-scan seed migrate reset-db compose-config verify verify-phase1
+.PHONY: help setup dev stop format format-check lint typecheck test contracts-check test-integration test-e2e test-e2e-stack build security-scan seed migrate reset-db compose-config verify verify-phase1 verify-phase2
 
 help:
 	@echo "CareerOS development targets"
@@ -20,6 +20,7 @@ help:
 	@echo "  contracts-check  Verify OpenAPI and generated TypeScript contract drift"
 	@echo "  verify           Run the Phase 0 quality, contract, build, and runtime gate"
 	@echo "  verify-phase1    Run the platform gate and isolated Phase 1 browser journey"
+	@echo "  verify-phase2    Run all platform gates and the isolated Resume Health journey"
 
 setup:
 	@test -f .env || cp .env.example .env
@@ -72,7 +73,7 @@ contracts-check:
 	pnpm contracts:check
 
 test-integration:
-	docker compose up --build --detach --wait --wait-timeout 180
+	docker compose up --build --detach --wait --wait-timeout 300
 	docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
 	docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
 	docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini current
@@ -102,6 +103,7 @@ security-scan:
 	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume careeros-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d careeros-api:latest --config /etc/grype.yaml --fail-on high --only-fixed
 	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume careeros-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d careeros-worker:latest --config /etc/grype.yaml --fail-on high --only-fixed
 	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume careeros-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d careeros-web:latest --config /etc/grype.yaml --fail-on high --only-fixed
+	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume careeros-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd --config /etc/grype.yaml --fail-on high --only-fixed
 
 seed:
 	pnpm seed
@@ -119,3 +121,5 @@ compose-config:
 verify: contracts-check format-check lint typecheck test build compose-config test-integration
 
 verify-phase1: verify test-e2e-stack
+
+verify-phase2: verify test-e2e-stack

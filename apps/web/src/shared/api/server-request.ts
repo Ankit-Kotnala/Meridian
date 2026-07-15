@@ -2,6 +2,8 @@ import { cookies } from "next/headers";
 
 import type { paths } from "@careeros/contracts";
 
+import type { GeneratedApiPath } from "./api-path";
+
 function serverApiOrigin(): string {
   const value = new URL(process.env.API_BASE_URL ?? "http://127.0.0.1:8000");
   if (
@@ -15,7 +17,9 @@ function serverApiOrigin(): string {
   return value.origin;
 }
 
-export async function serverApiFetch(path: keyof paths): Promise<Response> {
+export async function serverApiFetch(
+  path: keyof paths | GeneratedApiPath,
+): Promise<Response> {
   const store = await cookies();
   const cookieHeader = ["careeros_session", "careeros_refresh", "careeros_csrf"]
     .map((name) => store.get(name))

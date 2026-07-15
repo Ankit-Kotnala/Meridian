@@ -16,6 +16,8 @@ export POSTGRES_PORT="${POSTGRES_PORT:-55433}"
 export REDIS_PORT="${REDIS_PORT:-6380}"
 export MINIO_API_PORT="${MINIO_API_PORT:-19000}"
 export MINIO_CONSOLE_PORT="${MINIO_CONSOLE_PORT:-19001}"
+export CLAMAV_PORT="${CLAMAV_PORT:-13310}"
+export CLAMAV_PORT_INTERNAL=3310
 export MAILPIT_SMTP_PORT="${MAILPIT_SMTP_PORT:-11025}"
 export MAILPIT_HTTP_PORT="${MAILPIT_HTTP_PORT:-18025}"
 export API_PORT="${API_PORT:-18000}"
@@ -33,15 +35,36 @@ export MINIO_ROOT_PASSWORD=change-me-local-only
 export S3_ENDPOINT_URL=http://minio:9000
 export S3_REGION=us-east-1
 export S3_BUCKET=careeros-documents
-export S3_ACCESS_KEY_ID=careeros-local
-export S3_SECRET_ACCESS_KEY=change-me-local-only
+export S3_APP_ACCESS_KEY_ID=careeros-e2e-app
+export S3_APP_SECRET_ACCESS_KEY=change-me-local-only-e2e-storage-secret
 export S3_USE_SSL=false
+export MALWARE_SCANNER_PROVIDER=clamav
+export CLAMAV_HOST=clamav
+export CLAMAV_TIMEOUT_SECONDS=30
+export DOCUMENT_TEMP_ROOT=/tmp/careeros
+export DOCUMENT_MAX_BYTES=10485760
+export DOCUMENT_MAX_PAGES=20
+export DOCUMENT_MAX_ARCHIVE_ENTRIES=256
+export DOCUMENT_MAX_UNCOMPRESSED_BYTES=52428800
+export DOCUMENT_MAX_COMPRESSION_RATIO=100
+export DOCUMENT_MAX_EXTRACTED_CHARACTERS=500000
+export DOCUMENT_MAX_EXTRACTED_BLOCKS=5000
+export DOCUMENT_MAX_SERIALIZED_ARTIFACT_BYTES=2097152
+export RESUME_JOB_RECONCILIATION_INTERVAL_SECONDS=60
+export RESUME_JOB_RECONCILIATION_STALE_SECONDS=300
+export DOCUMENT_PROCESSING_TIMEOUT_SECONDS=120
 export API_BASE_URL=http://api:8000
 export PUBLIC_APP_URL="http://127.0.0.1:${WEB_PORT}"
 export NEXT_PUBLIC_API_BASE_URL="http://127.0.0.1:${API_PORT}"
+export S3_PUBLIC_ENDPOINT_URL="http://127.0.0.1:${MINIO_API_PORT}"
+export S3_ALLOWED_ORIGIN="$PUBLIC_APP_URL"
+export NEXT_PUBLIC_UPLOAD_ORIGIN="$S3_PUBLIC_ENDPOINT_URL"
 export ALLOWED_ORIGINS="[\"$PUBLIC_APP_URL\"]"
 export CORS_ORIGINS="[\"$PUBLIC_APP_URL\"]"
 export AUTH_TOKEN_PEPPER="${CAREEROS_E2E_AUTH_TOKEN_PEPPER:-change-me-local-only-e2e-auth-token-pepper}"
+export RESUME_CAPABILITY_PEPPER=change-me-local-only-e2e-resume-capability-pepper
+export BFF_CLIENT_SIGNAL_SECRET=change-me-local-only-e2e-bff-client-signal-secret
+export API_BFF_CLIENT_SIGNAL_SECRET=change-me-local-only-e2e-bff-client-signal-secret
 export COOKIE_SECURE=false
 export EMAIL_PROVIDER=smtp
 export EMAIL_FROM_ADDRESS=no-reply@careeros.local
@@ -60,10 +83,21 @@ export PLAYWRIGHT_BASE_URL="$PUBLIC_APP_URL"
 export PLAYWRIGHT_MAILPIT_URL="http://127.0.0.1:${MAILPIT_HTTP_PORT}"
 export CAREEROS_TEST_DATABASE_URL="postgresql+asyncpg://careeros:change-me-local-only@127.0.0.1:${POSTGRES_PORT}/careeros"
 export CAREEROS_TEST_REDIS_URL="redis://127.0.0.1:${REDIS_PORT}/15"
+export CAREEROS_TEST_S3_ENDPOINT_URL="$S3_PUBLIC_ENDPOINT_URL"
+export CAREEROS_TEST_S3_REGION="$S3_REGION"
+export CAREEROS_TEST_S3_BUCKET="$S3_BUCKET"
+export CAREEROS_TEST_S3_ACCESS_KEY_ID="$S3_APP_ACCESS_KEY_ID"
+export CAREEROS_TEST_S3_SECRET_ACCESS_KEY="$S3_APP_SECRET_ACCESS_KEY"
+export CAREEROS_TEST_CLAMAV_HOST=127.0.0.1
+export CAREEROS_TEST_CLAMAV_PORT="$CLAMAV_PORT"
 
 cleanup() {
   status=$?
   trap - EXIT HUP INT TERM
+  if [ "$status" -ne 0 ]; then
+    docker compose --project-name "$project_name" ps --all || true
+    docker compose --project-name "$project_name" logs --no-color --tail 200 || true
+  fi
   if ! docker compose --project-name "$project_name" down --volumes --remove-orphans --rmi local; then
     echo "Isolated E2E cleanup failed for Compose project $project_name." >&2
     if [ "$status" -eq 0 ]; then
@@ -81,7 +115,7 @@ cd "$repository_root"
 
 docker compose --project-name "$project_name" config --quiet
 docker compose --project-name "$project_name" build api worker web
-docker compose --project-name "$project_name" up --detach --wait --wait-timeout 180 postgres redis minio mailpit
+docker compose --project-name "$project_name" up --detach --wait --wait-timeout 300 postgres redis minio mailpit clamav
 docker compose --project-name "$project_name" up --detach minio-init
 init_container=$(docker compose --project-name "$project_name" ps --all --quiet minio-init)
 if [ -z "$init_container" ]; then
@@ -94,6 +128,83 @@ if [ "$init_exit" -ne 0 ]; then
   exit "$init_exit"
 fi
 docker compose --project-name "$project_name" run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
+docker compose --project-name "$project_name" run --rm --no-deps api alembic -c packages/backend/alembic.ini downgrade 20260715_0002
+docker compose --project-name "$project_name" run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
 (cd packages/backend && uv run --package careeros-backend pytest tests/integration)
-docker compose --project-name "$project_name" up --detach --wait --wait-timeout 180 --no-deps api worker web
+docker compose --project-name "$project_name" up --detach --wait --wait-timeout 180 --no-deps api worker worker-scheduler web web-edge
+worker_container=$(docker compose --project-name "$project_name" ps --quiet worker)
+if [ -z "$worker_container" ]; then
+  echo "Compose did not create the document worker." >&2
+  exit 1
+fi
+scheduler_container=$(docker compose --project-name "$project_name" ps --quiet worker-scheduler)
+if [ -z "$scheduler_container" ]; then
+  echo "Compose did not create the worker scheduler." >&2
+  exit 1
+fi
+scheduler_health=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$scheduler_container")
+if [ "$scheduler_health" != "healthy" ]; then
+  echo "Worker scheduler health is $scheduler_health, expected healthy Celery Beat process state." >&2
+  exit 1
+fi
+advertised_pages=$(curl --fail --silent "http://127.0.0.1:${WEB_PORT}/api/v1/guest/resume-health/upload-policy" | node -e 'let input=""; process.stdin.on("data", chunk => input += chunk); process.stdin.on("end", () => process.stdout.write(String(JSON.parse(input).maxPages)));')
+worker_pages=$(docker exec "$worker_container" python -c 'from careeros_worker.config import get_settings; print(get_settings().document_max_pages)')
+if [ "$advertised_pages" != "$DOCUMENT_MAX_PAGES" ] || [ "$worker_pages" != "$advertised_pages" ]; then
+  echo "API/worker page-limit policy mismatch: configured=$DOCUMENT_MAX_PAGES advertised=$advertised_pages worker=$worker_pages" >&2
+  exit 1
+fi
+if [ "$(docker inspect --format '{{.HostConfig.ReadonlyRootfs}}' "$worker_container")" != "true" ]; then
+  echo "Document worker root filesystem is not read-only." >&2
+  exit 1
+fi
+if ! docker inspect --format '{{json .HostConfig.CapDrop}}' "$worker_container" | grep -q '"ALL"'; then
+  echo "Document worker did not drop all Linux capabilities." >&2
+  exit 1
+fi
+if ! docker inspect --format '{{json .HostConfig.SecurityOpt}}' "$worker_container" | grep -q 'no-new-privileges'; then
+  echo "Document worker does not enforce no-new-privileges." >&2
+  exit 1
+fi
+if [ "$(docker inspect --format '{{.HostConfig.PidsLimit}}' "$worker_container")" -le 0 ] ||
+   [ "$(docker inspect --format '{{.HostConfig.Memory}}' "$worker_container")" -le 0 ] ||
+   [ "$(docker inspect --format '{{.HostConfig.NanoCpus}}' "$worker_container")" -le 0 ]; then
+  echo "Document worker CPU, memory, and PID limits must be explicit." >&2
+  exit 1
+fi
+if ! docker inspect --format '{{json .HostConfig.Tmpfs}}' "$worker_container" | grep -q '"/tmp/careeros"'; then
+  echo "Document worker requires a bounded private temporary filesystem." >&2
+  exit 1
+fi
+if [ "$(docker inspect --format '{{len .NetworkSettings.Networks}}' "$worker_container")" -ne 1 ]; then
+  echo "Document worker must attach only to the internal backend network." >&2
+  exit 1
+fi
+anonymous_status=$(curl --silent --output /dev/null --write-out '%{http_code}' "http://127.0.0.1:${MINIO_API_PORT}/${S3_BUCKET}")
+if [ "$anonymous_status" != "403" ]; then
+  echo "Private document bucket returned HTTP $anonymous_status to an anonymous request." >&2
+  exit 1
+fi
+docker compose --project-name "$project_name" stop postgres
+not_ready_status=$(curl --silent --output /dev/null --write-out '%{http_code}' "http://127.0.0.1:${API_PORT}/ready")
+if [ "$not_ready_status" != "503" ]; then
+  echo "API readiness returned HTTP $not_ready_status while PostgreSQL was unavailable." >&2
+  exit 1
+fi
+docker compose --project-name "$project_name" start postgres
+docker compose --project-name "$project_name" up --detach --wait --wait-timeout 120 postgres
+recovered=false
+attempt=0
+while [ "$attempt" -lt 30 ]; do
+  recovered_status=$(curl --silent --output /dev/null --write-out '%{http_code}' "http://127.0.0.1:${API_PORT}/ready")
+  if [ "$recovered_status" = "200" ]; then
+    recovered=true
+    break
+  fi
+  attempt=$((attempt + 1))
+  sleep 2
+done
+if [ "$recovered" != "true" ]; then
+  echo "API readiness did not recover after PostgreSQL restarted." >&2
+  exit 1
+fi
 pnpm test:e2e

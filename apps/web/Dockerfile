@@ -16,6 +16,8 @@ COPY packages/ui/package.json ./packages/ui/package.json
 RUN pnpm install --frozen-lockfile --filter @careeros/web...
 
 FROM base AS builder
+ARG NEXT_PUBLIC_UPLOAD_ORIGIN=http://localhost:9000
+ENV NEXT_PUBLIC_UPLOAD_ORIGIN=$NEXT_PUBLIC_UPLOAD_ORIGIN
 COPY --from=dependencies /workspace /workspace
 COPY apps/web ./apps/web
 COPY packages/contracts ./packages/contracts

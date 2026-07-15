@@ -9,6 +9,7 @@ from fastapi import APIRouter, Request, Response, status
 from careeros_api.config import Settings
 from careeros_api.constants import SCORING_DISCLAIMER
 from careeros_api.identity_routes import router as identity_router
+from careeros_api.resume_health_routes import router as resume_health_router
 from careeros_api.schemas import (
     ComponentReadiness,
     HealthResponse,
@@ -19,6 +20,7 @@ from careeros_api.schemas import (
 logger = structlog.get_logger(__name__)
 router = APIRouter()
 router.include_router(identity_router)
+router.include_router(resume_health_router)
 
 
 def _settings(request: Request) -> Settings:

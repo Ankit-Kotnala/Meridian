@@ -18,6 +18,235 @@
         "title": "AuthResponse",
         "type": "object"
       },
+      "CanonicalFieldResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "confidence": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "originalValue": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Originalvalue"
+          },
+          "sourceSpans": {
+            "items": {
+              "$ref": "#/components/schemas/SourceSpanResponse"
+            },
+            "title": "Sourcespans",
+            "type": "array"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "value",
+          "originalValue",
+          "confidence",
+          "sourceSpans"
+        ],
+        "title": "CanonicalFieldResponse",
+        "type": "object"
+      },
+      "CanonicalFieldUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "value": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "value"
+        ],
+        "title": "CanonicalFieldUpdate",
+        "type": "object"
+      },
+      "CanonicalResumeResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "correctedByUser": {
+            "title": "Correctedbyuser",
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "documentId": {
+            "format": "uuid",
+            "title": "Documentid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "schemaVersion": {
+            "title": "Schemaversion",
+            "type": "string"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/CanonicalSectionResponse"
+            },
+            "title": "Sections",
+            "type": "array"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/ParserWarningResponse"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "documentId",
+          "schemaVersion",
+          "version",
+          "sections",
+          "warnings",
+          "correctedByUser",
+          "createdAt"
+        ],
+        "title": "CanonicalResumeResponse",
+        "type": "object"
+      },
+      "CanonicalResumeUpdateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/CanonicalFieldUpdate"
+            },
+            "maxItems": 250,
+            "minItems": 1,
+            "title": "Fields",
+            "type": "array"
+          }
+        },
+        "required": [
+          "fields"
+        ],
+        "title": "CanonicalResumeUpdateRequest",
+        "type": "object"
+      },
+      "CanonicalSectionResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/CanonicalFieldResponse"
+            },
+            "title": "Fields",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "contact",
+              "summary",
+              "experience",
+              "education",
+              "skills",
+              "projects",
+              "certifications",
+              "other"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "fields"
+        ],
+        "title": "CanonicalSectionResponse",
+        "type": "object"
+      },
+      "ClaimGuestDocumentRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "consent": {
+            "const": true,
+            "title": "Consent",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "consent"
+        ],
+        "title": "ClaimGuestDocumentRequest",
+        "type": "object"
+      },
+      "ClaimGuestDocumentResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "accessMode": {
+            "const": "account",
+            "default": "account",
+            "title": "Accessmode",
+            "type": "string"
+          },
+          "documentId": {
+            "format": "uuid",
+            "title": "Documentid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "documentId"
+        ],
+        "title": "ClaimGuestDocumentResponse",
+        "type": "object"
+      },
       "ComponentReadiness": {
         "additionalProperties": false,
         "properties": {
@@ -126,6 +355,240 @@
         "title": "CsrfResponse",
         "type": "object"
       },
+      "DocumentListResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentSummaryResponse"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "DocumentListResponse",
+        "type": "object"
+      },
+      "DocumentResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "canonicalResume": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CanonicalResumeResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "currentCanonicalResumeId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currentcanonicalresumeid"
+          },
+          "displayFilename": {
+            "title": "Displayfilename",
+            "type": "string"
+          },
+          "expiresAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiresat"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "latestAnalysisId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latestanalysisid"
+          },
+          "mediaType": {
+            "enum": [
+              "application/pdf",
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            ],
+            "title": "Mediatype",
+            "type": "string"
+          },
+          "sizeBytes": {
+            "title": "Sizebytes",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "quarantined",
+              "processing",
+              "reviewReady",
+              "failed",
+              "cancelled",
+              "deleting"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "title": "Updatedat",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "displayFilename",
+          "mediaType",
+          "sizeBytes",
+          "status",
+          "version",
+          "currentCanonicalResumeId",
+          "latestAnalysisId",
+          "createdAt",
+          "updatedAt",
+          "expiresAt",
+          "canonicalResume"
+        ],
+        "title": "DocumentResponse",
+        "type": "object"
+      },
+      "DocumentSummaryResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "currentCanonicalResumeId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currentcanonicalresumeid"
+          },
+          "displayFilename": {
+            "title": "Displayfilename",
+            "type": "string"
+          },
+          "expiresAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiresat"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "latestAnalysisId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latestanalysisid"
+          },
+          "mediaType": {
+            "enum": [
+              "application/pdf",
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            ],
+            "title": "Mediatype",
+            "type": "string"
+          },
+          "sizeBytes": {
+            "title": "Sizebytes",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "quarantined",
+              "processing",
+              "reviewReady",
+              "failed",
+              "cancelled",
+              "deleting"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "title": "Updatedat",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "displayFilename",
+          "mediaType",
+          "sizeBytes",
+          "status",
+          "version",
+          "currentCanonicalResumeId",
+          "latestAnalysisId",
+          "createdAt",
+          "updatedAt",
+          "expiresAt"
+        ],
+        "title": "DocumentSummaryResponse",
+        "type": "object"
+      },
       "EmailRequest": {
         "additionalProperties": false,
         "properties": {
@@ -139,6 +602,25 @@
           "email"
         ],
         "title": "EmailRequest",
+        "type": "object"
+      },
+      "FinalizeUploadResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "documentId": {
+            "format": "uuid",
+            "title": "Documentid",
+            "type": "string"
+          },
+          "job": {
+            "$ref": "#/components/schemas/ProcessingJobResponse"
+          }
+        },
+        "required": [
+          "documentId",
+          "job"
+        ],
+        "title": "FinalizeUploadResponse",
         "type": "object"
       },
       "GenericMessage": {
@@ -178,6 +660,43 @@
           "version"
         ],
         "title": "HealthResponse",
+        "type": "object"
+      },
+      "JobAcceptedResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "job": {
+            "$ref": "#/components/schemas/ProcessingJobResponse"
+          }
+        },
+        "required": [
+          "job"
+        ],
+        "title": "JobAcceptedResponse",
+        "type": "object"
+      },
+      "JobErrorResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "retryable": {
+            "title": "Retryable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "retryable",
+          "message"
+        ],
+        "title": "JobErrorResponse",
         "type": "object"
       },
       "LoginRequest": {
@@ -853,6 +1372,61 @@
         "title": "OnboardingUpdateRequest",
         "type": "object"
       },
+      "ParserWarningResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "fieldId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fieldid"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ParserWarningResponse",
+        "type": "object"
+      },
+      "PlainTextResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "documentId": {
+            "format": "uuid",
+            "title": "Documentid",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "truncated": {
+            "default": false,
+            "title": "Truncated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "documentId",
+          "text"
+        ],
+        "title": "PlainTextResponse",
+        "type": "object"
+      },
       "ProblemField": {
         "additionalProperties": false,
         "properties": {
@@ -928,6 +1502,144 @@
         "title": "ProblemResponse",
         "type": "object"
       },
+      "ProcessingJobResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "attempts": {
+            "minimum": 0.0,
+            "title": "Attempts",
+            "type": "integer"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "documentId": {
+            "format": "uuid",
+            "title": "Documentid",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobErrorResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "jobType": {
+            "enum": [
+              "parse",
+              "analyze",
+              "delete"
+            ],
+            "title": "Jobtype",
+            "type": "string"
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress"
+          },
+          "resultId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resultid"
+          },
+          "resultType": {
+            "anyOf": [
+              {
+                "enum": [
+                  "document",
+                  "analysis"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resulttype"
+          },
+          "resultUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resulturl"
+          },
+          "stage": {
+            "enum": [
+              "queued",
+              "admission",
+              "malwareScan",
+              "extraction",
+              "canonicalization",
+              "analysis",
+              "complete",
+              "cleanup"
+            ],
+            "title": "Stage",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled",
+              "deadLettered"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "title": "Updatedat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "documentId",
+          "jobType",
+          "status",
+          "stage",
+          "attempts",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "ProcessingJobResponse",
+        "type": "object"
+      },
       "ReadinessResponse": {
         "additionalProperties": false,
         "properties": {
@@ -962,6 +1674,61 @@
           "checks"
         ],
         "title": "ReadinessResponse",
+        "type": "object"
+      },
+      "ReadingOrderBlockResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "index": {
+            "minimum": 0.0,
+            "title": "Index",
+            "type": "integer"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "index",
+          "page",
+          "text"
+        ],
+        "title": "ReadingOrderBlockResponse",
+        "type": "object"
+      },
+      "ReadingOrderResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/ReadingOrderBlockResponse"
+            },
+            "title": "Blocks",
+            "type": "array"
+          },
+          "documentId": {
+            "format": "uuid",
+            "title": "Documentid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "documentId",
+          "blocks"
+        ],
+        "title": "ReadingOrderResponse",
         "type": "object"
       },
       "RegisterRequest": {
@@ -1014,6 +1781,474 @@
           "newPassword"
         ],
         "title": "ResetPasswordRequest",
+        "type": "object"
+      },
+      "ResumeFindingResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action"
+          },
+          "category": {
+            "enum": [
+              "issue",
+              "quick_win",
+              "section_feedback",
+              "parser_warning"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section"
+          },
+          "severity": {
+            "enum": [
+              "info",
+              "warning",
+              "critical"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "severity",
+          "category",
+          "title",
+          "description",
+          "section",
+          "action"
+        ],
+        "title": "ResumeFindingResponse",
+        "type": "object"
+      },
+      "ResumeHealthComponentResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "contribution": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Contribution",
+            "type": "integer"
+          },
+          "explanation": {
+            "title": "Explanation",
+            "type": "string"
+          },
+          "featureContributions": {
+            "items": {
+              "$ref": "#/components/schemas/ResumeHealthFeatureContributionResponse"
+            },
+            "maxItems": 4,
+            "title": "Featurecontributions",
+            "type": "array"
+          },
+          "key": {
+            "enum": [
+              "machine_readability",
+              "recruiter_clarity",
+              "content_impact",
+              "achievement_strength",
+              "structure",
+              "consistency_truth"
+            ],
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "rawContributionBasisPoints": {
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Rawcontributionbasispoints",
+            "type": "integer"
+          },
+          "rawScoreBasisPoints": {
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Rawscorebasispoints",
+            "type": "integer"
+          },
+          "score": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Score",
+            "type": "integer"
+          },
+          "weight": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Weight",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "score",
+          "rawScoreBasisPoints",
+          "weight",
+          "contribution",
+          "rawContributionBasisPoints",
+          "explanation",
+          "featureContributions"
+        ],
+        "title": "ResumeHealthComponentResponse",
+        "type": "object"
+      },
+      "ResumeHealthFeatureContributionResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "contribution": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Contribution",
+            "type": "integer"
+          },
+          "key": {
+            "enum": [
+              "searchable_text",
+              "parser_confidence",
+              "reading_order_integrity",
+              "recognized_section_ratio",
+              "concise_block_ratio",
+              "section_breadth",
+              "chronology_coverage",
+              "action_bullet_ratio",
+              "outcome_bullet_ratio",
+              "duplicate_content_integrity",
+              "page_fit",
+              "parser_warning_integrity"
+            ],
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "rawContributionBasisPoints": {
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Rawcontributionbasispoints",
+            "type": "integer"
+          },
+          "rawScoreBasisPoints": {
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Rawscorebasispoints",
+            "type": "integer"
+          },
+          "rawWeightBasisPoints": {
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Rawweightbasispoints",
+            "type": "integer"
+          },
+          "score": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Score",
+            "type": "integer"
+          },
+          "weight": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Weight",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "score",
+          "rawScoreBasisPoints",
+          "weight",
+          "rawWeightBasisPoints",
+          "contribution",
+          "rawContributionBasisPoints"
+        ],
+        "title": "ResumeHealthFeatureContributionResponse",
+        "type": "object"
+      },
+      "ResumeHealthFeatureValueResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "displayValue": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Displayvalue",
+            "type": "string"
+          },
+          "key": {
+            "enum": [
+              "text_characters",
+              "page_count",
+              "image_only",
+              "section_count",
+              "recognized_section_count",
+              "block_count",
+              "concise_block_count",
+              "bullet_count",
+              "action_bullet_count",
+              "outcome_bullet_count",
+              "duplicate_block_count",
+              "chronology_signal_count",
+              "warning_count",
+              "reading_order_violation_count",
+              "average_confidence_basis_points"
+            ],
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "count",
+              "boolean",
+              "percentage"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "rawValue": {
+            "anyOf": [
+              {
+                "maximum": 100000000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              }
+            ],
+            "title": "Rawvalue"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "kind",
+          "rawValue",
+          "displayValue"
+        ],
+        "title": "ResumeHealthFeatureValueResponse",
+        "type": "object"
+      },
+      "ResumeHealthReportResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "canonicalResumeId": {
+            "format": "uuid",
+            "title": "Canonicalresumeid",
+            "type": "string"
+          },
+          "components": {
+            "items": {
+              "$ref": "#/components/schemas/ResumeHealthComponentResponse"
+            },
+            "title": "Components",
+            "type": "array"
+          },
+          "computedAt": {
+            "format": "date-time",
+            "title": "Computedat",
+            "type": "string"
+          },
+          "configurationVersion": {
+            "title": "Configurationversion",
+            "type": "string"
+          },
+          "disclaimer": {
+            "title": "Disclaimer",
+            "type": "string"
+          },
+          "documentId": {
+            "format": "uuid",
+            "title": "Documentid",
+            "type": "string"
+          },
+          "engineVersion": {
+            "title": "Engineversion",
+            "type": "string"
+          },
+          "expiresAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiresat"
+          },
+          "featureSchemaVersion": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Featureschemaversion",
+            "type": "string"
+          },
+          "featureSetHash": {
+            "title": "Featuresethash",
+            "type": "string"
+          },
+          "featureValues": {
+            "items": {
+              "$ref": "#/components/schemas/ResumeHealthFeatureValueResponse"
+            },
+            "maxItems": 15,
+            "title": "Featurevalues",
+            "type": "array"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/ResumeFindingResponse"
+            },
+            "title": "Findings",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "rawScoreBasisPoints": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rawscorebasispoints"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "scoreBand": {
+            "anyOf": [
+              {
+                "enum": [
+                  "needsAttention",
+                  "developing",
+                  "strong"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scoreband"
+          },
+          "scoreType": {
+            "const": "resume_health",
+            "default": "resume_health",
+            "title": "Scoretype",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "insufficientData",
+              "complete"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "documentId",
+          "canonicalResumeId",
+          "status",
+          "score",
+          "rawScoreBasisPoints",
+          "scoreBand",
+          "engineVersion",
+          "configurationVersion",
+          "featureSchemaVersion",
+          "featureValues",
+          "featureSetHash",
+          "components",
+          "findings",
+          "warnings",
+          "disclaimer",
+          "computedAt",
+          "expiresAt"
+        ],
+        "title": "ResumeHealthReportResponse",
+        "type": "object"
+      },
+      "ResumeHealthRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "documentId": {
+            "format": "uuid",
+            "title": "Documentid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "documentId"
+        ],
+        "title": "ResumeHealthRequest",
         "type": "object"
       },
       "SessionInfo": {
@@ -1115,6 +2350,172 @@
           "expiresAt"
         ],
         "title": "SessionSummaryResponse",
+        "type": "object"
+      },
+      "SourceSpanResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "end": {
+            "title": "End",
+            "type": "integer"
+          },
+          "excerpt": {
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "start": {
+            "title": "Start",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "page",
+          "start",
+          "end",
+          "excerpt"
+        ],
+        "title": "SourceSpanResponse",
+        "type": "object"
+      },
+      "UploadIntentRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "displayFilename": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Displayfilename",
+            "type": "string"
+          },
+          "expectedSizeBytes": {
+            "minimum": 1.0,
+            "title": "Expectedsizebytes",
+            "type": "integer"
+          },
+          "mediaType": {
+            "enum": [
+              "application/pdf",
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            ],
+            "title": "Mediatype",
+            "type": "string"
+          },
+          "purpose": {
+            "const": "resume_health",
+            "default": "resume_health",
+            "title": "Purpose",
+            "type": "string"
+          }
+        },
+        "required": [
+          "displayFilename",
+          "expectedSizeBytes",
+          "mediaType"
+        ],
+        "title": "UploadIntentRequest",
+        "type": "object"
+      },
+      "UploadIntentResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "expiresAt": {
+            "format": "date-time",
+            "title": "Expiresat",
+            "type": "string"
+          },
+          "guestExpiresAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guestexpiresat"
+          },
+          "headers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Headers",
+            "type": "object"
+          },
+          "method": {
+            "const": "PUT",
+            "default": "PUT",
+            "title": "Method",
+            "type": "string"
+          },
+          "uploadId": {
+            "format": "uuid",
+            "title": "Uploadid",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "uploadId",
+          "url",
+          "headers",
+          "expiresAt"
+        ],
+        "title": "UploadIntentResponse",
+        "type": "object"
+      },
+      "UploadPolicyResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "acceptedMediaTypes": {
+            "items": {
+              "enum": [
+                "application/pdf",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              ],
+              "type": "string"
+            },
+            "title": "Acceptedmediatypes",
+            "type": "array"
+          },
+          "guestRetentionHours": {
+            "title": "Guestretentionhours",
+            "type": "integer"
+          },
+          "maxBytes": {
+            "title": "Maxbytes",
+            "type": "integer"
+          },
+          "maxPages": {
+            "title": "Maxpages",
+            "type": "integer"
+          },
+          "uploadIntentTtlSeconds": {
+            "title": "Uploadintentttlseconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "acceptedMediaTypes",
+          "maxBytes",
+          "maxPages",
+          "guestRetentionHours",
+          "uploadIntentTtlSeconds"
+        ],
+        "title": "UploadPolicyResponse",
         "type": "object"
       },
       "VerificationResponse": {
@@ -3380,6 +4781,1873 @@
         ]
       }
     },
+    "/api/v1/documents": {
+      "get": {
+        "operationId": "listResumeDocuments",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "careeros_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "List Documents",
+        "tags": [
+          "Resume Health"
+        ]
+      }
+    },
+    "/api/v1/documents/{document_id}": {
+      "delete": {
+        "operationId": "deleteResumeDocument",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Quoted positive signed integer resource version, maximum 2147483647.",
+            "in": "header",
+            "name": "If-Match",
+            "required": true,
+            "schema": {
+              "description": "Quoted positive signed integer resource version, maximum 2147483647.",
+              "maxLength": 12,
+              "minLength": 3,
+              "pattern": "^\"[0-9]{1,10}\"$",
+              "title": "If-Match",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Stable 8-128 character retry key using letters, digits, dot, underscore, colon, or hyphen.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Stable 8-128 character retry key using letters, digits, dot, underscore, colon, or hyphen.",
+              "maxLength": 128,
+              "minLength": 8,
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$",
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_csrf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Session"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobAcceptedResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "Delete Document",
+        "tags": [
+          "Resume Health"
+        ]
+      },
+      "get": {
+        "operationId": "getResumeDocument",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "Get Document",
+        "tags": [
+          "Resume Health"
+        ]
+      }
+    },
+    "/api/v1/documents/{document_id}/canonical-resume": {
+      "patch": {
+        "operationId": "correctCanonicalResume",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Quoted positive signed integer resource version, maximum 2147483647.",
+            "in": "header",
+            "name": "If-Match",
+            "required": true,
+            "schema": {
+              "description": "Quoted positive signed integer resource version, maximum 2147483647.",
+              "maxLength": 12,
+              "minLength": 3,
+              "pattern": "^\"[0-9]{1,10}\"$",
+              "title": "If-Match",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_csrf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CanonicalResumeUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CanonicalResumeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "Correct Canonical Resume",
+        "tags": [
+          "Resume Health"
+        ]
+      }
+    },
+    "/api/v1/documents/{document_id}/plain-text": {
+      "get": {
+        "operationId": "getResumeDocumentPlainText",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlainTextResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "Get Plain Text",
+        "tags": [
+          "Resume Health"
+        ]
+      }
+    },
+    "/api/v1/documents/{document_id}/reading-order": {
+      "get": {
+        "operationId": "getResumeDocumentReadingOrder",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadingOrderResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "Get Reading Order",
+        "tags": [
+          "Resume Health"
+        ]
+      }
+    },
+    "/api/v1/documents/{document_id}/status": {
+      "get": {
+        "operationId": "getResumeDocumentStatus",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentSummaryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "Get Document Status",
+        "tags": [
+          "Resume Health"
+        ]
+      }
+    },
+    "/api/v1/guest/documents/{document_id}": {
+      "delete": {
+        "operationId": "deleteGuestResumeDocument",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Quoted positive signed integer resource version, maximum 2147483647.",
+            "in": "header",
+            "name": "If-Match",
+            "required": true,
+            "schema": {
+              "description": "Quoted positive signed integer resource version, maximum 2147483647.",
+              "maxLength": 12,
+              "minLength": 3,
+              "pattern": "^\"[0-9]{1,10}\"$",
+              "title": "If-Match",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Stable 8-128 character retry key using letters, digits, dot, underscore, colon, or hyphen.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Stable 8-128 character retry key using letters, digits, dot, underscore, colon, or hyphen.",
+              "maxLength": 128,
+              "minLength": 8,
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$",
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Guest-CSRF",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Guest-Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_guest_csrf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Guest Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_guest_capability",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Guest Capability"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobAcceptedResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "Delete Guest Document",
+        "tags": [
+          "Resume Health"
+        ]
+      },
+      "get": {
+        "operationId": "getGuestResumeDocument",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_guest_capability",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Guest Capability"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "Get Guest Document",
+        "tags": [
+          "Resume Health"
+        ]
+      }
+    },
+    "/api/v1/guest/documents/{document_id}/canonical-resume": {
+      "patch": {
+        "operationId": "correctGuestCanonicalResume",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Quoted positive signed integer resource version, maximum 2147483647.",
+            "in": "header",
+            "name": "If-Match",
+            "required": true,
+            "schema": {
+              "description": "Quoted positive signed integer resource version, maximum 2147483647.",
+              "maxLength": 12,
+              "minLength": 3,
+              "pattern": "^\"[0-9]{1,10}\"$",
+              "title": "If-Match",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Guest-CSRF",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Guest-Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_guest_csrf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Guest Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_guest_capability",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Guest Capability"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CanonicalResumeUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CanonicalResumeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "Correct Guest Canonical Resume",
+        "tags": [
+          "Resume Health"
+        ]
+      }
+    },
+    "/api/v1/guest/documents/{document_id}/claim": {
+      "post": {
+        "operationId": "claimGuestResumeDocument",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_csrf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Session"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_guest_capability",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Guest Capability"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimGuestDocumentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimGuestDocumentResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "Claim Guest Document",
+        "tags": [
+          "Resume Health"
+        ]
+      }
+    },
+    "/api/v1/guest/documents/{document_id}/plain-text": {
+      "get": {
+        "operationId": "getGuestResumeDocumentPlainText",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_guest_capability",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Guest Capability"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlainTextResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "Get Guest Plain Text",
+        "tags": [
+          "Resume Health"
+        ]
+      }
+    },
+    "/api/v1/guest/documents/{document_id}/reading-order": {
+      "get": {
+        "operationId": "getGuestResumeDocumentReadingOrder",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_guest_capability",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Guest Capability"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadingOrderResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "Get Guest Reading Order",
+        "tags": [
+          "Resume Health"
+        ]
+      }
+    },
+    "/api/v1/guest/documents/{document_id}/status": {
+      "get": {
+        "operationId": "getGuestResumeDocumentStatus",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_guest_capability",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Guest Capability"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentSummaryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "Get Guest Document Status",
+        "tags": [
+          "Resume Health"
+        ]
+      }
+    },
+    "/api/v1/guest/processing-jobs/{job_id}": {
+      "get": {
+        "operationId": "getGuestProcessingJob",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_guest_capability",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Guest Capability"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcessingJobResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "Get Guest Processing Job",
+        "tags": [
+          "Resume Health"
+        ]
+      }
+    },
+    "/api/v1/guest/processing-jobs/{job_id}/cancel": {
+      "post": {
+        "operationId": "cancelGuestProcessingJob",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Stable 8-128 character retry key using letters, digits, dot, underscore, colon, or hyphen.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Stable 8-128 character retry key using letters, digits, dot, underscore, colon, or hyphen.",
+              "maxLength": 128,
+              "minLength": 8,
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$",
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Guest-CSRF",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Guest-Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_guest_csrf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Guest Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_guest_capability",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Guest Capability"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcessingJobResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "Cancel Guest Processing Job",
+        "tags": [
+          "Resume Health"
+        ]
+      }
+    },
+    "/api/v1/guest/resume-health": {
+      "post": {
+        "operationId": "startGuestResumeHealthAnalysis",
+        "parameters": [
+          {
+            "description": "Stable 8-128 character retry key using letters, digits, dot, underscore, colon, or hyphen.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Stable 8-128 character retry key using letters, digits, dot, underscore, colon, or hyphen.",
+              "maxLength": 128,
+              "minLength": 8,
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$",
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Guest-CSRF",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Guest-Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_guest_csrf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Guest Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_guest_capability",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Guest Capability"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResumeHealthRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobAcceptedResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "Start Guest Resume Health",
+        "tags": [
+          "Resume Health"
+        ]
+      }
+    },
+    "/api/v1/guest/resume-health/upload-policy": {
+      "get": {
+        "operationId": "getGuestResumeHealthUploadPolicy",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadPolicyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Guest Upload Policy",
+        "tags": [
+          "Resume Health"
+        ]
+      }
+    },
+    "/api/v1/guest/resume-health/{analysis_id}": {
+      "get": {
+        "operationId": "getGuestResumeHealthAnalysis",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "analysis_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Analysis Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_guest_capability",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Guest Capability"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumeHealthReportResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "Get Guest Resume Health",
+        "tags": [
+          "Resume Health"
+        ]
+      }
+    },
+    "/api/v1/guest/uploads/presign": {
+      "post": {
+        "operationId": "createGuestResumeUploadIntent",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_guest_capability",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Guest Capability"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_csrf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Csrf"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadIntentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadIntentResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "Create Guest Upload Intent",
+        "tags": [
+          "Resume Health"
+        ]
+      }
+    },
+    "/api/v1/guest/uploads/{upload_id}/finalize": {
+      "post": {
+        "operationId": "finalizeGuestResumeUpload",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "upload_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Upload Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Stable 8-128 character retry key using letters, digits, dot, underscore, colon, or hyphen.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Stable 8-128 character retry key using letters, digits, dot, underscore, colon, or hyphen.",
+              "maxLength": 128,
+              "minLength": 8,
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$",
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Guest-CSRF",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Guest-Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_guest_csrf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Guest Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_guest_capability",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Guest Capability"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinalizeUploadResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "Finalize Guest Upload",
+        "tags": [
+          "Resume Health"
+        ]
+      }
+    },
     "/api/v1/me": {
       "get": {
         "operationId": "getCurrentUser",
@@ -3973,6 +7241,617 @@
         "summary": "Update Onboarding",
         "tags": [
           "Identity"
+        ]
+      }
+    },
+    "/api/v1/processing-jobs/{job_id}": {
+      "get": {
+        "operationId": "getProcessingJob",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcessingJobResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "Get Processing Job",
+        "tags": [
+          "Resume Health"
+        ]
+      }
+    },
+    "/api/v1/processing-jobs/{job_id}/cancel": {
+      "post": {
+        "operationId": "cancelProcessingJob",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Stable 8-128 character retry key using letters, digits, dot, underscore, colon, or hyphen.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Stable 8-128 character retry key using letters, digits, dot, underscore, colon, or hyphen.",
+              "maxLength": 128,
+              "minLength": 8,
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$",
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_csrf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcessingJobResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "Cancel Processing Job",
+        "tags": [
+          "Resume Health"
+        ]
+      }
+    },
+    "/api/v1/resume-health": {
+      "post": {
+        "operationId": "startResumeHealthAnalysis",
+        "parameters": [
+          {
+            "description": "Stable 8-128 character retry key using letters, digits, dot, underscore, colon, or hyphen.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Stable 8-128 character retry key using letters, digits, dot, underscore, colon, or hyphen.",
+              "maxLength": 128,
+              "minLength": 8,
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$",
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_csrf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResumeHealthRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobAcceptedResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "Start Resume Health",
+        "tags": [
+          "Resume Health"
+        ]
+      }
+    },
+    "/api/v1/resume-health/upload-policy": {
+      "get": {
+        "operationId": "getResumeHealthUploadPolicy",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadPolicyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Account Upload Policy",
+        "tags": [
+          "Resume Health"
+        ]
+      }
+    },
+    "/api/v1/resume-health/{analysis_id}": {
+      "get": {
+        "operationId": "getResumeHealthAnalysis",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "analysis_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Analysis Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumeHealthReportResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "Get Resume Health",
+        "tags": [
+          "Resume Health"
+        ]
+      }
+    },
+    "/api/v1/uploads/presign": {
+      "post": {
+        "operationId": "createResumeUploadIntent",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_csrf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadIntentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadIntentResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "Create Account Upload Intent",
+        "tags": [
+          "Resume Health"
+        ]
+      }
+    },
+    "/api/v1/uploads/{upload_id}/finalize": {
+      "post": {
+        "operationId": "finalizeResumeUpload",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "upload_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Upload Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Stable 8-128 character retry key using letters, digits, dot, underscore, colon, or hyphen.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Stable 8-128 character retry key using letters, digits, dot, underscore, colon, or hyphen.",
+              "maxLength": 128,
+              "minLength": 8,
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$",
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_csrf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Session"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinalizeUploadResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Authentication or guest capability required"
+          },
+          "403": {
+            "description": "Mutation protection rejected the request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Resource or idempotency conflict"
+          },
+          "410": {
+            "description": "Guest or upload retention expired"
+          },
+          "422": {
+            "description": "Document or request rejected"
+          },
+          "503": {
+            "description": "Required processing dependency unavailable"
+          }
+        },
+        "summary": "Finalize Account Upload",
+        "tags": [
+          "Resume Health"
         ]
       }
     },

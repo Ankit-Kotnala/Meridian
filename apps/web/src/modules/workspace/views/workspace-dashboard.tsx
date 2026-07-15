@@ -8,20 +8,39 @@ import {
 import Link from "next/link";
 
 import {
+  Alert,
   Badge,
   buttonStyles,
   Card,
   CardHeader,
   cn,
   EmptyState,
+  ScoreRing,
 } from "@careeros/ui";
+
+type DashboardResumeHealth =
+  | { kind: "empty" }
+  | { kind: "error" }
+  | { filename: string; kind: "deleting" }
+  | { filename: string; kind: "failed" | "processing" }
+  | { documentId: string; filename: string; kind: "review" }
+  | {
+      analysisId: string;
+      disclaimer: string;
+      filename: string;
+      kind: "report";
+      score: number | null;
+      scoreBand: "developing" | "needsAttention" | "strong" | null;
+    };
 
 export function WorkspaceDashboard({
   displayName,
   onboardingComplete,
+  resumeHealth = { kind: "empty" },
 }: {
   displayName: string;
   onboardingComplete: boolean;
+  resumeHealth?: DashboardResumeHealth;
 }) {
   return (
     <main className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8" id="main-content">
@@ -34,8 +53,8 @@ export function WorkspaceDashboard({
           Welcome to your CareerOS workspace, {displayName}.
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-          This protected workspace contains only your account state. Career data
-          and scores appear only after you add real information in later phases.
+          This protected workspace shows only your persisted account and resume
+          state. No fictional metrics appear in authenticated views.
         </p>
       </header>
 
@@ -61,7 +80,8 @@ export function WorkspaceDashboard({
             </h2>
             <p className="mt-2 text-sm leading-6 text-muted">
               You can revisit your target role and working preferences at any
-              time. Resume upload is an explicit Phase 2 handoff.
+              time. Resume upload and parsed-field review are now available from
+              Resume Health.
             </p>
             <Link
               className={cn(buttonStyles.base, buttonStyles.secondary, "mt-5")}
@@ -78,15 +98,154 @@ export function WorkspaceDashboard({
             action={
               <FileHeart aria-hidden="true" className="size-5 text-primary" />
             }
-            description="No fictional metrics are shown in a protected account"
-            title="Resume workspace"
+            description="Real state from your latest private document"
+            title="Resume Health"
           />
           <div className="p-5 sm:p-6">
-            <EmptyState
-              className="min-h-72 border-dashed shadow-none"
-              description="Resume upload and health analysis begin in Phase 2. Until you provide a real document, CareerOS will not display sample scores or invented activity."
-              title="No resume data yet"
-            />
+            {resumeHealth.kind === "empty" && (
+              <EmptyState
+                action={
+                  <Link
+                    className={cn(buttonStyles.base, buttonStyles.primary)}
+                    href="/resume-health/account"
+                  >
+                    Upload a resume{" "}
+                    <ArrowRight aria-hidden="true" className="size-4" />
+                  </Link>
+                }
+                className="min-h-72 border-dashed shadow-none"
+                description="Upload a real PDF or DOCX, review uncertain parsing, and calculate an explainable internal measurement."
+                title="No resume data yet"
+              />
+            )}
+            {resumeHealth.kind === "processing" && (
+              <div className="min-h-72 rounded-2xl bg-slate-50 p-5">
+                <Badge tone="warning">Processing</Badge>
+                <h2 className="mt-4 font-extrabold">
+                  Preparing {resumeHealth.filename}
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-muted">
+                  The file remains quarantined while the protected worker scans
+                  and parses it.
+                </p>
+                <Link
+                  className={cn(
+                    buttonStyles.base,
+                    buttonStyles.secondary,
+                    "mt-5",
+                  )}
+                  href="/resume-health/account"
+                >
+                  View document status
+                </Link>
+              </div>
+            )}
+            {resumeHealth.kind === "deleting" && (
+              <Alert title="Deletion in progress" tone="info">
+                {resumeHealth.filename} is completing durable source and
+                derivative cleanup. Refresh this page after the job finishes.
+                <Link
+                  className="mt-3 block font-bold underline"
+                  href="/resume-health/account"
+                >
+                  Open Resume Health
+                </Link>
+              </Alert>
+            )}
+            {resumeHealth.kind === "review" && (
+              <div className="min-h-72 rounded-2xl bg-primary-soft/25 p-5">
+                <Badge tone="warning">Review required</Badge>
+                <h2 className="mt-4 font-extrabold">Check the parsed fields</h2>
+                <p className="mt-2 text-sm leading-6 text-muted">
+                  CareerOS extracted structured information from{" "}
+                  {resumeHealth.filename}. Confirm or correct it before
+                  analysis.
+                </p>
+                <Link
+                  className={cn(
+                    buttonStyles.base,
+                    buttonStyles.primary,
+                    "mt-5",
+                  )}
+                  href={`/resume-health/account/review/${encodeURIComponent(resumeHealth.documentId)}`}
+                >
+                  Review parsed resume
+                </Link>
+              </div>
+            )}
+            {resumeHealth.kind === "failed" && (
+              <Alert title="Document needs attention" tone="danger">
+                {resumeHealth.filename} could not be safely processed. Open
+                Resume Health to delete it or try a clean supported file.
+                <Link
+                  className="mt-3 block font-bold underline"
+                  href="/resume-health/account"
+                >
+                  Open Resume Health
+                </Link>
+              </Alert>
+            )}
+            {resumeHealth.kind === "error" && (
+              <Alert title="Resume Health unavailable" tone="danger">
+                Your private resume state could not be loaded. No document was
+                changed. Refresh the page or open Resume Health to try again.
+                <Link
+                  className="mt-3 block font-bold underline"
+                  href="/resume-health/account"
+                >
+                  Open Resume Health
+                </Link>
+              </Alert>
+            )}
+            {resumeHealth.kind === "report" && (
+              <div className="grid min-h-72 gap-5 md:grid-cols-[10rem_1fr] md:items-center">
+                <div className="flex justify-center">
+                  {resumeHealth.score === null ? (
+                    <span className="grid size-32 place-items-center rounded-full border-8 border-slate-200 text-center text-xs font-black text-muted">
+                      Score unavailable
+                    </span>
+                  ) : (
+                    <ScoreRing
+                      label="Resume Health Score"
+                      score={resumeHealth.score}
+                      tone={
+                        resumeHealth.scoreBand === "strong"
+                          ? "success"
+                          : "warning"
+                      }
+                    />
+                  )}
+                </div>
+                <div>
+                  <Badge
+                    tone={
+                      resumeHealth.scoreBand === "strong"
+                        ? "success"
+                        : "warning"
+                    }
+                  >
+                    Internal CareerOS measure
+                  </Badge>
+                  <h2 className="mt-3 font-extrabold">
+                    Latest report for {resumeHealth.filename}
+                  </h2>
+                  <p className="mt-2 text-xs leading-5 text-muted">
+                    {resumeHealth.disclaimer}
+                  </p>
+                  <Link
+                    className={cn(
+                      buttonStyles.base,
+                      buttonStyles.primary,
+                      "mt-5",
+                    )}
+                    href={`/resume-health/account/report/${encodeURIComponent(resumeHealth.analysisId)}`}
+                  >
+                    Open full report{" "}
+                    <ArrowRight aria-hidden="true" className="size-4" />
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
         </Card>
       </div>

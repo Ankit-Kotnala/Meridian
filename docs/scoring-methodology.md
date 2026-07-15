@@ -1,8 +1,7 @@
 # CareerOS scoring methodology
 
-Status: policy and initial formula contract; scoring engines are implemented in
-their owning phases  
-Last reviewed: 2026-07-14
+Status: Resume Health v1 implemented and verified
+Last reviewed: 2026-07-15
 
 ## Required interpretation
 
@@ -89,34 +88,43 @@ Each persisted analysis contains at least:
   "scoreType": "resume_health",
   "engineVersion": "resume-health/1.0.0",
   "configurationVersion": "resume-health-default/1",
+  "featureSchemaVersion": "resume-health-features/1",
   "inputSnapshotId": "uuid",
   "rawScoreBasisPoints": 7812,
   "displayScore": 78,
-  "components": [],
-  "hardGaps": [],
+  "featureValues": {},
+  "components": [
+    {
+      "key": "machine_readability",
+      "rawScoreBasisPoints": 8536,
+      "featureContributions": []
+    }
+  ],
   "warnings": [],
   "featureSetHash": "sha256:...",
   "computedAt": "2026-07-14T00:00:00Z"
 }
 ```
 
-The actual contract will use generated OpenAPI schemas. Basis points or fixed
-decimal arithmetic avoids platform-dependent floating-point drift. Store feature
-values and contributions at greater precision than displayed. Hashing detects
-unexplained input drift; it is not a privacy or authorization control.
+The implemented contract uses generated OpenAPI schemas. Basis-point integer
+arithmetic avoids platform-dependent floating-point drift. The analysis row
+persists the feature-schema version and complete typed feature record; normalized
+contribution rows persist each component/feature score, weight, and contribution
+in basis points. The API returns both raw and rounded display units. Hashing
+detects unexplained input drift; it is not a privacy or authorization control.
 
 ## General Resume Health
 
 The initial top-level formula from the product specification is:
 
-| Component                           | Weight | Measures                                                                               |
-| ----------------------------------- | -----: | -------------------------------------------------------------------------------------- |
-| ATS Readiness / Machine Readability |    25% | Text extractability, reading order, section/field parsing, supported layout behavior   |
-| Recruiter Clarity                   |    20% | Scannable structure, clear chronology/titles, concise and understandable content       |
-| Content Impact                      |    20% | Action, specificity, scope, outcome, and relevance signals that are actually present   |
-| Achievement Strength                |    15% | Evidence-backed outcomes and personal contribution without invented quantification     |
-| Structure                           |    10% | Recognizable sections, ordering, hierarchy, length/layout constraints                  |
-| Consistency and Truth               |    10% | Date/title/format consistency, parsing confidence, evidence and contradiction warnings |
+| Component                           | Weight | Measures                                                                             |
+| ----------------------------------- | -----: | ------------------------------------------------------------------------------------ |
+| ATS Readiness / Machine Readability |    25% | Extractable text, parser confidence, reading-order warnings, and section recognition |
+| Recruiter Clarity                   |    20% | Recognized sections, concise blocks, section breadth, and chronology signals         |
+| Content Impact                      |    20% | Observable action/outcome phrasing, repetition, and concise blocks                   |
+| Achievement Strength                |    15% | Observable action/outcome phrasing and repetition without verifying the claim        |
+| Structure                           |    10% | Recognized-section breadth/ratio, page fit, and concise blocks                       |
+| Consistency and Truth               |    10% | Parser confidence, parser warnings, repetition, and chronology signals               |
 
 For component values `c_i` in `[0, 100]` and integer weights totaling 100:
 
@@ -129,23 +137,113 @@ initial top-level formula it is part of Consistency and Truth; the UI must not
 double-count it. The configuration may later split components only under a new
 version whose weights still total 100.
 
-### Candidate deterministic features
+### Resume Health v1 deterministic features
 
-The Phase 2 implementation must publish the exact sub-feature table. Candidate
-inputs include:
+Phase 2 implements engine `resume-health/1.0.0` with immutable configuration
+`resume-health-default/1` and feature schema `resume-health-features/1`. Features
+and all intermediate values use integer basis points in `[0, 10000]`.
 
-- extractor agreement, searchable-text ratio, critical-field recall against
-  user-corrected canonical data, reading-order violations, and image-only state;
-- recognized section presence/order, chronology parse, duplicate/misaligned
-  content, heading semantics, bullet length distribution, and page count;
-- explicit action/scope/outcome language, supported numbers, repeated generic
-  phrasing, and evidence-backed achievement ratio;
-- date/title/entity conflicts, unsupported claim count, uncertain source spans,
-  and user-confirmation coverage.
+The canonical snapshot produces these inputs:
 
-No feature may reward invented keywords or penalize a career gap, name, age,
+| Feature                | v1 definition                                                                   |
+| ---------------------- | ------------------------------------------------------------------------------- |
+| Extractable characters | Sum of canonical block text lengths                                             |
+| Page count             | Validated PDF page count; nominal `1` for local DOCX because no renderer exists |
+| Image-only             | Canonical warning contains `image_only_pdf`                                     |
+| Sections               | Total canonical sections and count whose kind is not `other`                    |
+| Blocks                 | Total blocks; a block is concise when its text is at most 240 characters        |
+| Bullets                | Total bullets and bullets containing an allowlisted action or outcome signal    |
+| Duplicate blocks       | Case-folded, whitespace-normalized block count minus unique block count         |
+| Chronology signals     | Blocks containing a four-digit year from 1900 through 2099                      |
+| Warnings               | Canonical warning count and warnings containing `reading_order`                 |
+| Parser confidence      | `sum(block_confidence) // block_count`; zero when there are no blocks           |
+
+The action signal list is `built`, `created`, `delivered`, `designed`,
+`developed`, `drove`, `improved`, `implemented`, `led`, `launched`, `managed`,
+`optimized`, `reduced`, `increased`, `owned`, and `supported`. The outcome signal
+list is `result`, `resulted`, `outcome`, `increased`, `reduced`, `improved`,
+`saved`, `grew`, `accelerated`, `revenue`, `cost`, `time`, `quality`, and
+`adoption`. These lists detect observable phrasing only. They do not establish
+that a claim is true or reward adding an unsupported claim.
+
+The reusable v1 sub-features are:
+
+| Code                  | Integer-basis-point calculation                                                         |
+| --------------------- | --------------------------------------------------------------------------------------- |
+| `recognized_ratio`    | recognized sections / all sections, rounded half up; zero for an empty denominator      |
+| `concise_ratio`       | concise blocks / all blocks, rounded half up; zero for an empty denominator             |
+| `action_ratio`        | action-led bullets / bullets, rounded half up                                           |
+| `outcome_ratio`       | outcome-bearing bullets / bullets, rounded half up                                      |
+| `searchable`          | `min(10000, extractable_characters * 10)`                                               |
+| `section_breadth`     | `min(10000, recognized_sections * 2500)`                                                |
+| `chronology`          | `min(10000, chronology_signals * 2000)`                                                 |
+| `duplicate_score`     | `max(0, 10000 - duplicate_blocks * 2000)`                                               |
+| `warning_score`       | `max(0, 10000 - warnings * 1500)`                                                       |
+| `reading_order_score` | `max(0, 10000 - reading_order_warnings * 2500)`                                         |
+| `page_fit`            | 10000 for one to three pages; otherwise `max(2000, 10000 - 2000 * abs(page_count - 2))` |
+
+When a document has no bullets, v1 assigns both bullet ratios the neutral value 5000. A paragraph-led format is therefore not treated as a division error or a
+perfect achievement signal.
+
+Each component is the rounded-half-up weighted sum below. Sub-feature weights in
+each row total 10000 basis points.
+
+| Component             | Exact v1 sub-feature weights                                                         |
+| --------------------- | ------------------------------------------------------------------------------------ |
+| Machine Readability   | searchable 30%; parser confidence 30%; reading-order score 20%; recognized ratio 20% |
+| Recruiter Clarity     | recognized ratio 30%; concise ratio 30%; section breadth 20%; chronology 20%         |
+| Content Impact        | action ratio 35%; outcome ratio 30%; duplicate score 20%; concise ratio 15%          |
+| Achievement Strength  | outcome ratio 45%; action ratio 35%; duplicate score 20%                             |
+| Structure             | section breadth 35%; recognized ratio 25%; page fit 20%; concise ratio 20%           |
+| Consistency and Truth | parser confidence 35%; warning score 30%; duplicate score 20%; chronology 15%        |
+
+The engine multiplies each component basis-point value by its top-level weight,
+rounds that contribution half up to one basis point, and sums the six
+contributions. The display score is the aggregate basis-point value rounded half
+up to a whole number. No binary floating-point arithmetic is used.
+
+`python-docx` has no authoritative rendered layout or page count. Phase 2 records
+a nominal DOCX page value of one, so its `page_fit` sub-feature cannot diagnose
+the actual rendered length and must not be described as doing so. DOCX safety is
+bounded through bytes, archive entries/expansion, characters, blocks, artifact
+size, and runtime resources. A later rendering provider and score-configuration
+version are required before layout-aware DOCX page fit can be claimed.
+
+An image-only document, fewer than 200 extractable characters, or fewer than
+three canonical blocks returns `insufficient_data`: no numeric aggregate and no
+component values are emitted. The report instead supplies a warning and a review
+path. The API label bands for this configuration are `needsAttention` below 60,
+`developing` from 60 through 79, and `strong` from 80; those labels remain
+internal interpretations, not predictions.
+
+The feature-set hash is SHA-256 over the sorted, compact JSON representation of
+the complete feature record. It is returned as `sha256:<hex>` and detects drift;
+it is not authorization or proof of document authenticity.
+
+Reports expose the persisted feature schema and measured values, then group the
+stored weighted feature contributions under their component. Semantic definition
+lists and keyboard-operable disclosure controls show raw/display score, weight,
+and contribution without relying on chart geometry or color. This trace is an
+explanation of deterministic document measurements, not evidence that a career
+claim is true.
+
+Findings are deterministic as well: v1 reports reading-order warnings, section
+recognition below 60%, action-led bullets below 50%, outcome-bearing bullets below
+40%, and any parser warning. Suggested outcome context explicitly says to add it
+only when it can be supported and confirmed.
+
+The committed nontrivial golden case has 612 characters, one page, four of four
+recognized sections, 14 concise blocks, three action-led bullets, one
+outcome-bearing bullet, five chronology signals, no duplicates or warnings, and
+9000 parser confidence. Its component values are 8536, 10000, 8000, 7000, 10000,
+and 9650; contributions are 2134, 2000, 1600, 1050, 1000, and 965. The exact raw
+score is 8749 basis points and the display score is 87.
+
+No feature rewards invented keywords or penalizes a career gap, name, age,
 protected characteristic, nontraditional history, or absence of an optional
-section as though it were a hiring judgment. Gap detection is informational.
+section as though it were a hiring judgment. Phase 2 Resume Health measures the
+document only. Evidence-backed claim scoring remains downstream of the Phase 3
+evidence graph.
 
 ## Role Readiness
 
@@ -363,13 +461,14 @@ must not optimize toward protected characteristics or claim causal hiring
 effects. Product changes based on outcomes are experiments with limitations and
 privacy review, not proof of success probability.
 
-## Phase 0 boundary
+## Implemented phase boundary
 
-No scoring engine, real analysis, or persisted score is implemented in Phase 0.
-Any score shown in the dashboard preview is isolated fictional data, visibly
-labeled, and not returned by the product API. Phase 0 verifies only that score UI
-primitives can expose labels and accessible text without misleading ATS language.
+Phase 2 implements and persists only job-independent Resume Health v1. The
+fictional dashboard at `/demo/dashboard` remains isolated from product data. Role
+Readiness remains Phase 4 work; Application Readiness and Opportunity Priority
+remain Phase 5 work. Resume Health v1 must not be reused as any of those scores.
 
-Phase 2 must finalize and implement Resume Health sub-feature configuration;
-Phase 4 Role Readiness; Phase 5 Application Readiness and Opportunity Priority.
-None may be marked complete until its deterministic/golden/explanation gates pass.
+The implementation, focused golden tests, and repository-wide local format,
+lint, type, unit, integration, container, migration, browser, accessibility, and
+security gates pass. Hosted run `29378312134` verifies the Phase 2 implementation;
+the evidence is recorded in `PLANS.md`.

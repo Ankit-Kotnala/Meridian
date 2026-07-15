@@ -111,6 +111,12 @@ def _trace_id(traceparent: str | None) -> str:
     return uuid4().hex
 
 
+def _route_template(request: Request) -> str:
+    route = request.scope.get("route")
+    path = getattr(route, "path", None)
+    return path if isinstance(path, str) and path.startswith("/") else "unmatched"
+
+
 def install_request_context_middleware(app: FastAPI) -> None:
     """Add correlation IDs without logging query strings, headers, or bodies."""
 
@@ -129,13 +135,29 @@ def install_request_context_middleware(app: FastAPI) -> None:
 
         try:
             response = await call_next(request)
-        except Exception:
-            logger.exception(
+        except Exception as exc:
+            # Exception messages and tracebacks can contain database parameters or
+            # provider payloads. Log only allowlisted request metadata and the
+            # exception class at this PII-bearing HTTP boundary. Convert the error
+            # here instead of re-raising it: Uvicorn's outer error logger otherwise
+            # renders the original traceback and exception message.
+            logger.error(
                 "http_request_failed",
                 http_method=request.method,
-                http_path=request.url.path,
+                http_route=_route_template(request),
+                error_type=type(exc).__name__,
             )
-            raise
+            response = problem_response(
+                request,
+                status_code=500,
+                code="internal_error",
+                title="Request could not be completed",
+                detail="The service could not complete this request.",
+            )
+            response.headers[REQUEST_ID_HEADER] = request_id
+            response.headers[TRACE_ID_HEADER] = trace_id
+            clear_contextvars()
+            return response
 
         duration_ms = round((perf_counter() - started_at) * 1000, 2)
         response.headers[REQUEST_ID_HEADER] = request_id
@@ -143,7 +165,7 @@ def install_request_context_middleware(app: FastAPI) -> None:
         logger.info(
             "http_request_completed",
             http_method=request.method,
-            http_path=request.url.path,
+            http_route=_route_template(request),
             http_status=response.status_code,
             duration_ms=duration_ms,
         )

@@ -2,6 +2,7 @@
 
 from uuid import UUID
 
+import pytest
 from fastapi.testclient import TestClient
 
 from careeros_api.config import Settings
@@ -43,6 +44,52 @@ def test_ready_fails_closed_without_leaking_exception_details(settings: Settings
     assert response.json()["status"] == "not_ready"
     assert response.json()["checks"] == {"database": {"status": "unavailable"}}
     assert "do-not-leak" not in response.text
+
+
+def test_unexpected_http_failure_log_does_not_render_private_exception_payload(
+    settings: Settings,
+    fake_database: FakeDatabase,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    marker = "private-canonical-resume-payload"
+    application = create_app(settings, database=fake_database)
+
+    async def fail_with_private_payload() -> None:
+        raise RuntimeError(marker)
+
+    application.add_api_route("/_test/private-failure", fail_with_private_payload)
+    with TestClient(application) as client:
+        response = client.get("/_test/private-failure")
+
+    output = capsys.readouterr().out
+    assert response.status_code == 500
+    assert response.json()["code"] == "internal_error"
+    assert response.json()["detail"] == "The service could not complete this request."
+    assert marker not in output
+    assert marker not in response.text
+    assert "RuntimeError" in output
+
+
+def test_request_log_uses_route_template_without_attacker_path_values(
+    settings: Settings,
+    fake_database: FakeDatabase,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    marker = "private-resume-alex@example.com"
+    application = create_app(settings, database=fake_database)
+
+    async def dynamic_path(document_id: str) -> dict[str, bool]:
+        return {"ok": bool(document_id)}
+
+    application.add_api_route("/_test/documents/{document_id}", dynamic_path)
+
+    with TestClient(application) as client:
+        response = client.get(f"/_test/documents/{marker}")
+
+    output = capsys.readouterr().out
+    assert response.status_code == 200
+    assert marker not in output
+    assert "/_test/documents/{document_id}" in output
 
 
 def test_request_id_is_echoed_when_safe(client: TestClient) -> None:

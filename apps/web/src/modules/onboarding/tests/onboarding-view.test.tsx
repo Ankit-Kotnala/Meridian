@@ -77,7 +77,7 @@ describe("onboarding", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "Resume upload is not active yet",
+        name: "Add a resume for review",
       }),
     ).toBeVisible();
     fireEvent.click(
@@ -86,7 +86,7 @@ describe("onboarding", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "Parsed review has no data yet",
+        name: "Review uncertain parsed information",
       }),
     ).toBeVisible();
     fireEvent.click(

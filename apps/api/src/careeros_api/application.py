@@ -25,6 +25,20 @@ from careeros.modules.identity.infrastructure.security import (
     NormalizedEmailValidator,
     SystemClock,
 )
+from careeros.modules.resume_health.application import (
+    DocumentLimits,
+    OutboxDispatcher,
+    ResumeHealthPolicy,
+    ResumeHealthService,
+)
+from careeros.modules.resume_health.infrastructure import (
+    CeleryJobPublisher,
+    CeleryPublisherOptions,
+    HmacGuestCapabilityManager,
+    S3ObjectStorage,
+    S3Options,
+    SqlAlchemyResumeUnitOfWorkFactory,
+)
 from fastapi import FastAPI
 from redis.asyncio import Redis
 from starlette.middleware.cors import CORSMiddleware
@@ -45,6 +59,9 @@ def create_app(
     identity: IdentityService | None = None,
     security_store: RedisSecurityStore | None = None,
     email_sender: SmtpEmailSender | DisabledEmailSender | None = None,
+    resume_health: ResumeHealthService | None = None,
+    resume_dispatcher: OutboxDispatcher | None = None,
+    resume_storage: S3ObjectStorage | None = None,
 ) -> FastAPI:
     """Build an application; injectable dependencies keep tests infrastructure-free."""
     resolved_settings = settings or get_settings()
@@ -64,6 +81,9 @@ def create_app(
         resolved_security_store = security_store
         resolved_email_sender = email_sender
         resolved_identity = identity
+        resolved_resume_health = resume_health
+        resolved_resume_dispatcher = resume_dispatcher
+        resolved_resume_storage = resume_storage
 
         if resolved_identity is None and isinstance(resolved_database, Database):
             pepper = resolved_settings.auth_token_pepper.get_secret_value()
@@ -129,13 +149,71 @@ def create_app(
                 ),
             )
 
+        if resolved_resume_health is None and isinstance(resolved_database, Database):
+            resume_uow = SqlAlchemyResumeUnitOfWorkFactory(resolved_database)
+            resolved_resume_storage = resolved_resume_storage or S3ObjectStorage(
+                S3Options(
+                    internal_endpoint_url=resolved_settings.s3_endpoint_url,
+                    public_endpoint_url=resolved_settings.s3_public_endpoint_url,
+                    region=resolved_settings.s3_region,
+                    bucket=resolved_settings.s3_bucket,
+                    access_key_id=resolved_settings.s3_access_key_id,
+                    secret_access_key=resolved_settings.s3_secret_access_key.get_secret_value(),
+                    use_ssl=resolved_settings.s3_use_ssl,
+                )
+            )
+            resume_clock = SystemClock()
+            resolved_resume_health = ResumeHealthService(
+                unit_of_work=resume_uow,
+                clock=resume_clock,
+                capabilities=HmacGuestCapabilityManager(
+                    resolved_settings.resume_capability_pepper.get_secret_value()
+                ),
+                storage=resolved_resume_storage,
+                limits=DocumentLimits(
+                    max_upload_bytes=resolved_settings.resume_max_upload_bytes,
+                    max_pdf_pages=resolved_settings.resume_max_pages,
+                    max_archive_entries=resolved_settings.resume_max_archive_entries,
+                    max_archive_uncompressed_bytes=(resolved_settings.resume_max_expanded_bytes),
+                    max_archive_ratio=resolved_settings.resume_max_compression_ratio,
+                    processing_timeout_seconds=(
+                        resolved_settings.resume_processing_timeout_seconds
+                    ),
+                ),
+                policy=ResumeHealthPolicy(
+                    upload_ttl_seconds=resolved_settings.resume_upload_intent_ttl_seconds,
+                    guest_session_ttl_seconds=(
+                        resolved_settings.resume_guest_retention_hours * 3600
+                    ),
+                    guest_document_retention_seconds=(
+                        resolved_settings.resume_guest_retention_hours * 3600
+                    ),
+                ),
+            )
+            if resolved_resume_dispatcher is None:
+                resolved_resume_dispatcher = OutboxDispatcher(
+                    unit_of_work=resume_uow,
+                    publisher=CeleryJobPublisher(
+                        CeleryPublisherOptions(
+                            broker_url=(resolved_settings.celery_broker_url.get_secret_value()),
+                            queue="resume-health",
+                        )
+                    ),
+                    clock=resume_clock,
+                )
+
         application.state.database = resolved_database
         application.state.identity_service = resolved_identity
+        application.state.security_store = resolved_security_store
+        application.state.resume_health_service = resolved_resume_health
+        application.state.resume_outbox_dispatcher = resolved_resume_dispatcher
         application.state.readiness_dependencies = {"database": resolved_database}
         if resolved_security_store is not None:
             application.state.readiness_dependencies["redis"] = resolved_security_store
         if resolved_email_sender is not None and resolved_settings.email_provider == "smtp":
             application.state.readiness_dependencies["email"] = resolved_email_sender
+        if resolved_resume_storage is not None:
+            application.state.readiness_dependencies["objectStorage"] = resolved_resume_storage
         logger.info(
             "api_started",
             service=resolved_settings.service_name,
@@ -149,6 +227,8 @@ def create_app(
                 await resolved_email_sender.dispose()
             if resolved_security_store is not None:
                 await resolved_security_store.dispose()
+            if resolved_resume_storage is not None:
+                await resolved_resume_storage.dispose()
             await resolved_database.dispose()
             logger.info("api_stopped", service=resolved_settings.service_name)
 
@@ -177,9 +257,11 @@ def create_app(
         allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=[
             "Content-Type",
+            "Idempotency-Key",
             "If-Match",
             "Traceparent",
             "X-CSRF-Token",
+            "X-Guest-CSRF",
             "X-Request-ID",
         ],
         expose_headers=["ETag", "X-Request-ID", "X-Trace-ID"],

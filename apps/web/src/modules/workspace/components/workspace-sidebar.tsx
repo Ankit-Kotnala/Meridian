@@ -23,12 +23,12 @@ const availableNavigation: ReadonlyArray<{
   label: string;
 }> = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/resume-health/account", icon: FileHeart, label: "Resume Health" },
   { href: "/onboarding", icon: UserRoundCheck, label: "Onboarding" },
   { href: "/settings", icon: Settings, label: "Settings" },
 ];
 
 const upcomingNavigation: ReadonlyArray<{ icon: LucideIcon; label: string }> = [
-  { icon: FileHeart, label: "Resume Health" },
   { icon: Target, label: "Role Explorer" },
   { icon: BriefcaseBusiness, label: "Applications" },
   { icon: BarChart3, label: "Analytics" },

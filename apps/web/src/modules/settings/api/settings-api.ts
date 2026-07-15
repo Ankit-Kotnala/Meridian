@@ -2,6 +2,7 @@
 
 import type { components } from "@careeros/contracts";
 
+import { fillApiPath } from "@/shared/api/api-path";
 import { apiMutation, apiQuery } from "@/shared/api/browser-request";
 
 export type ProfileState = components["schemas"]["MeResponse"];
@@ -79,7 +80,9 @@ export async function getSessions(): Promise<SessionState[]> {
 
 export async function revokeSession(sessionId: string): Promise<void> {
   await apiMutation(
-    `/api/v1/auth/sessions/${encodeURIComponent(sessionId)}`,
+    fillApiPath("/api/v1/auth/sessions/{session_id}", {
+      session_id: sessionId,
+    }),
     {
       method: "DELETE",
     },

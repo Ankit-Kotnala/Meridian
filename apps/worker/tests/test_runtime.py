@@ -1,0 +1,292 @@
+"""Worker runtime composition and resource-lifecycle tests."""
+
+import asyncio
+from pathlib import Path
+from typing import Any
+from uuid import uuid4
+
+import pytest
+from careeros.foundation.database import Base
+from careeros.modules.resume_health.application import (
+    JobReconciliationResult,
+    OutboxDispatchResult,
+    ProcessingOutcome,
+)
+from careeros.modules.resume_health.domain import JobStatus
+
+from careeros_worker import runtime
+from careeros_worker.config import WorkerSettings
+
+_TEST_TEMP_ROOT = Path.cwd().resolve() / "worker-runtime-test"
+
+
+def test_runtime_registers_cross_module_database_metadata() -> None:
+    assert "users" in Base.metadata.tables
+    assert "resume_audit_events" in Base.metadata.tables
+
+
+def test_runtime_translates_validated_settings_and_disposes_resources(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+    captured: dict[str, Any] = {}
+
+    class FakeDatabase:
+        def __init__(self, options: object) -> None:
+            captured["database_options"] = options
+
+        async def dispose(self) -> None:
+            events.append("database")
+
+    class FakeStorage:
+        def __init__(self, options: object) -> None:
+            captured["storage_options"] = options
+
+        async def dispose(self) -> None:
+            events.append("storage")
+
+    class FakeProcessor:
+        def __init__(self, **options: object) -> None:
+            captured["processor_options"] = options
+
+    monkeypatch.setattr(runtime, "Database", FakeDatabase)
+    monkeypatch.setattr(runtime, "S3ObjectStorage", FakeStorage)
+    monkeypatch.setattr(runtime, "ResumeHealthProcessor", FakeProcessor)
+    settings = WorkerSettings.model_validate(
+        {
+            "environment": "test",
+            "malware_scanner_provider": "clamav",
+            "document_temp_root": _TEST_TEMP_ROOT,
+            "document_processing_timeout_seconds": 90,
+        }
+    )
+
+    async def exercise() -> None:
+        async with runtime._runtime_resources(settings) as resources:
+            assert resources.limits.temp_root == _TEST_TEMP_ROOT
+            assert resources.limits.processing_timeout_seconds == 90
+            runtime._processor(resources, settings)
+
+    asyncio.run(exercise())
+
+    assert events == ["storage", "database"]
+    assert captured["database_options"].pool_size == settings.database_pool_size
+    assert captured["storage_options"].bucket == settings.s3_bucket
+    assert captured["processor_options"]["execution_lease_seconds"] == 330
+
+
+def test_database_is_disposed_even_when_storage_disposal_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+
+    class FakeDatabase:
+        def __init__(self, _options: object) -> None:
+            pass
+
+        async def dispose(self) -> None:
+            events.append("database")
+
+    class FailingStorage:
+        def __init__(self, _options: object) -> None:
+            pass
+
+        async def dispose(self) -> None:
+            events.append("storage")
+            raise RuntimeError("safe test failure")
+
+    monkeypatch.setattr(runtime, "Database", FakeDatabase)
+    monkeypatch.setattr(runtime, "S3ObjectStorage", FailingStorage)
+
+    async def exercise() -> None:
+        async with runtime._runtime_resources(
+            WorkerSettings.model_validate(
+                {"environment": "test", "malware_scanner_provider": "clamav"}
+            )
+        ):
+            pass
+
+    with pytest.raises(RuntimeError, match="safe test failure"):
+        asyncio.run(exercise())
+
+    assert events == ["storage", "database"]
+
+
+def test_database_is_disposed_when_storage_construction_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+
+    class FakeDatabase:
+        def __init__(self, _options: object) -> None:
+            pass
+
+        async def dispose(self) -> None:
+            events.append("database")
+
+    class FailingStorage:
+        def __init__(self, _options: object) -> None:
+            raise RuntimeError("safe constructor failure")
+
+    monkeypatch.setattr(runtime, "Database", FakeDatabase)
+    monkeypatch.setattr(runtime, "S3ObjectStorage", FailingStorage)
+
+    async def exercise() -> None:
+        async with runtime._runtime_resources(
+            WorkerSettings.model_validate(
+                {"environment": "test", "malware_scanner_provider": "clamav"}
+            )
+        ):
+            raise AssertionError("failed storage construction must not yield")
+
+    with pytest.raises(RuntimeError, match="safe constructor failure"):
+        asyncio.run(exercise())
+
+    assert events == ["database"]
+
+
+def test_failure_recording_uses_database_only_when_provider_assembly_is_broken(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+    captured: dict[str, object] = {}
+    job_id = uuid4()
+
+    class FakeDatabase:
+        def __init__(self, _options: object) -> None:
+            pass
+
+        async def dispose(self) -> None:
+            events.append("database")
+
+    class FakeFailureRecorder:
+        def __init__(self, **options: object) -> None:
+            captured["options"] = options
+
+        async def record_task_failure(
+            self, received_job_id: object, _trace_id: str, error_code: str, **options: object
+        ) -> ProcessingOutcome:
+            captured.update(
+                job_id=received_job_id,
+                error_code=error_code,
+                record_options=options,
+            )
+            return ProcessingOutcome(job_id, JobStatus.DEAD_LETTERED, False, error_code)
+
+    class ForbiddenStorage:
+        def __init__(self, _options: object) -> None:
+            raise AssertionError("failure recording must not assemble object storage")
+
+    monkeypatch.setattr(runtime, "Database", FakeDatabase)
+    monkeypatch.setattr(runtime, "ResumeJobFailureRecorder", FakeFailureRecorder)
+    monkeypatch.setattr(runtime, "S3ObjectStorage", ForbiddenStorage)
+    settings = WorkerSettings.model_validate(
+        {"environment": "test", "malware_scanner_provider": "clamav"}
+    )
+
+    outcome = asyncio.run(
+        runtime.record_resume_failure(
+            settings,
+            job_id,
+            "a" * 32,
+            "worker_runtime_unavailable",
+            retryable=True,
+            exhausted=True,
+            execution_token="b" * 64,
+        )
+    )
+
+    assert outcome.status is JobStatus.DEAD_LETTERED
+    assert captured["job_id"] == job_id
+    assert events == ["database"]
+
+
+def test_job_reconciliation_uses_database_only_and_disposes_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+    captured: dict[str, object] = {}
+
+    class FakeDatabase:
+        def __init__(self, _options: object) -> None:
+            pass
+
+        async def dispose(self) -> None:
+            events.append("database")
+
+    class FakeReconciler:
+        def __init__(self, **options: object) -> None:
+            captured.update(options)
+
+        async def reconcile_stale(self, limit: int) -> JobReconciliationResult:
+            captured["limit"] = limit
+            return JobReconciliationResult(requeued=2, dead_lettered=1)
+
+    class ForbiddenStorage:
+        def __init__(self, _options: object) -> None:
+            raise AssertionError("reconciliation must not assemble object storage")
+
+    monkeypatch.setattr(runtime, "Database", FakeDatabase)
+    monkeypatch.setattr(runtime, "ResumeJobReconciler", FakeReconciler)
+    monkeypatch.setattr(runtime, "S3ObjectStorage", ForbiddenStorage)
+    settings = WorkerSettings.model_validate(
+        {
+            "environment": "test",
+            "resume_job_reconciliation_stale_seconds": 900,
+        }
+    )
+
+    result = asyncio.run(runtime.reconcile_stale_resume_jobs(settings, 25))
+
+    assert result == JobReconciliationResult(requeued=2, dead_lettered=1)
+    assert captured["limit"] == 25
+    assert captured["stale_after_seconds"] == 900
+    assert events == ["database"]
+
+
+def test_outbox_dispatch_uses_database_only_and_disposes_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+
+    class FakeDatabase:
+        def __init__(self, _options: object) -> None:
+            pass
+
+        async def dispose(self) -> None:
+            events.append("database")
+
+    class FakeDispatcher:
+        def __init__(self, **_options: object) -> None:
+            pass
+
+        async def dispatch_pending(self, limit: int) -> OutboxDispatchResult:
+            assert limit == 25
+            return OutboxDispatchResult(published=3, failed=1, dead_lettered=0)
+
+    class ForbiddenStorage:
+        def __init__(self, _options: object) -> None:
+            raise AssertionError("outbox dispatch must not assemble object storage")
+
+    monkeypatch.setattr(runtime, "Database", FakeDatabase)
+    monkeypatch.setattr(runtime, "OutboxDispatcher", FakeDispatcher)
+    monkeypatch.setattr(runtime, "S3ObjectStorage", ForbiddenStorage)
+    settings = WorkerSettings.model_validate({"environment": "test"})
+
+    result = asyncio.run(runtime.dispatch_resume_outbox(settings, object(), 25))  # type: ignore[arg-type]
+
+    assert result == runtime.OutboxTaskResult(published=3, failed=1, dead_lettered=0)
+    assert events == ["database"]
+
+
+def test_runtime_fails_closed_when_scanning_is_disabled() -> None:
+    settings = WorkerSettings.model_validate(
+        {"environment": "test", "malware_scanner_provider": "disabled"}
+    )
+
+    async def exercise() -> None:
+        async with runtime._runtime_resources(settings):
+            raise AssertionError("disabled scanning must not yield resources")
+
+    with pytest.raises(RuntimeError, match="fail-closed malware scanner"):
+        asyncio.run(exercise())

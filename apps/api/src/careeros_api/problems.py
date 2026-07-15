@@ -21,12 +21,28 @@ from careeros.modules.identity.domain.errors import (
     ResourceNotFound,
     VersionConflict,
 )
+from careeros.modules.resume_health.domain.errors import (
+    GuestCapabilityRejected,
+    IdempotencyConflict,
+    ProcessingCancelled,
+    ResumeHealthError,
+    ResumeHealthUnavailable,
+    ResumeOwnershipDenied,
+    ResumeResourceNotFound,
+    ResumeStateConflict,
+    ResumeVersionConflict,
+    RetryableProcessingFailure,
+    UnsafeDocument,
+    UploadExpired,
+    UploadRejected,
+)
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from careeros_api.config import Settings
 from careeros_api.cookies import clear_session_cookies
+from careeros_api.resume_health_dependencies import clear_guest_cookies
 
 logger = structlog.get_logger(__name__)
 
@@ -154,6 +170,25 @@ def install_problem_handlers(app: FastAPI) -> None:
             clear_session_cookies(response, cast(Settings, request.app.state.settings))
         return response
 
+    @app.exception_handler(ResumeHealthError)
+    async def resume_health_problem(request: Request, exc: ResumeHealthError) -> JSONResponse:
+        status_code, title, detail = _resume_health_problem_details(exc)
+        logger.info(
+            "resume_health_request_rejected",
+            error_code=exc.code,
+            status_code=status_code,
+        )
+        response = problem_response(
+            request,
+            status_code=status_code,
+            code=exc.code,
+            title=title,
+            detail=detail,
+        )
+        if isinstance(exc, GuestCapabilityRejected):
+            clear_guest_cookies(response, cast(Settings, request.app.state.settings))
+        return response
+
     @app.exception_handler(ValueError)
     async def value_problem(request: Request, exc: ValueError) -> JSONResponse:
         logger.info("request_value_rejected", error_type=type(exc).__name__)
@@ -179,6 +214,7 @@ def problem_response(
     return JSONResponse(
         status_code=status_code,
         media_type="application/problem+json",
+        headers={"Cache-Control": "no-store"},
         content={
             "type": f"https://careeros.example/problems/{code.replace('_', '-')}",
             "title": title,
@@ -189,4 +225,60 @@ def problem_response(
             "requestId": request_id,
             "errors": errors or [],
         },
+    )
+
+
+def _resume_health_problem_details(exc: ResumeHealthError) -> tuple[int, str, str]:
+    if isinstance(exc, (ResumeResourceNotFound, ResumeOwnershipDenied)):
+        return (
+            status.HTTP_404_NOT_FOUND,
+            "Resource not found",
+            "The requested resource was not found.",
+        )
+    if isinstance(exc, GuestCapabilityRejected):
+        return (
+            status.HTTP_401_UNAUTHORIZED,
+            "Guest check unavailable",
+            "This guest check is unavailable or has expired.",
+        )
+    if isinstance(exc, UploadExpired):
+        return (
+            status.HTTP_410_GONE,
+            "Upload expired",
+            "This upload window has expired. Start a new upload.",
+        )
+    if isinstance(exc, (ResumeVersionConflict, ResumeStateConflict, IdempotencyConflict)):
+        return (
+            status.HTTP_409_CONFLICT,
+            "Request conflict",
+            "This resource changed or the request conflicts with its current state.",
+        )
+    if isinstance(exc, ProcessingCancelled):
+        return (
+            status.HTTP_409_CONFLICT,
+            "Processing cancelled",
+            "This processing job was cancelled.",
+        )
+    if isinstance(exc, (ResumeHealthUnavailable, RetryableProcessingFailure)):
+        return (
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "Resume processing unavailable",
+            "Resume processing is temporarily unavailable. Try again later.",
+        )
+    if isinstance(exc, (UploadRejected, UnsafeDocument)):
+        if exc.code in {"upload_too_large", "expanded_content_too_large"}:
+            status_code = status.HTTP_413_CONTENT_TOO_LARGE
+        elif exc.code in {"unsupported_media_type", "signature_mismatch"}:
+            status_code = status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
+        else:
+            status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
+        return (
+            status_code,
+            "Document rejected",
+            "This document could not be accepted safely.",
+        )
+    return (
+        status.HTTP_400_BAD_REQUEST,
+        "Request rejected",
+        "The request could not be completed.",
     )

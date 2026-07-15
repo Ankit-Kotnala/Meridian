@@ -260,6 +260,331 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Documents */
+        get: operations["listResumeDocuments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/documents/{document_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Document */
+        get: operations["getResumeDocument"];
+        put?: never;
+        post?: never;
+        /** Delete Document */
+        delete: operations["deleteResumeDocument"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/documents/{document_id}/canonical-resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Correct Canonical Resume */
+        patch: operations["correctCanonicalResume"];
+        trace?: never;
+    };
+    "/api/v1/documents/{document_id}/plain-text": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Plain Text */
+        get: operations["getResumeDocumentPlainText"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/documents/{document_id}/reading-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Reading Order */
+        get: operations["getResumeDocumentReadingOrder"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/documents/{document_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Document Status */
+        get: operations["getResumeDocumentStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/guest/documents/{document_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Guest Document */
+        get: operations["getGuestResumeDocument"];
+        put?: never;
+        post?: never;
+        /** Delete Guest Document */
+        delete: operations["deleteGuestResumeDocument"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/guest/documents/{document_id}/canonical-resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Correct Guest Canonical Resume */
+        patch: operations["correctGuestCanonicalResume"];
+        trace?: never;
+    };
+    "/api/v1/guest/documents/{document_id}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Claim Guest Document */
+        post: operations["claimGuestResumeDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/guest/documents/{document_id}/plain-text": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Guest Plain Text */
+        get: operations["getGuestResumeDocumentPlainText"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/guest/documents/{document_id}/reading-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Guest Reading Order */
+        get: operations["getGuestResumeDocumentReadingOrder"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/guest/documents/{document_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Guest Document Status */
+        get: operations["getGuestResumeDocumentStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/guest/processing-jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Guest Processing Job */
+        get: operations["getGuestProcessingJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/guest/processing-jobs/{job_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Guest Processing Job */
+        post: operations["cancelGuestProcessingJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/guest/resume-health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Guest Resume Health */
+        post: operations["startGuestResumeHealthAnalysis"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/guest/resume-health/{analysis_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Guest Resume Health */
+        get: operations["getGuestResumeHealthAnalysis"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/guest/resume-health/upload-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Guest Upload Policy */
+        get: operations["getGuestResumeHealthUploadPolicy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/guest/uploads/{upload_id}/finalize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Finalize Guest Upload */
+        post: operations["finalizeGuestResumeUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/guest/uploads/presign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Guest Upload Intent */
+        post: operations["createGuestResumeUploadIntent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me": {
         parameters: {
             query?: never;
@@ -316,6 +641,125 @@ export interface paths {
         patch: operations["updateOnboarding"];
         trace?: never;
     };
+    "/api/v1/processing-jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Processing Job */
+        get: operations["getProcessingJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/processing-jobs/{job_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Processing Job */
+        post: operations["cancelProcessingJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/resume-health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Resume Health */
+        post: operations["startResumeHealthAnalysis"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/resume-health/{analysis_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Resume Health */
+        get: operations["getResumeHealthAnalysis"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/resume-health/upload-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Account Upload Policy */
+        get: operations["getResumeHealthUploadPolicy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/uploads/{upload_id}/finalize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Finalize Account Upload */
+        post: operations["finalizeResumeUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/uploads/presign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Account Upload Intent */
+        post: operations["createResumeUploadIntent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -365,6 +809,97 @@ export interface components {
             session: components["schemas"]["SessionInfo"];
             user: components["schemas"]["MeResponse"];
         };
+        /** CanonicalFieldResponse */
+        CanonicalFieldResponse: {
+            /** Confidence */
+            confidence: number;
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Originalvalue */
+            originalValue: string | null;
+            /** Sourcespans */
+            sourceSpans: components["schemas"]["SourceSpanResponse"][];
+            /** Value */
+            value: string;
+        };
+        /** CanonicalFieldUpdate */
+        CanonicalFieldUpdate: {
+            /** Id */
+            id: string;
+            /** Value */
+            value: string;
+        };
+        /** CanonicalResumeResponse */
+        CanonicalResumeResponse: {
+            /** Correctedbyuser */
+            correctedByUser: boolean;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /**
+             * Documentid
+             * Format: uuid
+             */
+            documentId: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Schemaversion */
+            schemaVersion: string;
+            /** Sections */
+            sections: components["schemas"]["CanonicalSectionResponse"][];
+            /** Version */
+            version: number;
+            /** Warnings */
+            warnings: components["schemas"]["ParserWarningResponse"][];
+        };
+        /** CanonicalResumeUpdateRequest */
+        CanonicalResumeUpdateRequest: {
+            /** Fields */
+            fields: components["schemas"]["CanonicalFieldUpdate"][];
+        };
+        /** CanonicalSectionResponse */
+        CanonicalSectionResponse: {
+            /** Fields */
+            fields: components["schemas"]["CanonicalFieldResponse"][];
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "contact" | "summary" | "experience" | "education" | "skills" | "projects" | "certifications" | "other";
+            /** Title */
+            title: string;
+        };
+        /** ClaimGuestDocumentRequest */
+        ClaimGuestDocumentRequest: {
+            /**
+             * Consent
+             * @constant
+             */
+            consent: true;
+        };
+        /** ClaimGuestDocumentResponse */
+        ClaimGuestDocumentResponse: {
+            /**
+             * Accessmode
+             * @default account
+             * @constant
+             */
+            accessMode: "account";
+            /**
+             * Documentid
+             * Format: uuid
+             */
+            documentId: string;
+        };
         /** ComponentReadiness */
         ComponentReadiness: {
             /**
@@ -410,6 +945,92 @@ export interface components {
             /** Csrftoken */
             csrfToken: string;
         };
+        /** DocumentListResponse */
+        DocumentListResponse: {
+            /** Data */
+            data: components["schemas"]["DocumentSummaryResponse"][];
+        };
+        /** DocumentResponse */
+        DocumentResponse: {
+            canonicalResume: components["schemas"]["CanonicalResumeResponse"] | null;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Currentcanonicalresumeid */
+            currentCanonicalResumeId: string | null;
+            /** Displayfilename */
+            displayFilename: string;
+            /** Expiresat */
+            expiresAt: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Latestanalysisid */
+            latestAnalysisId: string | null;
+            /**
+             * Mediatype
+             * @enum {string}
+             */
+            mediaType: "application/pdf" | "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+            /** Sizebytes */
+            sizeBytes: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "quarantined" | "processing" | "reviewReady" | "failed" | "cancelled" | "deleting";
+            /**
+             * Updatedat
+             * Format: date-time
+             */
+            updatedAt: string;
+            /** Version */
+            version: number;
+        };
+        /** DocumentSummaryResponse */
+        DocumentSummaryResponse: {
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Currentcanonicalresumeid */
+            currentCanonicalResumeId: string | null;
+            /** Displayfilename */
+            displayFilename: string;
+            /** Expiresat */
+            expiresAt: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Latestanalysisid */
+            latestAnalysisId: string | null;
+            /**
+             * Mediatype
+             * @enum {string}
+             */
+            mediaType: "application/pdf" | "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+            /** Sizebytes */
+            sizeBytes: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "quarantined" | "processing" | "reviewReady" | "failed" | "cancelled" | "deleting";
+            /**
+             * Updatedat
+             * Format: date-time
+             */
+            updatedAt: string;
+            /** Version */
+            version: number;
+        };
         /** EmailRequest */
         EmailRequest: {
             /**
@@ -417,6 +1038,15 @@ export interface components {
              * Format: email
              */
             email: string;
+        };
+        /** FinalizeUploadResponse */
+        FinalizeUploadResponse: {
+            /**
+             * Documentid
+             * Format: uuid
+             */
+            documentId: string;
+            job: components["schemas"]["ProcessingJobResponse"];
         };
         /** GenericMessage */
         GenericMessage: {
@@ -435,6 +1065,19 @@ export interface components {
             status: "ok";
             /** Version */
             version: string;
+        };
+        /** JobAcceptedResponse */
+        JobAcceptedResponse: {
+            job: components["schemas"]["ProcessingJobResponse"];
+        };
+        /** JobErrorResponse */
+        JobErrorResponse: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /** Retryable */
+            retryable: boolean;
         };
         /** LoginRequest */
         LoginRequest: {
@@ -610,6 +1253,30 @@ export interface components {
             /** Writingstyle */
             writingStyle?: ("concise" | "balanced" | "detailed") | null;
         };
+        /** ParserWarningResponse */
+        ParserWarningResponse: {
+            /** Code */
+            code: string;
+            /** Fieldid */
+            fieldId?: string | null;
+            /** Message */
+            message: string;
+        };
+        /** PlainTextResponse */
+        PlainTextResponse: {
+            /**
+             * Documentid
+             * Format: uuid
+             */
+            documentId: string;
+            /** Text */
+            text: string;
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated: boolean;
+        };
         /** ProblemField */
         ProblemField: {
             /** Code */
@@ -638,6 +1305,55 @@ export interface components {
             /** Type */
             type: string;
         };
+        /** ProcessingJobResponse */
+        ProcessingJobResponse: {
+            /** Attempts */
+            attempts: number;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /**
+             * Documentid
+             * Format: uuid
+             */
+            documentId: string;
+            error?: components["schemas"]["JobErrorResponse"] | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Jobtype
+             * @enum {string}
+             */
+            jobType: "parse" | "analyze" | "delete";
+            /** Progress */
+            progress?: number | null;
+            /** Resultid */
+            resultId?: string | null;
+            /** Resulttype */
+            resultType?: ("document" | "analysis") | null;
+            /** Resulturl */
+            resultUrl?: string | null;
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "queued" | "admission" | "malwareScan" | "extraction" | "canonicalization" | "analysis" | "complete" | "cleanup";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "succeeded" | "failed" | "cancelled" | "deadLettered";
+            /**
+             * Updatedat
+             * Format: date-time
+             */
+            updatedAt: string;
+        };
         /** ReadinessResponse */
         ReadinessResponse: {
             /** Checks */
@@ -653,6 +1369,25 @@ export interface components {
             status: "ready" | "not_ready";
             /** Version */
             version: string;
+        };
+        /** ReadingOrderBlockResponse */
+        ReadingOrderBlockResponse: {
+            /** Index */
+            index: number;
+            /** Page */
+            page: number | null;
+            /** Text */
+            text: string;
+        };
+        /** ReadingOrderResponse */
+        ReadingOrderResponse: {
+            /** Blocks */
+            blocks: components["schemas"]["ReadingOrderBlockResponse"][];
+            /**
+             * Documentid
+             * Format: uuid
+             */
+            documentId: string;
         };
         /** RegisterRequest */
         RegisterRequest: {
@@ -672,6 +1407,162 @@ export interface components {
             newPassword: string;
             /** Token */
             token: string;
+        };
+        /** ResumeFindingResponse */
+        ResumeFindingResponse: {
+            /** Action */
+            action: string | null;
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "issue" | "quick_win" | "section_feedback" | "parser_warning";
+            /** Description */
+            description: string;
+            /** Id */
+            id: string;
+            /** Section */
+            section: string | null;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "info" | "warning" | "critical";
+            /** Title */
+            title: string;
+        };
+        /** ResumeHealthComponentResponse */
+        ResumeHealthComponentResponse: {
+            /** Contribution */
+            contribution: number;
+            /** Explanation */
+            explanation: string;
+            /** Featurecontributions */
+            featureContributions: components["schemas"]["ResumeHealthFeatureContributionResponse"][];
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "machine_readability" | "recruiter_clarity" | "content_impact" | "achievement_strength" | "structure" | "consistency_truth";
+            /** Label */
+            label: string;
+            /** Rawcontributionbasispoints */
+            rawContributionBasisPoints: number;
+            /** Rawscorebasispoints */
+            rawScoreBasisPoints: number;
+            /** Score */
+            score: number;
+            /** Weight */
+            weight: number;
+        };
+        /** ResumeHealthFeatureContributionResponse */
+        ResumeHealthFeatureContributionResponse: {
+            /** Contribution */
+            contribution: number;
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "searchable_text" | "parser_confidence" | "reading_order_integrity" | "recognized_section_ratio" | "concise_block_ratio" | "section_breadth" | "chronology_coverage" | "action_bullet_ratio" | "outcome_bullet_ratio" | "duplicate_content_integrity" | "page_fit" | "parser_warning_integrity";
+            /** Label */
+            label: string;
+            /** Rawcontributionbasispoints */
+            rawContributionBasisPoints: number;
+            /** Rawscorebasispoints */
+            rawScoreBasisPoints: number;
+            /** Rawweightbasispoints */
+            rawWeightBasisPoints: number;
+            /** Score */
+            score: number;
+            /** Weight */
+            weight: number;
+        };
+        /** ResumeHealthFeatureValueResponse */
+        ResumeHealthFeatureValueResponse: {
+            /** Displayvalue */
+            displayValue: string;
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "text_characters" | "page_count" | "image_only" | "section_count" | "recognized_section_count" | "block_count" | "concise_block_count" | "bullet_count" | "action_bullet_count" | "outcome_bullet_count" | "duplicate_block_count" | "chronology_signal_count" | "warning_count" | "reading_order_violation_count" | "average_confidence_basis_points";
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "count" | "boolean" | "percentage";
+            /** Label */
+            label: string;
+            /** Rawvalue */
+            rawValue: number | boolean;
+        };
+        /** ResumeHealthReportResponse */
+        ResumeHealthReportResponse: {
+            /**
+             * Canonicalresumeid
+             * Format: uuid
+             */
+            canonicalResumeId: string;
+            /** Components */
+            components: components["schemas"]["ResumeHealthComponentResponse"][];
+            /**
+             * Computedat
+             * Format: date-time
+             */
+            computedAt: string;
+            /** Configurationversion */
+            configurationVersion: string;
+            /** Disclaimer */
+            disclaimer: string;
+            /**
+             * Documentid
+             * Format: uuid
+             */
+            documentId: string;
+            /** Engineversion */
+            engineVersion: string;
+            /** Expiresat */
+            expiresAt: string | null;
+            /** Featureschemaversion */
+            featureSchemaVersion: string;
+            /** Featuresethash */
+            featureSetHash: string;
+            /** Featurevalues */
+            featureValues: components["schemas"]["ResumeHealthFeatureValueResponse"][];
+            /** Findings */
+            findings: components["schemas"]["ResumeFindingResponse"][];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Rawscorebasispoints */
+            rawScoreBasisPoints: number | null;
+            /** Score */
+            score: number | null;
+            /** Scoreband */
+            scoreBand: ("needsAttention" | "developing" | "strong") | null;
+            /**
+             * Scoretype
+             * @default resume_health
+             * @constant
+             */
+            scoreType: "resume_health";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "insufficientData" | "complete";
+            /** Warnings */
+            warnings: string[];
+        };
+        /** ResumeHealthRequest */
+        ResumeHealthRequest: {
+            /**
+             * Documentid
+             * Format: uuid
+             */
+            documentId: string;
         };
         /** SessionInfo */
         SessionInfo: {
@@ -729,6 +1620,75 @@ export interface components {
              * Format: date-time
              */
             lastSeenAt: string;
+        };
+        /** SourceSpanResponse */
+        SourceSpanResponse: {
+            /** End */
+            end: number;
+            /** Excerpt */
+            excerpt: string;
+            /** Page */
+            page: number | null;
+            /** Start */
+            start: number;
+        };
+        /** UploadIntentRequest */
+        UploadIntentRequest: {
+            /** Displayfilename */
+            displayFilename: string;
+            /** Expectedsizebytes */
+            expectedSizeBytes: number;
+            /**
+             * Mediatype
+             * @enum {string}
+             */
+            mediaType: "application/pdf" | "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+            /**
+             * Purpose
+             * @default resume_health
+             * @constant
+             */
+            purpose: "resume_health";
+        };
+        /** UploadIntentResponse */
+        UploadIntentResponse: {
+            /**
+             * Expiresat
+             * Format: date-time
+             */
+            expiresAt: string;
+            /** Guestexpiresat */
+            guestExpiresAt?: string | null;
+            /** Headers */
+            headers: {
+                [key: string]: string;
+            };
+            /**
+             * Method
+             * @default PUT
+             * @constant
+             */
+            method: "PUT";
+            /**
+             * Uploadid
+             * Format: uuid
+             */
+            uploadId: string;
+            /** Url */
+            url: string;
+        };
+        /** UploadPolicyResponse */
+        UploadPolicyResponse: {
+            /** Acceptedmediatypes */
+            acceptedMediaTypes: ("application/pdf" | "application/vnd.openxmlformats-officedocument.wordprocessingml.document")[];
+            /** Guestretentionhours */
+            guestRetentionHours: number;
+            /** Maxbytes */
+            maxBytes: number;
+            /** Maxpages */
+            maxPages: number;
+            /** Uploadintentttlseconds */
+            uploadIntentTtlSeconds: number;
         };
         /** VerificationResponse */
         VerificationResponse: {
@@ -2308,6 +3268,1546 @@ export interface operations {
             };
         };
     };
+    listResumeDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                careeros_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentListResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getResumeDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: {
+                careeros_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteResumeDocument: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Stable 8-128 character retry key using letters, digits, dot, underscore, colon, or hyphen. */
+                "Idempotency-Key": string;
+                /** @description Quoted positive signed integer resource version, maximum 2147483647. */
+                "If-Match": string;
+                "X-CSRF-Token"?: string | null;
+            };
+            path: {
+                document_id: string;
+            };
+            cookie?: {
+                careeros_csrf?: string | null;
+                careeros_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAcceptedResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    correctCanonicalResume: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Quoted positive signed integer resource version, maximum 2147483647. */
+                "If-Match": string;
+                "X-CSRF-Token"?: string | null;
+            };
+            path: {
+                document_id: string;
+            };
+            cookie?: {
+                careeros_csrf?: string | null;
+                careeros_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CanonicalResumeUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CanonicalResumeResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getResumeDocumentPlainText: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: {
+                careeros_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlainTextResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getResumeDocumentReadingOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: {
+                careeros_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadingOrderResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getResumeDocumentStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: {
+                careeros_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentSummaryResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getGuestResumeDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: {
+                careeros_guest_capability?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteGuestResumeDocument: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Stable 8-128 character retry key using letters, digits, dot, underscore, colon, or hyphen. */
+                "Idempotency-Key": string;
+                /** @description Quoted positive signed integer resource version, maximum 2147483647. */
+                "If-Match": string;
+                "X-Guest-CSRF"?: string | null;
+            };
+            path: {
+                document_id: string;
+            };
+            cookie?: {
+                careeros_guest_capability?: string | null;
+                careeros_guest_csrf?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAcceptedResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    correctGuestCanonicalResume: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Quoted positive signed integer resource version, maximum 2147483647. */
+                "If-Match": string;
+                "X-Guest-CSRF"?: string | null;
+            };
+            path: {
+                document_id: string;
+            };
+            cookie?: {
+                careeros_guest_capability?: string | null;
+                careeros_guest_csrf?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CanonicalResumeUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CanonicalResumeResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    claimGuestResumeDocument: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-CSRF-Token"?: string | null;
+            };
+            path: {
+                document_id: string;
+            };
+            cookie?: {
+                careeros_csrf?: string | null;
+                careeros_guest_capability?: string | null;
+                careeros_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimGuestDocumentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimGuestDocumentResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getGuestResumeDocumentPlainText: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: {
+                careeros_guest_capability?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlainTextResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getGuestResumeDocumentReadingOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: {
+                careeros_guest_capability?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadingOrderResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getGuestResumeDocumentStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: {
+                careeros_guest_capability?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentSummaryResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getGuestProcessingJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: {
+                careeros_guest_capability?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessingJobResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    cancelGuestProcessingJob: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Stable 8-128 character retry key using letters, digits, dot, underscore, colon, or hyphen. */
+                "Idempotency-Key": string;
+                "X-Guest-CSRF"?: string | null;
+            };
+            path: {
+                job_id: string;
+            };
+            cookie?: {
+                careeros_guest_capability?: string | null;
+                careeros_guest_csrf?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessingJobResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    startGuestResumeHealthAnalysis: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Stable 8-128 character retry key using letters, digits, dot, underscore, colon, or hyphen. */
+                "Idempotency-Key": string;
+                "X-Guest-CSRF"?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                careeros_guest_capability?: string | null;
+                careeros_guest_csrf?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResumeHealthRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAcceptedResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getGuestResumeHealthAnalysis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                analysis_id: string;
+            };
+            cookie?: {
+                careeros_guest_capability?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResumeHealthReportResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getGuestResumeHealthUploadPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadPolicyResponse"];
+                };
+            };
+        };
+    };
+    finalizeGuestResumeUpload: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Stable 8-128 character retry key using letters, digits, dot, underscore, colon, or hyphen. */
+                "Idempotency-Key": string;
+                "X-Guest-CSRF"?: string | null;
+            };
+            path: {
+                upload_id: string;
+            };
+            cookie?: {
+                careeros_guest_capability?: string | null;
+                careeros_guest_csrf?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinalizeUploadResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createGuestResumeUploadIntent: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-CSRF-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                careeros_csrf?: string | null;
+                careeros_guest_capability?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UploadIntentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadIntentResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     getCurrentUser: {
         parameters: {
             query?: never;
@@ -2717,6 +5217,486 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ProblemResponse"];
                 };
+            };
+        };
+    };
+    getProcessingJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: {
+                careeros_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessingJobResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    cancelProcessingJob: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Stable 8-128 character retry key using letters, digits, dot, underscore, colon, or hyphen. */
+                "Idempotency-Key": string;
+                "X-CSRF-Token"?: string | null;
+            };
+            path: {
+                job_id: string;
+            };
+            cookie?: {
+                careeros_csrf?: string | null;
+                careeros_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessingJobResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    startResumeHealthAnalysis: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Stable 8-128 character retry key using letters, digits, dot, underscore, colon, or hyphen. */
+                "Idempotency-Key": string;
+                "X-CSRF-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                careeros_csrf?: string | null;
+                careeros_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResumeHealthRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAcceptedResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getResumeHealthAnalysis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                analysis_id: string;
+            };
+            cookie?: {
+                careeros_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResumeHealthReportResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getResumeHealthUploadPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadPolicyResponse"];
+                };
+            };
+        };
+    };
+    finalizeResumeUpload: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Stable 8-128 character retry key using letters, digits, dot, underscore, colon, or hyphen. */
+                "Idempotency-Key": string;
+                "X-CSRF-Token"?: string | null;
+            };
+            path: {
+                upload_id: string;
+            };
+            cookie?: {
+                careeros_csrf?: string | null;
+                careeros_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinalizeUploadResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createResumeUploadIntent: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-CSRF-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                careeros_csrf?: string | null;
+                careeros_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UploadIntentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadIntentResponse"];
+                };
+            };
+            /** @description Authentication or guest capability required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mutation protection rejected the request */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Resource or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Guest or upload retention expired */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Document or request rejected */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Required processing dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

@@ -1,5 +1,8 @@
 """HTTP adapter tests for CSRF, cookies, validation, ownership calls, and safe errors."""
 
+import base64
+import hashlib
+import hmac
 from datetime import UTC, datetime, timedelta
 from unittest.mock import create_autospec
 from uuid import uuid4
@@ -14,6 +17,7 @@ from careeros.modules.identity.application.models import (
 from careeros.modules.identity.domain import AuthenticatedPrincipal, AuthMethod
 from careeros.modules.identity.domain.errors import AuthenticationRequired
 from fastapi.testclient import TestClient
+from pydantic import SecretStr
 
 from careeros_api.config import Settings
 from careeros_api.main import create_app
@@ -21,6 +25,7 @@ from conftest import FakeDatabase
 
 _ORIGIN = "http://localhost:3000"
 _PASSWORD = "a long test-only password"  # noqa: S105
+_BFF_SIGNAL_CONTEXT = b"careeros-bff-client-v1\0"
 
 
 def _service():
@@ -66,6 +71,16 @@ def _csrf(client: TestClient) -> str:
     return response.json()["csrfToken"]
 
 
+def _bff_client_signal(address: str, key_material: str) -> tuple[str, str]:
+    encoded = base64.urlsafe_b64encode(address.encode("ascii")).rstrip(b"=").decode("ascii")
+    signature = hmac.new(
+        key_material.encode("utf-8"),
+        _BFF_SIGNAL_CONTEXT + address.encode("ascii"),
+        hashlib.sha256,
+    ).hexdigest()
+    return f"v1.{encoded}.{signature}", signature
+
+
 def test_registration_requires_exact_origin_and_double_submit_csrf(
     settings: Settings, fake_database: FakeDatabase
 ) -> None:
@@ -93,6 +108,53 @@ def test_registration_requires_exact_origin_and_double_submit_csrf(
     assert accepted.status_code == 202
     service.validate_pre_auth_csrf.assert_called_once_with(csrf)
     service.register.assert_awaited_once()
+
+
+def test_staging_identity_rate_context_requires_the_authenticated_bff_source(
+    settings: Settings, fake_database: FakeDatabase
+) -> None:
+    service = _service()
+    key_material = "staging-bff-key-material-that-is-at-least-32-bytes"
+    staging = settings.model_copy(
+        update={
+            "environment": "staging",
+            "bff_client_signal_secret": SecretStr(key_material),
+        }
+    )
+    payload = {
+        "email": "alex@example.com",
+        "password": _PASSWORD,
+        "displayName": "Alex Example",
+    }
+    signal, signature = _bff_client_signal("203.0.113.42", key_material)
+    forged_signal = f"{signal[:-1]}{'0' if signal[-1] != '0' else '1'}"
+
+    with TestClient(create_app(staging, database=fake_database, identity=service)) as client:
+        csrf = _csrf(client)
+        forged = client.post(
+            "/api/v1/auth/register",
+            json=payload,
+            headers={
+                "Origin": _ORIGIN,
+                "X-CSRF-Token": csrf,
+                "X-CareerOS-Client-Signal": forged_signal,
+            },
+        )
+        accepted = client.post(
+            "/api/v1/auth/register",
+            json=payload,
+            headers={
+                "Origin": _ORIGIN,
+                "X-CSRF-Token": csrf,
+                "X-CareerOS-Client-Signal": signal,
+            },
+        )
+
+    assert forged.status_code == 403
+    assert accepted.status_code == 202
+    context = service.register.await_args.args[3]
+    assert context.source_key == f"bff:{signature}"
+    assert "203.0.113.42" not in context.source_key
 
 
 def test_login_sets_host_only_http_only_rotating_cookies(

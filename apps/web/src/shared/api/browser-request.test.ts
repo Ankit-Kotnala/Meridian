@@ -12,7 +12,27 @@ function json(body: unknown, init?: ResponseInit) {
 describe("browser API requests", () => {
   afterEach(() => {
     document.cookie = "careeros_csrf=; Max-Age=0; Path=/";
+    document.cookie = "careeros_guest_csrf=; Max-Age=0; Path=/";
     vi.unstubAllGlobals();
+  });
+
+  it("uses the separate guest CSRF cookie and header", async () => {
+    document.cookie = "careeros_guest_csrf=guest-token; Path=/";
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await apiMutation(
+      "/api/v1/me",
+      { method: "POST" },
+      { csrf: "guest", retryAfterRefresh: false },
+    );
+
+    const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const headers = new Headers(request.headers);
+    expect(headers.get("x-guest-csrf")).toBe("guest-token");
+    expect(headers.has("x-csrf-token")).toBe(false);
   });
 
   it("uses the session-bound readable CSRF cookie for authenticated writes", async () => {
@@ -32,6 +52,26 @@ describe("browser API requests", () => {
     const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
     expect(new Headers(request.headers).get("x-csrf-token")).toBe(
       "session-token",
+    );
+  });
+
+  it("reuses a valid pre-auth token so anonymous rate limits remain browser-scoped", async () => {
+    document.cookie = "careeros_csrf=stable-pre-auth-token; Path=/";
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await apiMutation(
+      "/api/v1/guest/uploads/presign",
+      { method: "POST" },
+      { csrf: "pre-auth", retryAfterRefresh: false },
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    expect(new Headers(request.headers).get("x-csrf-token")).toBe(
+      "stable-pre-auth-token",
     );
   });
 

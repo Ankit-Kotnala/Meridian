@@ -2,6 +2,7 @@
 
 import type { components, paths } from "@careeros/contracts";
 
+import type { GeneratedApiPath } from "./api-path";
 import { apiFailure, type ApiFailure } from "./problem-response";
 
 export class ApiRequestError extends Error {
@@ -15,21 +16,21 @@ export class ApiRequestError extends Error {
 }
 
 type MutationOptions = {
-  csrf: "pre-auth" | "session";
+  csrf: "guest" | "pre-auth" | "session";
   retryAfterRefresh?: boolean;
 };
 
-type ApiPath = keyof paths | `/api/v1/auth/sessions/${string}`;
+type ApiPath = keyof paths | GeneratedApiPath;
 
 let refreshInFlight: Promise<void> | undefined;
 
-function csrfCookie(): string | undefined {
+function csrfCookie(name = "careeros_csrf"): string | undefined {
   if (typeof document === "undefined") return undefined;
   const encoded = document.cookie
     .split(";")
     .map((part) => part.trim())
-    .find((part) => part.startsWith("careeros_csrf="))
-    ?.slice("careeros_csrf=".length);
+    .find((part) => part.startsWith(`${name}=`))
+    ?.slice(name.length + 1);
   if (!encoded) return undefined;
   try {
     return decodeURIComponent(encoded);
@@ -83,9 +84,15 @@ export async function apiMutation(
   init: Omit<RequestInit, "headers"> & { headers?: HeadersInit },
   options: MutationOptions = { csrf: "pre-auth" },
 ): Promise<Response> {
-  async function send(): Promise<Response> {
+  async function send(forcePreAuthRefresh = false): Promise<Response> {
     const token =
-      options.csrf === "pre-auth" ? await getCsrfToken() : csrfCookie();
+      options.csrf === "pre-auth"
+        ? forcePreAuthRefresh
+          ? await getCsrfToken()
+          : (csrfCookie() ?? (await getCsrfToken()))
+        : options.csrf === "guest"
+          ? csrfCookie("careeros_guest_csrf")
+          : csrfCookie();
     if (!token) {
       throw new ApiRequestError({
         message: "Your secure session could not be confirmed. Sign in again.",
@@ -93,7 +100,10 @@ export async function apiMutation(
       });
     }
     const headers = new Headers(init.headers);
-    headers.set("X-CSRF-Token", token);
+    headers.set(
+      options.csrf === "guest" ? "X-Guest-CSRF" : "X-CSRF-Token",
+      token,
+    );
     if (init.body) headers.set("content-type", "application/json");
     return fetch(path, {
       ...init,
@@ -104,6 +114,9 @@ export async function apiMutation(
   }
 
   let response = await send();
+  if (response.status === 403 && options.csrf === "pre-auth") {
+    response = await send(true);
+  }
   if (
     response.status === 401 &&
     options.csrf === "session" &&
@@ -117,13 +130,14 @@ export async function apiMutation(
 }
 
 export async function apiQuery(
-  path: keyof paths,
-  options: { retryAfterRefresh?: boolean } = {},
+  path: keyof paths | GeneratedApiPath,
+  options: { retryAfterRefresh?: boolean; signal?: AbortSignal } = {},
 ): Promise<Response> {
   const send = () =>
     fetch(path, {
       cache: "no-store",
       credentials: "same-origin",
+      ...(options.signal ? { signal: options.signal } : {}),
     });
   let response = await send();
   if (response.status === 401 && options.retryAfterRefresh) {

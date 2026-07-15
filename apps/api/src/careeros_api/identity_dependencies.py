@@ -13,6 +13,7 @@ from careeros.modules.identity.domain.errors import (
 )
 from fastapi import Cookie, Depends, Header, Request
 
+from careeros_api.client_signal import verified_client_source_key
 from careeros_api.config import Settings
 
 SESSION_COOKIE = "careeros_session"
@@ -36,7 +37,7 @@ def request_context(request: Request) -> RequestContext:
         request_id=str(request.state.request_id),
         trace_id=str(request.state.trace_id),
         device_label=_device_label(user_agent),
-        source_key=request.client.host if request.client is not None else "unknown",
+        source_key=verified_client_source_key(request),
     )
 
 
