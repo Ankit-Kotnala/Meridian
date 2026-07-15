@@ -13,14 +13,14 @@ claim under the user's control.
 
 ## Repository status
 
-**Phase 0 is complete and Phase 1 is next.** The aligned repository uses a shared Python modular
-monolith, one root uv workspace, generated API contracts, thin deployable
-applications, and executable dependency boundaries. The complete local runtime,
-browser, migration, and security gates pass.
+**Phase 1 authentication, onboarding, and the protected workspace are complete;
+Phase 2 resume upload, parsing, and general health is next.** The repository uses a
+shared Python modular monolith, one root uv workspace, generated API contracts,
+thin deployable applications, and executable dependency boundaries.
 
-Hosted CI run `29360385761` passed all six jobs against Phase 0 implementation
-commit `9558f33`, including API, worker, web/contracts, browser, supply-chain,
-and clean-checkout container/migration/image-scan verification.
+Hosted CI run `29366505373` passed GitGuardian plus all seven repository jobs
+against Phase 1 commit `c4bdbe1`, including API, worker, web/contracts, browser,
+auth E2E, supply-chain, and clean-checkout container/migration/image scanning.
 
 See [PLANS.md](PLANS.md) for current status, historical evidence, and phase gates.
 Do not infer that a planned endpoint or module is implemented from the
@@ -32,7 +32,8 @@ architecture documents.
   TypeScript 5.9.3 strict mode, and Tailwind CSS 4.3.2
 - API: Python 3.13, uv, FastAPI 0.138.2, Pydantic, async SQLAlchemy, and asyncpg
 - Worker: Celery 5.6.3 with Redis broker/result backend
-- Local services: PostgreSQL with pgvector, Redis, and S3-compatible MinIO
+- Local services: PostgreSQL with pgvector, Redis, S3-compatible MinIO, and
+  Mailpit SMTP capture
 - Backend: shared `careeros-backend` modular monolith used by thin API and worker
   deployables through one root uv workspace and lockfile
 - Contracts: FastAPI OpenAPI as the source of truth, with a normalized artifact,
@@ -70,8 +71,8 @@ quality checks run through the pinned host toolchains. Install:
 - either GNU Make plus a POSIX shell (WSL/Git Bash are suitable on Windows), or
   PowerShell and the checked-in scripts
 
-Docker must have enough memory for the web, API, worker, PostgreSQL, Redis, and
-MinIO services.
+Docker must have enough memory for the web, API, worker, PostgreSQL, Redis, MinIO,
+and Mailpit services.
 
 ## First-time setup
 
@@ -105,7 +106,7 @@ credentials are not exposed on other host interfaces by default.
 
 | Service       | URL                                 | Purpose                     |
 | ------------- | ----------------------------------- | --------------------------- |
-| Web           | <http://localhost:3000>             | Phase 0 product preview     |
+| Web           | <http://localhost:3000>             | Public and authenticated UI |
 | Web health    | <http://localhost:3000/api/health>  | Web liveness                |
 | API docs      | <http://localhost:8000/docs>        | OpenAPI UI                  |
 | API liveness  | <http://localhost:8000/health>      | Process health              |
@@ -113,6 +114,14 @@ credentials are not exposed on other host interfaces by default.
 | API metadata  | <http://localhost:8000/api/v1/meta> | Safe service metadata       |
 | MinIO API     | <http://localhost:9000>             | S3-compatible endpoint      |
 | MinIO console | <http://localhost:9001>             | Local object administration |
+| Mailpit       | <http://localhost:8025>             | Local auth email capture    |
+
+Create an account at `/register`, follow the verification link captured by
+Mailpit, and sign in at `/login`. Other public flow routes are `/verify-email`,
+`/forgot-password`, `/reset-password`, and `/get-started`. `/dashboard`,
+`/onboarding`, `/settings`, `/settings/sessions`, and `/settings/consent` require an
+authenticated session. The labeled fictional preview remains available at
+`/demo/dashboard`; it is isolated from real account state.
 
 Check the composed service state and probes:
 
@@ -157,26 +166,31 @@ make lint             # lint TypeScript and Python
 make typecheck        # strict TypeScript and Python type checks
 make test             # unit tests
 make test-integration # build/start the stack, migrate twice, and probe services
-make test-e2e         # end-to-end tests when present
+make test-e2e         # Playwright against an already running stack
+make test-e2e-stack   # isolated desktop/mobile authentication journey
 make security-scan    # scan source, dependencies, and application images
 make migrate          # apply the current database migrations
 make seed             # print the explicitly fictional Phase 0 fixture
 make verify           # full format/lint/type/test/contract/build/runtime gate
+make verify-phase1    # full gate plus isolated Phase 1 integration/E2E
 make reset-db         # explicitly destructive local database reset
 ```
 
 On native Windows without GNU Make, use `.\scripts\setup.ps1` for `make setup`,
 `.\scripts\verify.ps1` for the full contract/quality/build/migration/runtime
 gate, `.\scripts\security-scan.ps1` for `make security-scan`, and the equivalent
-`docker compose` commands shown above for start/stop. The verification script
-leaves the healthy local stack running for inspection. The Make targets remain
-the cross-platform CI/documentation contract.
+`docker compose` commands shown above for start/stop. Use
+`.\scripts\verify-phase1.ps1` for the consolidated Phase 1 gate, including isolated
+PostgreSQL/Redis integration and Playwright journeys. The general verification
+script leaves the healthy local stack running for inspection. The Phase 1 E2E
+runner cleans up its isolated containers, images, networks, and volumes.
 
-The Phase 0 migration enables the pgvector extension and intentionally creates no
-business tables. The Phase 0 seed command prints a fictional fixture and performs
-no database write. Domain migrations and database seeding arrive with their owning
-features. A command that prints a fixture or says a feature is deferred is not
-evidence that the product feature exists.
+The Phase 0 migration enables the pgvector extension. Phase 1 migration
+`20260715_0002` adds the identity, session, OAuth, organization, consent, audit,
+and onboarding tables with ownership and integrity constraints. The seed command
+still prints only a fictional demo fixture and performs no database write. A
+command that prints a fixture or says a feature is deferred is not evidence that
+the product feature exists.
 
 For host-only package work, use the pinned tools rather than global substitutes:
 
@@ -215,7 +229,7 @@ Read [AGENTS.md](AGENTS.md) before contributing. The principal references are:
 - [Implementation checklist](docs/implementation-checklist.md)
 - [Architecture decisions](docs/adr/README.md)
 
-## Phase 0 verification
+## Phase 0 and Phase 1 verification
 
 The aligned working tree passes the repository gates, architecture checks,
 contract drift checks, migrations, browser checks, security scans, and container
@@ -231,6 +245,7 @@ make lint
 make typecheck
 make test
 make verify
+make test-e2e
 ```
 
 Native PowerShell runs the equivalent quality/build/configuration checks with:
@@ -238,6 +253,7 @@ Native PowerShell runs the equivalent quality/build/configuration checks with:
 ```powershell
 .\scripts\setup.ps1
 .\scripts\verify.ps1
+.\scripts\verify-phase1.ps1
 docker compose up --build --detach --wait
 docker compose ps
 Invoke-WebRequest -UseBasicParsing http://localhost:3000/api/health
@@ -246,9 +262,13 @@ Invoke-WebRequest -UseBasicParsing http://localhost:8000/ready
 Invoke-WebRequest -UseBasicParsing http://localhost:8000/api/v1/meta
 ```
 
-The web, API, worker, PostgreSQL, Redis, and MinIO report healthy in the aligned
-tree. Hosted CI run `29360385761` verified the committed Phase 0 implementation.
-Skipped, unavailable, or failing checks reopen the affected gate.
+The Phase 1 gate passes formatting, lint, strict types, contract drift, unit and
+API tests, production builds, migration round-trip, all local service readiness,
+two real PostgreSQL/Redis identity integrations, and the primary desktop/mobile
+auth workflow. Playwright reports 9 passed, 1 intentional desktop-only project
+exclusion, and 0 failures. Hosted CI run `29366505373` verifies the Phase 1 commit;
+the earlier Phase 0 evidence remains in `PLANS.md`. Skipped, unavailable, or
+failing required checks reopen the phase.
 
 ## License and production use
 

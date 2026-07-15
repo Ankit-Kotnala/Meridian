@@ -1,8 +1,8 @@
 # CareerOS security threat model
 
-Status: baseline; update with every data-owning or trust-boundary change  
+Status: Phase 1 identity/session controls implemented; update with every data-owning or trust-boundary change
 Method: asset/trust-boundary analysis with STRIDE-style threat enumeration  
-Last reviewed: 2026-07-14
+Last reviewed: 2026-07-15
 
 ## Scope and current posture
 
@@ -10,12 +10,13 @@ This model covers the browser, Next.js application, FastAPI API, Celery workers,
 PostgreSQL/pgvector, Redis, S3-compatible object storage, external providers,
 administration, CI/CD, and operational telemetry.
 
-Phase 0 contains local platform skeletons and fictional demo content only. It does
-not yet accept authentication, uploads, private career data, job URLs, model
-requests, exports, billing, or administrator actions. Controls described for
-those paths are required target controls, not claims of implementation. Phase 0
-must still protect secrets, dependency integrity, health endpoints, container
-boundaries, and logs.
+Phase 1 accepts authentication, limited account/profile data, session metadata,
+consent events, and onboarding progress. Its implemented identity controls are
+called out below. The product still does not accept resume uploads, job URLs,
+model requests, exports, billing, or administrator actions; controls described
+for those later paths remain target requirements, not claims of implementation.
+The fictional dashboard preview is isolated at `/demo/dashboard` and does not use
+authenticated account state.
 
 ## Security objectives
 
@@ -223,6 +224,36 @@ tenant and UUID. Background jobs store owner/tenant and reauthorize durable
 resources. Organization roles grant explicit capabilities, not blanket tenant
 reads. Admin capabilities are separate and audited.
 
+### Phase 1 implemented controls and evidence
+
+- Passwords are Argon2id hashes. Session, refresh, verification, recovery, OAuth
+  state, and PKCE material are high-entropy opaque values; persisted secrets use
+  keyed hashes rather than recoverable plaintext.
+- Access and refresh cookies are HTTP-only, production-secure, and scoped to the
+  required paths. A session-bound readable CSRF cookie plus matching header and
+  origin/CORS allowlist protect state changes. The web proxy is same-origin,
+  header-allowlisted, redirect-controlled, time-bounded, and cannot select an
+  arbitrary upstream.
+- Refresh use rotates the token and detects replay; a replay revokes the family.
+  Verification and recovery tokens are short-lived and single-use. Successful
+  password recovery invalidates sessions.
+- Registration, resend, and recovery responses resist account enumeration. Redis
+  applies bounded abuse controls. Request bodies are capped at 1 MiB for both
+  declared and chunked bodies before application parsing.
+- Google OAuth state is browser-bound and one-use. The adapter requires state,
+  nonce, PKCE, exact configured redirects, RS256 signatures, audience/client and
+  authorized-party checks, plus `at_hash` when supplied. Account collisions fail
+  safely and tests use deterministic providers without live credentials.
+- Owner-scoped repositories and route dependencies reject anonymous and cross-user
+  access. Session, authentication, consent, and security-sensitive changes emit
+  redacted audit events; recent-auth hooks exist without claiming MFA support.
+
+Unit/API tests cover these invariants, two integration workflows exercise real
+PostgreSQL and Redis, and the isolated browser journey proves registration through
+Mailpit verification, login, onboarding, exact-session revocation, logout, and
+protected-route denial on desktop and mobile. Exact counts and commands are in
+`PLANS.md`.
+
 ## Privacy, retention, and consent
 
 - Default: user content is not used to train models.
@@ -309,15 +340,27 @@ integrity, ownership, migrations, object references, and documented RPO/RTO.
   user confirmation.
 - Distributed abuse can defeat simple rate keys. Edge controls and telemetry must
   complement application quotas.
+- MFA is not implemented; recent-auth and session hooks only preserve a future
+  integration point. Live Google credentials and production SMTP delivery were
+  not part of the local gate, so provider enablement requires a separate
+  configuration and contract review.
+- Account export/deletion orchestration and final retention periods remain later
+  phase work; Phase 1 consent and audit records do not substitute for them.
 - Backups and third-party retention delay physical erasure; policy and user
   messaging must describe the bounded window accurately.
-- Phase 0 local Compose is not hardened for hostile multi-user or internet-facing
+- Local Compose is not hardened for hostile multi-user or internet-facing
   use.
 - The high-severity image gate has two exact-version exceptions in `.grype.yaml`:
-  CPython 3.13.14 `CVE-2026-15308` has no supported 3.13 fix and the Phase 0 API
+  CPython 3.13.14 `CVE-2026-15308` has no supported 3.13 fix and the current API
   does not parse untrusted HTML; Next.js 16.2.10 vendors undici 6.26.0 affected by
-  WebSocket-only `GHSA-vxpw-j846-p89q`, while Phase 0 has no WebSocket client path.
+  WebSocket-only `GHSA-vxpw-j846-p89q`, while the product has no WebSocket client
+  path.
   A Python base-image or Next.js update must remove the corresponding exception.
+- The 2026-07-15 scan also reports medium findings in CPython 3.13.14 whose listed
+  fixes are 3.15 prereleases, plus vendored `undici` 6.26.0 and `tar` 7.5.15
+  findings below the configured fixable-high gate. Dependency/base-image upgrades
+  must remove them when compatible stable releases are available; `pnpm audit`
+  and `pip-audit` currently report no known actionable application dependency.
 
 Any new external data flow, public endpoint, file type, AI tool, administrator
 capability, authentication method, or tenant-sharing feature requires this model

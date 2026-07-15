@@ -2,12 +2,7 @@
 
 import { ErrorState } from "@careeros/ui";
 
-export default function DashboardError({
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
+export default function DashboardDemoError({ reset }: { reset: () => void }) {
   return (
     <main className="mx-auto max-w-[98rem] p-6" id="main-content">
       <ErrorState

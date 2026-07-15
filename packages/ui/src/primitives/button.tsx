@@ -14,23 +14,40 @@ export const buttonStyles = {
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode;
+  loading?: boolean;
+  loadingLabel?: string;
   variant?: keyof typeof buttonStyles;
 };
 
 export function Button({
   children,
   className,
+  disabled,
+  loading = false,
+  loadingLabel = "Working…",
   type = "button",
   variant = "primary",
   ...props
 }: ButtonProps) {
   return (
     <button
+      aria-busy={loading || undefined}
       className={cn(buttonStyles.base, buttonStyles[variant], className)}
+      disabled={disabled || loading}
       type={type}
       {...props}
     >
-      {children}
+      {loading ? (
+        <>
+          <span
+            aria-hidden="true"
+            className="size-4 animate-spin rounded-full border-2 border-current border-r-transparent"
+          />
+          <span>{loadingLabel}</span>
+        </>
+      ) : (
+        children
+      )}
     </button>
   );
 }

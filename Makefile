@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: help setup dev stop format format-check lint typecheck test contracts-check test-integration test-e2e build security-scan seed migrate reset-db compose-config verify
+.PHONY: help setup dev stop format format-check lint typecheck test contracts-check test-integration test-e2e test-e2e-stack build security-scan seed migrate reset-db compose-config verify verify-phase1
 
 help:
 	@echo "CareerOS development targets"
@@ -14,10 +14,12 @@ help:
 	@echo "  test             Run unit tests"
 	@echo "  test-integration Start the stack and verify service health"
 	@echo "  test-e2e         Run browser end-to-end tests"
+	@echo "  test-e2e-stack   Run the isolated full-stack authentication journey"
 	@echo "  build            Build workspace packages and service images"
 	@echo "  security-scan    Scan source, dependencies, and application images"
 	@echo "  contracts-check  Verify OpenAPI and generated TypeScript contract drift"
 	@echo "  verify           Run the Phase 0 quality, contract, build, and runtime gate"
+	@echo "  verify-phase1    Run the platform gate and isolated Phase 1 browser journey"
 
 setup:
 	@test -f .env || cp .env.example .env
@@ -61,7 +63,7 @@ typecheck:
 
 test:
 	pnpm test
-	cd packages/backend && uv run --package careeros-backend pytest
+	cd packages/backend && uv run --package careeros-backend pytest tests/architecture tests/unit
 	cd apps/api && uv run pytest
 	cd apps/worker && uv run pytest
 
@@ -78,9 +80,14 @@ test-integration:
 	curl --fail --silent --show-error http://localhost:8000/health
 	curl --fail --silent --show-error http://localhost:8000/ready
 	curl --fail --silent --show-error http://localhost:8000/api/v1/meta
+	curl --fail --silent --show-error http://localhost:8025/api/v1/info
+	docker compose exec -T worker celery --app careeros_worker.app:celery_app inspect ping --timeout 5
 
 test-e2e:
 	pnpm test:e2e
+
+test-e2e-stack:
+	sh tests/e2e/run-compose.sh
 
 build:
 	pnpm build
@@ -110,3 +117,5 @@ compose-config:
 	docker compose config --quiet
 
 verify: contracts-check format-check lint typecheck test build compose-config test-integration
+
+verify-phase1: verify test-e2e-stack

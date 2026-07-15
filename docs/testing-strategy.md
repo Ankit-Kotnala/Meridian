@@ -1,7 +1,7 @@
 # CareerOS testing strategy
 
-Status: aligned local Phase 0 gate passed; hosted CI rerun pending
-Last reviewed: 2026-07-14
+Status: Phase 1 consolidated local and hosted CI gates passed
+Last reviewed: 2026-07-15
 
 ## Objectives
 
@@ -46,8 +46,10 @@ Do not mock away the boundary a test is meant to prove.
   providers, and random seeds when outputs matter.
 - Integration tests receive a unique database/schema, bucket prefix, Redis
   namespace, and tenant/user fixtures. Parallel workers cannot share mutable state.
-- E2E starts from an explicit seed and cleans up. Retries must not hide failure;
-  CI retains trace/screenshot/video only with fictional/redacted content.
+- E2E starts from an isolated empty stack and creates unique fictional data, or
+  from an explicit fictional seed when a suite requires one. It destroys its
+  containers, networks, volumes, and local images. Retries must not hide failure;
+  retained traces/screenshots/video must contain only fictional/redacted content.
 - External AI, email, OAuth, billing, OCR, taxonomy, and monitoring use
   deterministic fakes by default. Separate opt-in provider contract tests use
   non-production credentials and never gate ordinary contributor tests on secrets.
@@ -124,9 +126,36 @@ Capture exact output/exit status in `PLANS.md`. If a host lacks Docker/Make, CI 
 provide additional evidence but the documented setup path remains unverified until
 it runs in a supported environment.
 
-The expanded repository gate passes in the current aligned working tree. The
-earlier foundation baseline remains historical evidence only. Phase 0 stays open
-until the aligned tree is committed and hosted CI passes for that exact revision.
+The expanded repository gate passes in the current aligned working tree. Phase 0
+is closed by hosted CI run `29360385761`; its earlier foundation baseline remains
+historical evidence only.
+
+## Identity and onboarding test plan (Phase 1)
+
+- Backend unit and API tests cover registration/verification, enumeration-safe
+  recovery, Argon2id settings, session rotation/replay-family revocation, one-use
+  tokens, CSRF/origin policy, abuse limits, audit events, owner denial, optimistic
+  updates, Google OAuth validation/collision behavior, and the streamed body cap.
+- Two integration tests use isolated real PostgreSQL and Redis. They are selected
+  explicitly by the full-stack runner and fail when dependency URLs are absent;
+  the fast unit runner does not disguise them as skipped coverage.
+- The migration gate exercises `20260714_0001` to `20260715_0002`, downgrade, and
+  forward re-upgrade, and verifies the runtime image reports one expected head.
+- Web/UI tests cover contract-bound requests, proxy allowlists and failures,
+  validation, loading/empty/success/error feedback, session-bound CSRF, refresh
+  coalescing, protected navigation, and accessible form primitives.
+- The isolated Playwright journey creates a unique fictional user, reads the
+  Mailpit verification link, signs in, persists honest Phase 2 onboarding skips,
+  reaches the real empty dashboard, exercises keyboard/mobile navigation, creates
+  and revokes the exact secondary session, proves its `/me` access fails, logs out,
+  and confirms protected-route denial.
+
+The frozen-tree result is 28 backend, 34 API, 12 worker, 17 web, 8 UI, 3 contract,
+and 4 boundary tests; both real-dependency integrations pass. Playwright reports 9
+passed and 1 intentional desktop-project exclusion for a mobile-only assertion;
+the assertion runs in the mobile project, so no required behavior is skipped.
+`scripts/verify-phase1.ps1` orchestrates the complete local gate and cleans its
+isolated containers, networks, volumes, images, and browser artifacts.
 
 ## Backend test portfolio
 

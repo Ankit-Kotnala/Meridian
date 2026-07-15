@@ -1,8 +1,8 @@
 # CareerOS API conventions and route plan
 
-Status: Phase 0 foundation plus forward route contract  
+Status: Phase 1 identity/account/onboarding API implemented; later phases are a forward route contract
 Base path for product APIs: `/api/v1`  
-Last reviewed: 2026-07-14
+Last reviewed: 2026-07-15
 
 ## Implementation truth
 
@@ -11,30 +11,30 @@ response shapes. This document defines conventions and the intended route map.
 A route listed as a future phase is not implemented merely because it appears
 here.
 
-### Phase 0 endpoints
+### Implemented foundation endpoints
 
 | Method | Path           | Purpose                                                                       | Dependency behavior                                        |
 | ------ | -------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------- |
 | `GET`  | `/health`      | API process liveness                                                          | Does not require downstream services                       |
-| `GET`  | `/ready`       | API readiness                                                                 | Fails when a required configured dependency is unavailable |
+| `GET`  | `/ready`       | API readiness                                                                 | Probes configured PostgreSQL, Redis, and SMTP dependencies |
 | `GET`  | `/api/v1/meta` | Safe service name/version/environment and canonical internal-score disclaimer | No secret or detailed topology                             |
 
 The web separately exposes `GET /api/health` for its own liveness on port 3000.
 It is not part of the product API contract.
 
-Phase 0 does not implement authentication, persisted domain resources, uploads,
-scores, AI, or application workflows. `/docs` and `/openapi.json` are development
-documentation endpoints and may be restricted or disabled in production.
+Phase 1 adds persisted identity, account, consent, session, and onboarding
+resources. Uploads, resume parsing/scores, AI, and application workflows remain
+unimplemented. `/docs` and `/openapi.json` are development documentation endpoints
+and may be restricted or disabled in production.
 
 `packages/contracts` derives its public types and client from the implemented
 FastAPI OpenAPI document. The normalized artifact under
 `packages/contracts/openapi` and generated files under
 `packages/contracts/src/generated` are committed review artifacts; neither is an
 independent contract authority. Problem, pagination, and product schemas are not
-published until corresponding Pydantic models and operations exist. The current
-architecture-alignment change passes both export and generation drift checks
-locally; hosted CI must repeat those checks on the committed revision before
-Phase 0 closes.
+published until corresponding Pydantic models and operations exist. The Phase 1
+tree passes export and generation drift checks locally and in hosted CI run
+`29366505373` against commit `c4bdbe1`.
 
 ## Protocol and representation
 
@@ -77,6 +77,13 @@ The browser uses API-owned secure HTTP-only session/refresh cookies. JavaScript
 does not persist bearer or refresh tokens in local storage. State-changing routes
 require CSRF protection and an allowed origin. Google OAuth uses state, nonce,
 PKCE, and exact redirect URIs.
+
+Session and one-time secrets are opaque and stored only as keyed hashes. Refresh
+tokens rotate on use; reuse revokes the token family. Passwords use Argon2id.
+Verification/recovery responses and abuse limits do not disclose whether an email
+exists. The web reaches these endpoints through an allowlisted same-origin
+`/api/v1/*` proxy and never accepts an arbitrary upstream target.
+See ADR 0008 for the implemented session and web/API boundary decision.
 
 Every user-owned lookup is scoped by authenticated user and current tenant in the
 service/repository query. Tenant selection is validated against membership; a
@@ -226,13 +233,15 @@ untrusted. See `docs/security-threat-model.md`.
 
 ## Route inventory by phase
 
-The methods below are the planned public surface. Names may be refined before
-implementation through OpenAPI review; once released, compatibility rules apply.
+The methods below are the implemented public surface through Phase 1 followed by
+the planned surface for later phases. Future names may be refined through OpenAPI
+review; once released, compatibility rules apply.
 
 ### Phase 1 — Authentication, account, and onboarding
 
 ```text
 POST   /api/v1/auth/register
+GET    /api/v1/auth/csrf
 POST   /api/v1/auth/verify-email
 POST   /api/v1/auth/resend-verification
 POST   /api/v1/auth/login
@@ -249,11 +258,15 @@ GET    /api/v1/me
 PATCH  /api/v1/me
 GET    /api/v1/onboarding
 PATCH  /api/v1/onboarding
+GET    /api/v1/consents
+POST   /api/v1/consents
 ```
 
 Registration/login/reset responses resist account enumeration. OAuth callback
 errors return through a safe fixed application route without leaking provider
-tokens. Account deletion is under settings/privacy below and requires re-auth.
+tokens. `GET` responses for `/me` and `/onboarding` return versions/ETags; their
+`PATCH` operations require CSRF plus `If-Match`. Account deletion is not a Phase 1
+endpoint; it remains Phase 10 work and will require recent authentication.
 
 ### Phase 2 — Upload, documents, parsing, and Resume Health
 
@@ -506,6 +519,10 @@ Limits are centrally configured with secure maximums. Entitlements may lower or
 raise a user's allowed use within those maximums but cannot disable security,
 grounding, authorization, or content limits.
 
+The implemented Phase 1 API enforces a 1 MiB default request-body maximum before
+route parsing. Both declared `Content-Length` and cumulative streamed/chunked body
+bytes are bounded and return a safe `413` problem when exceeded.
+
 ## OpenAPI and generated contracts
 
 - FastAPI operation IDs are stable and unique.
@@ -535,7 +552,7 @@ write API advances.
 
 ## API verification
 
-Phase 0:
+Foundation probes:
 
 ```sh
 curl --fail http://localhost:8000/health
@@ -544,13 +561,17 @@ curl --fail http://localhost:8000/api/v1/meta
 curl --fail http://localhost:8000/openapi.json
 ```
 
-Tests assert exact safe response schemas, status codes, correlation IDs, readiness
-failure under dependency loss, no secret leakage, stable operation IDs, OpenAPI
-validity, normalized artifact freshness, and generated-schema freshness. These
-checks pass together in the aligned local working tree and are recorded in
-`PLANS.md`. Hosted CI evidence for the eventual commit remains pending.
+Phase 1's consolidated local gate is:
 
-Later route gates include schema/validation, unauthenticated and cross-user denial,
-idempotency concurrency/replay, stale version, rate/size limits, safe errors,
-audit events, and the module-specific acceptance tests in
-`docs/implementation-checklist.md`.
+```powershell
+.\scripts\verify-phase1.ps1
+```
+
+Tests assert exact safe response schemas and problems, correlation IDs, readiness
+failure under dependency loss, no secret leakage, stable operation IDs, OpenAPI
+and generated-schema freshness, unauthenticated and cross-user denial, refresh
+rotation/replay, one-use recovery, CSRF/origin policy, OAuth state/link collision,
+abuse limits, audit events, optimistic profile/onboarding updates, and the 1 MiB
+streaming body limit. Real PostgreSQL/Redis integrations and the browser auth
+journey run in isolated Compose projects. Exact results are recorded in
+`PLANS.md`.

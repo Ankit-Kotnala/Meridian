@@ -45,7 +45,7 @@ export function PublicInformationPage({ page }: { page: PublicPageContent }) {
             <div className="mt-4 flex flex-col gap-3 border-t border-line pt-8 sm:flex-row">
               <Link
                 className={cn(buttonStyles.base, buttonStyles.primary)}
-                href="/dashboard"
+                href="/demo/dashboard"
               >
                 Explore the fictional demo
               </Link>

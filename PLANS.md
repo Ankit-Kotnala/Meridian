@@ -2,8 +2,8 @@
 
 Last updated: 2026-07-15
 Plan owner: engineering  
-Current status: **Phase 0 complete and verified locally and in hosted CI; Phase 1
-is the active next phase**
+Current status: **Phase 1 complete and verified locally and in hosted CI; Phase 2
+is next**
 
 ## Status legend
 
@@ -93,9 +93,9 @@ its expanded local gates pass, and commit `9558f33` passed hosted CI run
   root future-test trees, Terraform, and operations artifacts until their owning
   phases
 
-The Phase 0 dashboard is an unauthenticated, clearly labeled fictional preview.
-It must not imply that authentication, persisted metrics, or product analysis is
-implemented.
+The Phase 0 fictional dashboard remains isolated at `/demo/dashboard`. The real
+`/dashboard` is authenticated and intentionally shows an honest empty state until
+Phase 2 introduces resume processing and analysis.
 
 ### Phase 0 dependencies
 
@@ -182,6 +182,65 @@ revision.
 | `scripts/verify.ps1`                 | Pass   | Complete aligned local runtime gate finished with exit code 0                                                                       |
 | Hosted CI                            | Pass   | Run 29360385761 passed worker, API, supply-chain, web/contracts, browser-smoke, and container jobs against commit `9558f33`         |
 
+## Phase 1 scope and status
+
+### Included
+
+- [x] Owned user/profile, session, refresh, one-time-token, OAuth, organization,
+      membership, consent, audit, and onboarding persistence
+- [x] Email registration, verification/resend, login, rotating sessions,
+      logout/logout-all, recovery, session revocation, and Google OAuth adapter
+- [x] Argon2id password hashing, opaque hashed tokens, replay-family revocation,
+      CSRF/origin enforcement, abuse controls, audit events, and owner scoping
+- [x] Protected responsive workspace, real empty dashboard, profile/session/
+      consent settings, and resumable onboarding with honest Phase 2 handoffs
+- [x] Same-origin web API proxy, generated contract bindings, accessible form and
+      feedback primitives, and loading/empty/success/error states
+- [x] Unit, API, real PostgreSQL/Redis integration, migration round-trip, and
+      desktop/mobile primary-workflow E2E coverage
+
+ADR 0008 records the API-owned opaque-session model, same-origin web proxy,
+cookie/CSRF policy, refresh rotation, provider boundaries, abuse controls, and
+ownership rules. No working Phase 0 behavior was replaced with mock data; the
+fictional preview moved to the explicitly labeled demo route.
+
+### Phase 1 local evidence
+
+Evidence was captured on 2026-07-15 from the frozen working tree. Commit `c4bdbe1`
+then passed the complete hosted gate in run `29366505373`; Phase 1 is complete.
+
+| Command / gate                       | Result | Evidence                                                                                                                                             |
+| ------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts/verify-phase1.ps1`          | Pass   | Consolidated gate completed with exit code 0, including quality, contracts, builds, Compose, migration, integration, and browser checks              |
+| Formatting, lint, and strict types   | Pass   | Prettier, Ruff, ESLint/architecture boundaries, strict TypeScript, and mypy passed                                                                   |
+| Unit and API tests                   | Pass   | Backend 28, API 34, worker 12, web 17, UI 8, contracts 3, and ESLint-boundary 4 tests passed                                                         |
+| Real dependency integration          | Pass   | Two identity workflows passed against isolated PostgreSQL and Redis; the generic unit runner has no hidden integration skips                         |
+| Migration `20260715_0002`            | Pass   | Previous revision upgraded to head, downgraded, and re-upgraded; the runtime image migration path reported the expected single head                  |
+| Production builds and runtime        | Pass   | API, worker, and web images built; PostgreSQL, Redis, MinIO, Mailpit, API, worker, and web became healthy; Celery returned `pong`                    |
+| Primary workflow E2E                 | Pass   | Playwright passed 9 checks on desktop/mobile with 1 intentional desktop-only project exclusion and 0 failures                                        |
+| Manual rendered-browser review       | Pass   | Desktop registration, mobile login, the isolated demo, loading state, anonymous redirect, responsive overflow, labels, and visible skip focus passed |
+| Contract and body-limit verification | Pass   | Normalized OpenAPI/generated TypeScript stayed in sync; Content-Length and streamed bodies fail safely above the 1 MiB API limit                     |
+| Security scan                        | Pass   | Gitleaks, high-level pnpm audit, and pip-audit found no actionable issue; all application images passed Grype's fixable-high gate                    |
+| Hosted CI                            | Pass   | Run 29366505373 passed GitGuardian, API, worker, supply-chain, clean web/contracts, browser smoke, full auth E2E, and container jobs on `c4bdbe1`    |
+
+The first hosted attempt exposed that local build output had masked a clean-checkout
+contracts prerequisite and that a literal fictional E2E password triggered the
+external secret scanner. The final tree makes consumer typechecks depend on
+dependency builds/typechecks, generates the E2E password per run, removes the
+literal from reachable PR history, and passes both gates.
+
+### Explicitly deferred
+
+- Resume upload, malware admission, parsing, canonical resume state, corrections,
+  and deterministic Resume Health scoring remain Phase 2 work.
+- Live Google credentials are not required for ordinary tests; deterministic
+  provider and adapter tests cover OAuth behavior. Production provider selection
+  and credentials remain deployment decisions.
+- MFA is not presented as implemented. Phase 1 supplies recent-auth and
+  future-compatible session hooks only.
+- Account export/deletion orchestration, production retention durations, billing,
+  administrator tooling, and production deployment remain later-phase work.
+
 ## Roadmap and phase gates
 
 | Phase                                                       | Outcomes                                                                                                                           | Depends on  | Exit evidence                                                                                          |
@@ -238,30 +297,31 @@ Detailed checkboxes live in `docs/implementation-checklist.md`.
   retention; it must not weaken registered-user ownership boundaries.
 - The UI image directs hierarchy and visual language only. Its sample names,
   scores, jobs, and claims are not requirements or real data.
-- No real AI, OAuth, email, billing, or taxonomy credential is required for Phase
-  0; future phases provide environment-selected interfaces and deterministic
-  local/fake adapters.
+- Mailpit exercises real local SMTP delivery without external email credentials.
+  Google OAuth is disabled unless its complete provider configuration is supplied,
+  and deterministic adapters cover ordinary tests. AI, billing, taxonomy, and
+  production provider credentials remain later-phase/deployment decisions.
 
 ## Risk register
 
-| ID  | Risk                                                             | Likelihood / impact | Mitigation and gate                                                                                                                       | Earliest owner phase   |
-| --- | ---------------------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| R1  | Cross-tenant data exposure through IDOR or object keys           | Medium / Critical   | Ownership-scoped queries, policy tests, private buckets, audit events                                                                     | 1 and every data phase |
-| R2  | Malicious or resource-exhausting documents                       | High / Critical     | Signature/limit checks, scanning, isolated no-network worker, time/memory/CPU caps, hostile fixtures                                      | 2                      |
-| R3  | AI fabricates or is redirected by document instructions          | High / Critical     | Untrusted-content delimiters, strict schemas, evidence ledger, deterministic grounding, adversarial tests                                 | 5–6                    |
-| R4  | Score labels mislead users                                       | Medium / High       | Canonical disclaimer, deterministic versioned formulas, explanations, no probability language                                             | 2, 4, 5                |
-| R5  | PDF/DOCX looks correct but parses badly                          | High / High         | Constrained templates, searchable text, round-trip verification and blocking critical failures                                            | 7                      |
-| R6  | Dependency/toolchain churn breaks the greenfield baseline        | Medium / Medium     | Conservative pins, lockfiles, CI cache keys, scheduled upgrades in small changes                                                          | 0 onward               |
-| R7  | Queue retry duplicates work or cost                              | Medium / High       | Idempotency records, bounded retries/timeouts, job state machine, budgets and dead letters                                                | 2 onward               |
-| R8  | Sensitive content leaks through logs/telemetry/providers         | Medium / Critical   | Data classification, default redaction, payload-free telemetry, provider minimization and consent                                         | 0 onward               |
-| R9  | Local Compose health hides production gaps                       | High / High         | Separate readiness, production threat review, load/restore/failure tests, protected deploy                                                | 10                     |
-| R10 | Broad roadmap produces unfinished horizontal scaffolding         | High / Medium       | One vertical phase at a time, dependency gates, no completion on placeholders                                                             | Every phase            |
-| R11 | Public Phase 0 demo is mistaken for functional analysis          | Medium / Medium     | Persistent fictional-preview label; no upload/score claims or data persistence                                                            | 0–1                    |
-| R12 | Retention/deletion becomes inconsistent across stores            | Medium / High       | Data inventory, deletion tombstones/jobs, object/vector/backup policy and tests per entity                                                | 1 onward               |
-| R13 | Generated contracts drift from implemented OpenAPI               | Medium / High       | FastAPI remains authoritative; pin normalized export/client generation and fail CI on either drift                                        | 0 onward               |
-| R14 | Hosted CI and local behavior diverge after architecture changes  | Low / Medium        | Run 29360385761 verified the aligned implementation; keep clean-checkout container, migration, browser, and supply-chain jobs required    | 0 onward               |
-| R15 | Upstream runtime findings do not all have supported stable fixes | Low / High          | Two exact-version Grype exceptions document reachability and removal conditions; monitor remaining findings and refresh runtimes promptly | 0–1                    |
-| R16 | Workspace/migration move regresses runtime or existing databases | Medium / High       | One root lock, preserved revision IDs, fresh/existing upgrade tests, root-context image builds, and direct runtime Alembic verification   | 0                      |
+| ID  | Risk                                                             | Likelihood / impact | Mitigation and gate                                                                                                                                 | Earliest owner phase   |
+| --- | ---------------------------------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| R1  | Cross-tenant data exposure through IDOR or object keys           | Medium / Critical   | Ownership-scoped queries, policy tests, private buckets, audit events                                                                               | 1 and every data phase |
+| R2  | Malicious or resource-exhausting documents                       | High / Critical     | Signature/limit checks, scanning, isolated no-network worker, time/memory/CPU caps, hostile fixtures                                                | 2                      |
+| R3  | AI fabricates or is redirected by document instructions          | High / Critical     | Untrusted-content delimiters, strict schemas, evidence ledger, deterministic grounding, adversarial tests                                           | 5–6                    |
+| R4  | Score labels mislead users                                       | Medium / High       | Canonical disclaimer, deterministic versioned formulas, explanations, no probability language                                                       | 2, 4, 5                |
+| R5  | PDF/DOCX looks correct but parses badly                          | High / High         | Constrained templates, searchable text, round-trip verification and blocking critical failures                                                      | 7                      |
+| R6  | Dependency/toolchain churn breaks the greenfield baseline        | Medium / Medium     | Conservative pins, lockfiles, CI cache keys, scheduled upgrades in small changes                                                                    | 0 onward               |
+| R7  | Queue retry duplicates work or cost                              | Medium / High       | Idempotency records, bounded retries/timeouts, job state machine, budgets and dead letters                                                          | 2 onward               |
+| R8  | Sensitive content leaks through logs/telemetry/providers         | Medium / Critical   | Data classification, default redaction, payload-free telemetry, provider minimization and consent                                                   | 0 onward               |
+| R9  | Local Compose health hides production gaps                       | High / High         | Separate readiness, production threat review, load/restore/failure tests, protected deploy                                                          | 10                     |
+| R10 | Broad roadmap produces unfinished horizontal scaffolding         | High / Medium       | One vertical phase at a time, dependency gates, no completion on placeholders                                                                       | Every phase            |
+| R11 | Public demo is mistaken for functional analysis                  | Medium / Medium     | Isolate it at `/demo/dashboard`, retain the fictional-preview label, and keep it free of upload/score claims or account persistence                 | 0–1                    |
+| R12 | Retention/deletion becomes inconsistent across stores            | Medium / High       | Data inventory, deletion tombstones/jobs, object/vector/backup policy and tests per entity                                                          | 1 onward               |
+| R13 | Generated contracts drift from implemented OpenAPI               | Medium / High       | FastAPI remains authoritative; pin normalized export/client generation and fail CI on either drift                                                  | 0 onward               |
+| R14 | Hosted CI and local behavior diverge after architecture changes  | Low / Medium        | Runs 29360385761 and 29366505373 verify foundation and Phase 1; retain clean contract-output, container, migration, browser, and supply-chain gates | 0 onward               |
+| R15 | Upstream runtime findings do not all have supported stable fixes | Low / High          | Two exact-version Grype exceptions document reachability and removal conditions; monitor remaining findings and refresh runtimes promptly           | 0–1                    |
+| R16 | Workspace/migration move regresses runtime or existing databases | Medium / High       | One root lock, preserved revision IDs, fresh/existing upgrade tests, root-context image builds, and direct runtime Alembic verification             | 0                      |
 
 ## Change and verification protocol
 
@@ -279,8 +339,9 @@ At the end of every phase:
 
 ## Next phase
 
-The next work is **Phase 1 — Authentication, Application Shell, and Onboarding**.
-Begin with the identity/session data model, threat-model controls, and cross-user
-authorization harness; then deliver registration, verification, login, recovery,
-session management, the protected responsive shell, and persisted onboarding as
-one production-quality vertical slice.
+The next work is **Phase 2 — Resume Upload, Parsing, and General Health**. Begin
+with owned source-document and processing-job state, strict PDF/DOCX admission,
+private object storage, malware quarantine, and an idempotent isolated parsing
+boundary. Then deliver canonical resume review and correction plus deterministic,
+versioned, explainable Resume Health without fabricated metrics or bypassing the
+Phase 1 ownership model.

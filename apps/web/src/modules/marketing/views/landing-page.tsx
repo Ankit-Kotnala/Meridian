@@ -255,7 +255,7 @@ const faqs = [
   {
     question: "Is the dashboard on this site real user data?",
     answer:
-      "No. The Phase 0 dashboard is a product preview made entirely from fictional demo fixtures. Authentication and personal workspaces arrive in a later implementation phase.",
+      "No. The public demo dashboard is made entirely from fictional fixtures and remains separate from protected accounts. Signed-in workspaces currently contain only account and onboarding state; resume data arrives in a later phase.",
   },
 ];
 
@@ -290,7 +290,7 @@ export function LandingPage() {
                     buttonStyles.primary,
                     "min-h-12 px-5",
                   )}
-                  href="/dashboard"
+                  href="/demo/dashboard"
                 >
                   Explore the fictional demo
                   <ArrowRight aria-hidden="true" className="size-4" />
@@ -550,7 +550,7 @@ export function LandingPage() {
                 and what I still need to answer before I send an application.”
               </p>
               <p className="mt-4 text-sm text-muted">
-                Fictional product-use scenario for this Phase 0 preview.
+                Fictional product-use scenario for this public demo.
               </p>
             </div>
           </div>
@@ -670,7 +670,7 @@ export function LandingPage() {
                 buttonStyles.base,
                 "mt-8 min-h-12 bg-white px-6 text-navy hover:bg-violet-50",
               )}
-              href="/dashboard"
+              href="/demo/dashboard"
             >
               Open the product demo{" "}
               <ArrowRight aria-hidden="true" className="size-4" />

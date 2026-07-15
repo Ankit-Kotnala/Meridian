@@ -9,6 +9,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function DashboardPage() {
+export default function DashboardDemoRoute() {
   return <DashboardDemoPage />;
 }

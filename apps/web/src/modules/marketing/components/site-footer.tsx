@@ -27,7 +27,7 @@ const footerGroups = [
       ["About", "/about"],
       ["Contact", "/contact"],
       ["Terms", "/terms"],
-      ["Product demo", "/dashboard"],
+      ["Product demo", "/demo/dashboard"],
     ],
   },
 ] as const;
@@ -74,7 +74,9 @@ export function SiteFooter() {
       </div>
       <div className="border-t border-white/10">
         <div className="site-container flex flex-col gap-2 py-5 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} CareerOS. Phase 0 product preview.</p>
+          <p>
+            © {new Date().getFullYear()} CareerOS. Technical product preview.
+          </p>
           <p>Your career. Verified. Elevated.</p>
         </div>
       </div>

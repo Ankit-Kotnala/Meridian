@@ -29,8 +29,8 @@ try {
     Assert-LastExitCode "Backend lint"
     uv run --package careeros-backend mypy
     Assert-LastExitCode "Backend type check"
-    uv run --package careeros-backend pytest
-    Assert-LastExitCode "Backend tests"
+    uv run --package careeros-backend pytest tests/architecture tests/unit
+    Assert-LastExitCode "Backend unit and architecture tests"
 }
 finally {
     Pop-Location
@@ -88,7 +88,8 @@ $Endpoints = @(
     "http://127.0.0.1:3000/api/health",
     "http://127.0.0.1:8000/health",
     "http://127.0.0.1:8000/ready",
-    "http://127.0.0.1:8000/api/v1/meta"
+    "http://127.0.0.1:8000/api/v1/meta",
+    "http://127.0.0.1:8025/api/v1/info"
 )
 foreach ($Endpoint in $Endpoints) {
     $Response = Invoke-WebRequest -Uri $Endpoint -UseBasicParsing
