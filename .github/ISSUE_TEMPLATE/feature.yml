@@ -1,0 +1,33 @@
+name: Product or engineering proposal
+description: Propose a scoped capability or architectural change.
+title: "[Proposal]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Which user or operational problem needs to be solved?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe observable success without prescribing unnecessary implementation detail.
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Truth, privacy, and security constraints
+      description: Note provenance, consent, tenancy, accessibility, or retention implications.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Proposed scope and deferrals
+      description: Identify the active phase and what should remain out of scope.
+    validations:
+      required: true

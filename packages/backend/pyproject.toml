@@ -1,0 +1,59 @@
+[build-system]
+requires = ["hatchling>=1.28,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "careeros-backend"
+version = "0.1.0"
+description = "Shared CareerOS backend foundation"
+readme = "README.md"
+requires-python = ">=3.13,<3.15"
+dependencies = [
+  "structlog==26.1.0",
+]
+
+[project.optional-dependencies]
+database = [
+  "asyncpg==0.31.0",
+  "sqlalchemy[asyncio]==2.0.51",
+]
+migrations = [
+  "alembic==1.18.5",
+]
+
+[dependency-groups]
+dev = [
+  "alembic==1.18.5",
+  "asyncpg==0.31.0",
+  "mypy==2.3.0",
+  "pytest==9.1.1",
+  "ruff==0.15.21",
+  "sqlalchemy[asyncio]==2.0.51",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/careeros"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-config --strict-markers"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+src = ["src", "tests", "alembic"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "S", "SIM", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_unreachable = true
+pretty = true
+show_error_codes = true
+packages = ["careeros"]
+mypy_path = "src"

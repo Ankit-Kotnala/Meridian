@@ -4,13 +4,13 @@ from celery import Celery
 
 from careeros_worker.base import SafeTask
 from careeros_worker.config import WorkerSettings, get_settings
-from careeros_worker.logging import configure_logging
+from careeros_worker.logging import configure_worker_logging
 
 
 def create_celery_app(settings: WorkerSettings | None = None) -> Celery:
     """Create a JSON-only worker with conservative delivery and resource defaults."""
     resolved = settings or get_settings()
-    configure_logging(resolved)
+    configure_worker_logging(resolved)
     application = Celery(
         "careeros_worker",
         broker=resolved.broker_url.get_secret_value(),

@@ -18,11 +18,10 @@ try {
     pnpm audit --audit-level high
     Assert-LastExitCode "pnpm audit"
 
-    uv run --project apps/api --with pip-audit pip-audit
-    Assert-LastExitCode "API pip-audit"
-
-    uv run --project apps/worker --with pip-audit pip-audit
-    Assert-LastExitCode "Worker pip-audit"
+    uv sync --frozen --all-packages --all-groups
+    Assert-LastExitCode "Python workspace dependency sync"
+    uv run --package careeros-api --with pip-audit==2.10.1 pip-audit
+    Assert-LastExitCode "Python workspace pip-audit"
 
     docker compose build api worker web
     Assert-LastExitCode "Application image build"

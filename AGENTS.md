@@ -29,25 +29,51 @@ verification requirements below.
 
 - `apps/web`: Next.js App Router user experience. It does not access databases,
   object storage, or queues directly.
-- `apps/api`: FastAPI HTTP boundary, authorization, orchestration, persistence,
-  and OpenAPI source of truth.
-- `apps/worker`: Celery task entry points and isolated asynchronous processing.
-  Business logic should live in importable services, not only task functions.
+- `apps/api`: thin FastAPI HTTP delivery application and OpenAPI source of truth.
+  It owns transport validation and composition, not domain rules or persistence
+  implementations.
+- `apps/worker`: thin Celery delivery application for isolated asynchronous work.
+  Tasks call backend application use cases and never duplicate business rules or
+  import `apps/api`.
+- `packages/backend`: shared Python modular-monolith implementation. Stable,
+  domain-independent database, configuration, migration, and observability
+  primitives live in `careeros.foundation`; product code is added under
+  phase-owned `careeros.modules` and provider SDK adapters under
+  `careeros.integrations` only when those phases begin.
 - `packages/ui`: accessible, presentation-oriented React primitives. It must not
   depend on application routes or private API implementation details.
-- `packages/contracts`: generated or shared wire contracts. Do not hand-edit
-  generated artifacts.
-- `packages/config`: shared build and development configuration without secrets.
+- `packages/contracts`: normalized OpenAPI artifacts, generated TypeScript types,
+  and a typed `openapi-fetch` client wrapper. FastAPI schemas are authoritative;
+  do not create parallel handwritten wire models or hand-edit generated artifacts.
+- `packages/design-tokens`: reusable visual tokens without product behavior.
+- `packages/eslint-config` and `packages/typescript-config`: shared strict build
+  and dependency-boundary configuration without runtime credentials.
 - `packages/test-fixtures`: explicitly fictional, non-sensitive fixtures only.
 - `infra`: local and deployment infrastructure. Production changes require an
   ADR, rollback plan, and protected-environment review.
 
-Keep dependency direction toward contracts and domain services. Provider-specific
-code belongs behind interfaces such as `ResumeParserProvider`,
+The root uv workspace and its single lockfile cover `apps/api`, `apps/worker`,
+and `packages/backend`. Both deployable Python applications depend on the backend;
+the backend imports neither deployable, and the worker never imports the API.
+Within a backend product module, dependency direction is API/task adapter to
+application use case to domain model and port, with infrastructure implementing
+the inward-facing ports. Domain code must not import FastAPI, SQLAlchemy, Redis,
+object storage, queue libraries, or provider SDKs. One module must use another
+through an explicit application service, query interface, or event rather than
+querying its tables directly. Architecture tests make these rules executable.
+
+Keep dependency direction toward generated contracts and domain services.
+Provider-specific code belongs behind interfaces such as `ResumeParserProvider`,
 `DocumentTextExtractor`, `LayoutAnalyzer`, `MalwareScanner`, `OcrProvider`,
 `JobImportProvider`, AI provider, billing provider, and error-monitoring provider.
 Local development and tests must remain usable without third-party credentials
 through deterministic local or fake adapters.
+
+Next.js route files remain thin. Product behavior and domain-specific UI belong
+under `apps/web/src/modules/<feature>`; reusable framework-neutral UI belongs in
+`packages/ui`. Enforce frontend boundaries with lint/dependency checks. Do not
+create generic dumping grounds named `common`, `helpers`, `misc`, `services`, or
+`utils`.
 
 ## Data, tenancy, and authorization
 
@@ -98,8 +124,9 @@ through deterministic local or fake adapters.
   generation, export, webhook handling, and safe job retries.
 - Every background job defines ownership, idempotency, timeout, bounded retry,
   dead-letter behavior, status, trace ID, and AI cost metadata when applicable.
-- The OpenAPI document is the wire-contract source. Regenerate TypeScript
-  contracts and fail CI on unexplained drift once generation is introduced.
+- The OpenAPI document is the wire-contract source. Regenerate the normalized
+  OpenAPI artifact and TypeScript client in the same change as an API schema
+  change, and fail CI on unexplained drift.
 
 ## Frontend and accessibility
 
@@ -139,6 +166,11 @@ through deterministic local or fake adapters.
    could not run. State the exact command, result, and blocker in `PLANS.md`.
 7. Update relevant docs and `PLANS.md` status in the same change. Record remaining
    risks and the next safe step.
+
+Create directories only when their owning phase has real implementation or test
+content. Do not add empty extension, module, integration, operations, Terraform,
+or repository-test scaffolding and do not present reserved paths as implemented
+functionality.
 
 Pinned dependencies are changed intentionally through their owning package tool
 (`pnpm` or `uv`), with lockfiles committed. Prefer conservative compatible stable

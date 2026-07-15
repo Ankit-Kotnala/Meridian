@@ -1,6 +1,6 @@
 # CareerOS testing strategy
 
-Status: baseline quality strategy  
+Status: aligned local Phase 0 gate passed; hosted CI rerun pending
 Last reviewed: 2026-07-14
 
 ## Objectives
@@ -29,7 +29,7 @@ never runs. A runner reporting zero tests is a configuration failure.
 | Static                 | Formatting, lint, strict types, dependency/config/schema checks              | pnpm scripts, ESLint, TypeScript, Ruff, mypy/pyright as selected, OpenAPI validation |
 | Unit                   | Pure domain rules, features, state machines, validators, provider adapters   | Vitest and Pytest; no network/time randomness                                        |
 | Component              | UI states, semantics, focus, keyboard, responsive variants                   | React Testing Library/Vitest, axe-compatible checks, Storybook where valuable        |
-| Contract               | OpenAPI response/request/error/idempotency compatibility and generated types | FastAPI/Pydantic tests, normalized OpenAPI snapshots, generated client compile       |
+| Contract               | OpenAPI response/request/error/idempotency compatibility and generated types | FastAPI/Pydantic tests, normalized OpenAPI snapshots, typed client compile           |
 | Integration            | API + PostgreSQL/Redis/MinIO, worker tasks, migrations, object lifecycle     | Isolated Compose/test containers and Pytest; real dependencies, fake externals       |
 | End-to-end             | User-visible journeys and cross-service behavior                             | Playwright on a seeded fictional environment                                         |
 | Adversarial/security   | Authorization, upload/SSRF/prompt/sink abuse, sessions, rate/cost            | Dedicated fixtures/test servers/fuzz/property checks; safe isolated malware fixtures |
@@ -88,6 +88,24 @@ Do not mock away the boundary a test is meant to prove.
 - Verify MinIO bootstrap is idempotent and bucket is not public.
 - Inspect images/config for real secrets and unintended development commands.
 
+### Architecture, migrations, and contracts
+
+- Install `apps/api`, `apps/worker`, and `packages/backend` from one frozen root
+  uv workspace and assert both deployables depend on the backend.
+- Run static negative-fixture architecture tests: backend never imports a
+  deployable, worker never imports API, deployables do not own persistence, and
+  domain/application layers reject framework or provider SDK imports.
+- Run frontend boundary checks that keep route files thin, product behavior under
+  `src/modules`, and generic UI in `packages/ui`.
+- Export FastAPI OpenAPI deterministically, compare the committed normalized
+  artifact, regenerate the TypeScript schema with pinned tooling, compile the
+  typed client wrapper, and fail on either form of drift.
+- Assert one Alembic head with revision history preserved. Upgrade a fresh
+  database, verify the current revision, and exercise the installed container
+  migration command without relying on uv in the runtime image.
+- Build API and worker from the repository root context and confirm only required
+  workspace files enter each runtime image.
+
 ### Repository gate
 
 ```sh
@@ -105,6 +123,10 @@ make verify
 Capture exact output/exit status in `PLANS.md`. If a host lacks Docker/Make, CI may
 provide additional evidence but the documented setup path remains unverified until
 it runs in a supported environment.
+
+The expanded repository gate passes in the current aligned working tree. The
+earlier foundation baseline remains historical evidence only. Phase 0 stays open
+until the aligned tree is committed and hosted CI passes for that exact revision.
 
 ## Backend test portfolio
 
@@ -138,7 +160,7 @@ access.
 - **Component:** loading/empty/success/error, long/localized content, focus and
   keyboard behavior, dialog return focus, non-drag reorder, tables/charts/diffs,
   color-independent states, reduced motion.
-- **Contract integration:** query/form behavior against generated clients and a
+- **Contract integration:** query/form behavior against schema-typed clients and a
   schema-faithful mock server; error, conflict, rate limit, retry, cancellation.
 - **E2E:** registration/session, onboarding, upload/correction/report, profile/
   evidence, role/job matrix, Change Studio review, export verification/restore,
@@ -261,8 +283,10 @@ grounded” boolean.
 - frozen dependency install;
 - format check, lint, strict types;
 - unit/component/contract tests;
-- API import/OpenAPI validation and web production build;
-- migration validation when migrations exist;
+- backend and frontend architecture dependency checks;
+- API import, normalized OpenAPI/generated-schema drift validation, and web
+  production build;
+- migration graph plus fresh/container upgrade validation when migrations exist;
 - secret/dependency scanning and fast container build/smoke as infrastructure allows.
 
 ### Main/nightly gate

@@ -8,18 +8,23 @@
     "node": ">=24.0.0"
   },
   "scripts": {
-    "dev": "pnpm --filter @careeros/web dev",
-    "build": "pnpm -r --if-present run build",
+    "dev": "turbo run dev --filter=@careeros/web",
+    "build": "turbo run build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "pnpm -r --if-present run lint",
-    "typecheck": "pnpm -r --if-present run typecheck",
-    "test": "pnpm -r --if-present run test",
+    "lint": "turbo run lint && pnpm check:boundaries",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
     "test:e2e": "pnpm --filter @careeros/web test:e2e",
-    "seed": "pnpm --filter @careeros/test-fixtures seed"
+    "seed": "pnpm --filter @careeros/test-fixtures seed",
+    "contracts:export": "uv run --package careeros-api python packages/contracts/scripts/export_openapi.py",
+    "contracts:generate": "pnpm contracts:export && pnpm --filter @careeros/contracts generate",
+    "contracts:check": "uv run --package careeros-api python packages/contracts/scripts/export_openapi.py --check && pnpm --filter @careeros/contracts check-generated",
+    "check:boundaries": "node scripts/check-repository.mjs"
   },
   "devDependencies": {
     "prettier": "3.9.5",
+    "turbo": "2.10.4",
     "tsx": "4.23.1",
     "typescript": "5.9.3"
   }

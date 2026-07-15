@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: help setup dev stop format format-check lint typecheck test test-integration test-e2e build security-scan seed migrate reset-db compose-config verify
+.PHONY: help setup dev stop format format-check lint typecheck test contracts-check test-integration test-e2e build security-scan seed migrate reset-db compose-config verify
 
 help:
 	@echo "CareerOS development targets"
@@ -16,15 +16,15 @@ help:
 	@echo "  test-e2e         Run browser end-to-end tests"
 	@echo "  build            Build workspace packages and service images"
 	@echo "  security-scan    Scan source, dependencies, and application images"
-	@echo "  verify           Run the non-runtime Phase 0 quality and build gate"
+	@echo "  contracts-check  Verify OpenAPI and generated TypeScript contract drift"
+	@echo "  verify           Run the Phase 0 quality, contract, build, and runtime gate"
 
 setup:
 	@test -f .env || cp .env.example .env
 	corepack enable
 	corepack prepare pnpm@11.13.0 --activate
 	pnpm install --frozen-lockfile
-	cd apps/api && uv sync --frozen --all-extras --dev
-	cd apps/worker && uv sync --frozen --all-extras --dev
+	uv sync --frozen --all-packages --all-groups
 
 dev:
 	docker compose up --build
@@ -34,31 +34,46 @@ stop:
 
 format:
 	pnpm format
+	cd packages/backend && uv run --package careeros-backend ruff format .
 	cd apps/api && uv run ruff format .
 	cd apps/worker && uv run ruff format .
+	uv run --package careeros-api ruff format --config apps/api/pyproject.toml packages/contracts/scripts/export_openapi.py
 
 format-check:
 	pnpm format:check
+	cd packages/backend && uv run --package careeros-backend ruff format --check .
 	cd apps/api && uv run ruff format --check .
 	cd apps/worker && uv run ruff format --check .
+	uv run --package careeros-api ruff format --config apps/api/pyproject.toml --check packages/contracts/scripts/export_openapi.py
 
 lint:
 	pnpm lint
+	cd packages/backend && uv run --package careeros-backend ruff check .
 	cd apps/api && uv run ruff check .
 	cd apps/worker && uv run ruff check .
+	uv run --package careeros-api ruff check --config apps/api/pyproject.toml packages/contracts/scripts/export_openapi.py
 
 typecheck:
 	pnpm typecheck
+	cd packages/backend && uv run --package careeros-backend mypy
 	cd apps/api && uv run mypy
 	cd apps/worker && uv run mypy
 
 test:
 	pnpm test
+	cd packages/backend && uv run --package careeros-backend pytest
 	cd apps/api && uv run pytest
 	cd apps/worker && uv run pytest
 
+contracts-check:
+	uv lock --check
+	pnpm contracts:check
+
 test-integration:
-	docker compose up --build --detach --wait
+	docker compose up --build --detach --wait --wait-timeout 180
+	docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
+	docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
+	docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini current
 	curl --fail --silent --show-error http://localhost:3000/api/health
 	curl --fail --silent --show-error http://localhost:8000/health
 	curl --fail --silent --show-error http://localhost:8000/ready
@@ -74,8 +89,8 @@ build:
 security-scan:
 	docker run --rm --volume "$(CURDIR):/repo:ro" ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f dir /repo --config /repo/.gitleaks.toml --redact --exit-code 1
 	pnpm audit --audit-level high
-	cd apps/api && uv run --with pip-audit pip-audit
-	cd apps/worker && uv run --with pip-audit pip-audit
+	uv sync --frozen --all-packages --all-groups
+	uv run --package careeros-api --with pip-audit==2.10.1 pip-audit
 	docker compose build api worker web
 	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume careeros-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d careeros-api:latest --config /etc/grype.yaml --fail-on high --only-fixed
 	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume careeros-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d careeros-worker:latest --config /etc/grype.yaml --fail-on high --only-fixed
@@ -85,7 +100,7 @@ seed:
 	pnpm seed
 
 migrate:
-	docker compose run --rm api uv run alembic upgrade head
+	docker compose run --rm api alembic -c packages/backend/alembic.ini upgrade head
 
 reset-db:
 	docker compose down --volumes --remove-orphans
@@ -94,4 +109,4 @@ reset-db:
 compose-config:
 	docker compose config --quiet
 
-verify: format-check lint typecheck test build compose-config
+verify: contracts-check format-check lint typecheck test build compose-config test-integration

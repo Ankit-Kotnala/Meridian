@@ -5,4 +5,6 @@
 **/playwright-report/
 **/test-results/
 **/uv.lock
+packages/contracts/src/generated/
+packages/contracts/openapi/
 pnpm-lock.yaml

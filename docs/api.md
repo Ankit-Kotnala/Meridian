@@ -26,13 +26,15 @@ Phase 0 does not implement authentication, persisted domain resources, uploads,
 scores, AI, or application workflows. `/docs` and `/openapi.json` are development
 documentation endpoints and may be restricted or disabled in production.
 
-`packages/contracts` currently contains hand-authored Phase 0 health/readiness
-schemas plus provisional error and page-pagination schemas to exercise the shared
-package/tooling. Only schemas that match an implemented OpenAPI operation are live
-wire contracts. Before Phase 1 errors and the first product collection ship, the
-provisional `correlationId`/record-error and page-pagination shapes must either be
-reconciled with the conventions below or replaced by pinned OpenAPI generation;
-they must not become an accidental competing contract.
+`packages/contracts` derives its public types and client from the implemented
+FastAPI OpenAPI document. The normalized artifact under
+`packages/contracts/openapi` and generated files under
+`packages/contracts/src/generated` are committed review artifacts; neither is an
+independent contract authority. Problem, pagination, and product schemas are not
+published until corresponding Pydantic models and operations exist. The current
+architecture-alignment change passes both export and generation drift checks
+locally; hosted CI must repeat those checks on the committed revision before
+Phase 0 closes.
 
 ## Protocol and representation
 
@@ -510,11 +512,12 @@ grounding, authorization, or content limits.
 - Schemas distinguish create/update/read, secret write-only fields, immutable
   server fields, and discriminated unions for jobs/operations/evidence.
 - Examples are synthetic and contain no real private data.
-- CI exports a normalized OpenAPI file and detects unexplained drift once product
-  routes begin. The TypeScript package is generated from that artifact using a
-  pinned generator.
-- Generated code is not manually patched. Contract changes update API schemas,
-  compatibility notes, generated client, tests, and this document together.
+- CI exports a normalized OpenAPI file and detects unexplained drift for Phase 0
+  and every later route. The TypeScript package is generated from that artifact
+  using a pinned generator.
+- Generated schema code is not manually patched. Contract changes update API
+  schemas, compatibility notes, the typed client wrapper, tests, and this document
+  together.
 - Security schemes, error responses, idempotency, rate responses, and ownership
   expectations are documented per operation.
 
@@ -542,7 +545,10 @@ curl --fail http://localhost:8000/openapi.json
 ```
 
 Tests assert exact safe response schemas, status codes, correlation IDs, readiness
-failure under dependency loss, no secret leakage, and OpenAPI validity.
+failure under dependency loss, no secret leakage, stable operation IDs, OpenAPI
+validity, normalized artifact freshness, and generated-schema freshness. These
+checks pass together in the aligned local working tree and are recorded in
+`PLANS.md`. Hosted CI evidence for the eventual commit remains pending.
 
 Later route gates include schema/validation, unauthenticated and cross-user denial,
 idempotency concurrency/replay, stale version, rate/size limits, safe errors,

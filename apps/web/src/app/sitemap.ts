@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-import { publicPages } from "@/lib/public-pages";
+import { publicPages } from "@/modules/marketing";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";

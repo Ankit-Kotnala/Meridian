@@ -1,0 +1,10 @@
+# Repository-wide fallback. More specific ownership can be introduced with teams.
+* @Ankit-Kotnala
+
+# Security and delivery changes always require the repository owner.
+/.github/ @Ankit-Kotnala
+/infra/ @Ankit-Kotnala
+/packages/backend/ @Ankit-Kotnala
+/docs/security-threat-model.md @Ankit-Kotnala
+/docs/ai-grounding-policy.md @Ankit-Kotnala
+/docs/adr/ @Ankit-Kotnala

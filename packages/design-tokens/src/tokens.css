@@ -1,0 +1,55 @@
+:root {
+  --background: #f7f8fc;
+  --surface: #ffffff;
+  --surface-subtle: #f3f5fa;
+  --foreground: #0b1739;
+  --muted: #5d6883;
+  --border: #e3e7f0;
+  --primary: #5b46f5;
+  --primary-strong: #4833db;
+  --primary-soft: #eeebff;
+  --navy: #071a39;
+  --navy-hover: #102b57;
+  --success: #0b9f68;
+  --success-strong: #087950;
+  --success-soft: #e8f8f1;
+  --warning: #b87508;
+  --warning-strong: #8d5900;
+  --warning-visual: #e59a1f;
+  --warning-soft: #fff5dc;
+  --danger: #c73545;
+  --danger-soft: #fff0f1;
+  --focus: #7767ff;
+  --selection: #dcd7ff;
+  --score-track: #e9ecf3;
+  --radius-card: 1rem;
+  --radius-control: 0.75rem;
+  --shadow-sm: 0 1px 2px rgb(11 23 57 / 0.04), 0 8px 24px rgb(11 23 57 / 0.05);
+  --shadow-lg: 0 24px 80px rgb(22 29 77 / 0.13);
+  --font-family-sans:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-line: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-strong: var(--primary-strong);
+  --color-primary-soft: var(--primary-soft);
+  --color-navy: var(--navy);
+  --color-navy-hover: var(--navy-hover);
+  --color-success: var(--success);
+  --color-success-strong: var(--success-strong);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-strong: var(--warning-strong);
+  --color-warning-visual: var(--warning-visual);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --font-sans: var(--font-family-sans);
+}

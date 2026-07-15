@@ -1,50 +1,39 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
 import { describe, expect, it } from "vitest";
 
-import {
-  apiErrorSchema,
-  healthResponseSchema,
-  readinessResponseSchema,
-} from "./index";
+import { createCareerOsClient } from "./index";
 
-describe("platform contracts", () => {
-  it("accepts the API health envelope", () => {
-    expect(
-      healthResponseSchema.parse({
-        status: "ok",
-        service: "careeros-api",
-        version: "0.1.0",
-      }),
-    ).toEqual({ status: "ok", service: "careeros-api", version: "0.1.0" });
+const openApiPath = fileURLToPath(
+  new URL("../openapi/careeros.openapi.json", import.meta.url),
+);
+const openApi = JSON.parse(readFileSync(openApiPath, "utf8")) as {
+  paths: Record<string, { get?: { operationId?: string } }>;
+  components: { schemas: Record<string, unknown> };
+};
+
+describe("generated platform contracts", () => {
+  it("contains every Phase 0 endpoint with a stable operation identifier", () => {
+    expect(openApi.paths["/health"]?.get?.operationId).toBe("health");
+    expect(openApi.paths["/ready"]?.get?.operationId).toBe("readiness");
+    expect(openApi.paths["/api/v1/meta"]?.get?.operationId).toBe("metadata");
   });
 
-  it("rejects an unknown readiness state", () => {
-    expect(() =>
-      readinessResponseSchema.parse({
-        status: "perfect",
-        service: "careeros-api",
-        version: "0.1.0",
-        checks: {},
-      }),
-    ).toThrow();
+  it("contains the four response models exported by this package", () => {
+    expect(Object.keys(openApi.components.schemas)).toEqual(
+      expect.arrayContaining([
+        "ComponentReadiness",
+        "HealthResponse",
+        "MetaResponse",
+        "ReadinessResponse",
+      ]),
+    );
   });
 
-  it("accepts the documented problem response shape", () => {
-    expect(
-      apiErrorSchema.parse({
-        type: "https://careeros.example/problems/validation-error",
-        title: "Request validation failed",
-        status: 422,
-        code: "validation_error",
-        detail: "Review the highlighted fields.",
-        requestId: "01JEXAMPLE",
-        errors: [
-          {
-            field: "startDate",
-            code: "invalid_date",
-            message: "Use an ISO date.",
-          },
-        ],
-      }).code,
-    ).toBe("validation_error");
+  it("creates a path-typed fetch client without making a request", () => {
+    const client = createCareerOsClient("https://api.example.test");
+
+    expect(client.GET).toBeTypeOf("function");
   });
 });

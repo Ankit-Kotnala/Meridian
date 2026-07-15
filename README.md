@@ -13,21 +13,18 @@ claim under the user's control.
 
 ## Repository status
 
-**Phase 0: Repository Foundation is complete and verified in the current working
-tree. Phase 1 has not started.** The local platform skeleton, health probes, shared contracts,
-development infrastructure, initial design system, test harnesses, and governance
-documentation are implemented. User authentication, uploads, parsing, scoring,
-AI generation, and persisted product workflows are intentionally deferred to
-later phases. The dashboard is a prominently labeled fictional preview and is
-not yet a protected or data-backed product page.
+**Phase 0 is complete and Phase 1 is next.** The aligned repository uses a shared Python modular
+monolith, one root uv workspace, generated API contracts, thin deployable
+applications, and executable dependency boundaries. The complete local runtime,
+browser, migration, and security gates pass.
 
-The latest hosted CI run covers the earlier initial commit and failed on a
-formatting issue plus a test that did not isolate the CI database environment.
-Both are fixed and pass locally; the hosted workflow must be rerun after these
-working-tree changes are committed, before any Phase 1 merge.
+Hosted CI run `29360385761` passed all six jobs against Phase 0 implementation
+commit `9558f33`, including API, worker, web/contracts, browser, supply-chain,
+and clean-checkout container/migration/image-scan verification.
 
-See [PLANS.md](PLANS.md) for verified status and phase gates. Do not infer that a
-planned endpoint or module is implemented from the architecture documents.
+See [PLANS.md](PLANS.md) for current status, historical evidence, and phase gates.
+Do not infer that a planned endpoint or module is implemented from the
+architecture documents.
 
 ## Stack
 
@@ -36,23 +33,28 @@ planned endpoint or module is implemented from the architecture documents.
 - API: Python 3.13, uv, FastAPI 0.138.2, Pydantic, async SQLAlchemy, and asyncpg
 - Worker: Celery 5.6.3 with Redis broker/result backend
 - Local services: PostgreSQL with pgvector, Redis, and S3-compatible MinIO
-- Contracts: OpenAPI as the API source of truth, with generated TypeScript types
-  planned when product endpoints are introduced
+- Backend: shared `careeros-backend` modular monolith used by thin API and worker
+  deployables through one root uv workspace and lockfile
+- Contracts: FastAPI OpenAPI as the source of truth, with a normalized artifact,
+  generated TypeScript schema, and typed client wrapper in `packages/contracts`
 
 ## Repository map
 
 ```text
 apps/
   web/                 Next.js application
-  api/                 FastAPI service
-  worker/              Celery worker
+  api/                 Thin FastAPI delivery application
+  worker/              Thin Celery delivery application
 packages/
-  ui/                  Shared design tokens and future component boundary
-  contracts/           Wire contracts and schema helpers
-  config/              Shared development/build configuration
+  backend/             Shared Python foundation and phase-owned modules
+  contracts/           OpenAPI artifact, generated schema, typed client wrapper
+  ui/                  Generic accessible React components
+  design-tokens/       Shared visual tokens
+  eslint-config/       Frontend lint and dependency-boundary rules
+  typescript-config/   Shared strict TypeScript configuration
   test-fixtures/       Explicitly fictional fixtures
 docs/                  Product, architecture, security, API, and ADRs
-infra/                 Container and future deployment infrastructure
+infra/                 Implemented local container infrastructure
 scripts/               Repository automation
 ```
 
@@ -154,20 +156,21 @@ make format-check     # verify formatting without writing
 make lint             # lint TypeScript and Python
 make typecheck        # strict TypeScript and Python type checks
 make test             # unit tests
-make test-integration # integration tests when present
+make test-integration # build/start the stack, migrate twice, and probe services
 make test-e2e         # end-to-end tests when present
 make security-scan    # scan source, dependencies, and application images
 make migrate          # apply the current database migrations
 make seed             # print the explicitly fictional Phase 0 fixture
-make verify           # non-runtime format/lint/type/test/build/configuration gate
+make verify           # full format/lint/type/test/contract/build/runtime gate
 make reset-db         # explicitly destructive local database reset
 ```
 
 On native Windows without GNU Make, use `.\scripts\setup.ps1` for `make setup`,
-`.\scripts\verify.ps1` for the non-runtime format/lint/type/test/build/Compose-
-configuration gate, `.\scripts\security-scan.ps1` for `make security-scan`, and
-the equivalent `docker compose` commands shown above for start/stop. The Make
-targets remain the cross-platform CI/documentation contract.
+`.\scripts\verify.ps1` for the full contract/quality/build/migration/runtime
+gate, `.\scripts\security-scan.ps1` for `make security-scan`, and the equivalent
+`docker compose` commands shown above for start/stop. The verification script
+leaves the healthy local stack running for inspection. The Make targets remain
+the cross-platform CI/documentation contract.
 
 The Phase 0 migration enables the pgvector extension and intentionally creates no
 business tables. The Phase 0 seed command prints a fictional fixture and performs
@@ -180,9 +183,12 @@ For host-only package work, use the pinned tools rather than global substitutes:
 ```sh
 corepack enable
 pnpm install --frozen-lockfile
-cd apps/api && uv sync --frozen --all-extras --dev
-cd apps/worker && uv sync --frozen --all-extras --dev
+uv sync --frozen --all-packages --all-groups
 ```
+
+The root uv workspace contains `apps/api`, `apps/worker`, and
+`packages/backend`. Do not create per-application locks or make the worker import
+the API.
 
 ## Product and engineering guardrails
 
@@ -199,6 +205,7 @@ cd apps/worker && uv sync --frozen --all-extras --dev
 
 Read [AGENTS.md](AGENTS.md) before contributing. The principal references are:
 
+- [Documentation index](docs/README.md)
 - [Architecture](docs/architecture.md)
 - [Product requirements](docs/product-requirements.md)
 - [Security threat model](docs/security-threat-model.md)
@@ -210,8 +217,10 @@ Read [AGENTS.md](AGENTS.md) before contributing. The principal references are:
 
 ## Phase 0 verification
 
-Phase 0 was closed only after the following succeeded in the same working
-revision. Exact results are recorded in `PLANS.md`:
+The aligned working tree passes the repository gates, architecture checks,
+contract drift checks, migrations, browser checks, security scans, and container
+paths represented by the commands below. Exact current and historical results are
+recorded separately in `PLANS.md`:
 
 ```sh
 make setup
@@ -237,9 +246,9 @@ Invoke-WebRequest -UseBasicParsing http://localhost:8000/ready
 Invoke-WebRequest -UseBasicParsing http://localhost:8000/api/v1/meta
 ```
 
-The web, API, worker, PostgreSQL, Redis, and MinIO reported healthy. These remain
-required regression gates for later work; skipped, unavailable, or failing checks
-must reopen the affected phase.
+The web, API, worker, PostgreSQL, Redis, and MinIO report healthy in the aligned
+tree. Hosted CI run `29360385761` verified the committed Phase 0 implementation.
+Skipped, unavailable, or failing checks reopen the affected gate.
 
 ## License and production use
 

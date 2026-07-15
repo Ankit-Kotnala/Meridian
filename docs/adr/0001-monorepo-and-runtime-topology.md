@@ -1,6 +1,7 @@
 # ADR 0001: Monorepo and runtime topology
 
-- Status: Accepted
+- Status: Accepted; partially superseded by
+  [ADR 0007](0007-shared-modular-monolith-and-generated-contracts.md)
 - Date: 2026-07-14
 - Deciders: Engineering
 

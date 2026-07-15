@@ -1,6 +1,11 @@
 packages:
   - "apps/web"
-  - "packages/*"
+  - "packages/contracts"
+  - "packages/design-tokens"
+  - "packages/eslint-config"
+  - "packages/test-fixtures"
+  - "packages/typescript-config"
+  - "packages/ui"
 
 overrides:
   postcss: 8.5.19

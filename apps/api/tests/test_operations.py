@@ -88,6 +88,14 @@ def test_metadata_is_non_sensitive_and_contains_disclaimer(client: TestClient) -
     assert "database" not in response.text.lower()
 
 
+def test_openapi_operation_ids_are_stable(client: TestClient) -> None:
+    operations = client.get("/openapi.json").json()["paths"]
+
+    assert operations["/health"]["get"]["operationId"] == "health"
+    assert operations["/ready"]["get"]["operationId"] == "readiness"
+    assert operations["/api/v1/meta"]["get"]["operationId"] == "metadata"
+
+
 def test_dependency_is_disposed_after_lifespan(settings: Settings) -> None:
     database = FakeDatabase()
 

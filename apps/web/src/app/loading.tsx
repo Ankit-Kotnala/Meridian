@@ -1,4 +1,4 @@
-import { LoadingSkeleton } from "@/components/ui/async-state";
+import { LoadingSkeleton } from "@careeros/ui";
 
 export default function Loading() {
   return (

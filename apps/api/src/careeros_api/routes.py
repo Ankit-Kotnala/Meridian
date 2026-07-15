@@ -3,11 +3,11 @@
 from typing import cast
 
 import structlog
+from careeros.foundation.database import ReadinessProbe
 from fastapi import APIRouter, Request, Response, status
 
 from careeros_api.config import Settings
 from careeros_api.constants import SCORING_DISCLAIMER
-from careeros_api.database import ReadinessProbe
 from careeros_api.schemas import (
     ComponentReadiness,
     HealthResponse,
@@ -27,7 +27,12 @@ def _database(request: Request) -> ReadinessProbe:
     return cast(ReadinessProbe, request.app.state.database)
 
 
-@router.get("/health", response_model=HealthResponse, tags=["Operations"])
+@router.get(
+    "/health",
+    response_model=HealthResponse,
+    operation_id="health",
+    tags=["Operations"],
+)
 async def health(request: Request) -> HealthResponse:
     """Report process liveness without touching external dependencies."""
     settings = _settings(request)
@@ -37,6 +42,7 @@ async def health(request: Request) -> HealthResponse:
 @router.get(
     "/ready",
     response_model=ReadinessResponse,
+    operation_id="readiness",
     responses={status.HTTP_503_SERVICE_UNAVAILABLE: {"model": ReadinessResponse}},
     tags=["Operations"],
 )
@@ -63,7 +69,12 @@ async def ready(request: Request, response: Response) -> ReadinessResponse:
     )
 
 
-@router.get("/api/v1/meta", response_model=MetaResponse, tags=["Metadata"])
+@router.get(
+    "/api/v1/meta",
+    response_model=MetaResponse,
+    operation_id="metadata",
+    tags=["Metadata"],
+)
 async def metadata(request: Request) -> MetaResponse:
     """Return non-sensitive service metadata for compatible clients."""
     settings = _settings(request)
