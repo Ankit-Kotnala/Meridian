@@ -1,6 +1,6 @@
 """Safe common behavior for future background jobs."""
 
-from celery import Task
+from celery import Task  # type: ignore[import-untyped,unused-ignore]
 
 
 class RetryableTaskError(Exception):

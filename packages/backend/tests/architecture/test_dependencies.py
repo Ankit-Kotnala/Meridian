@@ -28,6 +28,7 @@ DOMAIN_FORBIDDEN = {
 }
 APPLICATION_FORBIDDEN = DOMAIN_FORBIDDEN
 DEPLOYABLE_PERSISTENCE = {"alembic", "asyncpg", "sqlalchemy"}
+BACKEND_MODULE_PREFIX = ("packages", "backend", "src", "careeros", "modules")
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,6 +59,98 @@ def imported_modules(source: str) -> list[tuple[int, str]]:
     return imported
 
 
+def _product_module_for_path(path: Path) -> str | None:
+    parts = path.parts
+    width = len(BACKEND_MODULE_PREFIX)
+    for index in range(len(parts) - width):
+        if parts[index : index + width] == BACKEND_MODULE_PREFIX:
+            return parts[index + width]
+    return None
+
+
+def _source_package(path: Path) -> tuple[str, ...]:
+    parts = path.parts
+    try:
+        source_index = parts.index("src")
+    except ValueError:
+        return ()
+    module_parts = list(parts[source_index + 1 :])
+    if not module_parts or not module_parts[-1].endswith(".py"):
+        return ()
+    filename = module_parts.pop()
+    if filename == "__init__.py":
+        return tuple(module_parts)
+    return tuple(module_parts)
+
+
+def resolved_imported_modules(path: Path, source: str) -> list[tuple[int, str]]:
+    """Resolve absolute and relative imports to repository package paths."""
+
+    tree = ast.parse(source)
+    package = _source_package(path)
+    imported: list[tuple[int, str]] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imported.extend((node.lineno, alias.name) for alias in node.names)
+            continue
+        if not isinstance(node, ast.ImportFrom):
+            continue
+        if node.level > 0:
+            parents_to_remove = node.level - 1
+            if parents_to_remove > len(package):
+                continue
+            prefix = package[: len(package) - parents_to_remove]
+            module = tuple((node.module or "").split(".")) if node.module else ()
+            base = ".".join((*prefix, *module))
+        else:
+            base = node.module or ""
+        imported.extend(
+            (
+                node.lineno,
+                f"{base}.{alias.name}" if base else alias.name,
+            )
+            for alias in node.names
+        )
+    return imported
+
+
+def _cross_product_import(current_module: str, imported_module: str) -> tuple[str, str] | None:
+    parts = imported_module.split(".")
+    for index in range(len(parts) - 2):
+        if parts[index : index + 2] != ["careeros", "modules"]:
+            continue
+        target_module = parts[index + 2]
+        if target_module == current_module:
+            return None
+        boundary = parts[index + 3] if len(parts) > index + 3 else None
+        if boundary == "application":
+            return None
+        if boundary == "infrastructure" or "models" in parts[index + 3 :]:
+            reason = "cross-product infrastructure/model access is forbidden"
+        else:
+            reason = "cross-product dependencies require an explicit application contract"
+        return imported_module, reason
+    return None
+
+
+def direct_table_accesses(source: str) -> list[tuple[int, str]]:
+    """Find table-object escape hatches that bypass module repositories."""
+
+    accesses: list[tuple[int, str]] = []
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.Attribute) and node.attr == "__table__":
+            accesses.append((node.lineno, "__table__"))
+        elif (
+            isinstance(node, ast.Subscript)
+            and isinstance(node.value, ast.Attribute)
+            and node.value.attr == "tables"
+            and isinstance(node.value.value, ast.Attribute)
+            and node.value.value.attr == "metadata"
+        ):
+            accesses.append((node.lineno, "metadata.tables"))
+    return accesses
+
+
 def violations_for_source(path: Path, source: str) -> list[ImportViolation]:
     """Evaluate dependency rules for one repository-relative source path."""
     imports = imported_modules(source)
@@ -71,6 +164,22 @@ def violations_for_source(path: Path, source: str) -> list[ImportViolation]:
                 violations.append(ImportViolation(path, line, imported_root, reason))
 
     normalized = path.as_posix()
+    product_module = _product_module_for_path(path)
+    if product_module is not None:
+        for line, imported_module in resolved_imported_modules(path, source):
+            cross_product = _cross_product_import(product_module, imported_module)
+            if cross_product is not None:
+                imported, reason = cross_product
+                violations.append(ImportViolation(path, line, imported, reason))
+        for line, access in direct_table_accesses(source):
+            violations.append(
+                ImportViolation(
+                    path,
+                    line,
+                    access,
+                    "product modules must not bypass repositories with direct table access",
+                )
+            )
     if normalized.startswith("packages/backend/src/"):
         forbid({"careeros_api", "careeros_worker"}, "backend must not import deployables")
     if normalized.startswith("apps/api/src/"):
@@ -160,6 +269,62 @@ def test_negative_fixtures_prove_rules_are_active(
     violations = violations_for_source(path, source)
 
     assert any(violation.imported == expected_package for violation in violations)
+
+
+@pytest.mark.parametrize(
+    ("source", "expected_import"),
+    [
+        (
+            "from careeros.modules.resume_health.infrastructure.models "
+            "import CanonicalResumeSnapshotModel",
+            "careeros.modules.resume_health.infrastructure.models.CanonicalResumeSnapshotModel",
+        ),
+        (
+            "from ...resume_health.domain.entities import CanonicalSnapshot",
+            "careeros.modules.resume_health.domain.entities.CanonicalSnapshot",
+        ),
+        (
+            "from careeros.modules.resume_health import infrastructure",
+            "careeros.modules.resume_health.infrastructure",
+        ),
+    ],
+)
+def test_product_modules_cannot_reach_across_non_application_boundaries(
+    source: str, expected_import: str
+) -> None:
+    path = Path("packages/backend/src/careeros/modules/evidence/application/handler.py")
+
+    violations = violations_for_source(path, source)
+
+    assert any(violation.imported == expected_import for violation in violations)
+
+
+@pytest.mark.parametrize(
+    ("source", "expected_access"),
+    [
+        ("table = EvidenceModel.__table__", "__table__"),
+        ('table = Base.metadata.tables["evidence_items"]', "metadata.tables"),
+    ],
+)
+def test_product_modules_cannot_bypass_repositories_with_table_objects(
+    source: str, expected_access: str
+) -> None:
+    path = Path("packages/backend/src/careeros/modules/evidence/infrastructure/query.py")
+
+    violations = violations_for_source(path, source)
+
+    assert any(violation.imported == expected_access for violation in violations)
+
+
+def test_product_modules_may_use_explicit_application_contracts() -> None:
+    path = Path("packages/backend/src/careeros/modules/evidence/application/handler.py")
+    source = (
+        "from careeros.modules.resume_health.application.contracts import CanonicalResumeReader"
+    )
+
+    violations = violations_for_source(path, source)
+
+    assert not violations
 
 
 def test_workspace_members_depend_on_shared_backend() -> None:

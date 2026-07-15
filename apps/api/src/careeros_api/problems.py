@@ -4,6 +4,27 @@ from collections.abc import Mapping
 from typing import cast
 
 import structlog
+from careeros.modules.career_record.application.attachment_workflow import (
+    AttachmentConflict,
+    AttachmentFenced,
+    AttachmentIdempotencyConflict,
+    AttachmentNotFound,
+    AttachmentRejected,
+    AttachmentTemporarilyUnavailable,
+    AttachmentWorkflowError,
+)
+from careeros.modules.career_record.domain.errors import (
+    CareerRecordConflict,
+    CareerRecordCursorInvalid,
+    CareerRecordError,
+    CareerRecordIdempotencyConflict,
+    CareerRecordNotFound,
+    CareerRecordSourceUnavailable,
+    CareerRecordTransitionRejected,
+    CareerRecordUnavailable,
+    CareerRecordValidationError,
+    CareerRecordVersionConflict,
+)
 from careeros.modules.identity.domain.errors import (
     AuthenticationRequired,
     CsrfRejected,
@@ -189,6 +210,38 @@ def install_problem_handlers(app: FastAPI) -> None:
             clear_guest_cookies(response, cast(Settings, request.app.state.settings))
         return response
 
+    @app.exception_handler(CareerRecordError)
+    async def career_record_problem(request: Request, exc: CareerRecordError) -> JSONResponse:
+        status_code, code, title, detail = _career_record_problem_details(exc)
+        logger.info(
+            "career_record_request_rejected",
+            error_code=code,
+            status_code=status_code,
+        )
+        return problem_response(
+            request,
+            status_code=status_code,
+            code=code,
+            title=title,
+            detail=detail,
+        )
+
+    @app.exception_handler(AttachmentWorkflowError)
+    async def attachment_problem(request: Request, exc: AttachmentWorkflowError) -> JSONResponse:
+        status_code, code, title, detail = _attachment_problem_details(exc)
+        logger.info(
+            "evidence_attachment_request_rejected",
+            error_code=code,
+            status_code=status_code,
+        )
+        return problem_response(
+            request,
+            status_code=status_code,
+            code=code,
+            title=title,
+            detail=detail,
+        )
+
     @app.exception_handler(ValueError)
     async def value_problem(request: Request, exc: ValueError) -> JSONResponse:
         logger.info("request_value_rejected", error_type=type(exc).__name__)
@@ -281,4 +334,124 @@ def _resume_health_problem_details(exc: ResumeHealthError) -> tuple[int, str, st
         status.HTTP_400_BAD_REQUEST,
         "Request rejected",
         "The request could not be completed.",
+    )
+
+
+def _career_record_problem_details(
+    exc: CareerRecordError,
+) -> tuple[int, str, str, str]:
+    if isinstance(exc, CareerRecordUnavailable):
+        return (
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "career_record_unavailable",
+            "Career record unavailable",
+            "Career record services are temporarily unavailable.",
+        )
+    if isinstance(exc, CareerRecordNotFound):
+        return (
+            status.HTTP_404_NOT_FOUND,
+            "career_record_not_found",
+            "Resource not found",
+            "The requested resource was not found.",
+        )
+    if isinstance(exc, CareerRecordVersionConflict):
+        return (
+            status.HTTP_409_CONFLICT,
+            "career_record_version_conflict",
+            "Version conflict",
+            "This information changed. Refresh and try again.",
+        )
+    if isinstance(exc, CareerRecordIdempotencyConflict):
+        return (
+            status.HTTP_409_CONFLICT,
+            "career_record_idempotency_conflict",
+            "Request conflict",
+            "This request key was already used for a different operation.",
+        )
+    if isinstance(exc, CareerRecordSourceUnavailable):
+        return (
+            status.HTTP_409_CONFLICT,
+            "career_record_source_unavailable",
+            "Source unavailable",
+            "The supporting source is unavailable or no longer matches this scope.",
+        )
+    if isinstance(exc, CareerRecordTransitionRejected):
+        return (
+            status.HTTP_409_CONFLICT,
+            "career_record_transition_rejected",
+            "Request conflict",
+            "This action is not allowed in the resource's current state.",
+        )
+    if isinstance(exc, CareerRecordConflict):
+        return (
+            status.HTTP_409_CONFLICT,
+            "career_record_conflict",
+            "Request conflict",
+            "The request conflicts with current career record state.",
+        )
+    if isinstance(exc, (CareerRecordValidationError, CareerRecordCursorInvalid)):
+        return (
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "career_record_validation_error",
+            "Request validation failed",
+            "Review the submitted career record values.",
+        )
+    return (
+        status.HTTP_400_BAD_REQUEST,
+        "career_record_rejected",
+        "Request rejected",
+        "The request could not be completed.",
+    )
+
+
+def _attachment_problem_details(
+    exc: AttachmentWorkflowError,
+) -> tuple[int, str, str, str]:
+    if isinstance(exc, AttachmentNotFound):
+        return (
+            status.HTTP_404_NOT_FOUND,
+            "evidence_attachment_not_found",
+            "Attachment not found",
+            "The requested attachment was not found.",
+        )
+    if isinstance(exc, AttachmentRejected):
+        code = exc.code.value
+        if code == "attachment_upload_size_out_of_range":
+            status_code = status.HTTP_413_CONTENT_TOO_LARGE
+        elif code in {
+            "attachment_upload_type_unsupported",
+            "attachment_upload_media_type_mismatch",
+            "attachment_upload_signature_mismatch",
+        }:
+            status_code = status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
+        else:
+            status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
+        return (
+            status_code,
+            code,
+            "Attachment rejected",
+            "This attachment could not be accepted safely.",
+        )
+    if isinstance(exc, AttachmentTemporarilyUnavailable):
+        return (
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            exc.code.value,
+            "Attachment service unavailable",
+            "Attachment processing is temporarily unavailable. Try again later.",
+        )
+    if isinstance(
+        exc,
+        (AttachmentIdempotencyConflict, AttachmentFenced, AttachmentConflict),
+    ):
+        return (
+            status.HTTP_409_CONFLICT,
+            "evidence_attachment_conflict",
+            "Attachment request conflict",
+            "This attachment changed or the request conflicts with its current state.",
+        )
+    return (
+        status.HTTP_400_BAD_REQUEST,
+        "evidence_attachment_rejected",
+        "Attachment request rejected",
+        "The attachment request could not be completed.",
     )

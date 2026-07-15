@@ -22,6 +22,7 @@ from careeros.modules.identity.domain.errors import AuthenticationRequired, OAut
 from fastapi import APIRouter, Cookie, Depends, Header, Query, Request, Response, status
 from fastapi.responses import RedirectResponse
 
+from careeros_api.conditional_requests import parse_if_match_version
 from careeros_api.config import Settings
 from careeros_api.cookies import (
     OAUTH_STATE_COOKIE,
@@ -381,7 +382,7 @@ async def update_me(
 ) -> MeResponse:
     user = await service.update_current_user(
         principal,
-        expected_version=_version(if_match),
+        expected_version=parse_if_match_version(if_match),
         updates=payload.model_dump(exclude_unset=True),
         context=context,
     )
@@ -438,7 +439,7 @@ async def update_onboarding(
     }
     view = await service.update_onboarding(
         principal,
-        expected_version=_version(if_match),
+        expected_version=parse_if_match_version(if_match),
         current_step=OnboardingStep(_from_wire_step(payload.current_step)),
         status=OnboardingStatus(_from_wire_status(payload.status)),
         resume_handoff=HandoffStatus(_from_wire_handoff(payload.resume_handoff)),
@@ -490,19 +491,6 @@ async def record_consent(
 
 def _settings(request: Request) -> Settings:
     return cast(Settings, request.app.state.settings)
-
-
-def _version(value: str) -> int:
-    normalized = value.strip()
-    if len(normalized) < 3 or not normalized.startswith('"') or not normalized.endswith('"'):
-        raise ValueError("If-Match must contain a quoted version")
-    try:
-        version = int(normalized[1:-1])
-    except ValueError as exc:
-        raise ValueError("If-Match must contain a quoted version") from exc
-    if version < 1:
-        raise ValueError("If-Match version must be positive")
-    return version
 
 
 def _me(user: CurrentUser) -> MeResponse:

@@ -9,6 +9,7 @@ from careeros.foundation.database import Database, ReadinessProbe
 from careeros.foundation.observability import configure_logging
 from careeros.integrations.email import DisabledEmailSender, SmtpEmailSender, SmtpOptions
 from careeros.integrations.oauth import GoogleOAuthOptions, GoogleOAuthProvider
+from careeros.modules.career_record.application import CareerRecordService
 from careeros.modules.identity.application import IdentityService
 from careeros.modules.identity.application.ports import (
     GoogleOAuthProvider as GoogleOAuthProviderPort,
@@ -62,6 +63,7 @@ def create_app(
     resume_health: ResumeHealthService | None = None,
     resume_dispatcher: OutboxDispatcher | None = None,
     resume_storage: S3ObjectStorage | None = None,
+    career_record: CareerRecordService | None = None,
 ) -> FastAPI:
     """Build an application; injectable dependencies keep tests infrastructure-free."""
     resolved_settings = settings or get_settings()
@@ -84,6 +86,7 @@ def create_app(
         resolved_resume_health = resume_health
         resolved_resume_dispatcher = resume_dispatcher
         resolved_resume_storage = resume_storage
+        resolved_career_record = career_record
 
         if resolved_identity is None and isinstance(resolved_database, Database):
             pepper = resolved_settings.auth_token_pepper.get_secret_value()
@@ -206,6 +209,7 @@ def create_app(
         application.state.identity_service = resolved_identity
         application.state.security_store = resolved_security_store
         application.state.resume_health_service = resolved_resume_health
+        application.state.career_record_service = resolved_career_record
         application.state.resume_outbox_dispatcher = resolved_resume_dispatcher
         application.state.readiness_dependencies = {"database": resolved_database}
         if resolved_security_store is not None:

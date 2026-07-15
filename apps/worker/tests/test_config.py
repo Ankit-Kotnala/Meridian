@@ -101,6 +101,8 @@ def test_document_limits_and_scanner_settings_are_bounded() -> None:
             "document_max_serialized_artifact_bytes": 1_048_576,
             "resume_job_reconciliation_interval_seconds": 30,
             "resume_job_reconciliation_stale_seconds": 600,
+            "attachment_job_reconciliation_interval_seconds": 45,
+            "attachment_job_reconciliation_stale_seconds": 720,
             "malware_scanner_provider": "clamav",
             "clamav_host": "scanner",
             "clamav_timeout_seconds": 15,
@@ -113,6 +115,8 @@ def test_document_limits_and_scanner_settings_are_bounded() -> None:
     assert settings.document_max_serialized_artifact_bytes == 1_048_576
     assert settings.resume_job_reconciliation_interval_seconds == 30
     assert settings.resume_job_reconciliation_stale_seconds == 600
+    assert settings.attachment_job_reconciliation_interval_seconds == 45
+    assert settings.attachment_job_reconciliation_stale_seconds == 720
     assert settings.document_temp_root.as_posix() == "/tmp/careeros"  # noqa: S108
 
 

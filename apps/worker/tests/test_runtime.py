@@ -7,6 +7,13 @@ from uuid import uuid4
 
 import pytest
 from careeros.foundation.database import Base
+from careeros.modules.career_record.application import (
+    AttachmentJobStatus,
+    AttachmentProcessingOutcome,
+    AttachmentReconciliationResult,
+    CleanupBatchResult,
+    SafeAttachmentError,
+)
 from careeros.modules.resume_health.application import (
     JobReconciliationResult,
     OutboxDispatchResult,
@@ -23,6 +30,9 @@ _TEST_TEMP_ROOT = Path.cwd().resolve() / "worker-runtime-test"
 def test_runtime_registers_cross_module_database_metadata() -> None:
     assert "users" in Base.metadata.tables
     assert "resume_audit_events" in Base.metadata.tables
+    assert "evidence_attachments" in Base.metadata.tables
+    assert "evidence_attachment_processing_jobs" in Base.metadata.tables
+    assert "evidence_attachment_outbox" in Base.metadata.tables
 
 
 def test_runtime_translates_validated_settings_and_disposes_resources(
@@ -290,3 +300,205 @@ def test_runtime_fails_closed_when_scanning_is_disabled() -> None:
 
     with pytest.raises(RuntimeError, match="fail-closed malware scanner"):
         asyncio.run(exercise())
+
+
+def test_attachment_runtime_translates_limits_and_disposes_private_resources(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+    captured: dict[str, object] = {}
+
+    class FakeDatabase:
+        def __init__(self, options: object) -> None:
+            captured["database_options"] = options
+
+        async def dispose(self) -> None:
+            events.append("database")
+
+    class FakeStorage:
+        def __init__(self, options: object) -> None:
+            captured["storage_options"] = options
+
+        async def dispose(self) -> None:
+            events.append("storage")
+
+    class FakeScanner:
+        def __init__(self, options: object) -> None:
+            captured["scanner_options"] = options
+
+    class FakeExtractor:
+        pass
+
+    monkeypatch.setattr(runtime, "Database", FakeDatabase)
+    monkeypatch.setattr(runtime, "AttachmentS3ObjectStorage", FakeStorage)
+    monkeypatch.setattr(runtime, "AttachmentClamAvScanner", FakeScanner)
+    monkeypatch.setattr(runtime, "BoundedAttachmentExtractor", FakeExtractor)
+    settings = WorkerSettings.model_validate(
+        {
+            "environment": "test",
+            "malware_scanner_provider": "clamav",
+            "document_temp_root": _TEST_TEMP_ROOT,
+            "document_max_pages": 12,
+            "document_processing_timeout_seconds": 75,
+        }
+    )
+
+    async def exercise() -> None:
+        async with runtime._attachment_runtime_resources(settings) as resources:
+            assert resources.limits.temp_root == (_TEST_TEMP_ROOT / "attachments").resolve()
+            assert resources.limits.max_pdf_pages == 12
+            assert resources.limits.processing_timeout_seconds == 75
+
+    asyncio.run(exercise())
+
+    assert events == ["storage", "database"]
+    assert captured["storage_options"].bucket == settings.s3_bucket
+
+
+def test_attachment_failure_and_outbox_composition_are_database_only(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+    captured: dict[str, object] = {}
+    job_id = uuid4()
+
+    class FakeDatabase:
+        def __init__(self, _options: object) -> None:
+            pass
+
+        async def dispose(self) -> None:
+            events.append("database")
+
+    class FakeFailureRecorder:
+        def __init__(self, **_options: object) -> None:
+            pass
+
+        async def record_failure(
+            self,
+            received_job_id: object,
+            execution_token: str,
+            error_code: SafeAttachmentError,
+            *,
+            exhausted: bool,
+        ) -> AttachmentProcessingOutcome:
+            captured.update(
+                job_id=received_job_id,
+                execution_token=execution_token,
+                error_code=error_code,
+                exhausted=exhausted,
+            )
+            return AttachmentProcessingOutcome(
+                job_id, AttachmentJobStatus.DEAD_LETTERED, error_code, False
+            )
+
+    class ForbiddenStorage:
+        def __init__(self, _options: object) -> None:
+            raise AssertionError("database-only composition must not assemble storage")
+
+    monkeypatch.setattr(runtime, "Database", FakeDatabase)
+    monkeypatch.setattr(runtime, "AttachmentFailureRecorder", FakeFailureRecorder)
+    monkeypatch.setattr(runtime, "AttachmentS3ObjectStorage", ForbiddenStorage)
+    settings = WorkerSettings.model_validate({"environment": "test"})
+
+    outcome = asyncio.run(
+        runtime.record_attachment_failure(
+            settings,
+            job_id,
+            SafeAttachmentError.ATTACHMENT_PROCESSING_RETRY,
+            exhausted=True,
+            execution_token="c" * 64,
+        )
+    )
+
+    assert outcome.status is AttachmentJobStatus.DEAD_LETTERED
+    assert captured["job_id"] == job_id
+    assert events == ["database"]
+
+
+def test_attachment_cleanup_assembles_storage_without_scanner(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+
+    class FakeDatabase:
+        def __init__(self, _options: object) -> None:
+            pass
+
+        async def dispose(self) -> None:
+            events.append("database")
+
+    class FakeStorage:
+        def __init__(self, _options: object) -> None:
+            pass
+
+        async def dispose(self) -> None:
+            events.append("storage")
+
+    class FakeCleanup:
+        def __init__(self, **_options: object) -> None:
+            pass
+
+        async def process_due(self, limit: int) -> CleanupBatchResult:
+            assert limit == 25
+            return CleanupBatchResult(completed=4, failed=1, dead_lettered=0)
+
+    class ForbiddenScanner:
+        def __init__(self, _options: object) -> None:
+            raise AssertionError("cleanup must not assemble a malware scanner")
+
+    monkeypatch.setattr(runtime, "Database", FakeDatabase)
+    monkeypatch.setattr(runtime, "AttachmentS3ObjectStorage", FakeStorage)
+    monkeypatch.setattr(runtime, "AttachmentCleanupProcessor", FakeCleanup)
+    monkeypatch.setattr(runtime, "AttachmentClamAvScanner", ForbiddenScanner)
+
+    result = asyncio.run(
+        runtime.cleanup_attachment_objects(
+            WorkerSettings.model_validate({"environment": "test"}), 25
+        )
+    )
+
+    assert result == CleanupBatchResult(completed=4, failed=1, dead_lettered=0)
+    assert events == ["storage", "database"]
+
+
+def test_attachment_reconciliation_is_database_only_and_bounded(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+    captured: dict[str, object] = {}
+
+    class FakeDatabase:
+        def __init__(self, _options: object) -> None:
+            pass
+
+        async def dispose(self) -> None:
+            events.append("database")
+
+    class FakeReconciler:
+        def __init__(self, **options: object) -> None:
+            captured.update(options)
+
+        async def reconcile_stale(self, limit: int) -> AttachmentReconciliationResult:
+            captured["limit"] = limit
+            return AttachmentReconciliationResult(requeued=2, dead_lettered=1)
+
+    class ForbiddenStorage:
+        def __init__(self, _options: object) -> None:
+            raise AssertionError("reconciliation must not assemble object storage")
+
+    monkeypatch.setattr(runtime, "Database", FakeDatabase)
+    monkeypatch.setattr(runtime, "AttachmentJobReconciler", FakeReconciler)
+    monkeypatch.setattr(runtime, "AttachmentS3ObjectStorage", ForbiddenStorage)
+    settings = WorkerSettings.model_validate(
+        {
+            "environment": "test",
+            "attachment_job_reconciliation_stale_seconds": 900,
+        }
+    )
+
+    result = asyncio.run(runtime.reconcile_stale_attachment_jobs(settings, 25))
+
+    assert result == AttachmentReconciliationResult(requeued=2, dead_lettered=1)
+    assert captured["limit"] == 25
+    assert captured["stale_after_seconds"] == 900
+    assert events == ["database"]

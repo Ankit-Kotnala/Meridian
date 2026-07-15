@@ -4,6 +4,13 @@ import re
 from uuid import uuid4
 
 import pytest
+from careeros.modules.career_record.application import (
+    AttachmentJobStatus,
+    AttachmentProcessingOutcome,
+    AttachmentReconciliationResult,
+    CleanupBatchResult,
+    SafeAttachmentError,
+)
 from careeros.modules.resume_health.application import (
     CleanupResult,
     JobReconciliationResult,
@@ -22,6 +29,7 @@ _DELIVERY_ID = "delivery-test-id"
 @pytest.fixture(autouse=True)
 def _delivery_id(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(tasks.process_resume_health.request, "id", _DELIVERY_ID)
+    monkeypatch.setattr(tasks.process_evidence_attachment.request, "id", _DELIVERY_ID)
 
 
 def _settings(*, max_retries: int = 3) -> WorkerSettings:
@@ -62,6 +70,100 @@ def test_process_task_returns_only_durable_status_metadata(
         "retryable": False,
         "safe_error_code": None,
     }
+
+
+def test_attachment_task_returns_identifier_only_durable_status(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    job_id = uuid4()
+
+    async def fake_process(
+        _settings: WorkerSettings,
+        received_job_id: object,
+        execution_token: str,
+    ) -> AttachmentProcessingOutcome:
+        assert received_job_id == job_id
+        assert execution_token != _DELIVERY_ID
+        assert re.fullmatch(r"[0-9a-f]{64}", execution_token)
+        return AttachmentProcessingOutcome(job_id, AttachmentJobStatus.SUCCEEDED, None, False)
+
+    monkeypatch.setattr(tasks, "get_settings", _settings)
+    monkeypatch.setattr(tasks, "process_attachment_job", fake_process)
+
+    result = tasks.process_evidence_attachment.run(job_id=str(job_id), trace_id="A" * 32)
+
+    assert result == {
+        "job_id": str(job_id),
+        "status": "succeeded",
+        "retryable": False,
+        "safe_error_code": None,
+    }
+
+
+def test_attachment_durable_retry_does_not_create_a_second_celery_retry(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    job_id = uuid4()
+
+    async def fake_process(*_args: object) -> AttachmentProcessingOutcome:
+        return AttachmentProcessingOutcome(
+            job_id,
+            AttachmentJobStatus.RETRY_WAIT,
+            SafeAttachmentError.MALWARE_SCANNER_UNAVAILABLE,
+            True,
+        )
+
+    monkeypatch.setattr(tasks, "get_settings", _settings)
+    monkeypatch.setattr(tasks, "process_attachment_job", fake_process)
+
+    result = tasks.process_evidence_attachment.run(job_id=str(job_id), trace_id="b" * 32)
+
+    assert result["status"] == "retry_wait"
+    assert result["retryable"] is True
+    assert result["safe_error_code"] == "attachment_malware_scanner_unavailable"
+
+
+def test_attachment_runtime_failure_is_durably_recorded_before_return(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    job_id = uuid4()
+    recorded: dict[str, object] = {}
+
+    async def broken_runtime(*_args: object) -> AttachmentProcessingOutcome:
+        raise RuntimeError("provider assembly failed")
+
+    async def fake_record(
+        _settings: WorkerSettings,
+        received_job_id: object,
+        error_code: SafeAttachmentError,
+        *,
+        exhausted: bool,
+        execution_token: str,
+    ) -> AttachmentProcessingOutcome:
+        recorded.update(
+            job_id=received_job_id,
+            error_code=error_code,
+            exhausted=exhausted,
+            execution_token=execution_token,
+        )
+        return AttachmentProcessingOutcome(
+            job_id,
+            AttachmentJobStatus.RETRY_WAIT,
+            SafeAttachmentError.ATTACHMENT_PROCESSING_RETRY,
+            True,
+        )
+
+    monkeypatch.setattr(tasks, "get_settings", _settings)
+    monkeypatch.setattr(tasks, "process_attachment_job", broken_runtime)
+    monkeypatch.setattr(tasks, "record_attachment_failure", fake_record)
+
+    result = tasks.process_evidence_attachment.run(job_id=str(job_id), trace_id="c" * 32)
+
+    assert result["status"] == "retry_wait"
+    assert recorded["job_id"] == job_id
+    assert recorded["error_code"] is SafeAttachmentError.ATTACHMENT_PROCESSING_RETRY
+    assert recorded["exhausted"] is False
+    assert re.fullmatch(r"[0-9a-f]{64}", str(recorded["execution_token"]))
 
 
 def test_process_task_schedules_retry_for_durable_retryable_outcome(
@@ -237,10 +339,21 @@ def test_maintenance_tasks_return_bounded_operational_counts(
     async def fake_reconcile(*_args: object) -> JobReconciliationResult:
         return JobReconciliationResult(requeued=2, dead_lettered=1)
 
+    async def fake_attachment_cleanup(*_args: object) -> CleanupBatchResult:
+        return CleanupBatchResult(completed=6, failed=2, dead_lettered=1)
+
+    async def fake_attachment_reconcile(
+        *_args: object,
+    ) -> AttachmentReconciliationResult:
+        return AttachmentReconciliationResult(requeued=3, dead_lettered=1)
+
     monkeypatch.setattr(tasks, "get_settings", _settings)
     monkeypatch.setattr(tasks, "dispatch_resume_outbox", fake_dispatch)
     monkeypatch.setattr(tasks, "cleanup_expired_resume_data", fake_cleanup)
     monkeypatch.setattr(tasks, "reconcile_stale_resume_jobs", fake_reconcile)
+    monkeypatch.setattr(tasks, "dispatch_attachment_outbox", fake_dispatch)
+    monkeypatch.setattr(tasks, "cleanup_attachment_objects", fake_attachment_cleanup)
+    monkeypatch.setattr(tasks, "reconcile_stale_attachment_jobs", fake_attachment_reconcile)
 
     assert tasks.dispatch_resume_health_outbox.run(limit=25) == {
         "published": 4,
@@ -259,11 +372,28 @@ def test_maintenance_tasks_return_bounded_operational_counts(
         "requeued": 2,
         "dead_lettered": 1,
     }
+    assert tasks.dispatch_evidence_attachment_outbox.run(limit=25) == {
+        "published": 4,
+        "failed": 1,
+        "dead_lettered": 1,
+    }
+    assert tasks.cleanup_evidence_attachment_objects.run(limit=25) == {
+        "completed": 6,
+        "failed": 2,
+        "dead_lettered": 1,
+    }
+    assert tasks.reconcile_evidence_attachment_jobs.run(limit=25) == {
+        "requeued": 3,
+        "dead_lettered": 1,
+    }
 
 
 @pytest.mark.parametrize("limit", [True, 0, 501, "100"])
 def test_maintenance_tasks_reject_unbounded_or_mistyped_limits(limit: object) -> None:
     for task in (
+        tasks.dispatch_evidence_attachment_outbox,
+        tasks.cleanup_evidence_attachment_objects,
+        tasks.reconcile_evidence_attachment_jobs,
         tasks.dispatch_resume_health_outbox,
         tasks.reconcile_resume_health_jobs,
         tasks.cleanup_expired_resume_health_data,

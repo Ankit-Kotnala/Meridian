@@ -242,6 +242,30 @@ def test_authenticated_profile_update_passes_owner_principal_and_version(
     assert call.kwargs["updates"] == {"target_role": "Product Manager"}
 
 
+def test_profile_update_rejects_if_match_above_signed_int32_before_service(
+    settings: Settings, fake_database: FakeDatabase
+) -> None:
+    service = _service()
+    user = _user()
+    service.authenticate.return_value = _principal(user.id)
+
+    with TestClient(create_app(settings, database=fake_database, identity=service)) as client:
+        client.cookies.set("careeros_session", "opaque-access")
+        client.cookies.set("careeros_csrf", "opaque-csrf")
+        response = client.patch(
+            "/api/v1/me",
+            json={"targetRole": "Product Manager"},
+            headers={
+                "Origin": _ORIGIN,
+                "X-CSRF-Token": "opaque-csrf",
+                "If-Match": '"2147483648"',
+            },
+        )
+
+    assert response.status_code == 422
+    service.update_current_user.assert_not_awaited()
+
+
 def test_authentication_failure_clears_stale_browser_credentials(
     settings: Settings, fake_database: FakeDatabase
 ) -> None:

@@ -297,6 +297,24 @@ class WorkerSettings(BaseSettings):
             "RESUME_JOB_RECONCILIATION_STALE_SECONDS",
         ),
     )
+    attachment_job_reconciliation_interval_seconds: int = Field(
+        default=60,
+        ge=10,
+        le=3_600,
+        validation_alias=AliasChoices(
+            "CAREEROS_ATTACHMENT_JOB_RECONCILIATION_INTERVAL_SECONDS",
+            "ATTACHMENT_JOB_RECONCILIATION_INTERVAL_SECONDS",
+        ),
+    )
+    attachment_job_reconciliation_stale_seconds: int = Field(
+        default=300,
+        ge=60,
+        le=86_400,
+        validation_alias=AliasChoices(
+            "CAREEROS_ATTACHMENT_JOB_RECONCILIATION_STALE_SECONDS",
+            "ATTACHMENT_JOB_RECONCILIATION_STALE_SECONDS",
+        ),
+    )
     result_expires_seconds: int = Field(
         default=3600,
         ge=60,

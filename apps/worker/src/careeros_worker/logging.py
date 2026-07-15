@@ -1,7 +1,7 @@
 """Celery-specific structured logging context hooks."""
 
 from careeros.foundation.observability import configure_logging
-from celery import signals
+from celery import signals  # type: ignore[import-untyped,unused-ignore]
 from structlog.contextvars import bind_contextvars, clear_contextvars
 
 from careeros_worker.config import WorkerSettings, get_settings

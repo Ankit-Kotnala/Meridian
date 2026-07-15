@@ -1,9 +1,52 @@
+[CmdletBinding()]
+param(
+    [ValidateSet(2, 3)]
+    [int]$Phase = 2
+)
+
 $ErrorActionPreference = "Stop"
 
 function Assert-LastExitCode([string]$Step) {
     if ($LASTEXITCODE -ne 0) {
         throw "$Step failed with exit code $LASTEXITCODE."
     }
+}
+
+function Assert-MigrationHeadOutput {
+    param(
+        [object[]]$Output,
+        [string]$ExpectedRevision,
+        [string]$Step
+    )
+
+    $ExpectedLine = "$ExpectedRevision (head)"
+    $HeadLines = @(
+        $Output |
+            ForEach-Object { [string]$_ } |
+            Where-Object { $_ -match '^[^\s]+ \(head\)$' }
+    )
+    if ($HeadLines.Count -ne 1 -or $HeadLines[0] -ne $ExpectedLine) {
+        $RenderedOutput = (($Output | Out-String).Trim())
+        throw "$Step reported an unexpected migration head. Expected '$ExpectedLine'; received '$RenderedOutput'."
+    }
+}
+
+if ($Phase -eq 3) {
+    $RollbackRevision = "20260715_0003"
+    $ExpectedMigrationHead = "20260715_0004"
+    $JourneySpecs = @(
+        "e2e/auth-journey.spec.ts",
+        "e2e/resume-health-journey.spec.ts",
+        "e2e/career-record-journey.spec.ts"
+    )
+}
+else {
+    $RollbackRevision = "20260715_0002"
+    $ExpectedMigrationHead = $null
+    $JourneySpecs = @(
+        "e2e/auth-journey.spec.ts",
+        "e2e/resume-health-journey.spec.ts"
+    )
 }
 
 $RepositoryRoot = Split-Path -Parent $PSScriptRoot
@@ -127,12 +170,28 @@ try {
     if ([int]$InitExitCode -ne 0) {
         throw "Object-storage initialization failed with exit code $InitExitCode."
     }
+    if ($ExpectedMigrationHead) {
+        $MigrationHeads = @(
+            docker compose --project-name $ProjectName run --rm --no-deps api alembic -c packages/backend/alembic.ini heads
+        )
+        Assert-LastExitCode "Phase $Phase migration-head lookup"
+        $MigrationHeads | ForEach-Object { Write-Host $_ }
+        Assert-MigrationHeadOutput -Output $MigrationHeads -ExpectedRevision $ExpectedMigrationHead -Step "Phase $Phase migration-head lookup"
+    }
     docker compose --project-name $ProjectName run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
     Assert-LastExitCode "Isolated database migration"
-    docker compose --project-name $ProjectName run --rm --no-deps api alembic -c packages/backend/alembic.ini downgrade 20260715_0002
-    Assert-LastExitCode "Phase 2 database migration rollback"
+    docker compose --project-name $ProjectName run --rm --no-deps api alembic -c packages/backend/alembic.ini downgrade $RollbackRevision
+    Assert-LastExitCode "Phase $Phase database migration rollback"
     docker compose --project-name $ProjectName run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
-    Assert-LastExitCode "Phase 2 database migration forward repair"
+    Assert-LastExitCode "Phase $Phase database migration forward repair"
+    if ($ExpectedMigrationHead) {
+        $CurrentMigration = @(
+            docker compose --project-name $ProjectName run --rm --no-deps api alembic -c packages/backend/alembic.ini current
+        )
+        Assert-LastExitCode "Phase $Phase current-migration lookup"
+        $CurrentMigration | ForEach-Object { Write-Host $_ }
+        Assert-MigrationHeadOutput -Output $CurrentMigration -ExpectedRevision $ExpectedMigrationHead -Step "Phase $Phase current-migration lookup"
+    }
     Push-Location "packages/backend"
     try {
         uv run --package careeros-backend pytest tests/integration
@@ -215,8 +274,8 @@ try {
     if (-not $Recovered) {
         throw "API readiness did not recover after PostgreSQL restarted."
     }
-    pnpm test:e2e
-    Assert-LastExitCode "Full-stack browser journey"
+    & pnpm --filter "@careeros/web" exec playwright test @JourneySpecs
+    Assert-LastExitCode "Phase $Phase full-stack browser journeys"
     $MainSucceeded = $true
 }
 finally {
@@ -237,4 +296,4 @@ finally {
     }
 }
 
-Write-Host "CareerOS isolated full-stack browser journey passed and all test state was removed."
+Write-Host "CareerOS Phase $Phase isolated full-stack browser journeys passed and all test state was removed."
