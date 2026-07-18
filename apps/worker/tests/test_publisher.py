@@ -5,6 +5,8 @@ from typing import Any, cast
 from unittest.mock import Mock
 from uuid import uuid4
 
+import pytest
+from careeros.modules.career_record.application import PROCESS_EVIDENCE_ATTACHMENT_TASK
 from careeros.modules.resume_health.application import PROCESS_RESUME_TASK
 from celery import Celery
 
@@ -23,6 +25,29 @@ def test_publisher_sends_only_job_and_trace_identifiers() -> None:
         PROCESS_RESUME_TASK,
         kwargs={"job_id": str(job_id), "trace_id": "1" * 32},
         queue="resume-health",
+        serializer="json",
+    )
+
+
+@pytest.mark.parametrize(
+    ("task_name", "queue"),
+    [
+        (PROCESS_RESUME_TASK, "resume-health"),
+        (PROCESS_EVIDENCE_ATTACHMENT_TASK, "career-record"),
+    ],
+)
+def test_publisher_routes_each_allowlisted_task_to_its_private_queue(
+    task_name: str, queue: str
+) -> None:
+    application = cast(Celery, Mock())
+    job_id = uuid4()
+
+    asyncio.run(CeleryJobPublisher(application).publish(task_name, job_id, "a" * 32))
+
+    cast(Any, application).send_task.assert_called_once_with(
+        task_name,
+        kwargs={"job_id": str(job_id), "trace_id": "a" * 32},
+        queue=queue,
         serializer="json",
     )
 

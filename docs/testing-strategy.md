@@ -1,7 +1,7 @@
 # CareerOS testing strategy
 
 Status: Phase 2 local and hosted suites pass
-Last reviewed: 2026-07-15
+Last reviewed: 2026-07-19
 
 ## Objectives
 
@@ -229,6 +229,67 @@ intentionally does not trust forwarded addresses.
 The separate source/dependency/image security gate also scans the pinned
 `web-edge` Node Alpine runtime; `verify-phase2.ps1` does not substitute for that
 scan.
+
+## Career record and Evidence Vault coverage (Phase 3)
+
+Phase 3 keeps every Phase 2 gate and adds blocking coverage for the decisions in
+ADR 0009. The focused suites and isolated stack runner implement the following
+coverage; exact closeout results are recorded in `PLANS.md`:
+
+- Domain tests exercise every permitted and forbidden evidence-strength
+  transition, keep archive/delete lifecycle separate from strength, prove that a
+  client or owner confirmation cannot create `Verified`, and require an explicit
+  allowlisted verification-authority decision for that transition.
+- Eligibility tests cover factual and numeric use independently. Inferred,
+  unsupported, archived, deleted, conflicted, unauthorized, and source-unavailable
+  evidence is excluded. Numeric evidence additionally requires confirmed or
+  verified value/range, unit/currency, period, precision, attribution, and any
+  applicable baseline/comparator.
+- Service/repository tests mutate user IDs on profile entities, nested evidence
+  links, conflicts, proposals, achievements, attachments, lists, and usage reads.
+  Unknown and cross-user identifiers return the same result. Stale `If-Match`,
+  incomplete/duplicate reorder sets, concurrent proposal review, and concurrent
+  achievement conversion cannot overwrite or duplicate state.
+- Provenance tests verify source document/snapshot/revision/block/span bounds and
+  digest integrity through the Resume Health application query. Import creates a
+  pending proposal only. Deleting the source keeps accepted career truth but makes
+  source-only Supported evidence ineligible until it is independently confirmed
+  or given another eligible source.
+- Conflict tests cover duplicate experience/title/date, legitimate concurrent
+  roles and promotion sequences, neutral career gaps, and contradictory entity or
+  metric values. Resolution is explicit and audited; no test permits silent
+  mutation of a competing record.
+- Achievement Inbox tests preserve unanswered neutral questions, reject leading
+  or invented metric defaults, validate complete metric dimensions, persist
+  reminder preferences, and convert a reviewed draft into one idempotent Confirmed
+  evidence record.
+- Attachment tests cover signed operation/key/size/type scope, byte signature,
+  malformed/archive-limit/malware/scanner-unavailable failures, clean-state access,
+  cross-user download denial, idempotent finalize, bounded retry/dead letter, and
+  durable private-object cleanup on unlink/delete.
+- API/contract tests cover authenticated CSRF, bounded filters and opaque cursor
+  pagination, strict unknown-field rejection, safe field problems, `If-Match` and
+  idempotency bounds, no public state elevation, generated-contract drift, and
+  redacted audit/log output.
+- Web component tests cover loading, empty, filtered-empty, success, validation,
+  safe failure, rate-limit, and version-conflict recovery states. Timeline and
+  list semantics, state versus eligibility labels, provenance, non-drag reorder,
+  focus restoration/error summaries, reduced motion, long content, and mobile
+  overflow are accessibility gates.
+- Full-stack Playwright creates career data without a resume, adds a skill/project/
+  experience, captures and confirms evidence, and explicitly converts a completed
+  achievement draft into evidence. The Phase 3 primary workflow runs once in the
+  desktop Chromium project; the inherited authentication journey continues to
+  exercise the shared workspace shell on desktop and mobile. Proposal review,
+  private attachment processing, unsupported eligibility, and incomplete drafts
+  are covered in API/domain/component/integration suites rather than overstated as
+  browser coverage.
+
+The migration gate is fresh bootstrap plus
+`20260715_0003 -> 20260715_0004 -> 20260715_0003 -> 20260715_0004`, followed by a
+single-head/drift check. Final local counts and exact commands are recorded in
+`PLANS.md`; hosted CI evidence is recorded separately when an implementation
+revision is published.
 
 ## Backend test portfolio
 

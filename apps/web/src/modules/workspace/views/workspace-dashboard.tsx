@@ -265,17 +265,25 @@ export function WorkspaceDashboard({
                 Your account foundation is ready
               </h2>
               <p className="mt-1 text-sm leading-6 text-muted">
-                Manage profile details, consent choices, and active sessions in
-                Settings. Future product modules remain unavailable until their
-                verified implementation phases.
+                Maintain a structured career record, connect provenance-rich
+                evidence, and capture achievements without requiring a resume.
               </p>
-              <Link
-                className="mt-3 inline-flex text-sm font-bold text-primary"
-                href="/settings"
-              >
-                Open settings{" "}
-                <ArrowRight aria-hidden="true" className="ml-1 size-4" />
-              </Link>
+              <div className="mt-3 flex flex-wrap gap-4">
+                <Link
+                  className="inline-flex text-sm font-bold text-primary"
+                  href="/career-profile"
+                >
+                  Open Career Profile{" "}
+                  <ArrowRight aria-hidden="true" className="ml-1 size-4" />
+                </Link>
+                <Link
+                  className="inline-flex text-sm font-bold text-primary"
+                  href="/evidence"
+                >
+                  Open Evidence Vault{" "}
+                  <ArrowRight aria-hidden="true" className="ml-1 size-4" />
+                </Link>
+              </div>
             </div>
           </div>
         </Card>

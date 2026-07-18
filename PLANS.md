@@ -1,8 +1,8 @@
 # CareerOS implementation plan
 
-Last updated: 2026-07-15
+Last updated: 2026-07-19
 Plan owner: engineering  
-Current status: **Phase 2 complete; Phase 3 is next and not started**
+Current status: **Phase 3 complete; Phase 4 is next**
 
 ## Status legend
 
@@ -420,6 +420,137 @@ diagnostics before cleanup, and the repaired local and hosted gates pass.
   allowlisted trusted-hop policy is added; production deployment must not simply
   start trusting arbitrary forwarding headers.
 
+## Phase 3 scope and status
+
+Current status: **complete**. Implementation commit `0df8bcf` records the Phase 3
+local-verification tree. No-change trigger commit `f752b55` has the identical
+tree and passed hosted CI run `29657932938` on PR #13 against the Phase 2 hosted
+baseline branch `codex/phase-2-resume-health`.
+
+### Implemented vertical slice
+
+- [x] Migration `20260715_0004` adds owner-scoped career profiles, typed career
+      entities and skills, evidence items with immutable revisions/sources/
+      metrics/links/usage/conflicts, resume import proposals, private attachment
+      admission/processing/outbox/cleanup/audit records, achievement drafts,
+      reminder preferences, and Career Record audit events with ownership-aware
+      foreign keys, constraints, indexes, and positive versions.
+- [x] `careeros.modules.career_record` is one transactional bounded context with
+      framework-free domain rules and application ports. It owns career truth,
+      evidence authority, eligibility, conflicts, proposals, Achievement Inbox,
+      reminder preferences, and redacted audit; SQLAlchemy, Resume Health source,
+      S3, ClamAV, extraction, API, and Celery adapters point inward.
+- [x] Career Profile supports profile facts, experience, education, projects,
+      certifications, awards, volunteering, publications, languages, skills,
+      partial year/year-month dates, complete-set accessible reorder, explicit
+      promotion/concurrent-role grouping, neutral gap findings, optimistic
+      concurrency, and owner-scoped CRUD without requiring a resume.
+- [x] Resume-derived changes are copied into versioned pending proposals through
+      an explicit ownership-checked Resume Health source query. Accept, edited
+      accept, and reject are explicit actions; source deletion never rewrites
+      accepted career truth and makes source-only Supported evidence ineligible.
+- [x] Evidence Vault separates active/archive/delete lifecycle from Verified,
+      Confirmed, Supported, Inferred, and Unsupported strength. State transitions,
+      immutable revisions, source availability, numeric dimensions, conflicts,
+      and downstream factual/numeric eligibility are deterministic and owner
+      scoped. Client input and owner confirmation cannot produce `Verified`; no
+      independent verification authority is configured in production.
+- [x] Evidence attachments accept bounded PDF/DOCX only. Short-lived exact-
+      operation signed transfers use randomized private keys; finalize rechecks
+      owner, expiry, size, media type, and signature. A restricted worker scans
+      fail-closed and extracts bounded counts through durable jobs, outbox,
+      execution fencing, bounded retries/dead letters, lost-delivery
+      reconciliation, and durable private-object cleanup. An attachment alone
+      never raises evidence strength or eligibility.
+- [x] Achievement Inbox supports neutral guided capture, durable incomplete
+      drafts, structured metric context, experience/project association, recurring
+      reminder preferences, archive, and an explicit idempotent conversion to one
+      Confirmed evidence item.
+- [x] Authenticated Next.js routes at `/career-profile`, proposal review,
+      `/evidence`, evidence detail, and `/achievement-inbox` use real APIs and
+      implement loading, empty, success, validation, conflict, and safe error
+      states with semantic timelines/tables, keyboard controls, visible labels,
+      focus handling, reduced-motion support, and responsive overflow. No working
+      Phase 1/2 path was replaced with fixtures or mock data.
+
+### Architecture decisions realized
+
+- ADR 0009 extends the source-of-truth, ownership, and asynchronous processing
+  decisions with one Career Record consistency boundary. Account display and
+  search preferences remain in Phase 1 `user_profiles`; factual career
+  presentation belongs to `career_profiles` and is not dual-written.
+- Every public resource identifier is a UUID, every mutable aggregate uses a
+  positive version, and API/service authorization fetches by owner plus ID.
+  Mutations require the existing authenticated session and CSRF policy; nested
+  links validate both ends in the same owner scope and unknown/cross-user IDs are
+  indistinguishable.
+- Evidence strength is server-derived. Manual/URL claims begin Inferred, exact
+  validated resume spans can begin Supported, owner attestation can become
+  Confirmed, and only the unconfigured server-side verification-authority port
+  could produce Verified. Material edits invalidate prior strength by creating an
+  immutable Inferred revision.
+- Downstream modules receive evidence through the owner-scoped application
+  eligibility query rather than ORM filtering or a client-selected state. Open
+  conflicts, unavailable provenance, archive/delete lifecycle, Inferred, and
+  Unsupported are excluded; numeric use additionally requires complete decimal
+  value/unit/period/precision/attribution context and confirmation.
+- Career Record attachments deliberately have separate persistence from Resume
+  Health documents while using provider-neutral storage/scanner/extractor ports.
+  The worker queue payload contains durable identifiers only, and a scheduled
+  database-only reconciler repairs lost delivery or expired leases within
+  separate processing/recovery budgets.
+
+### Migration and compatibility
+
+`20260715_0004` depends on the verified Phase 2 head `20260715_0003`. It is
+additive: Phase 1/2 tables and routes are neither renamed nor removed. Fresh
+bootstrap and the required `0003 -> 0004 -> 0003 -> 0004` path have been exercised
+locally. The downgrade deletes Phase 3 relational data in dependency order;
+production rollback after real career/evidence content therefore requires export,
+retention, and forward-repair review rather than an automatic downgrade.
+
+### Verification evidence and remaining gate
+
+The preceding Phase 2 acceptance criteria were rechecked before Phase 3 edits:
+the complete Phase 2 verifier passed in 208.5 seconds. Focused Phase 3 evidence
+captured during implementation, the final local closeout result, and hosted CI
+evidence are listed below.
+
+| Command / gate                                     | Status | Evidence                                                                                                                                                                                                                                                                                                                                                         |
+| -------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pre-edit `scripts/verify-phase2.ps1`               | Pass   | The complete Phase 2 migration, integration, runtime, browser, build, and cleanup baseline remained green in 208.5 seconds.                                                                                                                                                                                                                                      |
+| Backend unit/architecture suites                   | Pass   | Ruff and mypy passed; 132 backend architecture/unit tests passed, including Career Record state, eligibility, ownership, concurrency, grouping, proposals, conflicts, achievements, migration shape, and attachment workflow tests. Final local closeout rerun: 132 passed in 4.30 seconds.                                                                      |
+| Worker unit suite                                  | Pass   | Ruff and mypy passed; 63 worker tests passed, including attachment queue routing, bounded task behavior, production composition, outbox, cleanup, fencing, and stale-job reconciliation. Final local closeout rerun: 63 passed in 1.18 seconds.                                                                                                                  |
+| API focused/full iteration                         | Pass   | The final-tree API suite passed 92 tests in 8.97 seconds with one non-blocking Starlette/httpx2 deprecation warning. It includes the production Career Record and attachment workflow composition test.                                                                                                                                                          |
+| Web quality, component, and build                  | Pass   | Prettier, generated-contract drift, ESLint/boundary checks, TypeScript, 3 contract tests, 12 UI tests, 81 web tests, 2 web-edge tests, and the production Next.js build passed with all Phase 3 routes present.                                                                                                                                                  |
+| Real dependency integration                        | Pass   | 11 PostgreSQL/Redis/MinIO/ClamAV provider/repository integrations passed in 2.55 seconds. Fresh migration, `0004 -> 0003 -> 0004` round trip, container migration idempotency, runtime probes, and Celery broker ping all passed.                                                                                                                                |
+| Primary Phase 3 E2E                                | Pass   | The isolated Playwright run passed 4 workflows in 55.1 seconds with 2 intentional mobile skips: desktop auth/onboarding, desktop Career Record, guest Resume Health, and mobile auth passed. The Career Record workflow registers and verifies a user, creates profile/skill/project/experience data, confirms evidence, and explicitly converts an achievement. |
+| `scripts/verify-phase3.ps1` / `make verify-phase3` | Pass   | `scripts/verify-phase3.ps1` passed locally on 2026-07-19 against the documentation-aligned tree. It ran the full repository gate followed by the isolated Phase 3 migration, integration, runtime, and browser workflow.                                                                                                                                         |
+| Hosted CI                                          | Pass   | Run `29657932938` passed supply-chain, API, web/contracts, worker, browser-smoke, Resume Health E2E, Career Record E2E, and container/image jobs on no-change trigger commit `f752b55`, whose tree is identical to implementation commit `0df8bcf`; GitGuardian also passed on PR #13.                                                                           |
+
+### Known limitations and deferred work
+
+- No independent verification provider or operating process is configured.
+  Production evidence can be Confirmed or Supported but not Verified; owner
+  confirmation is intentionally not relabeled as independent verification.
+- Evidence attachments accept PDF and DOCX only and use the local ClamAV and
+  bounded parser adapters. OCR is disabled, DOCX has no authoritative rendered
+  page count, and parser timeouts still use `asyncio.to_thread` rather than a
+  killable per-file subprocess. These are not production-sandbox guarantees.
+- Phase 3 records an external HTTP(S) URL only as provenance metadata; it does not
+  fetch the URL. SSRF-hardened job import belongs to Phase 5.
+- The Phase 3 attachment intent is kept in the mounted page, not durable browser
+  storage. Reload after admission can consume one attachment slot until the
+  default ten-minute intent expires; multipart/resumable upload is absent.
+- The career-record Playwright primary workflow is desktop-only. Existing shared
+  workspace navigation and responsive component coverage exercise mobile paths,
+  but there is no separate mobile run of proposal review, private attachment
+  processing, or the complete career journey.
+- Complete account export/erasure, backup retention and restore, legal holds,
+  production storage/scanner/queue selection, and administrator support access
+  remain Phase 10 work. Phase 3 owner-scoped delete and object cleanup do not
+  substitute for account-wide orchestration.
+
 ## Roadmap and phase gates
 
 | Phase                                                       | Outcomes                                                                                                                           | Depends on  | Exit evidence                                                                                          |
@@ -484,24 +615,24 @@ Detailed checkboxes live in `docs/implementation-checklist.md`.
 
 ## Risk register
 
-| ID  | Risk                                                             | Likelihood / impact | Mitigation and gate                                                                                                                                                                                                                       | Earliest owner phase   |
-| --- | ---------------------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| R1  | Cross-tenant data exposure through IDOR or object keys           | Medium / Critical   | Ownership-scoped queries, policy tests, private buckets, audit events                                                                                                                                                                     | 1 and every data phase |
-| R2  | Malicious or resource-exhausting documents                       | High / Critical     | Signature/limit checks, scanning, isolated no-network worker, time/memory/CPU caps, hostile fixtures                                                                                                                                      | 2                      |
-| R3  | AI fabricates or is redirected by document instructions          | High / Critical     | Untrusted-content delimiters, strict schemas, evidence ledger, deterministic grounding, adversarial tests                                                                                                                                 | 5–6                    |
-| R4  | Score labels mislead users                                       | Medium / High       | Canonical disclaimer, deterministic versioned formulas, explanations, no probability language                                                                                                                                             | 2, 4, 5                |
-| R5  | PDF/DOCX looks correct but parses badly                          | High / High         | Constrained templates, searchable text, round-trip verification and blocking critical failures                                                                                                                                            | 7                      |
-| R6  | Dependency/toolchain churn breaks the greenfield baseline        | Medium / Medium     | Conservative pins, lockfiles, CI cache keys, scheduled upgrades in small changes                                                                                                                                                          | 0 onward               |
-| R7  | Queue retry duplicates work or cost                              | Medium / High       | Idempotency records, bounded retries/timeouts, job state machine, budgets and dead letters                                                                                                                                                | 2 onward               |
-| R8  | Sensitive content leaks through logs/telemetry/providers         | Medium / Critical   | Data classification, default redaction, payload-free telemetry, provider minimization and consent                                                                                                                                         | 0 onward               |
-| R9  | Local Compose health hides production gaps                       | High / High         | Separate readiness, production threat review, load/restore/failure tests, protected deploy                                                                                                                                                | 10                     |
-| R10 | Broad roadmap produces unfinished horizontal scaffolding         | High / Medium       | One vertical phase at a time, dependency gates, no completion on placeholders                                                                                                                                                             | Every phase            |
-| R11 | Public demo is mistaken for functional analysis                  | Medium / Medium     | Isolate it at `/demo/dashboard`, retain the fictional-preview label, and keep it free of upload/score claims or account persistence                                                                                                       | 0–1                    |
-| R12 | Retention/deletion becomes inconsistent across stores            | Medium / High       | Data inventory, deletion tombstones/jobs, object/vector/backup policy and tests per entity                                                                                                                                                | 1 onward               |
-| R13 | Generated contracts drift from implemented OpenAPI               | Medium / High       | FastAPI remains authoritative; pin normalized export/client generation and fail CI on either drift                                                                                                                                        | 0 onward               |
-| R14 | Hosted CI and local behavior diverge after architecture changes  | Low / Medium        | Runs 29360385761, 29367040183, and 29378312134 verify foundation through Phase 2; Beat liveness is now asserted consistently across Compose versions; retain clean contract-output, container, migration, browser, and supply-chain gates | 0 onward               |
-| R15 | Upstream runtime findings do not all have supported stable fixes | Low / High          | Two exact-version Grype exceptions document reachability and removal conditions; monitor remaining findings and refresh runtimes promptly                                                                                                 | 0–1                    |
-| R16 | Workspace/migration move regresses runtime or existing databases | Medium / High       | One root lock, preserved revision IDs, fresh/existing upgrade tests, root-context image builds, and direct runtime Alembic verification                                                                                                   | 0                      |
+| ID  | Risk                                                             | Likelihood / impact | Mitigation and gate                                                                                                                                                                                                                                    | Earliest owner phase   |
+| --- | ---------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------- |
+| R1  | Cross-tenant data exposure through IDOR or object keys           | Medium / Critical   | Ownership-scoped queries, policy tests, private buckets, audit events                                                                                                                                                                                  | 1 and every data phase |
+| R2  | Malicious or resource-exhausting documents                       | High / Critical     | Signature/limit checks, scanning, isolated no-network worker, time/memory/CPU caps, hostile fixtures                                                                                                                                                   | 2                      |
+| R3  | AI fabricates or is redirected by document instructions          | High / Critical     | Untrusted-content delimiters, strict schemas, evidence ledger, deterministic grounding, adversarial tests                                                                                                                                              | 5–6                    |
+| R4  | Score labels mislead users                                       | Medium / High       | Canonical disclaimer, deterministic versioned formulas, explanations, no probability language                                                                                                                                                          | 2, 4, 5                |
+| R5  | PDF/DOCX looks correct but parses badly                          | High / High         | Constrained templates, searchable text, round-trip verification and blocking critical failures                                                                                                                                                         | 7                      |
+| R6  | Dependency/toolchain churn breaks the greenfield baseline        | Medium / Medium     | Conservative pins, lockfiles, CI cache keys, scheduled upgrades in small changes                                                                                                                                                                       | 0 onward               |
+| R7  | Queue retry duplicates work or cost                              | Medium / High       | Idempotency records, bounded retries/timeouts, job state machine, budgets and dead letters                                                                                                                                                             | 2 onward               |
+| R8  | Sensitive content leaks through logs/telemetry/providers         | Medium / Critical   | Data classification, default redaction, payload-free telemetry, provider minimization and consent                                                                                                                                                      | 0 onward               |
+| R9  | Local Compose health hides production gaps                       | High / High         | Separate readiness, production threat review, load/restore/failure tests, protected deploy                                                                                                                                                             | 10                     |
+| R10 | Broad roadmap produces unfinished horizontal scaffolding         | High / Medium       | One vertical phase at a time, dependency gates, no completion on placeholders                                                                                                                                                                          | Every phase            |
+| R11 | Public demo is mistaken for functional analysis                  | Medium / Medium     | Isolate it at `/demo/dashboard`, retain the fictional-preview label, and keep it free of upload/score claims or account persistence                                                                                                                    | 0–1                    |
+| R12 | Retention/deletion becomes inconsistent across stores            | Medium / High       | Data inventory, deletion tombstones/jobs, object/vector/backup policy and tests per entity                                                                                                                                                             | 1 onward               |
+| R13 | Generated contracts drift from implemented OpenAPI               | Medium / High       | FastAPI remains authoritative; pin normalized export/client generation and fail CI on either drift                                                                                                                                                     | 0 onward               |
+| R14 | Hosted CI and local behavior diverge after architecture changes  | Low / Medium        | Runs 29360385761, 29367040183, 29378312134, and 29657932938 verify foundation through Phase 3; Beat liveness is now asserted consistently across Compose versions; retain clean contract-output, container, migration, browser, and supply-chain gates | 0 onward               |
+| R15 | Upstream runtime findings do not all have supported stable fixes | Low / High          | Two exact-version Grype exceptions document reachability and removal conditions; monitor remaining findings and refresh runtimes promptly                                                                                                              | 0–1                    |
+| R16 | Workspace/migration move regresses runtime or existing databases | Medium / High       | One root lock, preserved revision IDs, fresh/existing upgrade tests, root-context image builds, and direct runtime Alembic verification                                                                                                                | 0                      |
 
 ## Change and verification protocol
 
@@ -519,12 +650,9 @@ At the end of every phase:
 
 ## Next phase
 
-Phase 2 is verified and complete. The next planned phase has not started.
-
-The next phase is **Phase 3 — Career Profile, Evidence
-Vault, and Achievement Inbox**. It begins with independent owned career entities
-and a provenance/evidence graph. Resume import and corrections may propose
-profile changes, but they cannot overwrite career truth. Every factual claim and
-number must retain eligible evidence, explicit state, conflict handling, owner
-scope, audit history, and a user confirmation path before downstream readiness,
-matching, or generation can consume it.
+Phase 3 is locally and hosted verified. The next product phase is **Phase 4 -
+Role Explorer and Role Readiness**. It will introduce a licensed/versioned role
+taxonomy, role search/save/compare, and deterministic readiness snapshots that
+consume only the Phase 3 owner-scoped evidence-eligibility query. Every strength,
+gap, unknown, transition, and score component must remain explainable without
+presenting readiness as a hiring probability.

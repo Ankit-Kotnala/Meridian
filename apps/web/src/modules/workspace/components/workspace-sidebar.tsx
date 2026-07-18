@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  Archive,
   BriefcaseBusiness,
   ChevronLeft,
   FileHeart,
@@ -7,6 +8,7 @@ import {
   Settings,
   Target,
   UserRoundCheck,
+  UserRound,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -24,6 +26,8 @@ const availableNavigation: ReadonlyArray<{
 }> = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/resume-health/account", icon: FileHeart, label: "Resume Health" },
+  { href: "/career-profile", icon: UserRound, label: "Career Profile" },
+  { href: "/evidence", icon: Archive, label: "Evidence Vault" },
   { href: "/onboarding", icon: UserRoundCheck, label: "Onboarding" },
   { href: "/settings", icon: Settings, label: "Settings" },
 ];

@@ -1,8 +1,8 @@
 # CareerOS security threat model
 
-Status: Phase 2 resume-processing controls implemented and verified
+Status: Phase 3 Career Record controls implemented and locally verified
 Method: asset/trust-boundary analysis with STRIDE-style threat enumeration  
-Last reviewed: 2026-07-15
+Last reviewed: 2026-07-19
 
 ## Scope and current posture
 
@@ -14,8 +14,11 @@ Phase 1 accepts authentication, limited account/profile data, session metadata,
 consent events, and onboarding progress. Phase 2 also accepts PDF/DOCX resumes,
 stores private originals and derived text/reading-order artifacts, and persists
 canonical snapshots, processing jobs, Resume Health analyses, findings, and safe
-audit events. Its implemented file and guest controls are called out below. The
-product still does not accept job URLs, model requests, exports, billing, or
+audit events. Phase 3 adds owned career facts, resume-import proposals, evidence
+and provenance, private PDF/DOCX evidence attachments, conflicts, achievement
+drafts, reminder preferences, immutable evidence history, and redacted Career
+Record audit. Their implemented controls are called out below. The product still
+does not fetch job/evidence URLs, make model requests, export documents, bill, or
 administrator actions; controls described for those later paths remain target
 requirements, not implementation claims. The fictional dashboard preview remains
 isolated at `/demo/dashboard` and does not use authenticated account state.
@@ -361,6 +364,49 @@ protected-route denial on desktop and mobile. Exact counts and commands are in
 These controls and the same-revision local container, integration, E2E, and scan
 gates pass as recorded in `PLANS.md`; hosted run `29378312134` also passes.
 
+### Phase 3 implemented controls and verification status
+
+- Migration `20260715_0004` gives Career Record rows a non-null owner and uses
+  owner-aware uniqueness, foreign keys, checks, and indexes for profile entities,
+  nested links, evidence revisions/sources/metrics/conflicts/usage, proposals,
+  attachment workflow state, achievements, reminders, and audit events.
+  Repositories fetch by owner plus ID; nested links validate both resources in the
+  same scope, and cross-user/unknown IDs have indistinguishable not-found behavior.
+- Phase 3 is account-only and reuses authenticated server-side sessions, CSRF,
+  exact-origin, body limits, safe problem responses, and request/trace context.
+  Positive versions and strict quoted `If-Match` values reject stale writes.
+  Proposal review, attachment finalize, and achievement conversion prevent replay
+  from silently duplicating or overwriting career truth.
+- Evidence strength and lifecycle are separate server decisions. Clients cannot
+  submit a resulting strength; owner confirmation produces Confirmed only after
+  validation. The production service composes no `VerificationAuthority`, so
+  neither a client, model, nor owner can manufacture Verified evidence. Material
+  edits create immutable Inferred revisions, and open conflicts, unavailable
+  provenance, archive/delete lifecycle, Inferred, and Unsupported evidence are
+  excluded by the owner-scoped downstream eligibility query.
+- Resume provenance crosses the module boundary only through an explicit
+  ownership-checking application query. Career Record copies bounded source IDs,
+  revision/schema information, source span/digest, and a review excerpt into a
+  pending proposal or immutable evidence revision. It does not foreign-key career
+  truth to a deletable resume or treat parser confidence as confirmation.
+- Evidence attachments accept bounded PDF/DOCX only. Admission and download use
+  randomized private object keys and short-lived operation/key/media/size-bound
+  signed URLs. Finalize repeats ownership, expiry, object metadata, exact size,
+  and byte-signature checks while locking the parent evidence against deletion.
+  Required ClamAV and the bounded extractor run in the restricted worker and fail
+  closed; attachment presence alone cannot raise evidence strength.
+- Attachment jobs persist owner, idempotency, trace, status, attempts, safe error,
+  lease, hashed fencing token, and terminal state. Identifier-only outbox payloads,
+  bounded publish/process/cleanup retries, dead letters, stale-job reconciliation,
+  and durable object cleanup cover broker loss, worker death, and object-store
+  failure without logging raw evidence, answers, filenames, signed URLs, or bytes.
+- Focused domain, repository, API, worker, provider, component, and browser tests
+  cover the controls above. The desktop primary journey creates career data,
+  confirms evidence, and explicitly converts an achievement; it does not exercise
+  a mobile end-to-end career journey or independent verification. The final
+  local `scripts/verify-phase3.ps1` result passes; hosted Phase 3 CI remains
+  pending until the implementation tree is published.
+
 ## Privacy, retention, and consent
 
 - Default: user content is not used to train models.
@@ -370,7 +416,9 @@ gates pass as recorded in `PLANS.md`; hosted run `29378312134` also passes.
 - Define lifecycle by class: unfinalized upload, guest document, active account,
   archived evidence, audit/security log, deleted account, backup, and billing
   record. Phase 2 defaults upload intents to five minutes and guest capability/
-  document retention to 24 hours. Production account, audit, backup, and legal
+  document retention to 24 hours; Phase 3 evidence-attachment admission defaults
+  to ten minutes and download signatures to two minutes. Production account,
+  audit, backup, and legal
   durations remain a Phase 10 policy decision; indefinite raw-document retention
   is not an acceptable default.
 - Data export includes understandable structured records and files with integrity
@@ -450,10 +498,11 @@ integrity, ownership, migrations, object references, and documented RPO/RTO.
 - Production region, data residency, account/backup retention durations, RPO/RTO,
   identity email, AI/OCR/parser/scanner/billing providers, queue service, and
   support-access process are not selected. ClamAV and the local PDF/DOCX parser
-  are Phase 2 local/initial adapters, not a production provider decision.
+  are Phase 2/3 local/initial adapters, not a production provider decision.
 - No application sandbox fully eliminates parser zero-day risk; isolation,
   patching, corpus testing, and kill switches remain necessary.
-- Phase 2 parser timeout uses `asyncio.to_thread`; cancelling the await does not
+- Resume and evidence-attachment parser timeout uses `asyncio.to_thread`;
+  cancelling the await does not
   forcibly terminate the underlying Python thread. Celery task limits and the
   non-root, read-only, CPU/memory/PID-bounded, no-edge-network worker constrain
   impact, but killable per-parser subprocess isolation remains production
@@ -468,9 +517,10 @@ integrity, ownership, migrations, object references, and documented RPO/RTO.
   allowlisted trusted-hop policy is implemented; trusting arbitrary forwarded
   headers is prohibited.
 - Upload retry state is in-memory only. A lost intent response or page reload may
-  reserve quota for up to the default five-minute intent TTL, and Phase 2 has no
-  resumable transfer. This is a medium availability/UX limitation, not a reason
-  to persist signed URLs or weaken quota admission.
+  reserve Resume Health quota for up to its default five-minute intent TTL or an
+  evidence attachment slot for up to its default ten-minute admission TTL.
+  Neither flow has resumable transfer. This is an availability/UX limitation, not
+  a reason to persist signed URLs or weaken admission.
 - DOCX rendered page count is not authoritative in `python-docx`; byte/archive/
   expansion/character/block/artifact/resource limits apply until a reviewed
   layout-aware rendering provider is introduced.
@@ -479,11 +529,17 @@ integrity, ownership, migrations, object references, and documented RPO/RTO.
   not part of the local gate, so provider enablement requires a separate
   configuration and contract review.
 - Account export/deletion orchestration and final retention periods remain later
-  phase work; Phase 1 consent and audit records and Phase 2 document deletion do
-  not substitute for account-wide erasure.
-- OCR is an explicit optional port but Phase 2 has no enabled OCR adapter.
-  Image-only documents therefore return parser warning/insufficient data and must
-  never be treated as successfully scored text.
+  phase work; Phase 1 consent/audit, Phase 2 document deletion, and Phase 3
+  evidence/attachment deletion do not substitute for account-wide erasure.
+- OCR is an explicit optional port but no Phase 2/3 OCR adapter is enabled.
+  Image-only resumes therefore return parser warning/insufficient data, and image
+  content in evidence attachments is not promoted into claim text.
+- No independent evidence verifier is selected. Verified remains intentionally
+  unreachable in production until a reviewed provider and operating process can
+  supply method, verifier, scope, source, and time without trusting the claimant.
+- External HTTP(S) evidence URLs are stored as untrusted provenance metadata only;
+  Phase 3 does not fetch them. Any future fetch must use the Phase 5 redirect/DNS/
+  private-address/size/time SSRF policy rather than reusing a generic HTTP client.
 - Backups and third-party retention delay physical erasure; policy and user
   messaging must describe the bounded window accurately.
 - Local Compose is not hardened for hostile multi-user or internet-facing

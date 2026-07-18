@@ -9,6 +9,22 @@ from careeros.foundation.database import Database, ReadinessProbe
 from careeros.foundation.observability import configure_logging
 from careeros.integrations.email import DisabledEmailSender, SmtpEmailSender, SmtpOptions
 from careeros.integrations.oauth import GoogleOAuthOptions, GoogleOAuthProvider
+from careeros.modules.career_record.application import (
+    AttachmentLimits,
+    AttachmentWorkflowService,
+    CareerRecordService,
+)
+from careeros.modules.career_record.infrastructure import (
+    AttachmentAdmissionBridge,
+    AttachmentS3ObjectStorage,
+    AttachmentS3Options,
+    SqlAlchemyAttachmentUnitOfWorkFactory,
+    SqlAlchemyCareerRecordUnitOfWorkFactory,
+    UuidIdentifierFactory,
+)
+from careeros.modules.career_record.infrastructure import (
+    SystemClock as CareerRecordClock,
+)
 from careeros.modules.identity.application import IdentityService
 from careeros.modules.identity.application.ports import (
     GoogleOAuthProvider as GoogleOAuthProviderPort,
@@ -44,6 +60,7 @@ from redis.asyncio import Redis
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from careeros_api.career_record_resume_source import ResumeHealthSourceQuery
 from careeros_api.config import Settings, get_settings
 from careeros_api.middleware import RequestBodyLimitMiddleware, install_request_context_middleware
 from careeros_api.problems import install_problem_handlers
@@ -62,6 +79,9 @@ def create_app(
     resume_health: ResumeHealthService | None = None,
     resume_dispatcher: OutboxDispatcher | None = None,
     resume_storage: S3ObjectStorage | None = None,
+    career_record: CareerRecordService | None = None,
+    attachment_workflow: AttachmentWorkflowService | None = None,
+    attachment_storage: AttachmentS3ObjectStorage | None = None,
 ) -> FastAPI:
     """Build an application; injectable dependencies keep tests infrastructure-free."""
     resolved_settings = settings or get_settings()
@@ -84,6 +104,9 @@ def create_app(
         resolved_resume_health = resume_health
         resolved_resume_dispatcher = resume_dispatcher
         resolved_resume_storage = resume_storage
+        resolved_career_record = career_record
+        resolved_attachment_workflow = attachment_workflow
+        resolved_attachment_storage = attachment_storage
 
         if resolved_identity is None and isinstance(resolved_database, Database):
             pepper = resolved_settings.auth_token_pepper.get_secret_value()
@@ -202,10 +225,60 @@ def create_app(
                     clock=resume_clock,
                 )
 
+        if isinstance(resolved_database, Database):
+            attachment_uow = SqlAlchemyAttachmentUnitOfWorkFactory(resolved_database)
+            if resolved_attachment_workflow is None:
+                resolved_attachment_storage = (
+                    resolved_attachment_storage
+                    or AttachmentS3ObjectStorage(
+                        AttachmentS3Options(
+                            internal_endpoint_url=resolved_settings.s3_endpoint_url,
+                            public_endpoint_url=resolved_settings.s3_public_endpoint_url,
+                            region=resolved_settings.s3_region,
+                            bucket=resolved_settings.s3_bucket,
+                            access_key_id=resolved_settings.s3_access_key_id,
+                            secret_access_key=(
+                                resolved_settings.s3_secret_access_key.get_secret_value()
+                            ),
+                            use_ssl=resolved_settings.s3_use_ssl,
+                        )
+                    )
+                )
+                resolved_attachment_workflow = AttachmentWorkflowService(
+                    unit_of_work=attachment_uow,
+                    clock=CareerRecordClock(),
+                    storage=resolved_attachment_storage,
+                    limits=AttachmentLimits(
+                        max_upload_bytes=resolved_settings.resume_max_upload_bytes,
+                        max_pdf_pages=resolved_settings.resume_max_pages,
+                        max_archive_entries=resolved_settings.resume_max_archive_entries,
+                        max_archive_uncompressed_bytes=(
+                            resolved_settings.resume_max_expanded_bytes
+                        ),
+                        max_archive_ratio=resolved_settings.resume_max_compression_ratio,
+                        processing_timeout_seconds=(
+                            resolved_settings.resume_processing_timeout_seconds
+                        ),
+                    ),
+                )
+            if resolved_career_record is None:
+                if resolved_resume_health is None:
+                    raise RuntimeError("Career Record requires the Resume Health source query")
+                resolved_career_record = CareerRecordService(
+                    unit_of_work=SqlAlchemyCareerRecordUnitOfWorkFactory(resolved_database),
+                    clock=CareerRecordClock(),
+                    identifiers=UuidIdentifierFactory(),
+                    resume_sources=ResumeHealthSourceQuery(resolved_resume_health),
+                    attachments=AttachmentAdmissionBridge(resolved_attachment_workflow),
+                    verification_authority=None,
+                )
+
         application.state.database = resolved_database
         application.state.identity_service = resolved_identity
         application.state.security_store = resolved_security_store
         application.state.resume_health_service = resolved_resume_health
+        application.state.career_record_service = resolved_career_record
+        application.state.attachment_workflow_service = resolved_attachment_workflow
         application.state.resume_outbox_dispatcher = resolved_resume_dispatcher
         application.state.readiness_dependencies = {"database": resolved_database}
         if resolved_security_store is not None:
@@ -229,6 +302,8 @@ def create_app(
                 await resolved_security_store.dispose()
             if resolved_resume_storage is not None:
                 await resolved_resume_storage.dispose()
+            if resolved_attachment_storage is not None:
+                await resolved_attachment_storage.dispose()
             await resolved_database.dispose()
             logger.info("api_stopped", service=resolved_settings.service_name)
 

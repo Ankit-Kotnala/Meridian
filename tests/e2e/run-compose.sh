@@ -11,6 +11,22 @@ case "$project_name" in
     ;;
 esac
 
+verification_phase=${CAREEROS_E2E_PHASE:-2}
+case "$verification_phase" in
+  2)
+    rollback_revision=20260715_0002
+    expected_migration_head=
+    ;;
+  3)
+    rollback_revision=20260715_0003
+    expected_migration_head=20260715_0004
+    ;;
+  *)
+    echo "CAREEROS_E2E_PHASE must be either 2 or 3." >&2
+    exit 2
+    ;;
+esac
+
 export COMPOSE_PROJECT_NAME="$project_name"
 export POSTGRES_PORT="${POSTGRES_PORT:-55433}"
 export REDIS_PORT="${REDIS_PORT:-6380}"
@@ -91,6 +107,34 @@ export CAREEROS_TEST_S3_SECRET_ACCESS_KEY="$S3_APP_SECRET_ACCESS_KEY"
 export CAREEROS_TEST_CLAMAV_HOST=127.0.0.1
 export CAREEROS_TEST_CLAMAV_PORT="$CLAMAV_PORT"
 
+assert_migration_head_output() {
+  output=$1
+  expected_revision=$2
+  step=$3
+  head_lines=$(printf '%s\n' "$output" | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')
+  expected_line="$expected_revision (head)"
+  if [ "$head_lines" != "$expected_line" ]; then
+    echo "$step reported an unexpected migration head. Expected '$expected_line'; received '$output'." >&2
+    return 1
+  fi
+}
+
+run_browser_journeys() {
+  case "$verification_phase" in
+    2)
+      pnpm --filter @careeros/web exec playwright test \
+        e2e/auth-journey.spec.ts \
+        e2e/resume-health-journey.spec.ts
+      ;;
+    3)
+      pnpm --filter @careeros/web exec playwright test \
+        e2e/auth-journey.spec.ts \
+        e2e/resume-health-journey.spec.ts \
+        e2e/career-record-journey.spec.ts
+      ;;
+  esac
+}
+
 cleanup() {
   status=$?
   trap - EXIT HUP INT TERM
@@ -127,9 +171,19 @@ if [ "$init_exit" -ne 0 ]; then
   echo "Object-storage initialization failed with exit code $init_exit." >&2
   exit "$init_exit"
 fi
+if [ -n "$expected_migration_head" ]; then
+  migration_heads=$(docker compose --project-name "$project_name" run --rm --no-deps api alembic -c packages/backend/alembic.ini heads)
+  printf '%s\n' "$migration_heads"
+  assert_migration_head_output "$migration_heads" "$expected_migration_head" "Phase $verification_phase migration-head lookup"
+fi
 docker compose --project-name "$project_name" run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
-docker compose --project-name "$project_name" run --rm --no-deps api alembic -c packages/backend/alembic.ini downgrade 20260715_0002
+docker compose --project-name "$project_name" run --rm --no-deps api alembic -c packages/backend/alembic.ini downgrade "$rollback_revision"
 docker compose --project-name "$project_name" run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
+if [ -n "$expected_migration_head" ]; then
+  current_migration=$(docker compose --project-name "$project_name" run --rm --no-deps api alembic -c packages/backend/alembic.ini current)
+  printf '%s\n' "$current_migration"
+  assert_migration_head_output "$current_migration" "$expected_migration_head" "Phase $verification_phase current-migration lookup"
+fi
 (cd packages/backend && uv run --package careeros-backend pytest tests/integration)
 docker compose --project-name "$project_name" up --detach --wait --wait-timeout 180 --no-deps api worker worker-scheduler web web-edge
 worker_container=$(docker compose --project-name "$project_name" ps --quiet worker)
@@ -207,4 +261,4 @@ if [ "$recovered" != "true" ]; then
   echo "API readiness did not recover after PostgreSQL restarted." >&2
   exit 1
 fi
-pnpm test:e2e
+run_browser_journeys

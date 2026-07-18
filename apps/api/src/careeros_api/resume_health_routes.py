@@ -38,6 +38,10 @@ from fastapi import APIRouter, Cookie, Depends, Header, Request, Response, statu
 from pydantic import AfterValidator, StringConstraints
 
 from careeros_api.client_signal import verified_client_source_key
+from careeros_api.conditional_requests import (
+    IF_MATCH_VERSION_PATTERN,
+    parse_if_match_version,
+)
 from careeros_api.config import Settings
 from careeros_api.constants import SCORING_DISCLAIMER
 from careeros_api.identity_dependencies import (
@@ -260,8 +264,6 @@ def _resume_context(context: RequestContext) -> ResumeRequestContext:
 
 
 _IDEMPOTENCY_KEY_PATTERN = r"^[A-Za-z0-9._:-]{8,128}$"
-_IF_MATCH_PATTERN = r'^"[0-9]{1,10}"$'
-_SIGNED_INTEGER_MAX = 2_147_483_647
 
 
 def _idempotency_key(value: str) -> str:
@@ -270,17 +272,8 @@ def _idempotency_key(value: str) -> str:
     return value
 
 
-def _version(value: str) -> int:
-    if re.fullmatch(_IF_MATCH_PATTERN, value) is None:
-        raise ValueError("If-Match must contain a quoted version")
-    version = int(value[1:-1])
-    if not 1 <= version <= _SIGNED_INTEGER_MAX:
-        raise ValueError("If-Match version must be a positive signed integer")
-    return version
-
-
 def _validated_if_match(value: str) -> str:
-    _version(value)
+    parse_if_match_version(value)
     return value
 
 
@@ -302,7 +295,7 @@ IdempotencyKeyHeader = Annotated[
 ]
 IfMatchHeader = Annotated[
     str,
-    StringConstraints(min_length=3, max_length=12, pattern=_IF_MATCH_PATTERN),
+    StringConstraints(min_length=3, max_length=12, pattern=IF_MATCH_VERSION_PATTERN),
     AfterValidator(_validated_if_match),
     Header(
         alias="If-Match",
@@ -715,7 +708,7 @@ async def correct_canonical_resume(
         _account_scope(principal),
         document_id,
         payload,
-        _version(if_match),
+        parse_if_match_version(if_match),
         context,
         response,
     )
@@ -743,7 +736,7 @@ async def correct_guest_canonical_resume(
         await _guest_scope(service, credentials),
         document_id,
         payload,
-        _version(if_match),
+        parse_if_match_version(if_match),
         context,
         response,
     )
@@ -980,7 +973,7 @@ async def delete_document(
         service,
         _account_scope(principal),
         document_id,
-        _version(if_match),
+        parse_if_match_version(if_match),
         idempotency_key,
         context,
     )
@@ -1005,7 +998,7 @@ async def delete_guest_document(
         service,
         await _guest_scope(service, credentials),
         document_id,
-        _version(if_match),
+        parse_if_match_version(if_match),
         idempotency_key,
         context,
     )

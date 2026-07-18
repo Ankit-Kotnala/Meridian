@@ -1,8 +1,8 @@
 # CareerOS API conventions and route plan
 
-Status: Phase 2 Resume Health API implemented and verified
+Status: Phase 3 Career Record API implemented and locally verified; hosted CI pending
 Base path for product APIs: `/api/v1`  
-Last reviewed: 2026-07-15
+Last reviewed: 2026-07-19
 
 ## Implementation truth
 
@@ -24,7 +24,8 @@ It is not part of the product API contract.
 
 Phase 1 adds persisted identity, account, consent, session, and onboarding
 resources. Phase 2 adds owned and guest-limited resume upload, parsing, review,
-analysis, and deletion resources. AI generation, career-profile/evidence, role,
+analysis, and deletion resources. Phase 3 adds account-owned career profile,
+evidence, attachment, proposal, and achievement resources. AI generation, role,
 job, export, and application workflows remain unimplemented. `/docs` and
 `/openapi.json` are development documentation endpoints and may be restricted or
 disabled in production.
@@ -35,9 +36,9 @@ FastAPI OpenAPI document. The normalized artifact under
 `packages/contracts/src/generated` are committed review artifacts; neither is an
 independent contract authority. Problem, pagination, and product schemas are not
 published until corresponding Pydantic models and operations exist. Phase 1
-contract evidence is recorded in `PLANS.md`. Phase 2 changes regenerate both
-artifacts; the final drift result must be recorded there before the phase is
-marked complete.
+contract evidence is recorded in `PLANS.md`. Phase 2 and Phase 3 changes
+regenerate both artifacts; the final Phase 3 drift result must be recorded there
+before the phase is marked complete.
 
 ## Protocol and representation
 
@@ -45,7 +46,9 @@ marked complete.
   response says otherwise.
 - Product clients call `/api/v1`. Health probes remain unversioned.
 - Resource IDs are UUID strings. Timestamps are UTC RFC 3339 with offset (`Z`
-  preferred). Dates without time use ISO 8601 calendar dates.
+  preferred). Full dates without time use ISO 8601 calendar dates. Career Record
+  manual writes use `YYYY-MM`; imported responses may preserve `YYYY` or
+  `YYYY-MM` and never invent a day.
 - Money uses a decimal string plus ISO 4217 currency, never binary float. Locale-
   formatted text is display-only.
 - Unknown request fields are rejected for sensitive write schemas unless a
@@ -406,27 +409,96 @@ durable delete path before revoking an expired guest capability.
 ```text
 GET    /api/v1/career-profile
 PATCH  /api/v1/career-profile
+
 GET    /api/v1/experiences
 POST   /api/v1/experiences
 PATCH  /api/v1/experiences/{experienceId}
 DELETE /api/v1/experiences/{experienceId}
 POST   /api/v1/experiences/reorder
+
+GET    /api/v1/career-items
+POST   /api/v1/career-items
+PATCH  /api/v1/career-items/{careerItemId}
+DELETE /api/v1/career-items/{careerItemId}
+
+GET    /api/v1/skills
+POST   /api/v1/skills
+PATCH  /api/v1/skills/{skillId}
+DELETE /api/v1/skills/{skillId}
+
+GET    /api/v1/career-profile/import-proposals
+POST   /api/v1/career-profile/import-proposals
+GET    /api/v1/career-profile/import-proposals/{proposalId}
+POST   /api/v1/career-profile/import-proposals/{proposalId}/accept
+POST   /api/v1/career-profile/import-proposals/{proposalId}/reject
+
 GET    /api/v1/evidence
 POST   /api/v1/evidence
 GET    /api/v1/evidence/{evidenceId}
 PATCH  /api/v1/evidence/{evidenceId}
 DELETE /api/v1/evidence/{evidenceId}
 POST   /api/v1/evidence/{evidenceId}/confirm
+POST   /api/v1/evidence/{evidenceId}/unsupported
 POST   /api/v1/evidence/{evidenceId}/archive
+POST   /api/v1/evidence/{evidenceId}/restore
 GET    /api/v1/evidence/{evidenceId}/usage
+
+POST   /api/v1/evidence/{evidenceId}/attachments/presign
+POST   /api/v1/evidence/{evidenceId}/attachments/{uploadId}/finalize
+GET    /api/v1/evidence/{evidenceId}/attachments/{attachmentId}/download
+DELETE /api/v1/evidence/{evidenceId}/attachments/{attachmentId}
+POST   /api/v1/evidence/{evidenceId}/conflicts/{conflictId}/resolve
+
 GET    /api/v1/achievements
 POST   /api/v1/achievements
+GET    /api/v1/achievements/reminder-preferences
+PATCH  /api/v1/achievements/reminder-preferences
+GET    /api/v1/achievements/{achievementId}
 PATCH  /api/v1/achievements/{achievementId}
+DELETE /api/v1/achievements/{achievementId}
 POST   /api/v1/achievements/{achievementId}/confirm
 ```
 
-Evidence transition endpoints enforce the state machine server-side and emit an
-audit event. `confirm` never trusts a client-supplied “verified” status.
+All Phase 3 routes require the Phase 1 authenticated account session. Mutations
+also require the session-bound CSRF/origin contract; versioned writes require a
+strict quoted positive-int32 `If-Match` where exposed. The service fetches by
+owner plus resource ID, validates nested links in the same scope, and deliberately
+returns the same not-found result for unknown and cross-user IDs.
+
+Career items cover education, projects, certifications, awards, volunteering,
+publications, and languages. Experience supports explicit grouping with an owned
+peer; the server classifies overlapping same-employer roles as a promotion
+sequence and different-employer overlap as concurrent work. Reorder validates
+the complete owned set. Resume imports create a pending, source-preserving
+proposal only; accept/edit-and-accept/reject are explicit versioned decisions and
+never overwrite career truth silently.
+
+Evidence transition endpoints enforce lifecycle and strength server-side and
+emit redacted audit history. Manual and URL sources start Inferred; exact validated
+resume spans can start Supported; `confirm` creates Confirmed only after the
+required claim and numeric dimensions pass. No verification authority is
+configured, so production APIs cannot create Verified and never trust a client-
+supplied state. Archive is reversible but ineligible; material edit creates an
+immutable successor and invalidates prior confirmation. External URL provenance
+is stored and validated as HTTP(S) metadata only—Phase 3 does not fetch it.
+
+The evidence response includes server-authoritative factual/numeric eligibility,
+reason codes, provenance, immutable history, conflicts, attachments, links, and
+downstream usage. Inferred, Unsupported, archived, deleted, conflicted,
+unauthorized, and unavailable-source evidence is excluded from downstream use.
+An attachment never changes evidence strength by itself.
+
+Attachment admission accepts PDF and DOCX only. Presign binds a randomized private
+key to one short-lived `PUT`, exact media type, and exact byte length. Finalize is
+idempotent, repeats owner/object/signature admission, and creates a durable scan/
+extract job. Download is available only for the same owner and a clean active
+attachment through an operation-specific short-lived signed `GET`; permanent
+credentials and object keys are never response fields. Evidence detail exposes
+`uploading`, `scanning`, `ready`, `failed`, or `deleting` status for polling.
+
+Achievement drafts preserve unanswered neutral prompts. `/confirm` is named for
+wire compatibility but performs explicit, idempotent conversion of a reviewed
+draft into one Confirmed evidence item; it does not independently verify a claim.
 
 ### Phase 4 — Roles and readiness
 
@@ -700,6 +772,20 @@ real PostgreSQL/Redis/MinIO/ClamAV integration, restricted worker runtime, and t
 registered and guest Resume Health browser journeys. Local gates and hosted run
 `29378312134` pass as recorded in `PLANS.md`.
 
+Phase 3's blocking consolidated gate is:
+
+```powershell
+.\scripts\verify-phase3.ps1
+```
+
+It retains every Phase 2 gate and adds migration `20260715_0004`, Career Record
+repository and real S3/ClamAV attachment-provider integration, durable attachment
+worker/reconciliation checks, generated-contract drift, and the authenticated
+desktop Career Profile/Evidence/Achievement journey. The journey is intentionally
+run once on desktop; shared workspace mobile behavior is covered by existing
+responsive suites. The final local consolidated result passes; hosted Phase 3 CI
+evidence remains pending in `PLANS.md`.
+
 Tests assert exact safe response schemas and problems, correlation IDs, readiness
 failure under dependency loss, no secret leakage, stable operation IDs, OpenAPI
 and generated-schema freshness, unauthenticated and cross-user denial, refresh
@@ -716,3 +802,11 @@ version/hash/disclaimer output. Real storage/scanner/repository contracts and
 registered/guest browser workflows run through the isolated Phase 2 project. The
 local result is API 67 and contracts 3 with clean generated-contract drift; full
 counts and hosted evidence are recorded in `PLANS.md`.
+
+Phase 3 adds API/backend assertions for authenticated CSRF and owner scope,
+partial-date and unknown-field validation, strict preconditions, proposal-only
+resume import, source deletion/availability, evidence transitions and numeric
+eligibility, conflict resolution, idempotent achievement conversion, private
+attachment admission/access/deletion, lost-worker reconciliation, safe problem
+mapping, and production service composition. Exact final counts belong in
+`PLANS.md`; the local consolidated gate passed on 2026-07-19.

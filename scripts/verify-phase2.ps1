@@ -5,7 +5,7 @@ if ($LASTEXITCODE -ne 0) {
     throw "Platform verification failed with exit code $LASTEXITCODE."
 }
 
-& "$PSScriptRoot/test-e2e-stack.ps1"
+& "$PSScriptRoot/test-e2e-stack.ps1" -Phase 2
 if ($LASTEXITCODE -ne 0) {
     throw "Phase 2 isolated document workflow failed with exit code $LASTEXITCODE."
 }

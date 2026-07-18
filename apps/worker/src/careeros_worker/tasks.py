@@ -7,6 +7,15 @@ from uuid import UUID, uuid4
 
 import structlog
 from billiard.exceptions import SoftTimeLimitExceeded  # type: ignore[import-untyped]
+from careeros.modules.career_record.application import (
+    CLEANUP_EVIDENCE_ATTACHMENT_OBJECTS_TASK,
+    DISPATCH_EVIDENCE_ATTACHMENT_OUTBOX_TASK,
+    PROCESS_EVIDENCE_ATTACHMENT_TASK,
+    RECONCILE_EVIDENCE_ATTACHMENT_JOBS_TASK,
+    AttachmentProcessingOutcome,
+    CleanupBatchResult,
+    SafeAttachmentError,
+)
 from careeros.modules.resume_health.application import (
     CLEANUP_RESUME_TASK,
     DISPATCH_OUTBOX_TASK,
@@ -23,10 +32,15 @@ from careeros_worker.base import RetryableTaskError, SafeTask
 from careeros_worker.config import WorkerSettings, get_settings
 from careeros_worker.payloads import parse_job_payload
 from careeros_worker.runtime import (
+    cleanup_attachment_objects,
     cleanup_expired_resume_data,
+    dispatch_attachment_outbox,
     dispatch_resume_outbox,
+    process_attachment_job,
     process_resume_job,
+    reconcile_stale_attachment_jobs,
     reconcile_stale_resume_jobs,
+    record_attachment_failure,
     record_resume_failure,
 )
 
@@ -65,6 +79,12 @@ class CleanupTaskResult(TypedDict):
 
 class ReconciliationTaskResult(TypedDict):
     requeued: int
+    dead_lettered: int
+
+
+class AttachmentCleanupTaskResult(TypedDict):
+    completed: int
+    failed: int
     dead_lettered: int
 
 
@@ -144,6 +164,44 @@ def process_resume_health(
     return _processing_result(outcome)
 
 
+@celery_app.task(  # type: ignore[untyped-decorator]
+    bind=True,
+    name=PROCESS_EVIDENCE_ATTACHMENT_TASK,
+)
+def process_evidence_attachment(
+    task: SafeTask,
+    *,
+    job_id: str,
+    trace_id: str,
+) -> ProcessingTaskResult:
+    """Process one private attachment using only durable identifiers."""
+    parsed_job_id, parsed_trace_id = parse_job_payload(job_id, trace_id)
+    execution_token = _execution_token(task)
+    bind_contextvars(job_id=str(parsed_job_id), trace_id=parsed_trace_id)
+    settings = get_settings()
+    try:
+        outcome = asyncio.run(process_attachment_job(settings, parsed_job_id, execution_token))
+    except SoftTimeLimitExceeded:
+        return _record_attachment_runtime_failure(
+            task,
+            settings,
+            parsed_job_id,
+            SafeAttachmentError.PROCESSING_TIMEOUT,
+            execution_token,
+        )
+    except Exception:
+        return _record_attachment_runtime_failure(
+            task,
+            settings,
+            parsed_job_id,
+            SafeAttachmentError.ATTACHMENT_PROCESSING_RETRY,
+            execution_token,
+        )
+    # Retryable processor outcomes already have durable retry/outbox state. A
+    # second Celery retry path would duplicate work and weaken fencing.
+    return _attachment_processing_result(outcome)
+
+
 @celery_app.task(name=DISPATCH_OUTBOX_TASK)  # type: ignore[untyped-decorator]
 def dispatch_resume_health_outbox(limit: int = _MAINTENANCE_LIMIT) -> OutboxResult:
     """Publish pending transactional-outbox rows using the allowlisted task adapter."""
@@ -156,6 +214,29 @@ def dispatch_resume_health_outbox(limit: int = _MAINTENANCE_LIMIT) -> OutboxResu
         logger.warning("resume_outbox_publish_deferred", failed=result.failed)
     if result.dead_lettered:
         logger.error("resume_outbox_publish_dead_lettered", count=result.dead_lettered)
+    return {
+        "published": result.published,
+        "failed": result.failed,
+        "dead_lettered": result.dead_lettered,
+    }
+
+
+@celery_app.task(name=DISPATCH_EVIDENCE_ATTACHMENT_OUTBOX_TASK)  # type: ignore[untyped-decorator]
+def dispatch_evidence_attachment_outbox(
+    limit: int = _MAINTENANCE_LIMIT,
+) -> OutboxResult:
+    """Publish bounded identifier-only Career Record attachment jobs."""
+    validated_limit = _validate_maintenance_limit(limit)
+    try:
+        result = asyncio.run(
+            dispatch_attachment_outbox(get_settings(), celery_app, validated_limit)
+        )
+    except Exception:
+        raise RetryableTaskError("attachment_outbox_dispatch_unavailable") from None
+    if result.failed:
+        logger.warning("attachment_outbox_publish_deferred", failed=result.failed)
+    if result.dead_lettered:
+        logger.error("attachment_outbox_publish_dead_lettered", count=result.dead_lettered)
     return {
         "published": result.published,
         "failed": result.failed,
@@ -179,6 +260,26 @@ def reconcile_resume_health_jobs(
         logger.warning("resume_jobs_requeued", count=result.requeued)
     if result.dead_lettered:
         logger.error("resume_jobs_recovery_dead_lettered", count=result.dead_lettered)
+    return {
+        "requeued": result.requeued,
+        "dead_lettered": result.dead_lettered,
+    }
+
+
+@celery_app.task(name=RECONCILE_EVIDENCE_ATTACHMENT_JOBS_TASK)  # type: ignore[untyped-decorator]
+def reconcile_evidence_attachment_jobs(
+    limit: int = _MAINTENANCE_LIMIT,
+) -> ReconciliationTaskResult:
+    """Recover lost attachment deliveries and expired execution leases."""
+    validated_limit = _validate_maintenance_limit(limit)
+    try:
+        result = asyncio.run(reconcile_stale_attachment_jobs(get_settings(), validated_limit))
+    except Exception:
+        raise RetryableTaskError("attachment_job_reconciliation_unavailable") from None
+    if result.requeued:
+        logger.warning("attachment_jobs_requeued", count=result.requeued)
+    if result.dead_lettered:
+        logger.error("attachment_jobs_recovery_dead_lettered", count=result.dead_lettered)
     return {
         "requeued": result.requeued,
         "dead_lettered": result.dead_lettered,
@@ -213,6 +314,29 @@ def cleanup_expired_resume_health_data(limit: int = _MAINTENANCE_LIMIT) -> Clean
     }
 
 
+@celery_app.task(name=CLEANUP_EVIDENCE_ATTACHMENT_OBJECTS_TASK)  # type: ignore[untyped-decorator]
+def cleanup_evidence_attachment_objects(
+    limit: int = _MAINTENANCE_LIMIT,
+) -> AttachmentCleanupTaskResult:
+    """Delete due private objects before attachment tombstone redaction."""
+    validated_limit = _validate_maintenance_limit(limit)
+    try:
+        result: CleanupBatchResult = asyncio.run(
+            cleanup_attachment_objects(get_settings(), validated_limit)
+        )
+    except Exception:
+        raise RetryableTaskError("attachment_cleanup_unavailable") from None
+    if result.failed:
+        logger.warning("attachment_object_cleanup_deferred", count=result.failed)
+    if result.dead_lettered:
+        logger.error("attachment_object_cleanup_dead_lettered", count=result.dead_lettered)
+    return {
+        "completed": result.completed,
+        "failed": result.failed,
+        "dead_lettered": result.dead_lettered,
+    }
+
+
 def _record_runtime_failure(
     task: SafeTask,
     settings: WorkerSettings,
@@ -243,10 +367,45 @@ def _record_runtime_failure(
     return _processing_result(outcome)
 
 
+def _record_attachment_runtime_failure(
+    task: SafeTask,
+    settings: WorkerSettings,
+    job_id: UUID,
+    safe_error_code: SafeAttachmentError,
+    execution_token: str,
+) -> ProcessingTaskResult:
+    exhausted = _retries_exhausted(task, settings)
+    try:
+        outcome = asyncio.run(
+            record_attachment_failure(
+                settings,
+                job_id,
+                safe_error_code,
+                exhausted=exhausted,
+                execution_token=execution_token,
+            )
+        )
+    except Exception:
+        if exhausted:
+            raise RetryableTaskError("durable_attachment_failure_record_unavailable") from None
+        _schedule_attachment_retry(task, safe_error_code.value)
+    return _attachment_processing_result(outcome)
+
+
 def _schedule_retry(task: SafeTask, safe_error_code: str) -> NoReturn:
     retry_number = int(getattr(task.request, "retries", 0)) + 1
     logger.warning(
         "resume_job_retry_scheduled",
+        retry_number=retry_number,
+        safe_error_code=safe_error_code,
+    )
+    raise RetryableTaskError(safe_error_code)
+
+
+def _schedule_attachment_retry(task: SafeTask, safe_error_code: str) -> NoReturn:
+    retry_number = int(getattr(task.request, "retries", 0)) + 1
+    logger.warning(
+        "attachment_job_retry_scheduled",
         retry_number=retry_number,
         safe_error_code=safe_error_code,
     )
@@ -281,6 +440,19 @@ def _processing_result(outcome: ProcessingOutcome) -> ProcessingTaskResult:
         "status": outcome.status.value,
         "retryable": outcome.retryable,
         "safe_error_code": outcome.safe_error_code,
+    }
+
+
+def _attachment_processing_result(
+    outcome: AttachmentProcessingOutcome,
+) -> ProcessingTaskResult:
+    return {
+        "job_id": str(outcome.job_id),
+        "status": outcome.status.value,
+        "retryable": outcome.retryable,
+        "safe_error_code": (
+            outcome.safe_error_code.value if outcome.safe_error_code is not None else None
+        ),
     }
 
 

@@ -13,14 +13,15 @@ claim under the user's control.
 
 ## Repository status
 
-**Phase 2 resume upload, parsing, correction, and general health is complete and
-verified. Phase 3 is next and has not started.** The repository uses a shared
-Python modular monolith, one root uv
-workspace, generated API contracts, thin deployable applications, and executable
-dependency boundaries.
+**Phase 3 Career Profile, Evidence Vault, and Achievement Inbox is complete and
+hosted verified. Phase 4 Role Explorer and Role Readiness is next.** The
+repository uses a shared Python modular monolith, one root uv workspace,
+generated API contracts, thin deployable applications, and executable dependency
+boundaries.
 
-Hosted CI run `29378312134` passed every Phase 2 job against implementation
-commit `3b8d639`; prior Phase 1 evidence remains preserved at `baab8f7`.
+Hosted CI run `29657932938` passed every Phase 3 job on no-change trigger commit
+`f752b55`, whose tree is identical to implementation commit `0df8bcf`; prior
+Phase 2 evidence remains preserved at `3b8d639` and run `29378312134`.
 
 See [PLANS.md](PLANS.md) for current status, historical evidence, and phase gates.
 Do not infer that a planned endpoint or module is implemented from the
@@ -120,9 +121,21 @@ credentials are not exposed on other host interfaces by default.
 Create an account at `/register`, follow the verification link captured by
 Mailpit, and sign in at `/login`. Other public flow routes are `/verify-email`,
 `/forgot-password`, `/reset-password`, and `/get-started`. `/dashboard`,
-`/onboarding`, `/settings`, `/settings/sessions`, and `/settings/consent` require an
-authenticated session. The labeled fictional preview remains available at
+`/onboarding`, `/settings`, `/settings/sessions`, `/settings/consent`,
+`/career-profile`, `/evidence`, and `/achievement-inbox` require an authenticated
+session. The labeled fictional preview remains available at
 `/demo/dashboard`; it is isolated from real account state.
+
+Career Profile is independent of resume upload. It stores user-owned experience,
+typed career items, and skills with year/month precision, explicit grouping,
+optimistic concurrency, source provenance, and reviewable import proposals.
+Evidence Vault keeps evidence strength separate from lifecycle and downstream
+eligibility. Owner confirmation can produce `Confirmed`; no independent verifier
+is configured, so the production API cannot produce `Verified`. Achievement
+Inbox preserves drafts and converts them to confirmed evidence only after an
+explicit user action. Private evidence attachments use the same fail-closed
+PDF/DOCX scanner and bounded extractor contracts without reusing Resume Health
+persistence.
 
 Authenticated Resume Health starts at `/resume-health/account`. The intentionally
 limited guest flow starts at `/resume-health/guest`, uses one opaque short-lived
@@ -190,12 +203,14 @@ make test             # unit tests
 make test-integration # build/start the stack, migrate twice, and probe services
 make test-e2e         # Playwright against an already running stack
 make test-e2e-stack   # isolated desktop/mobile auth and Resume Health journeys
+make test-e2e-stack-phase3 # isolated Phase 3 desktop primary journey plus prior regressions
 make security-scan    # scan source, dependencies, app images, and trusted edge runtime
 make migrate          # apply the current database migrations
 make seed             # print the explicitly fictional Phase 0 fixture
 make verify           # full format/lint/type/test/contract/build/runtime gate
 make verify-phase1    # full gate plus isolated Phase 1 integration/E2E
 make verify-phase2    # full gate plus isolated Resume Health integration/E2E
+make verify-phase3    # full gate plus isolated Career Record integration/E2E
 make reset-db         # explicitly destructive local database reset
 ```
 
@@ -212,8 +227,13 @@ Use `.\scripts\verify-phase2.ps1` for the Phase 2 migration, real
 PostgreSQL/Redis/MinIO/ClamAV contracts, restricted worker, and registered/guest
 Playwright workflows. It also cleans its isolated containers, images, networks,
 volumes, and browser artifacts. A successful narrow test is not a substitute for
-this complete closeout gate. Run `make security-scan` (or its PowerShell
-equivalent) separately; the Phase 2 verification script does not replace the
+this complete closeout gate. Use `.\scripts\verify-phase3.ps1` for migration
+`20260715_0004`, Career Record repository and attachment-provider integration,
+the durable attachment worker, and the desktop Career Profile/Evidence/
+Achievement primary journey. Shared workspace responsive behavior continues to
+run in the existing mobile suites; the Phase 3 primary journey itself is
+intentionally desktop-only. Run `make security-scan` (or its PowerShell
+equivalent) separately; the phase verification scripts do not replace the
 source, dependency, application-image, and pinned `web-edge` runtime scans.
 
 The Phase 0 migration enables the pgvector extension. Phase 1 migration
@@ -224,6 +244,13 @@ jobs/outbox and object cleanup, fenced execution leases, immutable canonical
 snapshots, Resume Health analyses with feature schema/values/component
 contributions/findings, and redacted resume audit events with exactly-one-owner
 constraints.
+Phase 3 migration `20260715_0004` adds owner-scoped career profiles, typed career
+entities and skills, import proposals, immutable evidence revisions/sources/
+metrics/links/conflicts/usage, private attachment admission/jobs/outbox/cleanup,
+achievement drafts, reminder preferences, and redacted Career Record audit
+events. It is additive to the Phase 2 head; downgrading it deletes Phase 3 data
+and therefore is a test/forward-repair mechanism, not an automatic production
+rollback after real use.
 The seed command still prints only a fictional demo fixture and performs no
 database write. A command that prints a fixture or says a feature is deferred is
 not evidence that the product feature exists.
@@ -272,9 +299,9 @@ Read [AGENTS.md](AGENTS.md) before contributing. The principal references are:
 - [Implementation checklist](docs/implementation-checklist.md)
 - [Architecture decisions](docs/adr/README.md)
 
-## Verification status through Phase 2
+## Verification status through Phase 3 implementation
 
-Phases 0 through 2 have recorded local and hosted evidence. Exact current and
+Phases 0 through 3 have recorded local and hosted evidence. Exact current and
 historical results are recorded separately in `PLANS.md`; never infer a pass from
 the command list below:
 
@@ -297,6 +324,7 @@ Native PowerShell runs the equivalent quality/build/configuration checks with:
 .\scripts\verify.ps1
 .\scripts\verify-phase1.ps1
 .\scripts\verify-phase2.ps1
+.\scripts\verify-phase3.ps1
 docker compose up --build --detach --wait
 docker compose ps
 Invoke-WebRequest -UseBasicParsing http://localhost:3000/api/health
@@ -311,6 +339,11 @@ contracts, restricted async processing, deterministic score golden cases, and
 registered/guest desktop/mobile workflows. Its local counts and security/build
 results pass and are recorded in `PLANS.md`. Hosted run `29378312134` passed the
 complete Phase 2 workflow on implementation commit `3b8d639`.
+Phase 3 local closeout passed with `scripts/verify-phase3.ps1` on 2026-07-19:
+format, lint, type, unit, build, container, migration, integration, runtime, and
+isolated browser gates all passed. Hosted run `29657932938` then passed
+supply-chain, API, web/contracts, worker, browser-smoke, Resume Health E2E,
+Career Record E2E, and container/image jobs on the identical Phase 3 tree.
 
 ## License and production use
 

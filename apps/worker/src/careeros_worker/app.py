@@ -1,12 +1,18 @@
 """Celery application factory and command-line entry point."""
 
+from careeros.modules.career_record.application import (
+    CLEANUP_EVIDENCE_ATTACHMENT_OBJECTS_TASK,
+    DISPATCH_EVIDENCE_ATTACHMENT_OUTBOX_TASK,
+    PROCESS_EVIDENCE_ATTACHMENT_TASK,
+    RECONCILE_EVIDENCE_ATTACHMENT_JOBS_TASK,
+)
 from careeros.modules.resume_health.application import (
     CLEANUP_RESUME_TASK,
     DISPATCH_OUTBOX_TASK,
     PROCESS_RESUME_TASK,
     RECONCILE_RESUME_TASK,
 )
-from celery import Celery
+from celery import Celery  # type: ignore[import-untyped,unused-ignore]
 
 from careeros_worker.base import SafeTask
 from careeros_worker.config import WorkerSettings, get_settings
@@ -52,6 +58,10 @@ def create_celery_app(settings: WorkerSettings | None = None) -> Celery:
         task_time_limit=resolved.task_time_limit_seconds,
         task_track_started=True,
         task_routes={
+            PROCESS_EVIDENCE_ATTACHMENT_TASK: {"queue": "career-record"},
+            DISPATCH_EVIDENCE_ATTACHMENT_OUTBOX_TASK: {"queue": "maintenance"},
+            CLEANUP_EVIDENCE_ATTACHMENT_OBJECTS_TASK: {"queue": "maintenance"},
+            RECONCILE_EVIDENCE_ATTACHMENT_JOBS_TASK: {"queue": "maintenance"},
             PROCESS_RESUME_TASK: {"queue": "resume-health"},
             DISPATCH_OUTBOX_TASK: {"queue": "maintenance"},
             RECONCILE_RESUME_TASK: {"queue": "maintenance"},
@@ -64,6 +74,18 @@ def create_celery_app(settings: WorkerSettings | None = None) -> Celery:
         worker_send_task_events=True,
         worker_cancel_long_running_tasks_on_connection_loss=True,
         beat_schedule={
+            "dispatch-career-record-attachment-outbox": {
+                "task": DISPATCH_EVIDENCE_ATTACHMENT_OUTBOX_TASK,
+                "schedule": 5.0,
+            },
+            "cleanup-career-record-attachment-objects": {
+                "task": CLEANUP_EVIDENCE_ATTACHMENT_OBJECTS_TASK,
+                "schedule": 60.0,
+            },
+            "reconcile-career-record-attachment-jobs": {
+                "task": RECONCILE_EVIDENCE_ATTACHMENT_JOBS_TASK,
+                "schedule": float(resolved.attachment_job_reconciliation_interval_seconds),
+            },
             "dispatch-resume-health-outbox": {
                 "task": DISPATCH_OUTBOX_TASK,
                 "schedule": 5.0,

@@ -431,7 +431,8 @@ owning phase exits:
 
 - default upload size/page and guest retention limits (Phase 2);
 - exact evidence-state transition authority and independent verification sources
-  (Phase 3);
+  (Phase 3; resolved by ADR 0009: user confirmation cannot produce `Verified`,
+  and no independent verifier is configured in Phase 3);
 - licensed role taxonomy and regional job-source policy (Phases 4–5);
 - AI provider/data residency, prompt retention, and per-plan cost budgets (Phase 6);
 - renderer/template licensing and critical round-trip thresholds (Phase 7);

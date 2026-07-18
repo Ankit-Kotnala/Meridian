@@ -1,5 +1,11 @@
 """Celery configuration tests that do not connect to Redis."""
 
+from careeros.modules.career_record.application import (
+    CLEANUP_EVIDENCE_ATTACHMENT_OBJECTS_TASK,
+    DISPATCH_EVIDENCE_ATTACHMENT_OUTBOX_TASK,
+    PROCESS_EVIDENCE_ATTACHMENT_TASK,
+    RECONCILE_EVIDENCE_ATTACHMENT_JOBS_TASK,
+)
 from careeros.modules.resume_health.application import (
     CLEANUP_RESUME_TASK,
     DISPATCH_OUTBOX_TASK,
@@ -24,11 +30,31 @@ def test_celery_uses_json_and_safe_delivery_defaults() -> None:
     assert app.conf.task_soft_time_limit == 270
     assert app.conf.task_time_limit == 300
     assert app.conf.task_ignore_result is True
+    assert app.conf.task_routes[PROCESS_EVIDENCE_ATTACHMENT_TASK] == {"queue": "career-record"}
+    assert app.conf.task_routes[DISPATCH_EVIDENCE_ATTACHMENT_OUTBOX_TASK] == {
+        "queue": "maintenance"
+    }
+    assert app.conf.task_routes[CLEANUP_EVIDENCE_ATTACHMENT_OBJECTS_TASK] == {
+        "queue": "maintenance"
+    }
+    assert app.conf.task_routes[RECONCILE_EVIDENCE_ATTACHMENT_JOBS_TASK] == {"queue": "maintenance"}
     assert app.conf.task_routes[PROCESS_RESUME_TASK] == {"queue": "resume-health"}
     assert app.conf.task_routes[DISPATCH_OUTBOX_TASK] == {"queue": "maintenance"}
     assert app.conf.task_routes[RECONCILE_RESUME_TASK] == {"queue": "maintenance"}
     assert app.conf.task_routes[CLEANUP_RESUME_TASK] == {"queue": "maintenance"}
     assert app.conf.beat_schedule["dispatch-resume-health-outbox"]["task"] == (DISPATCH_OUTBOX_TASK)
+    assert app.conf.beat_schedule["dispatch-career-record-attachment-outbox"] == {
+        "task": DISPATCH_EVIDENCE_ATTACHMENT_OUTBOX_TASK,
+        "schedule": 5.0,
+    }
+    assert app.conf.beat_schedule["cleanup-career-record-attachment-objects"] == {
+        "task": CLEANUP_EVIDENCE_ATTACHMENT_OBJECTS_TASK,
+        "schedule": 60.0,
+    }
+    assert app.conf.beat_schedule["reconcile-career-record-attachment-jobs"] == {
+        "task": RECONCILE_EVIDENCE_ATTACHMENT_JOBS_TASK,
+        "schedule": 60.0,
+    }
     assert app.conf.beat_schedule["reconcile-stale-resume-health-jobs"] == {
         "task": RECONCILE_RESUME_TASK,
         "schedule": 60.0,
