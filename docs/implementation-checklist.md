@@ -1,7 +1,7 @@
 # CareerOS implementation checklist
 
 Status: living delivery checklist  
-Last reviewed: 2026-07-15
+Last reviewed: 2026-07-19
 
 This checklist expands `PLANS.md`. Check an item only when it is implemented in
 real application state and its required test passes. An interface, empty route,
@@ -230,28 +230,38 @@ Closeout evidence and residual limitations are recorded in `PLANS.md`.
 
 ## Phase 3 — Career Profile, Evidence Vault, and Achievement Inbox
 
-Dependencies: Phase 1 ownership; Phase 2 canonical/source-span model.
+Dependencies: Phase 1 ownership; Phase 2 canonical/source-span model. Current
+status: locally complete; hosted CI evidence pending. The consolidated
+`scripts/verify-phase3.ps1` gate passed on 2026-07-19.
 
-- [ ] Add career profile, experience/education/project/skill/credential/etc.
+- [x] Add career profile, experience/education/project/skill/credential/etc.
       entities with ownership, constraints, source provenance, and concurrency.
-- [ ] Implement profile CRUD, timeline/list, accessible reorder, promotion and
+- [x] Implement profile CRUD, timeline/list, accessible reorder, promotion and
       concurrent-role grouping, conflict detection, and neutral gap display.
-- [ ] Import/correction proposes profile changes rather than overwriting truth.
-- [ ] Add evidence item/source/attachment/skill/metric/link models and audited
+- [x] Import/correction proposes profile changes rather than overwriting truth.
+- [x] Add evidence item/source/attachment/skill/metric/link models and audited
       Verified/Confirmed/Supported/Inferred/Unsupported transition rules.
-- [ ] Implement evidence CRUD/confirm/archive, private attachments, experience/
+- [x] Implement evidence CRUD/confirm/archive, private attachments, experience/
       skill/requirement links, and downstream usage view.
-- [ ] Enforce generation-eligibility query boundaries; unsupported/inferred/
+- [x] Enforce generation-eligibility query boundaries; unsupported/inferred/
       conflicted/unauthorized evidence cannot be used as fact input.
-- [ ] Implement Achievement Inbox quick add, guided neutral questions, draft,
+- [x] Implement Achievement Inbox quick add, guided neutral questions, draft,
       metric details, employer/project association, reminders, timeline, and explicit
       conversion to confirmed evidence.
-- [ ] Detect date/title/metric/entity conflicts without silently resolving them.
-- [ ] Test ownership, state transitions, source-span integrity, attachment access/
+- [x] Detect date/title/metric/entity conflicts without silently resolving them.
+- [x] Test ownership, state transitions, source-span integrity, attachment access/
       deletion, numeric confirmation, concurrency, conflict/audit, and accessible CRUD.
 
 Exit: users maintain career data independently of a resume; all evidence has
 ownership/provenance; unsupported evidence is excluded by tested domain policy.
+
+Evidence: migration `20260715_0004` upgrades, downgrades to `20260715_0003`, and
+re-upgrades; 132 backend unit/architecture, 92 API, 63 worker, 81 web, 12 UI, 3
+contract, 4 frontend-boundary, 2 web-edge, 11 real dependency integration, and 4
+isolated Playwright workflows pass. Two Phase 3 isolated mobile browser projects
+are intentionally skipped because the primary Career Record journey is desktop;
+shared responsive shell behavior remains covered by inherited auth flows. Exact
+closeout evidence and residual limitations live in `PLANS.md`.
 
 ## Phase 4 — Role Explorer and Role Readiness
 

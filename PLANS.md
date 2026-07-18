@@ -1,8 +1,8 @@
 # CareerOS implementation plan
 
-Last updated: 2026-07-15
+Last updated: 2026-07-19
 Plan owner: engineering  
-Current status: **Phase 2 complete; Phase 3 is next and not started**
+Current status: **Phase 3 locally verified; hosted CI evidence pending**
 
 ## Status legend
 
@@ -420,6 +420,138 @@ diagnostics before cleanup, and the repaired local and hosted gates pass.
   allowlisted trusted-hop policy is added; production deployment must not simply
   start trusting arbitrary forwarding headers.
 
+## Phase 3 scope and status
+
+Current status: **locally verified; hosted CI evidence pending**. The production
+code, migration, generated contracts, focused tests, isolated integration runner,
+and final local closeout gate are present and pass in this working tree. No
+hosted Phase 3 run or implementation commit has been recorded yet.
+
+### Implemented vertical slice
+
+- [x] Migration `20260715_0004` adds owner-scoped career profiles, typed career
+      entities and skills, evidence items with immutable revisions/sources/
+      metrics/links/usage/conflicts, resume import proposals, private attachment
+      admission/processing/outbox/cleanup/audit records, achievement drafts,
+      reminder preferences, and Career Record audit events with ownership-aware
+      foreign keys, constraints, indexes, and positive versions.
+- [x] `careeros.modules.career_record` is one transactional bounded context with
+      framework-free domain rules and application ports. It owns career truth,
+      evidence authority, eligibility, conflicts, proposals, Achievement Inbox,
+      reminder preferences, and redacted audit; SQLAlchemy, Resume Health source,
+      S3, ClamAV, extraction, API, and Celery adapters point inward.
+- [x] Career Profile supports profile facts, experience, education, projects,
+      certifications, awards, volunteering, publications, languages, skills,
+      partial year/year-month dates, complete-set accessible reorder, explicit
+      promotion/concurrent-role grouping, neutral gap findings, optimistic
+      concurrency, and owner-scoped CRUD without requiring a resume.
+- [x] Resume-derived changes are copied into versioned pending proposals through
+      an explicit ownership-checked Resume Health source query. Accept, edited
+      accept, and reject are explicit actions; source deletion never rewrites
+      accepted career truth and makes source-only Supported evidence ineligible.
+- [x] Evidence Vault separates active/archive/delete lifecycle from Verified,
+      Confirmed, Supported, Inferred, and Unsupported strength. State transitions,
+      immutable revisions, source availability, numeric dimensions, conflicts,
+      and downstream factual/numeric eligibility are deterministic and owner
+      scoped. Client input and owner confirmation cannot produce `Verified`; no
+      independent verification authority is configured in production.
+- [x] Evidence attachments accept bounded PDF/DOCX only. Short-lived exact-
+      operation signed transfers use randomized private keys; finalize rechecks
+      owner, expiry, size, media type, and signature. A restricted worker scans
+      fail-closed and extracts bounded counts through durable jobs, outbox,
+      execution fencing, bounded retries/dead letters, lost-delivery
+      reconciliation, and durable private-object cleanup. An attachment alone
+      never raises evidence strength or eligibility.
+- [x] Achievement Inbox supports neutral guided capture, durable incomplete
+      drafts, structured metric context, experience/project association, recurring
+      reminder preferences, archive, and an explicit idempotent conversion to one
+      Confirmed evidence item.
+- [x] Authenticated Next.js routes at `/career-profile`, proposal review,
+      `/evidence`, evidence detail, and `/achievement-inbox` use real APIs and
+      implement loading, empty, success, validation, conflict, and safe error
+      states with semantic timelines/tables, keyboard controls, visible labels,
+      focus handling, reduced-motion support, and responsive overflow. No working
+      Phase 1/2 path was replaced with fixtures or mock data.
+
+### Architecture decisions realized
+
+- ADR 0009 extends the source-of-truth, ownership, and asynchronous processing
+  decisions with one Career Record consistency boundary. Account display and
+  search preferences remain in Phase 1 `user_profiles`; factual career
+  presentation belongs to `career_profiles` and is not dual-written.
+- Every public resource identifier is a UUID, every mutable aggregate uses a
+  positive version, and API/service authorization fetches by owner plus ID.
+  Mutations require the existing authenticated session and CSRF policy; nested
+  links validate both ends in the same owner scope and unknown/cross-user IDs are
+  indistinguishable.
+- Evidence strength is server-derived. Manual/URL claims begin Inferred, exact
+  validated resume spans can begin Supported, owner attestation can become
+  Confirmed, and only the unconfigured server-side verification-authority port
+  could produce Verified. Material edits invalidate prior strength by creating an
+  immutable Inferred revision.
+- Downstream modules receive evidence through the owner-scoped application
+  eligibility query rather than ORM filtering or a client-selected state. Open
+  conflicts, unavailable provenance, archive/delete lifecycle, Inferred, and
+  Unsupported are excluded; numeric use additionally requires complete decimal
+  value/unit/period/precision/attribution context and confirmation.
+- Career Record attachments deliberately have separate persistence from Resume
+  Health documents while using provider-neutral storage/scanner/extractor ports.
+  The worker queue payload contains durable identifiers only, and a scheduled
+  database-only reconciler repairs lost delivery or expired leases within
+  separate processing/recovery budgets.
+
+### Migration and compatibility
+
+`20260715_0004` depends on the verified Phase 2 head `20260715_0003`. It is
+additive: Phase 1/2 tables and routes are neither renamed nor removed. Fresh
+bootstrap and the required `0003 -> 0004 -> 0003 -> 0004` path have been exercised
+locally. The downgrade deletes Phase 3 relational data in dependency order;
+production rollback after real career/evidence content therefore requires export,
+retention, and forward-repair review rather than an automatic downgrade.
+
+### Verification evidence and remaining gate
+
+The preceding Phase 2 acceptance criteria were rechecked before Phase 3 edits:
+the complete Phase 2 verifier passed in 208.5 seconds. Focused Phase 3 evidence
+captured during implementation and the final local closeout result are listed
+below. Hosted CI remains pending until the working tree is committed, pushed, and
+verified remotely.
+
+| Command / gate                                     | Status  | Evidence                                                                                                                                                                                                                                                                                                                                                         |
+| -------------------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pre-edit `scripts/verify-phase2.ps1`               | Pass    | The complete Phase 2 migration, integration, runtime, browser, build, and cleanup baseline remained green in 208.5 seconds.                                                                                                                                                                                                                                      |
+| Backend unit/architecture suites                   | Pass    | Ruff and mypy passed; 132 backend architecture/unit tests passed, including Career Record state, eligibility, ownership, concurrency, grouping, proposals, conflicts, achievements, migration shape, and attachment workflow tests. Final local closeout rerun: 132 passed in 4.30 seconds.                                                                      |
+| Worker unit suite                                  | Pass    | Ruff and mypy passed; 63 worker tests passed, including attachment queue routing, bounded task behavior, production composition, outbox, cleanup, fencing, and stale-job reconciliation. Final local closeout rerun: 63 passed in 1.18 seconds.                                                                                                                  |
+| API focused/full iteration                         | Pass    | The final-tree API suite passed 92 tests in 8.97 seconds with one non-blocking Starlette/httpx2 deprecation warning. It includes the production Career Record and attachment workflow composition test.                                                                                                                                                          |
+| Web quality, component, and build                  | Pass    | Prettier, generated-contract drift, ESLint/boundary checks, TypeScript, 3 contract tests, 12 UI tests, 81 web tests, 2 web-edge tests, and the production Next.js build passed with all Phase 3 routes present.                                                                                                                                                  |
+| Real dependency integration                        | Pass    | 11 PostgreSQL/Redis/MinIO/ClamAV provider/repository integrations passed in 2.55 seconds. Fresh migration, `0004 -> 0003 -> 0004` round trip, container migration idempotency, runtime probes, and Celery broker ping all passed.                                                                                                                                |
+| Primary Phase 3 E2E                                | Pass    | The isolated Playwright run passed 4 workflows in 55.1 seconds with 2 intentional mobile skips: desktop auth/onboarding, desktop Career Record, guest Resume Health, and mobile auth passed. The Career Record workflow registers and verifies a user, creates profile/skill/project/experience data, confirms evidence, and explicitly converts an achievement. |
+| `scripts/verify-phase3.ps1` / `make verify-phase3` | Pass    | `scripts/verify-phase3.ps1` passed locally on 2026-07-19 against the documentation-aligned tree. It ran the full repository gate followed by the isolated Phase 3 migration, integration, runtime, and browser workflow.                                                                                                                                         |
+| Hosted CI                                          | Pending | No Phase 3 hosted run or implementation commit has been recorded.                                                                                                                                                                                                                                                                                                |
+
+### Known limitations and deferred work
+
+- No independent verification provider or operating process is configured.
+  Production evidence can be Confirmed or Supported but not Verified; owner
+  confirmation is intentionally not relabeled as independent verification.
+- Evidence attachments accept PDF and DOCX only and use the local ClamAV and
+  bounded parser adapters. OCR is disabled, DOCX has no authoritative rendered
+  page count, and parser timeouts still use `asyncio.to_thread` rather than a
+  killable per-file subprocess. These are not production-sandbox guarantees.
+- Phase 3 records an external HTTP(S) URL only as provenance metadata; it does not
+  fetch the URL. SSRF-hardened job import belongs to Phase 5.
+- The Phase 3 attachment intent is kept in the mounted page, not durable browser
+  storage. Reload after admission can consume one attachment slot until the
+  default ten-minute intent expires; multipart/resumable upload is absent.
+- The career-record Playwright primary workflow is desktop-only. Existing shared
+  workspace navigation and responsive component coverage exercise mobile paths,
+  but there is no separate mobile run of proposal review, private attachment
+  processing, or the complete career journey.
+- Complete account export/erasure, backup retention and restore, legal holds,
+  production storage/scanner/queue selection, and administrator support access
+  remain Phase 10 work. Phase 3 owner-scoped delete and object cleanup do not
+  substitute for account-wide orchestration.
+
 ## Roadmap and phase gates
 
 | Phase                                                       | Outcomes                                                                                                                           | Depends on  | Exit evidence                                                                                          |
@@ -519,12 +651,14 @@ At the end of every phase:
 
 ## Next phase
 
-Phase 2 is verified and complete. The next planned phase has not started.
+Phase 3 is locally verified in the current working tree. The immediate
+operational next step is to commit/push this tree and record the hosted Phase 3 CI
+run; do not describe Phase 3 as a hosted baseline until that external evidence
+exists.
 
-The next phase is **Phase 3 — Career Profile, Evidence
-Vault, and Achievement Inbox**. It begins with independent owned career entities
-and a provenance/evidence graph. Resume import and corrections may propose
-profile changes, but they cannot overwrite career truth. Every factual claim and
-number must retain eligible evidence, explicit state, conflict handling, owner
-scope, audit history, and a user confirmation path before downstream readiness,
-matching, or generation can consume it.
+After Phase 3 closes, the next product phase is **Phase 4 — Role Explorer and
+Role Readiness**. It will introduce a licensed/versioned role taxonomy, role
+search/save/compare, and deterministic readiness snapshots that consume only the
+Phase 3 owner-scoped evidence-eligibility query. Every strength, gap, unknown,
+transition, and score component must remain explainable without presenting
+readiness as a hiring probability.

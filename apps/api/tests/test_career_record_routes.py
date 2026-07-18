@@ -6,11 +6,17 @@ from pathlib import Path
 from unittest.mock import create_autospec
 from uuid import uuid4
 
-from careeros.modules.career_record.application import CareerRecordService
+from careeros.foundation.config import DatabaseOptions
+from careeros.foundation.database import Database
+from careeros.modules.career_record.application import (
+    AttachmentWorkflowService,
+    CareerRecordService,
+)
 from careeros.modules.identity.application import IdentityService
 from careeros.modules.identity.application.models import CurrentUser
 from careeros.modules.identity.domain import AuthenticatedPrincipal, AuthMethod
 from careeros.modules.identity.domain.errors import AuthenticationRequired
+from careeros.modules.resume_health.application import ResumeHealthService
 from fastapi.testclient import TestClient
 
 from careeros_api.config import Settings
@@ -79,7 +85,7 @@ def _write_headers(*, version: int | None = None, idempotency: bool = False):
         "Origin": _ORIGIN,
         "X-CSRF-Token": "opaque-csrf",
         **({"If-Match": f'"{version}"'} if version is not None else {}),
-        **({"Idempotency-Key": "phase3-route-test-0001"} if idempotency else {}),
+        **({"Idempotency-Key": "test-key"} if idempotency else {}),
     }
 
 
@@ -311,3 +317,30 @@ def test_career_wire_validation_rejects_invented_dates_and_attachment_shortcuts(
     assert shortcut.status_code == 422
     assert not state.entities
     assert not state.evidence
+
+
+def test_production_composition_builds_career_and_attachment_services(
+    settings: Settings,
+) -> None:
+    database = Database(
+        DatabaseOptions(
+            url=settings.database_url.get_secret_value(),
+            pool_size=1,
+            max_overflow=0,
+        )
+    )
+    identity = create_autospec(IdentityService, instance=True)
+    resume_health = create_autospec(ResumeHealthService, instance=True)
+
+    application = create_app(
+        settings,
+        database=database,
+        identity=identity,
+        resume_health=resume_health,
+    )
+    with TestClient(application):
+        assert isinstance(application.state.career_record_service, CareerRecordService)
+        assert isinstance(
+            application.state.attachment_workflow_service,
+            AttachmentWorkflowService,
+        )

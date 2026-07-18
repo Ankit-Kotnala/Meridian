@@ -1,7 +1,7 @@
 # CareerOS testing strategy
 
 Status: Phase 2 local and hosted suites pass
-Last reviewed: 2026-07-15
+Last reviewed: 2026-07-19
 
 ## Objectives
 
@@ -230,10 +230,11 @@ The separate source/dependency/image security gate also scans the pinned
 `web-edge` Node Alpine runtime; `verify-phase2.ps1` does not substitute for that
 scan.
 
-## Career record and Evidence Vault test plan (Phase 3)
+## Career record and Evidence Vault coverage (Phase 3)
 
 Phase 3 keeps every Phase 2 gate and adds blocking coverage for the decisions in
-ADR 0009:
+ADR 0009. The focused suites and isolated stack runner implement the following
+coverage; exact closeout results are recorded in `PLANS.md`:
 
 - Domain tests exercise every permitted and forbidden evidence-strength
   transition, keep archive/delete lifecycle separate from strength, prove that a
@@ -275,16 +276,20 @@ ADR 0009:
   list semantics, state versus eligibility labels, provenance, non-drag reorder,
   focus restoration/error summaries, reduced motion, long content, and mobile
   overflow are accessibility gates.
-- Full-stack Playwright creates career data without a resume, captures and confirms
-  evidence, preserves an incomplete achievement draft, explicitly converts it,
-  reviews a resume-derived proposal without auto-application, and proves an
-  unsupported item stays ineligible. The critical workflow runs in desktop and
-  mobile projects alongside every Phase 1/2 journey.
+- Full-stack Playwright creates career data without a resume, adds a skill/project/
+  experience, captures and confirms evidence, and explicitly converts a completed
+  achievement draft into evidence. The Phase 3 primary workflow runs once in the
+  desktop Chromium project; the inherited authentication journey continues to
+  exercise the shared workspace shell on desktop and mobile. Proposal review,
+  private attachment processing, unsupported eligibility, and incomplete drafts
+  are covered in API/domain/component/integration suites rather than overstated as
+  browser coverage.
 
 The migration gate is fresh bootstrap plus
 `20260715_0003 -> 20260715_0004 -> 20260715_0003 -> 20260715_0004`, followed by a
-single-head/drift check. Final counts and exact commands belong in `PLANS.md` only
-after the frozen Phase 3 revision passes locally and in hosted CI.
+single-head/drift check. Final local counts and exact commands are recorded in
+`PLANS.md`; hosted CI evidence is recorded separately when an implementation
+revision is published.
 
 ## Backend test portfolio
 

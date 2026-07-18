@@ -8,6 +8,7 @@ from .attachment_storage import (
     AttachmentS3ObjectStorage,
     AttachmentS3Options,
 )
+from .identifiers import UuidIdentifierFactory
 from .repository import SqlAlchemyCareerRecordUnitOfWorkFactory
 
 __all__ = [
@@ -21,4 +22,5 @@ __all__ = [
     "SqlAlchemyAttachmentUnitOfWorkFactory",
     "SqlAlchemyCareerRecordUnitOfWorkFactory",
     "SystemClock",
+    "UuidIdentifierFactory",
 ]

@@ -56,14 +56,14 @@ An evidence item has an independent lifecycle (`active`, `archived`, or deleted)
 and strength (`Verified`, `Confirmed`, `Supported`, `Inferred`, or
 `Unsupported`). Clients never supply the resulting strength directly.
 
-| Transition | Authority and rule |
-| --- | --- |
-| create -> `Inferred` | Manual notes, parser classifications, incomplete answers, and structured claims without a directly preserved source span |
-| create -> `Supported` | Server validation proves the exact claim is present in an authorized, available source span and stores its immutable locator and digest |
+| Transition                            | Authority and rule                                                                                                                                                                                   |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| create -> `Inferred`                  | Manual notes, parser classifications, incomplete answers, and structured claims without a directly preserved source span                                                                             |
+| create -> `Supported`                 | Server validation proves the exact claim is present in an authorized, available source span and stores its immutable locator and digest                                                              |
 | `Inferred`/`Supported` -> `Confirmed` | The authenticated owner reviews the normalized claim and explicitly attests to its scope; numeric claims also require value, unit, period, precision, attribution, and applicable comparison context |
-| eligible state -> `Unsupported` | The owner or deterministic policy rejects the claim, or a contradiction makes it unusable; the reason is recorded without copying free-form content into audit |
-| `Confirmed`/`Supported` -> `Verified` | Only a server-side `VerificationAuthority` decision with an allowlisted method, verifier reference, source, time, and scope |
-| material edit -> `Inferred` | Editing a factual claim invalidates prior confirmation/verification; the immutable prior revision and transition remain |
+| eligible state -> `Unsupported`       | The owner or deterministic policy rejects the claim, or a contradiction makes it unusable; the reason is recorded without copying free-form content into audit                                       |
+| `Confirmed`/`Supported` -> `Verified` | Only a server-side `VerificationAuthority` decision with an allowlisted method, verifier reference, source, time, and scope                                                                          |
+| material edit -> `Inferred`           | Editing a factual claim invalidates prior confirmation/verification; the immutable prior revision and transition remain                                                                              |
 
 No independent verification provider is configured in Phase 3. Production user
 APIs therefore cannot create `Verified` evidence. The internal authority port and

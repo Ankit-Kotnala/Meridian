@@ -83,11 +83,14 @@ test("a user maintains a career record and converts an explicit achievement to e
     await page.getByLabel("Email address").fill(email);
     await page.getByLabel("Password", { exact: true }).fill(password);
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await expect(page).toHaveURL(/\/(dashboard|onboarding)$/);
 
     await page.goto("/career-profile");
     await expect(
       page.getByRole("heading", { name: "Career Profile" }),
     ).toBeVisible();
+    await expect(page.getByText("Your career timeline is empty")).toBeVisible();
+    await page.getByRole("tab", { name: "List and reorder" }).click();
     await expect(page.getByText("No employment history yet")).toBeVisible();
 
     await page.getByRole("button", { name: "Add skill" }).click();
@@ -109,7 +112,9 @@ test("a user maintains a career record and converts an explicit achievement to e
     await page.getByLabel("Employer").fill("Fictional Products Ltd");
     await page.getByLabel("Official title").fill("Product Researcher");
     await page.getByLabel("Start month").fill("2024-04");
-    await page.getByLabel("User research").check();
+    await page
+      .getByRole("checkbox", { name: "User research", exact: true })
+      .check();
     await page.getByRole("button", { name: "Add experience" }).last().click();
     await expect(
       page.getByText("Experience added to your career profile."),
@@ -117,7 +122,7 @@ test("a user maintains a career record and converts an explicit achievement to e
 
     await page.goto("/evidence");
     await expect(
-      page.getByRole("heading", { name: "Evidence Vault" }),
+      page.getByRole("heading", { name: "Evidence Vault", exact: true }),
     ).toBeVisible();
     await page.getByRole("button", { name: "Add evidence" }).click();
     await page
@@ -130,7 +135,9 @@ test("a user maintains a career record and converts an explicit achievement to e
     await page
       .getByLabel("Product Researcher at Fictional Products Ltd")
       .check();
-    await page.getByLabel("User research").check();
+    await page
+      .getByRole("checkbox", { name: "User research", exact: true })
+      .check();
     await page.getByRole("button", { name: "Save evidence" }).click();
     await expect(
       page.getByText("Evidence saved.", { exact: false }),
@@ -141,7 +148,10 @@ test("a user maintains a career record and converts an explicit achievement to e
     });
     await evidenceRow.getByRole("link", { name: "Review" }).click();
     await expect(
-      page.getByRole("heading", { name: "Onboarding study source note" }),
+      page.getByRole("heading", {
+        name: "Onboarding study source note",
+        exact: true,
+      }),
     ).toBeVisible();
     await expect(
       page.getByText("Not eligible for factual generation"),
@@ -153,7 +163,7 @@ test("a user maintains a career record and converts an explicit achievement to e
 
     await page.goto("/achievement-inbox");
     await expect(
-      page.getByRole("heading", { name: "Achievement Inbox" }),
+      page.getByRole("heading", { name: "Achievement Inbox", exact: true }),
     ).toBeVisible();
     await page
       .getByRole("button", { name: "Capture achievement" })
