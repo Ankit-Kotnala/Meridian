@@ -13,14 +13,15 @@ claim under the user's control.
 
 ## Repository status
 
-**Phase 3 Career Profile, Evidence Vault, and Achievement Inbox is locally
-verified; hosted CI evidence is still pending. Phase 2 remains the last hosted
-baseline until a Phase 3 implementation commit is published and passes CI.** The repository uses a shared Python modular monolith, one root uv
-workspace, generated API contracts, thin deployable applications, and executable
-dependency boundaries.
+**Phase 3 Career Profile, Evidence Vault, and Achievement Inbox is complete and
+hosted verified. Phase 4 Role Explorer and Role Readiness is next.** The
+repository uses a shared Python modular monolith, one root uv workspace,
+generated API contracts, thin deployable applications, and executable dependency
+boundaries.
 
-Hosted CI run `29378312134` passed every Phase 2 job against implementation
-commit `3b8d639`; prior Phase 1 evidence remains preserved at `baab8f7`.
+Hosted CI run `29657932938` passed every Phase 3 job on no-change trigger commit
+`f752b55`, whose tree is identical to implementation commit `0df8bcf`; prior
+Phase 2 evidence remains preserved at `3b8d639` and run `29378312134`.
 
 See [PLANS.md](PLANS.md) for current status, historical evidence, and phase gates.
 Do not infer that a planned endpoint or module is implemented from the
@@ -300,10 +301,9 @@ Read [AGENTS.md](AGENTS.md) before contributing. The principal references are:
 
 ## Verification status through Phase 3 implementation
 
-Phases 0 through 2 have recorded local and hosted evidence. Phase 3 has recorded
-local closeout evidence; hosted CI remains pending until the implementation tree
-is committed and pushed. Exact current and historical results are recorded separately in
-`PLANS.md`; never infer a pass from the command list below:
+Phases 0 through 3 have recorded local and hosted evidence. Exact current and
+historical results are recorded separately in `PLANS.md`; never infer a pass from
+the command list below:
 
 ```sh
 make setup
@@ -341,7 +341,9 @@ results pass and are recorded in `PLANS.md`. Hosted run `29378312134` passed the
 complete Phase 2 workflow on implementation commit `3b8d639`.
 Phase 3 local closeout passed with `scripts/verify-phase3.ps1` on 2026-07-19:
 format, lint, type, unit, build, container, migration, integration, runtime, and
-isolated browser gates all passed. No hosted Phase 3 CI result is recorded yet.
+isolated browser gates all passed. Hosted run `29657932938` then passed
+supply-chain, API, web/contracts, worker, browser-smoke, Resume Health E2E,
+Career Record E2E, and container/image jobs on the identical Phase 3 tree.
 
 ## License and production use
 
