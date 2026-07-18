@@ -1,7 +1,7 @@
 # CareerOS scoring methodology
 
-Status: Resume Health v1 implemented and verified
-Last reviewed: 2026-07-15
+Status: Resume Health v1 and Role Readiness v1 implemented
+Last reviewed: 2026-07-19
 
 ## Required interpretation
 
@@ -247,22 +247,37 @@ evidence graph.
 
 ## Role Readiness
 
-Role readiness compares a career snapshot with a versioned role definition, not
-an exact vacancy. The initial **proposed** Phase 4 configuration is shown so the
-implementation has a reviewable starting point; it is not an active score in
-Phase 0 and must be validated before release:
+Role readiness compares an owner-scoped career snapshot with a versioned general
+role definition, not an exact vacancy. Phase 4 implements engine
+`role-readiness/1.0.0`, configuration `role-readiness-default/1`, and feature
+schema `role-readiness-features/1` with fixed-point basis-point arithmetic:
 
-| Dimension                            | Proposed weight |
-| ------------------------------------ | --------------: |
-| Core competency coverage             |             20% |
-| Responsibility alignment             |             15% |
-| Seniority alignment                  |             10% |
-| Leadership evidence                  |             10% |
-| Domain knowledge                     |             10% |
-| Technical skills                     |             10% |
-| Business impact                      |             10% |
-| Education/certification expectations |              5% |
-| Evidence strength                    |             10% |
+| Dimension                            | Weight |
+| ------------------------------------ | -----: |
+| Core competency coverage             |    20% |
+| Responsibility alignment             |    15% |
+| Seniority alignment                  |    10% |
+| Leadership evidence                  |    10% |
+| Domain knowledge                     |    10% |
+| Technical skills                     |    10% |
+| Business impact                      |    10% |
+| Education/certification expectations |     5% |
+| Evidence strength                    |    10% |
+
+Skill-state credits are deterministic:
+
+| State                       | Credit |
+| --------------------------- | -----: |
+| Demonstrated                |   1.00 |
+| Transferable                |   0.65 |
+| Adjacent                    |   0.35 |
+| Listed but not demonstrated |   0.25 |
+| Missing / Unknown           |   0.00 |
+
+Required competencies carry importance weight `3`; helpful competencies carry
+importance weight `1`. Evidence strength uses eligible direct evidence and the
+state ceilings below. If a career snapshot has no role-readiness signal, the
+analysis returns `insufficient_data` with no numeric aggregate.
 
 Required and helpful competencies carry explicit versioned importance; education
 or certification is never assumed required unless the role definition says so.
@@ -328,7 +343,7 @@ their contribution to the average.
 
 ### Skill-state treatment
 
-For role/job competency sub-calculations, the proposed evidence credits are:
+For job-specific competency sub-calculations, the proposed evidence credits are:
 
 | State                       | Proposed credit |
 | --------------------------- | --------------: |
@@ -463,12 +478,12 @@ privacy review, not proof of success probability.
 
 ## Implemented phase boundary
 
-Phase 2 implements and persists only job-independent Resume Health v1. The
-fictional dashboard at `/demo/dashboard` remains isolated from product data. Role
-Readiness remains Phase 4 work; Application Readiness and Opportunity Priority
-remain Phase 5 work. Resume Health v1 must not be reused as any of those scores.
+Phase 2 implements and persists job-independent Resume Health v1. Phase 4
+implements and persists general Role Readiness v1. The fictional dashboard at
+`/demo/dashboard` remains isolated from product data. Application Readiness and
+Opportunity Priority remain Phase 5 work. Resume Health v1 and Role Readiness v1
+must not be reused as exact-job scores or hiring probabilities.
 
-The implementation, focused golden tests, and repository-wide local format,
-lint, type, unit, integration, container, migration, browser, accessibility, and
-security gates pass. Hosted run `29378312134` verifies the Phase 2 implementation;
-the evidence is recorded in `PLANS.md`.
+The implementation, focused golden tests, and repository-wide local format, lint,
+type, unit, integration, container, migration, browser, accessibility, and
+security gates are recorded in `PLANS.md`.

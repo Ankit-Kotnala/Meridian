@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: help setup dev stop format format-check lint typecheck test contracts-check test-integration test-e2e test-e2e-stack test-e2e-stack-phase3 build security-scan seed migrate reset-db compose-config verify verify-phase1 verify-phase2 verify-phase3
+.PHONY: help setup dev stop format format-check lint typecheck test contracts-check test-integration test-e2e test-e2e-stack test-e2e-stack-phase3 test-e2e-stack-phase4 build security-scan seed migrate reset-db compose-config verify verify-phase1 verify-phase2 verify-phase3 verify-phase4
 
 help:
 	@echo "CareerOS development targets"
@@ -16,6 +16,7 @@ help:
 	@echo "  test-e2e         Run browser end-to-end tests"
 	@echo "  test-e2e-stack   Run the isolated Phase 2 authentication and Resume Health journeys"
 	@echo "  test-e2e-stack-phase3 Run the isolated Phase 3 Career Record journey suite"
+	@echo "  test-e2e-stack-phase4 Run the isolated Phase 4 Role Explorer journey suite"
 	@echo "  build            Build workspace packages and service images"
 	@echo "  security-scan    Scan source, dependencies, and application images"
 	@echo "  contracts-check  Verify OpenAPI and generated TypeScript contract drift"
@@ -23,6 +24,7 @@ help:
 	@echo "  verify-phase1    Run the platform gate and isolated Phase 1 browser journey"
 	@echo "  verify-phase2    Run all platform gates and the isolated Resume Health journey"
 	@echo "  verify-phase3    Run all platform gates and the isolated Career Record journey"
+	@echo "  verify-phase4    Run all platform gates and the isolated Role Explorer journey"
 
 setup:
 	@test -f .env || cp .env.example .env
@@ -95,6 +97,9 @@ test-e2e-stack:
 test-e2e-stack-phase3:
 	CAREEROS_E2E_PHASE=3 sh tests/e2e/run-compose.sh
 
+test-e2e-stack-phase4:
+	CAREEROS_E2E_PHASE=4 sh tests/e2e/run-compose.sh
+
 build:
 	pnpm build
 	docker compose build api worker web
@@ -130,3 +135,5 @@ verify-phase1: verify test-e2e-stack
 verify-phase2: verify test-e2e-stack
 
 verify-phase3: verify test-e2e-stack-phase3
+
+verify-phase4: verify test-e2e-stack-phase4

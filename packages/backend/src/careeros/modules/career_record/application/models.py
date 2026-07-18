@@ -266,6 +266,44 @@ class EvidenceRecord:
 
 
 @dataclass(frozen=True, slots=True)
+class ReadinessSnapshotSkill:
+    id: UUID
+    name: str
+    category: str | None
+    proficiency: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class ReadinessSnapshotEntity:
+    id: UUID
+    kind: str
+    title: str
+    organization: str | None
+    description: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class ReadinessSnapshotEvidence:
+    id: UUID
+    title: str
+    statement: str
+    context: str | None
+    strength: str
+    skill_ids: tuple[UUID, ...]
+    entity_ids: tuple[UUID, ...]
+    has_numeric_claim: bool
+
+
+@dataclass(frozen=True, slots=True)
+class CareerRecordReadinessSnapshot:
+    """Application-level, eligibility-filtered facts for downstream matching."""
+
+    skills: tuple[ReadinessSnapshotSkill, ...]
+    entities: tuple[ReadinessSnapshotEntity, ...]
+    evidence: tuple[ReadinessSnapshotEvidence, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class CareerProfileView:
     profile: CareerProfile
     entities: tuple[CareerEntity, ...]

@@ -62,6 +62,7 @@ from careeros.modules.career_record.domain import (
 from .models import (
     CareerEntityData,
     CareerProfileView,
+    CareerRecordReadinessSnapshot,
     CreateAchievement,
     CreateCareerProfile,
     CreateEvidence,
@@ -73,6 +74,9 @@ from .models import (
     Page,
     PageCursor,
     ProposalFilter,
+    ReadinessSnapshotEntity,
+    ReadinessSnapshotEvidence,
+    ReadinessSnapshotSkill,
     RequestContext,
     ResumeSourceLocator,
     ReviseEvidence,
@@ -1468,6 +1472,64 @@ class CareerRecordService:
             if decision.eligible:
                 eligible.append(refreshed)
         return tuple(eligible)
+
+    async def readiness_snapshot(
+        self, owner_user_id: UUID, *, evidence_limit: int = 100
+    ) -> CareerRecordReadinessSnapshot:
+        """Return owner-scoped profile signal plus only generation-eligible evidence."""
+
+        if not 1 <= evidence_limit <= self._policy.max_evidence:
+            raise CareerRecordValidationError("readiness evidence limit is out of range")
+        async with self._uow() as uow:
+            profile = await uow.get_profile(owner_user_id)
+            if profile is None:
+                return CareerRecordReadinessSnapshot(skills=(), entities=(), evidence=())
+            entities = await uow.list_entities(owner_user_id, profile.id)
+            skills = await uow.list_skills(owner_user_id, profile.id)
+            records = await uow.list_evidence(
+                owner_user_id,
+                EvidenceFilter(lifecycle=EvidenceLifecycle.ACTIVE),
+                None,
+                evidence_limit,
+            )
+        eligible: list[ReadinessSnapshotEvidence] = []
+        for record in records:
+            decision, refreshed = await self._evaluate_record(owner_user_id, record)
+            if decision.eligible:
+                eligible.append(
+                    ReadinessSnapshotEvidence(
+                        id=refreshed.item.id,
+                        title=refreshed.revision.title,
+                        statement=refreshed.revision.statement,
+                        context=refreshed.revision.context,
+                        strength=refreshed.revision.strength.value,
+                        skill_ids=refreshed.skill_ids,
+                        entity_ids=refreshed.entity_ids,
+                        has_numeric_claim=bool(refreshed.metrics),
+                    )
+                )
+        return CareerRecordReadinessSnapshot(
+            skills=tuple(
+                ReadinessSnapshotSkill(
+                    id=skill.id,
+                    name=skill.name,
+                    category=skill.category,
+                    proficiency=skill.proficiency.value if skill.proficiency is not None else None,
+                )
+                for skill in sorted(skills, key=lambda item: (item.sort_order, str(item.id)))
+            ),
+            entities=tuple(
+                ReadinessSnapshotEntity(
+                    id=entity.id,
+                    kind=entity.kind.value,
+                    title=entity.title,
+                    organization=entity.organization,
+                    description=entity.description,
+                )
+                for entity in sorted(entities, key=lambda item: (item.sort_order, str(item.id)))
+            ),
+            evidence=tuple(eligible),
+        )
 
     async def evaluate_evidence(
         self, owner_user_id: UUID, evidence_id: UUID

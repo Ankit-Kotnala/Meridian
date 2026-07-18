@@ -16,6 +16,9 @@ from careeros.modules.identity.infrastructure import models as identity_models  
 from careeros.modules.resume_health.infrastructure import (
     models as resume_health_models,  # noqa: F401
 )
+from careeros.modules.role_readiness.infrastructure import (
+    models as role_readiness_models,  # noqa: F401
+)
 
 config = context.config
 

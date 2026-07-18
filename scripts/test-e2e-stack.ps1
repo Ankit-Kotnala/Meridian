@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet(2, 3)]
+    [ValidateSet(2, 3, 4)]
     [int]$Phase = 2
 )
 
@@ -31,7 +31,17 @@ function Assert-MigrationHeadOutput {
     }
 }
 
-if ($Phase -eq 3) {
+if ($Phase -eq 4) {
+    $RollbackRevision = "20260715_0004"
+    $ExpectedMigrationHead = "20260719_0005"
+    $JourneySpecs = @(
+        "e2e/auth-journey.spec.ts",
+        "e2e/resume-health-journey.spec.ts",
+        "e2e/career-record-journey.spec.ts",
+        "e2e/role-readiness-journey.spec.ts"
+    )
+}
+elseif ($Phase -eq 3) {
     $RollbackRevision = "20260715_0003"
     $ExpectedMigrationHead = "20260715_0004"
     $JourneySpecs = @(

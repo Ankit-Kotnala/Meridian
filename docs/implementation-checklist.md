@@ -267,22 +267,27 @@ closeout evidence and residual limitations live in `PLANS.md`.
 
 Dependencies: Phase 3 profile/evidence and Phase 0 provider/config foundations.
 
-- [ ] Select/license and seed a versioned role taxonomy; add provider interface,
-      definitions, competencies, saved roles, and readiness history.
-- [ ] Implement search by title/seniority/industry/location/company type/domain,
+- [x] Select/license and seed a versioned role taxonomy; add source/version
+      metadata, definitions, competencies, saved roles, and readiness history.
+- [x] Implement search by title/seniority/industry/location/company type/domain,
       save/delete, and compare two or three roles.
-- [ ] Finalize deterministic Role Readiness weights/features and skill states;
+- [x] Finalize deterministic Role Readiness weights/features and skill states;
       store formula/taxonomy/profile/evidence snapshots.
-- [ ] Show competency/responsibility/seniority/leadership/domain/technical/business/
+- [x] Show competency/responsibility/seniority/leadership/domain/technical/business/
       education/evidence components, strengths, gaps, unknowns, transferable/adjacent
       states, evidence links, questions, transitions, and next actions.
-- [ ] Never label readiness as a hiring probability; show score disclaimer and
+- [x] Never label readiness as a hiring probability; show score disclaimer and
       accessible summaries.
-- [ ] Test taxonomy versioning, ownership/history, evidence relevance, unknown/
+- [x] Test taxonomy versioning, ownership/history, evidence relevance, unknown/
       not-applicable, determinism/goldens, comparison, and accessibility.
 
 Exit: role comparison works without job text and every score/gap is reproducible,
 explained, and linked to evidence or an explicit unknown/missing state.
+
+Evidence: migration `20260719_0005` upgrades from `20260715_0004`, downgrades
+back to it, and re-upgrades. Focused backend/API/web/unit/integration/browser
+coverage plus the consolidated `scripts/verify-phase4.ps1` result are recorded in
+`PLANS.md`.
 
 ## Phase 5 — Job Match, Requirement Matrix, and Opportunity Prioritizer
 

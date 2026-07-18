@@ -55,6 +55,17 @@ from careeros.modules.resume_health.infrastructure import (
     S3Options,
     SqlAlchemyResumeUnitOfWorkFactory,
 )
+from careeros.modules.role_readiness.application import RoleReadinessService
+from careeros.modules.role_readiness.infrastructure import (
+    CareerRecordSnapshotProvider,
+    SqlAlchemyRoleReadinessUnitOfWorkFactory,
+)
+from careeros.modules.role_readiness.infrastructure import (
+    SystemClock as RoleReadinessClock,
+)
+from careeros.modules.role_readiness.infrastructure import (
+    UuidIdentifierFactory as RoleReadinessUuidFactory,
+)
 from fastapi import FastAPI
 from redis.asyncio import Redis
 from starlette.middleware.cors import CORSMiddleware
@@ -82,6 +93,7 @@ def create_app(
     career_record: CareerRecordService | None = None,
     attachment_workflow: AttachmentWorkflowService | None = None,
     attachment_storage: AttachmentS3ObjectStorage | None = None,
+    role_readiness: RoleReadinessService | None = None,
 ) -> FastAPI:
     """Build an application; injectable dependencies keep tests infrastructure-free."""
     resolved_settings = settings or get_settings()
@@ -107,6 +119,7 @@ def create_app(
         resolved_career_record = career_record
         resolved_attachment_workflow = attachment_workflow
         resolved_attachment_storage = attachment_storage
+        resolved_role_readiness = role_readiness
 
         if resolved_identity is None and isinstance(resolved_database, Database):
             pepper = resolved_settings.auth_token_pepper.get_secret_value()
@@ -272,12 +285,24 @@ def create_app(
                     attachments=AttachmentAdmissionBridge(resolved_attachment_workflow),
                     verification_authority=None,
                 )
+            if resolved_role_readiness is None:
+                if resolved_career_record is None:
+                    raise RuntimeError(
+                        "Role Readiness requires the Career Record snapshot boundary"
+                    )
+                resolved_role_readiness = RoleReadinessService(
+                    unit_of_work=SqlAlchemyRoleReadinessUnitOfWorkFactory(resolved_database),
+                    clock=RoleReadinessClock(),
+                    identifiers=RoleReadinessUuidFactory(),
+                    career_snapshots=CareerRecordSnapshotProvider(resolved_career_record),
+                )
 
         application.state.database = resolved_database
         application.state.identity_service = resolved_identity
         application.state.security_store = resolved_security_store
         application.state.resume_health_service = resolved_resume_health
         application.state.career_record_service = resolved_career_record
+        application.state.role_readiness_service = resolved_role_readiness
         application.state.attachment_workflow_service = resolved_attachment_workflow
         application.state.resume_outbox_dispatcher = resolved_resume_dispatcher
         application.state.readiness_dependencies = {"database": resolved_database}

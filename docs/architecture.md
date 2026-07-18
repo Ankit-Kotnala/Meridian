@@ -1,6 +1,6 @@
 # CareerOS architecture
 
-Status: accepted target architecture; Phase 3 implemented and locally verified
+Status: accepted target architecture; Phase 4 implemented in the working tree
 Last reviewed: 2026-07-19
 
 ## Architectural objective
@@ -17,13 +17,12 @@ what the current working tree actually implements.
 ## Implementation alignment status
 
 The repository implements the Phase 0 shared backend/root workspace, the Phase 1
-identity boundary, the Phase 2 Resume Health module, and the Phase 3 Career Record
-bounded context used by thin API and worker adapters. Phase 3 adds independent
-career truth, reviewable resume-import proposals, a provenance/evidence graph,
-deterministic evidence authority and eligibility, private evidence attachments,
-and Achievement Inbox without changing dependency direction or Phase 1/2 wire
-semantics. Historical evidence and the current blocking verification status are
-recorded in `PLANS.md`.
+identity boundary, the Phase 2 Resume Health module, the Phase 3 Career Record
+bounded context, and the Phase 4 Role Explorer bounded context used by thin API
+and web adapters. Phase 4 adds versioned role taxonomy/search, saved roles,
+deterministic evidence-linked readiness, history, and comparison without changing
+dependency direction or reading Career Record tables directly. Historical
+evidence and the current blocking verification status are recorded in `PLANS.md`.
 
 ## System principles
 
@@ -438,7 +437,7 @@ must be visible without making unrelated core paths unavailable.
 
 ## Deployment progression
 
-Phase 0 through Phase 3 use Docker Compose for reproducible local integration. Production targets
+Phase 0 through Phase 4 use Docker Compose for reproducible local integration. Production targets
 remain deliberately unspecified until Phase 10, when the team must decide and
 test:
 
@@ -458,7 +457,9 @@ Phase 0 implements the runtime seams, Phase 1 implements identity/onboarding, an
 Phase 2 adds the real `resume_health` module and secure account/guest document
 workflows. Phase 3 adds `career_record`, migration `20260715_0004`, API/worker
 adapters, generated contracts, the `career-vault` web feature, private attachment
-processing, and focused unit/integration/browser suites. Role taxonomy/readiness,
+processing, and focused unit/integration/browser suites. Phase 4 adds
+`role_readiness`, migration `20260719_0005`, API/generated contracts, the
+`role-explorer` web feature, and focused unit/integration/browser suites. Exact
 job matching, external AI/OCR providers, browser extension, Terraform,
 operations, and production workflows remain absent until their owning phases.
 
@@ -490,11 +491,11 @@ Phase 3 adds `scripts/verify-phase3.ps1` (or `make verify-phase3`) for migration
 attachment processing/reconciliation, and the desktop Career Profile/Evidence/
 Achievement primary journey. Shared responsive workspace behavior remains in the
 existing mobile suites; the Phase 3 primary journey itself is not run as a mobile
-project. The consolidated final-tree local result passes; a hosted Phase 3 run is
-still pending as recorded in `PLANS.md`.
+project. The consolidated final-tree local result and hosted Phase 3 run pass as
+recorded in `PLANS.md`.
 
-The Phase 0/1 baselines and Phase 2 passed their aligned local and hosted gates.
-After Phase 3 closeout, later phases add role/job score golden, AI grounding,
-round-trip export,
-load, account-wide deletion, backup, and restore gates. The complete strategy is
-in `docs/testing-strategy.md`.
+Phase 4 adds `scripts/verify-phase4.ps1` (or `make verify-phase4`) for migration
+`20260719_0005`, Role Explorer repository integration, and the authenticated
+save/analyze/compare browser workflow. Later phases add exact-job score golden,
+AI grounding, round-trip export, load, account-wide deletion, backup, and restore
+gates. The complete strategy is in `docs/testing-strategy.md`.

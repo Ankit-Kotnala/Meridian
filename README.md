@@ -13,8 +13,9 @@ claim under the user's control.
 
 ## Repository status
 
-**Phase 3 Career Profile, Evidence Vault, and Achievement Inbox is complete and
-hosted verified. Phase 4 Role Explorer and Role Readiness is next.** The
+**Phase 4 Role Explorer and Role Readiness is implemented in this working tree
+and awaiting final closeout verification.** Phases 0 through 3 are hosted
+verified. The
 repository uses a shared Python modular monolith, one root uv workspace,
 generated API contracts, thin deployable applications, and executable dependency
 boundaries.
@@ -137,6 +138,12 @@ explicit user action. Private evidence attachments use the same fail-closed
 PDF/DOCX scanner and bounded extractor contracts without reusing Resume Health
 persistence.
 
+Role Explorer is available at `/role-explorer`. It uses the versioned Phase 4
+seed taxonomy, saved roles, deterministic evidence-linked readiness analysis,
+history, and two-or-three-role comparison. Results consume only the owner-scoped
+Career Record readiness snapshot and display the canonical internal-score
+disclaimer.
+
 Authenticated Resume Health starts at `/resume-health/account`. The intentionally
 limited guest flow starts at `/resume-health/guest`, uses one opaque short-lived
 browser capability, permits one active intake, and defaults to 24-hour retention.
@@ -204,6 +211,7 @@ make test-integration # build/start the stack, migrate twice, and probe services
 make test-e2e         # Playwright against an already running stack
 make test-e2e-stack   # isolated desktop/mobile auth and Resume Health journeys
 make test-e2e-stack-phase3 # isolated Phase 3 desktop primary journey plus prior regressions
+make test-e2e-stack-phase4 # isolated Phase 4 Role Explorer journey plus prior regressions
 make security-scan    # scan source, dependencies, app images, and trusted edge runtime
 make migrate          # apply the current database migrations
 make seed             # print the explicitly fictional Phase 0 fixture
@@ -211,6 +219,7 @@ make verify           # full format/lint/type/test/contract/build/runtime gate
 make verify-phase1    # full gate plus isolated Phase 1 integration/E2E
 make verify-phase2    # full gate plus isolated Resume Health integration/E2E
 make verify-phase3    # full gate plus isolated Career Record integration/E2E
+make verify-phase4    # full gate plus isolated Role Explorer integration/E2E
 make reset-db         # explicitly destructive local database reset
 ```
 
@@ -235,6 +244,10 @@ run in the existing mobile suites; the Phase 3 primary journey itself is
 intentionally desktop-only. Run `make security-scan` (or its PowerShell
 equivalent) separately; the phase verification scripts do not replace the
 source, dependency, application-image, and pinned `web-edge` runtime scans.
+Use `.\scripts\verify-phase4.ps1` for migration `20260719_0005`, Role Explorer
+repository integration, and the desktop save/analyze/compare workflow backed by
+confirmed career evidence. Shared responsive shell behavior remains covered by
+the inherited desktop/mobile suites.
 
 The Phase 0 migration enables the pgvector extension. Phase 1 migration
 `20260715_0002` adds the identity, session, OAuth, organization, consent, audit,
@@ -251,6 +264,10 @@ achievement drafts, reminder preferences, and redacted Career Record audit
 events. It is additive to the Phase 2 head; downgrading it deletes Phase 3 data
 and therefore is a test/forward-repair mechanism, not an automatic production
 rollback after real use.
+Phase 4 migration `20260719_0005` adds the public versioned role taxonomy,
+competencies, saved roles, readiness analyses/components/results/evidence links,
+idempotency records, and redacted audit events. Downgrading to `20260715_0004`
+deletes Phase 4 role-readiness data and is likewise a test/forward-repair path.
 The seed command still prints only a fictional demo fixture and performs no
 database write. A command that prints a fixture or says a feature is deferred is
 not evidence that the product feature exists.
@@ -299,9 +316,10 @@ Read [AGENTS.md](AGENTS.md) before contributing. The principal references are:
 - [Implementation checklist](docs/implementation-checklist.md)
 - [Architecture decisions](docs/adr/README.md)
 
-## Verification status through Phase 3 implementation
+## Verification Status Through Phase 4 Implementation
 
-Phases 0 through 3 have recorded local and hosted evidence. Exact current and
+Phases 0 through 3 have recorded local and hosted evidence; Phase 4 closeout
+evidence is recorded in `PLANS.md` as it runs. Exact current and
 historical results are recorded separately in `PLANS.md`; never infer a pass from
 the command list below:
 
@@ -325,6 +343,7 @@ Native PowerShell runs the equivalent quality/build/configuration checks with:
 .\scripts\verify-phase1.ps1
 .\scripts\verify-phase2.ps1
 .\scripts\verify-phase3.ps1
+.\scripts\verify-phase4.ps1
 docker compose up --build --detach --wait
 docker compose ps
 Invoke-WebRequest -UseBasicParsing http://localhost:3000/api/health

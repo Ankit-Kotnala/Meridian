@@ -1,6 +1,6 @@
 # CareerOS API conventions and route plan
 
-Status: Phase 3 Career Record API implemented and locally verified; hosted CI pending
+Status: Phase 4 Role Explorer API implemented in the working tree
 Base path for product APIs: `/api/v1`  
 Last reviewed: 2026-07-19
 
@@ -25,10 +25,11 @@ It is not part of the product API contract.
 Phase 1 adds persisted identity, account, consent, session, and onboarding
 resources. Phase 2 adds owned and guest-limited resume upload, parsing, review,
 analysis, and deletion resources. Phase 3 adds account-owned career profile,
-evidence, attachment, proposal, and achievement resources. AI generation, role,
-job, export, and application workflows remain unimplemented. `/docs` and
-`/openapi.json` are development documentation endpoints and may be restricted or
-disabled in production.
+evidence, attachment, proposal, and achievement resources. Phase 4 adds role
+taxonomy/search, saved roles, deterministic readiness analysis, history, and
+comparison. AI generation, exact job matching, export, and application workflows
+remain unimplemented. `/docs` and `/openapi.json` are development documentation
+endpoints and may be restricted or disabled in production.
 
 `packages/contracts` derives its public types and client from the implemented
 FastAPI OpenAPI document. The normalized artifact under
@@ -36,9 +37,9 @@ FastAPI OpenAPI document. The normalized artifact under
 `packages/contracts/src/generated` are committed review artifacts; neither is an
 independent contract authority. Problem, pagination, and product schemas are not
 published until corresponding Pydantic models and operations exist. Phase 1
-contract evidence is recorded in `PLANS.md`. Phase 2 and Phase 3 changes
-regenerate both artifacts; the final Phase 3 drift result must be recorded there
-before the phase is marked complete.
+contract evidence is recorded in `PLANS.md`. Phase 2 through Phase 4 changes
+regenerate both artifacts; the final drift result must be recorded there before a
+phase is marked complete.
 
 ## Protocol and representation
 
@@ -507,13 +508,23 @@ GET    /api/v1/roles
 GET    /api/v1/roles/{roleId}
 GET    /api/v1/saved-roles
 POST   /api/v1/saved-roles
+PATCH  /api/v1/saved-roles/{savedRoleId}
 DELETE /api/v1/saved-roles/{savedRoleId}
+GET    /api/v1/role-readiness
 POST   /api/v1/role-readiness
+GET    /api/v1/role-readiness/compare
 GET    /api/v1/role-readiness/{analysisId}
-GET    /api/v1/role-readiness/{analysisId}/requirements
-POST   /api/v1/role-comparisons
-GET    /api/v1/role-comparisons/{comparisonId}
 ```
+
+All Phase 4 routes require an authenticated account session. Mutations also
+require session CSRF/origin controls. Saved-role update/delete requires strict
+quoted positive-int32 `If-Match`; analysis requires `Idempotency-Key`.
+`GET /api/v1/role-readiness/compare` accepts two or three `roleId` query values.
+Readiness responses include engine/configuration/feature-schema versions, the
+versioned role taxonomy, raw and display scores, component contributions,
+competency states, evidence links by title/state, history, and the canonical
+internal-score disclaimer. The service consumes an owner-scoped Career Record
+readiness snapshot and returns `404` for cross-user saved roles or analyses.
 
 ### Phase 5 — Jobs, matching, and opportunity priority
 
@@ -810,3 +821,14 @@ eligibility, conflict resolution, idempotent achievement conversion, private
 attachment admission/access/deletion, lost-worker reconciliation, safe problem
 mapping, and production service composition. Exact final counts belong in
 `PLANS.md`; the local consolidated gate passed on 2026-07-19.
+
+Phase 4's consolidated gate is:
+
+```powershell
+.\scripts\verify-phase4.ps1
+```
+
+It retains every Phase 3 gate and adds migration `20260719_0005`, Role Explorer
+repository integration, generated-contract drift, API tests for authentication,
+CSRF, owner scope, idempotency, version preconditions and comparison, and the
+authenticated desktop Role Explorer save/analyze/compare journey.
