@@ -1,10 +1,16 @@
 **/.next/
+**/.mypy_cache/
+**/.pytest_cache/
+**/.ruff_cache/
+**/.turbo/
 **/.venv/
 **/node_modules/
 **/coverage/
 **/playwright-report/
 **/test-results/
 **/uv.lock
+.data
+.pytest_cache
 packages/contracts/src/generated/
 packages/contracts/openapi/
 pnpm-lock.yaml

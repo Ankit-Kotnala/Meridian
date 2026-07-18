@@ -16,8 +16,8 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "generate": "openapi-typescript openapi/careeros.openapi.json --output src/generated/schema.d.ts --alphabetize",
-    "check-generated": "openapi-typescript openapi/careeros.openapi.json --output src/generated/schema.d.ts --alphabetize --check",
+    "generate": "openapi-typescript openapi/careeros.openapi.json --output src/generated/schema.ts --alphabetize",
+    "check-generated": "openapi-typescript openapi/careeros.openapi.json --output src/generated/schema.ts --alphabetize --check",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run src"

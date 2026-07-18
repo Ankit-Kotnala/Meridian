@@ -1,13 +1,17 @@
 """Environment-backed worker configuration."""
 
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal, Self
 from urllib.parse import urlsplit
 
-from pydantic import AliasChoices, Field, SecretStr, model_validator
+from careeros.foundation.config import validate_database_url_for_environment
+from pydantic import AliasChoices, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _LOCAL_REDIS_URL = "redis://localhost:6379/0"
+_LOCAL_DATABASE_URL = "postgresql+asyncpg://careeros:careeros@localhost:5432/careeros"
+_LOCAL_STORAGE_SECRET = "change-me-local-only-app-storage-secret"  # noqa: S105 -- local Compose credential
 
 
 def _is_development_redis_url(value: SecretStr) -> bool:
@@ -18,6 +22,15 @@ def _is_development_redis_url(value: SecretStr) -> bool:
         "change-me-local-only",
         "changeme",
         "password",
+    }
+
+
+def _is_local_hostname(hostname: str | None, *service_names: str) -> bool:
+    return hostname is None or hostname.casefold() in {
+        "localhost",
+        "127.0.0.1",
+        "::1",
+        *(name.casefold() for name in service_names),
     }
 
 
@@ -66,6 +79,173 @@ class WorkerSettings(BaseSettings):
         ),
     )
 
+    database_url: SecretStr = Field(
+        default=SecretStr(_LOCAL_DATABASE_URL),
+        validation_alias=AliasChoices("CAREEROS_DATABASE_URL", "DATABASE_URL"),
+    )
+    database_pool_size: int = Field(default=3, ge=1, le=20)
+    database_max_overflow: int = Field(default=2, ge=0, le=20)
+    database_connect_timeout_seconds: float = Field(default=3.0, gt=0, le=30)
+    database_command_timeout_seconds: float = Field(default=30.0, gt=0, le=300)
+
+    s3_endpoint_url: str = Field(
+        default="http://localhost:9000",
+        validation_alias=AliasChoices("CAREEROS_S3_ENDPOINT_URL", "S3_ENDPOINT_URL"),
+    )
+    s3_public_endpoint_url: str = Field(
+        default="http://localhost:9000",
+        validation_alias=AliasChoices(
+            "CAREEROS_S3_PUBLIC_ENDPOINT_URL",
+            "S3_PUBLIC_ENDPOINT_URL",
+        ),
+    )
+    s3_region: str = Field(
+        default="us-east-1",
+        min_length=1,
+        max_length=63,
+        validation_alias=AliasChoices("CAREEROS_S3_REGION", "S3_REGION"),
+    )
+    s3_bucket: str = Field(
+        default="careeros-documents",
+        min_length=3,
+        max_length=63,
+        pattern=r"^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])$",
+        validation_alias=AliasChoices("CAREEROS_S3_BUCKET", "S3_BUCKET"),
+    )
+    s3_access_key_id: SecretStr = Field(
+        default=SecretStr("careeros-app"),
+        min_length=3,
+        validation_alias=AliasChoices(
+            "CAREEROS_S3_ACCESS_KEY_ID",
+            "S3_APP_ACCESS_KEY_ID",
+            "S3_ACCESS_KEY_ID",
+        ),
+    )
+    s3_secret_access_key: SecretStr = Field(
+        default=SecretStr(_LOCAL_STORAGE_SECRET),
+        min_length=12,
+        validation_alias=AliasChoices(
+            "CAREEROS_S3_SECRET_ACCESS_KEY",
+            "S3_APP_SECRET_ACCESS_KEY",
+            "S3_SECRET_ACCESS_KEY",
+        ),
+    )
+    s3_use_ssl: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("CAREEROS_S3_USE_SSL", "S3_USE_SSL"),
+    )
+
+    malware_scanner_provider: Literal["clamav", "disabled"] = Field(
+        default="clamav",
+        validation_alias=AliasChoices(
+            "CAREEROS_MALWARE_SCANNER_PROVIDER",
+            "MALWARE_SCANNER_PROVIDER",
+        ),
+    )
+    clamav_host: str = Field(
+        default="localhost",
+        min_length=1,
+        max_length=253,
+        validation_alias=AliasChoices("CAREEROS_CLAMAV_HOST", "CLAMAV_HOST"),
+    )
+    clamav_port: int = Field(
+        default=3310,
+        ge=1,
+        le=65_535,
+        validation_alias=AliasChoices("CAREEROS_CLAMAV_PORT", "CLAMAV_PORT"),
+    )
+    clamav_timeout_seconds: float = Field(
+        default=30.0,
+        gt=0,
+        le=120,
+        validation_alias=AliasChoices(
+            "CAREEROS_CLAMAV_TIMEOUT_SECONDS",
+            "CLAMAV_TIMEOUT_SECONDS",
+        ),
+    )
+
+    document_temp_root: Path = Field(
+        # The container mounts this private path as a bounded noexec tmpfs and the
+        # processor creates a fresh randomized child for every job.
+        default=Path("/tmp/careeros"),  # noqa: S108
+        validation_alias=AliasChoices("CAREEROS_DOCUMENT_TEMP_ROOT", "DOCUMENT_TEMP_ROOT"),
+    )
+    document_max_bytes: int = Field(
+        default=10_485_760,
+        ge=1_048_576,
+        le=26_214_400,
+        validation_alias=AliasChoices("CAREEROS_DOCUMENT_MAX_BYTES", "DOCUMENT_MAX_BYTES"),
+    )
+    document_max_pages: int = Field(
+        default=8,
+        ge=1,
+        le=100,
+        validation_alias=AliasChoices("CAREEROS_DOCUMENT_MAX_PAGES", "DOCUMENT_MAX_PAGES"),
+    )
+    document_max_archive_entries: int = Field(
+        default=256,
+        ge=1,
+        le=2_000,
+        validation_alias=AliasChoices(
+            "CAREEROS_DOCUMENT_MAX_ARCHIVE_ENTRIES",
+            "DOCUMENT_MAX_ARCHIVE_ENTRIES",
+        ),
+    )
+    document_max_uncompressed_bytes: int = Field(
+        default=52_428_800,
+        ge=1_048_576,
+        le=268_435_456,
+        validation_alias=AliasChoices(
+            "CAREEROS_DOCUMENT_MAX_UNCOMPRESSED_BYTES",
+            "DOCUMENT_MAX_UNCOMPRESSED_BYTES",
+        ),
+    )
+    document_max_compression_ratio: int = Field(
+        default=100,
+        ge=1,
+        le=1_000,
+        validation_alias=AliasChoices(
+            "CAREEROS_DOCUMENT_MAX_COMPRESSION_RATIO",
+            "DOCUMENT_MAX_COMPRESSION_RATIO",
+        ),
+    )
+    document_max_extracted_characters: int = Field(
+        default=500_000,
+        ge=1_000,
+        le=2_000_000,
+        validation_alias=AliasChoices(
+            "CAREEROS_DOCUMENT_MAX_EXTRACTED_CHARACTERS",
+            "DOCUMENT_MAX_EXTRACTED_CHARACTERS",
+        ),
+    )
+    document_max_extracted_blocks: int = Field(
+        default=5_000,
+        ge=1,
+        le=20_000,
+        validation_alias=AliasChoices(
+            "CAREEROS_DOCUMENT_MAX_EXTRACTED_BLOCKS",
+            "DOCUMENT_MAX_EXTRACTED_BLOCKS",
+        ),
+    )
+    document_max_serialized_artifact_bytes: int = Field(
+        default=2_097_152,
+        ge=65_536,
+        le=10_485_760,
+        validation_alias=AliasChoices(
+            "CAREEROS_DOCUMENT_MAX_SERIALIZED_ARTIFACT_BYTES",
+            "DOCUMENT_MAX_SERIALIZED_ARTIFACT_BYTES",
+        ),
+    )
+    document_processing_timeout_seconds: float = Field(
+        default=120.0,
+        gt=0,
+        le=600,
+        validation_alias=AliasChoices(
+            "CAREEROS_DOCUMENT_PROCESSING_TIMEOUT_SECONDS",
+            "DOCUMENT_PROCESSING_TIMEOUT_SECONDS",
+        ),
+    )
+
     task_soft_time_limit_seconds: int = Field(
         default=270,
         ge=1,
@@ -99,6 +279,42 @@ class WorkerSettings(BaseSettings):
             "RETRY_BACKOFF_MAX_SECONDS",
         ),
     )
+    resume_job_reconciliation_interval_seconds: int = Field(
+        default=60,
+        ge=10,
+        le=3_600,
+        validation_alias=AliasChoices(
+            "CAREEROS_RESUME_JOB_RECONCILIATION_INTERVAL_SECONDS",
+            "RESUME_JOB_RECONCILIATION_INTERVAL_SECONDS",
+        ),
+    )
+    resume_job_reconciliation_stale_seconds: int = Field(
+        default=300,
+        ge=60,
+        le=86_400,
+        validation_alias=AliasChoices(
+            "CAREEROS_RESUME_JOB_RECONCILIATION_STALE_SECONDS",
+            "RESUME_JOB_RECONCILIATION_STALE_SECONDS",
+        ),
+    )
+    attachment_job_reconciliation_interval_seconds: int = Field(
+        default=60,
+        ge=10,
+        le=3_600,
+        validation_alias=AliasChoices(
+            "CAREEROS_ATTACHMENT_JOB_RECONCILIATION_INTERVAL_SECONDS",
+            "ATTACHMENT_JOB_RECONCILIATION_INTERVAL_SECONDS",
+        ),
+    )
+    attachment_job_reconciliation_stale_seconds: int = Field(
+        default=300,
+        ge=60,
+        le=86_400,
+        validation_alias=AliasChoices(
+            "CAREEROS_ATTACHMENT_JOB_RECONCILIATION_STALE_SECONDS",
+            "ATTACHMENT_JOB_RECONCILIATION_STALE_SECONDS",
+        ),
+    )
     result_expires_seconds: int = Field(
         default=3600,
         ge=60,
@@ -127,15 +343,66 @@ class WorkerSettings(BaseSettings):
         ),
     )
 
+    @field_validator("s3_endpoint_url", "s3_public_endpoint_url")
+    @classmethod
+    def validate_storage_endpoint(cls, value: str) -> str:
+        parsed = urlsplit(value)
+        if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+            raise ValueError("S3 endpoints must be absolute HTTP(S) origins")
+        if parsed.username or parsed.password or parsed.path not in {"", "/"}:
+            raise ValueError("S3 endpoints must not contain credentials or a path")
+        if parsed.query or parsed.fragment:
+            raise ValueError("S3 endpoints must not contain query or fragment metadata")
+        return value.rstrip("/")
+
+    @field_validator("clamav_host")
+    @classmethod
+    def validate_clamav_host(cls, value: str) -> str:
+        if "://" in value or "/" in value or any(character.isspace() for character in value):
+            raise ValueError("clamav_host must be a hostname without a scheme or path")
+        return value
+
     @model_validator(mode="after")
     def validate_safety_constraints(self) -> Self:
         if self.task_soft_time_limit_seconds >= self.task_time_limit_seconds:
             raise ValueError("task soft time limit must be lower than the hard time limit")
+        if not (
+            self.document_temp_root.is_absolute()
+            or self.document_temp_root.as_posix().startswith("/")
+        ):
+            raise ValueError("document_temp_root must be an absolute path")
+        if self.document_max_uncompressed_bytes < self.document_max_bytes:
+            raise ValueError("document expansion limit must not be lower than upload limit")
+        if self.document_processing_timeout_seconds >= self.task_soft_time_limit_seconds:
+            raise ValueError("document processing timeout must be lower than the task soft limit")
+        validate_database_url_for_environment(
+            self.database_url.get_secret_value(),
+            self.environment,
+        )
         if self.environment == "production":
+            violations: list[str] = []
             if _is_development_redis_url(self.broker_url):
-                raise ValueError("production requires an explicit non-local broker URL")
+                violations.append("an explicit non-local broker URL is required")
             if _is_development_redis_url(self.result_backend):
-                raise ValueError("production requires an explicit non-local result backend")
+                violations.append("an explicit non-local result backend is required")
+            internal_storage = urlsplit(self.s3_endpoint_url)
+            public_storage = urlsplit(self.s3_public_endpoint_url)
+            if internal_storage.scheme != "https" or _is_local_hostname(
+                internal_storage.hostname, "minio"
+            ):
+                violations.append("the internal S3 endpoint must use non-local HTTPS")
+            if public_storage.scheme != "https" or _is_local_hostname(public_storage.hostname):
+                violations.append("the public S3 endpoint must use non-local HTTPS")
+            if not self.s3_use_ssl:
+                violations.append("S3 TLS must be enabled")
+            if self.s3_secret_access_key.get_secret_value() == _LOCAL_STORAGE_SECRET:
+                violations.append("the local S3 application secret must be replaced")
+            if self.malware_scanner_provider != "clamav":
+                violations.append("ClamAV scanning must be enabled")
+            if _is_local_hostname(self.clamav_host, "clamav"):
+                violations.append("an explicit non-local ClamAV host is required")
+            if violations:
+                raise ValueError("Unsafe production configuration: " + "; ".join(violations))
         return self
 
 

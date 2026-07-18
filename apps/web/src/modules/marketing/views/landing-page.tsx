@@ -255,7 +255,7 @@ const faqs = [
   {
     question: "Is the dashboard on this site real user data?",
     answer:
-      "No. The Phase 0 dashboard is a product preview made entirely from fictional demo fixtures. Authentication and personal workspaces arrive in a later implementation phase.",
+      "No. The public demo dashboard is made entirely from fictional fixtures and remains separate from protected accounts. Signed-in Resume Health workspaces and short-lived guest checks use their own persisted document state.",
   },
 ];
 
@@ -290,7 +290,7 @@ export function LandingPage() {
                     buttonStyles.primary,
                     "min-h-12 px-5",
                   )}
-                  href="/dashboard"
+                  href="/demo/dashboard"
                 >
                   Explore the fictional demo
                   <ArrowRight aria-hidden="true" className="size-4" />
@@ -550,7 +550,7 @@ export function LandingPage() {
                 and what I still need to answer before I send an application.”
               </p>
               <p className="mt-4 text-sm text-muted">
-                Fictional product-use scenario for this Phase 0 preview.
+                Fictional product-use scenario for this public demo.
               </p>
             </div>
           </div>
@@ -662,17 +662,17 @@ export function LandingPage() {
               Build an application system that remembers the truth.
             </h2>
             <p className="mx-auto mt-5 max-w-xl leading-7 text-slate-300">
-              Explore the fictional dashboard now. Real accounts, onboarding,
-              and protected workspaces follow in Phase 1.
+              Run a short-lived guest Resume Health check, or sign in to keep
+              reviewed documents and reports in your protected workspace.
             </p>
             <Link
               className={cn(
                 buttonStyles.base,
                 "mt-8 min-h-12 bg-white px-6 text-navy hover:bg-violet-50",
               )}
-              href="/dashboard"
+              href="/resume-health/guest"
             >
-              Open the product demo{" "}
+              Check my resume{" "}
               <ArrowRight aria-hidden="true" className="size-4" />
             </Link>
           </div>

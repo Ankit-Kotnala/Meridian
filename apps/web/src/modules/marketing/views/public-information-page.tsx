@@ -6,7 +6,15 @@ import { SiteFooter } from "@/modules/marketing/components/site-footer";
 import { SiteHeader } from "@/modules/marketing/components/site-header";
 import type { PublicPageContent } from "@/modules/marketing/content/public-pages";
 
-export function PublicInformationPage({ page }: { page: PublicPageContent }) {
+export function PublicInformationPage({
+  page,
+  primaryAction,
+  secondaryAction,
+}: {
+  page: PublicPageContent;
+  primaryAction?: { href: string; label: string };
+  secondaryAction?: { href: string; label: string };
+}) {
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
@@ -45,15 +53,15 @@ export function PublicInformationPage({ page }: { page: PublicPageContent }) {
             <div className="mt-4 flex flex-col gap-3 border-t border-line pt-8 sm:flex-row">
               <Link
                 className={cn(buttonStyles.base, buttonStyles.primary)}
-                href="/dashboard"
+                href={primaryAction?.href ?? "/demo/dashboard"}
               >
-                Explore the fictional demo
+                {primaryAction?.label ?? "Explore the fictional demo"}
               </Link>
               <Link
                 className={cn(buttonStyles.base, buttonStyles.secondary)}
-                href="/"
+                href={secondaryAction?.href ?? "/"}
               >
-                Return to overview
+                {secondaryAction?.label ?? "Return to overview"}
               </Link>
             </div>
           </div>

@@ -50,7 +50,7 @@ export function DashboardOverview() {
           </p>
           <p className="mt-1 text-xs leading-5 text-[#615a85]">
             {demoFixture.fixtureNotice} This preview is not a protected user
-            workspace; authentication arrives in Phase 1.
+            workspace; account data is available only in the signed-in area.
           </p>
         </div>
       </div>
@@ -427,7 +427,7 @@ export function DashboardOverview() {
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-300">
               Return to the public overview for trust principles, workflow, and
-              Phase 0 boundaries.
+              technical-preview boundaries.
             </p>
           </div>
         </div>

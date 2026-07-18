@@ -1,7 +1,7 @@
 # CareerOS testing strategy
 
-Status: aligned local Phase 0 gate passed; hosted CI rerun pending
-Last reviewed: 2026-07-14
+Status: Phase 2 local and hosted suites pass
+Last reviewed: 2026-07-19
 
 ## Objectives
 
@@ -46,8 +46,10 @@ Do not mock away the boundary a test is meant to prove.
   providers, and random seeds when outputs matter.
 - Integration tests receive a unique database/schema, bucket prefix, Redis
   namespace, and tenant/user fixtures. Parallel workers cannot share mutable state.
-- E2E starts from an explicit seed and cleans up. Retries must not hide failure;
-  CI retains trace/screenshot/video only with fictional/redacted content.
+- E2E starts from an isolated empty stack and creates unique fictional data, or
+  from an explicit fictional seed when a suite requires one. It destroys its
+  containers, networks, volumes, and local images. Retries must not hide failure;
+  retained traces/screenshots/video must contain only fictional/redacted content.
 - External AI, email, OAuth, billing, OCR, taxonomy, and monitoring use
   deterministic fakes by default. Separate opt-in provider contract tests use
   non-production credentials and never gate ordinary contributor tests on secrets.
@@ -124,9 +126,170 @@ Capture exact output/exit status in `PLANS.md`. If a host lacks Docker/Make, CI 
 provide additional evidence but the documented setup path remains unverified until
 it runs in a supported environment.
 
-The expanded repository gate passes in the current aligned working tree. The
-earlier foundation baseline remains historical evidence only. Phase 0 stays open
-until the aligned tree is committed and hosted CI passes for that exact revision.
+The expanded repository gate passes in the current aligned working tree. Phase 0
+is closed by hosted CI run `29360385761`; its earlier foundation baseline remains
+historical evidence only.
+
+## Identity and onboarding test plan (Phase 1)
+
+- Backend unit and API tests cover registration/verification, enumeration-safe
+  recovery, Argon2id settings, session rotation/replay-family revocation, one-use
+  tokens, CSRF/origin policy, abuse limits, audit events, owner denial, optimistic
+  updates, Google OAuth validation/collision behavior, and the streamed body cap.
+- Two integration tests use isolated real PostgreSQL and Redis. They are selected
+  explicitly by the full-stack runner and fail when dependency URLs are absent;
+  the fast unit runner does not disguise them as skipped coverage.
+- The migration gate exercises `20260714_0001` to `20260715_0002`, downgrade, and
+  forward re-upgrade, and verifies the runtime image reports one expected head.
+- Web/UI tests cover contract-bound requests, proxy allowlists and failures,
+  validation, loading/empty/success/error feedback, session-bound CSRF, refresh
+  coalescing, protected navigation, and accessible form primitives.
+- The isolated Playwright journey creates a unique fictional user, reads the
+  Mailpit verification link, signs in, persists honest Phase 2 onboarding skips,
+  reaches the real empty dashboard, exercises keyboard/mobile navigation, creates
+  and revokes the exact secondary session, proves its `/me` access fails, logs out,
+  and confirms protected-route denial.
+
+The frozen-tree result is 28 backend, 34 API, 12 worker, 17 web, 8 UI, 3 contract,
+and 4 boundary tests; both real-dependency integrations pass. Playwright reports 9
+passed and 1 intentional desktop-project exclusion for a mobile-only assertion;
+the assertion runs in the mobile project, so no required behavior is skipped.
+`scripts/verify-phase1.ps1` orchestrates the complete local gate and cleans its
+isolated containers, networks, volumes, images, and browser artifacts.
+
+## Resume Health test plan (Phase 2)
+
+- Backend domain tests cover exact owner cardinality, capability hashing and
+  constant-time verification, job transitions/cancellation/dead letter,
+  per-invocation fencing/lease recovery and stale-writer denial, fixed-point score
+  features, persisted feature values/contributions, insufficient-data behavior,
+  bounds, determinism, and two independently asserted golden score cases.
+- Service tests exercise the registered upload/parse/correct/analyze/delete
+  workflow, cross-user denial, guest expiry and explicit claim, account/guest
+  quotas, consent, scheduled retention deletion, outbox publication failure and
+  recovery/dead letter, durable object-cleanup retry/dead letter, busy-delivery
+  handling, claim denial during active/retryable work and lost-response replay,
+  no-op correction and history caps, infected/unavailable scanner handling,
+  retry exhaustion, stale published/lost-retry/expired-lease reconciliation,
+  processing/recovery budget exhaustion, and cancellation. In-memory adapters are
+  deterministic contract fakes; they do not replace the real-provider
+  integration layer.
+- Extractor tests use committed fictional clean PDF, DOCX, and image-only PDF
+  fixtures plus test-generated wrong-signature, malformed, encrypted, polyglot,
+  macro, traversal, expansion-entry, compression-ratio, and timeout inputs. The
+  fixtures and manifest are deterministic and contain no user data.
+- Integration tests use a migrated real PostgreSQL database for owner-scoped
+  repository/job state, private S3-compatible storage for signed upload/promote/
+  download/delete lifecycle, and real ClamAV with an isolated dynamically
+  assembled standard test signature. They fail rather than skip when the Phase 2
+  runner has not supplied its dependencies.
+- API tests cover real policy values, account authentication/owner scope, opaque
+  guest cookie scope and CSRF, neutral HMAC-signed per-source pre-auth/guest-upload
+  rate keys, invalid/absent production signals, correction/analysis rate classes,
+  exact idempotency/`If-Match` bounds, and score response feature-schema/value/
+  contribution/hash/disclaimer behavior. Worker tests cover strict queue
+  envelopes, allowlisted task publication, runtime failure mapping, fencing/busy
+  retry, bounded maintenance inputs, and secure configuration.
+- Web/UI tests cover filename/media/size validation, exact-origin direct upload,
+  byte progress and abort, same-page in-memory intent/finalize retry, loading/
+  empty/success/error states, processing and deletion semantics, immutable
+  correction review, insufficient data, stored measured values and weighted
+  contribution text equivalents, canonical disclaimer, keyboard interaction, and
+  accessible file/progress/tab/dialog/disclosure primitives.
+- Playwright extends the registered Mailpit/account journey through real PDF
+  upload, parse polling, source-preserving correction, reanalysis, report, and
+  dashboard. A separate guest journey covers upload/report, explicit save prompt,
+  and durable deletion without silently transferring data.
+
+The consolidated Phase 2 runner builds an isolated stack, migrates to
+`20260715_0003`, downgrades to `20260715_0002`, re-upgrades, runs real dependency
+integrations, asserts worker policy and anonymous-object denial, proves packaged
+API readiness fails closed while PostgreSQL is stopped and recovers after it is
+restarted, then runs the desktop/mobile journeys:
+
+```powershell
+.\scripts\verify-phase2.ps1
+```
+
+The same-revision local suites pass: 280 unit/API checks, 5 real provider
+integrations, and Playwright 10 passed with 2 intentional project exclusions and
+0 failures. Exact package counts and hosted run `29378312134` are recorded in
+`PLANS.md`; that plan remains the completion evidence.
+
+Security regressions additionally assert that local `web-edge` discards spoofed
+client-address/hop headers and overwrites them with its socket peer, the web
+container has no direct host-published port, identical normalized sources produce
+stable BFF signatures, production fails closed without a real signing secret, and
+HTTP failure/completion logs use route templates without request payloads or
+exception text. An exception-message canary uses normal test-server propagation,
+asserts the marker is absent from both logs and the generic no-store response,
+and proves the exception is not re-raised. Cloud-load-balancer trusted-hop
+behavior remains a deployment test because the local single-hop edge
+intentionally does not trust forwarded addresses.
+The separate source/dependency/image security gate also scans the pinned
+`web-edge` Node Alpine runtime; `verify-phase2.ps1` does not substitute for that
+scan.
+
+## Career record and Evidence Vault coverage (Phase 3)
+
+Phase 3 keeps every Phase 2 gate and adds blocking coverage for the decisions in
+ADR 0009. The focused suites and isolated stack runner implement the following
+coverage; exact closeout results are recorded in `PLANS.md`:
+
+- Domain tests exercise every permitted and forbidden evidence-strength
+  transition, keep archive/delete lifecycle separate from strength, prove that a
+  client or owner confirmation cannot create `Verified`, and require an explicit
+  allowlisted verification-authority decision for that transition.
+- Eligibility tests cover factual and numeric use independently. Inferred,
+  unsupported, archived, deleted, conflicted, unauthorized, and source-unavailable
+  evidence is excluded. Numeric evidence additionally requires confirmed or
+  verified value/range, unit/currency, period, precision, attribution, and any
+  applicable baseline/comparator.
+- Service/repository tests mutate user IDs on profile entities, nested evidence
+  links, conflicts, proposals, achievements, attachments, lists, and usage reads.
+  Unknown and cross-user identifiers return the same result. Stale `If-Match`,
+  incomplete/duplicate reorder sets, concurrent proposal review, and concurrent
+  achievement conversion cannot overwrite or duplicate state.
+- Provenance tests verify source document/snapshot/revision/block/span bounds and
+  digest integrity through the Resume Health application query. Import creates a
+  pending proposal only. Deleting the source keeps accepted career truth but makes
+  source-only Supported evidence ineligible until it is independently confirmed
+  or given another eligible source.
+- Conflict tests cover duplicate experience/title/date, legitimate concurrent
+  roles and promotion sequences, neutral career gaps, and contradictory entity or
+  metric values. Resolution is explicit and audited; no test permits silent
+  mutation of a competing record.
+- Achievement Inbox tests preserve unanswered neutral questions, reject leading
+  or invented metric defaults, validate complete metric dimensions, persist
+  reminder preferences, and convert a reviewed draft into one idempotent Confirmed
+  evidence record.
+- Attachment tests cover signed operation/key/size/type scope, byte signature,
+  malformed/archive-limit/malware/scanner-unavailable failures, clean-state access,
+  cross-user download denial, idempotent finalize, bounded retry/dead letter, and
+  durable private-object cleanup on unlink/delete.
+- API/contract tests cover authenticated CSRF, bounded filters and opaque cursor
+  pagination, strict unknown-field rejection, safe field problems, `If-Match` and
+  idempotency bounds, no public state elevation, generated-contract drift, and
+  redacted audit/log output.
+- Web component tests cover loading, empty, filtered-empty, success, validation,
+  safe failure, rate-limit, and version-conflict recovery states. Timeline and
+  list semantics, state versus eligibility labels, provenance, non-drag reorder,
+  focus restoration/error summaries, reduced motion, long content, and mobile
+  overflow are accessibility gates.
+- Full-stack Playwright creates career data without a resume, adds a skill/project/
+  experience, captures and confirms evidence, and explicitly converts a completed
+  achievement draft into evidence. The Phase 3 primary workflow runs once in the
+  desktop Chromium project; the inherited authentication journey continues to
+  exercise the shared workspace shell on desktop and mobile. Proposal review,
+  private attachment processing, unsupported eligibility, and incomplete drafts
+  are covered in API/domain/component/integration suites rather than overstated as
+  browser coverage.
+
+The migration gate is fresh bootstrap plus
+`20260715_0003 -> 20260715_0004 -> 20260715_0003 -> 20260715_0004`, followed by a
+single-head/drift check. Final local counts and exact commands are recorded in
+`PLANS.md`; hosted CI evidence is recorded separately when an implementation
+revision is published.
 
 ## Backend test portfolio
 
@@ -167,8 +330,9 @@ access.
   application/interview/contact, export/deletion.
 - **Responsive:** large desktop, laptop, tablet, and representative narrow mobile;
   approval/review remains functional even when editing is desktop-optimized.
-- **Accessibility:** automated checks plus manual keyboard/screen-reader review of
-  each primary workflow. Automation alone does not prove WCAG 2.2 AA.
+- **Accessibility:** automated checks plus manual keyboard/rendered review of each
+  primary workflow; representative screen-reader review is required before
+  production release. Automation alone does not prove WCAG 2.2 AA.
 
 Visual regression may protect core shell/templates after the design stabilizes.
 It must mask dynamic timestamps/IDs and cannot replace semantic/accessibility tests.
@@ -202,11 +366,28 @@ symlink/path traversal archive, and EICAR scanner fixtures where the selected
 libraries/formats make them relevant. Malware fixtures run only in isolated
 approved test environments and are never executable.
 
+Phase 2 commits generated fictional one-column PDF, DOCX, and image-only PDF
+fixtures with a checksum manifest. Hostile PDF/DOCX/ZIP cases are assembled in
+isolated unit tests, and the scanner integration assembles the standard antivirus
+test signature at runtime rather than committing it. Two-column, header/footer,
+table-heavy, date-locale, concurrent-role, career-gap, long-resume, unusual-font,
+and bidirectional-Unicode corpus files remain future fixture-matrix coverage;
+they are not implied by the Phase 2 closeout suite.
+
+PDF fixtures exercise the authoritative page cap. The local `python-docx`
+extractor does not expose reliable rendered page count, so DOCX tests instead
+prove upload-byte, archive-entry, expanded-size/ratio, extracted-character/block,
+artifact-size, and runtime bounds. Layout-aware DOCX page-limit coverage waits
+for a rendering provider and must not be inferred from the PDF test.
+
 ## Scoring tests
 
 - Unit test each feature, cap, denominator, state credit, importance, gate,
   threshold, fixed-decimal aggregate, and half-up display rounding.
 - Golden fixtures calculate expected features/components/total independently.
+- Repository/API round trips preserve `resume-health-features/1`, every typed
+  feature value, and exact component feature score/weight/contribution basis
+  points; generated-contract parsers reject malformed or missing trace fields.
 - Property tests assert determinism, `[0,100]` bounds, weight total, no divide-by-
   zero/NaN, expected monotonic behavior, and idempotent reanalysis.
 - Assert unknown/missing/not-applicable differ; insufficient data returns no

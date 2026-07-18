@@ -1,9 +1,8 @@
 # CareerOS implementation plan
 
-Last updated: 2026-07-15
+Last updated: 2026-07-19
 Plan owner: engineering  
-Current status: **Phase 0 complete and verified locally and in hosted CI; Phase 1
-is the active next phase**
+Current status: **Phase 3 complete; Phase 4 is next**
 
 ## Status legend
 
@@ -93,9 +92,9 @@ its expanded local gates pass, and commit `9558f33` passed hosted CI run
   root future-test trees, Terraform, and operations artifacts until their owning
   phases
 
-The Phase 0 dashboard is an unauthenticated, clearly labeled fictional preview.
-It must not imply that authentication, persisted metrics, or product analysis is
-implemented.
+The Phase 0 fictional dashboard remains isolated at `/demo/dashboard`. The real
+`/dashboard` is authenticated and intentionally shows an honest empty state until
+Phase 2 introduces resume processing and analysis.
 
 ### Phase 0 dependencies
 
@@ -182,6 +181,376 @@ revision.
 | `scripts/verify.ps1`                 | Pass   | Complete aligned local runtime gate finished with exit code 0                                                                       |
 | Hosted CI                            | Pass   | Run 29360385761 passed worker, API, supply-chain, web/contracts, browser-smoke, and container jobs against commit `9558f33`         |
 
+## Phase 1 scope and status
+
+### Included
+
+- [x] Owned user/profile, session, refresh, one-time-token, OAuth, organization,
+      membership, consent, audit, and onboarding persistence
+- [x] Email registration, verification/resend, login, rotating sessions,
+      logout/logout-all, recovery, session revocation, and Google OAuth adapter
+- [x] Argon2id password hashing, opaque hashed tokens, replay-family revocation,
+      CSRF/origin enforcement, abuse controls, audit events, and owner scoping
+- [x] Protected responsive workspace, real empty dashboard, profile/session/
+      consent settings, and resumable onboarding with honest Phase 2 handoffs
+- [x] Same-origin web API proxy, generated contract bindings, accessible form and
+      feedback primitives, and loading/empty/success/error states
+- [x] Unit, API, real PostgreSQL/Redis integration, migration round-trip, and
+      desktop/mobile primary-workflow E2E coverage
+
+ADR 0008 records the API-owned opaque-session model, same-origin web proxy,
+cookie/CSRF policy, refresh rotation, provider boundaries, abuse controls, and
+ownership rules. No working Phase 0 behavior was replaced with mock data; the
+fictional preview moved to the explicitly labeled demo route.
+
+### Phase 1 local evidence
+
+Evidence was captured on 2026-07-15 from the frozen working tree. Implementation
+commit `c4bdbe1` and its evidence commit `baab8f7` preserve the same Phase 1
+runtime; hosted run `29367040183` passed all eight checks on `baab8f7`. Phase 1 is
+complete.
+
+| Command / gate                       | Result | Evidence                                                                                                                                             |
+| ------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts/verify-phase1.ps1`          | Pass   | Consolidated gate completed with exit code 0, including quality, contracts, builds, Compose, migration, integration, and browser checks              |
+| Formatting, lint, and strict types   | Pass   | Prettier, Ruff, ESLint/architecture boundaries, strict TypeScript, and mypy passed                                                                   |
+| Unit and API tests                   | Pass   | Backend 28, API 34, worker 12, web 17, UI 8, contracts 3, and ESLint-boundary 4 tests passed                                                         |
+| Real dependency integration          | Pass   | Two identity workflows passed against isolated PostgreSQL and Redis; the generic unit runner has no hidden integration skips                         |
+| Migration `20260715_0002`            | Pass   | Previous revision upgraded to head, downgraded, and re-upgraded; the runtime image migration path reported the expected single head                  |
+| Production builds and runtime        | Pass   | API, worker, and web images built; PostgreSQL, Redis, MinIO, Mailpit, API, worker, and web became healthy; Celery returned `pong`                    |
+| Primary workflow E2E                 | Pass   | Playwright passed 9 checks on desktop/mobile with 1 intentional desktop-only project exclusion and 0 failures                                        |
+| Manual rendered-browser review       | Pass   | Desktop registration, mobile login, the isolated demo, loading state, anonymous redirect, responsive overflow, labels, and visible skip focus passed |
+| Contract and body-limit verification | Pass   | Normalized OpenAPI/generated TypeScript stayed in sync; Content-Length and streamed bodies fail safely above the 1 MiB API limit                     |
+| Security scan                        | Pass   | Gitleaks, high-level pnpm audit, and pip-audit found no actionable issue; all application images passed Grype's fixable-high gate                    |
+| Hosted CI                            | Pass   | Run 29367040183 passed all eight checks, including API, worker, supply-chain, clean web/contracts, browser/auth E2E, and container jobs on `baab8f7` |
+
+The first hosted attempt exposed that local build output had masked a clean-checkout
+contracts prerequisite and that a literal fictional E2E password triggered the
+external secret scanner. The final tree makes consumer typechecks depend on
+dependency builds/typechecks, generates the E2E password per run, removes the
+literal from reachable PR history, and passes both gates.
+
+### Explicitly deferred
+
+- Resume upload, malware admission, parsing, canonical resume state, corrections,
+  and deterministic Resume Health scoring remain Phase 2 work.
+- Live Google credentials are not required for ordinary tests; deterministic
+  provider and adapter tests cover OAuth behavior. Production provider selection
+  and credentials remain deployment decisions.
+- MFA is not presented as implemented. Phase 1 supplies recent-auth and
+  future-compatible session hooks only.
+- Account export/deletion orchestration, production retention durations, billing,
+  administrator tooling, and production deployment remain later-phase work.
+
+## Phase 2 scope and status
+
+Current status: **complete**. Implementation commit `3b8d639` passed the complete
+local gate and hosted CI run `29378312134`. This section does not supersede a
+failed or skipped command.
+
+### Implemented vertical slice
+
+- [x] Migration `20260715_0003` adds guest resume sessions, upload intents,
+      ownership-scoped source documents and derived artifacts, durable processing
+      jobs/outbox and object-cleanup records, immutable canonical snapshots, Resume
+      Health analyses, persisted feature values/component contributions/findings,
+      per-invocation execution leases, and redacted resume audit events with
+      constraints, foreign keys, indexes, and exactly-one-owner checks.
+- [x] Account and guest upload-policy/intent/finalize APIs issue short-lived
+      signed `PUT`s for randomized staging keys, enforce exact size/media/signature,
+      rate/quota/scope, and promote accepted bytes into private randomized
+      quarantine keys without returning permanent credentials or a standalone/
+      unsigned object-key field. The staging key is exposed only inside its
+      short-lived, operation-scoped signed URL.
+- [x] Required ClamAV and guarded local PDF/DOCX extraction run in the restricted
+      worker. Wrong-signature, malformed/encrypted/polyglot, macro, traversal,
+      expansion, PDF-page/universal-character-limit, timeout, malware, and
+      scanner-unavailable cases fail safely. Image-only input is identified; no OCR
+      adapter is enabled.
+- [x] Parse, analyze, and delete use durable owner-scoped jobs with idempotency,
+      progress, bounded retry/dead letter, safe errors, trace IDs,
+      an allowlisted queue envelope, a per-invocation fencing token, and an execution
+      lease longer than the worker hard timeout. A concurrent delivery receives a
+      delayed busy retry; an expired lease can be recovered without allowing its
+      stale predecessor to commit. Transactional outbox publication and object
+      cleanup both use bounded batches, durable attempts, backoff, and terminal
+      dead-letter state. Scheduled dispatch and retention maintenance use the same
+      worker application services. A scheduled database-only reconciler detects
+      stale published queue work, retryable failures with lost retries, and expired
+      running leases; it fences, republishes, or dead-letters them within separate
+      processing and recovery attempt budgets. Parse/analyze jobs support cooperative
+      cancellation; an accepted delete job is intentionally noncancellable.
+- [x] Extraction persists plain-text and reading-order artifacts plus canonical
+      sections/blocks with confidence and source spans. User correction requires
+      optimistic concurrency and creates an immutable successor snapshot without
+      changing the extracted source. Correction and analysis have separate
+      ownership-scoped rate classes; correction rejects an all-no-op request and the
+      domain caps canonical revisions and analysis history per document.
+- [x] Resume Health engine `resume-health/1.0.0` with configuration
+      `resume-health-default/1` uses the exact published fixed-point feature and
+      component formula. Each immutable analysis persists feature schema
+      `resume-health-features/1`, the complete typed feature values, each component's
+      weighted feature contributions, and a feature hash; it exposes deterministic
+      findings/explanations and returns insufficient data rather than a deceptive
+      zero.
+- [x] The account and short-retention guest web workflows implement direct upload
+      progress/abort, processing polling/cancel, document list/empty state,
+      plain-text and reading-order review, source-preserving correction, analysis,
+      report, explicit consented claim, and durable deletion with loading, empty,
+      success, and safe error states.
+- [x] Reports carry the canonical internal-measure disclaimer, real component and
+      finding data, and keyboard/mobile/color-independent accessible summaries.
+      Keyboard-operable disclosure panels expose the stored feature values and exact
+      score/weight/contribution trace rather than relying on color or a chart. No
+      working Phase 1 functionality is replaced with fixture or mock data.
+
+### Architecture decisions realized
+
+- FastAPI remains the OpenAPI authority and thin authorization/validation adapter;
+  generated contracts are consumed by the Next.js feature module.
+- `packages/backend/src/careeros/modules/resume_health` owns framework-free domain
+  rules and application ports/use cases. SQLAlchemy, S3, ClamAV, and Celery
+  adapters point inward; the worker does not import the API.
+- Direct object transfer is split into staging and quarantine. A signed URL grants
+  one key/method/header/TTL-scoped upload operation, never resource ownership;
+  finalize and every worker action recheck durable scope/state.
+- The Compose `web-edge` discards client-selected forwarding headers, derives the
+  source from its socket peer, and is the only host-published web listener. The
+  otherwise unexposed web BFF converts that neutral address into an opaque HMAC-
+  signed source signal; the API verifies it before using it for pre-authentication
+  and first-guest upload abuse controls. The signal is rate-key input, never
+  identity or resource authorization.
+- HTTP observability records only route templates, status/duration, request/trace
+  context, and exception class. Raw paths/queries, bodies, headers, exception
+  messages, signed URLs, document text, and provider payloads are excluded, and
+  payload-bearing library access logs are disabled. An unexpected HTTP exception
+  becomes a generic no-store `internal_error` response at this boundary instead
+  of being re-raised into the server logger.
+- Job creation and queue intent share a database transaction. The bounded,
+  retrying outbox publisher closes the database/broker consistency gap without
+  enqueuing raw document bytes or credentials. Promotion/claim compensation and
+  orphaned staging/quarantine cleanup use durable cleanup rows; explicit document
+  deletion is itself a fenced durable job and adds a staging backstop. Transient
+  object-store failures are retried and eventually visible as job or cleanup
+  dead-letter state rather than silently abandoned.
+- Guest access is an opaque high-entropy capability stored as a keyed hash and
+  delivered in an `HttpOnly` path-scoped cookie. A separate guest CSRF token and
+  exact-origin policy protect mutation. One active guest intake defaults to
+  24-hour retention; explicit account claim requires a ready document, completed
+  analysis, no active/retryable job, consent, and account quota. It rekeys
+  objects, transfers retained content/job history, and only then revokes the
+  guest capability. Prior guest audit records retain their original scope.
+- Canonical correction and score analysis are append-only. Analyses reference one
+  immutable snapshot and one immutable formula/configuration/feature-schema
+  version. Resume mutation headers are bounded consistently: `Idempotency-Key`
+  is 8-128 characters from `[A-Za-z0-9._:-]`, and `If-Match` is a quoted positive
+  PostgreSQL `int4` value no greater than 2147483647.
+
+### Migration and compatibility
+
+`20260715_0003` depends on the verified Phase 1 head `20260715_0002`. It is
+additive and does not rename or remove Phase 1 tables or routes. Its downgrade
+removes Phase 2 data in reverse foreign-key order; production rollback after real
+uploads would therefore require data retention/export review rather than an
+automatic destructive downgrade. The required test path is previous head -> new
+head -> previous head -> new head plus a fresh bootstrap and single-head check.
+
+### Local verification evidence
+
+Evidence was captured on 2026-07-15 from the frozen Phase 2 working tree.
+Implementation commit `3b8d639` passed hosted CI run `29378312134` after the
+complete local gate below.
+
+| Command / gate                                     | Status | Evidence                                                                                                                                                                                                                                                |
+| -------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Frozen installs and lock checks                    | Pass   | Frozen pnpm and root uv workspace installs completed; `uv lock --check` and fixture manifest size/SHA-256 verification passed                                                                                                                           |
+| Formatting and lint                                | Pass   | Prettier, Ruff format/check, ESLint, and executable dependency-boundary checks passed                                                                                                                                                                   |
+| Strict type checking                               | Pass   | TypeScript and mypy passed for the web/contracts/UI and all Python packages                                                                                                                                                                             |
+| Unit and API tests                                 | Pass   | 280 tests passed: backend 88, API 67, worker 54, web 50, UI 12, contracts 3, boundary 4, and edge 2; the generic backend run's 5 explicit provider-environment skips were exercised separately below                                                    |
+| Contract drift and production builds               | Pass   | Normalized OpenAPI/generated TypeScript remained clean; Next.js built 31 routes/pages and all application images built                                                                                                                                  |
+| Migration and real integration                     | Pass   | Fresh bootstrap and `20260715_0002 -> 20260715_0003 -> 20260715_0002 -> 20260715_0003` passed; 5 real PostgreSQL/Redis/MinIO/ClamAV/provider integrations passed                                                                                        |
+| Primary E2E                                        | Pass   | Playwright passed 10 checks with 2 intentional project exclusions and 0 failures across registered/guest desktop/mobile workflows                                                                                                                       |
+| Accessibility and rendered review                  | Pass   | Automated semantics plus manual keyboard/rendered review covered desktop/mobile upload, selection, processing, structured/plain review, and report; labels, skip focus, tabs, disclosures, disclaimer, controls, and overflow passed; no console errors |
+| Runtime and dependency recovery                    | Pass   | Hardened Compose policy, worker and Beat scheduler health, anonymous MinIO denial, packaged readiness HTTP 503 while PostgreSQL was stopped, recovery to HTTP 200, and isolated cleanup passed                                                          |
+| Security scan                                      | Pass   | Separate Gitleaks and Node audits passed; pip-audit found no known vulnerability after `pypdf` 6.13.3; API, worker, web, and `web-edge` passed the Grype fixable-high gate subject to documented reachability exceptions                                |
+| `scripts/verify-phase2.ps1` / `make verify-phase2` | Pass   | Consolidated frozen-tree gate exited 0 in 199.8 seconds after hosted-failure repair, including migration, integration, runtime, browser, build, and cleanup checks                                                                                      |
+| Hosted CI                                          | Pass   | Run `29378312134` passed API, worker, web/contracts, supply-chain, browser-smoke, Resume Health E2E, and container/image jobs on implementation commit `3b8d639`; GitGuardian also passed                                                               |
+
+The first hosted attempt, run `29377566406`, showed that local Docker Compose
+5.1.1 tolerated a healthcheck-disabled Beat service while hosted Compose 2.38.2
+rejected it under `--wait`. The scheduler now has a PID/process-specific
+health probe, both E2E runners assert it explicitly, failure paths retain bounded
+diagnostics before cleanup, and the repaired local and hosted gates pass.
+
+### Known limitations and deferred work
+
+- OCR is an explicit port but no provider is enabled; image-only PDFs produce a
+  parser warning and insufficient-data report rather than invented text.
+- The committed benign corpus covers deterministic one-column PDF, DOCX, and
+  image-only PDF. Additional two-column, header/footer, table-heavy, locale,
+  unusual-font, bidirectional-Unicode, and long-document fixtures remain ongoing
+  parser-compatibility work, not claimed Phase 2 coverage.
+- PDF has an authoritative extractor page-count cap. The local `python-docx`
+  path cannot reliably infer rendered DOCX pages, so DOCX is instead bounded by
+  upload bytes, archive entries, expanded bytes/ratio, extracted characters/
+  blocks, and artifact size. Layout-aware DOCX page enforcement requires a later
+  rendering provider.
+- Resume Health is job-independent document analysis. It does not create the
+  career-profile/evidence source of truth, verify a claim, measure role/job fit,
+  call an AI provider, or predict hiring outcomes.
+- Explicit document deletion covers Phase 2 objects and relational content.
+  Account-wide export/erasure, backups, legal retention, production lifecycle,
+  support access, managed storage/scanner/queue selection, and restore exercises
+  remain Phase 10 release work.
+- Local Compose hardening and ClamAV prove the development contract, not an
+  internet-facing production sandbox or zero-day immunity.
+- The local extractor runs blocking parser code through `asyncio.to_thread`.
+  Its application timeout cancels the await but cannot forcibly stop that Python
+  thread. Celery task limits plus the non-root, read-only, CPU/memory/PID-bounded,
+  no-edge-network worker reduce impact; a killable per-parser subprocess remains
+  security hardening work before production exposure.
+- Upload retry state is intentionally held only in the mounted browser component.
+  An ambiguous transfer/finalize failure can reuse the same intent and finalize
+  key while that page remains mounted, but a lost upload-intent response or page
+  reload can consume quota until the default five-minute intent TTL expires.
+  Phase 2 does not provide chunked or resumable file transfer.
+- The local `web-edge` trusts only its direct socket peer and overwrites every
+  client-selected address header. A cloud load balancer would therefore collapse
+  source attribution to the balancer address until a deployment-specific,
+  allowlisted trusted-hop policy is added; production deployment must not simply
+  start trusting arbitrary forwarding headers.
+
+## Phase 3 scope and status
+
+Current status: **complete**. Implementation commit `0df8bcf` records the Phase 3
+local-verification tree. No-change trigger commit `f752b55` has the identical
+tree and passed hosted CI run `29657932938` on PR #13 against the Phase 2 hosted
+baseline branch `codex/phase-2-resume-health`.
+
+### Implemented vertical slice
+
+- [x] Migration `20260715_0004` adds owner-scoped career profiles, typed career
+      entities and skills, evidence items with immutable revisions/sources/
+      metrics/links/usage/conflicts, resume import proposals, private attachment
+      admission/processing/outbox/cleanup/audit records, achievement drafts,
+      reminder preferences, and Career Record audit events with ownership-aware
+      foreign keys, constraints, indexes, and positive versions.
+- [x] `careeros.modules.career_record` is one transactional bounded context with
+      framework-free domain rules and application ports. It owns career truth,
+      evidence authority, eligibility, conflicts, proposals, Achievement Inbox,
+      reminder preferences, and redacted audit; SQLAlchemy, Resume Health source,
+      S3, ClamAV, extraction, API, and Celery adapters point inward.
+- [x] Career Profile supports profile facts, experience, education, projects,
+      certifications, awards, volunteering, publications, languages, skills,
+      partial year/year-month dates, complete-set accessible reorder, explicit
+      promotion/concurrent-role grouping, neutral gap findings, optimistic
+      concurrency, and owner-scoped CRUD without requiring a resume.
+- [x] Resume-derived changes are copied into versioned pending proposals through
+      an explicit ownership-checked Resume Health source query. Accept, edited
+      accept, and reject are explicit actions; source deletion never rewrites
+      accepted career truth and makes source-only Supported evidence ineligible.
+- [x] Evidence Vault separates active/archive/delete lifecycle from Verified,
+      Confirmed, Supported, Inferred, and Unsupported strength. State transitions,
+      immutable revisions, source availability, numeric dimensions, conflicts,
+      and downstream factual/numeric eligibility are deterministic and owner
+      scoped. Client input and owner confirmation cannot produce `Verified`; no
+      independent verification authority is configured in production.
+- [x] Evidence attachments accept bounded PDF/DOCX only. Short-lived exact-
+      operation signed transfers use randomized private keys; finalize rechecks
+      owner, expiry, size, media type, and signature. A restricted worker scans
+      fail-closed and extracts bounded counts through durable jobs, outbox,
+      execution fencing, bounded retries/dead letters, lost-delivery
+      reconciliation, and durable private-object cleanup. An attachment alone
+      never raises evidence strength or eligibility.
+- [x] Achievement Inbox supports neutral guided capture, durable incomplete
+      drafts, structured metric context, experience/project association, recurring
+      reminder preferences, archive, and an explicit idempotent conversion to one
+      Confirmed evidence item.
+- [x] Authenticated Next.js routes at `/career-profile`, proposal review,
+      `/evidence`, evidence detail, and `/achievement-inbox` use real APIs and
+      implement loading, empty, success, validation, conflict, and safe error
+      states with semantic timelines/tables, keyboard controls, visible labels,
+      focus handling, reduced-motion support, and responsive overflow. No working
+      Phase 1/2 path was replaced with fixtures or mock data.
+
+### Architecture decisions realized
+
+- ADR 0009 extends the source-of-truth, ownership, and asynchronous processing
+  decisions with one Career Record consistency boundary. Account display and
+  search preferences remain in Phase 1 `user_profiles`; factual career
+  presentation belongs to `career_profiles` and is not dual-written.
+- Every public resource identifier is a UUID, every mutable aggregate uses a
+  positive version, and API/service authorization fetches by owner plus ID.
+  Mutations require the existing authenticated session and CSRF policy; nested
+  links validate both ends in the same owner scope and unknown/cross-user IDs are
+  indistinguishable.
+- Evidence strength is server-derived. Manual/URL claims begin Inferred, exact
+  validated resume spans can begin Supported, owner attestation can become
+  Confirmed, and only the unconfigured server-side verification-authority port
+  could produce Verified. Material edits invalidate prior strength by creating an
+  immutable Inferred revision.
+- Downstream modules receive evidence through the owner-scoped application
+  eligibility query rather than ORM filtering or a client-selected state. Open
+  conflicts, unavailable provenance, archive/delete lifecycle, Inferred, and
+  Unsupported are excluded; numeric use additionally requires complete decimal
+  value/unit/period/precision/attribution context and confirmation.
+- Career Record attachments deliberately have separate persistence from Resume
+  Health documents while using provider-neutral storage/scanner/extractor ports.
+  The worker queue payload contains durable identifiers only, and a scheduled
+  database-only reconciler repairs lost delivery or expired leases within
+  separate processing/recovery budgets.
+
+### Migration and compatibility
+
+`20260715_0004` depends on the verified Phase 2 head `20260715_0003`. It is
+additive: Phase 1/2 tables and routes are neither renamed nor removed. Fresh
+bootstrap and the required `0003 -> 0004 -> 0003 -> 0004` path have been exercised
+locally. The downgrade deletes Phase 3 relational data in dependency order;
+production rollback after real career/evidence content therefore requires export,
+retention, and forward-repair review rather than an automatic downgrade.
+
+### Verification evidence and remaining gate
+
+The preceding Phase 2 acceptance criteria were rechecked before Phase 3 edits:
+the complete Phase 2 verifier passed in 208.5 seconds. Focused Phase 3 evidence
+captured during implementation, the final local closeout result, and hosted CI
+evidence are listed below.
+
+| Command / gate                                     | Status | Evidence                                                                                                                                                                                                                                                                                                                                                         |
+| -------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pre-edit `scripts/verify-phase2.ps1`               | Pass   | The complete Phase 2 migration, integration, runtime, browser, build, and cleanup baseline remained green in 208.5 seconds.                                                                                                                                                                                                                                      |
+| Backend unit/architecture suites                   | Pass   | Ruff and mypy passed; 132 backend architecture/unit tests passed, including Career Record state, eligibility, ownership, concurrency, grouping, proposals, conflicts, achievements, migration shape, and attachment workflow tests. Final local closeout rerun: 132 passed in 4.30 seconds.                                                                      |
+| Worker unit suite                                  | Pass   | Ruff and mypy passed; 63 worker tests passed, including attachment queue routing, bounded task behavior, production composition, outbox, cleanup, fencing, and stale-job reconciliation. Final local closeout rerun: 63 passed in 1.18 seconds.                                                                                                                  |
+| API focused/full iteration                         | Pass   | The final-tree API suite passed 92 tests in 8.97 seconds with one non-blocking Starlette/httpx2 deprecation warning. It includes the production Career Record and attachment workflow composition test.                                                                                                                                                          |
+| Web quality, component, and build                  | Pass   | Prettier, generated-contract drift, ESLint/boundary checks, TypeScript, 3 contract tests, 12 UI tests, 81 web tests, 2 web-edge tests, and the production Next.js build passed with all Phase 3 routes present.                                                                                                                                                  |
+| Real dependency integration                        | Pass   | 11 PostgreSQL/Redis/MinIO/ClamAV provider/repository integrations passed in 2.55 seconds. Fresh migration, `0004 -> 0003 -> 0004` round trip, container migration idempotency, runtime probes, and Celery broker ping all passed.                                                                                                                                |
+| Primary Phase 3 E2E                                | Pass   | The isolated Playwright run passed 4 workflows in 55.1 seconds with 2 intentional mobile skips: desktop auth/onboarding, desktop Career Record, guest Resume Health, and mobile auth passed. The Career Record workflow registers and verifies a user, creates profile/skill/project/experience data, confirms evidence, and explicitly converts an achievement. |
+| `scripts/verify-phase3.ps1` / `make verify-phase3` | Pass   | `scripts/verify-phase3.ps1` passed locally on 2026-07-19 against the documentation-aligned tree. It ran the full repository gate followed by the isolated Phase 3 migration, integration, runtime, and browser workflow.                                                                                                                                         |
+| Hosted CI                                          | Pass   | Run `29657932938` passed supply-chain, API, web/contracts, worker, browser-smoke, Resume Health E2E, Career Record E2E, and container/image jobs on no-change trigger commit `f752b55`, whose tree is identical to implementation commit `0df8bcf`; GitGuardian also passed on PR #13.                                                                           |
+
+### Known limitations and deferred work
+
+- No independent verification provider or operating process is configured.
+  Production evidence can be Confirmed or Supported but not Verified; owner
+  confirmation is intentionally not relabeled as independent verification.
+- Evidence attachments accept PDF and DOCX only and use the local ClamAV and
+  bounded parser adapters. OCR is disabled, DOCX has no authoritative rendered
+  page count, and parser timeouts still use `asyncio.to_thread` rather than a
+  killable per-file subprocess. These are not production-sandbox guarantees.
+- Phase 3 records an external HTTP(S) URL only as provenance metadata; it does not
+  fetch the URL. SSRF-hardened job import belongs to Phase 5.
+- The Phase 3 attachment intent is kept in the mounted page, not durable browser
+  storage. Reload after admission can consume one attachment slot until the
+  default ten-minute intent expires; multipart/resumable upload is absent.
+- The career-record Playwright primary workflow is desktop-only. Existing shared
+  workspace navigation and responsive component coverage exercise mobile paths,
+  but there is no separate mobile run of proposal review, private attachment
+  processing, or the complete career journey.
+- Complete account export/erasure, backup retention and restore, legal holds,
+  production storage/scanner/queue selection, and administrator support access
+  remain Phase 10 work. Phase 3 owner-scoped delete and object cleanup do not
+  substitute for account-wide orchestration.
+
 ## Roadmap and phase gates
 
 | Phase                                                       | Outcomes                                                                                                                           | Depends on  | Exit evidence                                                                                          |
@@ -229,39 +598,41 @@ Detailed checkboxes live in `docs/implementation-checklist.md`.
   later deployment ADR and load/failure testing.
 - MinIO is local object storage. Production object storage remains S3-compatible
   and private, with tenant-prefixed randomized keys and short-lived signed URLs.
-- “Optional malware scanner service” in local Compose does not make scanning
-  optional for production uploads. Phase 2 must fail closed or quarantine when a
-  required scanner is unavailable.
+- ClamAV is required by the Phase 2 local stack. The processor fails closed and
+  retains quarantine during bounded retry when the scanner is unavailable.
+  Production scanner/service selection still requires deployment review.
 - “Current stable dependencies” and reproducibility are reconciled by selecting
   conservative stable compatible releases and tracking exact lockfiles.
-- Guest resume health will use an opaque, short-lived capability and strict
-  retention; it must not weaken registered-user ownership boundaries.
+- Guest Resume Health uses a keyed-hash opaque, short-lived capability, separate
+  CSRF/origin checks, one active intake, and strict retention without weakening
+  registered-user ownership boundaries.
 - The UI image directs hierarchy and visual language only. Its sample names,
   scores, jobs, and claims are not requirements or real data.
-- No real AI, OAuth, email, billing, or taxonomy credential is required for Phase
-  0; future phases provide environment-selected interfaces and deterministic
-  local/fake adapters.
+- Mailpit exercises real local SMTP delivery without external email credentials.
+  Google OAuth is disabled unless its complete provider configuration is supplied,
+  and deterministic adapters cover ordinary tests. AI, billing, taxonomy, and
+  production provider credentials remain later-phase/deployment decisions.
 
 ## Risk register
 
-| ID  | Risk                                                             | Likelihood / impact | Mitigation and gate                                                                                                                       | Earliest owner phase   |
-| --- | ---------------------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| R1  | Cross-tenant data exposure through IDOR or object keys           | Medium / Critical   | Ownership-scoped queries, policy tests, private buckets, audit events                                                                     | 1 and every data phase |
-| R2  | Malicious or resource-exhausting documents                       | High / Critical     | Signature/limit checks, scanning, isolated no-network worker, time/memory/CPU caps, hostile fixtures                                      | 2                      |
-| R3  | AI fabricates or is redirected by document instructions          | High / Critical     | Untrusted-content delimiters, strict schemas, evidence ledger, deterministic grounding, adversarial tests                                 | 5–6                    |
-| R4  | Score labels mislead users                                       | Medium / High       | Canonical disclaimer, deterministic versioned formulas, explanations, no probability language                                             | 2, 4, 5                |
-| R5  | PDF/DOCX looks correct but parses badly                          | High / High         | Constrained templates, searchable text, round-trip verification and blocking critical failures                                            | 7                      |
-| R6  | Dependency/toolchain churn breaks the greenfield baseline        | Medium / Medium     | Conservative pins, lockfiles, CI cache keys, scheduled upgrades in small changes                                                          | 0 onward               |
-| R7  | Queue retry duplicates work or cost                              | Medium / High       | Idempotency records, bounded retries/timeouts, job state machine, budgets and dead letters                                                | 2 onward               |
-| R8  | Sensitive content leaks through logs/telemetry/providers         | Medium / Critical   | Data classification, default redaction, payload-free telemetry, provider minimization and consent                                         | 0 onward               |
-| R9  | Local Compose health hides production gaps                       | High / High         | Separate readiness, production threat review, load/restore/failure tests, protected deploy                                                | 10                     |
-| R10 | Broad roadmap produces unfinished horizontal scaffolding         | High / Medium       | One vertical phase at a time, dependency gates, no completion on placeholders                                                             | Every phase            |
-| R11 | Public Phase 0 demo is mistaken for functional analysis          | Medium / Medium     | Persistent fictional-preview label; no upload/score claims or data persistence                                                            | 0–1                    |
-| R12 | Retention/deletion becomes inconsistent across stores            | Medium / High       | Data inventory, deletion tombstones/jobs, object/vector/backup policy and tests per entity                                                | 1 onward               |
-| R13 | Generated contracts drift from implemented OpenAPI               | Medium / High       | FastAPI remains authoritative; pin normalized export/client generation and fail CI on either drift                                        | 0 onward               |
-| R14 | Hosted CI and local behavior diverge after architecture changes  | Low / Medium        | Run 29360385761 verified the aligned implementation; keep clean-checkout container, migration, browser, and supply-chain jobs required    | 0 onward               |
-| R15 | Upstream runtime findings do not all have supported stable fixes | Low / High          | Two exact-version Grype exceptions document reachability and removal conditions; monitor remaining findings and refresh runtimes promptly | 0–1                    |
-| R16 | Workspace/migration move regresses runtime or existing databases | Medium / High       | One root lock, preserved revision IDs, fresh/existing upgrade tests, root-context image builds, and direct runtime Alembic verification   | 0                      |
+| ID  | Risk                                                             | Likelihood / impact | Mitigation and gate                                                                                                                                                                                                                                    | Earliest owner phase   |
+| --- | ---------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------- |
+| R1  | Cross-tenant data exposure through IDOR or object keys           | Medium / Critical   | Ownership-scoped queries, policy tests, private buckets, audit events                                                                                                                                                                                  | 1 and every data phase |
+| R2  | Malicious or resource-exhausting documents                       | High / Critical     | Signature/limit checks, scanning, isolated no-network worker, time/memory/CPU caps, hostile fixtures                                                                                                                                                   | 2                      |
+| R3  | AI fabricates or is redirected by document instructions          | High / Critical     | Untrusted-content delimiters, strict schemas, evidence ledger, deterministic grounding, adversarial tests                                                                                                                                              | 5–6                    |
+| R4  | Score labels mislead users                                       | Medium / High       | Canonical disclaimer, deterministic versioned formulas, explanations, no probability language                                                                                                                                                          | 2, 4, 5                |
+| R5  | PDF/DOCX looks correct but parses badly                          | High / High         | Constrained templates, searchable text, round-trip verification and blocking critical failures                                                                                                                                                         | 7                      |
+| R6  | Dependency/toolchain churn breaks the greenfield baseline        | Medium / Medium     | Conservative pins, lockfiles, CI cache keys, scheduled upgrades in small changes                                                                                                                                                                       | 0 onward               |
+| R7  | Queue retry duplicates work or cost                              | Medium / High       | Idempotency records, bounded retries/timeouts, job state machine, budgets and dead letters                                                                                                                                                             | 2 onward               |
+| R8  | Sensitive content leaks through logs/telemetry/providers         | Medium / Critical   | Data classification, default redaction, payload-free telemetry, provider minimization and consent                                                                                                                                                      | 0 onward               |
+| R9  | Local Compose health hides production gaps                       | High / High         | Separate readiness, production threat review, load/restore/failure tests, protected deploy                                                                                                                                                             | 10                     |
+| R10 | Broad roadmap produces unfinished horizontal scaffolding         | High / Medium       | One vertical phase at a time, dependency gates, no completion on placeholders                                                                                                                                                                          | Every phase            |
+| R11 | Public demo is mistaken for functional analysis                  | Medium / Medium     | Isolate it at `/demo/dashboard`, retain the fictional-preview label, and keep it free of upload/score claims or account persistence                                                                                                                    | 0–1                    |
+| R12 | Retention/deletion becomes inconsistent across stores            | Medium / High       | Data inventory, deletion tombstones/jobs, object/vector/backup policy and tests per entity                                                                                                                                                             | 1 onward               |
+| R13 | Generated contracts drift from implemented OpenAPI               | Medium / High       | FastAPI remains authoritative; pin normalized export/client generation and fail CI on either drift                                                                                                                                                     | 0 onward               |
+| R14 | Hosted CI and local behavior diverge after architecture changes  | Low / Medium        | Runs 29360385761, 29367040183, 29378312134, and 29657932938 verify foundation through Phase 3; Beat liveness is now asserted consistently across Compose versions; retain clean contract-output, container, migration, browser, and supply-chain gates | 0 onward               |
+| R15 | Upstream runtime findings do not all have supported stable fixes | Low / High          | Two exact-version Grype exceptions document reachability and removal conditions; monitor remaining findings and refresh runtimes promptly                                                                                                              | 0–1                    |
+| R16 | Workspace/migration move regresses runtime or existing databases | Medium / High       | One root lock, preserved revision IDs, fresh/existing upgrade tests, root-context image builds, and direct runtime Alembic verification                                                                                                                | 0                      |
 
 ## Change and verification protocol
 
@@ -279,8 +650,9 @@ At the end of every phase:
 
 ## Next phase
 
-The next work is **Phase 1 — Authentication, Application Shell, and Onboarding**.
-Begin with the identity/session data model, threat-model controls, and cross-user
-authorization harness; then deliver registration, verification, login, recovery,
-session management, the protected responsive shell, and persisted onboarding as
-one production-quality vertical slice.
+Phase 3 is locally and hosted verified. The next product phase is **Phase 4 -
+Role Explorer and Role Readiness**. It will introduce a licensed/versioned role
+taxonomy, role search/save/compare, and deterministic readiness snapshots that
+consume only the Phase 3 owner-scoped evidence-eligibility query. Every strength,
+gap, unknown, transition, and score component must remain explainable without
+presenting readiness as a hiring probability.

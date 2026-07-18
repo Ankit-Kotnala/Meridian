@@ -18,7 +18,7 @@ test("public landing page presents the core promise", async ({ page }) => {
 test("dashboard is explicit about fictional data and score limits", async ({
   page,
 }) => {
-  await page.goto("/dashboard");
+  await page.goto("/demo/dashboard");
 
   await expect(
     page.getByText(/fictional demo data · product preview only/i),

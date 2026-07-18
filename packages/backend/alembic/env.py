@@ -9,6 +9,13 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from careeros.foundation.config import database_url_from_environment
 from careeros.foundation.database import Base
+from careeros.modules.career_record.infrastructure import (
+    models as career_record_models,  # noqa: F401
+)
+from careeros.modules.identity.infrastructure import models as identity_models  # noqa: F401
+from careeros.modules.resume_health.infrastructure import (
+    models as resume_health_models,  # noqa: F401
+)
 
 config = context.config
 

@@ -10,27 +10,46 @@ export const buttonStyles = {
     "border border-line bg-white text-foreground shadow-sm hover:border-primary/40 hover:bg-primary-soft/50",
   ghost: "text-muted hover:bg-slate-100 hover:text-foreground",
   dark: "bg-navy text-white hover:bg-navy-hover",
+  danger:
+    "bg-danger text-white shadow-[0_8px_24px_rgba(190,24,93,.18)] hover:bg-danger/90",
 } as const;
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode;
+  loading?: boolean;
+  loadingLabel?: string;
   variant?: keyof typeof buttonStyles;
 };
 
 export function Button({
   children,
   className,
+  disabled,
+  loading = false,
+  loadingLabel = "Working…",
   type = "button",
   variant = "primary",
   ...props
 }: ButtonProps) {
   return (
     <button
+      aria-busy={loading || undefined}
       className={cn(buttonStyles.base, buttonStyles[variant], className)}
+      disabled={disabled || loading}
       type={type}
       {...props}
     >
-      {children}
+      {loading ? (
+        <>
+          <span
+            aria-hidden="true"
+            className="size-4 animate-spin rounded-full border-2 border-current border-r-transparent"
+          />
+          <span>{loadingLabel}</span>
+        </>
+      ) : (
+        children
+      )}
     </button>
   );
 }

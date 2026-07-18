@@ -31,6 +31,9 @@ def test_connection_urls_are_redacted() -> None:
         {
             "broker_url": "redis://:private@redis:6379/0",
             "result_backend": "redis://:private@redis:6379/1",
+            "database_url": "postgresql+asyncpg://careeros:private@postgres:5432/careeros",
+            "s3_access_key_id": "private-access",
+            "s3_secret_access_key": "private-storage-secret",
         }
     )
 
@@ -48,12 +51,12 @@ def test_soft_time_limit_must_precede_hard_limit() -> None:
 
 
 def test_production_rejects_local_connection_defaults() -> None:
-    with pytest.raises(ValidationError, match="production requires"):
+    with pytest.raises(ValidationError, match=r"production|Production"):
         WorkerSettings.model_validate({"environment": "production"})
 
 
 def test_production_rejects_compose_redis_service_defaults() -> None:
-    with pytest.raises(ValidationError, match="production requires"):
+    with pytest.raises(ValidationError, match=r"production|Production"):
         WorkerSettings.model_validate(
             {
                 "environment": "production",
@@ -69,7 +72,97 @@ def test_production_accepts_explicit_non_local_redis_urls() -> None:
             "environment": "production",
             "broker_url": "rediss://broker.internal.example:6380/0",
             "result_backend": "rediss://backend.internal.example:6380/1",
+            "database_url": (
+                "postgresql+asyncpg://careeros:production-credential@"
+                "postgres.internal.example:5432/careeros"
+            ),
+            "s3_endpoint_url": "https://s3.internal.example",
+            "s3_public_endpoint_url": "https://uploads.example.com",
+            "s3_use_ssl": True,
+            "s3_secret_access_key": "production-storage-secret",
+            "malware_scanner_provider": "clamav",
+            "clamav_host": "scanner.internal.example",
         }
     )
 
     assert settings.environment == "production"
+
+
+def test_document_limits_and_scanner_settings_are_bounded() -> None:
+    settings = WorkerSettings.model_validate(
+        {
+            "document_max_bytes": 2_000_000,
+            "document_max_uncompressed_bytes": 8_000_000,
+            "document_max_pages": 12,
+            "document_max_archive_entries": 100,
+            "document_max_compression_ratio": 25,
+            "document_max_extracted_characters": 250_000,
+            "document_max_extracted_blocks": 2_500,
+            "document_max_serialized_artifact_bytes": 1_048_576,
+            "resume_job_reconciliation_interval_seconds": 30,
+            "resume_job_reconciliation_stale_seconds": 600,
+            "attachment_job_reconciliation_interval_seconds": 45,
+            "attachment_job_reconciliation_stale_seconds": 720,
+            "malware_scanner_provider": "clamav",
+            "clamav_host": "scanner",
+            "clamav_timeout_seconds": 15,
+        }
+    )
+
+    assert settings.malware_scanner_provider == "clamav"
+    assert settings.document_max_pages == 12
+    assert settings.document_max_extracted_blocks == 2_500
+    assert settings.document_max_serialized_artifact_bytes == 1_048_576
+    assert settings.resume_job_reconciliation_interval_seconds == 30
+    assert settings.resume_job_reconciliation_stale_seconds == 600
+    assert settings.attachment_job_reconciliation_interval_seconds == 45
+    assert settings.attachment_job_reconciliation_stale_seconds == 720
+    assert settings.document_temp_root.as_posix() == "/tmp/careeros"  # noqa: S108
+
+
+@pytest.mark.parametrize(
+    ("values", "message"),
+    [
+        (
+            {
+                "document_max_bytes": 5_000_000,
+                "document_max_uncompressed_bytes": 4_000_000,
+            },
+            "expansion limit",
+        ),
+        ({"document_temp_root": "relative/path"}, "absolute path"),
+        (
+            {
+                "document_processing_timeout_seconds": 270,
+                "task_soft_time_limit_seconds": 270,
+            },
+            "processing timeout",
+        ),
+        ({"clamav_host": "http://scanner:3310"}, "hostname"),
+        ({"s3_public_endpoint_url": "http://user:secret@localhost:9000"}, "credentials"),
+    ],
+)
+def test_unsafe_document_configuration_is_rejected(values: dict[str, object], message: str) -> None:
+    with pytest.raises(ValidationError, match=message):
+        WorkerSettings.model_validate(values)
+
+
+def test_production_cannot_disable_required_malware_scanning() -> None:
+    with pytest.raises(ValidationError, match="ClamAV scanning must be enabled"):
+        WorkerSettings.model_validate(
+            {
+                "environment": "production",
+                "broker_url": "rediss://broker.internal.example:6380/0",
+                "result_backend": "rediss://backend.internal.example:6380/1",
+                "database_url": (
+                    "postgresql+asyncpg://careeros:production-credential@"
+                    "postgres.internal.example:5432/careeros"
+                ),
+                "s3_endpoint_url": "https://s3.internal.example",
+                "s3_public_endpoint_url": "https://uploads.example.com",
+                "s3_use_ssl": True,
+                "s3_secret_access_key": "production-storage-secret",
+                "malware_scanner_provider": "disabled",
+                "clamav_host": "scanner.internal.example",
+            }
+        )

@@ -7,6 +7,7 @@ from careeros.foundation.config import (
     database_url_from_environment,
     parse_async_postgresql_url,
 )
+from careeros.foundation.database import Database
 
 ASYNC_DATABASE_URL = "postgresql+asyncpg://app:secret@database:5432/careeros"
 
@@ -15,6 +16,12 @@ def test_database_options_redact_the_url_from_repr() -> None:
     options = DatabaseOptions(url=ASYNC_DATABASE_URL)
 
     assert "secret" not in repr(options)
+
+
+def test_database_engine_hides_bound_parameters_from_errors_and_logs() -> None:
+    database = Database(DatabaseOptions(url=ASYNC_DATABASE_URL))
+
+    assert database._engine.sync_engine.hide_parameters is True
 
 
 def test_database_url_environment_aliases_are_supported() -> None:

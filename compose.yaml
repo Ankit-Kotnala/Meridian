@@ -9,14 +9,68 @@ x-app-environment: &app-environment
   CAREEROS_TRUSTED_HOSTS: '["localhost","127.0.0.1","testserver","api"]'
   DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://careeros:change-me-local-only@postgres:5432/careeros}
   REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+  CAREEROS_REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
   CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
   CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/1}
+  CAREEROS_S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-http://minio:9000}
+  CAREEROS_S3_PUBLIC_ENDPOINT_URL: ${S3_PUBLIC_ENDPOINT_URL:-http://localhost:9000}
+  CAREEROS_S3_REGION: ${S3_REGION:-us-east-1}
+  CAREEROS_S3_BUCKET: ${S3_BUCKET:-careeros-documents}
+  CAREEROS_S3_ACCESS_KEY_ID: ${S3_APP_ACCESS_KEY_ID:-careeros-app}
+  CAREEROS_S3_SECRET_ACCESS_KEY: ${S3_APP_SECRET_ACCESS_KEY:-change-me-local-only-app-storage-secret}
+  CAREEROS_S3_USE_SSL: ${S3_USE_SSL:-false}
   S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-http://minio:9000}
+  S3_PUBLIC_ENDPOINT_URL: ${S3_PUBLIC_ENDPOINT_URL:-http://localhost:9000}
   S3_REGION: ${S3_REGION:-us-east-1}
   S3_BUCKET: ${S3_BUCKET:-careeros-documents}
-  S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-careeros-local}
-  S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-change-me-local-only}
+  S3_ACCESS_KEY_ID: ${S3_APP_ACCESS_KEY_ID:-careeros-app}
+  S3_SECRET_ACCESS_KEY: ${S3_APP_SECRET_ACCESS_KEY:-change-me-local-only-app-storage-secret}
   S3_USE_SSL: ${S3_USE_SSL:-false}
+  CAREEROS_MALWARE_SCANNER_PROVIDER: ${MALWARE_SCANNER_PROVIDER:-clamav}
+  CAREEROS_CLAMAV_HOST: ${CLAMAV_HOST:-clamav}
+  CAREEROS_CLAMAV_PORT: ${CLAMAV_PORT_INTERNAL:-3310}
+  CAREEROS_CLAMAV_TIMEOUT_SECONDS: ${CLAMAV_TIMEOUT_SECONDS:-30}
+  CAREEROS_DOCUMENT_TEMP_ROOT: ${DOCUMENT_TEMP_ROOT:-/tmp/careeros}
+  CAREEROS_DOCUMENT_MAX_BYTES: ${DOCUMENT_MAX_BYTES:-10485760}
+  CAREEROS_DOCUMENT_MAX_PAGES: ${DOCUMENT_MAX_PAGES:-8}
+  CAREEROS_DOCUMENT_MAX_ARCHIVE_ENTRIES: ${DOCUMENT_MAX_ARCHIVE_ENTRIES:-256}
+  CAREEROS_DOCUMENT_MAX_UNCOMPRESSED_BYTES: ${DOCUMENT_MAX_UNCOMPRESSED_BYTES:-52428800}
+  CAREEROS_DOCUMENT_MAX_COMPRESSION_RATIO: ${DOCUMENT_MAX_COMPRESSION_RATIO:-100}
+  CAREEROS_DOCUMENT_MAX_EXTRACTED_CHARACTERS: ${DOCUMENT_MAX_EXTRACTED_CHARACTERS:-500000}
+  CAREEROS_DOCUMENT_MAX_EXTRACTED_BLOCKS: ${DOCUMENT_MAX_EXTRACTED_BLOCKS:-5000}
+  CAREEROS_DOCUMENT_MAX_SERIALIZED_ARTIFACT_BYTES: ${DOCUMENT_MAX_SERIALIZED_ARTIFACT_BYTES:-2097152}
+  CAREEROS_DOCUMENT_PROCESSING_TIMEOUT_SECONDS: ${DOCUMENT_PROCESSING_TIMEOUT_SECONDS:-120}
+  CAREEROS_RESUME_JOB_RECONCILIATION_INTERVAL_SECONDS: ${RESUME_JOB_RECONCILIATION_INTERVAL_SECONDS:-60}
+  CAREEROS_RESUME_JOB_RECONCILIATION_STALE_SECONDS: ${RESUME_JOB_RECONCILIATION_STALE_SECONDS:-300}
+  CAREEROS_ATTACHMENT_JOB_RECONCILIATION_INTERVAL_SECONDS: ${ATTACHMENT_JOB_RECONCILIATION_INTERVAL_SECONDS:-60}
+  CAREEROS_ATTACHMENT_JOB_RECONCILIATION_STALE_SECONDS: ${ATTACHMENT_JOB_RECONCILIATION_STALE_SECONDS:-300}
+  TMPDIR: ${DOCUMENT_TEMP_ROOT:-/tmp/careeros}
+  MALWARE_SCANNER_PROVIDER: ${MALWARE_SCANNER_PROVIDER:-clamav}
+  CLAMAV_HOST: ${CLAMAV_HOST:-clamav}
+  CLAMAV_PORT: ${CLAMAV_PORT_INTERNAL:-3310}
+  CAREEROS_AUTH_TOKEN_PEPPER: ${AUTH_TOKEN_PEPPER:-change-me-local-only-auth-token-pepper}
+  CAREEROS_RESUME_CAPABILITY_PEPPER: ${RESUME_CAPABILITY_PEPPER:-change-me-local-only-resume-capability-pepper}
+  CAREEROS_BFF_CLIENT_SIGNAL_SECRET: ${BFF_CLIENT_SIGNAL_SECRET:-change-me-local-only-bff-client-signal-secret}
+  CAREEROS_ALLOWED_ORIGINS: '${ALLOWED_ORIGINS:-["http://localhost:3000"]}'
+  CORS_ORIGINS: '${CORS_ORIGINS:-["http://localhost:3000"]}'
+  CAREEROS_COOKIE_SECURE: ${COOKIE_SECURE:-false}
+  CAREEROS_SESSION_TTL_SECONDS: ${SESSION_TTL_SECONDS:-900}
+  CAREEROS_REFRESH_TTL_SECONDS: ${REFRESH_TTL_SECONDS:-2592000}
+  CAREEROS_RECENT_AUTH_TTL_SECONDS: ${RECENT_AUTH_TTL_SECONDS:-600}
+  CAREEROS_AUTH_RATE_LIMIT_WINDOW_SECONDS: ${AUTH_RATE_LIMIT_WINDOW_SECONDS:-300}
+  CAREEROS_EMAIL_PROVIDER: ${EMAIL_PROVIDER:-smtp}
+  CAREEROS_EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-no-reply@careeros.local}
+  CAREEROS_SMTP_HOST: ${SMTP_HOST:-mailpit}
+  CAREEROS_SMTP_PORT: ${SMTP_PORT:-1025}
+  CAREEROS_SMTP_USERNAME: ${SMTP_USERNAME:-}
+  CAREEROS_SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  CAREEROS_SMTP_START_TLS: ${SMTP_START_TLS:-false}
+  CAREEROS_PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:3000}
+  CAREEROS_GOOGLE_OAUTH_ENABLED: ${GOOGLE_OAUTH_ENABLED:-false}
+  CAREEROS_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+  CAREEROS_GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+  CAREEROS_GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:3000/api/v1/auth/google/callback}
+  CAREEROS_CONSENT_POLICY_VERSION: ${CONSENT_POLICY_VERSION:-2026-07-15}
 
 services:
   postgres:
@@ -35,6 +89,7 @@ services:
       timeout: 5s
       retries: 12
     restart: unless-stopped
+    networks: [backend, host-services]
 
   redis:
     image: redis:8.2-alpine@sha256:223b183cbc49f5ff48728e1fc52ccf101f05072decad2bd9867281a3c9bf75fd
@@ -49,6 +104,7 @@ services:
       timeout: 3s
       retries: 12
     restart: unless-stopped
+    networks: [backend, host-services]
 
   minio:
     image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z@sha256:a1ea29fa28355559ef137d71fc570e508a214ec84ff8083e39bc5428980b015e
@@ -56,6 +112,7 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-careeros-local}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me-local-only}
+      MINIO_API_CORS_ALLOW_ORIGIN: ${S3_ALLOWED_ORIGIN:-http://localhost:3000}
     ports:
       - "127.0.0.1:${MINIO_API_PORT:-9000}:9000"
       - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001"
@@ -67,6 +124,7 @@ services:
       timeout: 5s
       retries: 20
     restart: unless-stopped
+    networks: [backend, host-services]
 
   minio-init:
     image: quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z@sha256:aead63c77f9db9107f1696fb08ecb0faeda23729cde94b0f663edf4fe09728e3
@@ -77,13 +135,51 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-careeros-local}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me-local-only}
       S3_BUCKET: ${S3_BUCKET:-careeros-documents}
+      S3_ACCESS_KEY_ID: ${S3_APP_ACCESS_KEY_ID:-careeros-app}
+      S3_SECRET_ACCESS_KEY: ${S3_APP_SECRET_ACCESS_KEY:-change-me-local-only-app-storage-secret}
+      S3_ALLOWED_ORIGIN: ${S3_ALLOWED_ORIGIN:-http://localhost:3000}
+      MC_CONFIG_DIR: /tmp/.mc
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=1048576,mode=0700
+    volumes:
+      - ./infra/docker/minio/app-policy.json.template:/config/app-policy.json.template:ro
     entrypoint: >-
       /bin/sh -c '
+      set -eu;
+      case "$${S3_BUCKET}" in
+        [a-z0-9][a-z0-9.-]*[a-z0-9]) ;;
+        *) echo "S3_BUCKET must be a valid lowercase bucket name." >&2; exit 2 ;;
+      esac;
+      case "$${S3_ALLOWED_ORIGIN}" in
+        http://localhost:*|http://127.0.0.1:*|https://*) ;;
+        *) echo "S3_ALLOWED_ORIGIN must be one exact HTTP local or HTTPS origin." >&2; exit 2 ;;
+      esac;
+      case "$${S3_ALLOWED_ORIGIN}" in *\<*|*\>*|*\&*) echo "S3_ALLOWED_ORIGIN contains unsafe XML characters." >&2; exit 2 ;; esac;
+      if [ "$${S3_ACCESS_KEY_ID}" = "$${MINIO_ROOT_USER}" ]; then
+        echo "The application object-store identity must differ from the MinIO root identity." >&2;
+        exit 2;
+      fi;
       mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}";
       mc mb --ignore-existing "local/$${S3_BUCKET}";
       mc anonymous set none "local/$${S3_BUCKET}";
+      while IFS= read -r line || [ -n "$${line}" ]; do
+        line=$${line//__BUCKET__/$${S3_BUCKET}};
+        printf "%s\n" "$${line}";
+      done < /config/app-policy.json.template > /tmp/app-policy.json;
+      mc admin policy create local careeros-documents-app /tmp/app-policy.json;
+      if mc admin user info local "$${S3_ACCESS_KEY_ID}" >/dev/null 2>&1; then
+        mc admin user rm local "$${S3_ACCESS_KEY_ID}";
+      fi;
+      mc admin user add local "$${S3_ACCESS_KEY_ID}" "$${S3_SECRET_ACCESS_KEY}";
+      mc admin policy attach local careeros-documents-app --user "$${S3_ACCESS_KEY_ID}";
+      mc anonymous get "local/$${S3_BUCKET}" >/dev/null;
+      mc stat "local/$${S3_BUCKET}" >/dev/null;
       '
     restart: "no"
+    networks: [backend]
 
   api:
     build:
@@ -91,7 +187,6 @@ services:
       dockerfile: apps/api/Dockerfile
     environment:
       <<: *app-environment
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
     ports:
       - "127.0.0.1:${API_PORT:-8000}:8000"
     depends_on:
@@ -101,19 +196,22 @@ services:
         condition: service_healthy
       minio-init:
         condition: service_completed_successfully
+      mailpit:
+        condition: service_healthy
     healthcheck:
       test:
         [
           "CMD",
           "python",
           "-c",
-          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=9)",
         ]
       interval: 10s
-      timeout: 4s
+      timeout: 10s
       retries: 12
       start_period: 10s
     restart: unless-stopped
+    networks: [backend, edge]
 
   worker:
     build:
@@ -128,6 +226,28 @@ services:
         condition: service_healthy
       minio-init:
         condition: service_completed_successfully
+      clamav:
+        condition: service_healthy
+    read_only: true
+    init: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 128
+    mem_limit: ${WORKER_MEMORY_LIMIT:-768m}
+    cpus: ${WORKER_CPU_LIMIT:-1.0}
+    stop_grace_period: 30s
+    tmpfs:
+      - /tmp/careeros:rw,noexec,nosuid,nodev,size=268435456,uid=10001,gid=10001,mode=0700
+    command:
+      [
+        "celery",
+        "--app",
+        "careeros_worker.app:celery_app",
+        "worker",
+        "--loglevel=INFO",
+        "--concurrency=${WORKER_CONCURRENCY:-2}",
+        "--queues=default,resume-health,career-record,maintenance",
+      ]
     healthcheck:
       test: ["CMD", "python", "-m", "careeros_worker.healthcheck"]
       interval: 20s
@@ -135,6 +255,45 @@ services:
       retries: 6
       start_period: 20s
     restart: unless-stopped
+    networks: [backend]
+
+  worker-scheduler:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    environment:
+      <<: *app-environment
+    depends_on:
+      redis:
+        condition: service_healthy
+    read_only: true
+    init: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 64
+    mem_limit: ${WORKER_SCHEDULER_MEMORY_LIMIT:-256m}
+    cpus: ${WORKER_SCHEDULER_CPU_LIMIT:-0.25}
+    stop_grace_period: 15s
+    tmpfs:
+      - /tmp/careeros:rw,noexec,nosuid,nodev,size=16777216,uid=10001,gid=10001,mode=0700
+    command:
+      [
+        "celery",
+        "--app",
+        "careeros_worker.app:celery_app",
+        "beat",
+        "--loglevel=INFO",
+        "--schedule=/tmp/careeros/celerybeat-schedule",
+        "--pidfile=/tmp/careeros/celerybeat.pid",
+      ]
+    healthcheck:
+      test: ["CMD", "python", "-m", "careeros_worker.scheduler_healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+    networks: [backend]
 
   web:
     build:
@@ -142,11 +301,16 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+        NEXT_PUBLIC_UPLOAD_ORIGIN: ${S3_PUBLIC_ENDPOINT_URL:-http://localhost:9000}
     environment:
       API_BASE_URL: ${API_BASE_URL:-http://api:8000}
+      API_BFF_CLIENT_SIGNAL_SECRET: ${API_BFF_CLIENT_SIGNAL_SECRET:-change-me-local-only-bff-client-signal-secret}
+      API_TRUSTED_CLIENT_IP_HEADER: ${API_TRUSTED_CLIENT_IP_HEADER:-x-forwarded-for}
+      CAREEROS_ENVIRONMENT: ${ENVIRONMENT:-development}
       NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
-    ports:
-      - "127.0.0.1:${WEB_PORT:-3000}:3000"
+      NEXT_PUBLIC_UPLOAD_ORIGIN: ${S3_PUBLIC_ENDPOINT_URL:-http://localhost:9000}
+    expose:
+      - "3000"
     depends_on:
       api:
         condition: service_healthy
@@ -163,20 +327,74 @@ services:
       retries: 12
       start_period: 15s
     restart: unless-stopped
+    networks: [edge]
+
+  web-edge:
+    image: node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd
+    environment:
+      PORT: "8080"
+      UPSTREAM_HOST: web
+      UPSTREAM_PORT: "3000"
+    command: ["node", "/app/server.mjs"]
+    user: node
+    read_only: true
+    init: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 64
+    mem_limit: 128m
+    cpus: 0.25
+    volumes:
+      - ./infra/docker/web-edge:/app:ro
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3000}:8080"
+    depends_on:
+      web:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8080/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    restart: unless-stopped
+    networks: [edge]
 
   mailpit:
-    image: axllent/mailpit:v1.27.8@sha256:6abc8e633df15eaf785cfcf38bae48e66f64beecdc03121e249d0f9ec15f0707
-    profiles: ["optional"]
+    image: axllent/mailpit:v1.30.0@sha256:0059ef81e492a7192af3816281eed6859eb078bd7bdc58b76757c13e10e53a7d
+    user: "65532:65532"
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      MP_BLOCK_REMOTE_CSS_AND_FONTS: "true"
+      MP_DISABLE_VERSION_CHECK: "true"
+      MP_MAX: "500"
     ports:
       - "127.0.0.1:${MAILPIT_SMTP_PORT:-1025}:1025"
       - "127.0.0.1:${MAILPIT_HTTP_PORT:-8025}:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
     restart: unless-stopped
+    networks: [edge]
 
   clamav:
     image: clamav/clamav:1.4_base@sha256:d54ef59d5d07ff243c669789f51e0c3d9dfa9945f62b515be84febe8e1db0dbf
-    profiles: ["security"]
     volumes:
       - clamav-data:/var/lib/clamav
+    ports:
+      - "127.0.0.1:${CLAMAV_PORT:-3310}:3310"
+    pids_limit: 128
+    mem_limit: ${CLAMAV_MEMORY_LIMIT:-2g}
+    cpus: ${CLAMAV_CPU_LIMIT:-1.5}
     healthcheck:
       test: ["CMD", "/usr/local/bin/clamdcheck.sh"]
       interval: 30s
@@ -184,6 +402,7 @@ services:
       retries: 10
       start_period: 120s
     restart: unless-stopped
+    networks: [backend, host-services]
 
 volumes:
   postgres-data:
@@ -192,5 +411,10 @@ volumes:
   clamav-data:
 
 networks:
-  default:
-    name: careeros-local
+  backend:
+    name: ${COMPOSE_PROJECT_NAME:-careeros}-backend
+    internal: true
+  edge:
+    name: ${COMPOSE_PROJECT_NAME:-careeros}-edge
+  host-services:
+    name: ${COMPOSE_PROJECT_NAME:-careeros}-host-services

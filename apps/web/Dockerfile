@@ -16,16 +16,17 @@ COPY packages/ui/package.json ./packages/ui/package.json
 RUN pnpm install --frozen-lockfile --filter @careeros/web...
 
 FROM base AS builder
+ARG NEXT_PUBLIC_UPLOAD_ORIGIN=http://localhost:9000
+ENV NEXT_PUBLIC_UPLOAD_ORIGIN=$NEXT_PUBLIC_UPLOAD_ORIGIN
 COPY --from=dependencies /workspace /workspace
 COPY apps/web ./apps/web
+COPY packages/contracts ./packages/contracts
 COPY packages/design-tokens ./packages/design-tokens
 COPY packages/typescript-config ./packages/typescript-config
 COPY packages/ui ./packages/ui
 WORKDIR /workspace/apps/web
-ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
-ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN pnpm build
+RUN pnpm --filter @careeros/contracts build && pnpm build
 
 FROM node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd AS runner
 WORKDIR /app

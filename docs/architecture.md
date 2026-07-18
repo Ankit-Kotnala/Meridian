@@ -1,7 +1,7 @@
 # CareerOS architecture
 
-Status: accepted target architecture; implementation is phased  
-Last reviewed: 2026-07-14
+Status: accepted target architecture; Phase 3 implemented and locally verified
+Last reviewed: 2026-07-19
 
 ## Architectural objective
 
@@ -16,11 +16,14 @@ what the current working tree actually implements.
 
 ## Implementation alignment status
 
-The repository now implements the Phase 0 shared backend, root uv workspace,
-generated contract pipeline, thin deployable boundaries, and executable
-architecture checks described below. Their complete local gate passes, and
-hosted CI run `29360385761` verified implementation commit `9558f33`; earlier
-baseline evidence remains historical.
+The repository implements the Phase 0 shared backend/root workspace, the Phase 1
+identity boundary, the Phase 2 Resume Health module, and the Phase 3 Career Record
+bounded context used by thin API and worker adapters. Phase 3 adds independent
+career truth, reviewable resume-import proposals, a provenance/evidence graph,
+deterministic evidence authority and eligibility, private evidence attachments,
+and Achievement Inbox without changing dependency direction or Phase 1/2 wire
+semantics. Historical evidence and the current blocking verification status are
+recorded in `PLANS.md`.
 
 ## System principles
 
@@ -49,9 +52,11 @@ flowchart LR
     A -->|SQL, ownership scoped| P[(PostgreSQL + pgvector)]
     A -->|enqueue / cache / limits| R[(Redis)]
     A -->|private objects / signed URLs| O[(S3-compatible storage)]
+    U -->|authorized signed PUT only| O
     R --> Q[Celery workers]
     Q --> P
     Q --> O
+    Q --> C[ClamAV]
     Q -. minimized payloads .-> X[External provider adapters]
     A --> T[Structured telemetry]
     Q --> T
@@ -155,6 +160,39 @@ A source document is provenance, not automatic truth. Parser confidence and user
 confirmation remain distinct. Derived output stores the exact evidence IDs and
 policy/model/prompt versions used so later evidence changes do not rewrite history.
 
+### Career Record consistency and authority (Phase 3 implementation)
+
+`careeros.modules.career_record` is one transactional bounded context for factual
+career presentation, typed career entities and skills, evidence, conflicts,
+import proposals, Achievement Inbox, reminder preferences, and append-oriented
+redacted audit. Account display, locale, timezone, onboarding, and target-search
+preferences remain authoritative in the Phase 1 identity profile; Phase 3 does
+not duplicate or dual-write them.
+
+Evidence lifecycle (`active`, `archived`, or deleted) is independent from
+strength (`Verified`, `Confirmed`, `Supported`, `Inferred`, or `Unsupported`).
+Clients never choose the resulting strength. Manual and external-URL provenance
+begins Inferred; an exact server-validated Resume Health span can begin Supported;
+the owner can explicitly attest to a complete claim as Confirmed. Only a
+server-side `VerificationAuthority` decision could assign Verified, and no such
+provider is configured in Phase 3, so production APIs cannot create it. Material
+edits preserve the prior immutable revision and return the new revision to
+Inferred.
+
+Later modules must use the owner-scoped eligibility query rather than inspecting
+Career Record tables or trusting client-selected evidence IDs. That boundary
+excludes Inferred, Unsupported, archived, deleted, conflicted, unauthorized, and
+source-unavailable evidence. Numeric use also requires a Confirmed or Verified
+metric with decimal value, unit/currency, period, precision, attribution, and
+comparison context where applicable.
+
+Resume Health remains the owner of documents and canonical snapshots. Career
+Record reads a minimal immutable source DTO through an explicit application
+query, copies bounded provenance into a pending proposal or evidence revision,
+and never foreign-keys career truth to a deletable resume. Deleting the source
+does not rewrite accepted career data, but source-only Supported evidence becomes
+ineligible until independently confirmed or connected to another eligible source.
+
 ## Request and job flows
 
 ### Synchronous API flow
@@ -168,39 +206,116 @@ policy/model/prompt versions used so later evidence changes do not rewrite histo
 4. Logs include safe IDs, route template, status, duration, and trace IDs—not raw
    career content.
 
+The HTTP middleware logs the matched route template or `unmatched`, never the
+raw path/query. Failure events include only an allowlisted exception class, not
+the exception message, body, headers, signed URL, or parser/provider payload. An
+unexpected exception is converted to a generic no-store `internal_error` problem
+at this boundary rather than being re-raised to the server logger.
+
 ### Asynchronous flow
 
 1. The API creates a durable job row and outbox/enqueue intent with user ownership
    and an idempotency key.
-2. A worker claims a task, checks cancellation/ownership/state, and runs with a
-   timeout, bounded retry policy, and trace context.
+2. A worker claims a task with a fresh per-invocation fencing token, checks
+   cancellation/ownership/state, and runs with a timeout, bounded retry policy,
+   durable lease longer than its hard timeout, and trace context.
 3. Progress and sanitized error details update durable job state. Poison jobs move
    to dead-letter handling; unsafe automatic retries are prohibited.
 4. The web polls a status resource initially; server-sent events or push
    notification may be introduced after measuring need.
 
+If an overlapping delivery sees a live lease, it performs a delayed busy retry
+after that lease must expire. A successor can reclaim an expired lease within the
+durable attempt cap, while every stale progress/result write is rejected by its
+token. The outbox publisher and object-cleanup maintenance take bounded batches,
+apply bounded exponential backoff/attempts, and persist published/completed or
+dead-letter state instead of silently dropping broker or storage failures. A
+scheduled database-only reconciler locks stale published queued jobs, retryable
+failures, and expired running leases. It fences any expired token, creates a new
+durable outbox generation, and dead-letters work that has exhausted either its
+processing or recovery budget.
+
 All AI work stores provider/model/prompt identifiers, structured-output validity,
 usage/cost, and grounding outcome. All rendering work records the input version
 and output hash.
 
-### Secure document pipeline (Phase 2 target)
+### Secure document pipeline (Phase 2 implementation)
 
 ```text
-request upload intent
-  -> authorize + reserve randomized private object key
-  -> bounded signed upload
-  -> finalize: signature/MIME/size validation
-  -> quarantine + malware/decompression checks
-  -> isolated extraction (no execution, no unnecessary network)
-  -> OCR only when needed and enabled
-  -> canonical parse + source spans + confidence
-  -> deterministic analysis
-  -> user correction/review
+read configured upload policy
+  -> authorize account or opaque guest capability + reserve randomized staging key
+  -> exact-origin, short-lived signed PUT with declared expected-size metadata
+  -> finalize: ownership + expiry + size + media-type + signature validation
+  -> promote to randomized quarantine key
+  -> commit document + job + outbox in one database transaction
+  -> fail-closed ClamAV scan
+  -> isolated PDF/DOCX expansion/extraction + authoritative PDF page checks
+  -> immutable canonical snapshot + source spans + confidence + parser warnings
+  -> explicit user correction creates a new snapshot
+  -> deterministic fixed-point analysis bound to that snapshot
 ```
 
-The original remains immutable. Temporary content is cleaned on success, failure,
-and timeout. A wrong extension, malformed file, macro-enabled document, archive
-bomb, or unavailable required scanner fails safely. See the threat model.
+The upload component keeps an issued intent, transfer completion flag, and
+finalize idempotency key only in memory, which permits safe same-page retry of an
+ambiguous transfer/finalize. A lost intent response or page reload cannot recover
+that state and can leave quota reserved for up to the default five-minute intent
+TTL; Phase 2 has no resumable or multipart transfer protocol.
+
+The original remains immutable. The worker downloads into a fresh randomized
+temporary directory on a bounded `noexec` tmpfs and deletes it on every normal or
+exceptional exit. PDF/DOCX bytes are never executed. A wrong signature,
+malformed/encrypted/polyglot PDF, macro-enabled DOCX, traversal/expansion bomb,
+PDF page limit, universal character/artifact limit, timeout, malware result, or
+unavailable required scanner fails safely. Scanner unavailability leaves the
+object quarantined for bounded retry and ultimately rejects/dead-letters it
+rather than parsing unchecked. DOCX has no authoritative rendered page count in
+the local `python-docx` extractor; it is bounded by bytes, archive entries,
+expanded size/ratio, extracted characters/blocks, and artifact size until a
+rendering provider supplies layout-aware page enforcement.
+
+The local Resume Health and evidence-attachment extractors call blocking
+libraries through `asyncio.to_thread`.
+Application timeout cancels the await but is not a killable per-parser process
+boundary. Celery task limits and the non-root, read-only, CPU/memory/PID-bounded,
+no-edge-network worker constrain the residual thread; production parser sandbox
+selection remains a later hardening decision.
+
+### Private evidence attachments (Phase 3 implementation)
+
+Evidence attachments use Career Record-owned admission, processing, and deletion
+tables rather than the Resume Health document tables. The API authorizes the
+owner and evidence item before issuing a randomized private, short-lived signed
+`PUT` bound to PDF/DOCX media type, exact byte length, key, and operation. Finalize
+rechecks ownership, expiry, object metadata, and byte signature while holding the
+parent evidence row against a delete/admission race.
+
+The restricted worker scans fail-closed with ClamAV, applies the bounded PDF/DOCX
+extractor, and stores counts/digests rather than attachment text in the public
+Career Record representation. Durable jobs, identifier-only queue messages,
+transactional outbox, fencing tokens, leases, bounded retry/dead letter, scheduled
+lost-delivery reconciliation, and private-object cleanup close the API/broker/
+object-store failure gaps. Download requires the same owner and a clean active
+attachment and returns only an operation-specific short-lived signed `GET`.
+Attachment presence alone never makes a factual claim Supported or eligible.
+
+Parse, analyze, and delete requests are durable jobs. The API transaction writes
+the job and an allowlisted outbox message; a scheduler publishes pending rows and
+the worker reloads durable ownership/state before acting. Jobs persist progress,
+cancellation, attempts, safe error code, trace ID, result ID, and dead-letter
+state plus a hashed execution token and lease expiry. Queue payloads contain only
+job ID and trace ID. Object-store promotion/claim compensation and orphan cleanup
+create durable records with purpose, owner, next attempt, and terminal status;
+explicit document deletion remains a fenced durable job and schedules a staging
+cleanup backstop.
+
+The canonical source is append-only: the parser creates revision 1, and a user
+correction creates a successor with `based_on_snapshot_id` while retaining the
+original values and source spans. All-no-op correction is rejected; the domain
+caps each document at 50 canonical revisions and 100 analysis jobs, while the API
+applies separate owner-scoped correction and analysis rate classes. A score
+analysis references exactly one snapshot. Source resumes remain provenance
+inputs; they do not replace the career-profile/evidence source of truth
+introduced in Phase 3.
 
 ## API and contract strategy
 
@@ -215,7 +330,9 @@ bomb, or unavailable required scanner fails safely. See the threat model.
 - Collection APIs use cursor pagination where datasets grow; every sort/filter is
   allowlisted and bounded.
 - Side-effecting retryable requests accept an `Idempotency-Key`; reuse with a
-  different payload is a conflict.
+  different payload is a conflict. Resume Health restricts keys to 8-128
+  characters from `[A-Za-z0-9._:-]`; its `If-Match` values are quoted positive
+  `int4` versions capped at `2147483647`.
 - Breaking changes require a new API version or an explicit migration/deprecation
   window. Internal schema changes do not automatically change the public API.
 
@@ -236,7 +353,7 @@ Provider failure is explicit; there is no hidden fallback from a security contro
 to an unsafe no-op. Circuit breaking, timeouts, retry classification, usage cost,
 and redacted telemetry wrap remote providers.
 
-## Authentication and tenancy (Phase 1 target)
+## Authentication and tenancy (implemented through Phase 3)
 
 The FastAPI service owns email/password and Google OAuth account linkage.
 Passwords use Argon2id. Browser sessions use secure, HTTP-only, appropriately
@@ -250,6 +367,34 @@ ID. Background tasks repeat the ownership check against durable records. Admin
 identity is separate from tenant authority; sensitive admin reads are
 least-privilege, redacted by default, and audited.
 
+Phase 2 represents resource ownership as exactly one account user or guest
+session. Guest access uses a server-hashed, opaque, short-lived capability in an
+`HttpOnly` cookie plus a separate double-submit CSRF token and exact-origin check
+for mutation. It is not derived from a document UUID. Guest quota is one active
+intake, scheduled retention queues durable object/content deletion, and explicit
+claim requires ready/completed state without an active/retryable job, copies
+objects into new account-scoped keys, atomically transfers retained content/job
+history, and then revokes the capability. Prior guest audit events remain
+append-only under their original scope.
+
+Phase 3 is account-only. Every Career Record row carries a non-null owner user,
+and repositories query by owner plus resource identifier. Nested entity/skill/
+evidence/attachment links validate both ends in the same scope; unknown and
+cross-user identifiers share not-found behavior. The API reuses Phase 1 session,
+CSRF, origin, request-size, and problem contracts. Positive versions and strict
+quoted `If-Match` preconditions protect mutable aggregates; proposal review,
+attachment finalize, and achievement conversion are idempotent.
+
+Local Compose publishes `web-edge` while the Next.js web container is reachable
+only on the shared edge network. `web-edge` strips all client-selected address
+headers and overwrites them from its socket peer. The server-only BFF normalizes
+that value, signs it with a shared HMAC secret, and sends the opaque signal to the
+API; the API verifies it before using it as pre-authentication and first-guest
+upload rate-key input. This signal is intentionally unrelated to authentication
+or authorization. A cloud load balancer changes the immediate peer, so production
+needs an explicit allowlisted trusted-hop design; arbitrary forwarded headers
+must never be accepted as client identity.
+
 ## Scoring and AI boundaries
 
 Numeric scores are computed only by a deterministic, versioned engine over stored
@@ -257,6 +402,15 @@ features. Models may help extract candidate features but cannot supply the final
 score or override hard-gap display. Stored score output includes engine version,
 weight configuration, inputs, component contributions, missing-data treatment,
 and timestamp.
+
+Resume Health v1 is implemented without a model provider. It uses integer
+fixed-point feature/component arithmetic and persists engine/configuration/
+feature-schema version, the complete typed feature record, each weighted feature
+contribution, and feature-set hash. It returns no number for image-only or sparse
+input and emits the canonical internal-score disclaimer. The report's semantic,
+keyboard-operable disclosures expose measured values and the raw/display
+score-weight-contribution trace without requiring color or chart interpretation.
+Exact features and weights are normative in `docs/scoring-methodology.md`.
 
 AI output is untrusted until strict schema validation and deterministic claim-
 evidence verification pass. A material change becomes usable only through the
@@ -271,13 +425,20 @@ processing duration, parser/export failure, AI latency/usage/cost, rate limits,
 and authentication failures. Traces carry metadata and stable identifiers only;
 raw resume, job, evidence, and generated content are excluded by default.
 
+HTTP logs use route templates rather than raw paths/queries. The application
+disables payload-bearing library access loggers and emits allowlisted completion/
+failure events; failure logs record only the exception class, not exception text,
+headers, request/response bodies, signed URLs, or document/provider payloads.
+Unexpected exceptions become generic no-store problems at the middleware
+boundary instead of reaching the server traceback logger.
+
 Liveness means the process can respond. Readiness verifies required dependencies
 without disclosing credentials or topology details. A degraded optional provider
 must be visible without making unrelated core paths unavailable.
 
 ## Deployment progression
 
-Phase 0 uses Docker Compose for reproducible local integration. Production targets
+Phase 0 through Phase 3 use Docker Compose for reproducible local integration. Production targets
 remain deliberately unspecified until Phase 10, when the team must decide and
 test:
 
@@ -293,18 +454,17 @@ Local Compose is not a production topology.
 
 ## Phase realization
 
-Phase 0 implements only the runtime seams: the root workspaces, shared backend
-foundation, generated contracts, generic UI, health/meta endpoints, dependency
-connectivity, a fictional web preview, worker health, local services, test
-runners, and documentation. Each subsequent phase adds a maintainable vertical
-slice as mapped in `PLANS.md`; an interface, directory, or empty route is never
-used as evidence that its feature exists. The browser extension, product modules,
-provider integrations, Terraform, operations, and production workflows are
-created only in their owning phases.
+Phase 0 implements the runtime seams, Phase 1 implements identity/onboarding, and
+Phase 2 adds the real `resume_health` module and secure account/guest document
+workflows. Phase 3 adds `career_record`, migration `20260715_0004`, API/worker
+adapters, generated contracts, the `career-vault` web feature, private attachment
+processing, and focused unit/integration/browser suites. Role taxonomy/readiness,
+job matching, external AI/OCR providers, browser extension, Terraform,
+operations, and production workflows remain absent until their owning phases.
 
 ## Architecture verification
 
-Phase 0 requires the following repository gates plus architecture-boundary,
+Every phase retains the repository gates plus architecture-boundary,
 OpenAPI-generation drift, migration, and root-workspace checks:
 
 ```sh
@@ -319,8 +479,22 @@ make test
 make verify
 ```
 
-The aligned tree passes these local gates together, and hosted CI verifies the
-committed implementation. Exact evidence is recorded in `PLANS.md`.
-Later phases add ownership, hostile-document, grounding, score-golden, round-trip
-export, accessibility, load, deletion, and restore gates. The complete strategy
-is in `docs/testing-strategy.md`.
+Phase 2 additionally uses `scripts/verify-phase2.ps1` (or
+`make verify-phase2`) for migration `20260715_0003`, real storage/scanner
+contracts, durable worker processing, and registered/guest Playwright journeys.
+The complete local gate and hosted CI run `29378312134` pass against the Phase 2
+implementation and are recorded in `PLANS.md`.
+
+Phase 3 adds `scripts/verify-phase3.ps1` (or `make verify-phase3`) for migration
+`20260715_0004`, Career Record and real attachment-provider integration, durable
+attachment processing/reconciliation, and the desktop Career Profile/Evidence/
+Achievement primary journey. Shared responsive workspace behavior remains in the
+existing mobile suites; the Phase 3 primary journey itself is not run as a mobile
+project. The consolidated final-tree local result passes; a hosted Phase 3 run is
+still pending as recorded in `PLANS.md`.
+
+The Phase 0/1 baselines and Phase 2 passed their aligned local and hosted gates.
+After Phase 3 closeout, later phases add role/job score golden, AI grounding,
+round-trip export,
+load, account-wide deletion, backup, and restore gates. The complete strategy is
+in `docs/testing-strategy.md`.

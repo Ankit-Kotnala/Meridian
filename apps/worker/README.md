@@ -1,15 +1,16 @@
 # CareerOS Worker
 
-Phase 0 Celery worker foundation backed by Redis. Only a non-sensitive health
-task is registered; document processing and other business jobs arrive in later
-phases.
+Celery worker backed by Redis for isolated Resume Health document processing,
+private Career Record evidence attachments, durable outbox delivery, cleanup,
+and non-sensitive health checks. Broker payloads contain identifiers only;
+document bytes and extracted content remain in private storage and PostgreSQL.
 
 ## Local commands
 
 ```bash
 uv sync --frozen --all-packages --all-groups
 cd apps/worker
-uv run celery --app careeros_worker.app:celery_app worker --loglevel=INFO
+uv run celery --app careeros_worker.app:celery_app worker --loglevel=INFO --queues=default,resume-health,career-record,maintenance
 uv run ruff format --check .
 uv run ruff check .
 uv run mypy src tests

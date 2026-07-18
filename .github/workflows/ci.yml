@@ -59,6 +59,7 @@ jobs:
           --health-retries 12
     env:
       CAREEROS_DATABASE_URL: postgresql+asyncpg://careeros:ci-only-password@127.0.0.1:5432/careeros
+      CAREEROS_TEST_DATABASE_URL: postgresql+asyncpg://careeros:ci-only-password@127.0.0.1:5432/careeros
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
@@ -73,15 +74,19 @@ jobs:
       - run: cd packages/backend && uv run --package careeros-backend ruff format --check .
       - run: cd packages/backend && uv run --package careeros-backend ruff check .
       - run: cd packages/backend && uv run --package careeros-backend mypy
-      - run: cd packages/backend && uv run --package careeros-backend pytest
+      - run: cd packages/backend && uv run --package careeros-backend pytest tests/architecture tests/unit
       - run: cd apps/api && uv run ruff format --check .
       - run: cd apps/api && uv run ruff check .
       - run: cd apps/api && uv run mypy
       - run: cd apps/api && uv run pytest
       - run: uv run --package careeros-api ruff format --config apps/api/pyproject.toml --check packages/contracts/scripts/export_openapi.py
       - run: uv run --package careeros-api ruff check --config apps/api/pyproject.toml packages/contracts/scripts/export_openapi.py
+      - run: test "$(uv run --package careeros-backend alembic -c packages/backend/alembic.ini heads | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')" = "20260715_0004 (head)"
       - run: uv run --package careeros-backend alembic -c packages/backend/alembic.ini upgrade head
-      - run: uv run --package careeros-backend alembic -c packages/backend/alembic.ini current
+      - run: uv run --package careeros-backend alembic -c packages/backend/alembic.ini downgrade 20260715_0003
+      - run: uv run --package careeros-backend alembic -c packages/backend/alembic.ini upgrade head
+      - run: test "$(uv run --package careeros-backend alembic -c packages/backend/alembic.ini current | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')" = "20260715_0004 (head)"
+      - run: cd packages/backend && uv run --package careeros-backend pytest tests/integration
       - run: uv run --package careeros-api python -c "from careeros_api.main import app; assert app.openapi()"
 
   worker:
@@ -119,6 +124,62 @@ jobs:
       - run: pnpm --filter @careeros/web exec playwright install --with-deps chromium
       - run: pnpm test:e2e
 
+  resume-health-e2e:
+    runs-on: ubuntu-latest
+    needs: [api, worker, web-and-contracts]
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        with:
+          version: 11.13.0
+          run_install: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        with:
+          version: "0.11.21"
+          enable-cache: true
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.13"
+      - run: cp .env.example .env
+      - run: pnpm install --frozen-lockfile
+      - run: uv sync --frozen --all-packages --all-groups
+      - run: pnpm --filter @careeros/web exec playwright install --with-deps chromium
+      - name: Run the isolated authentication and Resume Health journeys
+        run: CAREEROS_E2E_PHASE=2 sh tests/e2e/run-compose.sh
+
+  career-record-e2e:
+    runs-on: ubuntu-latest
+    needs: [api, worker, web-and-contracts]
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        with:
+          version: 11.13.0
+          run_install: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        with:
+          version: "0.11.21"
+          enable-cache: true
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.13"
+      - run: cp .env.example .env
+      - run: pnpm install --frozen-lockfile
+      - run: uv sync --frozen --all-packages --all-groups
+      - run: pnpm --filter @careeros/web exec playwright install --with-deps chromium
+      - name: Run the isolated Phase 3 Career Record journey suite
+        run: CAREEROS_E2E_PHASE=3 sh tests/e2e/run-compose.sh
+
   supply-chain:
     runs-on: ubuntu-latest
     steps:
@@ -155,19 +216,35 @@ jobs:
       - run: cp .env.example .env
       - run: docker compose config --quiet
       - run: docker compose build api worker web
-      - run: docker compose up --detach --wait --wait-timeout 180
-      - name: Run the packaged migration path twice
+      - name: Start the Compose platform
         run: |
+          if ! docker compose up --detach --wait --wait-timeout 300; then
+            docker compose ps --all
+            docker compose logs --no-color --tail 200
+            exit 1
+          fi
+      - name: Verify the packaged Phase 3 migration path
+        run: |
+          heads=$(docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini heads | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')
+          printf '%s\n' "$heads"
+          test "$heads" = "20260715_0004 (head)"
           docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
+          docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini downgrade 20260715_0003
           docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
-          docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini current
+          current=$(docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini current | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')
+          printf '%s\n' "$current"
+          test "$current" = "20260715_0004 (head)"
       - name: Probe the running platform
         run: |
           curl --fail --silent --show-error http://127.0.0.1:3000/api/health
           curl --fail --silent --show-error http://127.0.0.1:8000/health
           curl --fail --silent --show-error http://127.0.0.1:8000/ready
           curl --fail --silent --show-error http://127.0.0.1:8000/api/v1/meta
+          curl --fail --silent --show-error http://127.0.0.1:8025/api/v1/info
           docker compose exec -T worker celery --app careeros_worker.app:celery_app inspect ping --timeout 5
+          scheduler_id=$(docker compose ps --quiet worker-scheduler)
+          test -n "$scheduler_id"
+          test "$(docker inspect --format '{{.State.Health.Status}}' "$scheduler_id")" = healthy
       - name: Scan API image for fixable high vulnerabilities
         run: >-
           docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock
@@ -189,5 +266,13 @@ jobs:
           --volume careeros-grype-cache:/root/.cache/grype
           anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d
           careeros-web:latest --config /etc/grype.yaml --fail-on high --only-fixed
+      - name: Scan trusted web-edge runtime for fixable high vulnerabilities
+        run: >-
+          docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock
+          --volume "$PWD/.grype.yaml:/etc/grype.yaml:ro"
+          --volume careeros-grype-cache:/root/.cache/grype
+          anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d
+          node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd
+          --config /etc/grype.yaml --fail-on high --only-fixed
       - if: always()
         run: docker compose down --volumes --remove-orphans

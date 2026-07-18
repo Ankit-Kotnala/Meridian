@@ -13,14 +13,15 @@ claim under the user's control.
 
 ## Repository status
 
-**Phase 0 is complete and Phase 1 is next.** The aligned repository uses a shared Python modular
-monolith, one root uv workspace, generated API contracts, thin deployable
-applications, and executable dependency boundaries. The complete local runtime,
-browser, migration, and security gates pass.
+**Phase 3 Career Profile, Evidence Vault, and Achievement Inbox is complete and
+hosted verified. Phase 4 Role Explorer and Role Readiness is next.** The
+repository uses a shared Python modular monolith, one root uv workspace,
+generated API contracts, thin deployable applications, and executable dependency
+boundaries.
 
-Hosted CI run `29360385761` passed all six jobs against Phase 0 implementation
-commit `9558f33`, including API, worker, web/contracts, browser, supply-chain,
-and clean-checkout container/migration/image-scan verification.
+Hosted CI run `29657932938` passed every Phase 3 job on no-change trigger commit
+`f752b55`, whose tree is identical to implementation commit `0df8bcf`; prior
+Phase 2 evidence remains preserved at `3b8d639` and run `29378312134`.
 
 See [PLANS.md](PLANS.md) for current status, historical evidence, and phase gates.
 Do not infer that a planned endpoint or module is implemented from the
@@ -32,7 +33,8 @@ architecture documents.
   TypeScript 5.9.3 strict mode, and Tailwind CSS 4.3.2
 - API: Python 3.13, uv, FastAPI 0.138.2, Pydantic, async SQLAlchemy, and asyncpg
 - Worker: Celery 5.6.3 with Redis broker/result backend
-- Local services: PostgreSQL with pgvector, Redis, and S3-compatible MinIO
+- Local services: PostgreSQL with pgvector, Redis, private S3-compatible MinIO,
+  required ClamAV scanning, and Mailpit SMTP capture
 - Backend: shared `careeros-backend` modular monolith used by thin API and worker
   deployables through one root uv workspace and lockfile
 - Contracts: FastAPI OpenAPI as the source of truth, with a normalized artifact,
@@ -70,8 +72,9 @@ quality checks run through the pinned host toolchains. Install:
 - either GNU Make plus a POSIX shell (WSL/Git Bash are suitable on Windows), or
   PowerShell and the checked-in scripts
 
-Docker must have enough memory for the web, API, worker, PostgreSQL, Redis, and
-MinIO services.
+Docker must have enough memory for the web, API, worker/scheduler, PostgreSQL,
+Redis, MinIO, ClamAV, and Mailpit services. The local ClamAV container alone is
+configured for up to 2 GiB.
 
 ## First-time setup
 
@@ -105,7 +108,7 @@ credentials are not exposed on other host interfaces by default.
 
 | Service       | URL                                 | Purpose                     |
 | ------------- | ----------------------------------- | --------------------------- |
-| Web           | <http://localhost:3000>             | Phase 0 product preview     |
+| Web           | <http://localhost:3000>             | Public and authenticated UI |
 | Web health    | <http://localhost:3000/api/health>  | Web liveness                |
 | API docs      | <http://localhost:8000/docs>        | OpenAPI UI                  |
 | API liveness  | <http://localhost:8000/health>      | Process health              |
@@ -113,6 +116,47 @@ credentials are not exposed on other host interfaces by default.
 | API metadata  | <http://localhost:8000/api/v1/meta> | Safe service metadata       |
 | MinIO API     | <http://localhost:9000>             | S3-compatible endpoint      |
 | MinIO console | <http://localhost:9001>             | Local object administration |
+| Mailpit       | <http://localhost:8025>             | Local auth email capture    |
+
+Create an account at `/register`, follow the verification link captured by
+Mailpit, and sign in at `/login`. Other public flow routes are `/verify-email`,
+`/forgot-password`, `/reset-password`, and `/get-started`. `/dashboard`,
+`/onboarding`, `/settings`, `/settings/sessions`, `/settings/consent`,
+`/career-profile`, `/evidence`, and `/achievement-inbox` require an authenticated
+session. The labeled fictional preview remains available at
+`/demo/dashboard`; it is isolated from real account state.
+
+Career Profile is independent of resume upload. It stores user-owned experience,
+typed career items, and skills with year/month precision, explicit grouping,
+optimistic concurrency, source provenance, and reviewable import proposals.
+Evidence Vault keeps evidence strength separate from lifecycle and downstream
+eligibility. Owner confirmation can produce `Confirmed`; no independent verifier
+is configured, so the production API cannot produce `Verified`. Achievement
+Inbox preserves drafts and converts them to confirmed evidence only after an
+explicit user action. Private evidence attachments use the same fail-closed
+PDF/DOCX scanner and bounded extractor contracts without reusing Resume Health
+persistence.
+
+Authenticated Resume Health starts at `/resume-health/account`. The intentionally
+limited guest flow starts at `/resume-health/guest`, uses one opaque short-lived
+browser capability, permits one active intake, and defaults to 24-hour retention.
+Both paths use real PDF/DOCX direct upload, required scanning, processing status,
+source-preserving canonical review/correction, and deterministic analysis. An
+image-only or sparse document returns insufficient data rather than a zero score.
+The report exposes the persisted feature schema, measured values, and weighted
+component contribution trace through keyboard-operable disclosures. Guest data
+moves into an account only through the explicit consented claim path.
+
+The mounted upload flow can retry an ambiguous transfer/finalize with the same
+short-lived intent and idempotency key. That retry state is intentionally not
+persisted in browser storage: after a lost intent response or page reload, quota
+may remain reserved until the default five-minute intent TTL expires. Phase 2
+does not implement resumable/chunked file transfer.
+
+The local extractor enforces an authoritative page cap for PDF only.
+`python-docx` has no reliable rendered page count, so DOCX is bounded by byte,
+archive/expansion, extracted-character/block, artifact, and worker-resource
+limits until a layout-aware rendering provider is introduced.
 
 Check the composed service state and probes:
 
@@ -157,26 +201,59 @@ make lint             # lint TypeScript and Python
 make typecheck        # strict TypeScript and Python type checks
 make test             # unit tests
 make test-integration # build/start the stack, migrate twice, and probe services
-make test-e2e         # end-to-end tests when present
-make security-scan    # scan source, dependencies, and application images
+make test-e2e         # Playwright against an already running stack
+make test-e2e-stack   # isolated desktop/mobile auth and Resume Health journeys
+make test-e2e-stack-phase3 # isolated Phase 3 desktop primary journey plus prior regressions
+make security-scan    # scan source, dependencies, app images, and trusted edge runtime
 make migrate          # apply the current database migrations
 make seed             # print the explicitly fictional Phase 0 fixture
 make verify           # full format/lint/type/test/contract/build/runtime gate
+make verify-phase1    # full gate plus isolated Phase 1 integration/E2E
+make verify-phase2    # full gate plus isolated Resume Health integration/E2E
+make verify-phase3    # full gate plus isolated Career Record integration/E2E
 make reset-db         # explicitly destructive local database reset
 ```
 
 On native Windows without GNU Make, use `.\scripts\setup.ps1` for `make setup`,
 `.\scripts\verify.ps1` for the full contract/quality/build/migration/runtime
 gate, `.\scripts\security-scan.ps1` for `make security-scan`, and the equivalent
-`docker compose` commands shown above for start/stop. The verification script
-leaves the healthy local stack running for inspection. The Make targets remain
-the cross-platform CI/documentation contract.
+`docker compose` commands shown above for start/stop. Use
+`.\scripts\verify-phase1.ps1` for the consolidated Phase 1 gate, including isolated
+PostgreSQL/Redis integration and Playwright journeys. The general verification
+script leaves the healthy local stack running for inspection. The Phase 1 E2E
+baseline used the isolated runner, which cleans up its containers, images,
+networks, and volumes.
+Use `.\scripts\verify-phase2.ps1` for the Phase 2 migration, real
+PostgreSQL/Redis/MinIO/ClamAV contracts, restricted worker, and registered/guest
+Playwright workflows. It also cleans its isolated containers, images, networks,
+volumes, and browser artifacts. A successful narrow test is not a substitute for
+this complete closeout gate. Use `.\scripts\verify-phase3.ps1` for migration
+`20260715_0004`, Career Record repository and attachment-provider integration,
+the durable attachment worker, and the desktop Career Profile/Evidence/
+Achievement primary journey. Shared workspace responsive behavior continues to
+run in the existing mobile suites; the Phase 3 primary journey itself is
+intentionally desktop-only. Run `make security-scan` (or its PowerShell
+equivalent) separately; the phase verification scripts do not replace the
+source, dependency, application-image, and pinned `web-edge` runtime scans.
 
-The Phase 0 migration enables the pgvector extension and intentionally creates no
-business tables. The Phase 0 seed command prints a fictional fixture and performs
-no database write. Domain migrations and database seeding arrive with their owning
-features. A command that prints a fixture or says a feature is deferred is not
-evidence that the product feature exists.
+The Phase 0 migration enables the pgvector extension. Phase 1 migration
+`20260715_0002` adds the identity, session, OAuth, organization, consent, audit,
+and onboarding tables with ownership and integrity constraints. Phase 2 migration
+`20260715_0003` adds guest capabilities, upload/document/artifact state, durable
+jobs/outbox and object cleanup, fenced execution leases, immutable canonical
+snapshots, Resume Health analyses with feature schema/values/component
+contributions/findings, and redacted resume audit events with exactly-one-owner
+constraints.
+Phase 3 migration `20260715_0004` adds owner-scoped career profiles, typed career
+entities and skills, import proposals, immutable evidence revisions/sources/
+metrics/links/conflicts/usage, private attachment admission/jobs/outbox/cleanup,
+achievement drafts, reminder preferences, and redacted Career Record audit
+events. It is additive to the Phase 2 head; downgrading it deletes Phase 3 data
+and therefore is a test/forward-repair mechanism, not an automatic production
+rollback after real use.
+The seed command still prints only a fictional demo fixture and performs no
+database write. A command that prints a fixture or says a feature is deferred is
+not evidence that the product feature exists.
 
 For host-only package work, use the pinned tools rather than global substitutes:
 
@@ -203,6 +280,13 @@ the API.
 - Uploaded documents, imported URLs, and model output are untrusted input.
 - Public demo content is fictional and visibly labeled.
 
+Local Compose publishes `web-edge`, not the Next.js container. The edge replaces
+all client-selected forwarding headers with its socket peer before the otherwise
+unexposed web BFF signs an opaque source key for pre-authentication and guest-
+intake API abuse controls. This is a
+local single-hop contract; a cloud load balancer requires an explicit allowlisted
+trusted-hop design rather than accepting arbitrary forwarded addresses.
+
 Read [AGENTS.md](AGENTS.md) before contributing. The principal references are:
 
 - [Documentation index](docs/README.md)
@@ -215,12 +299,11 @@ Read [AGENTS.md](AGENTS.md) before contributing. The principal references are:
 - [Implementation checklist](docs/implementation-checklist.md)
 - [Architecture decisions](docs/adr/README.md)
 
-## Phase 0 verification
+## Verification status through Phase 3 implementation
 
-The aligned working tree passes the repository gates, architecture checks,
-contract drift checks, migrations, browser checks, security scans, and container
-paths represented by the commands below. Exact current and historical results are
-recorded separately in `PLANS.md`:
+Phases 0 through 3 have recorded local and hosted evidence. Exact current and
+historical results are recorded separately in `PLANS.md`; never infer a pass from
+the command list below:
 
 ```sh
 make setup
@@ -231,6 +314,7 @@ make lint
 make typecheck
 make test
 make verify
+make test-e2e
 ```
 
 Native PowerShell runs the equivalent quality/build/configuration checks with:
@@ -238,6 +322,9 @@ Native PowerShell runs the equivalent quality/build/configuration checks with:
 ```powershell
 .\scripts\setup.ps1
 .\scripts\verify.ps1
+.\scripts\verify-phase1.ps1
+.\scripts\verify-phase2.ps1
+.\scripts\verify-phase3.ps1
 docker compose up --build --detach --wait
 docker compose ps
 Invoke-WebRequest -UseBasicParsing http://localhost:3000/api/health
@@ -246,9 +333,17 @@ Invoke-WebRequest -UseBasicParsing http://localhost:8000/ready
 Invoke-WebRequest -UseBasicParsing http://localhost:8000/api/v1/meta
 ```
 
-The web, API, worker, PostgreSQL, Redis, and MinIO report healthy in the aligned
-tree. Hosted CI run `29360385761` verified the committed Phase 0 implementation.
-Skipped, unavailable, or failing checks reopen the affected gate.
+The Phase 1 baseline at `baab8f7` remains verified by hosted run `29367040183`.
+The Phase 2 runner adds migration `20260715_0003`, real private object/scanner
+contracts, restricted async processing, deterministic score golden cases, and
+registered/guest desktop/mobile workflows. Its local counts and security/build
+results pass and are recorded in `PLANS.md`. Hosted run `29378312134` passed the
+complete Phase 2 workflow on implementation commit `3b8d639`.
+Phase 3 local closeout passed with `scripts/verify-phase3.ps1` on 2026-07-19:
+format, lint, type, unit, build, container, migration, integration, runtime, and
+isolated browser gates all passed. Hosted run `29657932938` then passed
+supply-chain, API, web/contracts, worker, browser-smoke, Resume Health E2E,
+Career Record E2E, and container/image jobs on the identical Phase 3 tree.
 
 ## License and production use
 

@@ -110,7 +110,7 @@ export function Sidebar({
             Preview workspace
           </p>
           <p className="mt-1 text-[0.65rem] leading-4 text-slate-400">
-            Fictional data only. Accounts arrive in Phase 1.
+            Fictional data only. Separate from protected accounts.
           </p>
         </div>
         {onCollapse && (

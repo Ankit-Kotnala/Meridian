@@ -1,8 +1,8 @@
 # CareerOS API conventions and route plan
 
-Status: Phase 0 foundation plus forward route contract  
+Status: Phase 3 Career Record API implemented and locally verified; hosted CI pending
 Base path for product APIs: `/api/v1`  
-Last reviewed: 2026-07-14
+Last reviewed: 2026-07-19
 
 ## Implementation truth
 
@@ -11,30 +11,34 @@ response shapes. This document defines conventions and the intended route map.
 A route listed as a future phase is not implemented merely because it appears
 here.
 
-### Phase 0 endpoints
+### Implemented foundation endpoints
 
-| Method | Path           | Purpose                                                                       | Dependency behavior                                        |
-| ------ | -------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| `GET`  | `/health`      | API process liveness                                                          | Does not require downstream services                       |
-| `GET`  | `/ready`       | API readiness                                                                 | Fails when a required configured dependency is unavailable |
-| `GET`  | `/api/v1/meta` | Safe service name/version/environment and canonical internal-score disclaimer | No secret or detailed topology                             |
+| Method | Path           | Purpose                                                                       | Dependency behavior                                                        |
+| ------ | -------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `GET`  | `/health`      | API process liveness                                                          | Does not require downstream services                                       |
+| `GET`  | `/ready`       | API readiness                                                                 | Probes configured PostgreSQL, Redis, SMTP, and object-storage dependencies |
+| `GET`  | `/api/v1/meta` | Safe service name/version/environment and canonical internal-score disclaimer | No secret or detailed topology                                             |
 
 The web separately exposes `GET /api/health` for its own liveness on port 3000.
 It is not part of the product API contract.
 
-Phase 0 does not implement authentication, persisted domain resources, uploads,
-scores, AI, or application workflows. `/docs` and `/openapi.json` are development
-documentation endpoints and may be restricted or disabled in production.
+Phase 1 adds persisted identity, account, consent, session, and onboarding
+resources. Phase 2 adds owned and guest-limited resume upload, parsing, review,
+analysis, and deletion resources. Phase 3 adds account-owned career profile,
+evidence, attachment, proposal, and achievement resources. AI generation, role,
+job, export, and application workflows remain unimplemented. `/docs` and
+`/openapi.json` are development documentation endpoints and may be restricted or
+disabled in production.
 
 `packages/contracts` derives its public types and client from the implemented
 FastAPI OpenAPI document. The normalized artifact under
 `packages/contracts/openapi` and generated files under
 `packages/contracts/src/generated` are committed review artifacts; neither is an
 independent contract authority. Problem, pagination, and product schemas are not
-published until corresponding Pydantic models and operations exist. The current
-architecture-alignment change passes both export and generation drift checks
-locally; hosted CI must repeat those checks on the committed revision before
-Phase 0 closes.
+published until corresponding Pydantic models and operations exist. Phase 1
+contract evidence is recorded in `PLANS.md`. Phase 2 and Phase 3 changes
+regenerate both artifacts; the final Phase 3 drift result must be recorded there
+before the phase is marked complete.
 
 ## Protocol and representation
 
@@ -42,7 +46,9 @@ Phase 0 closes.
   response says otherwise.
 - Product clients call `/api/v1`. Health probes remain unversioned.
 - Resource IDs are UUID strings. Timestamps are UTC RFC 3339 with offset (`Z`
-  preferred). Dates without time use ISO 8601 calendar dates.
+  preferred). Full dates without time use ISO 8601 calendar dates. Career Record
+  manual writes use `YYYY-MM`; imported responses may preserve `YYYY` or
+  `YYYY-MM` and never invent a day.
 - Money uses a decimal string plus ISO 4217 currency, never binary float. Locale-
   formatted text is display-only.
 - Unknown request fields are rejected for sensitive write schemas unless a
@@ -57,26 +63,54 @@ Phase 0 closes.
 
 ## Request context and headers
 
-| Header            | Direction         | Rule                                                                                                     |
-| ----------------- | ----------------- | -------------------------------------------------------------------------------------------------------- |
-| `X-Request-ID`    | request/response  | Client may supply a bounded safe value; edge replaces invalid values and always returns the effective ID |
-| `traceparent`     | request/internal  | Valid W3C context is propagated; invalid input starts a new trace and is never trusted for authorization |
-| `X-Trace-ID`      | response/internal | Effective 32-hex trace ID returned by the Phase 0 API and bound to structured logs; diagnostic only      |
-| `Idempotency-Key` | request           | Required for specified retryable side-effecting `POST` operations                                        |
-| `If-Match`        | request           | Required when a resource uses optimistic concurrency; contains the last observed ETag/version            |
-| `ETag`            | response          | Represents a mutable resource version, not a secret                                                      |
-| `X-CSRF-Token`    | request           | Phase 1 cookie-authenticated state-changing request defense, paired with origin policy                   |
-| `Retry-After`     | response          | Returned for applicable `429` or temporary `503` responses                                               |
+| Header                     | Direction         | Rule                                                                                                     |
+| -------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------- |
+| `X-Request-ID`             | request/response  | Client may supply a bounded safe value; edge replaces invalid values and always returns the effective ID |
+| `traceparent`              | request/internal  | Valid W3C context is propagated; invalid input starts a new trace and is never trusted for authorization |
+| `X-Trace-ID`               | response/internal | Effective 32-hex trace ID returned by the Phase 0 API and bound to structured logs; diagnostic only      |
+| `Idempotency-Key`          | request           | Required where specified; 8-128 characters from `[A-Za-z0-9._:-]`                                        |
+| `If-Match`                 | request           | Required where specified; quoted positive integer version, maximum `2147483647`                          |
+| `ETag`                     | response          | Represents a mutable resource version, not a secret                                                      |
+| `X-CSRF-Token`             | request           | Phase 1 cookie-authenticated state-changing request defense, paired with origin policy                   |
+| `X-Guest-CSRF`             | request           | Phase 2 guest double-submit token, paired with the guest capability cookie and origin policy             |
+| `X-CareerOS-Client-Signal` | internal request  | HMAC-authenticated opaque per-source input from the trusted web BFF; never authorization                 |
+| `Retry-After`              | response          | Returned for applicable `429` or temporary `503` responses                                               |
 
 Correlation IDs are safe opaque diagnostics. They are shown in user-facing errors
 and logs but never grant access.
 
-## Authentication and authorization (Phase 1)
+HTTP completion and failure logs use the matched route template (or the literal
+`unmatched`) rather than a raw path/query. They include only allowlisted request
+metadata and, on failure, the exception class; request/response bodies, exception
+messages, headers, signed URLs, and resume text are excluded. Payload-bearing
+library access loggers are disabled in favor of these structured events. An
+unexpected exception is converted there into a generic no-store `internal_error`
+problem, so its message/traceback is not re-raised into the ASGI server logger.
+
+## Authentication and authorization (implemented through Phase 2)
 
 The browser uses API-owned secure HTTP-only session/refresh cookies. JavaScript
 does not persist bearer or refresh tokens in local storage. State-changing routes
 require CSRF protection and an allowed origin. Google OAuth uses state, nonce,
 PKCE, and exact redirect URIs.
+
+Session and one-time secrets are opaque and stored only as keyed hashes. Refresh
+tokens rotate on use; reuse revokes the token family. Passwords use Argon2id.
+Verification/recovery responses and abuse limits do not disclose whether an email
+exists. The web reaches these endpoints through an allowlisted same-origin
+`/api/v1/*` proxy and never accepts an arbitrary upstream target.
+See ADR 0008 for the implemented session and web/API boundary decision.
+
+In local Compose, only `web-edge` publishes the web port. It removes every
+client-selected address header, writes `X-Forwarded-For` from the socket peer,
+and forwards to the unexposed Next.js service. The server-side BFF normalizes
+that address and signs it with a server-only secret; the API verifies the signal
+before using its opaque signature as a pre-authentication/first-guest upload rate
+subject. The source key is deliberately neutral: it grants no session, guest
+capability, tenant, or resource access. Direct browser input cannot supply the
+internal signal. A deployment behind a cloud load balancer needs an explicit
+allowlisted trusted-hop policy, because the local edge otherwise sees only the
+balancer.
 
 Every user-owned lookup is scoped by authenticated user and current tenant in the
 service/repository query. Tenant selection is validated against membership; a
@@ -158,6 +192,13 @@ OpenAPI contract explicitly says so.
 
 ## Idempotency and concurrency
 
+The implemented Resume Health `Idempotency-Key` accepts 8 through 128 ASCII
+characters and only letters, digits, dot, underscore, colon, or hyphen. Finalize,
+analysis, cancellation, and deletion validate that form. Canonical correction
+and deletion use `If-Match` as a quoted positive integer no greater than
+PostgreSQL `int4` maximum `2147483647`; zero, signs, whitespace, weak ETags, and
+larger values are rejected at the transport boundary.
+
 Important retryable `POST`s—analysis, import, change-set generation, export,
 application-pack generation, webhook processing, data export/deletion, and safe
 job retry—require `Idempotency-Key`.
@@ -203,36 +244,71 @@ documents in queue payloads. Every task reloads ownership and state, defines a
 timeout and bounded retries, records progress/cost where useful, and routes poison
 work to dead-letter handling.
 
+Resume processing adds a hash of a fresh per-invocation delivery token and a
+durable lease whose duration exceeds the worker hard timeout. A duplicate that
+finds a live lease returns the safe `execution_lease_active` state and schedules
+a delayed retry after that lease must have expired. A successor may reclaim an
+expired lease within the durable attempt cap; every progress/result write checks
+the token, so the stale invocation cannot commit afterward. Job creation and its
+outbox row are transactional. The outbox publisher and object-cleanup maintenance
+both use caller-bounded batches (1-500), bounded attempts/backoff, and explicit
+dead-letter state.
+
 Polling is the initial completion mechanism. Server-sent events or notifications
 may be added as a separate authenticated contract after need is demonstrated.
 
 ## Upload contract (Phase 2)
 
-The intended direct-upload sequence is:
+The implemented direct-upload sequence is:
 
-1. `POST /api/v1/uploads/presign` with filename for display, expected size and
-   media type, and purpose.
-2. API authorizes quota/ownership and returns a single-use, short-lived upload
-   operation for a randomized private object key. It never exposes permanent
-   object credentials.
-3. Client uploads the bounded object to storage with the exact allowed method and
-   conditions.
-4. Client starts/finalizes analysis using an opaque upload ID; the API verifies
-   object size/signature/MIME and ownership before queueing quarantine/scanning.
-5. Status comes from the owned document/processing job resource.
+1. The client reads the account or guest upload-policy endpoint and validates PDF
+   or DOCX filename, media type, and size locally for immediate feedback.
+2. `POST /api/v1/uploads/presign` (or its `/guest` equivalent) supplies display
+   filename, exact expected byte count, media type, and purpose
+   `resume_health`.
+3. The API applies owner/guest quota and rate policy, persists a short-lived
+   intent, and returns a signed `PUT` for a randomized `staging/` key. The
+   browser accepts that URL only when its origin equals the configured upload
+   origin and sends no application credentials to object storage.
+4. The client transfers bytes directly with the exact signed headers and reports
+   real byte progress. No permanent object credentials or standalone/unsigned
+   object-key field is returned; the randomized staging key is exposed only as
+   part of the short-lived, operation-scoped signed URL.
+5. `POST .../uploads/{uploadId}/finalize` rechecks scope, expiry, object size,
+   object media type, and file signature. It promotes the object to a randomized
+   `quarantine/` key, creates an owned document plus parse job and transactional
+   outbox row, and returns `202`.
+6. The web polls the owned job/document resources. Only the worker can mark a
+   document clean and review-ready after malware and parser admission.
 
 Browser filename, extension, MIME, object metadata, and upload completion are
 untrusted. See `docs/security-threat-model.md`.
 
+The upload-policy `maxPages` value is an authoritative PDF limit in the local
+extractor. `python-docx` cannot reliably infer rendered DOCX pages, so DOCX is
+bounded instead by upload bytes, archive entries, expanded bytes/ratio, extracted
+characters/blocks, artifact size, and worker resources. The locally reported
+DOCX page value is nominal and must not be presented as a rendered-page claim.
+
+The web retains a successfully issued intent, transfer state, and finalize
+idempotency key only in memory while the upload component remains mounted. It can
+retry an ambiguous transfer/finalize without requesting another intent. A page
+reload or lost intent response cannot recover that state: the intake may count
+toward quota for up to the default five-minute intent TTL. Scheduled cleanup
+later removes any orphaned staging bytes. The Phase 2 protocol is a single signed
+`PUT`; it does not provide resumable or multipart transfer.
+
 ## Route inventory by phase
 
-The methods below are the planned public surface. Names may be refined before
-implementation through OpenAPI review; once released, compatibility rules apply.
+The methods below are the implemented public surface through Phase 2 followed by
+the planned surface for later phases. Future names may be refined through OpenAPI
+review; once released, compatibility rules apply.
 
 ### Phase 1 — Authentication, account, and onboarding
 
 ```text
 POST   /api/v1/auth/register
+GET    /api/v1/auth/csrf
 POST   /api/v1/auth/verify-email
 POST   /api/v1/auth/resend-verification
 POST   /api/v1/auth/login
@@ -249,17 +325,23 @@ GET    /api/v1/me
 PATCH  /api/v1/me
 GET    /api/v1/onboarding
 PATCH  /api/v1/onboarding
+GET    /api/v1/consents
+POST   /api/v1/consents
 ```
 
 Registration/login/reset responses resist account enumeration. OAuth callback
 errors return through a safe fixed application route without leaking provider
-tokens. Account deletion is under settings/privacy below and requires re-auth.
+tokens. `GET` responses for `/me` and `/onboarding` return versions/ETags; their
+`PATCH` operations require CSRF plus `If-Match`. Account deletion is not a Phase 1
+endpoint; it remains Phase 10 work and will require recent authentication.
 
 ### Phase 2 — Upload, documents, parsing, and Resume Health
 
 ```text
+GET    /api/v1/resume-health/upload-policy
 POST   /api/v1/uploads/presign
 POST   /api/v1/uploads/{uploadId}/finalize
+GET    /api/v1/documents
 GET    /api/v1/documents/{documentId}
 GET    /api/v1/documents/{documentId}/status
 GET    /api/v1/documents/{documentId}/plain-text
@@ -270,38 +352,153 @@ POST   /api/v1/resume-health
 GET    /api/v1/resume-health/{analysisId}
 GET    /api/v1/processing-jobs/{jobId}
 POST   /api/v1/processing-jobs/{jobId}/cancel
+
+GET    /api/v1/guest/resume-health/upload-policy
+POST   /api/v1/guest/uploads/presign
+POST   /api/v1/guest/uploads/{uploadId}/finalize
+GET    /api/v1/guest/documents/{documentId}
+GET    /api/v1/guest/documents/{documentId}/status
+GET    /api/v1/guest/documents/{documentId}/plain-text
+GET    /api/v1/guest/documents/{documentId}/reading-order
+PATCH  /api/v1/guest/documents/{documentId}/canonical-resume
+DELETE /api/v1/guest/documents/{documentId}
+POST   /api/v1/guest/documents/{documentId}/claim
+POST   /api/v1/guest/resume-health
+GET    /api/v1/guest/resume-health/{analysisId}
+GET    /api/v1/guest/processing-jobs/{jobId}
+POST   /api/v1/guest/processing-jobs/{jobId}/cancel
 ```
 
-Guest equivalents use a narrow, short-lived capability and never accept a user
-or tenant ID from the browser as ownership. A registered-user save operation
-requires explicit consent to move data out of guest retention.
+Account resources are scoped by the authenticated Phase 1 principal in every
+service/repository lookup. Inaccessible IDs return the same safe not-found class.
+Canonical correction and deletion require `If-Match`; upload finalize, analysis,
+deletion, and job cancellation require an `Idempotency-Key` where defined by
+OpenAPI. Parse/analyze cancellation is cooperative; delete jobs reject
+cancellation because partial erasure must continue to a durable terminal state.
+
+Guest routes use a narrow, opaque capability in the path-restricted, `HttpOnly`,
+`SameSite=Lax` `careeros_guest_capability` cookie. Mutations also require an
+exact allowed origin and `X-Guest-CSRF` matching the readable guest CSRF cookie.
+A guest may have one active intake and the default capability/document retention
+is 24 hours (bounded by configuration to seven days). The browser never submits a
+user or tenant ID as guest authorization. Claiming requires a valid guest
+capability, an authenticated account session, CSRF, and explicit consent; the
+service rechecks account quota, copies objects to new account-owned randomized
+keys, requires a ready document with completed analysis and no active/retryable
+job, transfers retained content/job history atomically, removes guest retention,
+and revokes the guest capability. Prior guest audit records retain their original
+scope while the claim adds a new account-scoped audit event.
+
+Parser corrections create a new immutable canonical snapshot based on the prior
+snapshot. The response keeps original extracted values and source spans visible;
+the source document is never overwritten. Analysis binds to one snapshot and
+returns fixed-point score/components, engine/configuration/feature-schema
+versions, all persisted feature values, each component's feature score/weight/
+contribution in raw basis points and display units, feature hash, findings,
+warnings, and the canonical disclaimer. The web exposes that trace in semantic,
+keyboard-operable disclosure lists. Insufficient extracted data returns no
+numeric score rather than zero.
+
+Delete is a durable background operation. The worker removes the quarantined
+object and derived artifacts, purges canonical/analysis content, and retains a
+minimal redacted document/job/audit record. Scheduled retention uses the same
+durable delete path before revoking an expired guest capability.
 
 ### Phase 3 — Career profile, evidence, and achievements
 
 ```text
 GET    /api/v1/career-profile
 PATCH  /api/v1/career-profile
+
 GET    /api/v1/experiences
 POST   /api/v1/experiences
 PATCH  /api/v1/experiences/{experienceId}
 DELETE /api/v1/experiences/{experienceId}
 POST   /api/v1/experiences/reorder
+
+GET    /api/v1/career-items
+POST   /api/v1/career-items
+PATCH  /api/v1/career-items/{careerItemId}
+DELETE /api/v1/career-items/{careerItemId}
+
+GET    /api/v1/skills
+POST   /api/v1/skills
+PATCH  /api/v1/skills/{skillId}
+DELETE /api/v1/skills/{skillId}
+
+GET    /api/v1/career-profile/import-proposals
+POST   /api/v1/career-profile/import-proposals
+GET    /api/v1/career-profile/import-proposals/{proposalId}
+POST   /api/v1/career-profile/import-proposals/{proposalId}/accept
+POST   /api/v1/career-profile/import-proposals/{proposalId}/reject
+
 GET    /api/v1/evidence
 POST   /api/v1/evidence
 GET    /api/v1/evidence/{evidenceId}
 PATCH  /api/v1/evidence/{evidenceId}
 DELETE /api/v1/evidence/{evidenceId}
 POST   /api/v1/evidence/{evidenceId}/confirm
+POST   /api/v1/evidence/{evidenceId}/unsupported
 POST   /api/v1/evidence/{evidenceId}/archive
+POST   /api/v1/evidence/{evidenceId}/restore
 GET    /api/v1/evidence/{evidenceId}/usage
+
+POST   /api/v1/evidence/{evidenceId}/attachments/presign
+POST   /api/v1/evidence/{evidenceId}/attachments/{uploadId}/finalize
+GET    /api/v1/evidence/{evidenceId}/attachments/{attachmentId}/download
+DELETE /api/v1/evidence/{evidenceId}/attachments/{attachmentId}
+POST   /api/v1/evidence/{evidenceId}/conflicts/{conflictId}/resolve
+
 GET    /api/v1/achievements
 POST   /api/v1/achievements
+GET    /api/v1/achievements/reminder-preferences
+PATCH  /api/v1/achievements/reminder-preferences
+GET    /api/v1/achievements/{achievementId}
 PATCH  /api/v1/achievements/{achievementId}
+DELETE /api/v1/achievements/{achievementId}
 POST   /api/v1/achievements/{achievementId}/confirm
 ```
 
-Evidence transition endpoints enforce the state machine server-side and emit an
-audit event. `confirm` never trusts a client-supplied “verified” status.
+All Phase 3 routes require the Phase 1 authenticated account session. Mutations
+also require the session-bound CSRF/origin contract; versioned writes require a
+strict quoted positive-int32 `If-Match` where exposed. The service fetches by
+owner plus resource ID, validates nested links in the same scope, and deliberately
+returns the same not-found result for unknown and cross-user IDs.
+
+Career items cover education, projects, certifications, awards, volunteering,
+publications, and languages. Experience supports explicit grouping with an owned
+peer; the server classifies overlapping same-employer roles as a promotion
+sequence and different-employer overlap as concurrent work. Reorder validates
+the complete owned set. Resume imports create a pending, source-preserving
+proposal only; accept/edit-and-accept/reject are explicit versioned decisions and
+never overwrite career truth silently.
+
+Evidence transition endpoints enforce lifecycle and strength server-side and
+emit redacted audit history. Manual and URL sources start Inferred; exact validated
+resume spans can start Supported; `confirm` creates Confirmed only after the
+required claim and numeric dimensions pass. No verification authority is
+configured, so production APIs cannot create Verified and never trust a client-
+supplied state. Archive is reversible but ineligible; material edit creates an
+immutable successor and invalidates prior confirmation. External URL provenance
+is stored and validated as HTTP(S) metadata only—Phase 3 does not fetch it.
+
+The evidence response includes server-authoritative factual/numeric eligibility,
+reason codes, provenance, immutable history, conflicts, attachments, links, and
+downstream usage. Inferred, Unsupported, archived, deleted, conflicted,
+unauthorized, and unavailable-source evidence is excluded from downstream use.
+An attachment never changes evidence strength by itself.
+
+Attachment admission accepts PDF and DOCX only. Presign binds a randomized private
+key to one short-lived `PUT`, exact media type, and exact byte length. Finalize is
+idempotent, repeats owner/object/signature admission, and creates a durable scan/
+extract job. Download is available only for the same owner and a clean active
+attachment through an operation-specific short-lived signed `GET`; permanent
+credentials and object keys are never response fields. Evidence detail exposes
+`uploading`, `scanning`, `ready`, `failed`, or `deleting` status for polling.
+
+Achievement drafts preserve unanswered neutral prompts. `/confirm` is named for
+wire compatibility but performs explicit, idempotent conversion of a reviewed
+draft into one Confirmed evidence item; it does not independently verify a claim.
 
 ### Phase 4 — Roles and readiness
 
@@ -506,6 +703,20 @@ Limits are centrally configured with secure maximums. Entitlements may lower or
 raise a user's allowed use within those maximums but cannot disable security,
 grounding, authorization, or content limits.
 
+The API enforces a 1 MiB default JSON request-body maximum before route parsing.
+Both declared `Content-Length` and cumulative streamed/chunked body bytes are
+bounded and return a safe `413` problem when exceeded. Resume bytes do not pass
+through that JSON boundary: an upload intent enforces the exact byte count and
+the API rechecks object metadata and signature at finalization. The account and
+guest upload-intent routes also apply the configured Redis-backed rate class;
+the backend separately enforces one active guest intake and at most 25 active
+registered-account intakes. Canonical correction and analysis use independent
+ownership-scoped Redis rate classes (defaults: 30 corrections per minute and 10
+analyses per hour). The domain also caps a document at 50 canonical revisions and
+100 analysis jobs, returns the completed result for an already analyzed immutable
+snapshot, rejects concurrent work, and rejects a correction whose requested
+values make no actual change.
+
 ## OpenAPI and generated contracts
 
 - FastAPI operation IDs are stable and unique.
@@ -535,7 +746,7 @@ write API advances.
 
 ## API verification
 
-Phase 0:
+Foundation probes:
 
 ```sh
 curl --fail http://localhost:8000/health
@@ -544,13 +755,58 @@ curl --fail http://localhost:8000/api/v1/meta
 curl --fail http://localhost:8000/openapi.json
 ```
 
-Tests assert exact safe response schemas, status codes, correlation IDs, readiness
-failure under dependency loss, no secret leakage, stable operation IDs, OpenAPI
-validity, normalized artifact freshness, and generated-schema freshness. These
-checks pass together in the aligned local working tree and are recorded in
-`PLANS.md`. Hosted CI evidence for the eventual commit remains pending.
+Phase 1's consolidated local gate is:
 
-Later route gates include schema/validation, unauthenticated and cross-user denial,
-idempotency concurrency/replay, stale version, rate/size limits, safe errors,
-audit events, and the module-specific acceptance tests in
-`docs/implementation-checklist.md`.
+```powershell
+.\scripts\verify-phase1.ps1
+```
+
+Phase 2's consolidated gate is implemented as:
+
+```powershell
+.\scripts\verify-phase2.ps1
+```
+
+It includes generated-contract drift, migration `20260715_0003` round trip,
+real PostgreSQL/Redis/MinIO/ClamAV integration, restricted worker runtime, and the
+registered and guest Resume Health browser journeys. Local gates and hosted run
+`29378312134` pass as recorded in `PLANS.md`.
+
+Phase 3's blocking consolidated gate is:
+
+```powershell
+.\scripts\verify-phase3.ps1
+```
+
+It retains every Phase 2 gate and adds migration `20260715_0004`, Career Record
+repository and real S3/ClamAV attachment-provider integration, durable attachment
+worker/reconciliation checks, generated-contract drift, and the authenticated
+desktop Career Profile/Evidence/Achievement journey. The journey is intentionally
+run once on desktop; shared workspace mobile behavior is covered by existing
+responsive suites. The final local consolidated result passes; hosted Phase 3 CI
+evidence remains pending in `PLANS.md`.
+
+Tests assert exact safe response schemas and problems, correlation IDs, readiness
+failure under dependency loss, no secret leakage, stable operation IDs, OpenAPI
+and generated-schema freshness, unauthenticated and cross-user denial, refresh
+rotation/replay, one-use recovery, CSRF/origin policy, OAuth state/link collision,
+abuse limits, audit events, optimistic profile/onboarding updates, and the 1 MiB
+streaming body limit. Real PostgreSQL/Redis integrations and the browser auth
+journey run in isolated Compose projects. Exact results are recorded in
+`PLANS.md`.
+
+Phase 2 adds API/backend assertions for configured upload policy, account and
+guest scope, capability-cookie behavior, CSRF/origin and upload rate policy,
+immutable correction/version conflicts, job/idempotency state, and score
+version/hash/disclaimer output. Real storage/scanner/repository contracts and
+registered/guest browser workflows run through the isolated Phase 2 project. The
+local result is API 67 and contracts 3 with clean generated-contract drift; full
+counts and hosted evidence are recorded in `PLANS.md`.
+
+Phase 3 adds API/backend assertions for authenticated CSRF and owner scope,
+partial-date and unknown-field validation, strict preconditions, proposal-only
+resume import, source deletion/availability, evidence transitions and numeric
+eligibility, conflict resolution, idempotent achievement conversion, private
+attachment admission/access/deletion, lost-worker reconciliation, safe problem
+mapping, and production service composition. Exact final counts belong in
+`PLANS.md`; the local consolidated gate passed on 2026-07-19.

@@ -1,7 +1,7 @@
 # CareerOS implementation checklist
 
 Status: living delivery checklist  
-Last reviewed: 2026-07-14
+Last reviewed: 2026-07-19
 
 This checklist expands `PLANS.md`. Check an item only when it is implemented in
 real application state and its required test passes. An interface, empty route,
@@ -115,91 +115,153 @@ earlier baseline evidence remains historical.
 
 ## Phase 1 — Authentication, Application Shell, and Onboarding
 
-Dependencies: Phase 0 green.
+Dependencies: Phase 0 green. Current status: complete. The consolidated local gate
+and hosted CI run `29367040183` passed all eight checks against Phase 1 evidence
+commit `baab8f7`.
 
-- [ ] Add users/profiles, hashed session/refresh material, OAuth accounts,
+- [x] Add users/profiles, hashed session/refresh material, OAuth accounts,
       organization/membership extension, consent, and audit models/migrations.
-- [ ] Implement email registration and enumeration-safe verification/resend.
-- [ ] Implement Argon2id login, secure HTTP-only cookie session/refresh rotation,
+- [x] Implement email registration and enumeration-safe verification/resend.
+- [x] Implement Argon2id login, secure HTTP-only cookie session/refresh rotation,
       reuse detection, logout/current/all-session invalidation, and session UI.
-- [ ] Implement enumeration-safe forgot/reset with short-lived single-use hashed
+- [x] Implement enumeration-safe forgot/reset with short-lived single-use hashed
       tokens; invalidate affected sessions on success.
-- [ ] Implement Google OAuth adapter with state, nonce, PKCE, exact redirects, and
+- [x] Implement Google OAuth adapter with state, nonce, PKCE, exact redirects, and
       safe account linking; deterministic local provider for tests.
-- [ ] Enforce CSRF, origin/CORS, rate/abuse controls, secure production cookie
+- [x] Enforce CSRF, origin/CORS, rate/abuse controls, secure production cookie
       settings, and no browser-readable persistent bearer token.
-- [ ] Add recent-auth hooks for future sensitive actions and future-compatible MFA
+- [x] Add recent-auth hooks for future sensitive actions and future-compatible MFA
       architecture without pretending MFA exists.
-- [ ] Build protected responsive AppShell, expanded/collapsed/mobile Sidebar,
+- [x] Build protected responsive AppShell, expanded/collapsed/mobile Sidebar,
       TopBar, active state, command search/notifications placeholders only when honest.
-- [ ] Convert dashboard from public fictional preview to protected real skeleton;
+- [x] Convert dashboard from public fictional preview to protected real skeleton;
       retain a separate explicit demo path only if product approves.
-- [ ] Implement resumable/skippable onboarding through account/guest choice,
+- [x] Implement resumable/skippable onboarding through account/guest choice,
       upload handoff, parsed review handoff, role/preferences, and dashboard; defer
       actual upload processing to Phase 2 without fake completion.
-- [ ] Build Settings skeleton for profile/account/sessions/consent with real state.
-- [ ] Pass anonymous, cross-user, session rotation/replay/fixation, CSRF, OAuth
+- [x] Build Settings skeleton for profile/account/sessions/consent with real state.
+- [x] Pass anonymous, cross-user, session rotation/replay/fixation, CSRF, OAuth
       collision, rate-limit, audit, keyboard, responsive, and e2e auth journey tests.
 
 Exit: a user can register, verify, log in, manage/rotate sessions, traverse
 onboarding, access protected shell, and log out; protected data fails closed.
 
+Evidence: migration `20260715_0002` upgrades, downgrades, and re-upgrades; 28
+backend, 34 API, 12 worker, 17 web, 8 UI, 3 contract, and 4 frontend-boundary
+tests pass; two real PostgreSQL/Redis integration workflows pass; and the isolated
+Playwright workflow passes 9 checks across desktop/mobile with one intentional
+desktop-only project exclusion. `scripts/verify-phase1.ps1` is the consolidated
+local gate. Exact closeout evidence and residual limitations live in `PLANS.md`.
+
 ## Phase 2 — Resume Upload, Parsing, and General Health
 
-Dependencies: Phase 1 identity/ownership; Phase 0 object/queue health.
+Dependencies: Phase 1 identity/ownership; Phase 0 object/queue health. Current
+status: complete; local gates and hosted run `29378312134` pass.
 
-- [ ] Add owned source-document, processing-job, canonical resume, analysis,
-      score-component, and finding models/migrations with state constraints.
-- [ ] Implement private upload intent/finalize flow, signature/MIME/size/page/
-      expansion validation, randomized object key, quarantine, deletion, and audit.
-- [ ] Integrate malware interface/local adapter; production-required scan failure
-      quarantines/fails closed. Reject macros/unsupported/encrypted inputs safely.
-- [ ] Run parsing in a no-execution, no-unnecessary-network, CPU/memory/PID/time-
-      limited worker with randomized temporary paths and cleanup.
-- [ ] Implement local PDF/DOCX text extraction, layout analysis, image-only
-      detection, optional OCR interface, and parser provider abstraction.
-- [ ] Produce canonical sections/entities/bullets with confidence and source spans;
-      allow user correction without mutating original source.
-- [ ] Implement idempotent async scan/parse/analyze status, progress, cancellation,
-      bounded retries, dead letters, trace, and safe errors.
-- [ ] Finalize versioned deterministic Resume Health features/formula and golden
-      explanations under `docs/scoring-methodology.md`.
-- [ ] Build registered and limited short-retention guest flows, report components,
-      issues/quick wins/section feedback, plain-text and reading-order previews,
-      parser warnings, and correction/save flow.
-- [ ] Show canonical score disclaimer and accessible text summaries; no employer
-      ATS/hiring-guarantee language.
-- [ ] Test all document fixtures, cross-user object/job/status/deletion access,
-      parser disagreement, determinism/rounding/missing data, malformed/polyglot/wrong
-      extension/oversize/bomb/path/malware/timeout, cleanup, and keyboard workflow.
+- [x] Migration `20260715_0003` adds exactly-one-owner guest sessions, upload
+      intents, source documents, derived artifacts, processing jobs/outbox/object
+      cleanup, fenced execution leases, immutable canonical snapshots, analyses with
+      feature schema/values/component contributions/findings, and redacted resume
+      audit events with constraints and ownership indexes.
+- [x] Private S3-compatible upload policy/intent/finalize uses exact expected
+      media/size, randomized staging and quarantine keys, signature checks,
+      account/guest quota, rate limiting, object promotion, durable deletion, and
+      audit without returning permanent credentials or a standalone/unsigned object
+      key; the staging key appears only inside its short-lived signed URL. Local `web-edge`
+      overwrites address headers from its socket peer before the unexposed web BFF
+      signs a neutral per-source API rate key; it is never authorization.
+- [x] Required ClamAV scanning fails closed. Local PDF/DOCX admission rejects
+      wrong-signature, malformed/encrypted/polyglot, macro, traversal, expansion,
+      PDF-page/universal-character-limit, malware, unavailable-scanner, and timeout
+      cases with safe codes. DOCX is bounded by byte/archive/expansion/character/
+      block/artifact limits because `python-docx` cannot provide authoritative
+      rendered page counts; layout-aware enforcement remains provider work.
+- [x] The worker runs non-root with a read-only filesystem, dropped capabilities,
+      no edge network, bounded CPU/memory/PIDs/time, a private randomized `noexec`
+      tmpfs path, and cleanup on normal/error exits. The current parser timeout
+      cannot kill its `asyncio.to_thread` thread; Celery/container limits mitigate
+      it, and per-parser subprocess isolation remains a documented hardening gap.
+- [x] Guarded local PDF/DOCX extraction produces plain text, ordered blocks,
+      source spans, confidence, parser warnings, authoritative PDF page count, and
+      image-only detection behind extractor/OCR/scanner/storage ports. DOCX has only
+      a nominal local page value because no renderer is present. OCR is a disabled
+      optional port, so image-only input returns insufficient data.
+- [x] The parser creates canonical sections/blocks as immutable revision 1.
+      Optimistic `If-Match` correction creates a successor snapshot, retains the
+      extracted original and spans, rejects an all-no-op update, and emits an audit
+      event. The API applies separate correction/analysis rate classes; the domain
+      caps canonical revisions and analysis history per document. Resume mutation
+      headers constrain `Idempotency-Key` to 8-128 `[A-Za-z0-9._:-]` characters and
+      `If-Match` to a quoted positive `int4` value no greater than `2147483647`.
+- [x] Parse, analyze, and delete jobs use owner-scoped state, request hashes,
+      idempotency, progress, cancellation, bounded retries, dead letter, safe
+      errors, trace IDs, allowlisted Celery payloads, per-invocation fencing, and a
+      lease longer than the worker hard timeout. Busy delivery retries, transactional
+      outbox dispatch, storage compensation, and retention cleanup all have durable,
+      bounded attempt/backoff/dead-letter state. A scheduled database-only reconciler
+      fences and requeues or dead-letters stale work within separate processing and
+      recovery budgets. Parse/analyze cancellation is cooperative; accepted deletion
+      is deliberately noncancellable.
+- [x] Resume Health `resume-health/1.0.0` / `resume-health-default/1` uses the
+      published fixed-point feature/component table, immutable snapshot binding,
+      persisted `resume-health-features/1` values and weighted contributions, feature
+      hash, exact golden expectations, findings, and no numeric value for image-only/
+      sparse input.
+- [x] Account and one-document/24-hour guest web flows implement direct upload,
+      real progress/cancel, processing polling, empty/loading/success/error,
+      plain-text/reading-order review, source-preserving correction, analysis,
+      report, explicit consented account claim, and durable deletion. Same-page
+      ambiguous transfer/finalize retry reuses in-memory intent/idempotency state;
+      reload recovery and resumable file transfer are not implemented.
+- [x] Reports show the canonical score disclaimer, components, findings, parser
+      warnings, stored measured values, and exact feature score/weight/contribution
+      details in keyboard-operable, color-independent disclosures; they never claim
+      an employer ATS score, hiring probability, or guarantee.
+- [x] Focused unit/component/API/worker/integration/E2E coverage exists for the
+      implemented fixture and threat matrix. The full format/lint/type/build,
+      migration round-trip, real PostgreSQL/Redis/MinIO/ClamAV, desktop/mobile
+      Playwright, container-policy, and separate security-scan gates pass; hosted CI
+      run `29378312134` passes all corresponding jobs.
 
 Exit: supported fixtures parse and can be corrected; scores reproduce/explain;
 malformed/hostile input fails safely; guest retention and user ownership hold.
 
+Closeout evidence and residual limitations are recorded in `PLANS.md`.
+
 ## Phase 3 — Career Profile, Evidence Vault, and Achievement Inbox
 
-Dependencies: Phase 1 ownership; Phase 2 canonical/source-span model.
+Dependencies: Phase 1 ownership; Phase 2 canonical/source-span model. Current
+status: locally complete; hosted CI evidence pending. The consolidated
+`scripts/verify-phase3.ps1` gate passed on 2026-07-19.
 
-- [ ] Add career profile, experience/education/project/skill/credential/etc.
+- [x] Add career profile, experience/education/project/skill/credential/etc.
       entities with ownership, constraints, source provenance, and concurrency.
-- [ ] Implement profile CRUD, timeline/list, accessible reorder, promotion and
+- [x] Implement profile CRUD, timeline/list, accessible reorder, promotion and
       concurrent-role grouping, conflict detection, and neutral gap display.
-- [ ] Import/correction proposes profile changes rather than overwriting truth.
-- [ ] Add evidence item/source/attachment/skill/metric/link models and audited
+- [x] Import/correction proposes profile changes rather than overwriting truth.
+- [x] Add evidence item/source/attachment/skill/metric/link models and audited
       Verified/Confirmed/Supported/Inferred/Unsupported transition rules.
-- [ ] Implement evidence CRUD/confirm/archive, private attachments, experience/
+- [x] Implement evidence CRUD/confirm/archive, private attachments, experience/
       skill/requirement links, and downstream usage view.
-- [ ] Enforce generation-eligibility query boundaries; unsupported/inferred/
+- [x] Enforce generation-eligibility query boundaries; unsupported/inferred/
       conflicted/unauthorized evidence cannot be used as fact input.
-- [ ] Implement Achievement Inbox quick add, guided neutral questions, draft,
+- [x] Implement Achievement Inbox quick add, guided neutral questions, draft,
       metric details, employer/project association, reminders, timeline, and explicit
       conversion to confirmed evidence.
-- [ ] Detect date/title/metric/entity conflicts without silently resolving them.
-- [ ] Test ownership, state transitions, source-span integrity, attachment access/
+- [x] Detect date/title/metric/entity conflicts without silently resolving them.
+- [x] Test ownership, state transitions, source-span integrity, attachment access/
       deletion, numeric confirmation, concurrency, conflict/audit, and accessible CRUD.
 
 Exit: users maintain career data independently of a resume; all evidence has
 ownership/provenance; unsupported evidence is excluded by tested domain policy.
+
+Evidence: migration `20260715_0004` upgrades, downgrades to `20260715_0003`, and
+re-upgrades; 132 backend unit/architecture, 92 API, 63 worker, 81 web, 12 UI, 3
+contract, 4 frontend-boundary, 2 web-edge, 11 real dependency integration, and 4
+isolated Playwright workflows pass. Two Phase 3 isolated mobile browser projects
+are intentionally skipped because the primary Career Record journey is desktop;
+shared responsive shell behavior remains covered by inherited auth flows. Exact
+closeout evidence and residual limitations live in `PLANS.md`.
 
 ## Phase 4 — Role Explorer and Role Readiness
 

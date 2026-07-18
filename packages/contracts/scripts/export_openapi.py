@@ -9,8 +9,25 @@ from typing import Any
 
 from careeros_api.application import create_app
 from careeros_api.config import Settings
+from pydantic_settings import PydanticBaseSettingsSource
 
 SCHEMA_PATH = Path(__file__).resolve().parents[1] / "openapi" / "careeros.openapi.json"
+
+
+class _SchemaSettings(Settings):
+    """Validate explicit defaults without consulting ambient configuration sources."""
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[Settings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        del cls, settings_cls, env_settings, dotenv_settings, file_secret_settings
+        return (init_settings,)
 
 
 def render_schema() -> str:
@@ -20,7 +37,7 @@ def render_schema() -> str:
         for name, field in Settings.model_fields.items()
     }
     default_values["environment"] = "test"
-    app = create_app(Settings.model_validate(default_values))
+    app = create_app(_SchemaSettings(**default_values))
     return json.dumps(app.openapi(), indent=2, sort_keys=True, ensure_ascii=False) + "\n"
 
 

@@ -15,6 +15,8 @@ status; consult `PLANS.md` for current behavior.
 | [0005](0005-ownership-scoped-tenancy-and-api-owned-sessions.md)       | Ownership-scoped data access with future organization tenancy and API-owned sessions | Accepted                               |
 | [0006](0006-asynchronous-isolated-document-processing.md)             | Hostile document and render work runs as isolated, idempotent background jobs        | Accepted                               |
 | [0007](0007-shared-modular-monolith-and-generated-contracts.md)       | Shared Python modular monolith, root uv workspace, and generated API contracts       | Accepted                               |
+| [0008](0008-identity-sessions-and-same-origin-web-api.md)             | API-owned opaque sessions, same-origin web proxy, CSRF, and provider boundaries      | Accepted                               |
+| [0009](0009-phase3-career-record-and-evidence-authority.md)           | Phase 3 career-record boundary, evidence authority, provenance, and attachments      | Accepted                               |
 
 ## Lifecycle
 
