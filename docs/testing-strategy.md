@@ -1,6 +1,6 @@
 # CareerOS testing strategy
 
-Status: Phase 2 local and hosted suites pass
+Status: Phase 4 local verification in progress
 Last reviewed: 2026-07-19
 
 ## Objectives
@@ -290,6 +290,33 @@ The migration gate is fresh bootstrap plus
 single-head/drift check. Final local counts and exact commands are recorded in
 `PLANS.md`; hosted CI evidence is recorded separately when an implementation
 revision is published.
+
+## Role Explorer and readiness coverage (Phase 4)
+
+Phase 4 keeps every Phase 3 gate and adds blocking coverage for ADR 0010:
+
+- Scoring tests cover no-signal insufficient data, deterministic fixed-point
+  weights, demonstrated versus listed skills, eligible evidence relevance, state
+  ceilings, and explainable required gaps.
+- Service tests cover role search/filtering, saved-role create/update/delete,
+  stale versions, owner denial, idempotency replay/conflict, snapshot reuse, audit
+  events, history, and two-or-three-role comparison.
+- Migration tests assert public taxonomy tables are intentionally not user-owned,
+  saved roles and analyses are owner-owned, indexes/constraints match the ORM,
+  and the graph upgrades from and downgrades to the Phase 3 head.
+- Repository integration uses real PostgreSQL to save roles, analyze against an
+  owned Career Record snapshot, fetch history, deny cross-user access, and prove
+  role-readiness audit rows do not store raw evidence text.
+- API tests cover authenticated reads, CSRF mutations, `If-Match`,
+  `Idempotency-Key`, owner-scoped not-found behavior, generated response shapes,
+  score disclaimer propagation, and comparison query bounds.
+- Web tests cover loading, empty, success, failure, saved-role notes, analysis,
+  evidence-linked result tables, history, comparison, accessible labels, and
+  non-color-only score summaries.
+- Full-stack Playwright registers a fictional user, creates and confirms career
+  evidence through Phase 3 UI, then saves, annotates, analyzes, and compares roles
+  in Role Explorer. The primary Role Explorer journey runs once in desktop
+  Chromium; inherited auth/workspace suites continue desktop/mobile coverage.
 
 ## Backend test portfolio
 

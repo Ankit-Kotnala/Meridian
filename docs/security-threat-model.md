@@ -1,6 +1,6 @@
 # CareerOS security threat model
 
-Status: Phase 3 Career Record controls implemented and locally verified
+Status: Phase 4 Role Explorer controls implemented in the working tree
 Method: asset/trust-boundary analysis with STRIDE-style threat enumeration  
 Last reviewed: 2026-07-19
 
@@ -17,11 +17,14 @@ canonical snapshots, processing jobs, Resume Health analyses, findings, and safe
 audit events. Phase 3 adds owned career facts, resume-import proposals, evidence
 and provenance, private PDF/DOCX evidence attachments, conflicts, achievement
 drafts, reminder preferences, immutable evidence history, and redacted Career
-Record audit. Their implemented controls are called out below. The product still
-does not fetch job/evidence URLs, make model requests, export documents, bill, or
-administrator actions; controls described for those later paths remain target
-requirements, not implementation claims. The fictional dashboard preview remains
-isolated at `/demo/dashboard` and does not use authenticated account state.
+Record audit. Phase 4 adds role taxonomy, saved roles, owner-scoped readiness
+analyses, evidence-linked competency results, idempotency records, and redacted
+Role Explorer audit. Their implemented controls are called out below. The product
+still does not fetch job/evidence URLs, make model requests, export documents,
+bill, or perform administrator actions; controls described for those later paths
+remain target requirements, not implementation claims. The fictional dashboard
+preview remains isolated at `/demo/dashboard` and does not use authenticated
+account state.
 
 ## Security objectives
 
@@ -404,8 +407,30 @@ gates pass as recorded in `PLANS.md`; hosted run `29378312134` also passes.
   cover the controls above. The desktop primary journey creates career data,
   confirms evidence, and explicitly converts an achievement; it does not exercise
   a mobile end-to-end career journey or independent verification. The final
-  local `scripts/verify-phase3.ps1` result passes; hosted Phase 3 CI remains
-  pending until the implementation tree is published.
+  local `scripts/verify-phase3.ps1` result and hosted Phase 3 CI pass as recorded
+  in `PLANS.md`.
+
+### Phase 4 implemented controls and verification status
+
+- Public role taxonomy rows carry source, license, version, and published time.
+  User-owned saved roles, readiness analyses, components, competency results,
+  evidence links, idempotency rows, and audit events carry non-null owner scope
+  and supporting indexes/constraints.
+- All routes require authenticated account sessions. Mutations require CSRF and
+  exact-origin protection; saved-role updates/deletes require strict `If-Match`;
+  analysis requires bounded idempotency keys. Cross-user saved-role and analysis
+  reads return not-found rather than exposing resource existence.
+- Readiness consumes only the Career Record application snapshot. It does not
+  query evidence tables, accept client evidence IDs as proof, copy raw evidence
+  text into analysis/audit rows, or treat a listed skill as demonstrated without
+  eligible matching evidence.
+- Scoring is deterministic fixed-point code with persisted engine/configuration/
+  feature-schema versions, feature hash, input snapshot, components, and
+  competency results. Responses include the internal-score disclaimer and never
+  label readiness as an ATS score, hiring probability, or guarantee.
+- Unit, migration-shape, API, repository integration, web component, and
+  Playwright workflow coverage exercise owner scope, idempotency, stale versions,
+  no-signal behavior, evidence relevance, comparison, and disclaimer display.
 
 ## Privacy, retention, and consent
 
@@ -540,6 +565,9 @@ integrity, ownership, migrations, object references, and documented RPO/RTO.
 - External HTTP(S) evidence URLs are stored as untrusted provenance metadata only;
   Phase 3 does not fetch them. Any future fetch must use the Phase 5 redirect/DNS/
   private-address/size/time SSRF policy rather than reusing a generic HTTP client.
+- Phase 4 uses a small CareerOS-authored seed role taxonomy. External taxonomy
+  provider ingestion, admin curation workflow, localization, and market-specific
+  role calibration remain later work.
 - Backups and third-party retention delay physical erasure; policy and user
   messaging must describe the bounded window accurately.
 - Local Compose is not hardened for hostile multi-user or internet-facing

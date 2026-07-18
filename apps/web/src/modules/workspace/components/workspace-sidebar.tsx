@@ -28,12 +28,12 @@ const availableNavigation: ReadonlyArray<{
   { href: "/resume-health/account", icon: FileHeart, label: "Resume Health" },
   { href: "/career-profile", icon: UserRound, label: "Career Profile" },
   { href: "/evidence", icon: Archive, label: "Evidence Vault" },
+  { href: "/role-explorer", icon: Target, label: "Role Explorer" },
   { href: "/onboarding", icon: UserRoundCheck, label: "Onboarding" },
   { href: "/settings", icon: Settings, label: "Settings" },
 ];
 
 const upcomingNavigation: ReadonlyArray<{ icon: LucideIcon; label: string }> = [
-  { icon: Target, label: "Role Explorer" },
   { icon: BriefcaseBusiness, label: "Applications" },
   { icon: BarChart3, label: "Analytics" },
 ];

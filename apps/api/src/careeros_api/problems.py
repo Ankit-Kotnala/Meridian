@@ -57,6 +57,15 @@ from careeros.modules.resume_health.domain.errors import (
     UploadExpired,
     UploadRejected,
 )
+from careeros.modules.role_readiness.domain.errors import (
+    RoleReadinessConflict,
+    RoleReadinessError,
+    RoleReadinessIdempotencyConflict,
+    RoleReadinessNotFound,
+    RoleReadinessUnavailable,
+    RoleReadinessValidationError,
+    RoleReadinessVersionConflict,
+)
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -215,6 +224,22 @@ def install_problem_handlers(app: FastAPI) -> None:
         status_code, code, title, detail = _career_record_problem_details(exc)
         logger.info(
             "career_record_request_rejected",
+            error_code=code,
+            status_code=status_code,
+        )
+        return problem_response(
+            request,
+            status_code=status_code,
+            code=code,
+            title=title,
+            detail=detail,
+        )
+
+    @app.exception_handler(RoleReadinessError)
+    async def role_readiness_problem(request: Request, exc: RoleReadinessError) -> JSONResponse:
+        status_code, code, title, detail = _role_readiness_problem_details(exc)
+        logger.info(
+            "role_readiness_request_rejected",
             error_code=code,
             status_code=status_code,
         )
@@ -399,6 +424,59 @@ def _career_record_problem_details(
     return (
         status.HTTP_400_BAD_REQUEST,
         "career_record_rejected",
+        "Request rejected",
+        "The request could not be completed.",
+    )
+
+
+def _role_readiness_problem_details(
+    exc: RoleReadinessError,
+) -> tuple[int, str, str, str]:
+    if isinstance(exc, RoleReadinessUnavailable):
+        return (
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "role_readiness_unavailable",
+            "Role readiness unavailable",
+            "Role readiness services are temporarily unavailable.",
+        )
+    if isinstance(exc, RoleReadinessNotFound):
+        return (
+            status.HTTP_404_NOT_FOUND,
+            "role_readiness_not_found",
+            "Resource not found",
+            "The requested resource was not found.",
+        )
+    if isinstance(exc, RoleReadinessVersionConflict):
+        return (
+            status.HTTP_409_CONFLICT,
+            "role_readiness_version_conflict",
+            "Version conflict",
+            "This information changed. Refresh and try again.",
+        )
+    if isinstance(exc, RoleReadinessIdempotencyConflict):
+        return (
+            status.HTTP_409_CONFLICT,
+            "role_readiness_idempotency_conflict",
+            "Request conflict",
+            "This request key was already used for a different operation.",
+        )
+    if isinstance(exc, RoleReadinessConflict):
+        return (
+            status.HTTP_409_CONFLICT,
+            "role_readiness_conflict",
+            "Request conflict",
+            "The request conflicts with current role readiness state.",
+        )
+    if isinstance(exc, RoleReadinessValidationError):
+        return (
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "role_readiness_validation_error",
+            "Request validation failed",
+            "Review the submitted role readiness values.",
+        )
+    return (
+        status.HTTP_400_BAD_REQUEST,
+        "role_readiness_rejected",
         "Request rejected",
         "The request could not be completed.",
     )

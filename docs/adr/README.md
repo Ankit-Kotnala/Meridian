@@ -17,6 +17,7 @@ status; consult `PLANS.md` for current behavior.
 | [0007](0007-shared-modular-monolith-and-generated-contracts.md)       | Shared Python modular monolith, root uv workspace, and generated API contracts       | Accepted                               |
 | [0008](0008-identity-sessions-and-same-origin-web-api.md)             | API-owned opaque sessions, same-origin web proxy, CSRF, and provider boundaries      | Accepted                               |
 | [0009](0009-phase3-career-record-and-evidence-authority.md)           | Phase 3 career-record boundary, evidence authority, provenance, and attachments      | Accepted                               |
+| [0010](0010-phase4-role-readiness.md)                                 | Phase 4 Role Explorer taxonomy, deterministic readiness, and evidence boundary       | Accepted                               |
 
 ## Lifecycle
 

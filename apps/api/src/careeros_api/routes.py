@@ -11,6 +11,7 @@ from careeros_api.config import Settings
 from careeros_api.constants import SCORING_DISCLAIMER
 from careeros_api.identity_routes import router as identity_router
 from careeros_api.resume_health_routes import router as resume_health_router
+from careeros_api.role_readiness_routes import router as role_readiness_router
 from careeros_api.schemas import (
     ComponentReadiness,
     HealthResponse,
@@ -23,6 +24,7 @@ router = APIRouter()
 router.include_router(identity_router)
 router.include_router(resume_health_router)
 router.include_router(career_record_router)
+router.include_router(role_readiness_router)
 
 
 def _settings(request: Request) -> Settings:

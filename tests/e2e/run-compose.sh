@@ -21,8 +21,12 @@ case "$verification_phase" in
     rollback_revision=20260715_0003
     expected_migration_head=20260715_0004
     ;;
+  4)
+    rollback_revision=20260715_0004
+    expected_migration_head=20260719_0005
+    ;;
   *)
-    echo "CAREEROS_E2E_PHASE must be either 2 or 3." >&2
+    echo "CAREEROS_E2E_PHASE must be 2, 3, or 4." >&2
     exit 2
     ;;
 esac
@@ -131,6 +135,13 @@ run_browser_journeys() {
         e2e/auth-journey.spec.ts \
         e2e/resume-health-journey.spec.ts \
         e2e/career-record-journey.spec.ts
+      ;;
+    4)
+      pnpm --filter @careeros/web exec playwright test \
+        e2e/auth-journey.spec.ts \
+        e2e/resume-health-journey.spec.ts \
+        e2e/career-record-journey.spec.ts \
+        e2e/role-readiness-journey.spec.ts
       ;;
   esac
 }

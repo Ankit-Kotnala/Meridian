@@ -2,7 +2,7 @@
 
 Last updated: 2026-07-19
 Plan owner: engineering  
-Current status: **Phase 3 complete; Phase 4 is next**
+Current status: **Phase 4 implemented; verification in progress**
 
 ## Status legend
 
@@ -551,6 +551,99 @@ evidence are listed below.
   remain Phase 10 work. Phase 3 owner-scoped delete and object cleanup do not
   substitute for account-wide orchestration.
 
+## Phase 4 scope and status
+
+Current status: **implemented; final verification in progress**. The active tree
+adds Role Explorer and Role Readiness as a production vertical slice, but this
+phase remains open until the full format, lint, type, test, build, integration,
+and isolated Phase 4 browser gates pass on the final documentation-aligned tree.
+
+### Included
+
+- [x] Migration `20260719_0005` adds public versioned role taxonomy tables,
+      competencies, owner-scoped saved roles, readiness analyses, components,
+      competency results, evidence links, idempotency records, and redacted
+      audit events.
+- [x] Seed a CareerOS-authored taxonomy version
+      `careeros-seed-roles/2026-07-19` with Product Manager, Software Engineer,
+      and Data Analyst definitions and deterministic UUIDs.
+- [x] Add `careeros.modules.role_readiness` with framework-independent domain
+      entities, deterministic fixed-point scoring, application service/ports, and
+      SQLAlchemy infrastructure.
+- [x] Consume Phase 3 Career Record through
+      `CareerRecordService.readiness_snapshot`; the role module does not query
+      Career Record tables or trust client-supplied evidence IDs.
+- [x] Expose authenticated `/api/v1/roles`, `/api/v1/saved-roles`, and
+      `/api/v1/role-readiness` routes with server-side input validation,
+      owner-scoped authorization, CSRF, `If-Match`, idempotency, safe problems,
+      no-store responses, and generated OpenAPI contracts.
+- [x] Build the authenticated `/role-explorer` web workflow with role search,
+      save/update/delete, analysis, evidence-linked result tables, history,
+      comparison, loading/empty/success/error states, keyboard-named controls,
+      and the canonical score disclaimer.
+- [x] Add unit, migration-shape, API, repository integration, web component, and
+      full-stack Playwright coverage for the primary workflow.
+- [x] Add ADR 0010 and update API, architecture, scoring, security, testing,
+      checklist, README, Make, CI, and isolated E2E scripts for Phase 4.
+
+### Pre-edit review and acceptance baseline
+
+The preceding Phase 3 acceptance criteria were rechecked before Phase 4 edits:
+hosted CI run `29658296318` on implementation commit `65face5` passed every
+published Phase 3 job. The Phase 3 implementation already proved account-owned
+Career Profile, Evidence Vault, Achievement Inbox, attachment processing,
+eligible-evidence exclusion, and the isolated Career Record browser journey.
+
+Reviewed before editing:
+
+- Repository rules in `AGENTS.md`, especially source-of-truth, provenance,
+  owner-scoping, generated-contract, and verification requirements.
+- ADRs 0002, 0003, 0005, 0007, 0008, and 0009. ADR 0009 was the blocking
+  architecture constraint for this phase: Role Readiness must use Career Record
+  through an application query boundary.
+- The attached UI/product reference for Role Explorer: role search/select without
+  job text, saved roles, evidence-linked readiness, compare two or three roles,
+  history, loading/empty/error/success states, and no hiring-probability claims.
+- `docs/scoring-methodology.md`, including the canonical internal-score
+  disclaimer and Role Readiness dimension weights.
+
+### Blocking technical debt assessment
+
+No unresolved technical debt blocks the Phase 4 slice. The only blocking debt
+identified before implementation was a potential cross-module persistence leak:
+Role Readiness needed profile/evidence inputs but must not query Career Record
+tables. That is addressed by `CareerRecordService.readiness_snapshot`, which
+returns a bounded owner-scoped snapshot of profile signals and eligible evidence
+through the Phase 3 application boundary.
+
+### Verification evidence
+
+| Check                                            | Status  | Evidence                                                                                                                                                                                                          |
+| ------------------------------------------------ | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pre-edit Phase 3 baseline                        | Pass    | Hosted CI run `29658296318` passed the previous implementation tree before Phase 4 edits.                                                                                                                         |
+| Backend focused Ruff and mypy                    | Pass    | `uv run --package careeros-backend ruff check ...` and `uv run --package careeros-backend mypy` pass for the new backend surface.                                                                                 |
+| Backend focused unit/migration tests             | Pass    | Role Readiness scoring/service/migration plus migration-graph tests passed (`9 passed`).                                                                                                                          |
+| API focused Ruff, mypy, and tests                | Pass    | API Ruff, mypy, `tests/test_role_readiness_routes.py`, and `tests/test_contract_export.py` pass (`3 passed`, one Starlette deprecation warning).                                                                  |
+| Generated contracts                              | Pass    | `pnpm contracts:generate` and `pnpm --filter @careeros/contracts build` completed after API schema changes.                                                                                                       |
+| Web focused Prettier, lint, typecheck, component | Pass    | Role Explorer files format; `pnpm --filter @careeros/web lint`, `typecheck`, and focused Vitest pass (`3 passed`).                                                                                                |
+| Phase 4 E2E discovery                            | Pass    | With `PLAYWRIGHT_E2E_MODE=full-stack`, Playwright lists the Role Explorer desktop/mobile projects; the spec desktop path runs in the isolated Phase 4 stack.                                                      |
+| Final repository gates                           | Pending | Required before marking Phase 4 complete: `make format-check`, `make lint`, `make typecheck`, `make test`, `make test-integration`, `make build`, and `make test-e2e-stack-phase4` / `scripts/verify-phase4.ps1`. |
+
+### Known limitations and deferred work
+
+- The Phase 4 taxonomy is a small CareerOS-authored seed, not an external labor
+  market taxonomy. External provider ingestion, admin curation, localization,
+  market calibration, and taxonomy lifecycle operations remain future work.
+- Role Readiness is a general role comparison, not an exact job match. It does
+  not import job descriptions, fetch URLs, extract source-spanned job
+  requirements, or compute Application Readiness; those remain Phase 5.
+- The deterministic keyword/relevance matcher is intentionally conservative and
+  explainable. It does not use embeddings, model inference, or semantic
+  retrieval; future improvements require new formula/config versions and tests.
+- The primary Role Explorer E2E workflow is desktop-only, while inherited auth
+  and shared workspace suites continue to cover mobile navigation and shell
+  behavior.
+
 ## Roadmap and phase gates
 
 | Phase                                                       | Outcomes                                                                                                                           | Depends on  | Exit evidence                                                                                          |
@@ -650,9 +743,10 @@ At the end of every phase:
 
 ## Next phase
 
-Phase 3 is locally and hosted verified. The next product phase is **Phase 4 -
-Role Explorer and Role Readiness**. It will introduce a licensed/versioned role
-taxonomy, role search/save/compare, and deterministic readiness snapshots that
-consume only the Phase 3 owner-scoped evidence-eligibility query. Every strength,
-gap, unknown, transition, and score component must remain explainable without
-presenting readiness as a hiring probability.
+After Phase 4 is fully verified, the next product phase is **Phase 5 - Job Match,
+Requirement Matrix, and Opportunity Prioritizer**. It must keep using Phase 3
+eligible evidence and Phase 4 role context while adding exact job imports,
+source-spanned requirements, SSRF-hardened URL fetching, deterministic
+requirement coverage, and opportunity-priority explanations. Every requirement
+match must trace to authorized evidence or an explicit missing/unknown state, and
+no output may be presented as a hiring probability.
