@@ -21,7 +21,11 @@ from careeros.modules.role_readiness.domain import (
     RoleTaxonomyVersion,
     SavedRole,
 )
-from careeros.modules.role_readiness.domain.scoring import CareerReadinessSnapshot
+from careeros.modules.role_readiness.domain.scoring import (
+    CareerReadinessSnapshot,
+    SnapshotEvidence,
+    SnapshotSkill,
+)
 
 NOW = datetime(2026, 7, 19, 12, tzinfo=UTC)
 TAXONOMY_ID = UUID("00000000-0000-4000-8000-000000000401")
@@ -50,6 +54,26 @@ class StaticSnapshotProvider:
     async def snapshot(self, owner_user_id: UUID) -> CareerReadinessSnapshot:
         self.requests.append(owner_user_id)
         return self.snapshot_value
+
+
+def sample_readiness_snapshot() -> CareerReadinessSnapshot:
+    skill_id = UUID("00000000-0000-4000-8000-000000000701")
+    return CareerReadinessSnapshot(
+        skills=(SnapshotSkill(skill_id, "User research", "Product", "advanced"),),
+        entities=(),
+        evidence=(
+            SnapshotEvidence(
+                id=UUID("00000000-0000-4000-8000-000000000801"),
+                title="Confirmed customer discovery",
+                statement="Confirmed evidence about user research with customers.",
+                context="The owner confirmed the evidence in the evidence vault.",
+                strength="confirmed",
+                skill_ids=(skill_id,),
+                entity_ids=(),
+                has_numeric_claim=False,
+            ),
+        ),
+    )
 
 
 class MemoryRoleReadiness:

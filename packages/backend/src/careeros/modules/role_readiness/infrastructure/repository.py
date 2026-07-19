@@ -210,6 +210,7 @@ class SqlAlchemyRoleReadinessUnitOfWork:
         await self._flush()
         self.session.add_all(_component_model(item) for item in record.components)
         self.session.add_all(_result_model(item) for item in record.competency_results)
+        await self._flush()
         self.session.add_all(_evidence_link_model(item) for item in record.evidence_links)
         await self._flush()
 

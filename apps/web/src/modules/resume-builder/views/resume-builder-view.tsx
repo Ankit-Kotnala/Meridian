@@ -1,0 +1,719 @@
+"use client";
+
+import {
+  AlertTriangle,
+  ArrowDown,
+  ArrowUp,
+  CheckCircle2,
+  Download,
+  FileText,
+  History,
+  Plus,
+  RotateCcw,
+  Save,
+} from "lucide-react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
+
+import {
+  Alert,
+  Badge,
+  Button,
+  EmptyState,
+  ErrorState,
+  Input,
+  LoadingSkeleton,
+  Select,
+  cn,
+} from "@careeros/ui";
+
+import { requestErrorMessage } from "@/shared/api/browser-request";
+
+import {
+  createDownloadIntent,
+  createResume,
+  createVersion,
+  exportVersion,
+  listResumes,
+  listVersions,
+  restoreVersion,
+  updateResume,
+} from "../api/resume-builder-api";
+import type {
+  Resume,
+  ResumeExportRecord,
+  ResumeSectionResponse,
+  ResumeVersion,
+} from "../api/types";
+
+const templates = [
+  ["standard_professional", "Standard Professional"],
+  ["compact_technical", "Compact Technical"],
+  ["executive", "Executive"],
+  ["graduate", "Graduate"],
+  ["consulting_finance", "Consulting and Finance"],
+] as const;
+
+const formats = [
+  ["pdf", "PDF"],
+  ["docx", "DOCX"],
+  ["text", "Text"],
+  ["json", "JSON"],
+] as const;
+
+type TemplateValue = (typeof templates)[number][0];
+type FormatValue = (typeof formats)[number][0];
+
+export function ResumeBuilderView() {
+  const [resumes, setResumes] = useState<Resume[]>([]);
+  const [selectedId, setSelectedId] = useState<string>("");
+  const [versions, setVersions] = useState<ResumeVersion[]>([]);
+  const [exportRecord, setExportRecord] = useState<ResumeExportRecord>();
+  const [downloadUrl, setDownloadUrl] = useState<string>();
+  const [failure, setFailure] = useState<string>();
+  const [success, setSuccess] = useState<string>();
+  const [busyKey, setBusyKey] = useState("initial");
+  const [title, setTitle] = useState("Focused Resume");
+  const [targetRole, setTargetRole] = useState("");
+  const [template, setTemplate] = useState<TemplateValue>(
+    "standard_professional",
+  );
+  const [format, setFormat] = useState<FormatValue>("pdf");
+
+  const selected = useMemo(
+    () => resumes.find((item) => item.id === selectedId),
+    [resumes, selectedId],
+  );
+
+  useEffect(() => {
+    let active = true;
+    async function load() {
+      setBusyKey("initial");
+      setFailure(undefined);
+      try {
+        const items = await listResumes();
+        if (!active) return;
+        setResumes(items);
+        const first = items[0];
+        if (first) {
+          setSelectedId(first.id);
+          setTitle(first.title);
+          setTargetRole(first.targetRole ?? "");
+          setTemplate(first.template);
+        }
+      } catch (error) {
+        if (active) {
+          setFailure(
+            requestErrorMessage(error, "Resume Builder could not load."),
+          );
+        }
+      } finally {
+        if (active) setBusyKey("");
+      }
+    }
+    void load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!selected) return;
+    const resumeId = selected.id;
+    let active = true;
+    async function loadVersions() {
+      try {
+        const items = await listVersions(resumeId);
+        if (active) setVersions(items);
+      } catch {
+        if (active) setVersions([]);
+      }
+    }
+    void loadVersions();
+    return () => {
+      active = false;
+    };
+  }, [selected]);
+
+  async function submitCreate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await run("create", async () => {
+      const created = await createResume({
+        targetRole: targetRole.trim() || null,
+        template,
+        title: title.trim(),
+      });
+      setResumes((items) => [created, ...items]);
+      setSelectedId(created.id);
+      setVersions([]);
+      setExportRecord(undefined);
+      setDownloadUrl(undefined);
+      setSuccess("Resume created from eligible Career Record evidence.");
+    });
+  }
+
+  async function saveDraft() {
+    if (!selected) return;
+    await run("save", async () => {
+      const updated = await updateResume(selected, {
+        targetRole: targetRole.trim() || null,
+        template,
+        title: title.trim(),
+      });
+      replaceResume(updated);
+      setSuccess("Resume saved.");
+    });
+  }
+
+  async function moveSection(index: number, direction: -1 | 1) {
+    if (!selected) return;
+    const sections = [...selected.currentVersion.sections];
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= sections.length) return;
+    const [section] = sections.splice(index, 1);
+    if (!section) return;
+    sections.splice(nextIndex, 0, section);
+    await run(`move-${section.id}`, async () => {
+      const updated = await updateResume(selected, { sections });
+      replaceResume(updated);
+      setSuccess("Section order saved.");
+    });
+  }
+
+  async function addGroundedBullet(section: ResumeSectionResponse) {
+    if (!selected) return;
+    const source = selected.currentVersion.sections
+      .flatMap((value) => value.items)
+      .find((item) => item.evidenceIds.length > 0);
+    if (!source) return;
+    const sections = selected.currentVersion.sections.map((value) =>
+      value.id === section.id
+        ? {
+            ...value,
+            items: [
+              ...value.items,
+              {
+                ...source,
+                id: crypto.randomUUID(),
+                source: source.source || "career_record",
+              },
+            ],
+          }
+        : value,
+    );
+    await run(`add-${section.id}`, async () => {
+      const updated = await updateResume(selected, { sections });
+      replaceResume(updated);
+      setSuccess("Grounded bullet added.");
+    });
+  }
+
+  async function snapshotVersion() {
+    if (!selected) return;
+    await run("version", async () => {
+      const version = await createVersion(selected);
+      setVersions((items) => [...items, version]);
+      setSuccess(`Version ${version.versionNumber} saved.`);
+    });
+  }
+
+  async function restore(versionId: string) {
+    if (!selected) return;
+    await run(`restore-${versionId}`, async () => {
+      const restored = await restoreVersion(selected, versionId);
+      replaceResume(restored);
+      setTitle(restored.title);
+      setTargetRole(restored.targetRole ?? "");
+      setTemplate(restored.template);
+      setSuccess("Version restored.");
+    });
+  }
+
+  async function exportCurrent() {
+    if (!selected) return;
+    await run("export", async () => {
+      const record = await exportVersion(selected.currentVersion.id, {
+        format,
+      });
+      setExportRecord(record);
+      setDownloadUrl(undefined);
+      if (record.export.status === "blocked") {
+        setFailure("Round-trip verification blocked this export.");
+      } else {
+        setSuccess("Export verified.");
+      }
+    });
+  }
+
+  async function downloadExport() {
+    if (!exportRecord) return;
+    await run("download", async () => {
+      const intent = await createDownloadIntent(exportRecord.export.id);
+      setDownloadUrl(intent.url);
+      setSuccess("Download is ready.");
+    });
+  }
+
+  async function run(key: string, action: () => Promise<void>) {
+    setBusyKey(key);
+    setFailure(undefined);
+    setSuccess(undefined);
+    try {
+      await action();
+    } catch (error) {
+      setFailure(
+        requestErrorMessage(
+          error,
+          "Resume Builder could not complete that action.",
+        ),
+      );
+    } finally {
+      setBusyKey("");
+    }
+  }
+
+  function replaceResume(next: Resume) {
+    setResumes((items) =>
+      items.map((item) => (item.id === next.id ? next : item)),
+    );
+  }
+
+  if (busyKey === "initial") return <ResumeBuilderLoading />;
+  if (failure && resumes.length === 0) {
+    return (
+      <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8" id="main-content">
+        <ErrorState
+          description={failure}
+          title="Resume Builder could not load"
+        />
+      </main>
+    );
+  }
+
+  return (
+    <main
+      className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8"
+      id="main-content"
+    >
+      <div aria-live="polite" className="sr-only">
+        {success || failure || ""}
+      </div>
+
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-primary">
+            Resume Builder
+          </p>
+          <h1 className="mt-1 text-2xl font-black text-foreground">
+            Verified resume exports
+          </h1>
+        </div>
+        <form
+          aria-label="Create a resume"
+          className="grid gap-2 sm:grid-cols-[minmax(0,12rem)_minmax(0,13rem)_11rem_auto]"
+          onSubmit={(event) => void submitCreate(event)}
+        >
+          <label className="sr-only" htmlFor="resume-title">
+            Resume title
+          </label>
+          <Input
+            id="resume-title"
+            maxLength={120}
+            onChange={(event) => setTitle(event.target.value)}
+            required
+            value={title}
+          />
+          <label className="sr-only" htmlFor="target-role">
+            Target role
+          </label>
+          <Input
+            id="target-role"
+            maxLength={120}
+            onChange={(event) => setTargetRole(event.target.value)}
+            placeholder="Target role"
+            value={targetRole}
+          />
+          <label className="sr-only" htmlFor="template">
+            Template
+          </label>
+          <Select
+            id="template"
+            onChange={(event) =>
+              setTemplate(event.target.value as TemplateValue)
+            }
+            value={template}
+          >
+            {templates.map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </Select>
+          <Button loading={busyKey === "create"} type="submit">
+            <FileText aria-hidden="true" className="size-4" />
+            Create
+          </Button>
+        </form>
+      </div>
+
+      {failure && resumes.length > 0 && (
+        <Alert title="Action failed" tone="danger">
+          {failure}
+        </Alert>
+      )}
+      {success && (
+        <Alert title="Ready" tone="success">
+          {success}
+        </Alert>
+      )}
+
+      {resumes.length === 0 ? (
+        <EmptyState
+          description="Add confirmed evidence in Career Profile before creating a resume."
+          title="No resumes yet"
+        />
+      ) : (
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">
+          <section aria-labelledby="editor-heading" className="space-y-4">
+            <div className="rounded-lg border border-line bg-white p-4 shadow-sm">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <h2
+                    className="text-lg font-black text-foreground"
+                    id="editor-heading"
+                  >
+                    Structured editor
+                  </h2>
+                  {selected && (
+                    <p className="mt-1 text-sm text-muted">
+                      Version {selected.currentVersion.versionNumber}
+                    </p>
+                  )}
+                </div>
+                <div className="grid gap-2 sm:grid-cols-[minmax(0,13rem)_auto_auto]">
+                  <label className="sr-only" htmlFor="resume-select">
+                    Resume
+                  </label>
+                  <Select
+                    id="resume-select"
+                    onChange={(event) => {
+                      const next = resumes.find(
+                        (item) => item.id === event.target.value,
+                      );
+                      setSelectedId(event.target.value);
+                      setVersions([]);
+                      setExportRecord(undefined);
+                      setDownloadUrl(undefined);
+                      if (next) {
+                        setTitle(next.title);
+                        setTargetRole(next.targetRole ?? "");
+                        setTemplate(next.template);
+                      }
+                    }}
+                    value={selectedId}
+                  >
+                    {resumes.map((resume) => (
+                      <option key={resume.id} value={resume.id}>
+                        {resume.title}
+                      </option>
+                    ))}
+                  </Select>
+                  <Button
+                    disabled={!selected}
+                    loading={busyKey === "save"}
+                    onClick={() => void saveDraft()}
+                    type="button"
+                    variant="secondary"
+                  >
+                    <Save aria-hidden="true" className="size-4" />
+                    Save
+                  </Button>
+                  <Button
+                    disabled={!selected}
+                    loading={busyKey === "version"}
+                    onClick={() => void snapshotVersion()}
+                    type="button"
+                  >
+                    <History aria-hidden="true" className="size-4" />
+                    Version
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {selected && (
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                <section
+                  aria-label="Resume sections"
+                  className="rounded-lg border border-line bg-white p-4 shadow-sm"
+                >
+                  <div className="space-y-3">
+                    {selected.currentVersion.sections.map((section, index) => (
+                      <article
+                        className="rounded-lg border border-line bg-slate-50 p-3"
+                        key={section.id}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <h3 className="text-sm font-black text-foreground">
+                              {section.title}
+                            </h3>
+                            <p className="text-xs text-muted">{section.kind}</p>
+                          </div>
+                          <div className="flex gap-1">
+                            <IconButton
+                              disabled={index === 0}
+                              label={`Move ${section.title} up`}
+                              loading={busyKey === `move-${section.id}`}
+                              onClick={() => void moveSection(index, -1)}
+                            >
+                              <ArrowUp aria-hidden="true" className="size-4" />
+                            </IconButton>
+                            <IconButton
+                              disabled={
+                                index ===
+                                selected.currentVersion.sections.length - 1
+                              }
+                              label={`Move ${section.title} down`}
+                              loading={busyKey === `move-${section.id}`}
+                              onClick={() => void moveSection(index, 1)}
+                            >
+                              <ArrowDown
+                                aria-hidden="true"
+                                className="size-4"
+                              />
+                            </IconButton>
+                            <IconButton
+                              label={`Add grounded bullet to ${section.title}`}
+                              loading={busyKey === `add-${section.id}`}
+                              onClick={() => void addGroundedBullet(section)}
+                            >
+                              <Plus aria-hidden="true" className="size-4" />
+                            </IconButton>
+                          </div>
+                        </div>
+                        <ul className="mt-3 space-y-2">
+                          {section.items.length === 0 ? (
+                            <li className="text-sm text-muted">No items</li>
+                          ) : (
+                            section.items.map((item) => (
+                              <li
+                                className="text-sm text-foreground"
+                                key={item.id}
+                              >
+                                {item.text}
+                                <span className="ml-2 text-xs text-muted">
+                                  {item.evidenceIds.length} evidence
+                                </span>
+                              </li>
+                            ))
+                          )}
+                        </ul>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+
+                <section
+                  aria-label="Plain text preview"
+                  className="rounded-lg border border-line bg-white p-4 shadow-sm"
+                >
+                  <h2 className="text-sm font-black text-foreground">
+                    Recruiter preview
+                  </h2>
+                  <pre className="mt-3 max-h-[34rem] overflow-auto whitespace-pre-wrap rounded-lg bg-slate-950 p-4 text-sm leading-6 text-white">
+                    {selected.currentVersion.plainText}
+                  </pre>
+                </section>
+              </div>
+            )}
+          </section>
+
+          <aside className="space-y-4">
+            <section
+              aria-labelledby="export-heading"
+              className="rounded-lg border border-line bg-white p-4 shadow-sm"
+            >
+              <h2
+                className="text-lg font-black text-foreground"
+                id="export-heading"
+              >
+                Export
+              </h2>
+              <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_auto] xl:grid-cols-1">
+                <label className="sr-only" htmlFor="export-format">
+                  Export format
+                </label>
+                <Select
+                  id="export-format"
+                  onChange={(event) =>
+                    setFormat(event.target.value as FormatValue)
+                  }
+                  value={format}
+                >
+                  {formats.map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </Select>
+                <Button
+                  disabled={!selected}
+                  loading={busyKey === "export"}
+                  onClick={() => void exportCurrent()}
+                  type="button"
+                >
+                  <CheckCircle2 aria-hidden="true" className="size-4" />
+                  Verify
+                </Button>
+              </div>
+
+              {exportRecord && (
+                <div className="mt-4 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <Badge
+                      tone={
+                        exportRecord.export.status === "blocked"
+                          ? "danger"
+                          : exportRecord.export.verificationStatus === "warning"
+                            ? "warning"
+                            : "success"
+                      }
+                    >
+                      {exportRecord.export.status}
+                    </Badge>
+                    <span className="text-xs text-muted">
+                      {exportRecord.export.sizeBytes} bytes
+                    </span>
+                  </div>
+                  {exportRecord.verification?.criticalFailures.length ? (
+                    <Alert title="Blocked" tone="danger">
+                      {exportRecord.verification.criticalFailures.join(", ")}
+                    </Alert>
+                  ) : exportRecord.verification?.warnings.length ? (
+                    <Alert title="Warnings" tone="warning">
+                      {exportRecord.verification.warnings.join(", ")}
+                    </Alert>
+                  ) : (
+                    <Alert title="Round-trip verified" tone="success">
+                      Searchable output matched the source version.
+                    </Alert>
+                  )}
+                  <Button
+                    disabled={exportRecord.export.status !== "verified"}
+                    loading={busyKey === "download"}
+                    onClick={() => void downloadExport()}
+                    type="button"
+                    variant="secondary"
+                  >
+                    <Download aria-hidden="true" className="size-4" />
+                    Download
+                  </Button>
+                  {downloadUrl && (
+                    <a
+                      className="block break-all text-sm font-semibold text-primary underline-offset-4 hover:underline"
+                      href={downloadUrl}
+                      rel="noreferrer"
+                    >
+                      {downloadUrl}
+                    </a>
+                  )}
+                </div>
+              )}
+            </section>
+
+            <section
+              aria-labelledby="history-heading"
+              className="rounded-lg border border-line bg-white p-4 shadow-sm"
+            >
+              <h2
+                className="text-lg font-black text-foreground"
+                id="history-heading"
+              >
+                History
+              </h2>
+              <div className="mt-4 space-y-2">
+                {versions.length === 0 ? (
+                  <p className="text-sm text-muted">No versions</p>
+                ) : (
+                  versions.map((version) => (
+                    <div
+                      className={cn(
+                        "flex items-center justify-between gap-3 rounded-lg border border-line p-3",
+                        selected?.currentVersionId === version.id &&
+                          "bg-primary-soft",
+                      )}
+                      key={version.id}
+                    >
+                      <div>
+                        <p className="text-sm font-bold text-foreground">
+                          Version {version.versionNumber}
+                        </p>
+                        <p className="text-xs text-muted">{version.title}</p>
+                      </div>
+                      <IconButton
+                        disabled={selected?.currentVersionId === version.id}
+                        label={`Restore version ${version.versionNumber}`}
+                        loading={busyKey === `restore-${version.id}`}
+                        onClick={() => void restore(version.id)}
+                      >
+                        <RotateCcw aria-hidden="true" className="size-4" />
+                      </IconButton>
+                    </div>
+                  ))
+                )}
+              </div>
+            </section>
+          </aside>
+        </div>
+      )}
+    </main>
+  );
+}
+
+function IconButton({
+  children,
+  disabled,
+  label,
+  loading,
+  onClick,
+}: {
+  children: ReactNode;
+  disabled?: boolean;
+  label: string;
+  loading?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      aria-label={label}
+      className="grid size-9 place-items-center rounded-lg border border-line bg-white text-muted shadow-sm transition hover:border-primary hover:text-primary focus:outline-none focus:ring-3 focus:ring-primary-soft disabled:cursor-not-allowed disabled:opacity-50"
+      disabled={disabled || loading}
+      onClick={onClick}
+      title={label}
+      type="button"
+    >
+      {loading ? (
+        <AlertTriangle aria-hidden="true" className="size-4" />
+      ) : (
+        children
+      )}
+    </button>
+  );
+}
+
+function ResumeBuilderLoading() {
+  return (
+    <main
+      className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8"
+      id="main-content"
+    >
+      <LoadingSkeleton />
+    </main>
+  );
+}

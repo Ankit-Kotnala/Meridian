@@ -1,6 +1,6 @@
 # CareerOS testing strategy
 
-Status: Phase 4 local verification in progress
+Status: Phase 7 implementation locally verified
 Last reviewed: 2026-07-19
 
 ## Objectives
@@ -317,6 +317,115 @@ Phase 4 keeps every Phase 3 gate and adds blocking coverage for ADR 0010:
   evidence through Phase 3 UI, then saves, annotates, analyzes, and compares roles
   in Role Explorer. The primary Role Explorer journey runs once in desktop
   Chromium; inherited auth/workspace suites continue desktop/mobile coverage.
+
+The consolidated `scripts/verify-phase4.ps1` gate passed on 2026-07-19. It
+retains the previous phase gates, verifies migration
+`20260715_0004 -> 20260719_0005 -> 20260715_0004 -> 20260719_0005`, runs real
+dependency integrations, and exercises the authenticated Role Explorer
+save/analyze/compare journey in the isolated stack.
+
+## Job Match and Opportunity Priority coverage (Phase 5)
+
+Phase 5 keeps every Phase 4 gate and adds blocking coverage for ADR 0011:
+
+- Scoring tests cover deterministic job metadata/requirement extraction, source
+  spans, eligible evidence links, hard-gap counts, insufficient-data behavior,
+  and versioned Application Readiness snapshots.
+- Service tests cover job create/import/update/delete ownership, idempotency
+  replay/conflict, stale-version rejection, target role lookup through the Role
+  Readiness boundary, career snapshot reuse, analysis creation, latest-analysis
+  priority calculation, and redacted audit events.
+- URL importer tests cover HTTP(S)-only enforcement, blocked loopback/private
+  destinations, redirect validation, response-size limits, and HTML
+  script/style stripping. Tests must not require external network access.
+- Migration tests assert every Phase 5 table is owner-scoped, composite foreign
+  keys include `owner_user_id`, and migration `20260719_0006` matches registered
+  SQLAlchemy metadata.
+- API tests cover authenticated create/analyze/requirements/priority workflow,
+  CSRF requirements for mutations, idempotency headers, no raw `sourceText` in
+  job responses, scoring disclaimer exposure, and cross-user denial.
+- Web component tests cover loading, empty, success, failure, pasted-job save,
+  analysis matrix, eligible evidence display, disclaimer display, and priority
+  output.
+- The Phase 5 Playwright journey registers and verifies a real account, creates
+  confirmed fictional career evidence, saves a pasted job posting, analyzes the
+  requirement matrix, confirms the evidence link and internal-score disclaimer,
+  and calculates opportunity priority.
+
+`scripts/verify-phase5.ps1` passed on 2026-07-19. The isolated stack reported
+migration head `20260719_0006`, successful rollback to `20260719_0005` and
+forward repair, `13 passed` backend integration tests, and `6 passed, 4 skipped`
+Playwright project results for the configured desktop/mobile journey portfolio.
+
+## Change Studio and truth-locked AI coverage (Phase 6)
+
+Phase 6 keeps every Phase 5 gate and adds blocking coverage for ADR 0012 and
+`docs/ai-grounding-policy.md`:
+
+- Grounding tests cover strict provider schema parsing, unknown-field rejection,
+  unsupported facts, prompt-injection text, unsafe sink content, unauthorized
+  evidence/requirement IDs, unconfirmed numeric claims, and deterministic
+  conversion of missing facts into clarifying questions.
+- Service tests cover owner-scoped create/get/action workflows, idempotency
+  replay/conflict, stale-version rejection, accept/reject/edit/alternative,
+  lock/unlock, undo/redo, restore, clarification answers, immutable versions,
+  provider-run metadata, and redacted audit events.
+- Provider tests cover the deterministic local provider, malformed remote output,
+  disabled provider behavior, HTTPS/API-key configuration, response-size limits,
+  bounded retry, and circuit-breaker failure handling.
+- Migration tests assert every Phase 6 table is owner-scoped, internal foreign
+  keys include `owner_user_id`, and migration `20260719_0007` matches registered
+  SQLAlchemy metadata.
+- API tests cover authenticated creation, edit rejection for ungrounded text,
+  accept/undo/answer/get, no-store/ETag behavior, CSRF requirements, and
+  cross-user denial.
+- Web component tests cover loading, empty, success, failure, provenance-visible
+  suggestions, canonical score disclaimer, accept and clarification-answer
+  actions, and absence of demo/mock suggestions.
+- The Phase 6 Playwright journey registers and verifies a real account, creates
+  confirmed fictional evidence, saves/analyzes a pasted job, opens Change
+  Studio, generates grounded suggestions, reviews provenance, accepts, undoes,
+  and answers a clarification.
+
+`scripts/verify-phase6.ps1` is the consolidated local gate for the final Phase 6
+tree. It verifies migration head `20260719_0007`, rollback to `20260719_0006`,
+forward repair, real integration tests, prior Playwright journeys, and the new
+Change Studio primary workflow.
+
+## Resume Builder and verified export coverage (Phase 7)
+
+Phase 7 keeps every Phase 6 gate and adds blocking coverage for ADR 0013:
+
+- Service tests cover owner-scoped create/list/get/update, evidence-required
+  bullet validation, autosave/version creation, immutable restore/history,
+  export idempotency replay/conflict, blocked-export download denial, deletion,
+  and redacted audit/status behavior.
+- Renderer tests generate real PDF and DOCX bytes from all five templates and
+  reparse them through the local document extractor to prove searchable critical
+  text survives round trip. Text and JSON outputs are verified through the same
+  structured policy and content hash checks.
+- Migration tests assert every Phase 7 table is owner-scoped where required,
+  composite foreign keys include `owner_user_id`, and migration
+  `20260719_0008` matches registered SQLAlchemy metadata.
+- Repository integration uses real PostgreSQL to persist resumes, versions,
+  exports, verification reports, idempotency records, download intents, and
+  cross-user denial.
+- API tests cover authenticated resume creation/update/export/download-intent
+  workflow, CSRF requirements, idempotency headers, `If-Match` handling,
+  verification-blocked exports, no-store/ETag behavior, and safe problem
+  responses.
+- Web component tests cover loading, empty, success, failure, structured editor
+  controls, non-drag keyboard reorder, version restore, verification warnings,
+  blocked download state, and generated-contract-backed API calls.
+- The Phase 7 Playwright journey registers and verifies a real account, creates
+  confirmed fictional career evidence, opens Resume Builder, creates a resume,
+  verifies a PDF export, and obtains a short-lived download intent without mock
+  resume data.
+
+`scripts/verify-phase7.ps1` is the consolidated local gate for the final Phase 7
+tree. It verifies migration head `20260719_0008`, rollback to `20260719_0007`,
+forward repair, real integration tests, prior Playwright journeys, and the new
+Resume Builder primary workflow.
 
 ## Backend test portfolio
 

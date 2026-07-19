@@ -18,6 +18,9 @@ status; consult `PLANS.md` for current behavior.
 | [0008](0008-identity-sessions-and-same-origin-web-api.md)             | API-owned opaque sessions, same-origin web proxy, CSRF, and provider boundaries      | Accepted                               |
 | [0009](0009-phase3-career-record-and-evidence-authority.md)           | Phase 3 career-record boundary, evidence authority, provenance, and attachments      | Accepted                               |
 | [0010](0010-phase4-role-readiness.md)                                 | Phase 4 Role Explorer taxonomy, deterministic readiness, and evidence boundary       | Accepted                               |
+| [0011](0011-phase5-job-match.md)                                      | Phase 5 Job Match, requirement matrix, and opportunity priority boundary             | Accepted                               |
+| [0012](0012-phase6-change-studio.md)                                  | Phase 6 Change Studio provider gateway, grounding, and immutable change review       | Accepted                               |
+| [0013](0013-phase7-resume-builder-export-verification.md)             | Phase 7 Resume Builder, immutable versions, verified export, and download intents    | Accepted                               |
 
 ## Lifecycle
 

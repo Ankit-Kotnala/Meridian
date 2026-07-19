@@ -19,7 +19,7 @@ from careeros_api.constants import SCORING_DISCLAIMER
 from careeros_api.main import create_app
 from conftest import FakeDatabase
 
-_BACKEND_TEST_SUPPORT = Path(__file__).resolve().parents[3] / "packages/backend/tests/unit"
+_BACKEND_TEST_SUPPORT = Path(__file__).resolve().parents[3] / "packages/backend/tests"
 sys.path.insert(0, str(_BACKEND_TEST_SUPPORT))
 from role_readiness_memory import (  # noqa: E402
     ENGINEER_ROLE_ID,
@@ -28,8 +28,8 @@ from role_readiness_memory import (  # noqa: E402
     MemoryRoleReadiness,
     StaticSnapshotProvider,
     UuidFactory,
+    sample_readiness_snapshot,
 )
-from test_role_readiness_service import _snapshot  # noqa: E402
 
 _ORIGIN = "http://localhost:3000"
 
@@ -51,7 +51,7 @@ def _services(owner_id):
         unit_of_work=state,
         clock=FixedClock(),
         identifiers=UuidFactory(),
-        career_snapshots=StaticSnapshotProvider(_snapshot()),
+        career_snapshots=StaticSnapshotProvider(sample_readiness_snapshot()),
     )
     return identity, role_readiness
 

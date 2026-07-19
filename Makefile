@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: help setup dev stop format format-check lint typecheck test contracts-check test-integration test-e2e test-e2e-stack test-e2e-stack-phase3 test-e2e-stack-phase4 build security-scan seed migrate reset-db compose-config verify verify-phase1 verify-phase2 verify-phase3 verify-phase4
+.PHONY: help setup dev stop format format-check lint typecheck test contracts-check test-integration test-e2e test-e2e-stack test-e2e-stack-phase3 test-e2e-stack-phase4 test-e2e-stack-phase5 test-e2e-stack-phase6 test-e2e-stack-phase7 build security-scan seed migrate reset-db compose-config verify verify-phase1 verify-phase2 verify-phase3 verify-phase4 verify-phase5 verify-phase6 verify-phase7
 
 help:
 	@echo "CareerOS development targets"
@@ -17,6 +17,9 @@ help:
 	@echo "  test-e2e-stack   Run the isolated Phase 2 authentication and Resume Health journeys"
 	@echo "  test-e2e-stack-phase3 Run the isolated Phase 3 Career Record journey suite"
 	@echo "  test-e2e-stack-phase4 Run the isolated Phase 4 Role Explorer journey suite"
+	@echo "  test-e2e-stack-phase5 Run the isolated Phase 5 Job Match journey suite"
+	@echo "  test-e2e-stack-phase6 Run the isolated Phase 6 Change Studio journey suite"
+	@echo "  test-e2e-stack-phase7 Run the isolated Phase 7 Resume Builder journey suite"
 	@echo "  build            Build workspace packages and service images"
 	@echo "  security-scan    Scan source, dependencies, and application images"
 	@echo "  contracts-check  Verify OpenAPI and generated TypeScript contract drift"
@@ -25,6 +28,9 @@ help:
 	@echo "  verify-phase2    Run all platform gates and the isolated Resume Health journey"
 	@echo "  verify-phase3    Run all platform gates and the isolated Career Record journey"
 	@echo "  verify-phase4    Run all platform gates and the isolated Role Explorer journey"
+	@echo "  verify-phase5    Run all platform gates and the isolated Job Match journey"
+	@echo "  verify-phase6    Run all platform gates and the isolated Change Studio journey"
+	@echo "  verify-phase7    Run all platform gates and the isolated Resume Builder journey"
 
 setup:
 	@test -f .env || cp .env.example .env
@@ -100,6 +106,15 @@ test-e2e-stack-phase3:
 test-e2e-stack-phase4:
 	CAREEROS_E2E_PHASE=4 sh tests/e2e/run-compose.sh
 
+test-e2e-stack-phase5:
+	CAREEROS_E2E_PHASE=5 sh tests/e2e/run-compose.sh
+
+test-e2e-stack-phase6:
+	CAREEROS_E2E_PHASE=6 sh tests/e2e/run-compose.sh
+
+test-e2e-stack-phase7:
+	CAREEROS_E2E_PHASE=7 sh tests/e2e/run-compose.sh
+
 build:
 	pnpm build
 	docker compose build api worker web
@@ -137,3 +152,9 @@ verify-phase2: verify test-e2e-stack
 verify-phase3: verify test-e2e-stack-phase3
 
 verify-phase4: verify test-e2e-stack-phase4
+
+verify-phase5: verify test-e2e-stack-phase5
+
+verify-phase6: verify test-e2e-stack-phase6
+
+verify-phase7: verify test-e2e-stack-phase7

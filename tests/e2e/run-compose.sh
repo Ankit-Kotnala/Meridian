@@ -25,8 +25,20 @@ case "$verification_phase" in
     rollback_revision=20260715_0004
     expected_migration_head=20260719_0005
     ;;
+  5)
+    rollback_revision=20260719_0005
+    expected_migration_head=20260719_0006
+    ;;
+  6)
+    rollback_revision=20260719_0006
+    expected_migration_head=20260719_0007
+    ;;
+  7)
+    rollback_revision=20260719_0007
+    expected_migration_head=20260719_0008
+    ;;
   *)
-    echo "CAREEROS_E2E_PHASE must be 2, 3, or 4." >&2
+    echo "CAREEROS_E2E_PHASE must be 2, 3, 4, 5, 6, or 7." >&2
     exit 2
     ;;
 esac
@@ -97,6 +109,7 @@ export GOOGLE_OAUTH_ENABLED=false
 export GOOGLE_CLIENT_ID=
 export GOOGLE_CLIENT_SECRET=
 export GOOGLE_REDIRECT_URI="${PUBLIC_APP_URL}/api/v1/auth/google/callback"
+export AI_PROVIDER=deterministic
 export PLAYWRIGHT_EXTERNAL_SERVER=1
 export PLAYWRIGHT_E2E_MODE=full-stack
 export PLAYWRIGHT_BASE_URL="$PUBLIC_APP_URL"
@@ -123,6 +136,28 @@ assert_migration_head_output() {
   fi
 }
 
+wait_service_healthy() {
+  service=$1
+  timeout_seconds=${2:-900}
+  poll_seconds=${3:-10}
+  deadline=$(( $(date +%s) + timeout_seconds ))
+  last_status=missing
+
+  while [ "$(date +%s)" -lt "$deadline" ]; do
+    container=$(docker compose --project-name "$project_name" ps --quiet "$service")
+    if [ -n "$container" ]; then
+      last_status=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$container")
+      if [ "$last_status" = healthy ]; then
+        return 0
+      fi
+    fi
+    sleep "$poll_seconds"
+  done
+
+  echo "$service did not become healthy within ${timeout_seconds}s; last health status was '$last_status'." >&2
+  return 1
+}
+
 run_browser_journeys() {
   case "$verification_phase" in
     2)
@@ -142,6 +177,33 @@ run_browser_journeys() {
         e2e/resume-health-journey.spec.ts \
         e2e/career-record-journey.spec.ts \
         e2e/role-readiness-journey.spec.ts
+      ;;
+    5)
+      pnpm --filter @careeros/web exec playwright test \
+        e2e/auth-journey.spec.ts \
+        e2e/resume-health-journey.spec.ts \
+        e2e/career-record-journey.spec.ts \
+        e2e/role-readiness-journey.spec.ts \
+        e2e/job-match-journey.spec.ts
+      ;;
+    6)
+      pnpm --filter @careeros/web exec playwright test \
+        e2e/auth-journey.spec.ts \
+        e2e/resume-health-journey.spec.ts \
+        e2e/career-record-journey.spec.ts \
+        e2e/role-readiness-journey.spec.ts \
+        e2e/job-match-journey.spec.ts \
+        e2e/change-studio-journey.spec.ts
+      ;;
+    7)
+      pnpm --filter @careeros/web exec playwright test \
+        e2e/auth-journey.spec.ts \
+        e2e/resume-health-journey.spec.ts \
+        e2e/career-record-journey.spec.ts \
+        e2e/role-readiness-journey.spec.ts \
+        e2e/job-match-journey.spec.ts \
+        e2e/change-studio-journey.spec.ts \
+        e2e/resume-builder-journey.spec.ts
       ;;
   esac
 }
@@ -170,7 +232,8 @@ cd "$repository_root"
 
 docker compose --project-name "$project_name" config --quiet
 docker compose --project-name "$project_name" build api worker web
-docker compose --project-name "$project_name" up --detach --wait --wait-timeout 300 postgres redis minio mailpit clamav
+docker compose --project-name "$project_name" up --detach --wait --wait-timeout 900 postgres redis minio mailpit clamav
+wait_service_healthy clamav 900 10
 docker compose --project-name "$project_name" up --detach minio-init
 init_container=$(docker compose --project-name "$project_name" ps --all --quiet minio-init)
 if [ -z "$init_container" ]; then

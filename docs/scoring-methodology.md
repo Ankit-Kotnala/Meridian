@@ -1,6 +1,6 @@
 # CareerOS scoring methodology
 
-Status: Resume Health v1 and Role Readiness v1 implemented
+Status: Resume Health v1, Role Readiness v1, Job Match v1, and Phase 6 Change Studio controls implemented
 Last reviewed: 2026-07-19
 
 ## Required interpretation
@@ -414,9 +414,13 @@ configured materiality threshold.
 
 ## Expected score effect in Change Studio
 
-An `expectedScoreDelta` is computed by applying a structured operation to a copy
-of the canonical resume and re-running deterministic features under the same
-formula. It is not model opinion and not a hiring-outcome prediction. It must:
+An `expectedScoreDelta` is never model authority and never a hiring-outcome
+prediction. In Phase 6, Change Studio exposes only a bounded deterministic local
+estimate for grounded operations against an existing Job Match analysis; remote
+provider-supplied deltas are ignored by the service. Later resume/export phases
+may replace that estimate by applying a structured operation to a copy of the
+canonical resume and re-running deterministic features under the same formula.
+It must:
 
 - identify affected component(s), engine/config version, and assumptions;
 - remain unavailable if the operation has an unsupported claim;
@@ -432,9 +436,11 @@ effort, and contacts. User preferences are not career-quality scores. Mandatory
 blockers remain separate. Output explains reasons, uncertainty, effort, and next
 action and never states that the user will or will not be hired.
 
-The Phase 5 team must choose whether to present a number or an ordinal category
-after user research. If numeric, its configuration follows the same versioning
-and explainability requirements.
+Phase 5 presents a bounded numeric priority value with an ordinal label,
+component reasons, uncertainty, effort, and next action. The persisted
+configuration, component weights, and threshold labels are versioned alongside
+the analysis. The number is never a career-quality, employer, ATS, or hiring
+probability score.
 
 ## Versioning and change control
 
@@ -479,10 +485,14 @@ privacy review, not proof of success probability.
 ## Implemented phase boundary
 
 Phase 2 implements and persists job-independent Resume Health v1. Phase 4
-implements and persists general Role Readiness v1. The fictional dashboard at
-`/demo/dashboard` remains isolated from product data. Application Readiness and
-Opportunity Priority remain Phase 5 work. Resume Health v1 and Role Readiness v1
-must not be reused as exact-job scores or hiring probabilities.
+implements and persists general Role Readiness v1. Phase 5 implements and
+persists exact-job Application Readiness v1 and Opportunity Priority v1. Phase 6
+implements Change Studio's grounded-change review controls and bounded local
+expected-score-effect display; it does not create a new scoring engine. The
+fictional dashboard at `/demo/dashboard` remains isolated from product data.
+Resume Health v1, Role Readiness v1, Application Readiness v1, and Opportunity
+Priority v1 must not be reused as employer, ATS, hiring-probability, or guarantee
+scores.
 
 The implementation, focused golden tests, and repository-wide local format, lint,
 type, unit, integration, container, migration, browser, accessibility, and

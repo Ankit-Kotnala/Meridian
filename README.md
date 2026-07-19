@@ -13,9 +13,9 @@ claim under the user's control.
 
 ## Repository status
 
-**Phase 4 Role Explorer and Role Readiness is implemented in this working tree
-and awaiting final closeout verification.** Phases 0 through 3 are hosted
-verified. The
+**Phase 7 Resume Builder and verified export is implemented and locally verified in this working tree.**
+Phases 0 through 3 are hosted verified; Phase 4 has local closeout evidence; and
+Phases 5 through 7 final local gate evidence is recorded in `PLANS.md`. The
 repository uses a shared Python modular monolith, one root uv workspace,
 generated API contracts, thin deployable applications, and executable dependency
 boundaries.
@@ -144,6 +144,30 @@ history, and two-or-three-role comparison. Results consume only the owner-scoped
 Career Record readiness snapshot and display the canonical internal-score
 disclaimer.
 
+Job Match is available at `/job-match`. It saves pasted or safely imported job
+postings, extracts source-spanned requirements, compares each requirement against
+eligible Career Record evidence, shows mandatory gaps, and calculates an
+explainable opportunity priority. It does not display raw saved job text in API
+responses and does not describe scores as employer, ATS, or hiring-probability
+scores.
+
+Change Studio is available at `/change-studio` and from a completed Job Match
+analysis. It uses eligible Career Record evidence plus saved job requirements to
+generate structured suggestions, shows original/proposed text, reason, evidence,
+requirement, grounding status, risk, and clarifying questions, and requires
+explicit accept/reject/edit actions before the current version changes. The
+local deterministic provider only reuses eligible evidence text; remote provider
+configuration is HTTPS/API-key gated and still passes strict grounding before
+display.
+
+Resume Builder is available at `/resume-builder`. It creates structured,
+evidence-backed resume drafts from the owner-scoped Career Record and optional
+Change Studio output, preserves immutable versions, offers five constrained
+ATS-friendly templates, renders PDF/DOCX/text/JSON exports, re-parses generated
+files before download, shows the verification report, blocks critical failures,
+and issues only short-lived owner-checked download intents. Exported files remain
+pinned to the version and content hash that passed verification.
+
 Authenticated Resume Health starts at `/resume-health/account`. The intentionally
 limited guest flow starts at `/resume-health/guest`, uses one opaque short-lived
 browser capability, permits one active intake, and defaults to 24-hour retention.
@@ -212,6 +236,9 @@ make test-e2e         # Playwright against an already running stack
 make test-e2e-stack   # isolated desktop/mobile auth and Resume Health journeys
 make test-e2e-stack-phase3 # isolated Phase 3 desktop primary journey plus prior regressions
 make test-e2e-stack-phase4 # isolated Phase 4 Role Explorer journey plus prior regressions
+make test-e2e-stack-phase5 # isolated Phase 5 Job Match journey plus prior regressions
+make test-e2e-stack-phase6 # isolated Phase 6 Change Studio journey plus prior regressions
+make test-e2e-stack-phase7 # isolated Phase 7 Resume Builder journey plus prior regressions
 make security-scan    # scan source, dependencies, app images, and trusted edge runtime
 make migrate          # apply the current database migrations
 make seed             # print the explicitly fictional Phase 0 fixture
@@ -220,6 +247,9 @@ make verify-phase1    # full gate plus isolated Phase 1 integration/E2E
 make verify-phase2    # full gate plus isolated Resume Health integration/E2E
 make verify-phase3    # full gate plus isolated Career Record integration/E2E
 make verify-phase4    # full gate plus isolated Role Explorer integration/E2E
+make verify-phase5    # full gate plus isolated Job Match integration/E2E
+make verify-phase6    # full gate plus isolated Change Studio integration/E2E
+make verify-phase7    # full gate plus isolated Resume Builder integration/E2E
 make reset-db         # explicitly destructive local database reset
 ```
 
@@ -244,10 +274,17 @@ run in the existing mobile suites; the Phase 3 primary journey itself is
 intentionally desktop-only. Run `make security-scan` (or its PowerShell
 equivalent) separately; the phase verification scripts do not replace the
 source, dependency, application-image, and pinned `web-edge` runtime scans.
-Use `.\scripts\verify-phase4.ps1` for migration `20260719_0005`, Role Explorer
-repository integration, and the desktop save/analyze/compare workflow backed by
-confirmed career evidence. Shared responsive shell behavior remains covered by
-the inherited desktop/mobile suites.
+Use `.\scripts\verify-phase5.ps1` for migration `20260719_0006`, Job Match
+repository integration, and the desktop save/analyze/prioritize workflow backed
+by confirmed career evidence. Shared responsive shell behavior remains covered
+by the inherited desktop/mobile suites. Use `.\scripts\verify-phase6.ps1` for
+migration `20260719_0007`, Change Studio repository integration, grounding/
+provider tests, and the desktop generate/review/accept/undo/answer workflow
+backed by confirmed career evidence and saved job requirements.
+Use `.\scripts\verify-phase7.ps1` for migration `20260719_0008`, Resume Builder
+repository integration, renderer/round-trip verification tests, and the desktop
+create/version/export/download-intent workflow backed by confirmed career
+evidence.
 
 The Phase 0 migration enables the pgvector extension. Phase 1 migration
 `20260715_0002` adds the identity, session, OAuth, organization, consent, audit,
@@ -268,6 +305,21 @@ Phase 4 migration `20260719_0005` adds the public versioned role taxonomy,
 competencies, saved roles, readiness analyses/components/results/evidence links,
 idempotency records, and redacted audit events. Downgrading to `20260715_0004`
 deletes Phase 4 role-readiness data and is likewise a test/forward-repair path.
+Phase 5 migration `20260719_0006` adds owner-scoped job postings, current
+requirements, match analyses/components/requirement rows/evidence links,
+opportunity priorities, idempotency records, and redacted audit events.
+Downgrading to `20260719_0005` deletes Phase 5 job-match data and is likewise a
+test/forward-repair path.
+Phase 6 migration `20260719_0007` adds owner-scoped change sets, operations,
+claim-ledger rows, clarifying questions, immutable output versions, provider-run
+metadata, idempotency records, and redacted audit events. Downgrading to
+`20260719_0006` deletes Phase 6 Change Studio data and is likewise a
+test/forward-repair path.
+Phase 7 migration `20260719_0008` adds owner-scoped structured resumes,
+immutable resume versions, export records, verification reports, short-lived
+download intents, idempotency records, and redacted audit events. Downgrading to
+`20260719_0007` deletes Phase 7 resume-builder/export data and is likewise a
+test/forward-repair path.
 The seed command still prints only a fictional demo fixture and performs no
 database write. A command that prints a fixture or says a feature is deferred is
 not evidence that the product feature exists.
@@ -316,12 +368,13 @@ Read [AGENTS.md](AGENTS.md) before contributing. The principal references are:
 - [Implementation checklist](docs/implementation-checklist.md)
 - [Architecture decisions](docs/adr/README.md)
 
-## Verification Status Through Phase 4 Implementation
+## Verification Status Through Phase 7 Implementation
 
-Phases 0 through 3 have recorded local and hosted evidence; Phase 4 closeout
-evidence is recorded in `PLANS.md` as it runs. Exact current and
-historical results are recorded separately in `PLANS.md`; never infer a pass from
-the command list below:
+Phases 0 through 3 have recorded local and hosted evidence; Phase 4 has recorded
+local closeout evidence; Phases 5 through 7 have recorded local closeout evidence in
+`PLANS.md`.
+Exact current and historical results are recorded separately in `PLANS.md`; never
+infer a pass from the command list below:
 
 ```sh
 make setup
@@ -344,6 +397,9 @@ Native PowerShell runs the equivalent quality/build/configuration checks with:
 .\scripts\verify-phase2.ps1
 .\scripts\verify-phase3.ps1
 .\scripts\verify-phase4.ps1
+.\scripts\verify-phase5.ps1
+.\scripts\verify-phase6.ps1
+.\scripts\verify-phase7.ps1
 docker compose up --build --detach --wait
 docker compose ps
 Invoke-WebRequest -UseBasicParsing http://localhost:3000/api/health
@@ -363,6 +419,20 @@ format, lint, type, unit, build, container, migration, integration, runtime, and
 isolated browser gates all passed. Hosted run `29657932938` then passed
 supply-chain, API, web/contracts, worker, browser-smoke, Resume Health E2E,
 Career Record E2E, and container/image jobs on the identical Phase 3 tree.
+Phase 4 local closeout passed with `scripts/verify-phase4.ps1` on 2026-07-19:
+format, lint, type, unit, build, container, migration, integration, runtime,
+worker hardening, and isolated Role Explorer browser gates all passed.
+Phase 5 local closeout passed with `scripts/verify-phase5.ps1` on 2026-07-19:
+format, lint, type, unit, build, container, migration, integration, runtime,
+worker hardening, and isolated Job Match browser gates all passed.
+Phase 6 local closeout passed with `scripts/verify-phase6.ps1` on 2026-07-19:
+format, lint, type, unit, build, container, migration, integration, runtime,
+worker hardening, grounding/provider tests, and isolated Change Studio browser
+gates all passed.
+Phase 7 local closeout passed with `scripts/verify-phase7.ps1` on 2026-07-19:
+format, lint, type, unit, build, container, migration, integration, runtime,
+worker hardening, renderer/round-trip tests, and isolated Resume Builder browser
+gates all passed.
 
 ## License and production use
 

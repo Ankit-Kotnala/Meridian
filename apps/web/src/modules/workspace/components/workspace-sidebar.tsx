@@ -1,11 +1,13 @@
-import {
+﻿import {
   BarChart3,
   Archive,
   BriefcaseBusiness,
   ChevronLeft,
+  FileText,
   FileHeart,
   LayoutDashboard,
   Settings,
+  Sparkles,
   Target,
   UserRoundCheck,
   UserRound,
@@ -29,12 +31,14 @@ const availableNavigation: ReadonlyArray<{
   { href: "/career-profile", icon: UserRound, label: "Career Profile" },
   { href: "/evidence", icon: Archive, label: "Evidence Vault" },
   { href: "/role-explorer", icon: Target, label: "Role Explorer" },
+  { href: "/job-match", icon: BriefcaseBusiness, label: "Job Match" },
+  { href: "/change-studio", icon: Sparkles, label: "Change Studio" },
+  { href: "/resume-builder", icon: FileText, label: "Resume Builder" },
   { href: "/onboarding", icon: UserRoundCheck, label: "Onboarding" },
   { href: "/settings", icon: Settings, label: "Settings" },
 ];
 
 const upcomingNavigation: ReadonlyArray<{ icon: LucideIcon; label: string }> = [
-  { icon: BriefcaseBusiness, label: "Applications" },
   { icon: BarChart3, label: "Analytics" },
 ];
 
@@ -133,7 +137,7 @@ export function WorkspaceSidebar({
                   "flex min-h-11 items-center rounded-xl text-xs font-semibold text-slate-500",
                   collapsed ? "justify-center px-2" : "gap-3 px-3",
                 )}
-                title={collapsed ? `${label} — coming later` : undefined}
+                title={collapsed ? `${label} - coming later` : undefined}
               >
                 <Icon aria-hidden="true" className="size-4 shrink-0" />
                 {!collapsed && <span className="flex-1">{label}</span>}

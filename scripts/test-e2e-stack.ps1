@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet(2, 3, 4)]
+    [ValidateSet(2, 3, 4, 5, 6, 7)]
     [int]$Phase = 2
 )
 
@@ -31,7 +31,68 @@ function Assert-MigrationHeadOutput {
     }
 }
 
-if ($Phase -eq 4) {
+function Wait-ComposeServiceHealthy {
+    param(
+        [string]$Service,
+        [int]$TimeoutSeconds = 900,
+        [int]$PollSeconds = 10
+    )
+
+    $Deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    $LastStatus = "missing"
+    while ((Get-Date) -lt $Deadline) {
+        $Container = docker compose --project-name $ProjectName ps --quiet $Service
+        Assert-LastExitCode "$Service container lookup"
+        if ($Container) {
+            $LastStatus = docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' $Container
+            Assert-LastExitCode "$Service health inspection"
+            if ($LastStatus -eq "healthy") {
+                return
+            }
+        }
+        Start-Sleep -Seconds $PollSeconds
+    }
+
+    throw "$Service did not become healthy within $TimeoutSeconds seconds; last health status was '$LastStatus'."
+}
+
+if ($Phase -eq 7) {
+    $RollbackRevision = "20260719_0007"
+    $ExpectedMigrationHead = "20260719_0008"
+    $JourneySpecs = @(
+        "e2e/auth-journey.spec.ts",
+        "e2e/resume-health-journey.spec.ts",
+        "e2e/career-record-journey.spec.ts",
+        "e2e/role-readiness-journey.spec.ts",
+        "e2e/job-match-journey.spec.ts",
+        "e2e/change-studio-journey.spec.ts",
+        "e2e/resume-builder-journey.spec.ts"
+    )
+}
+elseif ($Phase -eq 6) {
+    $RollbackRevision = "20260719_0006"
+    $ExpectedMigrationHead = "20260719_0007"
+    $JourneySpecs = @(
+        "e2e/auth-journey.spec.ts",
+        "e2e/resume-health-journey.spec.ts",
+        "e2e/career-record-journey.spec.ts",
+        "e2e/role-readiness-journey.spec.ts",
+        "e2e/job-match-journey.spec.ts",
+        "e2e/change-studio-journey.spec.ts"
+    )
+}
+elseif ($Phase -eq 5) {
+    $RollbackRevision = "20260719_0005"
+    $ExpectedMigrationHead = "20260719_0006"
+    $JourneySpecs = @(
+        "e2e/auth-journey.spec.ts",
+        "e2e/resume-health-journey.spec.ts",
+        "e2e/career-record-journey.spec.ts",
+        "e2e/role-readiness-journey.spec.ts",
+        "e2e/job-match-journey.spec.ts"
+    )
+}
+elseif ($Phase -eq 4) {
     $RollbackRevision = "20260715_0004"
     $ExpectedMigrationHead = "20260719_0005"
     $JourneySpecs = @(
@@ -128,6 +189,7 @@ $Overrides = [ordered]@{
     GOOGLE_OAUTH_ENABLED       = "false"
     GOOGLE_CLIENT_ID           = ""
     GOOGLE_CLIENT_SECRET       = ""
+    AI_PROVIDER                = "deterministic"
     PLAYWRIGHT_EXTERNAL_SERVER = "1"
     PLAYWRIGHT_E2E_MODE        = "full-stack"
 }
@@ -166,8 +228,9 @@ try {
     Assert-LastExitCode "Isolated Compose configuration"
     docker compose --project-name $ProjectName build api worker web
     Assert-LastExitCode "Isolated application image build"
-    docker compose --project-name $ProjectName up --detach --wait --wait-timeout 300 postgres redis minio mailpit clamav
+    docker compose --project-name $ProjectName up --detach --wait --wait-timeout 900 postgres redis minio mailpit clamav
     Assert-LastExitCode "Isolated dependency startup"
+    Wait-ComposeServiceHealthy -Service "clamav" -TimeoutSeconds 900 -PollSeconds 10
     docker compose --project-name $ProjectName up --detach minio-init
     Assert-LastExitCode "Object-storage initializer startup"
     $InitContainer = docker compose --project-name $ProjectName ps --all --quiet minio-init

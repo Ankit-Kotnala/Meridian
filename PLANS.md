@@ -2,7 +2,7 @@
 
 Last updated: 2026-07-19
 Plan owner: engineering  
-Current status: **Phase 4 implemented; verification in progress**
+Current status: **Phase 7 complete locally; Phase 8 is next**
 
 ## Status legend
 
@@ -553,10 +553,12 @@ evidence are listed below.
 
 ## Phase 4 scope and status
 
-Current status: **implemented; final verification in progress**. The active tree
-adds Role Explorer and Role Readiness as a production vertical slice, but this
-phase remains open until the full format, lint, type, test, build, integration,
-and isolated Phase 4 browser gates pass on the final documentation-aligned tree.
+Current status: **complete**. The active tree adds Role Explorer and Role
+Readiness as a production vertical slice. The full local Phase 4 PowerShell gate
+passed on 2026-07-19 and covers formatting, linting, type checking, tests,
+builds, migrations, integration, runtime probes, worker hardening checks, and the
+isolated Role Explorer browser journey. Hosted Phase 4 CI evidence has not yet
+been recorded.
 
 ### Included
 
@@ -618,16 +620,22 @@ through the Phase 3 application boundary.
 
 ### Verification evidence
 
-| Check                                            | Status  | Evidence                                                                                                                                                                                                          |
-| ------------------------------------------------ | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pre-edit Phase 3 baseline                        | Pass    | Hosted CI run `29658296318` passed the previous implementation tree before Phase 4 edits.                                                                                                                         |
-| Backend focused Ruff and mypy                    | Pass    | `uv run --package careeros-backend ruff check ...` and `uv run --package careeros-backend mypy` pass for the new backend surface.                                                                                 |
-| Backend focused unit/migration tests             | Pass    | Role Readiness scoring/service/migration plus migration-graph tests passed (`9 passed`).                                                                                                                          |
-| API focused Ruff, mypy, and tests                | Pass    | API Ruff, mypy, `tests/test_role_readiness_routes.py`, and `tests/test_contract_export.py` pass (`3 passed`, one Starlette deprecation warning).                                                                  |
-| Generated contracts                              | Pass    | `pnpm contracts:generate` and `pnpm --filter @careeros/contracts build` completed after API schema changes.                                                                                                       |
-| Web focused Prettier, lint, typecheck, component | Pass    | Role Explorer files format; `pnpm --filter @careeros/web lint`, `typecheck`, and focused Vitest pass (`3 passed`).                                                                                                |
-| Phase 4 E2E discovery                            | Pass    | With `PLAYWRIGHT_E2E_MODE=full-stack`, Playwright lists the Role Explorer desktop/mobile projects; the spec desktop path runs in the isolated Phase 4 stack.                                                      |
-| Final repository gates                           | Pending | Required before marking Phase 4 complete: `make format-check`, `make lint`, `make typecheck`, `make test`, `make test-integration`, `make build`, and `make test-e2e-stack-phase4` / `scripts/verify-phase4.ps1`. |
+| Check                                            | Status | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ------------------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pre-edit Phase 3 baseline                        | Pass   | Hosted CI run `29658296318` passed the previous implementation tree before Phase 4 edits.                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Backend focused Ruff and mypy                    | Pass   | `uv run --package careeros-backend ruff check ...` and `uv run --package careeros-backend mypy` pass for the new backend surface.                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| Backend focused unit/migration tests             | Pass   | Role Readiness scoring/service/migration plus migration-graph tests passed (`9 passed`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| API focused Ruff, mypy, and tests                | Pass   | API Ruff, mypy, `tests/test_role_readiness_routes.py`, and `tests/test_contract_export.py` pass (`3 passed`, one Starlette deprecation warning).                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Generated contracts                              | Pass   | `pnpm contracts:generate` and `pnpm --filter @careeros/contracts build` completed after API schema changes.                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Web focused Prettier, lint, typecheck, component | Pass   | Role Explorer files format; `pnpm --filter @careeros/web lint`, `typecheck`, and focused Vitest pass (`3 passed`).                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Phase 4 E2E discovery                            | Pass   | With `PLAYWRIGHT_E2E_MODE=full-stack`, Playwright lists the Role Explorer desktop/mobile projects; the spec desktop path runs in the isolated Phase 4 stack.                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Final repository gates                           | Pass   | `scripts/verify-phase4.ps1` passed on 2026-07-19. It runs the documented PowerShell equivalent of the Make gate in this native shell: formatting, lock/contract drift, lint, type checking, unit suites, production builds, Docker Compose config/build/startup, migration head/rollback/forward repair, real dependency integrations, runtime probes, worker hardening checks, and Phase 4 E2E. GNU Make is not installed in this PowerShell environment; an earlier `make format-check` attempt failed with command-not-found and was not treated as evidence. |
+
+A previous final-verification attempt exposed a non-product infrastructure gap:
+fresh ClamAV volumes can spend several minutes downloading the initial database
+while the scanner is still unavailable. The PowerShell and POSIX isolated-stack
+runners now wait explicitly for the ClamAV service healthcheck before provider
+integration tests execute. The final rerun passed after that readiness fix.
 
 ### Known limitations and deferred work
 
@@ -643,6 +651,331 @@ through the Phase 3 application boundary.
 - The primary Role Explorer E2E workflow is desktop-only, while inherited auth
   and shared workspace suites continue to cover mobile navigation and shell
   behavior.
+
+## Phase 5 scope and status
+
+Current status: **complete locally**. Phase 5 adds the Job Match, Requirement
+Matrix, and Opportunity Prioritizer vertical slice. It preserves Phase 3
+evidence authority and Phase 4 role context while adding exact job imports,
+source-spanned requirements, SSRF-hardened URL fetching, deterministic
+Application Readiness, hard-gap visibility, and explainable pursuit priority.
+
+### Included
+
+- [x] Add migration `20260719_0006` for owner-scoped job postings,
+      source-spanned job requirements, requirement matches, job-match analyses,
+      components, evidence links, opportunity-priority analyses, idempotency
+      records, and redacted audit events.
+- [x] Add `careeros.modules.job_match` with framework-independent domain
+      entities, deterministic extraction/matching/scoring, application service
+      and ports, safe URL-import provider interface, and SQLAlchemy
+      infrastructure.
+- [x] Consume Career Record only through the existing owner-scoped readiness
+      snapshot and Role Explorer context through explicit role identifiers where
+      provided; do not query Phase 3 or Phase 4 tables across module boundaries.
+- [x] Expose authenticated `/api/v1/jobs`, `/api/v1/jobs/import`,
+      `/api/v1/job-match-analyses`, and `/api/v1/opportunity-priorities` routes
+      with server-side validation, owner-scoped authorization, CSRF,
+      `If-Match`, idempotency, safe problems, no-store responses, and generated
+      OpenAPI contracts.
+- [x] Build the authenticated `/job-match` web workflow with paste/manual/URL
+      import, saved job list/detail, analysis, requirement-to-evidence matrix,
+      hard gaps, opportunity priority, loading/empty/success/error states,
+      keyboard-accessible controls, semantic tables, and the canonical score
+      disclaimer.
+- [x] Add unit, SSRF/provider, migration-shape, API, repository integration, web
+      component, and full-stack Playwright coverage for the primary workflow.
+- [x] Add ADR 0011 and update API, architecture, scoring, security, testing,
+      checklist, README, Make, CI, and isolated E2E scripts for Phase 5.
+
+### Pre-edit review and acceptance baseline
+
+The preceding Phase 4 acceptance criteria remain satisfied in the current
+working tree: `scripts/verify-phase4.ps1` passed on 2026-07-19 after the final
+documentation-aligned closeout, including migration rollback/forward repair, real
+dependency integrations, worker hardening probes, and the isolated Role Explorer
+browser journey. Hosted Phase 4 CI evidence is not yet recorded and remains a
+release-management follow-up, but it does not change the local acceptance result
+for this phase handoff.
+
+Reviewed before editing:
+
+- Repository rules in `AGENTS.md`, especially source-of-truth, provenance,
+  owner-scoping, generated-contract, URL-import security, and verification
+  requirements.
+- ADRs 0003, 0005, 0008, 0009, and 0010. ADRs 0009 and 0010 constrain this
+  phase to use application boundaries for eligible evidence and role context.
+- The attached UI/product reference for Job Match: left-navigation workspace,
+  exact job comparison, source-spanned requirements, match matrix, hard gaps,
+  opportunity priority, loading/empty/error/success states, and no
+  hiring-probability claims.
+- `docs/scoring-methodology.md`, including the canonical internal-score
+  disclaimer, Application Readiness formula, match credits, mandatory gap rules,
+  and opportunity-priority cautions.
+- `docs/security-threat-model.md`, especially SSRF threat T09, remote content
+  injection T10, and prompt-injection T18.
+
+### Blocking technical debt assessment
+
+No unresolved technical debt blocked the Phase 5 slice. The most important
+implementation debt was to avoid a new cross-module persistence leak: Job Match
+needed eligible evidence and optional role context, but had to consume those
+through application boundaries rather than reading Career Record or Role
+Readiness tables. That is addressed through the Career Record readiness snapshot
+and Role Readiness application service. The URL importer uses deterministic local
+tests and explicit SSRF validation so tests do not require external network
+access or third-party credentials.
+
+### Verification evidence
+
+| Check                               | Status | Evidence                                                                                                                                                                                                                                                                                                                                                                                |
+| ----------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pre-edit Phase 4 baseline           | Pass   | `scripts/verify-phase4.ps1` passed on 2026-07-19 on the final documentation-aligned tree.                                                                                                                                                                                                                                                                                               |
+| Backend focused tests               | Pass   | Job Match scoring, service, URL-import provider, migration-shape, and migration-graph tests passed before the full gate (`10 passed`).                                                                                                                                                                                                                                                  |
+| API and web focused tests           | Pass   | `apps/api/tests/test_job_match_routes.py` passed (`2 passed`, one Starlette deprecation warning). `apps/web/src/modules/job-match/tests/job-match-view.test.tsx` passed (`3 passed`).                                                                                                                                                                                                   |
+| Generated contracts                 | Pass   | `pnpm contracts:generate` regenerated `packages/contracts/openapi/careeros.openapi.json` and `packages/contracts/src/generated/schema.ts`; final `contracts:check` passed inside `scripts/verify-phase5.ps1`.                                                                                                                                                                           |
+| Final repository and Phase 5 gates  | Pass   | `scripts/verify-phase5.ps1` passed on 2026-07-19. It runs the native PowerShell equivalent of the Make gate plus the isolated Phase 5 stack: format, uv lock, contract drift, lint, typecheck, JS tests, JS build, Ruff, mypy, backend/API/worker tests, Compose config/build/startup, migrations, runtime probes, integration tests, worker hardening probes, and Playwright journeys. |
+| Phase 5 E2E and integration details | Pass   | Isolated stack migration head was `20260719_0006`; rollback to `20260719_0005` and forward repair passed. Backend integration tests passed (`13 passed`). Playwright ran auth, Resume Health, Career Record, Role Explorer, and Job Match journeys with `6 passed, 4 mobile skips` where product-specific desktop journeys intentionally skip mobile.                                   |
+
+Earlier verification attempts found and fixed two issues caused by the Phase 5
+change: the web Vitest suite could exhaust memory with parallel jsdom workers, so
+`apps/web/vitest.config.mts` now disables file-level parallelism; and the Job
+Match E2E success assertion matched both the screen-reader live region and the
+visible alert, so the test now asserts the accessible status region.
+
+### Known limitations and deferred work
+
+- The URL importer validates each URL and redirect resolution before fetching and
+  blocks non-public addresses, but it does not yet pin the TCP socket to the
+  prevalidated address. Production hardening should add socket pinning or an
+  egress proxy/firewall that enforces the same policy outside application code.
+- Requirement extraction and evidence matching are deterministic and
+  conservative. There is no AI extraction, embedding retrieval, semantic search,
+  or provider-backed independent evidence verification in Phase 5.
+- URL import supports bounded plain-text and HTML responses and strips script,
+  style, and template content. It does not execute remote scripts, send cookies,
+  import authenticated pages, or fetch Career Record evidence URLs.
+- Opportunity Priority uses the exact job analysis plus user-supplied
+  preferences, deadline, effort, and contact count. It is not an application CRM,
+  hiring probability, employer score, or ATS score.
+- The primary Job Match Playwright workflow runs on desktop. Shared authenticated
+  shell, navigation, and auth workflows still cover mobile; a full mobile Job
+  Match workflow remains optional future coverage.
+
+## Phase 6 scope and status
+
+Current status: **complete locally**. Phase 6 adds Change Studio and
+truth-locked AI: an authenticated, owner-scoped review workflow that turns
+eligible Career Record evidence plus saved Job Match requirements into
+structured, grounded suggestions. Provider output remains untrusted until strict
+schema validation, deterministic grounding, and explicit user action complete.
+
+### Included
+
+- [x] Migration `20260719_0007` adds owner-scoped change sets, operations, claim
+      ledger entries, clarifying questions, immutable versions, provider run
+      metadata, idempotency records, and redacted audit events.
+- [x] `careeros.modules.change_studio` provides framework-independent domain
+      types, provider gateway ports, deterministic local provider, strict
+      candidate validation, grounding verifier, application service, and
+      SQLAlchemy persistence.
+- [x] Change Studio consumes eligible evidence through Career Record application
+      services and saved job requirements through the Job Match application
+      service; clients cannot attach arbitrary evidence or requirement IDs.
+- [x] Authenticated `/api/v1/change-sets` routes and operation action routes
+      enforce CSRF, idempotency keys, ETags, owner authorization, input
+      validation, no-store responses, safe problem details, and generated
+      OpenAPI contracts.
+- [x] The authenticated `/change-studio` workflow covers loading, empty,
+      success, and error states; provenance-visible diffs; accessible action
+      controls; explicit accept/reject/edit/alternate/lock/undo/redo/restore
+      actions; and unsupported-claim/question handling.
+- [x] Backend unit/adversarial tests, API authorization tests, repository
+      integration tests, web component tests, and full-stack Playwright coverage
+      exercise the primary workflow.
+- [x] API, architecture, security, testing, grounding, README, checklist,
+      Make/CI/verification scripts, and this plan are updated for Phase 6.
+
+### Pre-edit review and acceptance baseline
+
+The preceding Phase 5 acceptance criteria remain satisfied in the current
+working tree based on the recorded final gate: `scripts/verify-phase5.ps1` passed
+on 2026-07-19 after documentation and contract drift were aligned. That gate
+includes the platform verifier, migration head `20260719_0006`, rollback to
+`20260719_0005`, forward repair to head, backend integration tests, worker
+hardening probes, and the authenticated Job Match Playwright journey. The Phase 5
+known URL-import socket-pinning limitation is contained to future importer
+hardening and does not block Change Studio because this phase consumes saved,
+owner-authorized Job Match analyses rather than fetching new URLs.
+
+Reviewed before editing:
+
+- Repository rules in `AGENTS.md`, especially Career Record source-of-truth,
+  provenance, owner-scoped authorization, generated contracts, AI output
+  validation, and phase verification requirements.
+- ADR 0004 and `docs/ai-grounding-policy.md` for provider gateway, strict
+  schemas, claim ledger, deterministic grounding, user control, immutable
+  versions, clarifying questions, and adversarial tests.
+- ADR 0003 for deterministic score language and expected-score simulation limits.
+- ADR 0009 for the Career Record application-boundary evidence authority and
+  stricter numeric eligibility.
+- ADR 0011 for the Phase 5 Job Match boundary, source-spanned requirements, and
+  saved analysis snapshots.
+- The attached UI/product reference for the Change Studio loop: original text,
+  suggested text, diff, rationale, evidence, job requirement, accept/reject/edit,
+  alternate, undo/redo, restore, and no invented career facts.
+
+### Blocking technical debt assessment
+
+No unresolved technical debt blocks Phase 6. The important implementation risks
+are controlled by using application boundaries instead of cross-module table
+reads, keeping the local provider deterministic and data-driven, failing closed
+when a production provider is not configured, and never treating an expected
+score delta as permission to bypass grounding or user approval.
+
+### Verification evidence
+
+| Check                               | Status | Evidence                                                                                                                                                                                                                                                                                                                                                                                                |
+| ----------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pre-edit Phase 5 baseline           | Pass   | `scripts/verify-phase5.ps1` passed on 2026-07-19 after documentation and contract drift were aligned. Phase 5 migration head `20260719_0006`, rollback to `20260719_0005`, forward repair, backend integration tests, worker hardening probes, and the authenticated Job Match Playwright journey remain the accepted predecessor baseline.                                                             |
+| Focused Change Studio tests         | Pass   | Change Studio backend service, adversarial provider/grounding, migration-shape, migration-graph, API route, repository integration, web component, and focused desktop Playwright tests passed while iterating. The final focused browser rerun passed `apps/web/e2e/change-studio-journey.spec.ts` in 12.1 seconds after the locator was narrowed to avoid repeated evidence text.                     |
+| Generated contracts                 | Pass   | `pnpm contracts:generate` regenerated `packages/contracts/openapi/careeros.openapi.json` and `packages/contracts/src/generated/schema.ts`; final contract drift checks passed inside `scripts/verify-phase6.ps1`.                                                                                                                                                                                       |
+| Final repository and Phase 6 gates  | Pass   | `scripts/verify-phase6.ps1` passed on 2026-07-19. It runs the native PowerShell equivalent of the Make gate plus the isolated Phase 6 stack: format, uv lock, contract drift, lint, typecheck, JS tests, JS build, Ruff, mypy, backend/API/worker tests, Compose config/build/startup, migrations, runtime probes, integration tests, worker hardening probes, and Playwright journeys.                 |
+| Phase 6 E2E and integration details | Pass   | Isolated stack migration head was `20260719_0007`; rollback to `20260719_0006` and forward repair passed. Backend integration tests passed (`14 passed`). Playwright ran auth, Resume Health, Career Record, Role Explorer, Job Match, and Change Studio journeys with `7 passed, 5 mobile skips` where product-specific desktop journeys intentionally skip mobile and shared mobile coverage remains. |
+
+Earlier verification attempts found and fixed two issues during Phase 6
+closeout. The API production-config test needed explicit non-deterministic AI
+provider settings after `AI_PROVIDER` changed from the old fake name to the
+Phase 6 provider choices. The Change Studio Playwright journey also used one
+broad evidence-text locator that matched multiple intentional UI occurrences;
+the assertion now targets a stable visible occurrence.
+
+### Known limitations and deferred work
+
+- The local deterministic provider is conservative and only reuses already
+  eligible evidence text. The HTTPS JSON provider is configured behind strict
+  schema/grounding controls, but live provider credentials, privacy/legal review,
+  data residency, retention, and cost-budget operations remain deployment work.
+- Phase 6 versions are Change Studio output versions, not final exportable
+  resume documents. Phase 7 owns structured resume editing, rendering,
+  round-trip verification, and download controls.
+- Expected score effect is a bounded local estimate derived after grounding; the
+  service ignores provider-supplied deltas and does not run a new scoring engine
+  simulation in Phase 6.
+- Plan-level quotas, per-user AI budgets, and production provider observability
+  are intentionally deferred to the later entitlement/operations layer.
+
+## Phase 7 scope and status
+
+Current status: **complete locally**. Phase 7 adds Resume Builder and verified
+export: an authenticated, owner-scoped workflow that turns eligible Career
+Record evidence and optional Change Studio output into structured resume drafts,
+immutable versions, ATS-readable PDF/DOCX/text/JSON exports, round-trip
+verification reports, and short-lived download intents.
+
+### Included
+
+- [x] Migration `20260719_0008` adds owner-scoped resumes, immutable resume
+      versions, export records, verification reports, short-lived download
+      intents, idempotency records, and redacted audit events.
+- [x] `careeros.modules.resume_builder` provides framework-independent domain
+      entities, validation, application services, renderer/extractor/storage
+      ports, SQLAlchemy persistence, deterministic local rendering, round-trip
+      verification, and private export storage.
+- [x] Resume Builder consumes eligible Career Record evidence and optional
+      Change Studio output through application boundaries; clients cannot mark
+      edits grounded or attach arbitrary evidence as authority.
+- [x] Authenticated `/api/v1/resumes`, `/api/v1/resume-versions`, and
+      `/api/v1/exports` routes enforce CSRF, idempotency keys, ETags,
+      owner-scoped authorization, input validation, no-store responses, safe
+      problem details, and generated OpenAPI contracts.
+- [x] The authenticated `/resume-builder` workflow covers loading, empty,
+      success, and error states; structured sections and bullets; accessible
+      non-drag reorder controls; evidence-backed bullet additions; version
+      history and restore; recruiter/plain-text preview; verification report;
+      blocked download state; and short-lived download intent creation.
+- [x] Backend service, renderer, migration, API, repository integration, web
+      component, and full-stack Playwright coverage exercise the primary
+      create/version/export/verify/download-intent workflow.
+- [x] ADR 0013 and API, architecture, security, testing, checklist, README,
+      Make/CI/verification scripts, generated contracts, and this plan are
+      updated for Phase 7.
+
+### Pre-edit review and acceptance baseline
+
+The preceding Phase 6 acceptance criteria remain satisfied in the current
+working tree based on the recorded final gate: `scripts/verify-phase6.ps1`
+passed on 2026-07-19 after documentation and contract drift were aligned. That
+gate includes the platform verifier, migration head `20260719_0007`, rollback
+to `20260719_0006`, forward repair to head, backend integration tests, worker
+hardening probes, grounding/provider tests, and the authenticated Change Studio
+Playwright journey. Phase 6's known limitation is contained to production
+provider enablement and does not block Phase 7 because Resume Builder consumes
+validated versions and eligible evidence rather than trusting provider output.
+
+Reviewed before editing:
+
+- Repository rules in `AGENTS.md`, especially Career Record source-of-truth,
+  provenance, owner-scoped authorization, generated contracts, export privacy,
+  and verification requirements.
+- ADRs 0002, 0004, 0005, 0006, 0007, 0009, 0011, and 0012 for source-of-truth,
+  grounding, ownership, isolated document work, generated contracts, eligible
+  evidence authority, Job Match snapshots, and Change Studio versions.
+- `docs/security-threat-model.md`, especially object access, sensitive-log
+  redaction, queue replay/idempotency, render cost, and the new export
+  round-trip threat.
+- `docs/testing-strategy.md` and `docs/implementation-checklist.md` for
+  required loading/empty/success/error, accessibility, authorization,
+  migration, integration, and e2e coverage.
+- The attached UI/product reference for the workspace shell, structured resume
+  editing, source-visible evidence, preview/export actions, verification
+  warnings, and explicit user control.
+
+### Blocking technical debt assessment
+
+No unresolved technical debt blocked the Phase 7 slice. The important
+implementation risk was preserving evidence authority while allowing resume
+editing. The service addresses that by rebuilding source snapshots from
+owner-scoped application contracts and requiring every bullet to retain eligible
+evidence IDs before it can be saved, versioned, or rendered. Rendering and
+verification currently execute synchronously inside the application service, but
+the persisted export state includes status, attempts, timeout/retry/dead-letter
+metadata, hashes, object keys, and verification rows so the same policy can move
+behind a Celery worker without changing the public contract.
+
+### Verification evidence
+
+| Check                               | Status | Evidence                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ----------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Pre-edit Phase 6 baseline           | Pass   | `scripts/verify-phase6.ps1` passed on 2026-07-19 after documentation and contract drift were aligned. Phase 6 migration head `20260719_0007`, rollback to `20260719_0006`, forward repair, backend integration tests, worker hardening probes, grounding/provider tests, and the authenticated Change Studio Playwright journey remain the accepted predecessor baseline.                                          |
+| Focused Resume Builder tests        | Pass   | Backend service, renderer round-trip, migration-shape, migration-graph, API route, repository integration, web component, backend architecture, Ruff, mypy, and focused TypeScript checks passed while iterating. The renderer tests exercise PDF/DOCX generation and reparse through the local extractor.                                                                                                         |
+| Generated contracts                 | Pass   | `pnpm contracts:generate` regenerated `packages/contracts/openapi/careeros.openapi.json` and `packages/contracts/src/generated/schema.ts`; `pnpm --filter '@careeros/contracts' build` passed, and the final contract drift check passed inside `scripts/verify-phase7.ps1`.                                                                                                                                       |
+| Final repository and Phase 7 gates  | Pass   | `scripts/verify-phase7.ps1` passed on 2026-07-19. It runs the native PowerShell equivalent of the Make gate plus the isolated Phase 7 stack: format, uv lock, contract drift, lint, typecheck, JS tests, JS build, Ruff, mypy, backend/API/worker tests, Compose config/build/startup, migrations, runtime probes, integration tests, worker hardening probes, renderer/round-trip tests, and Playwright journeys. |
+| Phase 7 E2E and integration details | Pass   | Isolated stack migration head was `20260719_0008`; rollback to `20260719_0007` and forward repair passed. Backend integration tests passed. Playwright ran auth, Resume Health, Career Record, Role Explorer, Job Match, Change Studio, and Resume Builder journeys with product-specific desktop workflows and inherited mobile shell coverage.                                                                   |
+
+Earlier verification attempts found and fixed several issues during Phase 7
+closeout: migration constraint names were aligned with the SQLAlchemy naming
+convention; local API tests required `CAREEROS_AI_PROVIDER=deterministic`
+because the developer `.env` still used the older fake provider name; generated
+contract artifacts had to be rebuilt before web typecheck; and one web component
+assertion was narrowed because the live region and visible alert intentionally
+announce the same export status.
+
+### Known limitations and deferred work
+
+- The local renderer prioritizes searchable, predictable single-column output.
+  Rich graphics-heavy or multi-column templates are deferred until they can pass
+  the same round-trip verification corpus without losing reading order.
+- Export rendering and verification are executed immediately in the service for
+  this vertical slice. Durable state and retry/dead-letter metadata are present;
+  a Celery renderer is the next scale/isolation hardening step if render volume
+  or tenant isolation demands it.
+- Evidence-backed addition in the initial web editor reuses available grounded
+  evidence-bearing content. A richer evidence picker and field-level compare UI
+  can improve authoring ergonomics without weakening server validation.
+- The renderer/round-trip suite covers the deterministic Phase 7 templates and
+  primary one-page workflow. Broader unusual-font, locale, and complex-layout
+  fixture coverage remains future corpus expansion.
 
 ## Roadmap and phase gates
 
@@ -743,10 +1076,8 @@ At the end of every phase:
 
 ## Next phase
 
-After Phase 4 is fully verified, the next product phase is **Phase 5 - Job Match,
-Requirement Matrix, and Opportunity Prioritizer**. It must keep using Phase 3
-eligible evidence and Phase 4 role context while adding exact job imports,
-source-spanned requirements, SSRF-hardened URL fetching, deterministic
-requirement coverage, and opportunity-priority explanations. Every requirement
-match must trace to authorized evidence or an explicit missing/unknown state, and
-no output may be presented as a hiring probability.
+The next product phase is **Phase 8 - Application Workspace and Application
+Packs**. It must add application records, stage/event/task workflows, exact
+job/resume/evidence version links, grounded application packs, consistency
+checks, deletion/audit behavior, and accessible Kanban/table/calendar views
+without adding autonomous submission.

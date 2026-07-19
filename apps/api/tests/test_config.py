@@ -46,6 +46,9 @@ def test_production_accepts_explicit_safe_configuration() -> None:
             "s3_secret_access_key": "production-test-unique-object-secret",
             "s3_use_ssl": True,
             "malware_scanner_provider": "clamav",
+            "ai_provider": "http_json",
+            "ai_http_endpoint_url": "https://ai-gateway.example.com",
+            "ai_http_api_key": "production-test-ai-key",
         }
     )
 

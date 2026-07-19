@@ -5,14 +5,6 @@ from __future__ import annotations
 from uuid import UUID, uuid4
 
 import pytest
-from role_readiness_memory import (
-    ENGINEER_ROLE_ID,
-    PRODUCT_ROLE_ID,
-    FixedClock,
-    MemoryRoleReadiness,
-    StaticSnapshotProvider,
-    UuidFactory,
-)
 
 from careeros.modules.role_readiness.application import (
     AnalyzeRoleReadiness,
@@ -28,10 +20,15 @@ from careeros.modules.role_readiness.domain import (
     RoleReadinessVersionConflict,
     SkillMatchState,
 )
-from careeros.modules.role_readiness.domain.scoring import (
-    CareerReadinessSnapshot,
-    SnapshotEvidence,
-    SnapshotSkill,
+from careeros.modules.role_readiness.domain.scoring import CareerReadinessSnapshot
+from role_readiness_memory import (
+    ENGINEER_ROLE_ID,
+    PRODUCT_ROLE_ID,
+    FixedClock,
+    MemoryRoleReadiness,
+    StaticSnapshotProvider,
+    UuidFactory,
+    sample_readiness_snapshot,
 )
 
 
@@ -40,23 +37,7 @@ def _context(owner: UUID) -> RequestContext:
 
 
 def _snapshot() -> CareerReadinessSnapshot:
-    skill_id = UUID("00000000-0000-4000-8000-000000000701")
-    return CareerReadinessSnapshot(
-        skills=(SnapshotSkill(skill_id, "User research", "Product", "advanced"),),
-        entities=(),
-        evidence=(
-            SnapshotEvidence(
-                id=UUID("00000000-0000-4000-8000-000000000801"),
-                title="Confirmed customer discovery",
-                statement="Confirmed evidence about user research with customers.",
-                context="The owner confirmed the evidence in the evidence vault.",
-                strength="confirmed",
-                skill_ids=(skill_id,),
-                entity_ids=(),
-                has_numeric_claim=False,
-            ),
-        ),
-    )
+    return sample_readiness_snapshot()
 
 
 def _service(memory: MemoryRoleReadiness, snapshot: CareerReadinessSnapshot | None = None):

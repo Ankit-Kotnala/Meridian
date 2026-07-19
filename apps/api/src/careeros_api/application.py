@@ -25,6 +25,23 @@ from careeros.modules.career_record.infrastructure import (
 from careeros.modules.career_record.infrastructure import (
     SystemClock as CareerRecordClock,
 )
+from careeros.modules.change_studio.application import ChangeStudioService, SuggestionProvider
+from careeros.modules.change_studio.infrastructure import (
+    CareerRecordChangeStudioEvidenceProvider,
+    CircuitBreakingSuggestionProvider,
+    DeterministicSuggestionProvider,
+    DisabledSuggestionProvider,
+    HttpJsonProviderOptions,
+    HttpJsonSuggestionProvider,
+    JobMatchChangeStudioAnalysisProvider,
+    SqlAlchemyChangeStudioUnitOfWorkFactory,
+)
+from careeros.modules.change_studio.infrastructure import (
+    SystemClock as ChangeStudioClock,
+)
+from careeros.modules.change_studio.infrastructure import (
+    UuidIdentifierFactory as ChangeStudioUuidFactory,
+)
 from careeros.modules.identity.application import IdentityService
 from careeros.modules.identity.application.ports import (
     GoogleOAuthProvider as GoogleOAuthProviderPort,
@@ -40,6 +57,33 @@ from careeros.modules.identity.infrastructure.security import (
     HmacTokenManager,
     NormalizedEmailValidator,
     SystemClock,
+)
+from careeros.modules.job_match.application import JobMatchService
+from careeros.modules.job_match.infrastructure import (
+    CareerRecordJobMatchSnapshotProvider,
+    RoleReadinessRoleContextProvider,
+    SafeUrlJobImportProvider,
+    SqlAlchemyJobMatchUnitOfWorkFactory,
+)
+from careeros.modules.job_match.infrastructure import (
+    SystemClock as JobMatchClock,
+)
+from careeros.modules.job_match.infrastructure import (
+    UuidIdentifierFactory as JobMatchUuidFactory,
+)
+from careeros.modules.resume_builder.application import ResumeBuilderPolicy, ResumeBuilderService
+from careeros.modules.resume_builder.infrastructure import (
+    CareerRecordResumeSourceProvider,
+    DeterministicResumeRenderer,
+    ResumeExportS3Options,
+    ResumeExportS3Storage,
+    SqlAlchemyResumeBuilderUnitOfWorkFactory,
+)
+from careeros.modules.resume_builder.infrastructure import (
+    SystemClock as ResumeBuilderClock,
+)
+from careeros.modules.resume_builder.infrastructure import (
+    UuidIdentifierFactory as ResumeBuilderUuidFactory,
 )
 from careeros.modules.resume_health.application import (
     DocumentLimits,
@@ -75,9 +119,34 @@ from careeros_api.career_record_resume_source import ResumeHealthSourceQuery
 from careeros_api.config import Settings, get_settings
 from careeros_api.middleware import RequestBodyLimitMiddleware, install_request_context_middleware
 from careeros_api.problems import install_problem_handlers
+from careeros_api.resume_builder_extractors import ResumeBuilderDocumentExtractor
 from careeros_api.routes import router
 
 logger = structlog.get_logger(__name__)
+
+
+def _change_studio_provider(settings: Settings) -> SuggestionProvider:
+    if settings.ai_provider == "disabled":
+        return DisabledSuggestionProvider()
+    if settings.ai_provider == "deterministic":
+        return DeterministicSuggestionProvider()
+    endpoint = settings.ai_http_endpoint_url
+    api_key = settings.ai_http_api_key
+    if endpoint is None or api_key is None:
+        raise RuntimeError("validated AI HTTP provider configuration is unavailable")
+    return CircuitBreakingSuggestionProvider(
+        HttpJsonSuggestionProvider(
+            HttpJsonProviderOptions(
+                endpoint_url=endpoint,
+                api_key=api_key.get_secret_value(),
+                timeout_seconds=settings.ai_http_timeout_seconds,
+                max_attempts=settings.ai_http_max_attempts,
+                max_response_bytes=settings.ai_http_max_response_bytes,
+            )
+        ),
+        failure_threshold=settings.ai_circuit_failure_threshold,
+        cooldown_seconds=settings.ai_circuit_cooldown_seconds,
+    )
 
 
 def create_app(
@@ -94,6 +163,9 @@ def create_app(
     attachment_workflow: AttachmentWorkflowService | None = None,
     attachment_storage: AttachmentS3ObjectStorage | None = None,
     role_readiness: RoleReadinessService | None = None,
+    job_match: JobMatchService | None = None,
+    change_studio: ChangeStudioService | None = None,
+    resume_builder: ResumeBuilderService | None = None,
 ) -> FastAPI:
     """Build an application; injectable dependencies keep tests infrastructure-free."""
     resolved_settings = settings or get_settings()
@@ -120,6 +192,10 @@ def create_app(
         resolved_attachment_workflow = attachment_workflow
         resolved_attachment_storage = attachment_storage
         resolved_role_readiness = role_readiness
+        resolved_job_match = job_match
+        resolved_change_studio = change_studio
+        resolved_resume_builder = resume_builder
+        resolved_resume_builder_storage: ResumeExportS3Storage | None = None
 
         if resolved_identity is None and isinstance(resolved_database, Database):
             pepper = resolved_settings.auth_token_pepper.get_secret_value()
@@ -296,6 +372,74 @@ def create_app(
                     identifiers=RoleReadinessUuidFactory(),
                     career_snapshots=CareerRecordSnapshotProvider(resolved_career_record),
                 )
+            if resolved_job_match is None:
+                if resolved_career_record is None or resolved_role_readiness is None:
+                    raise RuntimeError(
+                        "Job Match requires Career Record and Role Readiness boundaries"
+                    )
+                resolved_job_match = JobMatchService(
+                    unit_of_work=SqlAlchemyJobMatchUnitOfWorkFactory(resolved_database),
+                    clock=JobMatchClock(),
+                    identifiers=JobMatchUuidFactory(),
+                    career_snapshots=CareerRecordJobMatchSnapshotProvider(resolved_career_record),
+                    role_context=RoleReadinessRoleContextProvider(resolved_role_readiness),
+                    importer=SafeUrlJobImportProvider(),
+                )
+            if resolved_change_studio is None:
+                if resolved_career_record is None or resolved_job_match is None:
+                    raise RuntimeError(
+                        "Change Studio requires Career Record and Job Match boundaries"
+                    )
+                resolved_change_studio = ChangeStudioService(
+                    unit_of_work=SqlAlchemyChangeStudioUnitOfWorkFactory(resolved_database),
+                    clock=ChangeStudioClock(),
+                    identifiers=ChangeStudioUuidFactory(),
+                    provider=_change_studio_provider(resolved_settings),
+                    evidence=CareerRecordChangeStudioEvidenceProvider(resolved_career_record),
+                    job_matches=JobMatchChangeStudioAnalysisProvider(resolved_job_match),
+                )
+            if resolved_resume_builder is None:
+                if resolved_career_record is None:
+                    raise RuntimeError("Resume Builder requires Career Record boundary")
+                resolved_resume_builder_storage = ResumeExportS3Storage(
+                    ResumeExportS3Options(
+                        internal_endpoint_url=resolved_settings.s3_endpoint_url,
+                        public_endpoint_url=resolved_settings.s3_public_endpoint_url,
+                        region=resolved_settings.s3_region,
+                        bucket=resolved_settings.s3_bucket,
+                        access_key_id=resolved_settings.s3_access_key_id,
+                        secret_access_key=(
+                            resolved_settings.s3_secret_access_key.get_secret_value()
+                        ),
+                        use_ssl=resolved_settings.s3_use_ssl,
+                    )
+                )
+                resolved_resume_builder = ResumeBuilderService(
+                    unit_of_work=SqlAlchemyResumeBuilderUnitOfWorkFactory(resolved_database),
+                    clock=ResumeBuilderClock(),
+                    identifiers=ResumeBuilderUuidFactory(),
+                    sources=CareerRecordResumeSourceProvider(
+                        resolved_career_record,
+                        change_studio=resolved_change_studio,
+                    ),
+                    renderer=DeterministicResumeRenderer(),
+                    extractor=ResumeBuilderDocumentExtractor(
+                        DocumentLimits(
+                            max_upload_bytes=resolved_settings.resume_max_upload_bytes,
+                            max_pdf_pages=resolved_settings.resume_max_pages,
+                            max_archive_entries=resolved_settings.resume_max_archive_entries,
+                            max_archive_uncompressed_bytes=(
+                                resolved_settings.resume_max_expanded_bytes
+                            ),
+                            max_archive_ratio=resolved_settings.resume_max_compression_ratio,
+                            processing_timeout_seconds=(
+                                resolved_settings.resume_processing_timeout_seconds
+                            ),
+                        )
+                    ),
+                    storage=resolved_resume_builder_storage,
+                    policy=ResumeBuilderPolicy(),
+                )
 
         application.state.database = resolved_database
         application.state.identity_service = resolved_identity
@@ -303,6 +447,9 @@ def create_app(
         application.state.resume_health_service = resolved_resume_health
         application.state.career_record_service = resolved_career_record
         application.state.role_readiness_service = resolved_role_readiness
+        application.state.job_match_service = resolved_job_match
+        application.state.change_studio_service = resolved_change_studio
+        application.state.resume_builder_service = resolved_resume_builder
         application.state.attachment_workflow_service = resolved_attachment_workflow
         application.state.resume_outbox_dispatcher = resolved_resume_dispatcher
         application.state.readiness_dependencies = {"database": resolved_database}
@@ -329,6 +476,8 @@ def create_app(
                 await resolved_resume_storage.dispose()
             if resolved_attachment_storage is not None:
                 await resolved_attachment_storage.dispose()
+            if resolved_resume_builder_storage is not None:
+                await resolved_resume_builder_storage.dispose()
             await resolved_database.dispose()
             logger.info("api_stopped", service=resolved_settings.service_name)
 
