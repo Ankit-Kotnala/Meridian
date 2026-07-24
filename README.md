@@ -30,7 +30,7 @@ architecture documents.
 
 ## Stack
 
-- Web: Node.js 24, pnpm 11.13.0, Next.js 16.2.10 App Router, React 19.2.7,
+- Web: Node.js 24, pnpm 11.13.0, Next.js 16.2.11 App Router, React 19.2.7,
   TypeScript 5.9.3 strict mode, and Tailwind CSS 4.3.2
 - API: Python 3.13, uv, FastAPI 0.138.2, Pydantic, async SQLAlchemy, and asyncpg
 - Worker: Celery 5.6.3 with Redis broker/result backend
@@ -349,12 +349,14 @@ the API.
 - Uploaded documents, imported URLs, and model output are untrusted input.
 - Public demo content is fictional and visibly labeled.
 
-Local Compose publishes `web-edge`, not the Next.js container. The edge replaces
-all client-selected forwarding headers with its socket peer before the otherwise
-unexposed web BFF signs an opaque source key for pre-authentication and guest-
-intake API abuse controls. This is a
-local single-hop contract; a cloud load balancer requires an explicit allowlisted
-trusted-hop design rather than accepting arbitrary forwarded addresses.
+Local Compose publishes a dedicated minimized `web-edge` image, not the Next.js
+container. Both shipped Node runtimes remove npm, Corepack, and other
+package-manager executables after building. The edge replaces all client-selected
+forwarding headers with its socket peer before the otherwise unexposed web BFF
+signs an opaque source key for pre-authentication and guest-intake API abuse
+controls. This is a local single-hop contract; a cloud load balancer requires an
+explicit allowlisted trusted-hop design rather than accepting arbitrary forwarded
+addresses.
 
 Read [AGENTS.md](AGENTS.md) before contributing. The principal references are:
 

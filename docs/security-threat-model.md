@@ -317,13 +317,15 @@ reads. Admin capabilities are separate and audited.
 The pre-authentication and Phase 2 guest-intake rate key is deliberately separate
 from identity. Local
 Compose publishes only `web-edge`; the Next.js container has no host port. The
-edge discards `Forwarded`, `X-Forwarded-For`, `X-Real-IP`, and vendor address
-headers supplied by the client, then writes the direct socket peer. The
-server-only BFF normalizes that value and HMAC-signs it; the API verifies the
-signature in constant time and uses only the opaque signature as the pre-auth/
-first-guest upload rate subject. Invalid or unavailable signals fail closed in
-staging and production. This mechanism grants no session, capability, owner, or
-tenant authority.
+edge is built as a dedicated minimized image. Both shipped Node runtimes remove
+npm, Corepack, and package-manager executables after the build stage, so their
+transitive packages are not deployed. The edge discards `Forwarded`,
+`X-Forwarded-For`, `X-Real-IP`, and vendor address headers supplied by the client,
+then writes the direct socket peer. The server-only BFF normalizes that value and
+HMAC-signs it; the API verifies the signature in constant time and uses only the
+opaque signature as the pre-auth/first-guest upload rate subject. Invalid or
+unavailable signals fail closed in staging and production. This mechanism grants
+no session, capability, owner, or tenant authority.
 
 The local policy is intentionally single-hop. Behind a cloud load balancer, the
 edge sees the balancer socket address, so attribution collapses until a
@@ -668,14 +670,16 @@ integrity, ownership, migrations, object references, and documented RPO/RTO.
   use.
 - The high-severity image gate has two exact-version exceptions in `.grype.yaml`:
   CPython 3.13.14 `CVE-2026-15308` has no supported 3.13 fix and the current API
-  does not parse untrusted HTML; Next.js 16.2.10 vendors undici 6.26.0 affected by
+  does not parse untrusted HTML; Next.js 16.2.11 vendors undici 6.26.0 affected by
   WebSocket-only `GHSA-vxpw-j846-p89q`, while the product has no WebSocket client
   path.
   A Python base-image or Next.js update must remove the corresponding exception.
-- The 2026-07-15 scan also reports medium findings in CPython 3.13.14 whose listed
-  fixes are 3.15 prereleases, plus vendored `undici` 6.26.0 and `tar` 7.5.15
-  findings below the configured fixable-high gate. Dependency/base-image upgrades
-  must remove them when compatible stable releases are available; `pnpm audit`
+- The 2026-07-24 scan reports medium findings in CPython 3.13.14 whose listed
+  fixes are 3.15 prereleases plus the ignored, unreachable vendored `undici`
+  WebSocket finding. npm's newly disclosed fixable `tar` and `brace-expansion`
+  findings were removed from the shipped web and edge images by removing
+  build-only package managers. Dependency/base-image upgrades must remove the
+  remaining findings when compatible stable releases are available; `pnpm audit`
   and `pip-audit` currently report no known actionable application dependency.
 
 Any new external data flow, public endpoint, file type, AI tool, administrator

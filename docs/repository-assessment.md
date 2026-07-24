@@ -60,7 +60,7 @@ require explicit interpretation:
 ## Selected foundation architecture
 
 - pnpm 11.13.0 workspace on the Node.js 24 LTS line.
-- Next.js 16.2.10 App Router, React 19.2.7, strict TypeScript 5.9.3, and Tailwind
+- Next.js 16.2.11 App Router, React 19.2.7, strict TypeScript 5.9.3, and Tailwind
   CSS 4.3.2.
 - Python 3.13 with uv 0.11.21; FastAPI 0.138.2, Pydantic, async
   SQLAlchemy/asyncpg, and Alembic infrastructure in one root workspace and lock.

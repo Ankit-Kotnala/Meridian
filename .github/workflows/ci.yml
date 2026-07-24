@@ -327,7 +327,7 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - run: cp .env.example .env
       - run: docker compose config --quiet
-      - run: docker compose build api worker web
+      - run: docker compose build api worker web web-edge
       - name: Start the Compose platform
         run: |
           if ! docker compose up --detach --wait --wait-timeout 300; then
@@ -378,13 +378,13 @@ jobs:
           --volume careeros-grype-cache:/root/.cache/grype
           anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d
           careeros-web:latest --config /etc/grype.yaml --fail-on high --only-fixed
-      - name: Scan trusted web-edge runtime for fixable high vulnerabilities
+      - name: Scan minimized web-edge runtime for fixable high vulnerabilities
         run: >-
           docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock
           --volume "$PWD/.grype.yaml:/etc/grype.yaml:ro"
           --volume careeros-grype-cache:/root/.cache/grype
           anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d
-          node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd
+          careeros-web-edge:latest
           --config /etc/grype.yaml --fail-on high --only-fixed
       - if: always()
         run: docker compose down --volumes --remove-orphans

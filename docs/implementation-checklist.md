@@ -54,7 +54,7 @@ earlier baseline evidence remains historical.
 ### Workspace and applications
 
 - [x] Pin pnpm 11.13.0/Node 24 and verify the root workspace lockfile.
-- [x] Create `apps/web` with Next.js 16.2.10, React 19.2.7, strict TypeScript
+- [x] Create `apps/web` with Next.js 16.2.11, React 19.2.7, strict TypeScript
       5.9.3, Tailwind 4.3.2, format/lint/type/test/build scripts.
 - [x] Create an accessible initial design system and a conspicuously fictional,
       unauthenticated dashboard preview; do not imply real scoring or persistence.

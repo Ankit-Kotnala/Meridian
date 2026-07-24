@@ -111,7 +111,7 @@ This superseding foundation decision is recorded in
 | Concern      | Choice                                                          | Notes                                                                           |
 | ------------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | JS workspace | pnpm 11.13.0, Node.js 24                                        | One root lockfile; Corepack pins package-manager behavior                       |
-| Web          | Next.js 16.2.10, React 19.2.7, TypeScript 5.9.3, Tailwind 4.3.2 | App Router; strict types; server components by default where appropriate        |
+| Web          | Next.js 16.2.11, React 19.2.7, TypeScript 5.9.3, Tailwind 4.3.2 | App Router; strict types; server components by default where appropriate        |
 | Python       | Python 3.13, uv 0.11.21                                         | One root workspace/lock for API, worker, and shared backend                     |
 | HTTP         | FastAPI 0.138.2, Pydantic                                       | OpenAPI contract and validation boundary                                        |
 | Persistence  | SQLAlchemy 2 async, asyncpg, Alembic                            | PostgreSQL is authoritative; migrations arrive with owning models               |
@@ -445,15 +445,18 @@ CSRF, origin, request-size, and problem contracts. Positive versions and strict
 quoted `If-Match` preconditions protect mutable aggregates; proposal review,
 attachment finalize, and achievement conversion are idempotent.
 
-Local Compose publishes `web-edge` while the Next.js web container is reachable
-only on the shared edge network. `web-edge` strips all client-selected address
-headers and overwrites them from its socket peer. The server-only BFF normalizes
-that value, signs it with a shared HMAC secret, and sends the opaque signal to the
-API; the API verifies it before using it as pre-authentication and first-guest
-upload rate-key input. This signal is intentionally unrelated to authentication
-or authorization. A cloud load balancer changes the immediate peer, so production
-needs an explicit allowlisted trusted-hop design; arbitrary forwarded headers
-must never be accepted as client identity.
+Local Compose publishes a dedicated minimized `web-edge` image while the Next.js
+web container is reachable only on the shared edge network. The final edge and
+web images contain the Node runtime but remove npm, Corepack, and package-manager
+executables that are needed only while building. `web-edge` strips all
+client-selected address headers and overwrites them from its socket peer. The
+server-only BFF normalizes that value, signs it with a shared HMAC secret, and
+sends the opaque signal to the API; the API verifies it before using it as
+pre-authentication and first-guest upload rate-key input. This signal is
+intentionally unrelated to authentication or authorization. A cloud load
+balancer changes the immediate peer, so production needs an explicit allowlisted
+trusted-hop design; arbitrary forwarded headers must never be accepted as client
+identity.
 
 ## Scoring and AI boundaries
 

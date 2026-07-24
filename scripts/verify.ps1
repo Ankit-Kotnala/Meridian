@@ -73,7 +73,7 @@ Assert-LastExitCode "OpenAPI exporter lint"
 
 docker compose config --quiet
 Assert-LastExitCode "Compose configuration"
-docker compose build api worker web
+docker compose build api worker web web-edge
 Assert-LastExitCode "Application image build"
 docker compose up --detach --wait --wait-timeout 300
 Assert-LastExitCode "Application stack startup"

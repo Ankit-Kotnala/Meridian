@@ -4,7 +4,7 @@
 # patch update and must be removed as soon as the 3.13 line ships a fix.
 #
 # GHSA-vxpw-j846-p89q affects the undici WebSocket client. Phase 0 has no
-# WebSocket client path, and Next.js 16.2.10 (the current stable release) vendors
+# WebSocket client path, and Next.js 16.2.11 (the current stable release) vendors
 # undici 6.26.0. The exact-version rule must be removed when Next.js vendors
 # undici 6.27.0 or later.
 ignore:
