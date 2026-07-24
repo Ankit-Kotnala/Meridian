@@ -304,6 +304,9 @@ class ChangeClaim:
     claim_kind: ClaimKind
     text: str
     evidence_id: UUID
+    evidence_revision_id: UUID | None
+    evidence_revision_number: int | None
+    evidence_statement_sha256: str | None
     evidence_title: str
     evidence_strength: str
     source_excerpt: str
@@ -314,6 +317,25 @@ class ChangeClaim:
 
     def __post_init__(self) -> None:
         _text(self.text, "claim text", 1_000)
+        provenance = (
+            self.evidence_revision_id,
+            self.evidence_revision_number,
+            self.evidence_statement_sha256,
+        )
+        if any(value is None for value in provenance) and not all(
+            value is None for value in provenance
+        ):
+            raise ChangeStudioValidationError(
+                "claim evidence provenance must be either complete or explicitly legacy"
+            )
+        if self.evidence_revision_number is not None:
+            _positive_version(self.evidence_revision_number)
+        if self.evidence_statement_sha256 is not None and (
+            re.fullmatch(r"[0-9a-f]{64}", self.evidence_statement_sha256) is None
+        ):
+            raise ChangeStudioValidationError(
+                "claim evidence statement hash must be lowercase SHA-256"
+            )
         _text(self.evidence_title, "evidence title", 300)
         _text(self.evidence_strength, "evidence strength", 40)
         _text(self.source_excerpt, "source excerpt", 1_500)
@@ -321,6 +343,12 @@ class ChangeClaim:
             _text(code, "claim validation code", 80)
         if not 0 <= self.sort_order <= MAX_INT32:
             raise ChangeStudioValidationError("claim sort order is invalid")
+
+    @property
+    def evidence_is_pinned(self) -> bool:
+        """Whether this claim has a complete exact-revision provenance tuple."""
+
+        return self.evidence_revision_id is not None
 
 
 @dataclass(slots=True)

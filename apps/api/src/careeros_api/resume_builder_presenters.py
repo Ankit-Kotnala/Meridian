@@ -20,6 +20,7 @@ from careeros.modules.resume_builder.domain import (
 from careeros_api.resume_builder_schemas import (
     ResumeBulletResponse,
     ResumeDownloadIntentResponse,
+    ResumeEvidenceReferenceResponse,
     ResumeExportRecordResponse,
     ResumeExportResponse,
     ResumeListResponse,
@@ -147,4 +148,16 @@ def _bullet_response(item: ResumeBullet) -> ResumeBulletResponse:
         text=item.text,
         evidence_ids=list(item.evidence_ids),
         source=item.source,
+        evidence_references=[
+            ResumeEvidenceReferenceResponse(
+                evidence_id=reference.evidence_id,
+                evidence_revision_id=reference.evidence_revision_id,
+                revision_number=reference.revision_number,
+                statement_sha256=reference.statement_sha256,
+                claim_sha256=reference.claim_sha256,
+                link_basis=reference.link_basis.value,
+                source_skill_id=reference.source_skill_id,
+            )
+            for reference in item.evidence_references
+        ],
     )

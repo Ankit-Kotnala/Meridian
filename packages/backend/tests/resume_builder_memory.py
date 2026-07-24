@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Iterator
 from copy import deepcopy
 from dataclasses import replace
@@ -21,6 +22,8 @@ from careeros.modules.resume_builder.domain import (
     ResumeBuilderIdempotencyRecord,
     ResumeDocument,
     ResumeDownloadIntent,
+    ResumeEvidenceLinkBasis,
+    ResumeEvidenceReference,
     ResumeExport,
     ResumeFormat,
     ResumeVerificationReport,
@@ -33,6 +36,8 @@ EVIDENCE_ID = UUID("00000000-0000-4000-8000-000000000703")
 SKILL_EVIDENCE_ID = UUID("00000000-0000-4000-8000-000000000704")
 CHANGE_SET_ID = UUID("00000000-0000-4000-8000-000000000705")
 CHANGE_SET_VERSION_ID = UUID("00000000-0000-4000-8000-000000000706")
+EVIDENCE_REVISION_ID = UUID("00000000-0000-4000-8000-000000000707")
+SKILL_EVIDENCE_REVISION_ID = UUID("00000000-0000-4000-8000-000000000708")
 
 
 class FixedClock:
@@ -61,12 +66,24 @@ class StaticResumeSourceProvider:
     ) -> ResumeSourceSnapshot:
         _ = owner_user_id
         evidence_ids = (EVIDENCE_ID, SKILL_EVIDENCE_ID) if self.with_evidence else ()
+        career_text = "Confirmed product discovery work across customer interviews."
+        skill_text = "Product discovery"
+        change_text = "Tailored launch story approved in Change Studio."
         change_bullets = (
             (
                 ResumeSourceBullet(
-                    text="Tailored launch story approved in Change Studio.",
+                    text=change_text,
                     evidence_ids=(EVIDENCE_ID,),
                     source="change_studio",
+                    evidence_references=(
+                        _reference(
+                            EVIDENCE_ID,
+                            EVIDENCE_REVISION_ID,
+                            statement=career_text,
+                            claim=change_text,
+                            basis=ResumeEvidenceLinkBasis.CHANGE_STUDIO_CLAIM,
+                        ),
+                    ),
                 ),
             )
             if change_set_id == CHANGE_SET_ID
@@ -80,9 +97,34 @@ class StaticResumeSourceProvider:
             bullets=(
                 (
                     ResumeSourceBullet(
-                        text="Confirmed product discovery work across customer interviews.",
+                        text=career_text,
                         evidence_ids=(EVIDENCE_ID,),
                         source="career_record",
+                        evidence_references=(
+                            _reference(
+                                EVIDENCE_ID,
+                                EVIDENCE_REVISION_ID,
+                                statement=career_text,
+                                claim=career_text,
+                                basis=ResumeEvidenceLinkBasis.EVIDENCE_STATEMENT,
+                            ),
+                        ),
+                    ),
+                    ResumeSourceBullet(
+                        text=skill_text,
+                        evidence_ids=(SKILL_EVIDENCE_ID,),
+                        source="career_record",
+                        evidence_references=(
+                            _reference(
+                                SKILL_EVIDENCE_ID,
+                                SKILL_EVIDENCE_REVISION_ID,
+                                statement="Applied product discovery methods.",
+                                claim=skill_text,
+                                basis=ResumeEvidenceLinkBasis.EVIDENCE_SKILL,
+                                source_skill_id=UUID("00000000-0000-4000-8000-000000000709"),
+                            ),
+                        ),
+                        section_kind="skills",
                     ),
                     *change_bullets,
                 )
@@ -91,6 +133,26 @@ class StaticResumeSourceProvider:
             ),
             source_evidence_ids=evidence_ids,
         )
+
+
+def _reference(
+    evidence_id: UUID,
+    evidence_revision_id: UUID,
+    *,
+    statement: str,
+    claim: str,
+    basis: ResumeEvidenceLinkBasis,
+    source_skill_id: UUID | None = None,
+) -> ResumeEvidenceReference:
+    return ResumeEvidenceReference(
+        evidence_id=evidence_id,
+        evidence_revision_id=evidence_revision_id,
+        revision_number=1,
+        statement_sha256=hashlib.sha256(statement.encode("utf-8")).hexdigest(),
+        claim_sha256=hashlib.sha256(" ".join(claim.strip().split()).encode("utf-8")).hexdigest(),
+        link_basis=basis,
+        source_skill_id=source_skill_id,
+    )
 
 
 class MemoryResumeBuilder:

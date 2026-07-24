@@ -344,6 +344,20 @@ class JobMatchService:
             raise JobMatchNotFound
         return self._match_view(job, analysis)
 
+    async def get_latest_analysis_for_job(
+        self,
+        owner_user_id: UUID,
+        job_id: UUID,
+    ) -> JobMatchView | None:
+        """Return the latest owner-scoped analysis through an application boundary."""
+
+        async with self._uow() as uow:
+            job = await uow.get_job(owner_user_id, job_id)
+            if job is None:
+                raise JobMatchNotFound
+            analysis = await uow.latest_analysis_for_job(owner_user_id, job_id)
+        return self._match_view(job, analysis) if analysis is not None else None
+
     async def prioritize_opportunity(
         self,
         owner_user_id: UUID,

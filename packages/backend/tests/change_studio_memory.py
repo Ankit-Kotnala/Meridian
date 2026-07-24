@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Iterator
 from copy import deepcopy
 from dataclasses import replace
@@ -33,6 +34,8 @@ REQUIREMENT_ID = UUID("00000000-0000-4000-8000-000000000606")
 MISSING_REQUIREMENT_ID = UUID("00000000-0000-4000-8000-000000000607")
 EVIDENCE_ID = UUID("00000000-0000-4000-8000-000000000608")
 METRIC_EVIDENCE_ID = UUID("00000000-0000-4000-8000-000000000609")
+EVIDENCE_REVISION_ID = UUID("00000000-0000-4000-8000-00000000060a")
+METRIC_EVIDENCE_REVISION_ID = UUID("00000000-0000-4000-8000-00000000060b")
 
 
 class FixedClock:
@@ -183,21 +186,27 @@ def sample_analysis(analysis_id: UUID = ANALYSIS_ID) -> JobMatchAnalysisContext:
 
 
 def sample_evidence() -> tuple[EvidenceGroundingContext, ...]:
+    statement = "Confirmed evidence for user research, customer discovery, and product experiments."
+    metric_statement = "Improved activation by 40%."
     return (
         EvidenceGroundingContext(
             id=EVIDENCE_ID,
+            evidence_revision_id=EVIDENCE_REVISION_ID,
+            revision_number=2,
+            statement_sha256=hashlib.sha256(statement.encode("utf-8")).hexdigest(),
             title="Confirmed discovery program",
-            statement=(
-                "Confirmed evidence for user research, customer discovery, and product experiments."
-            ),
+            statement=statement,
             context="Career Record evidence only.",
             strength="confirmed",
             metrics=(),
         ),
         EvidenceGroundingContext(
             id=METRIC_EVIDENCE_ID,
+            evidence_revision_id=METRIC_EVIDENCE_REVISION_ID,
+            revision_number=3,
+            statement_sha256=hashlib.sha256(metric_statement.encode("utf-8")).hexdigest(),
             title="Confirmed activation improvement",
-            statement="Improved activation by 40%.",
+            statement=metric_statement,
             context=None,
             strength="confirmed",
             metrics=(

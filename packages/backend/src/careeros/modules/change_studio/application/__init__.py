@@ -1,5 +1,6 @@
 """Application-layer public API for Change Studio."""
 
+from ..domain import ValidationStatus
 from .models import (
     AiGenerationRequest,
     AiProviderResponse,
@@ -43,4 +44,5 @@ __all__ = [
     "RequestContext",
     "RequirementMatchContext",
     "SuggestionProvider",
+    "ValidationStatus",
 ]

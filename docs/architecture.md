@@ -1,7 +1,7 @@
 # CareerOS architecture
 
-Status: accepted target architecture; Phase 7 implemented and locally verified
-Last reviewed: 2026-07-19
+Status: accepted target architecture; Phase 8 implemented with final closeout pending
+Last reviewed: 2026-07-24
 
 ## Architectural objective
 
@@ -27,8 +27,12 @@ structured resumes, immutable versions, deterministic rendering, round-trip
 verification, private exports, and short-lived download intents. Phase 6 and
 Phase 7 consume upstream modules only through application boundaries; they do not
 read another module's tables directly or let clients choose evidence as
-grounding authority. Historical evidence and Phase 7 closeout verification are
-recorded in `PLANS.md`.
+grounding authority. Phase 8 adds the Application Workspace bounded context for
+owner-scoped workflow, immutable job/resume/evidence pins, paginated activity,
+grounded packs, consistency findings, deletion, and purpose-minimized Phase 9
+query views. It also consumes upstream modules only through owner-authorizing
+application interfaces. Historical evidence, current Phase 8 targeted results,
+and the pending final closeout gate are recorded in `PLANS.md`.
 
 ## System principles
 
@@ -252,6 +256,64 @@ The Phase 7 local renderer and verifier execute immediately inside the service
 while persisting job status, attempts, warnings, failures, timeout/retry fields,
 and dead-letter metadata. That preserves the same idempotent job contract the
 worker can claim later without introducing a second rendering policy.
+
+## Application Workspace Boundary
+
+`careeros.modules.application_workspace` owns application records, workflow
+events, tasks, notes, application packs, generated documents, consistency
+findings, idempotency fingerprints, and redacted audit events. It consumes a
+saved job through Job Match, an immutable resume version through Resume Builder,
+and eligible historical evidence revisions through Career Record application
+interfaces. It does not query any upstream table directly.
+
+Creating an application copies a bounded immutable input ledger:
+
+- job ID, positive version, source SHA-256, latest compatible analysis ID, typed
+  requirements, source spans, and exact evidence-to-requirement support links;
+- resume ID, immutable version ID and number, with each claim and evidence
+  reference revalidated against the resume version's normalized claim hashes; and
+- evidence ID, revision ID, revision number, statement SHA-256, strength, and
+  numeric-claim flag after current eligibility and historical revision checks.
+
+The service rejects incomplete or contradictory provenance. In particular, a
+legacy resume/change source without exact evidence revision identifiers,
+revision numbers, statement hashes, and a valid claim-hash ledger cannot seed an
+application or pack. Changing the selected resume rebuilds the evidence snapshot
+and requires an explicit reason preserved with previous/next pins in workflow and
+audit history; no source edit rewrites an existing snapshot.
+
+Upgrade compatibility preserves history without inventing provenance. Migration
+`20260724_0009` leaves the shipped Phase 6 migration immutable and forward-adds a
+nullable all-or-none evidence revision tuple to Change Studio claims. Existing
+rows remain readable as explicitly unpinned history, while Resume Builder and
+Application Workspace reject them as grounding input. New claims require the
+complete tuple.
+
+Application stage/outcome/reopen rules live in the domain. Mutable application
+and task operations use positive optimistic-concurrency versions. Application,
+task, note, event, and pack creates use bounded idempotency keys plus request
+fingerprints, while the web preserves one key for an unchanged user intent and
+rotates it after an input change or successful mutation. All nested persistence
+and API reads scope by owner plus application parent. Deleting a generated
+document replaces its sensitive body and links with an audited tombstone;
+deleting an application is ownership/version checked and preserves only a
+redacted audit event.
+
+Reads are purpose-bounded. Application lists and task/note/event/pack child
+collections use opaque bounded cursor pagination; the main detail response stays
+lightweight. The web loads each activity/pack panel on demand, retains mounted
+draft state, and exposes authoritative non-drag board/table/calendar controls.
+Interview preparation receives only grounded claims, evidence pins, requirements,
+and basic application context without notes, contacts, or offers. Analytics
+receives content-minimized workflow dimensions and milestones without notes,
+contacts, generated prose, rejection text, or offer text.
+
+The Phase 8 pack generator is deterministic and synchronous. Generated claims
+may cite only the pinned evidence revisions and deterministically supported job
+requirements; content and claim ledgers are hashed and checked for numeric,
+source, and cross-document consistency. Blocking findings block the affected
+document/pack. There is no application submission, email/social-network sending,
+contact scraping, or autonomous stage transition boundary.
 
 ## Request and job flows
 
@@ -532,8 +594,16 @@ adds `job_match`, migration `20260719_0006`, API/generated contracts, the
 adds `change_studio`, migration `20260719_0007`, API/generated contracts, the
 `change-studio` web feature, deterministic local provider, HTTP provider
 boundary, grounding verifier, and focused adversarial/integration/browser suites.
-OCR providers, browser extension, Terraform, operations, export rendering, and
-production workflows remain absent until their owning phases.
+Phase 7 adds `resume_builder`, migration `20260719_0008`, API/generated
+contracts, the `resume-builder` web feature, deterministic PDF/DOCX/text/JSON
+rendering, round-trip verification, private export storage, and focused
+integration/browser suites. Phase 8 adds `application_workspace`, migration
+`20260724_0009`, API/generated contracts, the `applications` web feature,
+immutable source adapters, deterministic grounded packs, consistency/deletion
+rules, cursor-paginated activity, and desktop/mobile product journeys. OCR
+providers, browser extension, Terraform, production AI/provider decisions,
+external CRM/calendar connections, and production deployment workflows remain
+absent until their owning phases.
 
 ## Architecture verification
 
@@ -575,6 +645,14 @@ SSRF policy tests, and the authenticated save/analyze/prioritize browser
 workflow. Phase 6 adds `scripts/verify-phase6.ps1` (or `make verify-phase6`) for
 migration `20260719_0007`, Change Studio repository integration, grounding and
 provider adversarial tests, and the authenticated generate/review/accept/undo/
-answer browser workflow. Later phases add round-trip export, load, account-wide
-deletion, backup, and restore gates. The complete strategy is in
+answer browser workflow. Phase 7 adds `scripts/verify-phase7.ps1` (or `make
+verify-phase7`) for migration `20260719_0008`, Resume Builder repository and
+renderer round-trip integration, and the authenticated create/version/export/
+download-intent browser workflow. Phase 8 adds `scripts/verify-phase8.ps1` (or
+`make verify-phase8`) for migration `20260724_0009`, Application Workspace
+repository and immutable-source integration, and the complete desktop/mobile
+create/track/generate browser workflow. Current targeted Phase 8 suites and both
+product journeys pass, but the consolidated final-tree rerun and separate
+security scan remain pending as recorded in `PLANS.md`. Later phases add load,
+account-wide deletion, backup, and restore gates. The complete strategy is in
 `docs/testing-strategy.md`.

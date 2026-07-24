@@ -342,6 +342,27 @@ class SqlAlchemyCareerRecordUnitOfWork:
         records = await self._evidence_records(owner_user_id, [model])
         return records[0] if records else None
 
+    async def get_evidence_batch(
+        self,
+        owner_user_id: UUID,
+        evidence_ids: tuple[UUID, ...],
+    ) -> list[EvidenceRecord]:
+        if not evidence_ids:
+            return []
+        models = list(
+            (
+                await self.session.scalars(
+                    select(EvidenceItemModel).where(
+                        EvidenceItemModel.owner_user_id == owner_user_id,
+                        EvidenceItemModel.id.in_(evidence_ids),
+                    )
+                )
+            ).all()
+        )
+        by_id = {model.id: model for model in models}
+        ordered = [by_id[evidence_id] for evidence_id in evidence_ids if evidence_id in by_id]
+        return await self._evidence_records(owner_user_id, ordered)
+
     async def list_evidence(
         self,
         owner_user_id: UUID,

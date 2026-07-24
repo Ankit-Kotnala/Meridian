@@ -1,7 +1,7 @@
 # CareerOS implementation checklist
 
 Status: living delivery checklist  
-Last reviewed: 2026-07-19
+Last reviewed: 2026-07-24
 
 This checklist expands `PLANS.md`. Check an item only when it is implemented in
 real application state and its required test passes. An interface, empty route,
@@ -381,22 +381,35 @@ hardening step, not a different product policy.
 
 Dependencies: Phases 5–7.
 
-- [ ] Add applications/stages/events/tasks/documents and exact job/resume/evidence/
-      cover-letter version links with ownership/concurrency/audit.
-- [ ] Implement accessible Kanban plus non-drag stage controls, table, calendar,
+- [x] Add applications/stages/events/tasks/documents and exact job/resume/
+      evidence/requirement revision links with ownership/concurrency/audit.
+- [x] Implement accessible Kanban plus non-drag stage controls, table, calendar,
       search/filter/sort, deadlines/follow-ups, contacts, notes, tasks, referrals,
       interviews, outcomes/reasons, and offer information.
-- [ ] Generate grounded tailored resume/letter/bio/fit-interest answers, recruiter/
+- [x] Generate grounded tailored resume/letter/bio/fit-interest answers, recruiter/
       hiring/referral/LinkedIn/follow-up messages, introduction, and achievements.
-- [ ] Run Application Consistency Engine across dates/titles/metrics/claims and
+- [x] Run Application Consistency Engine across dates/titles/metrics/claims and
       resume/letter/answer/interview sources; require conflict resolution.
-- [ ] Do not add autonomous submission in the first production release.
-- [ ] Test stage state machine, concurrent changes, cross-user records/docs,
+- [x] Do not add autonomous submission in the first production release.
+- [x] Test stage state machine, concurrent changes, cross-user records/docs,
       version pinning, pack grounding/consistency, idempotency/cost, deletion/audit,
       accessible Kanban/table/calendar, and end-to-end workflow.
 
 Exit: applications pin exact document versions; all generated pack claims remain
 grounded and consistent; workflow tests pass.
+
+Phase 8 implementation note: application sources pin the exact job
+version/source hash and immutable resume version, revalidate its per-claim hash
+ledger, and copy evidence revision numbers/statement hashes; incomplete legacy
+source ledgers remain readable as explicitly unpinned history but fail closed as
+Resume Builder/Application Workspace generation input.
+List and child reads are cursor-paginated, detail panels load on demand, and
+application/task writes use optimistic concurrency. Application, task, note,
+event, and pack creates reuse one stable idempotency key for an unchanged user
+intent. Current focused backend/API/web suites and complete desktop/mobile
+journeys pass; the full web suite is `121/121` across 35 files. The final
+consolidated `scripts/verify-phase8.ps1` rerun and separate security scan remain
+pending before phase closeout.
 
 ## Phase 9 — Interview Prep, Networking, Career Growth, and Analytics
 

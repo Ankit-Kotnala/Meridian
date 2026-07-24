@@ -12,7 +12,7 @@ case "$project_name" in
 esac
 
 verification_phase=${CAREEROS_E2E_PHASE:-2}
-expected_migration_head=${CAREEROS_EXPECTED_MIGRATION_HEAD:-20260719_0008}
+expected_migration_head=${CAREEROS_EXPECTED_MIGRATION_HEAD:-20260724_0009}
 case "$verification_phase" in
   2)
     rollback_revision=20260715_0002
@@ -32,8 +32,11 @@ case "$verification_phase" in
   7)
     rollback_revision=20260719_0007
     ;;
+  8)
+    rollback_revision=20260719_0008
+    ;;
   *)
-    echo "CAREEROS_E2E_PHASE must be 2, 3, 4, 5, 6, or 7." >&2
+    echo "CAREEROS_E2E_PHASE must be 2, 3, 4, 5, 6, 7, or 8." >&2
     exit 2
     ;;
 esac
@@ -200,6 +203,17 @@ run_browser_journeys() {
         e2e/change-studio-journey.spec.ts \
         e2e/resume-builder-journey.spec.ts
       ;;
+    8)
+      pnpm --filter @careeros/web exec playwright test \
+        e2e/auth-journey.spec.ts \
+        e2e/resume-health-journey.spec.ts \
+        e2e/career-record-journey.spec.ts \
+        e2e/role-readiness-journey.spec.ts \
+        e2e/job-match-journey.spec.ts \
+        e2e/change-studio-journey.spec.ts \
+        e2e/resume-builder-journey.spec.ts \
+        e2e/application-workspace-journey.spec.ts
+      ;;
   esac
 }
 
@@ -226,7 +240,7 @@ trap 'exit 143' TERM
 cd "$repository_root"
 
 docker compose --project-name "$project_name" config --quiet
-docker compose --project-name "$project_name" build api worker web
+docker compose --project-name "$project_name" build api worker web web-edge
 docker compose --project-name "$project_name" up --detach --wait --wait-timeout 900 postgres redis minio mailpit clamav
 wait_service_healthy clamav 900 10
 docker compose --project-name "$project_name" up --detach minio-init

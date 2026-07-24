@@ -6,6 +6,7 @@ import structlog
 from careeros.foundation.database import ReadinessProbe
 from fastapi import APIRouter, Request, Response, status
 
+from careeros_api.application_workspace_routes import router as application_workspace_router
 from careeros_api.career_record_routes import router as career_record_router
 from careeros_api.change_studio_routes import router as change_studio_router
 from careeros_api.config import Settings
@@ -31,6 +32,7 @@ router.include_router(career_record_router)
 router.include_router(role_readiness_router)
 router.include_router(job_match_router)
 router.include_router(change_studio_router)
+router.include_router(application_workspace_router)
 
 
 def _settings(request: Request) -> Settings:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
@@ -50,12 +51,48 @@ class ResumeAuditAction(StrEnum):
     EXPORT_DELETED = "export_deleted"
 
 
+class ResumeEvidenceLinkBasis(StrEnum):
+    EVIDENCE_STATEMENT = "evidence_statement"
+    EVIDENCE_SKILL = "evidence_skill"
+    CHANGE_STUDIO_CLAIM = "change_studio_claim"
+
+
+@dataclass(frozen=True, slots=True)
+class ResumeEvidenceReference:
+    evidence_id: UUID
+    evidence_revision_id: UUID
+    revision_number: int
+    statement_sha256: str
+    claim_sha256: str
+    link_basis: ResumeEvidenceLinkBasis
+    source_skill_id: UUID | None = None
+
+    def __post_init__(self) -> None:
+        if self.revision_number < 1:
+            raise ValueError("evidence revision number must be positive")
+        if re.fullmatch(r"[0-9a-f]{64}", self.statement_sha256) is None:
+            raise ValueError("evidence statement hash must be lowercase SHA-256")
+        if re.fullmatch(r"[0-9a-f]{64}", self.claim_sha256) is None:
+            raise ValueError("resume claim hash must be lowercase SHA-256")
+        if not isinstance(self.link_basis, ResumeEvidenceLinkBasis):
+            raise ValueError("evidence link basis is invalid")
+        if self.link_basis is ResumeEvidenceLinkBasis.EVIDENCE_STATEMENT:
+            if self.source_skill_id is not None:
+                raise ValueError("statement links cannot cite a source skill")
+        elif self.link_basis is ResumeEvidenceLinkBasis.EVIDENCE_SKILL:
+            if self.source_skill_id is None:
+                raise ValueError("skill links require the exact source skill")
+        elif self.source_skill_id is not None:
+            raise ValueError("change studio links cannot cite a source skill")
+
+
 @dataclass(frozen=True, slots=True)
 class ResumeBullet:
     id: UUID
     text: str
     evidence_ids: tuple[UUID, ...]
     source: str
+    evidence_references: tuple[ResumeEvidenceReference, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

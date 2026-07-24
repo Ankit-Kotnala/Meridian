@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet(2, 3, 4, 5, 6, 7)]
+    [ValidateSet(2, 3, 4, 5, 6, 7, 8)]
     [int]$Phase = 2
 )
 
@@ -60,10 +60,23 @@ $ExpectedMigrationHead = if ($env:CAREEROS_EXPECTED_MIGRATION_HEAD) {
     $env:CAREEROS_EXPECTED_MIGRATION_HEAD
 }
 else {
-    "20260719_0008"
+    "20260724_0009"
 }
 
-if ($Phase -eq 7) {
+if ($Phase -eq 8) {
+    $RollbackRevision = "20260719_0008"
+    $JourneySpecs = @(
+        "e2e/auth-journey.spec.ts",
+        "e2e/resume-health-journey.spec.ts",
+        "e2e/career-record-journey.spec.ts",
+        "e2e/role-readiness-journey.spec.ts",
+        "e2e/job-match-journey.spec.ts",
+        "e2e/change-studio-journey.spec.ts",
+        "e2e/resume-builder-journey.spec.ts",
+        "e2e/application-workspace-journey.spec.ts"
+    )
+}
+elseif ($Phase -eq 7) {
     $RollbackRevision = "20260719_0007"
     $JourneySpecs = @(
         "e2e/auth-journey.spec.ts",
@@ -227,7 +240,7 @@ Push-Location $RepositoryRoot
 try {
     docker compose --project-name $ProjectName config --quiet
     Assert-LastExitCode "Isolated Compose configuration"
-    docker compose --project-name $ProjectName build api worker web
+    docker compose --project-name $ProjectName build api worker web web-edge
     Assert-LastExitCode "Isolated application image build"
     docker compose --project-name $ProjectName up --detach --wait --wait-timeout 900 postgres redis minio mailpit clamav
     Assert-LastExitCode "Isolated dependency startup"

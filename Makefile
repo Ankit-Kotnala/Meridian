@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: help setup dev stop format format-check lint typecheck test contracts-check test-integration test-e2e test-e2e-stack test-e2e-stack-phase3 test-e2e-stack-phase4 test-e2e-stack-phase5 test-e2e-stack-phase6 test-e2e-stack-phase7 build security-scan seed migrate reset-db compose-config verify verify-phase1 verify-phase2 verify-phase3 verify-phase4 verify-phase5 verify-phase6 verify-phase7
+.PHONY: help setup dev stop format format-check lint typecheck test contracts-check test-integration test-e2e test-e2e-stack test-e2e-stack-phase3 test-e2e-stack-phase4 test-e2e-stack-phase5 test-e2e-stack-phase6 test-e2e-stack-phase7 test-e2e-stack-phase8 build security-scan seed migrate reset-db compose-config verify verify-phase1 verify-phase2 verify-phase3 verify-phase4 verify-phase5 verify-phase6 verify-phase7 verify-phase8
 
 help:
 	@echo "CareerOS development targets"
@@ -20,6 +20,7 @@ help:
 	@echo "  test-e2e-stack-phase5 Run the isolated Phase 5 Job Match journey suite"
 	@echo "  test-e2e-stack-phase6 Run the isolated Phase 6 Change Studio journey suite"
 	@echo "  test-e2e-stack-phase7 Run the isolated Phase 7 Resume Builder journey suite"
+	@echo "  test-e2e-stack-phase8 Run the isolated Phase 8 Application Workspace journey suite"
 	@echo "  build            Build workspace packages and service images"
 	@echo "  security-scan    Scan source, dependencies, and application images"
 	@echo "  contracts-check  Verify OpenAPI and generated TypeScript contract drift"
@@ -31,6 +32,7 @@ help:
 	@echo "  verify-phase5    Run all platform gates and the isolated Job Match journey"
 	@echo "  verify-phase6    Run all platform gates and the isolated Change Studio journey"
 	@echo "  verify-phase7    Run all platform gates and the isolated Resume Builder journey"
+	@echo "  verify-phase8    Run all platform gates and the isolated Application Workspace journey"
 
 setup:
 	@test -f .env || cp .env.example .env
@@ -115,6 +117,9 @@ test-e2e-stack-phase6:
 test-e2e-stack-phase7:
 	CAREEROS_E2E_PHASE=7 sh tests/e2e/run-compose.sh
 
+test-e2e-stack-phase8:
+	CAREEROS_E2E_PHASE=8 sh tests/e2e/run-compose.sh
+
 build:
 	pnpm build
 	docker compose build api worker web web-edge
@@ -158,3 +163,5 @@ verify-phase5: verify test-e2e-stack-phase5
 verify-phase6: verify test-e2e-stack-phase6
 
 verify-phase7: verify test-e2e-stack-phase7
+
+verify-phase8: verify test-e2e-stack-phase8

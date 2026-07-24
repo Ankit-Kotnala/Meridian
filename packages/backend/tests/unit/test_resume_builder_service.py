@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
+from dataclasses import replace
+
 import pytest
 
 from careeros.modules.resume_builder.application import (
@@ -227,3 +230,83 @@ async def test_blocked_export_cannot_create_download_intent() -> None:
             idempotency_key="resume-blocked-download",
             context=_context(),
         )
+
+
+@pytest.mark.asyncio
+async def test_bullet_ids_are_globally_unique_across_sections() -> None:
+    service = _service()
+    created = await service.create_resume(
+        OWNER_ID,
+        CreateResume(
+            title="Unique claim ledger",
+            target_role=None,
+            template=ResumeTemplate.STANDARD_PROFESSIONAL,
+        ),
+        idempotency_key="resume-global-claim-id",
+        context=_context(),
+    )
+    experience, skills = created.current_version.sections
+    duplicate_skill = replace(
+        skills.items[0],
+        id=experience.items[0].id,
+    )
+    with pytest.raises(
+        ResumeBuilderValidationError,
+        match="globally unique",
+    ):
+        await service.update_resume(
+            OWNER_ID,
+            created.resume.id,
+            UpdateResume(
+                sections=(
+                    experience,
+                    replace(skills, items=(duplicate_skill,)),
+                )
+            ),
+            expected_version=created.resume.version,
+            idempotency_key="resume-global-claim-id-update",
+            context=_context(),
+        )
+
+
+@pytest.mark.asyncio
+async def test_verifier_never_claims_grounding_for_legacy_missing_references() -> None:
+    service = _service()
+    created = await service.create_resume(
+        OWNER_ID,
+        CreateResume(
+            title="Legacy provenance check",
+            target_role=None,
+            template=ResumeTemplate.STANDARD_PROFESSIONAL,
+        ),
+        idempotency_key="resume-legacy-provenance",
+        context=_context(),
+    )
+    section = created.current_version.sections[0]
+    legacy = replace(
+        created.current_version,
+        sections=(
+            replace(
+                section,
+                items=(
+                    replace(
+                        section.items[0],
+                        evidence_references=(),
+                    ),
+                ),
+            ),
+        ),
+    )
+    content = legacy.plain_text.encode("utf-8")
+    report = await service._verify(
+        legacy,
+        legacy.id,
+        content,
+        "text/plain; charset=utf-8",
+        tuple(legacy.plain_text.splitlines()),
+        hashlib.sha256(content).hexdigest(),
+    )
+    assert report.status.value == "failed"
+    assert "grounding_validation_failed" in report.grounding_codes
+    assert "all_bullets_grounded" not in report.grounding_codes
+    assert any(value.startswith("invalid_provenance:") for value in report.critical_failures)

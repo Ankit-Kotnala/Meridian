@@ -13,16 +13,20 @@ claim under the user's control.
 
 ## Repository status
 
-**Phase 7 Resume Builder and verified export is implemented and locally verified in this working tree.**
-Phases 0 through 3 are hosted verified; Phase 4 has local closeout evidence; and
-Phases 5 through 7 final local gate evidence is recorded in `PLANS.md`. The
-repository uses a shared Python modular monolith, one root uv workspace,
-generated API contracts, thin deployable applications, and executable dependency
-boundaries.
+**Phase 8 Application Workspace and grounded application packs are implemented in
+this working tree; the final consolidated Phase 8 verification and security scan
+are pending.**
+Phases 0 through 7 are hosted verified; PR #20 merged Phases 5 through 7 after
+hosted CI run `30119088488` passed every required job. The current Phase 8
+targeted backend, API, web, and desktop/mobile workflow evidence is recorded in
+`PLANS.md` without being presented as final closeout. The repository uses a
+shared Python modular monolith, one root uv workspace, generated API contracts,
+thin deployable applications, and executable dependency boundaries.
 
 Hosted CI run `29657932938` passed every Phase 3 job on no-change trigger commit
 `f752b55`, whose tree is identical to implementation commit `0df8bcf`; prior
-Phase 2 evidence remains preserved at `3b8d639` and run `29378312134`.
+Phase 2 evidence remains preserved at `3b8d639` and run `29378312134`. The
+latest predecessor baseline is merge commit `f9807dc` from PR #20.
 
 See [PLANS.md](PLANS.md) for current status, historical evidence, and phase gates.
 Do not infer that a planned endpoint or module is implemented from the
@@ -168,6 +172,18 @@ files before download, shows the verification report, blocks critical failures,
 and issues only short-lived owner-checked download intents. Exported files remain
 pinned to the version and content hash that passed verification.
 
+Application Workspace is available at `/applications`. It creates owner-scoped
+application records from one exact saved-job revision and one immutable resume
+version, then pins the job version/source hash and requirement snapshot, validates
+the resume version's per-claim hash ledger, and copies exact eligible evidence
+revision numbers and statement hashes. It provides accessible board, table, and
+calendar views; explicit
+non-drag stage changes; contacts, deadlines, follow-ups, tasks, notes, events,
+outcomes, rejection reasons, and offer summaries; and deterministic grounded
+application packs with consistency findings. Legacy resume sources without the
+complete immutable claim/evidence ledger are refused. The product does not submit
+applications or send messages on the user's behalf.
+
 Authenticated Resume Health starts at `/resume-health/account`. The intentionally
 limited guest flow starts at `/resume-health/guest`, uses one opaque short-lived
 browser capability, permits one active intake, and defaults to 24-hour retention.
@@ -239,6 +255,7 @@ make test-e2e-stack-phase4 # isolated Phase 4 Role Explorer journey plus prior r
 make test-e2e-stack-phase5 # isolated Phase 5 Job Match journey plus prior regressions
 make test-e2e-stack-phase6 # isolated Phase 6 Change Studio journey plus prior regressions
 make test-e2e-stack-phase7 # isolated Phase 7 Resume Builder journey plus prior regressions
+make test-e2e-stack-phase8 # isolated Phase 8 desktop/mobile Application Workspace journeys
 make security-scan    # scan source, dependencies, app images, and trusted edge runtime
 make migrate          # apply the current database migrations
 make seed             # print the explicitly fictional Phase 0 fixture
@@ -250,6 +267,7 @@ make verify-phase4    # full gate plus isolated Role Explorer integration/E2E
 make verify-phase5    # full gate plus isolated Job Match integration/E2E
 make verify-phase6    # full gate plus isolated Change Studio integration/E2E
 make verify-phase7    # full gate plus isolated Resume Builder integration/E2E
+make verify-phase8    # full gate plus isolated Application Workspace integration/E2E
 make reset-db         # explicitly destructive local database reset
 ```
 
@@ -285,6 +303,11 @@ Use `.\scripts\verify-phase7.ps1` for migration `20260719_0008`, Resume Builder
 repository integration, renderer/round-trip verification tests, and the desktop
 create/version/export/download-intent workflow backed by confirmed career
 evidence.
+Use `.\scripts\verify-phase8.ps1` for migration `20260724_0009`, Application
+Workspace repository integration, immutable-source and consistency tests, and
+the complete desktop/mobile create/track/generate workflow. The Phase 8
+implementation currently has passing focused evidence; its final consolidated
+rerun remains pending and must pass before the phase is called complete.
 
 The Phase 0 migration enables the pgvector extension. Phase 1 migration
 `20260715_0002` adds the identity, session, OAuth, organization, consent, audit,
@@ -320,6 +343,15 @@ immutable resume versions, export records, verification reports, short-lived
 download intents, idempotency records, and redacted audit events. Downgrading to
 `20260719_0007` deletes Phase 7 resume-builder/export data and is likewise a
 test/forward-repair path.
+Phase 8 migration `20260724_0009` adds owner-scoped applications, exact immutable
+source pins, workflow events, tasks, notes, packs, generated documents,
+idempotency records, and redacted audit events. It also forward-adds a nullable
+all-or-none evidence-revision tuple to Change Studio claims without rewriting the
+shipped Phase 6 migration: existing claims remain readable but explicitly
+unpinned and cannot seed grounded Resume Builder/Application Workspace output;
+new claims require complete pins. Downgrading to `20260719_0008` deletes Phase 8
+workspace data and removes those forward-added fields; it is a
+test/forward-repair path, not a production rollback recommendation.
 The seed command still prints only a fictional demo fixture and performs no
 database write. A command that prints a fixture or says a feature is deferred is
 not evidence that the product feature exists.
@@ -370,11 +402,11 @@ Read [AGENTS.md](AGENTS.md) before contributing. The principal references are:
 - [Implementation checklist](docs/implementation-checklist.md)
 - [Architecture decisions](docs/adr/README.md)
 
-## Verification Status Through Phase 7 Implementation
+## Verification Status Through Phase 8 Implementation
 
-Phases 0 through 3 have recorded local and hosted evidence; Phase 4 has recorded
-local closeout evidence; Phases 5 through 7 have recorded local closeout evidence in
-`PLANS.md`.
+Phases 0 through 7 have recorded local and hosted evidence. Phase 8 has current
+focused and product-journey evidence in `PLANS.md`, while its final consolidated
+gate and security scan remain explicitly pending.
 Exact current and historical results are recorded separately in `PLANS.md`; never
 infer a pass from the command list below:
 
@@ -402,6 +434,7 @@ Native PowerShell runs the equivalent quality/build/configuration checks with:
 .\scripts\verify-phase5.ps1
 .\scripts\verify-phase6.ps1
 .\scripts\verify-phase7.ps1
+.\scripts\verify-phase8.ps1
 docker compose up --build --detach --wait
 docker compose ps
 Invoke-WebRequest -UseBasicParsing http://localhost:3000/api/health
@@ -434,7 +467,17 @@ gates all passed.
 Phase 7 local closeout passed with `scripts/verify-phase7.ps1` on 2026-07-19:
 format, lint, type, unit, build, container, migration, integration, runtime,
 worker hardening, renderer/round-trip tests, and isolated Resume Builder browser
-gates all passed.
+gates all passed. PR #20 subsequently merged the Phase 5–7 stack at `f9807dc`
+after hosted CI run `30119088488` passed every required job.
+Phase 8 targeted verification currently reports `201 passed` in the backend
+portfolio, `104 passed` in the API portfolio, and `121 passed` across 35 web test
+files. The complete Application Workspace product journey passes separately on
+desktop and mobile, including application creation, tracking, stage changes,
+tasks/notes/events, pack generation, and consistency review. Outcome, deletion,
+and audit behavior pass in the backend/API portfolios. These targeted results do
+not replace the pending final
+`scripts/verify-phase8.ps1` rerun or the separate security scan, and no hosted
+Phase 8 result is claimed.
 
 ## License and production use
 

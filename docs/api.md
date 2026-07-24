@@ -1,8 +1,8 @@
 # CareerOS API conventions and route plan
 
-Status: Phase 7 Resume Builder and verified export API implemented and locally verified
+Status: Phase 8 Application Workspace API implemented; final closeout pending
 Base path for product APIs: `/api/v1`  
-Last reviewed: 2026-07-19
+Last reviewed: 2026-07-24
 
 ## Implementation truth
 
@@ -33,7 +33,10 @@ Studio change sets, truth-locked provider suggestions, grounding decisions,
 clarifying questions, and immutable output versions. Phase 7 adds authenticated
 structured resumes, immutable resume versions, verified PDF/DOCX/text/JSON
 exports, round-trip reports, short-lived download intents, and export deletion.
-Application workflows remain unimplemented. `/docs` and `/openapi.json` are
+Phase 8 adds authenticated applications, stage/outcome/task/note/event tracking,
+bounded calendar/list views, exact immutable source pins, deterministic grounded
+application packs, consistency results, and deletion. It deliberately adds no
+application-submission or message-sending route. `/docs` and `/openapi.json` are
 development documentation endpoints and may be restricted or disabled in
 production.
 
@@ -43,7 +46,7 @@ FastAPI OpenAPI document. The normalized artifact under
 `packages/contracts/src/generated` are committed review artifacts; neither is an
 independent contract authority. Problem, pagination, and product schemas are not
 published until corresponding Pydantic models and operations exist. Phase 1
-contract evidence is recorded in `PLANS.md`. Phase 2 through Phase 7 changes
+contract evidence is recorded in `PLANS.md`. Phase 2 through Phase 8 changes
 regenerate both artifacts; the final drift result must be recorded there before a
 phase is marked complete.
 
@@ -626,19 +629,54 @@ never exposes the private object key.
 ```text
 GET    /api/v1/applications
 POST   /api/v1/applications
+GET    /api/v1/applications/calendar
 GET    /api/v1/applications/{applicationId}
 PATCH  /api/v1/applications/{applicationId}
+PATCH  /api/v1/applications/{applicationId}/stage
 DELETE /api/v1/applications/{applicationId}
+GET    /api/v1/applications/{applicationId}/events
 POST   /api/v1/applications/{applicationId}/events
 GET    /api/v1/applications/{applicationId}/tasks
 POST   /api/v1/applications/{applicationId}/tasks
+PATCH  /api/v1/applications/{applicationId}/tasks/{taskId}
+GET    /api/v1/applications/{applicationId}/notes
+POST   /api/v1/applications/{applicationId}/notes
 POST   /api/v1/applications/{applicationId}/application-packs
+GET    /api/v1/applications/{applicationId}/application-packs
 GET    /api/v1/application-packs/{packId}
 GET    /api/v1/application-packs/{packId}/consistency
+DELETE /api/v1/applications/{applicationId}/documents/{documentId}
 ```
 
-Stage transitions are validated and audited. Documents pin exact resume/evidence/
-job versions. There is no autonomous submission endpoint in the first release.
+Application, task, note, event, and pack creates require bounded idempotency keys
+with request-fingerprint conflict detection. The web reuses one key for an
+unchanged user intent and rotates it only after relevant input changes or a
+successful mutation. Mutable application and task writes use positive quoted
+`If-Match` versions. Stage/outcome transitions are validated and audited,
+terminal-stage reopening requires a reason, resume changes require a reason, and
+nested resources are fetched by both owner and application parent.
+
+The server-side application snapshot pins the exact job ID/version/source
+SHA-256 and typed requirement snapshot; resume ID/immutable version ID/version
+number after revalidating its per-claim hash ledger; and evidence ID/revision ID/
+revision number/statement SHA-256. The authorized detail response exposes the
+necessary pin and claim/evidence identifiers without exposing unrelated source
+content. An incomplete legacy resume/change source is refused rather than treated
+as grounded. Forward migration keeps an older Change Studio claim readable with
+nullable provenance fields, but downstream source adapters reject that explicitly
+unpinned row; every new claim requires the complete evidence revision tuple. Pack
+documents also store content hashes and exact claim-to-evidence/requirement
+links. Consistency results cover source-pin drift, claims, numbers, titles, dates,
+evidence, requirements, and cross-document ledger disagreement.
+Deleting a document produces an audited content-free tombstone; deleting an
+application requires current ownership/version and leaves redacted audit history.
+
+Application, task, note, event, and pack-list responses use opaque cursor
+pagination with bounded limits; the application detail response stays
+lightweight and clients load child collections on demand. Calendar ranges are
+bounded to 366 days and 500 entries. All responses are private `no-store`.
+There is no autonomous submission, email/social-network delivery, contact
+scraping, or message-sending endpoint in the first release.
 
 ### Phase 9 — Interview, networking, growth, and analytics
 
@@ -871,3 +909,25 @@ CSRF, owner scope, idempotency, version preconditions and comparison, and the
 authenticated desktop Role Explorer save/analyze/compare journey.
 The local consolidated gate passed on 2026-07-19; exact evidence is recorded in
 `PLANS.md`.
+
+Phase 5 through Phase 7 retain those API gates while adding Job Match, Change
+Studio, and Resume Builder routes and their migration, contract, ownership,
+grounding, idempotency, concurrency, renderer, and browser checks. Their
+consolidated local results are recorded in `PLANS.md`.
+
+Phase 8's consolidated gate is:
+
+```powershell
+.\scripts\verify-phase8.ps1
+```
+
+It retains the prior gates and adds migration `20260724_0009`, generated-contract
+drift, Application Workspace repository/source integration, exact historical
+revision/hash provenance, legacy-source refusal, owner/nested-parent denial,
+opaque pagination, stable idempotency, `If-Match` conflicts, consistency and
+deletion behavior, and complete desktop/mobile application workflows. The
+current targeted API portfolio reports `104 passed`; backend and web targeted
+portfolios and both product journeys also pass as recorded in `PLANS.md`.
+Because final UI hardening and documentation followed the interim consolidated
+baseline, the final `verify-phase8.ps1` rerun and separate security scan remain
+pending. No final or hosted Phase 8 API result is claimed yet.

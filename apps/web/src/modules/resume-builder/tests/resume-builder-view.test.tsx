@@ -30,6 +30,17 @@ const baseVersion: ResumeVersion = {
       items: [
         {
           evidenceIds: ["00000000-0000-4000-8000-000000000804"],
+          evidenceReferences: [
+            {
+              claimSha256: "d".repeat(64),
+              evidenceId: "00000000-0000-4000-8000-000000000804",
+              evidenceRevisionId: "00000000-0000-4000-8000-000000000807",
+              linkBasis: "evidence_statement",
+              revisionNumber: 1,
+              sourceSkillId: null,
+              statementSha256: "e".repeat(64),
+            },
+          ],
           id: "00000000-0000-4000-8000-000000000805",
           source: "career_record",
           text: "Confirmed product discovery work across customer interviews.",

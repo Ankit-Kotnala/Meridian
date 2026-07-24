@@ -21,6 +21,8 @@ from careeros.modules.resume_builder.domain import (
     ResumeBullet,
     ResumeDocument,
     ResumeDownloadIntent,
+    ResumeEvidenceLinkBasis,
+    ResumeEvidenceReference,
     ResumeExport,
     ResumeExportStatus,
     ResumeFormat,
@@ -414,6 +416,22 @@ def _sections_payload(sections: tuple[ResumeSection, ...]) -> list[dict[str, obj
                     "text": item.text,
                     "evidenceIds": [str(value) for value in item.evidence_ids],
                     "source": item.source,
+                    "evidenceReferences": [
+                        {
+                            "evidenceId": str(reference.evidence_id),
+                            "evidenceRevisionId": str(reference.evidence_revision_id),
+                            "revisionNumber": reference.revision_number,
+                            "statementSha256": reference.statement_sha256,
+                            "claimSha256": reference.claim_sha256,
+                            "linkBasis": reference.link_basis.value,
+                            "sourceSkillId": (
+                                str(reference.source_skill_id)
+                                if reference.source_skill_id is not None
+                                else None
+                            ),
+                        }
+                        for reference in item.evidence_references
+                    ],
                 }
                 for item in section.items
             ],
@@ -435,6 +453,25 @@ def _sections(values: list[dict[str, object]]) -> tuple[ResumeSection, ...]:
                     for value in cast(list[object], raw_item.get("evidenceIds", []))
                 ),
                 source=str(raw_item.get("source", "career_record")),
+                evidence_references=tuple(
+                    ResumeEvidenceReference(
+                        evidence_id=UUID(str(reference["evidenceId"])),
+                        evidence_revision_id=UUID(str(reference["evidenceRevisionId"])),
+                        revision_number=int(str(reference["revisionNumber"])),
+                        statement_sha256=str(reference["statementSha256"]),
+                        claim_sha256=str(reference["claimSha256"]),
+                        link_basis=ResumeEvidenceLinkBasis(str(reference["linkBasis"])),
+                        source_skill_id=(
+                            UUID(str(reference["sourceSkillId"]))
+                            if reference.get("sourceSkillId") is not None
+                            else None
+                        ),
+                    )
+                    for reference in cast(
+                        list[dict[str, object]],
+                        raw_item.get("evidenceReferences", []),
+                    )
+                ),
             )
             for raw_item in raw_items
         )

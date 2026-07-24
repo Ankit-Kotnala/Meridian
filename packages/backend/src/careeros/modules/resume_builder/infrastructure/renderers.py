@@ -42,7 +42,7 @@ class DeterministicResumeRenderer(ResumeRenderer):
         if requested == ResumeFormat.JSON:
             content = json.dumps(
                 {
-                    "schemaVersion": "resume-export-json-v1",
+                    "schemaVersion": "resume-export-json-v2",
                     "versionId": str(version.id),
                     "title": version.title,
                     "targetRole": version.target_role,
@@ -58,6 +58,24 @@ class DeterministicResumeRenderer(ResumeRenderer):
                                     "text": item.text,
                                     "evidenceIds": [str(value) for value in item.evidence_ids],
                                     "source": item.source,
+                                    "evidenceReferences": [
+                                        {
+                                            "evidenceId": str(reference.evidence_id),
+                                            "evidenceRevisionId": str(
+                                                reference.evidence_revision_id
+                                            ),
+                                            "revisionNumber": reference.revision_number,
+                                            "statementSha256": reference.statement_sha256,
+                                            "claimSha256": reference.claim_sha256,
+                                            "linkBasis": reference.link_basis.value,
+                                            "sourceSkillId": (
+                                                str(reference.source_skill_id)
+                                                if reference.source_skill_id is not None
+                                                else None
+                                            ),
+                                        }
+                                        for reference in item.evidence_references
+                                    ],
                                 }
                                 for item in section.items
                             ],

@@ -3,7 +3,7 @@
 Status: mandatory product policy  
 Applies to: extraction, suggestions, rewrites, application materials, networking
 messages, interview content, summaries, and any future generative capability  
-Last reviewed: 2026-07-19
+Last reviewed: 2026-07-24
 
 ## Policy statement
 
@@ -240,9 +240,16 @@ content. Regeneration uses a new model run linked to the same request. Restoring
 creates another current version referencing its ancestor; it does not mutate or
 delete the historic exported version.
 
-Application packs pin their resume/evidence/job snapshots. Subsequent profile
-updates can raise a consistency warning but cannot silently rewrite sent or
-exported material.
+Application packs pin the exact job ID/version/source hash and requirement
+snapshot; resume ID/immutable version ID/version number after validating its
+per-claim hash ledger; and evidence ID/revision ID/revision number/statement hash.
+A legacy resume/change source without the complete immutable ledger is refused
+rather than silently upgraded or treated as grounded. Forward migration may keep
+an older Change Studio claim readable as explicitly unpinned history; it is not
+generation input, is never backfilled from today's evidence, and new claims
+require the complete revision tuple. Existing applications continue to validate
+against their pinned inputs; a future live-source comparison may add a warning,
+but no subsequent source change may silently rewrite an application or pack.
 
 ## Application Consistency Engine
 
@@ -255,7 +262,9 @@ deterministic engine compares:
 - claimed skill/technology use;
 - resume, cover letter, application answer, professional bio, networking message,
   and STAR-story claims;
-- exact immutable resume and evidence versions linked to the application.
+- exact immutable job/resume versions, job source hash, validated resume claim
+  hashes, evidence revision numbers/statement hashes, and requirement links
+  recorded for the application.
 
 Conflicts are findings with source links and resolution choices. A later version
 does not make an earlier statement retroactively false or rewrite application
@@ -306,7 +315,9 @@ access.
 For each generation request, preserve without unnecessary content:
 
 - actor, tenant, purpose, request/trace/idempotency IDs, and time;
-- authorized input snapshot and evidence/requirement IDs;
+- authorized input snapshot with exact job/resume versions, source hashes,
+  validated claim hashes, evidence revision IDs/numbers/statement hashes, and
+  requirement IDs;
 - provider/model/prompt/schema/policy/grounding versions;
 - structured operation and claim ledger, stored under restricted career-data
   controls rather than general logs;
@@ -339,6 +350,36 @@ redacted operational metadata by default, not raw prompts or resumes.
 These are blocking adversarial tests for Phase 6 and remain regression gates for
 all later generative features.
 
+## Phase 8 Application Workspace enforcement
+
+Phase 8 applies this policy without asking a model to invent prose. Its first pack
+generator is deterministic and synchronous: it selects bounded claims from the
+immutable resume ledger, reauthorizes and verifies each exact historical evidence
+revision, links only requirements deterministically supported by that evidence,
+and builds constrained document forms. Unsupported facts, missing revision
+provenance, changed hashes, unconfirmed numbers, and cross-document ledger
+disagreement become blocking findings.
+
+Every application/pack generation request is owner scoped and records a bounded
+idempotency key/fingerprint. The web preserves the same key while retrying one
+unchanged user intent and rotates it after relevant input changes or success.
+This prevents an ambiguous response from duplicating a pack while ensuring an
+edited request cannot replay the prior result.
+
+The application snapshot remains immutable even when Career Record, Job Match,
+or Resume Builder later changes. Selecting a different resume requires an
+explicit reason and creates new exact resume/evidence pins while preserving
+previous/next identifiers in workflow and redacted audit history. Generated
+documents store their content hash, atomic claim ledger, exact evidence-revision
+links, and supported requirement links. Deletion removes document prose and
+provenance links from the active record and retains only an audited tombstone.
+
+Application materials remain drafts for explicit user review. Phase 8 provides
+no submission, email, social-network, contact-scraping, or autonomous-stage tool.
+A future provider or worker may change wording or throughput only behind the same
+strict schema, immutable input, grounding, idempotency, cost/retry, and
+consistency gates.
+
 ## Phase 0 boundary
 
 Phase 0 defines this policy and provider/domain boundaries only. It does not call
@@ -351,4 +392,6 @@ Phase 3 implements evidence states/provenance; Phase 5 implements source-spanned
 job requirements; Phase 6 implements the provider gateway, strict schemas, claim
 ledger, grounding verifier, Change Studio, and adversarial suite. Generative
 production features outside this reviewed Change Studio path cannot ship before
-equivalent gates pass.
+equivalent gates pass. Phase 8's application packs are implemented as the
+deterministic constrained path described above; they do not enable a production
+model provider.

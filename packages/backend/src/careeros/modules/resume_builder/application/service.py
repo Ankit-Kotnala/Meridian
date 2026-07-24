@@ -11,6 +11,7 @@ from pathlib import Path
 from uuid import UUID
 
 from careeros.modules.resume_builder.domain import (
+    MAX_ITEMS_PER_SECTION,
     ResumeAuditAction,
     ResumeBuilderAuditEvent,
     ResumeBuilderConflict,
@@ -22,6 +23,7 @@ from careeros.modules.resume_builder.domain import (
     ResumeBullet,
     ResumeDocument,
     ResumeDownloadIntent,
+    ResumeEvidenceReference,
     ResumeExport,
     ResumeExportBlocked,
     ResumeExportStatus,
@@ -45,6 +47,7 @@ from .models import (
     ResumeExportRecord,
     ResumeList,
     ResumeRecord,
+    ResumeSourceBullet,
     ResumeSourceSnapshot,
     ResumeVersionList,
     UpdateResume,
@@ -217,17 +220,24 @@ class ResumeBuilderService:
         if replay is not None:
             return replay
 
+        source_record = await self.get_resume(owner_user_id, resume_id)
+        source = await self._sources.snapshot(
+            owner_user_id,
+            change_set_id=source_record.resume.source_change_set_id,
+            change_set_version_id=source_record.resume.source_change_set_version_id,
+        )
         async with self._uow() as uow:
             record = await uow.get_resume(owner_user_id, resume_id, for_update=True)
             if record is None:
                 raise ResumeBuilderNotFound
             if record.resume.version != expected_version:
                 raise ResumeBuilderVersionConflict
-            source = await self._sources.snapshot(
-                owner_user_id,
-                change_set_id=record.resume.source_change_set_id,
-                change_set_version_id=record.resume.source_change_set_version_id,
-            )
+            if (
+                record.resume.source_change_set_id != source_record.resume.source_change_set_id
+                or record.resume.source_change_set_version_id
+                != source_record.resume.source_change_set_version_id
+            ):
+                raise ResumeBuilderVersionConflict
             title = (
                 validate_title(command.title) if command.title is not None else record.resume.title
             )
@@ -238,12 +248,13 @@ class ResumeBuilderService:
             )
             template = command.template or record.resume.template
             sections = (
-                validate_sections(
+                self._sections_with_authoritative_references(
                     command.sections,
-                    eligible_evidence_ids=set(source.source_evidence_ids),
+                    current=record.current_version.sections,
+                    source=source,
                 )
                 if command.sections is not None
-                else record.current_version.sections
+                else self._validated_version_sections(record.current_version)
             )
             versions = await uow.list_versions(owner_user_id, resume_id)
             next_number = max((item.version_number for item in versions), default=0) + 1
@@ -258,6 +269,7 @@ class ResumeBuilderService:
                 template=template,
                 sections=sections,
                 plain_text=_plain_text(title, target_role, sections),
+                source_evidence_ids=_section_evidence_ids(sections),
                 created_at=now,
             )
             resume = replace(
@@ -330,6 +342,7 @@ class ResumeBuilderService:
                 raise ResumeBuilderNotFound
             if record.resume.version != expected_version:
                 raise ResumeBuilderVersionConflict
+            sections = self._validated_version_sections(record.current_version)
             versions = await uow.list_versions(owner_user_id, resume_id)
             next_number = max((item.version_number for item in versions), default=0) + 1
             now = self._clock.now()
@@ -338,6 +351,7 @@ class ResumeBuilderService:
                 id=self._ids.new(),
                 version_number=next_number,
                 parent_version_id=record.current_version.id,
+                sections=sections,
                 created_at=now,
             )
             await uow.add_version(version)
@@ -408,6 +422,7 @@ class ResumeBuilderService:
             version = await uow.get_version(owner_user_id, version_id)
             if version is None or version.resume_id != resume_id:
                 raise ResumeBuilderNotFound
+            self._validated_version_sections(version)
             now = self._clock.now()
             updated = await uow.set_current_version(owner_user_id, resume_id, version_id, now=now)
             if updated is None:
@@ -463,6 +478,7 @@ class ResumeBuilderService:
             version = await uow.get_version(owner_user_id, version_id)
             if version is None:
                 raise ResumeBuilderNotFound
+            self._validated_version_sections(version)
             now = self._clock.now()
             export_id = self._ids.new()
             export = ResumeExport(
@@ -644,6 +660,7 @@ class ResumeBuilderService:
             version = await uow.get_version(owner_user_id, export.version_id)
             if version is None:
                 raise ResumeBuilderNotFound
+            self._validated_version_sections(version)
             now = self._clock.now()
             rendering = replace(
                 export,
@@ -763,7 +780,22 @@ class ResumeBuilderService:
             line for line in expected if line and normalized_text.count(line.casefold()) > 1
         )
         detected = tuple(line for line in expected if line not in missing)
-        failures = tuple(f"missing:{line[:80]}" for line in missing)
+        grounding_failures = _version_provenance_failures(version)
+        failures = (
+            *(f"missing:{line[:80]}" for line in missing),
+            *grounding_failures,
+        )
+        grounding_codes = (
+            (
+                "all_bullets_grounded",
+                *(() if missing else ("round_trip_searchable",)),
+            )
+            if not grounding_failures
+            else (
+                "grounding_validation_failed",
+                *(() if missing else ("round_trip_searchable",)),
+            )
+        )
         status = (
             ResumeVerificationStatus.FAILED
             if failures
@@ -784,7 +816,7 @@ class ResumeBuilderService:
             missing_lines=missing,
             duplicate_lines=duplicate_lines,
             reading_order=reading_order,
-            grounding_codes=("all_bullets_grounded", "round_trip_searchable"),
+            grounding_codes=grounding_codes,
             file_sha256=digest,
             parser_version=parser_version,
             created_at=now,
@@ -818,7 +850,7 @@ class ResumeBuilderService:
             template=template,
             sections=sections,
             plain_text=_plain_text(title, target_role, sections),
-            source_evidence_ids=source.source_evidence_ids,
+            source_evidence_ids=_section_evidence_ids(sections),
             source_change_set_id=change_set_id,
             source_change_set_version_id=change_set_version_id,
             created_at=now,
@@ -830,60 +862,133 @@ class ResumeBuilderService:
             raise ResumeBuilderValidationError(
                 "eligible career evidence is required before building a resume"
             )
+        grouped: dict[str, list[ResumeSourceBullet]] = {}
+        for item in source.bullets:
+            kind = normalize_text(item.section_kind).casefold()
+            if kind not in {"experience", "skills"}:
+                raise ResumeBuilderValidationError("resume source section kind is invalid")
+            grouped.setdefault(kind, []).append(item)
         sections: list[ResumeSection] = []
-        if source.summary:
-            sections.append(
-                ResumeSection(
-                    id=self._ids.new(),
-                    title="Summary",
-                    kind="summary",
-                    items=(
-                        ResumeBullet(
-                            id=self._ids.new(),
-                            text=source.summary,
-                            evidence_ids=source.source_evidence_ids[:1],
-                            source="career_record",
-                        ),
-                    ),
+        titles = {"experience": "Experience", "skills": "Skills"}
+        for kind, source_items in grouped.items():
+            for offset in range(0, len(source_items), MAX_ITEMS_PER_SECTION):
+                items = tuple(
+                    ResumeBullet(
+                        id=self._ids.new(),
+                        text=item.text,
+                        evidence_ids=item.evidence_ids,
+                        source=item.source,
+                        evidence_references=item.evidence_references,
+                    )
+                    for item in source_items[offset : offset + MAX_ITEMS_PER_SECTION]
                 )
-            )
-        bullet_items = tuple(
-            ResumeBullet(
-                id=self._ids.new(),
-                text=item.text,
-                evidence_ids=item.evidence_ids,
-                source=item.source,
-            )
-            for item in source.bullets
-        )
-        if bullet_items:
-            sections.append(
-                ResumeSection(
-                    id=self._ids.new(),
-                    title="Experience",
-                    kind="experience",
-                    items=bullet_items,
+                sections.append(
+                    ResumeSection(
+                        id=self._ids.new(),
+                        title=titles[kind],
+                        kind=kind,
+                        items=items,
+                    )
                 )
-            )
-        skill_items = tuple(
-            ResumeBullet(
-                id=self._ids.new(),
-                text=skill,
-                evidence_ids=source.source_evidence_ids[:1],
-                source="career_record",
-            )
-            for skill in source.skills
-            if source.source_evidence_ids
-        )
-        if skill_items:
-            sections.append(
-                ResumeSection(id=self._ids.new(), title="Skills", kind="skills", items=skill_items)
-            )
         if not sections:
             raise ResumeBuilderValidationError(
                 "eligible career evidence is required before building a resume"
             )
         return validate_sections(tuple(sections), eligible_evidence_ids=eligible)
+
+    def _validated_version_sections(
+        self,
+        version: ResumeVersion,
+    ) -> tuple[ResumeSection, ...]:
+        sections = validate_sections(
+            version.sections,
+            eligible_evidence_ids=set(version.source_evidence_ids),
+        )
+        if _section_evidence_ids(sections) != version.source_evidence_ids:
+            raise ResumeBuilderValidationError(
+                "resume version provenance ledger is incomplete or legacy"
+            )
+        return sections
+
+    def _sections_with_authoritative_references(
+        self,
+        sections: tuple[ResumeSection, ...],
+        *,
+        current: tuple[ResumeSection, ...],
+        source: ResumeSourceSnapshot,
+    ) -> tuple[ResumeSection, ...]:
+        current_by_id = {
+            item.id: item
+            for section in current
+            for item in section.items
+            if _bullet_references_match(item)
+        }
+        source_by_key: dict[
+            tuple[str, tuple[UUID, ...], str],
+            tuple[ResumeEvidenceReference, ...] | None,
+        ] = {}
+        for source_item in source.bullets:
+            key = _bullet_key(
+                source_item.text,
+                source_item.evidence_ids,
+                source_item.source,
+            )
+            source_references = source_item.evidence_references
+            existing = source_by_key.get(key)
+            if existing is not None and existing != source_references:
+                source_by_key[key] = None
+            elif key not in source_by_key:
+                source_by_key[key] = source_references
+
+        attached: list[ResumeSection] = []
+        for section in sections:
+            items: list[ResumeBullet] = []
+            for bullet in section.items:
+                key = _bullet_key(
+                    bullet.text,
+                    bullet.evidence_ids,
+                    bullet.source,
+                )
+                current_item = current_by_id.get(bullet.id)
+                authoritative_references: tuple[ResumeEvidenceReference, ...] | None
+                if (
+                    current_item is not None
+                    and _bullet_key(
+                        current_item.text,
+                        current_item.evidence_ids,
+                        current_item.source,
+                    )
+                    == key
+                ):
+                    authoritative_references = current_item.evidence_references
+                else:
+                    authoritative_references = source_by_key.get(key)
+                if not authoritative_references:
+                    raise ResumeBuilderValidationError(
+                        "new or changed resume bullets must exactly match an "
+                        "eligible evidence-backed source fact"
+                    )
+                items.append(
+                    ResumeBullet(
+                        id=bullet.id,
+                        text=bullet.text,
+                        evidence_ids=bullet.evidence_ids,
+                        source=bullet.source,
+                        evidence_references=authoritative_references,
+                    )
+                )
+            attached.append(
+                ResumeSection(
+                    id=section.id,
+                    title=section.title,
+                    kind=section.kind,
+                    items=tuple(items),
+                )
+            )
+        return validate_sections(
+            tuple(attached),
+            eligible_evidence_ids=set(source.source_evidence_ids),
+        )
 
     async def _resume_replay(
         self, owner_user_id: UUID, idempotency_key: str, fingerprint: str
@@ -1009,6 +1114,73 @@ def _plain_text(title: str, target_role: str | None, sections: tuple[ResumeSecti
         lines.append(section.title)
         lines.extend(item.text for item in section.items)
     return "\n".join(lines)
+
+
+def _section_evidence_ids(sections: tuple[ResumeSection, ...]) -> tuple[UUID, ...]:
+    return tuple(
+        dict.fromkeys(
+            evidence_id
+            for section in sections
+            for item in section.items
+            for evidence_id in item.evidence_ids
+        )
+    )
+
+
+def _bullet_key(
+    text: str,
+    evidence_ids: tuple[UUID, ...],
+    source: str,
+) -> tuple[str, tuple[UUID, ...], str]:
+    return (
+        normalize_text(text),
+        tuple(dict.fromkeys(evidence_ids)),
+        normalize_text(source) or "career_record",
+    )
+
+
+def _bullet_references_match(item: ResumeBullet) -> bool:
+    references_by_id = {reference.evidence_id: reference for reference in item.evidence_references}
+    return (
+        len(references_by_id) == len(item.evidence_references)
+        and set(references_by_id) == set(item.evidence_ids)
+        and all(
+            reference.claim_sha256
+            == hashlib.sha256(normalize_text(item.text).encode("utf-8")).hexdigest()
+            for reference in item.evidence_references
+        )
+    )
+
+
+def _version_provenance_failures(version: ResumeVersion) -> tuple[str, ...]:
+    failures: list[str] = []
+    seen_item_ids: set[UUID] = set()
+    revisions_by_evidence: dict[UUID, tuple[UUID, int, str]] = {}
+    for section in version.sections:
+        for item in section.items:
+            if item.id in seen_item_ids:
+                failures.append(f"duplicate_bullet_id:{item.id}")
+            seen_item_ids.add(item.id)
+            if not _bullet_references_match(item):
+                failures.append(f"invalid_provenance:{item.id}")
+            for reference in item.evidence_references:
+                revision_key = (
+                    reference.evidence_revision_id,
+                    reference.revision_number,
+                    reference.statement_sha256,
+                )
+                previous = revisions_by_evidence.setdefault(
+                    reference.evidence_id,
+                    revision_key,
+                )
+                if previous != revision_key:
+                    failures.append(f"conflicting_evidence_revision:{reference.evidence_id}")
+    if (
+        len(set(version.source_evidence_ids)) != len(version.source_evidence_ids)
+        or _section_evidence_ids(version.sections) != version.source_evidence_ids
+    ):
+        failures.append("incomplete_version_evidence_ledger")
+    return tuple(dict.fromkeys(failures))
 
 
 def _sections_payload(sections: tuple[ResumeSection, ...] | None) -> object:

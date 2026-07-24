@@ -285,6 +285,9 @@ class ReadinessSnapshotEntity:
 @dataclass(frozen=True, slots=True)
 class ReadinessSnapshotEvidence:
     id: UUID
+    evidence_revision_id: UUID
+    revision_number: int
+    statement_sha256: str
     title: str
     statement: str
     context: str | None

@@ -2,6 +2,7 @@
 
 import asyncio
 import re
+import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
@@ -63,6 +64,16 @@ from careeros.modules.resume_health.infrastructure.fakes import (
     InMemoryResumeUnitOfWorkFactory,
 )
 from careeros.modules.resume_health.infrastructure.security import HmacGuestCapabilityManager
+
+
+@pytest.fixture(autouse=True)
+def _isolated_default_document_temp_root(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Keep default-root tests independent from host and parallel-worker ACLs."""
+
+    monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
 
 
 def _extraction() -> ExtractionResult:
@@ -174,6 +185,38 @@ async def _ready_pdf(
     )
     assert outcome.status == JobStatus.SUCCEEDED
     return finalized
+
+
+@pytest.mark.asyncio
+async def test_unwritable_configured_temp_root_fails_closed_without_path_disclosure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    configured_root = (tmp_path / "configured-document-root").resolve()
+    limits = DocumentLimits(temp_root=configured_root)
+    factory, storage, _, service, processor = _runtime(limits=limits)
+    owner = OwnerScope(user_id=uuid4())
+    finalized = await _finalize_pdf(factory, storage, service, owner)
+    sensitive_path = r"C:\private\resume-source"
+
+    def deny_temporary_directory(*args: object, **kwargs: object) -> None:
+        del args
+        assert kwargs["dir"] == configured_root
+        raise PermissionError(f"access denied: {sensitive_path}")
+
+    monkeypatch.setattr(tempfile, "TemporaryDirectory", deny_temporary_directory)
+
+    outcome = await processor.process_job(
+        finalized.job_id,
+        "trace",
+        execution_token=_invocation_token(),
+    )
+
+    assert outcome.status is JobStatus.FAILED
+    assert outcome.retryable
+    assert outcome.safe_error_code == "processing_failed"
+    assert factory.state.documents[finalized.document_id].status is DocumentStatus.QUARANTINED
+    assert sensitive_path not in repr((factory.state.jobs[finalized.job_id], factory.state.audit))
 
 
 @pytest.mark.asyncio
@@ -1640,10 +1683,10 @@ async def test_minimal_failure_recorder_dead_letters_without_provider_assembly()
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    ("limits", "extraction", "safe_code"),
+    ("limit_kwargs", "extraction", "safe_code"),
     [
         (
-            DocumentLimits(max_extracted_blocks=2),
+            {"max_extracted_blocks": 2},
             ExtractionResult(
                 plain_text="a\nb\nc",
                 reading_order=tuple(
@@ -1663,17 +1706,18 @@ async def test_minimal_failure_recorder_dead_letters_without_provider_assembly()
             "extracted_block_limit_exceeded",
         ),
         (
-            DocumentLimits(max_serialized_artifact_bytes=200),
+            {"max_serialized_artifact_bytes": 200},
             _extraction(),
             "extracted_artifact_limit_exceeded",
         ),
     ],
 )
 async def test_processor_rejects_unreviewable_extraction_graphs_before_commit(
-    limits: DocumentLimits,
+    limit_kwargs: dict[str, int],
     extraction: ExtractionResult,
     safe_code: str,
 ) -> None:
+    limits = DocumentLimits(**limit_kwargs)
     factory, storage, _, service, processor = _runtime(
         extractor=FakeDocumentExtractor(extraction), limits=limits
     )

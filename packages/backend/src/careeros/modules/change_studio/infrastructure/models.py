@@ -191,6 +191,18 @@ class ChangeClaimModel(Base):
             name="validation_status_valid",
         ),
         CheckConstraint("sort_order >= 0", name="sort_order_nonnegative"),
+        CheckConstraint(
+            "(evidence_revision_id IS NULL "
+            "AND evidence_revision_number IS NULL "
+            "AND evidence_statement_sha256 IS NULL) "
+            "OR "
+            "(evidence_revision_id IS NOT NULL "
+            "AND evidence_revision_number IS NOT NULL "
+            "AND evidence_statement_sha256 IS NOT NULL "
+            "AND evidence_revision_number > 0 "
+            "AND evidence_statement_sha256 ~ '^[0-9a-f]{64}$')",
+            name="evidence_provenance_complete",
+        ),
         ForeignKeyConstraint(
             ["owner_user_id", "change_set_id"],
             ["change_sets.owner_user_id", "change_sets.id"],
@@ -217,6 +229,9 @@ class ChangeClaimModel(Base):
     claim_kind: Mapped[str] = mapped_column(String(32), nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     evidence_id: Mapped[UUID] = mapped_column(Uuid, nullable=False)
+    evidence_revision_id: Mapped[UUID | None] = mapped_column(Uuid)
+    evidence_revision_number: Mapped[int | None] = mapped_column(Integer)
+    evidence_statement_sha256: Mapped[str | None] = mapped_column(String(64))
     evidence_title: Mapped[str] = mapped_column(String(300), nullable=False)
     evidence_strength: Mapped[str] = mapped_column(String(40), nullable=False)
     source_excerpt: Mapped[str] = mapped_column(Text, nullable=False)

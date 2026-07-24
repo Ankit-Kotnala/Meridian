@@ -2,6 +2,7 @@
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import cast
 
 import structlog
 from careeros.foundation.config import DatabaseOptions
@@ -9,6 +10,22 @@ from careeros.foundation.database import Database, ReadinessProbe
 from careeros.foundation.observability import configure_logging
 from careeros.integrations.email import DisabledEmailSender, SmtpEmailSender, SmtpOptions
 from careeros.integrations.oauth import GoogleOAuthOptions, GoogleOAuthProvider
+from careeros.modules.application_workspace.application import (
+    ApplicationWorkspaceService,
+    ApplicationWorkspaceUnitOfWorkFactory,
+)
+from careeros.modules.application_workspace.infrastructure import (
+    CareerRecordApplicationEvidenceSnapshotProvider,
+    JobMatchApplicationSnapshotProvider,
+    ResumeBuilderVersionSnapshotProvider,
+    SqlAlchemyApplicationWorkspaceUnitOfWorkFactory,
+)
+from careeros.modules.application_workspace.infrastructure import (
+    SystemClock as ApplicationWorkspaceClock,
+)
+from careeros.modules.application_workspace.infrastructure import (
+    UuidIdentifierFactory as ApplicationWorkspaceUuidFactory,
+)
 from careeros.modules.career_record.application import (
     AttachmentLimits,
     AttachmentWorkflowService,
@@ -166,6 +183,7 @@ def create_app(
     job_match: JobMatchService | None = None,
     change_studio: ChangeStudioService | None = None,
     resume_builder: ResumeBuilderService | None = None,
+    application_workspace: ApplicationWorkspaceService | None = None,
 ) -> FastAPI:
     """Build an application; injectable dependencies keep tests infrastructure-free."""
     resolved_settings = settings or get_settings()
@@ -195,6 +213,7 @@ def create_app(
         resolved_job_match = job_match
         resolved_change_studio = change_studio
         resolved_resume_builder = resume_builder
+        resolved_application_workspace = application_workspace
         resolved_resume_builder_storage: ResumeExportS3Storage | None = None
 
         if resolved_identity is None and isinstance(resolved_database, Database):
@@ -440,6 +459,29 @@ def create_app(
                     storage=resolved_resume_builder_storage,
                     policy=ResumeBuilderPolicy(),
                 )
+            if resolved_application_workspace is None:
+                if (
+                    resolved_career_record is None
+                    or resolved_job_match is None
+                    or resolved_resume_builder is None
+                ):
+                    raise RuntimeError(
+                        "Application Workspace requires Career Record, Job Match, "
+                        "and Resume Builder boundaries"
+                    )
+                resolved_application_workspace = ApplicationWorkspaceService(
+                    unit_of_work=cast(
+                        ApplicationWorkspaceUnitOfWorkFactory,
+                        SqlAlchemyApplicationWorkspaceUnitOfWorkFactory(resolved_database),
+                    ),
+                    clock=ApplicationWorkspaceClock(),
+                    identifiers=ApplicationWorkspaceUuidFactory(),
+                    jobs=JobMatchApplicationSnapshotProvider(resolved_job_match),
+                    resumes=ResumeBuilderVersionSnapshotProvider(resolved_resume_builder),
+                    evidence=CareerRecordApplicationEvidenceSnapshotProvider(
+                        resolved_career_record
+                    ),
+                )
 
         application.state.database = resolved_database
         application.state.identity_service = resolved_identity
@@ -450,6 +492,7 @@ def create_app(
         application.state.job_match_service = resolved_job_match
         application.state.change_studio_service = resolved_change_studio
         application.state.resume_builder_service = resolved_resume_builder
+        application.state.application_workspace_service = resolved_application_workspace
         application.state.attachment_workflow_service = resolved_attachment_workflow
         application.state.resume_outbox_dispatcher = resolved_resume_dispatcher
         application.state.readiness_dependencies = {"database": resolved_database}

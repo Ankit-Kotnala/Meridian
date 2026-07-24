@@ -113,7 +113,11 @@ def test_change_studio_primary_workflow_is_authenticated_and_owner_scoped(
         assert body["scoringDisclaimer"] == SCORING_DISCLAIMER
         assert body["operations"][0]["groundingStatus"] == "grounded"
         assert body["operations"][0]["requiresConfirmation"] is True
-        assert body["operations"][0]["claims"][0]["evidenceTitle"]
+        claim = body["operations"][0]["claims"][0]
+        assert claim["evidenceTitle"]
+        assert claim["evidenceRevisionId"]
+        assert claim["evidenceRevisionNumber"] > 0
+        assert len(claim["evidenceStatementSha256"]) == 64
         assert body["questions"][0]["status"] == "open"
 
         ungrounded = client.post(

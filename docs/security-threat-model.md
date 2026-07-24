@@ -1,8 +1,8 @@
 # CareerOS security threat model
 
-Status: Phase 7 Resume Builder and verified export controls implemented and locally verified
+Status: Phase 8 Application Workspace controls implemented; final closeout pending
 Method: asset/trust-boundary analysis with STRIDE-style threat enumeration  
-Last reviewed: 2026-07-19
+Last reviewed: 2026-07-24
 
 ## Scope and current posture
 
@@ -27,13 +27,17 @@ immutable output versions, provider-run metadata, idempotency records, and
 redacted Change Studio audit. Phase 7 adds structured resumes, immutable resume
 versions, private exported objects, round-trip verification reports, short-lived
 download intents, idempotency records, and redacted Resume Builder audit. Their
-implemented controls are called out below. The product still does not fetch
-evidence URLs, bill, or perform administrator actions; controls described for
-those later paths remain target requirements, not implementation claims. The
-deterministic local AI provider is implemented for development/tests, while
-production remote-provider enablement remains a deployment and security review
-decision. The fictional dashboard preview remains isolated at `/demo/dashboard`
-and does not use authenticated account state.
+Phase 8 adds owner-scoped applications, contacts, workflow activity, tasks,
+notes, outcomes, rejection/offer text, immutable source pins, grounded packs,
+consistency findings, idempotency records, and redacted audit. Its implemented
+controls are called out below. The product still does not fetch evidence URLs,
+submit applications, send messages, scrape contacts, bill, or perform
+administrator actions; controls described for those later paths remain target
+requirements, not implementation claims. The deterministic local AI provider is
+implemented for development/tests, while production remote-provider enablement
+remains a deployment and security review decision. The fictional dashboard
+preview remains isolated at `/demo/dashboard` and does not use authenticated
+account state.
 
 ## Security objectives
 
@@ -139,6 +143,7 @@ a safe production network policy.
 | T22  | Sensitive data leaks through logs, traces, errors, analytics           | Central redaction, allowlisted fields, route templates not raw URLs, safe IDs, payload-free events, production error masking                                                                                                       | Secret/PII canary tests and log review                                                                                              | Free-form exceptions; structured logging only                                                                |
 | T23  | Excessive AI or render cost                                            | Per-user/tenant/plan quota, idempotency, max tokens/pages, concurrency, timeouts, circuit breaker, cost accounting and alerts                                                                                                      | Retry/idempotency/budget tests                                                                                                      | Provider price/usage spikes; configurable kill switch                                                        |
 | T23a | Export file looks correct but drops, duplicates, or reorders facts     | Immutable version pinning, deterministic templates, searchable output, PDF/DOCX reparse, critical mismatch blocking, hash storage, no download intent for blocked exports                                                          | Renderer round-trip, blocked-export download denial, cross-user download, and Playwright export workflow tests                      | Complex font/layout behavior; constrained templates until broader renderer corpus passes                     |
+| T23b | Application source drift, legacy provenance, or contradictory packs    | Exact job version/source hash, resume-version claim-hash validation, evidence revision/statement hashes, legacy-source refusal, deterministic claim/number/requirement consistency, blocked findings                               | Historical-revision/hash mismatch, legacy-ledger refusal, numeric support, cross-document consistency, resume-change audit tests    | Semantic paraphrase drift; deterministic synchronous generator remains intentionally constrained             |
 | T24  | Queue replay, forged job, duplicate side effect                        | Authenticated private broker; durable job record; ownership/state/idempotency check; payload references not raw secrets; bounded retry/dead letter                                                                                 | Duplicate/reordered/forged payload tests                                                                                            | Redis local durability differs from production; deployment ADR                                               |
 | T25  | Dependency or build compromise                                         | Lockfiles/hashes, least-privilege CI, pinned actions/images, review of updates, SCA/container/secret scanning, provenance and SBOM objective                                                                                       | CI security jobs and reproducible build                                                                                             | Registry/upstream compromise; ongoing                                                                        |
 | T26  | Secret committed or exposed in image/client                            | `.env.example` placeholders; secret scanning; server-only vars; build/image inspection; managed secret injection                                                                                                                   | Git/image/bundle secret scans                                                                                                       | Human error or CI artifact leakage                                                                           |
@@ -261,6 +266,47 @@ Export deletion rechecks ownership, removes the private object, marks the export
 deleted, and leaves redacted audit/status metadata. Verification failures and
 render errors store safe codes/messages only; logs must not include resume text,
 download URLs, object keys, or rendered bytes.
+
+### Application Workspace provenance and sensitive data
+
+Phase 8 applications duplicate only the bounded source material required to
+preserve history: exact job version/source hash and requirement spans, immutable
+resume version and claim ledger, and eligible evidence revision numbers/
+statement hashes. Each source is loaded through an owner-authorizing application
+service. Cross-user IDs, a changed or unavailable historical revision, a hash
+mismatch, inconsistent claim references, and legacy versions without exact
+revision/hash provenance fail closed before application creation or a resume-pin
+change.
+
+Upgrade compatibility does not manufacture provenance. The shipped Phase 6
+migration remains immutable; Phase 8 forward-adds a nullable all-or-none evidence
+revision tuple to Change Studio claims. Existing rows remain readable as
+explicitly unpinned history, but Resume Builder and Application Workspace refuse
+to use them as grounded generation input. Only claims created with the complete
+revision ID/number/statement-hash tuple can cross those boundaries.
+
+Application, task, note, event, pack, and document rows carry explicit owner and
+application scope; nested reads constrain both rather than authorizing from an ID
+alone. Application/task mutations use optimistic concurrency. Retried creates use
+bounded idempotency keys and fingerprints, and the web retains one key for the
+same unchanged user intent. A reused key with different input conflicts instead
+of duplicating or mutating the earlier side effect.
+
+Contacts, notes, rejection reasons, offer summaries, and generated pack bodies
+are restricted career content and never belong in general logs, analytics
+snapshots, or operational errors. List/child APIs use bounded opaque pagination,
+calendar ranges are bounded, and the main detail response avoids unbounded eager
+activity. The web loads sensitive child panels only when used and does not treat
+hidden controls as authorization.
+
+Pack generation is deterministic and synchronous in this phase. Every factual
+claim retains exact evidence-revision and supported-requirement links; numeric
+claims are checked against pinned evidence, document content is hashed, and
+cross-document disagreement produces blocking findings. Deleting a generated
+document replaces its content and provenance links with an audited tombstone.
+Application deletion is owner/version checked and leaves only redacted audit
+metadata. No API can submit an application, send a generated message, scrape a
+contact, or autonomously advance a stage.
 
 ## URL-import security design
 
@@ -527,6 +573,57 @@ gates pass as recorded in `PLANS.md`; hosted run `29378312134` also passes.
   claims, numeric eligibility, provenance display, and the primary review flow.
   Final consolidated local Phase 6 verification is recorded in `PLANS.md`.
 
+### Phase 7 implemented controls and verification status
+
+- Migration `20260719_0008` adds owner-scoped resumes, immutable versions,
+  exports, verification reports, short-lived download intents, idempotency, and
+  redacted audit with scoped constraints and indexes.
+- Resume Builder consumes owner-authorized Career Record and Change Studio
+  application views. Every current bullet and immutable-version claim must carry
+  exact evidence revision provenance; unsupported and incomplete legacy source
+  ledgers are refused rather than treated as grounded.
+- Exports pin one immutable version and content hash, use private randomized
+  object keys, reparse PDF/DOCX output, block critical verification failures, and
+  issue only short-lived owner-checked download intents.
+- The final consolidated Phase 7 renderer, repository, API, web, migration, and
+  browser evidence is recorded in `PLANS.md`.
+
+### Phase 8 implemented controls and verification status
+
+- Migration `20260724_0009` adds explicitly owner-scoped applications and child
+  records with composite scope, database constraints/indexes, positive
+  concurrency versions, idempotency fingerprints, and redacted audit. It also
+  forward-adds nullable all-or-none evidence revision pins to Change Studio
+  claims without rewriting the shipped `20260719_0007` migration or backfilling
+  historical rows.
+- Owner-authorizing source adapters require an exact job version/source hash,
+  immutable resume version whose claim hashes are revalidated, and exact eligible
+  evidence revision numbers/statement hashes. Historical mismatch, cross-owner
+  input, and incomplete provenance fail closed. Legacy Change Studio claims remain
+  readable as explicitly unpinned history but cannot seed Resume Builder or
+  Application Workspace; new claims require the complete pin tuple.
+- Authenticated reads and nested-parent checks prevent ID-only authorization;
+  mutations require CSRF, and application/task changes require strict
+  `If-Match`. Application, task, note, event, and pack creates reuse stable
+  per-intent idempotency keys and reject a conflicting fingerprint.
+- The deterministic synchronous generator preserves exact
+  evidence-revision/requirement links, blocks unsupported numeric/factual
+  material, hashes documents, and reports source and cross-document consistency.
+  Sensitive document deletion leaves an audited tombstone; application deletion
+  leaves a redacted audit event.
+- Cursor pagination, bounded filters/calendar ranges, lightweight detail
+  responses, and lazy web panels bound response/query growth. Accessible
+  board/table/calendar and non-drag actions avoid treating drag or hidden UI as
+  authority.
+- Current targeted evidence is `201 passed` backend, `104 passed` API, and
+  `121/121 passed` across 35 web files. Complete desktop and mobile product
+  journeys pass. The final consolidated `scripts/verify-phase8.ps1` rerun and
+  separate security scan remain pending after final hardening; no final or hosted
+  Phase 8 security result is claimed.
+- No submission, send, scrape, or autonomous stage-changing capability exists.
+  The production provider, durable generation worker, load/soak, backup/restore,
+  and protected deployment review remain later gates.
+
 ## Privacy, retention, and consent
 
 - Default: user content is not used to train models.
@@ -569,19 +666,19 @@ administrator sensitive actions, and deletion/retention failures.
 
 ## Required security tests by phase
 
-| Phase | Blocking security evidence                                                                                                                                          |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0     | Secret/dependency/container scan foundation; minimal health responses; no real PII in fixtures/logs; Compose services not unintentionally public beyond local needs |
-| 1     | Registration/session/reset/OAuth abuse tests; CSRF; rotation/replay; anonymous and cross-user/tenant authorization; audit coverage                                  |
-| 2     | Hostile upload corpus; signature/limit/malware/expansion/path/timeout; worker egress/resource policy; object-key and deletion isolation                             |
-| 3     | Evidence transition/provenance/ownership; attachment access; unsupported evidence exclusion; conflict audit                                                         |
-| 4     | Taxonomy input validation and cross-user saved-role/readiness history isolation                                                                                     |
-| 5     | SSRF matrix, sanitizer, source-span integrity, URL limits, hard-gap integrity, prompt-injected job text                                                             |
-| 6     | Strict-output fuzzing, unsupported claim/number rejection, prompt injection, cost/idempotency, XSS-safe diff/render, manual-edit revalidation                       |
-| 7     | Template injection, renderer sandbox, round-trip grounding/integrity/hash, private export, immutable version/restore                                                |
-| 8     | Application/contact/document authorization; consistency checks; stage/action audit; no autonomous submission                                                        |
-| 9     | Contact consent, sensitive notes isolation, analytics aggregation/privacy and non-causal language                                                                   |
-| 10    | Billing webhook, admin matrix/audit, end-to-end export/deletion, backup restore, load/DoS, penetration test, dependency/container/IaC scan                          |
+| Phase | Blocking security evidence                                                                                                                                                  |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0     | Secret/dependency/container scan foundation; minimal health responses; no real PII in fixtures/logs; Compose services not unintentionally public beyond local needs         |
+| 1     | Registration/session/reset/OAuth abuse tests; CSRF; rotation/replay; anonymous and cross-user/tenant authorization; audit coverage                                          |
+| 2     | Hostile upload corpus; signature/limit/malware/expansion/path/timeout; worker egress/resource policy; object-key and deletion isolation                                     |
+| 3     | Evidence transition/provenance/ownership; attachment access; unsupported evidence exclusion; conflict audit                                                                 |
+| 4     | Taxonomy input validation and cross-user saved-role/readiness history isolation                                                                                             |
+| 5     | SSRF matrix, sanitizer, source-span integrity, URL limits, hard-gap integrity, prompt-injected job text                                                                     |
+| 6     | Strict-output fuzzing, unsupported claim/number rejection, prompt injection, cost/idempotency, XSS-safe diff/render, manual-edit revalidation                               |
+| 7     | Template injection, renderer sandbox, round-trip grounding/integrity/hash, private export, immutable version/restore                                                        |
+| 8     | Exact job/resume/evidence revision/hash pins; legacy-source refusal; nested authorization; stable idempotency/concurrency; pack consistency/tombstone audit; no submit/send |
+| 9     | Contact consent, sensitive notes isolation, analytics aggregation/privacy and non-causal language                                                                           |
+| 10    | Billing webhook, admin matrix/audit, end-to-end export/deletion, backup restore, load/DoS, penetration test, dependency/container/IaC scan                                  |
 
 ## Phase 0 security checklist
 
