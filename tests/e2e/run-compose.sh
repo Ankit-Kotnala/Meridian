@@ -12,30 +12,25 @@ case "$project_name" in
 esac
 
 verification_phase=${CAREEROS_E2E_PHASE:-2}
+expected_migration_head=${CAREEROS_EXPECTED_MIGRATION_HEAD:-20260719_0008}
 case "$verification_phase" in
   2)
     rollback_revision=20260715_0002
-    expected_migration_head=
     ;;
   3)
     rollback_revision=20260715_0003
-    expected_migration_head=20260715_0004
     ;;
   4)
     rollback_revision=20260715_0004
-    expected_migration_head=20260719_0005
     ;;
   5)
     rollback_revision=20260719_0005
-    expected_migration_head=20260719_0006
     ;;
   6)
     rollback_revision=20260719_0006
-    expected_migration_head=20260719_0007
     ;;
   7)
     rollback_revision=20260719_0007
-    expected_migration_head=20260719_0008
     ;;
   *)
     echo "CAREEROS_E2E_PHASE must be 2, 3, 4, 5, 6, or 7." >&2

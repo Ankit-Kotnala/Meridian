@@ -56,9 +56,15 @@ function Wait-ComposeServiceHealthy {
     throw "$Service did not become healthy within $TimeoutSeconds seconds; last health status was '$LastStatus'."
 }
 
+$ExpectedMigrationHead = if ($env:CAREEROS_EXPECTED_MIGRATION_HEAD) {
+    $env:CAREEROS_EXPECTED_MIGRATION_HEAD
+}
+else {
+    "20260719_0008"
+}
+
 if ($Phase -eq 7) {
     $RollbackRevision = "20260719_0007"
-    $ExpectedMigrationHead = "20260719_0008"
     $JourneySpecs = @(
         "e2e/auth-journey.spec.ts",
         "e2e/resume-health-journey.spec.ts",
@@ -71,7 +77,6 @@ if ($Phase -eq 7) {
 }
 elseif ($Phase -eq 6) {
     $RollbackRevision = "20260719_0006"
-    $ExpectedMigrationHead = "20260719_0007"
     $JourneySpecs = @(
         "e2e/auth-journey.spec.ts",
         "e2e/resume-health-journey.spec.ts",
@@ -83,7 +88,6 @@ elseif ($Phase -eq 6) {
 }
 elseif ($Phase -eq 5) {
     $RollbackRevision = "20260719_0005"
-    $ExpectedMigrationHead = "20260719_0006"
     $JourneySpecs = @(
         "e2e/auth-journey.spec.ts",
         "e2e/resume-health-journey.spec.ts",
@@ -94,7 +98,6 @@ elseif ($Phase -eq 5) {
 }
 elseif ($Phase -eq 4) {
     $RollbackRevision = "20260715_0004"
-    $ExpectedMigrationHead = "20260719_0005"
     $JourneySpecs = @(
         "e2e/auth-journey.spec.ts",
         "e2e/resume-health-journey.spec.ts",
@@ -104,7 +107,6 @@ elseif ($Phase -eq 4) {
 }
 elseif ($Phase -eq 3) {
     $RollbackRevision = "20260715_0003"
-    $ExpectedMigrationHead = "20260715_0004"
     $JourneySpecs = @(
         "e2e/auth-journey.spec.ts",
         "e2e/resume-health-journey.spec.ts",
@@ -113,7 +115,6 @@ elseif ($Phase -eq 3) {
 }
 else {
     $RollbackRevision = "20260715_0002"
-    $ExpectedMigrationHead = $null
     $JourneySpecs = @(
         "e2e/auth-journey.spec.ts",
         "e2e/resume-health-journey.spec.ts"
