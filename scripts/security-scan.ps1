@@ -23,14 +23,14 @@ try {
     uv run --package careeros-api --with pip-audit==2.10.1 pip-audit
     Assert-LastExitCode "Python workspace pip-audit"
 
-    docker compose build api worker web
+    docker compose build api worker web web-edge
     Assert-LastExitCode "Application image build"
 
     $Images = @(
         "careeros-api:latest",
         "careeros-worker:latest",
         "careeros-web:latest",
-        "node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd"
+        "careeros-web-edge:latest"
     )
     foreach ($Image in $Images) {
         docker run --rm --volume "/var/run/docker.sock:/var/run/docker.sock" `

@@ -12,6 +12,7 @@ Environment = Literal["development", "test", "staging", "production"]
 LogFormat = Literal["json", "console"]
 EmailProvider = Literal["smtp", "disabled"]
 MalwareScannerProvider = Literal["clamav", "disabled"]
+AiProvider = Literal["deterministic", "http_json", "disabled"]
 
 _DEVELOPMENT_DATABASE_URL = "postgresql+asyncpg://careeros:careeros@localhost:5432/careeros"
 
@@ -164,6 +165,24 @@ class Settings(BaseSettings):
     resume_correction_rate_window_seconds: int = Field(default=60, ge=60, le=3600)
     resume_analysis_rate_limit: int = Field(default=10, ge=1, le=100)
     resume_analysis_rate_window_seconds: int = Field(default=3600, ge=60, le=86400)
+    ai_provider: AiProvider = Field(
+        default="deterministic",
+        validation_alias=AliasChoices("CAREEROS_AI_PROVIDER", "AI_PROVIDER"),
+    )
+    ai_http_endpoint_url: str | None = Field(
+        default=None,
+        max_length=2048,
+        validation_alias=AliasChoices("CAREEROS_AI_HTTP_ENDPOINT_URL", "AI_HTTP_ENDPOINT_URL"),
+    )
+    ai_http_api_key: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices("CAREEROS_AI_HTTP_API_KEY", "AI_HTTP_API_KEY"),
+    )
+    ai_http_timeout_seconds: float = Field(default=10.0, gt=0, le=60)
+    ai_http_max_attempts: int = Field(default=2, ge=1, le=3)
+    ai_http_max_response_bytes: int = Field(default=262_144, ge=1_024, le=1_048_576)
+    ai_circuit_failure_threshold: int = Field(default=3, ge=1, le=20)
+    ai_circuit_cooldown_seconds: int = Field(default=60, ge=1, le=3_600)
 
     @field_validator("allowed_origins", mode="before")
     @classmethod
@@ -212,6 +231,7 @@ class Settings(BaseSettings):
     @field_validator(
         "smtp_username",
         "google_client_id",
+        "ai_http_endpoint_url",
         mode="before",
     )
     @classmethod
@@ -223,6 +243,7 @@ class Settings(BaseSettings):
     @field_validator(
         "smtp_password",
         "google_client_secret",
+        "ai_http_api_key",
         mode="before",
     )
     @classmethod
@@ -281,6 +302,16 @@ class Settings(BaseSettings):
             not self.google_client_id or self.google_client_secret is None
         ):
             raise ValueError("Google OAuth requires both client ID and client secret")
+        if self.ai_provider == "http_json":
+            if self.ai_http_endpoint_url is None or self.ai_http_api_key is None:
+                raise ValueError("AI HTTP provider requires an endpoint URL and API key")
+            parsed_ai = urlparse(self.ai_http_endpoint_url)
+            if parsed_ai.scheme != "https" or not parsed_ai.hostname:
+                raise ValueError("AI HTTP provider endpoint must be an HTTPS URL")
+            if parsed_ai.username or parsed_ai.password:
+                raise ValueError("AI HTTP provider endpoint must not contain credentials")
+            if parsed_ai.fragment:
+                raise ValueError("AI HTTP provider endpoint must not contain a fragment")
         if self.environment != "production":
             return self
 
@@ -312,6 +343,8 @@ class Settings(BaseSettings):
             violations.append("s3_use_ssl must be enabled")
         if self.malware_scanner_provider != "clamav":
             violations.append("malware_scanner_provider must be clamav")
+        if self.ai_provider == "deterministic":
+            violations.append("ai_provider must not be deterministic")
         if (
             self.resume_capability_pepper.get_secret_value()
             == "change-me-local-only-resume-capability-pepper"

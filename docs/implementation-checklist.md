@@ -54,7 +54,7 @@ earlier baseline evidence remains historical.
 ### Workspace and applications
 
 - [x] Pin pnpm 11.13.0/Node 24 and verify the root workspace lockfile.
-- [x] Create `apps/web` with Next.js 16.2.10, React 19.2.7, strict TypeScript
+- [x] Create `apps/web` with Next.js 16.2.11, React 19.2.7, strict TypeScript
       5.9.3, Tailwind 4.3.2, format/lint/type/test/build scripts.
 - [x] Create an accessible initial design system and a conspicuously fictional,
       unauthenticated dashboard preview; do not imply real scoring or persistence.
@@ -231,7 +231,7 @@ Closeout evidence and residual limitations are recorded in `PLANS.md`.
 ## Phase 3 — Career Profile, Evidence Vault, and Achievement Inbox
 
 Dependencies: Phase 1 ownership; Phase 2 canonical/source-span model. Current
-status: locally complete; hosted CI evidence pending. The consolidated
+status: locally complete and hosted verified. The consolidated
 `scripts/verify-phase3.ps1` gate passed on 2026-07-19.
 
 - [x] Add career profile, experience/education/project/skill/credential/etc.
@@ -286,60 +286,64 @@ explained, and linked to evidence or an explicit unknown/missing state.
 
 Evidence: migration `20260719_0005` upgrades from `20260715_0004`, downgrades
 back to it, and re-upgrades. Focused backend/API/web/unit/integration/browser
-coverage plus the consolidated `scripts/verify-phase4.ps1` result are recorded in
-`PLANS.md`.
+coverage plus the passing consolidated `scripts/verify-phase4.ps1` result from
+2026-07-19 are recorded in `PLANS.md`.
 
 ## Phase 5 — Job Match, Requirement Matrix, and Opportunity Prioritizer
 
 Dependencies: Phases 3–4; URL-import security boundary.
 
-- [ ] Add owned job/source/requirement/match/analysis/opportunity models with
+- [x] Add owned job/source/requirement/match/analysis/opportunity models with
       immutable source text/spans and versions.
-- [ ] Implement paste/manual/saved imports and `JobImportProvider`.
-- [ ] Implement HTTP(S)-only URL fetch with normalized URL, every-resolution and
+- [x] Implement paste/manual/saved imports and `JobImportProvider`.
+- [x] Implement HTTP(S)-only URL fetch with normalized URL, every-resolution and
       redirect SSRF checks, public-network enforcement, DNS rebinding/IPv4/IPv6
       handling, TLS hostname verification, no scripts/cookies, content sanitization,
-      and time/redirect/decompressed-byte/content limits.
-- [ ] Extract explicit metadata and requirements with original spans,
+      and time/redirect/decompressed-byte/content limits. Phase 5 does not yet
+      pin the TCP socket to the prevalidated address; ADR 0011 records this
+      production hardening item.
+- [x] Extract explicit metadata and requirements with original spans,
       normalized/type/importance/mandatory-preferred/confidence; user can correct them.
-- [ ] Match each requirement to eligible evidence as Strong/Partial/Transferable/
+- [x] Match each requirement to eligible evidence as Strong/Partial/Transferable/
       Unknown/Missing/Not Applicable; show full accessible matrix and actions.
-- [ ] Finalize deterministic Application Readiness components/credits and display
+- [x] Finalize deterministic Application Readiness components/credits and display
       mandatory gaps separately.
-- [ ] Implement explainable Opportunity Priority using user preferences, deadline,
+- [x] Implement explainable Opportunity Priority using user preferences, deadline,
       effort, and contacts; never predict hire/no-hire.
-- [ ] Test cross-user data, source-span round trip, SSRF matrix/sanitizer/limits,
+- [x] Test cross-user data, source-span round trip, SSRF matrix/sanitizer/limits,
       injected job instructions, model-candidate schema, hard-gap visibility,
       determinism/goldens, user correction, and accessibility.
 
 Exit: every requirement traces to source; every match traces to authorized evidence
 or explicit missing/unknown; no model number becomes a score; SSRF tests pass.
+Final consolidated gate evidence is recorded in `PLANS.md`.
 
 ## Phase 6 — Change Studio and Truth-Locked AI
 
 Dependencies: Phase 3 eligible evidence, Phase 5 source-spanned requirements,
 deterministic scoring.
 
-- [ ] Implement environment-selected AI gateway, production adapter, deterministic
-      fake, timeouts/retries/circuit breaker, idempotency, rate/concurrency/cost budgets,
-      usage tracking, and provider kill switch.
-- [ ] Build minimal-data prompts that separate hostile document text and safely
+- [x] Implement environment-selected AI gateway, production adapter, deterministic
+      provider, timeouts/retries/circuit breaker, idempotency, bounded request/
+      response limits, usage tracking, and provider kill switch. Plan-level
+      rate/concurrency/cost budgets remain a later entitlement/operations layer.
+- [x] Build minimal-data provider payloads that separate hostile document text and safely
       handle Unicode controls; no broad tools or raw prompt logging.
-- [ ] Validate strict operation/claim/question schemas with bounded fields and
+- [x] Validate strict operation/claim/question schemas with bounded fields and
       reject malformed/unknown output.
-- [ ] Implement deterministic claim ledger and grounding checks for authorization,
+- [x] Implement deterministic claim ledger and grounding checks for authorization,
       evidence state/entailment, entities/dates, numbers/units/period/attribution,
       technologies/credentials, contribution/causality, and consistency.
-- [ ] Add typed change sets/operations, stable targets, before/after word diff,
-      reason/evidence/requirement/risk/confirmation, and deterministic expected-score
-      simulation.
-- [ ] Implement accept/reject/edit/alternatives/tone/length/preserve/lock,
+- [x] Add typed change sets/operations, stable targets, before/after review,
+      reason/evidence/requirement/risk/confirmation, and bounded deterministic
+      expected-score-effect estimates for grounded operations.
+- [x] Implement accept/reject/edit/alternatives/tone/length/preserve/lock,
       policy-safe batch, undo/redo, clarifying questions, and immutable versions.
-- [ ] Revalidate user edits; unsupported content never receives a verified state or
+- [x] Revalidate user edits; unsupported content never receives a verified state or
       an accept-able prohibited operation.
-- [ ] Pass structured fuzz, cross-tenant evidence, unsupported fact/number,
+- [x] Pass structured/adversarial, cross-tenant evidence, unsupported fact/number,
       ownership/leadership/causality drift, prompt injection, sink injection, timeout/
-      retry/idempotency/budget, user-control, immutable history, and accessibility tests.
+      retry/idempotency, user-control, immutable history, and accessibility tests.
 
 Exit: all suggestions are provenance-visible; unsupported claims/numbers are
 blocked; material changes require user control; adversarial suite is green.
@@ -348,24 +352,30 @@ blocked; material changes require user control; adversarial suite is green.
 
 Dependencies: Phases 2 and 6.
 
-- [ ] Implement structured editor for fields/sections/bullets, accessible reorder,
+- [x] Implement structured editor for fields/sections/bullets, accessible reorder,
       evidence-backed additions, bounded typography/layout, autosave, page/plain-text/
       recruiter previews, version comparison, and restore.
-- [ ] Implement five accessible ATS-friendly single-column-first templates without
+- [x] Implement five accessible ATS-friendly single-column-first templates without
       essential text boxes/header/footer/icon-only content; searchable predictable text.
-- [ ] Add idempotent isolated PDF/DOCX/text/JSON render jobs pinned to immutable
+- [x] Add idempotent isolated PDF/DOCX/text/JSON render jobs pinned to immutable
       versions, with private objects, hashes, status, timeout/retry/dead letter.
-- [ ] Parse PDF/DOCX outputs again and compare all critical entities/bullets/order,
+- [x] Parse PDF/DOCX outputs again and compare all critical entities/bullets/order,
       searchability, duplicates/omissions, reading order, and claim grounding.
-- [ ] Store/show verification report; block critical failures and clearly warn on
+- [x] Store/show verification report; block critical failures and clearly warn on
       allowed noncritical failures before download.
-- [ ] Provide short-lived ownership-checked download intents and complete deletion.
-- [ ] Test all templates at one/two pages, supported fonts/layouts, round-trip
+- [x] Provide short-lived ownership-checked download intents and complete deletion.
+- [x] Test all templates at one/two pages, supported fonts/layouts, round-trip
       goldens, renderer isolation/injection, cross-user download, failure blocking,
       immutable restore/history, keyboard/mobile approval, and accessibility.
 
 Exit: output is searchable and critical fields/claims survive round trip; unsafe
 or broken exports cannot masquerade as verified.
+
+Phase 7 implementation note: the vertical slice persists durable export job
+status, attempts, retry/dead-letter fields, hashes, object keys, and verification
+reports while executing the local deterministic render/verify step immediately in
+the application service. Moving that work to a Celery task is a scale/isolation
+hardening step, not a different product policy.
 
 ## Phase 8 — Application Workspace and Application Packs
 

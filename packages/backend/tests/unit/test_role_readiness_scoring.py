@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from uuid import UUID, uuid4
 
-from role_readiness_memory import PRODUCT_ROLE_ID, MemoryRoleReadiness
-
 from careeros.modules.role_readiness.domain import ReadinessLabel, SkillMatchState
 from careeros.modules.role_readiness.domain.scoring import (
     CareerReadinessSnapshot,
@@ -13,6 +11,7 @@ from careeros.modules.role_readiness.domain.scoring import (
     SnapshotSkill,
     score_role_readiness,
 )
+from role_readiness_memory import PRODUCT_ROLE_ID, MemoryRoleReadiness
 
 
 def _role_and_competencies():

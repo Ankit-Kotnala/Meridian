@@ -1,5 +1,6 @@
 """Public Career Record application contract."""
 
+from ..domain import CareerRecordNotFound
 from .attachment_workflow import (
     CLEANUP_EVIDENCE_ATTACHMENT_OBJECTS_TASK,
     DISPATCH_EVIDENCE_ATTACHMENT_OUTBOX_TASK,
@@ -111,6 +112,7 @@ __all__ = [
     "AttachmentWorkflowService",
     "CareerEntityData",
     "CareerProfileView",
+    "CareerRecordNotFound",
     "CareerRecordPolicy",
     "CareerRecordReadinessSnapshot",
     "CareerRecordService",

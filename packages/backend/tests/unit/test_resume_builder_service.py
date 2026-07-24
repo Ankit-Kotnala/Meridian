@@ -1,0 +1,229 @@
+"""Service-level tests for Phase 7 resume builder."""
+
+from __future__ import annotations
+
+import pytest
+
+from careeros.modules.resume_builder.application import (
+    CreateResume,
+    ExportResume,
+    RequestContext,
+    ResumeBuilderPolicy,
+    ResumeBuilderService,
+    UpdateResume,
+)
+from careeros.modules.resume_builder.domain import (
+    ResumeBuilderNotFound,
+    ResumeBuilderValidationError,
+    ResumeExportBlocked,
+    ResumeExportStatus,
+    ResumeFormat,
+    ResumeTemplate,
+)
+from resume_builder_memory import (
+    EVIDENCE_ID,
+    OTHER_ID,
+    OWNER_ID,
+    FixedClock,
+    MemoryResumeBuilder,
+    MemoryStorage,
+    PlainTextExtractor,
+    StaticResumeSourceProvider,
+    TextOnlyRenderer,
+    UuidFactory,
+)
+
+
+def _service(
+    *,
+    state: MemoryResumeBuilder | None = None,
+    renderer: TextOnlyRenderer | None = None,
+    source: StaticResumeSourceProvider | None = None,
+) -> ResumeBuilderService:
+    return ResumeBuilderService(
+        unit_of_work=state or MemoryResumeBuilder(),
+        clock=FixedClock(),
+        identifiers=UuidFactory(),
+        sources=source or StaticResumeSourceProvider(),
+        renderer=renderer or TextOnlyRenderer(),
+        extractor=PlainTextExtractor(),
+        storage=MemoryStorage(),
+        policy=ResumeBuilderPolicy(),
+    )
+
+
+def _context(user_id=OWNER_ID) -> RequestContext:
+    return RequestContext(actor_user_id=user_id, request_id="req-test", trace_id="trace-test")
+
+
+@pytest.mark.asyncio
+async def test_create_update_version_export_and_download_are_grounded_and_idempotent() -> None:
+    state = MemoryResumeBuilder()
+    storage = MemoryStorage()
+    service = ResumeBuilderService(
+        unit_of_work=state,
+        clock=FixedClock(),
+        identifiers=UuidFactory(),
+        sources=StaticResumeSourceProvider(),
+        renderer=TextOnlyRenderer(),
+        extractor=PlainTextExtractor(),
+        storage=storage,
+        policy=ResumeBuilderPolicy(),
+    )
+    created = await service.create_resume(
+        OWNER_ID,
+        CreateResume(
+            title="Launch PM Resume",
+            target_role="Senior Product Manager",
+            template=ResumeTemplate.STANDARD_PROFESSIONAL,
+        ),
+        idempotency_key="resume-create-key",
+        context=_context(),
+    )
+    replay = await service.create_resume(
+        OWNER_ID,
+        CreateResume(
+            title="Launch PM Resume",
+            target_role="Senior Product Manager",
+            template=ResumeTemplate.STANDARD_PROFESSIONAL,
+        ),
+        idempotency_key="resume-create-key",
+        context=_context(),
+    )
+    assert replay.resume.id == created.resume.id
+    assert created.current_version.source_evidence_ids
+    assert created.current_version.sections[0].items[0].evidence_ids == (EVIDENCE_ID,)
+
+    edited_section = created.current_version.sections[0]
+    grounded_edit = await service.update_resume(
+        OWNER_ID,
+        created.resume.id,
+        UpdateResume(
+            title="Launch PM Resume",
+            sections=(edited_section,),
+            template=ResumeTemplate.COMPACT_TECHNICAL,
+        ),
+        expected_version=created.resume.version,
+        idempotency_key="resume-update-key",
+        context=_context(),
+    )
+    assert grounded_edit.resume.version == 2
+    assert grounded_edit.current_version.id != created.current_version.id
+    assert grounded_edit.current_version.parent_version_id == created.current_version.id
+
+    checkpoint = await service.create_version(
+        OWNER_ID,
+        grounded_edit.resume.id,
+        expected_version=grounded_edit.resume.version,
+        idempotency_key="resume-version-key",
+        context=_context(),
+    )
+    exported = await service.export_version(
+        OWNER_ID,
+        checkpoint.id,
+        ExportResume(format=ResumeFormat.TEXT),
+        idempotency_key="resume-export-key",
+        context=_context(),
+    )
+    assert exported.export.status == ResumeExportStatus.VERIFIED
+    assert exported.verification is not None
+    assert exported.verification.status.value == "passed"
+    assert exported.export.sha256_digest is not None
+
+    intent = await service.create_download_intent(
+        OWNER_ID,
+        exported.export.id,
+        idempotency_key="resume-download-key",
+        context=_context(),
+    )
+    assert intent.url.startswith("https://downloads.invalid/resume-exports/")
+
+
+@pytest.mark.asyncio
+async def test_creation_requires_eligible_evidence() -> None:
+    service = _service(source=StaticResumeSourceProvider(with_evidence=False))
+    with pytest.raises(ResumeBuilderValidationError):
+        await service.create_resume(
+            OWNER_ID,
+            CreateResume(
+                title="No Evidence Resume",
+                target_role=None,
+                template=ResumeTemplate.EXECUTIVE,
+            ),
+            idempotency_key="resume-no-evidence",
+            context=_context(),
+        )
+
+
+@pytest.mark.asyncio
+async def test_update_rejects_ungrounded_bullets_and_cross_user_reads_are_hidden() -> None:
+    service = _service()
+    created = await service.create_resume(
+        OWNER_ID,
+        CreateResume(
+            title="Grounded Resume",
+            target_role=None,
+            template=ResumeTemplate.GRADUATE,
+        ),
+        idempotency_key="resume-grounded",
+        context=_context(),
+    )
+    section = created.current_version.sections[0]
+    ungrounded = (
+        section.__class__(
+            id=section.id,
+            title=section.title,
+            kind=section.kind,
+            items=(
+                section.items[0].__class__(
+                    id=section.items[0].id,
+                    text="Invented unsupported ownership of billing systems.",
+                    evidence_ids=(OTHER_ID,),
+                    source="manual",
+                ),
+            ),
+        ),
+    )
+    with pytest.raises(ResumeBuilderValidationError):
+        await service.update_resume(
+            OWNER_ID,
+            created.resume.id,
+            UpdateResume(sections=ungrounded),
+            expected_version=created.resume.version,
+            idempotency_key="resume-bad-edit",
+            context=_context(),
+        )
+    with pytest.raises(ResumeBuilderNotFound):
+        await service.get_resume(OTHER_ID, created.resume.id)
+
+
+@pytest.mark.asyncio
+async def test_blocked_export_cannot_create_download_intent() -> None:
+    service = _service(renderer=TextOnlyRenderer(omit_expected=True))
+    created = await service.create_resume(
+        OWNER_ID,
+        CreateResume(
+            title="Blocked Resume",
+            target_role=None,
+            template=ResumeTemplate.CONSULTING_FINANCE,
+        ),
+        idempotency_key="resume-blocked",
+        context=_context(),
+    )
+    exported = await service.export_version(
+        OWNER_ID,
+        created.current_version.id,
+        ExportResume(format=ResumeFormat.TEXT),
+        idempotency_key="resume-blocked-export",
+        context=_context(),
+    )
+    assert exported.export.status == ResumeExportStatus.BLOCKED
+    assert exported.verification is not None
+    assert exported.verification.critical_failures
+    with pytest.raises(ResumeExportBlocked):
+        await service.create_download_intent(
+            OWNER_ID,
+            exported.export.id,
+            idempotency_key="resume-blocked-download",
+            context=_context(),
+        )

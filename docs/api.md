@@ -1,6 +1,6 @@
 # CareerOS API conventions and route plan
 
-Status: Phase 4 Role Explorer API implemented in the working tree
+Status: Phase 7 Resume Builder and verified export API implemented and locally verified
 Base path for product APIs: `/api/v1`  
 Last reviewed: 2026-07-19
 
@@ -27,9 +27,15 @@ resources. Phase 2 adds owned and guest-limited resume upload, parsing, review,
 analysis, and deletion resources. Phase 3 adds account-owned career profile,
 evidence, attachment, proposal, and achievement resources. Phase 4 adds role
 taxonomy/search, saved roles, deterministic readiness analysis, history, and
-comparison. AI generation, exact job matching, export, and application workflows
-remain unimplemented. `/docs` and `/openapi.json` are development documentation
-endpoints and may be restricted or disabled in production.
+comparison. Phase 5 adds authenticated job posting save/import, requirement
+matrix analysis, and opportunity priority. Phase 6 adds authenticated Change
+Studio change sets, truth-locked provider suggestions, grounding decisions,
+clarifying questions, and immutable output versions. Phase 7 adds authenticated
+structured resumes, immutable resume versions, verified PDF/DOCX/text/JSON
+exports, round-trip reports, short-lived download intents, and export deletion.
+Application workflows remain unimplemented. `/docs` and `/openapi.json` are
+development documentation endpoints and may be restricted or disabled in
+production.
 
 `packages/contracts` derives its public types and client from the implemented
 FastAPI OpenAPI document. The normalized artifact under
@@ -37,7 +43,7 @@ FastAPI OpenAPI document. The normalized artifact under
 `packages/contracts/src/generated` are committed review artifacts; neither is an
 independent contract authority. Problem, pagination, and product schemas are not
 published until corresponding Pydantic models and operations exist. Phase 1
-contract evidence is recorded in `PLANS.md`. Phase 2 through Phase 4 changes
+contract evidence is recorded in `PLANS.md`. Phase 2 through Phase 7 changes
 regenerate both artifacts; the final drift result must be recorded there before a
 phase is marked complete.
 
@@ -539,11 +545,21 @@ POST   /api/v1/jobs/{jobId}/analyze
 GET    /api/v1/job-match-analyses/{analysisId}
 GET    /api/v1/job-match-analyses/{analysisId}/requirements
 POST   /api/v1/jobs/{jobId}/opportunity-priority
-GET    /api/v1/opportunity-priorities/{analysisId}
+GET    /api/v1/opportunity-priorities/{priorityId}
 ```
 
-URL import accepts an HTTP(S) URL but applies destination/redirect SSRF policy.
-Extracted requirements always include original source spans and uncertainty.
+All endpoints require an authenticated user. Mutations require CSRF. Create,
+URL import, analysis, and opportunity priority require `Idempotency-Key`; update
+and delete require `If-Match` with the current job version. Responses are
+owner-scoped and never authorize access by ID alone.
+
+URL import accepts HTTP(S) only, rejects credentials and non-public resolved
+addresses, validates every redirect, caps response size/redirects/time, accepts
+plain text or HTML, strips script/style/template content, and stores only plain
+text. Extracted requirements include source spans and confidence. Match analyses
+store immutable requirement match rows and evidence-link snapshots so later job
+edits do not rewrite historical results. Readiness and priority responses include
+the canonical internal-score disclaimer.
 
 ### Phase 6 — Change Studio and grounded AI
 
@@ -554,15 +570,23 @@ POST   /api/v1/change-sets/{changeSetId}/operations/{operationId}/accept
 POST   /api/v1/change-sets/{changeSetId}/operations/{operationId}/reject
 POST   /api/v1/change-sets/{changeSetId}/operations/{operationId}/edit
 POST   /api/v1/change-sets/{changeSetId}/operations/{operationId}/alternatives
+POST   /api/v1/change-sets/{changeSetId}/operations/{operationId}/lock
+POST   /api/v1/change-sets/{changeSetId}/operations/{operationId}/unlock
 POST   /api/v1/change-sets/{changeSetId}/apply-safe
 POST   /api/v1/change-sets/{changeSetId}/undo
 POST   /api/v1/change-sets/{changeSetId}/redo
+POST   /api/v1/change-sets/{changeSetId}/versions/{versionId}/restore
 POST   /api/v1/clarifications/{clarificationId}/answer
 ```
 
-Each write requires current version/ETag. Structured operations and grounding
-results are server-calculated; clients cannot waive confirmation or attach an
-arbitrary evidence ID.
+All routes require an authenticated account session. Mutations require CSRF,
+`Idempotency-Key`, and the current quoted positive-int32 `If-Match` version,
+except creation, which requires CSRF and idempotency and returns the initial ETag.
+Structured operations, claim ledgers, provider metadata, grounding results, and
+clarifying questions are server-calculated; clients cannot waive confirmation,
+mark output as grounded, or attach arbitrary evidence/requirement IDs. Responses
+are `no-store`, owner-scoped, and include the canonical internal-score
+disclaimer wherever expected score movement appears.
 
 ### Phase 7 — Resumes and verified export
 
@@ -579,10 +603,23 @@ POST   /api/v1/resume-versions/{versionId}/export
 GET    /api/v1/exports/{exportId}
 GET    /api/v1/exports/{exportId}/verification
 POST   /api/v1/exports/{exportId}/download-intent
+DELETE /api/v1/exports/{exportId}
 ```
 
-An export references one immutable version. Download intent is ownership-checked,
-short-lived, and unavailable when a critical verification result blocks release.
+All routes require an authenticated account session. Mutations require CSRF.
+Resume creation, immutable version creation, version restore, export, download
+intent creation, and export deletion require `Idempotency-Key`; mutable resume
+updates, version creation from the current draft, and restore require the current
+quoted positive-int32 `If-Match` version. Resume reads return ETags and all
+responses are `no-store`.
+
+The service builds default drafts from eligible owner-scoped Career Record
+evidence and optional Change Studio current-version output. Every persisted
+bullet carries evidence IDs and server validation rejects unsupported edits. An
+export references one immutable version, stores a hash and private object key,
+and records a verification report. Download intent is ownership-checked,
+short-lived, unavailable when a critical verification result blocks release, and
+never exposes the private object key.
 
 ### Phase 8 — Applications and application packs
 
@@ -795,7 +832,7 @@ worker/reconciliation checks, generated-contract drift, and the authenticated
 desktop Career Profile/Evidence/Achievement journey. The journey is intentionally
 run once on desktop; shared workspace mobile behavior is covered by existing
 responsive suites. The final local consolidated result passes; hosted Phase 3 CI
-evidence remains pending in `PLANS.md`.
+evidence also passes as recorded in `PLANS.md`.
 
 Tests assert exact safe response schemas and problems, correlation IDs, readiness
 failure under dependency loss, no secret leakage, stable operation IDs, OpenAPI
@@ -832,3 +869,5 @@ It retains every Phase 3 gate and adds migration `20260719_0005`, Role Explorer
 repository integration, generated-contract drift, API tests for authentication,
 CSRF, owner scope, idempotency, version preconditions and comparison, and the
 authenticated desktop Role Explorer save/analyze/compare journey.
+The local consolidated gate passed on 2026-07-19; exact evidence is recorded in
+`PLANS.md`.

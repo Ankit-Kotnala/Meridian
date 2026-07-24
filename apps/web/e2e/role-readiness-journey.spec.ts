@@ -167,7 +167,9 @@ test("a user saves, analyzes, and compares evidence-linked target roles", async 
     });
     await expect(productRole).toBeVisible();
     await productRole.getByRole("button", { name: "Save" }).click();
-    await expect(page.getByText("Product Manager saved.")).toBeVisible();
+    await expect(page.getByRole("status")).toContainText(
+      "Product Manager saved.",
+    );
 
     const savedRole = page.locator("article").filter({
       has: page.getByRole("heading", { name: "Product Manager" }),
@@ -177,11 +179,13 @@ test("a user saves, analyzes, and compares evidence-linked target roles", async 
       .getByRole("textbox", { name: "Notes" })
       .fill("Primary role target for customer discovery evidence.");
     await savedRole.getByRole("button", { name: "Save notes" }).click();
-    await expect(page.getByText("Product Manager notes saved.")).toBeVisible();
+    await expect(page.getByRole("status")).toContainText(
+      "Product Manager notes saved.",
+    );
     await savedRole.getByRole("button", { name: "Analyze" }).click();
-    await expect(
-      page.getByText("Product Manager readiness analyzed."),
-    ).toBeVisible();
+    await expect(page.getByRole("status")).toContainText(
+      "Product Manager readiness analyzed.",
+    );
 
     await expect(
       page.getByText(/Product Manager readiness is based on/),
@@ -201,15 +205,23 @@ test("a user saves, analyzes, and compares evidence-linked target roles", async 
     ).toBeVisible();
 
     await productRole.getByRole("button", { name: "Compare" }).click();
+    await page.getByLabel("Search roles").fill("software engineer");
+    await page.getByRole("button", { name: "Search" }).click();
     const engineerRole = page.locator("article").filter({
       has: page.getByRole("heading", { name: "Software Engineer" }),
     });
+    await expect(engineerRole).toBeVisible();
     await engineerRole.getByRole("button", { name: "Compare" }).click();
     await page.getByRole("button", { name: "Compare selected" }).click();
     await expect(
       page.getByRole("heading", { name: "Role comparison" }),
     ).toBeVisible();
-    await expect(page.getByText("Required gaps")).toBeVisible();
+    const comparisonSection = page.locator("section").filter({
+      has: page.getByRole("heading", { name: "Role comparison" }),
+    });
+    await expect(
+      comparisonSection.getByText("Required gaps", { exact: true }).first(),
+    ).toBeVisible();
   } finally {
     await request
       .delete(`${requireMailpitUrl()}/api/v1/search`, {

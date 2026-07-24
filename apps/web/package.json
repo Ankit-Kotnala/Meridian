@@ -20,7 +20,7 @@
     "@careeros/design-tokens": "workspace:*",
     "@careeros/ui": "workspace:*",
     "lucide-react": "1.24.0",
-    "next": "16.2.10",
+    "next": "16.2.11",
     "react": "19.2.7",
     "react-dom": "19.2.7"
   },
@@ -34,12 +34,12 @@
     "@types/node": "26.1.1",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
-    "eslint": "10.7.0",
-    "eslint-config-next": "16.2.10",
+    "eslint": "9.39.1",
+    "eslint-config-next": "16.2.11",
     "jsdom": "29.1.1",
     "prettier": "3.9.5",
     "tailwindcss": "4.3.2",
-    "typescript": "7.0.2",
+    "typescript": "5.9.3",
     "vitest": "4.1.10"
   },
   "engines": {

@@ -3,7 +3,7 @@
 Status: mandatory product policy  
 Applies to: extraction, suggestions, rewrites, application materials, networking
 messages, interview content, summaries, and any future generative capability  
-Last reviewed: 2026-07-14
+Last reviewed: 2026-07-19
 
 ## Policy statement
 
@@ -347,7 +347,8 @@ Any fictional dashboard copy is static demo presentation and must not be labeled
 AI-generated, verified, or evidence-backed unless the fixture explicitly models
 that state and is visibly marked fictional.
 
-Phase 3 implements evidence states/provenance; Phase 5 source-spanned job
-requirements; Phase 6 the provider gateway, strict schemas, claim ledger,
-grounding verifier, Change Studio, and adversarial suite. Generative production
-features cannot ship before those gates pass.
+Phase 3 implements evidence states/provenance; Phase 5 implements source-spanned
+job requirements; Phase 6 implements the provider gateway, strict schemas, claim
+ledger, grounding verifier, Change Studio, and adversarial suite. Generative
+production features outside this reviewed Change Studio path cannot ship before
+equivalent gates pass.

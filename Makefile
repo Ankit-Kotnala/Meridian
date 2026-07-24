@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: help setup dev stop format format-check lint typecheck test contracts-check test-integration test-e2e test-e2e-stack test-e2e-stack-phase3 test-e2e-stack-phase4 build security-scan seed migrate reset-db compose-config verify verify-phase1 verify-phase2 verify-phase3 verify-phase4
+.PHONY: help setup dev stop format format-check lint typecheck test contracts-check test-integration test-e2e test-e2e-stack test-e2e-stack-phase3 test-e2e-stack-phase4 test-e2e-stack-phase5 test-e2e-stack-phase6 test-e2e-stack-phase7 build security-scan seed migrate reset-db compose-config verify verify-phase1 verify-phase2 verify-phase3 verify-phase4 verify-phase5 verify-phase6 verify-phase7
 
 help:
 	@echo "CareerOS development targets"
@@ -17,6 +17,9 @@ help:
 	@echo "  test-e2e-stack   Run the isolated Phase 2 authentication and Resume Health journeys"
 	@echo "  test-e2e-stack-phase3 Run the isolated Phase 3 Career Record journey suite"
 	@echo "  test-e2e-stack-phase4 Run the isolated Phase 4 Role Explorer journey suite"
+	@echo "  test-e2e-stack-phase5 Run the isolated Phase 5 Job Match journey suite"
+	@echo "  test-e2e-stack-phase6 Run the isolated Phase 6 Change Studio journey suite"
+	@echo "  test-e2e-stack-phase7 Run the isolated Phase 7 Resume Builder journey suite"
 	@echo "  build            Build workspace packages and service images"
 	@echo "  security-scan    Scan source, dependencies, and application images"
 	@echo "  contracts-check  Verify OpenAPI and generated TypeScript contract drift"
@@ -25,6 +28,9 @@ help:
 	@echo "  verify-phase2    Run all platform gates and the isolated Resume Health journey"
 	@echo "  verify-phase3    Run all platform gates and the isolated Career Record journey"
 	@echo "  verify-phase4    Run all platform gates and the isolated Role Explorer journey"
+	@echo "  verify-phase5    Run all platform gates and the isolated Job Match journey"
+	@echo "  verify-phase6    Run all platform gates and the isolated Change Studio journey"
+	@echo "  verify-phase7    Run all platform gates and the isolated Resume Builder journey"
 
 setup:
 	@test -f .env || cp .env.example .env
@@ -100,20 +106,29 @@ test-e2e-stack-phase3:
 test-e2e-stack-phase4:
 	CAREEROS_E2E_PHASE=4 sh tests/e2e/run-compose.sh
 
+test-e2e-stack-phase5:
+	CAREEROS_E2E_PHASE=5 sh tests/e2e/run-compose.sh
+
+test-e2e-stack-phase6:
+	CAREEROS_E2E_PHASE=6 sh tests/e2e/run-compose.sh
+
+test-e2e-stack-phase7:
+	CAREEROS_E2E_PHASE=7 sh tests/e2e/run-compose.sh
+
 build:
 	pnpm build
-	docker compose build api worker web
+	docker compose build api worker web web-edge
 
 security-scan:
 	docker run --rm --volume "$(CURDIR):/repo:ro" ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f dir /repo --config /repo/.gitleaks.toml --redact --exit-code 1
 	pnpm audit --audit-level high
 	uv sync --frozen --all-packages --all-groups
 	uv run --package careeros-api --with pip-audit==2.10.1 pip-audit
-	docker compose build api worker web
+	docker compose build api worker web web-edge
 	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume careeros-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d careeros-api:latest --config /etc/grype.yaml --fail-on high --only-fixed
 	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume careeros-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d careeros-worker:latest --config /etc/grype.yaml --fail-on high --only-fixed
 	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume careeros-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d careeros-web:latest --config /etc/grype.yaml --fail-on high --only-fixed
-	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume careeros-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd --config /etc/grype.yaml --fail-on high --only-fixed
+	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume careeros-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d careeros-web-edge:latest --config /etc/grype.yaml --fail-on high --only-fixed
 
 seed:
 	pnpm seed
@@ -137,3 +152,9 @@ verify-phase2: verify test-e2e-stack
 verify-phase3: verify test-e2e-stack-phase3
 
 verify-phase4: verify test-e2e-stack-phase4
+
+verify-phase5: verify test-e2e-stack-phase5
+
+verify-phase6: verify test-e2e-stack-phase6
+
+verify-phase7: verify test-e2e-stack-phase7

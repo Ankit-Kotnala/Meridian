@@ -25,6 +25,17 @@ from careeros.modules.career_record.domain.errors import (
     CareerRecordValidationError,
     CareerRecordVersionConflict,
 )
+from careeros.modules.change_studio.domain.errors import (
+    ChangeStudioConflict,
+    ChangeStudioError,
+    ChangeStudioIdempotencyConflict,
+    ChangeStudioNotFound,
+    ChangeStudioUnavailable,
+    ChangeStudioValidationError,
+    ChangeStudioVersionConflict,
+    GroundingFailed,
+    ProviderOutputRejected,
+)
 from careeros.modules.identity.domain.errors import (
     AuthenticationRequired,
     CsrfRejected,
@@ -41,6 +52,26 @@ from careeros.modules.identity.domain.errors import (
     RecentAuthenticationRequired,
     ResourceNotFound,
     VersionConflict,
+)
+from careeros.modules.job_match.domain.errors import (
+    JobImportRejected,
+    JobMatchConflict,
+    JobMatchError,
+    JobMatchIdempotencyConflict,
+    JobMatchNotFound,
+    JobMatchUnavailable,
+    JobMatchValidationError,
+    JobMatchVersionConflict,
+)
+from careeros.modules.resume_builder.domain.errors import (
+    ResumeBuilderConflict,
+    ResumeBuilderError,
+    ResumeBuilderIdempotencyConflict,
+    ResumeBuilderNotFound,
+    ResumeBuilderUnavailable,
+    ResumeBuilderValidationError,
+    ResumeBuilderVersionConflict,
+    ResumeExportBlocked,
 )
 from careeros.modules.resume_health.domain.errors import (
     GuestCapabilityRejected,
@@ -240,6 +271,54 @@ def install_problem_handlers(app: FastAPI) -> None:
         status_code, code, title, detail = _role_readiness_problem_details(exc)
         logger.info(
             "role_readiness_request_rejected",
+            error_code=code,
+            status_code=status_code,
+        )
+        return problem_response(
+            request,
+            status_code=status_code,
+            code=code,
+            title=title,
+            detail=detail,
+        )
+
+    @app.exception_handler(JobMatchError)
+    async def job_match_problem(request: Request, exc: JobMatchError) -> JSONResponse:
+        status_code, code, title, detail = _job_match_problem_details(exc)
+        logger.info(
+            "job_match_request_rejected",
+            error_code=code,
+            status_code=status_code,
+        )
+        return problem_response(
+            request,
+            status_code=status_code,
+            code=code,
+            title=title,
+            detail=detail,
+        )
+
+    @app.exception_handler(ChangeStudioError)
+    async def change_studio_problem(request: Request, exc: ChangeStudioError) -> JSONResponse:
+        status_code, code, title, detail = _change_studio_problem_details(exc)
+        logger.info(
+            "change_studio_request_rejected",
+            error_code=code,
+            status_code=status_code,
+        )
+        return problem_response(
+            request,
+            status_code=status_code,
+            code=code,
+            title=title,
+            detail=detail,
+        )
+
+    @app.exception_handler(ResumeBuilderError)
+    async def resume_builder_problem(request: Request, exc: ResumeBuilderError) -> JSONResponse:
+        status_code, code, title, detail = _resume_builder_problem_details(exc)
+        logger.info(
+            "resume_builder_request_rejected",
             error_code=code,
             status_code=status_code,
         )
@@ -477,6 +556,187 @@ def _role_readiness_problem_details(
     return (
         status.HTTP_400_BAD_REQUEST,
         "role_readiness_rejected",
+        "Request rejected",
+        "The request could not be completed.",
+    )
+
+
+def _job_match_problem_details(exc: JobMatchError) -> tuple[int, str, str, str]:
+    if isinstance(exc, JobMatchUnavailable):
+        return (
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "job_match_unavailable",
+            "Job match unavailable",
+            "Job match services are temporarily unavailable.",
+        )
+    if isinstance(exc, JobMatchNotFound):
+        return (
+            status.HTTP_404_NOT_FOUND,
+            "job_match_not_found",
+            "Resource not found",
+            "The requested resource was not found.",
+        )
+    if isinstance(exc, JobMatchVersionConflict):
+        return (
+            status.HTTP_409_CONFLICT,
+            "job_match_version_conflict",
+            "Version conflict",
+            "This information changed. Refresh and try again.",
+        )
+    if isinstance(exc, JobMatchIdempotencyConflict):
+        return (
+            status.HTTP_409_CONFLICT,
+            "job_match_idempotency_conflict",
+            "Request conflict",
+            "This request key was already used for a different operation.",
+        )
+    if isinstance(exc, JobImportRejected):
+        return (
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "job_import_rejected",
+            "Job import rejected",
+            "This job posting could not be imported safely.",
+        )
+    if isinstance(exc, JobMatchValidationError):
+        return (
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "job_match_validation_error",
+            "Request validation failed",
+            "Review the submitted job match values.",
+        )
+    if isinstance(exc, JobMatchConflict):
+        return (
+            status.HTTP_409_CONFLICT,
+            "job_match_conflict",
+            "Request conflict",
+            "The request conflicts with current job match state.",
+        )
+    return (
+        status.HTTP_400_BAD_REQUEST,
+        "job_match_rejected",
+        "Request rejected",
+        "The request could not be completed.",
+    )
+
+
+def _change_studio_problem_details(exc: ChangeStudioError) -> tuple[int, str, str, str]:
+    if isinstance(exc, ChangeStudioUnavailable):
+        return (
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "change_studio_unavailable",
+            "Change Studio unavailable",
+            "Change Studio services are temporarily unavailable.",
+        )
+    if isinstance(exc, ChangeStudioNotFound):
+        return (
+            status.HTTP_404_NOT_FOUND,
+            "change_studio_not_found",
+            "Resource not found",
+            "The requested resource was not found.",
+        )
+    if isinstance(exc, ChangeStudioVersionConflict):
+        return (
+            status.HTTP_409_CONFLICT,
+            "change_studio_version_conflict",
+            "Version conflict",
+            "This information changed. Refresh and try again.",
+        )
+    if isinstance(exc, ChangeStudioIdempotencyConflict):
+        return (
+            status.HTTP_409_CONFLICT,
+            "change_studio_idempotency_conflict",
+            "Request conflict",
+            "This request key was already used for a different operation.",
+        )
+    if isinstance(exc, GroundingFailed):
+        return (
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "grounding_failed",
+            "Grounding failed",
+            "The submitted change is not grounded in eligible evidence.",
+        )
+    if isinstance(exc, ProviderOutputRejected):
+        return (
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "provider_output_rejected",
+            "Provider output rejected",
+            "The AI provider returned output that failed strict validation.",
+        )
+    if isinstance(exc, ChangeStudioValidationError):
+        return (
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "change_studio_validation_error",
+            "Request validation failed",
+            "Review the submitted Change Studio values.",
+        )
+    if isinstance(exc, ChangeStudioConflict):
+        return (
+            status.HTTP_409_CONFLICT,
+            "change_studio_conflict",
+            "Request conflict",
+            "The request conflicts with current Change Studio state.",
+        )
+    return (
+        status.HTTP_400_BAD_REQUEST,
+        "change_studio_rejected",
+        "Request rejected",
+        "The request could not be completed.",
+    )
+
+
+def _resume_builder_problem_details(exc: ResumeBuilderError) -> tuple[int, str, str, str]:
+    if isinstance(exc, ResumeBuilderUnavailable):
+        return (
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "resume_builder_unavailable",
+            "Resume Builder unavailable",
+            "Resume Builder services are temporarily unavailable.",
+        )
+    if isinstance(exc, ResumeBuilderNotFound):
+        return (
+            status.HTTP_404_NOT_FOUND,
+            "resume_builder_not_found",
+            "Resource not found",
+            "The requested resource was not found.",
+        )
+    if isinstance(exc, ResumeBuilderVersionConflict):
+        return (
+            status.HTTP_409_CONFLICT,
+            "resume_builder_version_conflict",
+            "Version conflict",
+            "This resume changed. Refresh and try again.",
+        )
+    if isinstance(exc, ResumeBuilderIdempotencyConflict):
+        return (
+            status.HTTP_409_CONFLICT,
+            "resume_builder_idempotency_conflict",
+            "Request conflict",
+            "This request key was already used for a different operation.",
+        )
+    if isinstance(exc, ResumeExportBlocked):
+        return (
+            status.HTTP_409_CONFLICT,
+            "resume_export_blocked",
+            "Export blocked",
+            "Round-trip verification found a critical issue before download.",
+        )
+    if isinstance(exc, ResumeBuilderValidationError):
+        return (
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "resume_builder_validation_error",
+            "Request validation failed",
+            "Review the submitted resume builder values.",
+        )
+    if isinstance(exc, ResumeBuilderConflict):
+        return (
+            status.HTTP_409_CONFLICT,
+            "resume_builder_conflict",
+            "Request conflict",
+            "The request conflicts with current Resume Builder state.",
+        )
+    return (
+        status.HTTP_400_BAD_REQUEST,
+        "resume_builder_rejected",
         "Request rejected",
         "The request could not be completed.",
     )

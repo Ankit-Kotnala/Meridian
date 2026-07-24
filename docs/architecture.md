@@ -1,6 +1,6 @@
 # CareerOS architecture
 
-Status: accepted target architecture; Phase 4 implemented in the working tree
+Status: accepted target architecture; Phase 7 implemented and locally verified
 Last reviewed: 2026-07-19
 
 ## Architectural objective
@@ -18,11 +18,17 @@ what the current working tree actually implements.
 
 The repository implements the Phase 0 shared backend/root workspace, the Phase 1
 identity boundary, the Phase 2 Resume Health module, the Phase 3 Career Record
-bounded context, and the Phase 4 Role Explorer bounded context used by thin API
-and web adapters. Phase 4 adds versioned role taxonomy/search, saved roles,
-deterministic evidence-linked readiness, history, and comparison without changing
-dependency direction or reading Career Record tables directly. Historical
-evidence and the current blocking verification status are recorded in `PLANS.md`.
+bounded context, the Phase 4 Role Explorer bounded context, and the Phase 5 Job
+Match bounded context used by thin API and web adapters. It also implements the
+Phase 6 Change Studio bounded context for truth-locked suggestions, claim-ledger
+grounding, user-controlled review actions, immutable output versions, and
+provider-run metadata. Phase 7 adds the Resume Builder bounded context for
+structured resumes, immutable versions, deterministic rendering, round-trip
+verification, private exports, and short-lived download intents. Phase 6 and
+Phase 7 consume upstream modules only through application boundaries; they do not
+read another module's tables directly or let clients choose evidence as
+grounding authority. Historical evidence and Phase 7 closeout verification are
+recorded in `PLANS.md`.
 
 ## System principles
 
@@ -105,7 +111,7 @@ This superseding foundation decision is recorded in
 | Concern      | Choice                                                          | Notes                                                                           |
 | ------------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | JS workspace | pnpm 11.13.0, Node.js 24                                        | One root lockfile; Corepack pins package-manager behavior                       |
-| Web          | Next.js 16.2.10, React 19.2.7, TypeScript 5.9.3, Tailwind 4.3.2 | App Router; strict types; server components by default where appropriate        |
+| Web          | Next.js 16.2.11, React 19.2.7, TypeScript 5.9.3, Tailwind 4.3.2 | App Router; strict types; server components by default where appropriate        |
 | Python       | Python 3.13, uv 0.11.21                                         | One root workspace/lock for API, worker, and shared backend                     |
 | HTTP         | FastAPI 0.138.2, Pydantic                                       | OpenAPI contract and validation boundary                                        |
 | Persistence  | SQLAlchemy 2 async, asyncpg, Alembic                            | PostgreSQL is authoritative; migrations arrive with owning models               |
@@ -191,6 +197,61 @@ query, copies bounded provenance into a pending proposal or evidence revision,
 and never foreign-keys career truth to a deletable resume. Deleting the source
 does not rewrite accepted career data, but source-only Supported evidence becomes
 ineligible until independently confirmed or connected to another eligible source.
+
+## Job Match Boundary
+
+`careeros.modules.job_match` owns saved job postings, current extracted
+requirements, immutable job-match analyses, requirement match rows, evidence-link
+snapshots, opportunity priority analyses, idempotency fingerprints, versions, and
+redacted audit events. It consumes eligible evidence through the Career Record
+readiness snapshot provider and optional target-role labels through the Role
+Readiness application service. It must not inspect Career Record evidence tables
+or Role Readiness taxonomy tables directly.
+
+URL imports are treated as hostile input. The default adapter accepts HTTP(S)
+only, blocks credentialed URLs and non-public resolved addresses, validates every
+redirect, caps bytes/time/redirects, strips scripts/styles/templates from HTML,
+and returns plain text only. Application Readiness and Opportunity Priority use
+versioned deterministic formulas and must show the canonical scoring disclaimer.
+
+## Change Studio Boundary
+
+`careeros.modules.change_studio` owns change sets, structured operations,
+claim-ledger rows, clarifying questions, immutable output versions, provider-run
+metadata, idempotency fingerprints, and redacted audit events. It consumes
+eligible evidence through Career Record and saved job requirements through Job
+Match application providers. The web and API submit an analysis ID and style
+constraints; they cannot submit arbitrary evidence IDs, mark claims as grounded,
+or waive confirmation.
+
+The provider gateway is environment-selected. Development and tests use a
+deterministic provider that only reuses eligible evidence text already linked to
+requirements. The HTTP JSON provider is HTTPS-only, API-key configured, bounded
+by timeout/retry/response-size limits, and wrapped in a circuit breaker. Provider
+payloads are strict JSON candidates, not trusted prose: unknown fields, invalid
+IDs/enums/ranges, unsupported facts, unsafe sink content, prompt-injection text,
+and ungrounded numbers fail closed before the user can accept them.
+
+## Resume Builder Boundary
+
+`careeros.modules.resume_builder` owns structured resume documents, immutable
+resume versions, export records, verification reports, download intents,
+idempotency fingerprints, and redacted audit events. It consumes eligible
+Career Record evidence through an application provider and can seed from the
+current Change Studio output through an application contract. It does not inspect
+Career Record, Evidence, Resume Health, or Change Studio tables directly.
+
+Every section and bullet is server-validated before it can become the current
+draft or an immutable version. Bullets must remain evidence-backed; unsupported
+client edits are rejected rather than rendered. Exports are pinned to a specific
+immutable version and format, rendered to private object storage, hashed, parsed
+again where applicable, and blocked before download if critical text, ordering,
+duplication, searchability, or grounding checks fail.
+
+The Phase 7 local renderer and verifier execute immediately inside the service
+while persisting job status, attempts, warnings, failures, timeout/retry fields,
+and dead-letter metadata. That preserves the same idempotent job contract the
+worker can claim later without introducing a second rendering policy.
 
 ## Request and job flows
 
@@ -384,15 +445,18 @@ CSRF, origin, request-size, and problem contracts. Positive versions and strict
 quoted `If-Match` preconditions protect mutable aggregates; proposal review,
 attachment finalize, and achievement conversion are idempotent.
 
-Local Compose publishes `web-edge` while the Next.js web container is reachable
-only on the shared edge network. `web-edge` strips all client-selected address
-headers and overwrites them from its socket peer. The server-only BFF normalizes
-that value, signs it with a shared HMAC secret, and sends the opaque signal to the
-API; the API verifies it before using it as pre-authentication and first-guest
-upload rate-key input. This signal is intentionally unrelated to authentication
-or authorization. A cloud load balancer changes the immediate peer, so production
-needs an explicit allowlisted trusted-hop design; arbitrary forwarded headers
-must never be accepted as client identity.
+Local Compose publishes a dedicated minimized `web-edge` image while the Next.js
+web container is reachable only on the shared edge network. The final edge and
+web images contain the Node runtime but remove npm, Corepack, and package-manager
+executables that are needed only while building. `web-edge` strips all
+client-selected address headers and overwrites them from its socket peer. The
+server-only BFF normalizes that value, signs it with a shared HMAC secret, and
+sends the opaque signal to the API; the API verifies it before using it as
+pre-authentication and first-guest upload rate-key input. This signal is
+intentionally unrelated to authentication or authorization. A cloud load
+balancer changes the immediate peer, so production needs an explicit allowlisted
+trusted-hop design; arbitrary forwarded headers must never be accepted as client
+identity.
 
 ## Scoring and AI boundaries
 
@@ -412,9 +476,12 @@ score-weight-contribution trace without requiring color or chart interpretation.
 Exact features and weights are normative in `docs/scoring-methodology.md`.
 
 AI output is untrusted until strict schema validation and deterministic claim-
-evidence verification pass. A material change becomes usable only through the
-review lifecycle. See `docs/scoring-methodology.md` and
-`docs/ai-grounding-policy.md`.
+evidence verification pass. Phase 6 implements this for Change Studio: grounded
+operations show original/proposed text, reason, requirement, evidence, claim
+validation, risk, and expected score effect while preserving accept/reject/edit,
+alternative, lock/unlock, undo/redo, restore, and clarification-answer actions.
+A material change becomes usable only through the review lifecycle. See
+`docs/scoring-methodology.md` and `docs/ai-grounding-policy.md`.
 
 ## Observability
 
@@ -437,9 +504,9 @@ must be visible without making unrelated core paths unavailable.
 
 ## Deployment progression
 
-Phase 0 through Phase 4 use Docker Compose for reproducible local integration. Production targets
-remain deliberately unspecified until Phase 10, when the team must decide and
-test:
+Phase 0 through Phase 6 use Docker Compose for reproducible local integration.
+Production targets remain deliberately unspecified until Phase 10, when the team
+must decide and test:
 
 - managed database/cache/queue/object services and regional/data-residency needs;
 - separate API and restricted worker network/security policies;
@@ -459,9 +526,14 @@ workflows. Phase 3 adds `career_record`, migration `20260715_0004`, API/worker
 adapters, generated contracts, the `career-vault` web feature, private attachment
 processing, and focused unit/integration/browser suites. Phase 4 adds
 `role_readiness`, migration `20260719_0005`, API/generated contracts, the
-`role-explorer` web feature, and focused unit/integration/browser suites. Exact
-job matching, external AI/OCR providers, browser extension, Terraform,
-operations, and production workflows remain absent until their owning phases.
+`role-explorer` web feature, and focused unit/integration/browser suites. Phase 5
+adds `job_match`, migration `20260719_0006`, API/generated contracts, the
+`job-match` web feature, and focused unit/integration/browser suites. Phase 6
+adds `change_studio`, migration `20260719_0007`, API/generated contracts, the
+`change-studio` web feature, deterministic local provider, HTTP provider
+boundary, grounding verifier, and focused adversarial/integration/browser suites.
+OCR providers, browser extension, Terraform, operations, export rendering, and
+production workflows remain absent until their owning phases.
 
 ## Architecture verification
 
@@ -496,6 +568,13 @@ recorded in `PLANS.md`.
 
 Phase 4 adds `scripts/verify-phase4.ps1` (or `make verify-phase4`) for migration
 `20260719_0005`, Role Explorer repository integration, and the authenticated
-save/analyze/compare browser workflow. Later phases add exact-job score golden,
-AI grounding, round-trip export, load, account-wide deletion, backup, and restore
-gates. The complete strategy is in `docs/testing-strategy.md`.
+save/analyze/compare browser workflow. The local consolidated Phase 4 gate passed
+on 2026-07-19. Phase 5 adds `scripts/verify-phase5.ps1` (or `make
+verify-phase5`) for migration `20260719_0006`, Job Match repository integration,
+SSRF policy tests, and the authenticated save/analyze/prioritize browser
+workflow. Phase 6 adds `scripts/verify-phase6.ps1` (or `make verify-phase6`) for
+migration `20260719_0007`, Change Studio repository integration, grounding and
+provider adversarial tests, and the authenticated generate/review/accept/undo/
+answer browser workflow. Later phases add round-trip export, load, account-wide
+deletion, backup, and restore gates. The complete strategy is in
+`docs/testing-strategy.md`.

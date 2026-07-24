@@ -12,7 +12,14 @@ from careeros.foundation.database import Base
 from careeros.modules.career_record.infrastructure import (
     models as career_record_models,  # noqa: F401
 )
+from careeros.modules.change_studio.infrastructure import (
+    models as change_studio_models,  # noqa: F401
+)
 from careeros.modules.identity.infrastructure import models as identity_models  # noqa: F401
+from careeros.modules.job_match.infrastructure import models as job_match_models  # noqa: F401
+from careeros.modules.resume_builder.infrastructure import (
+    models as resume_builder_models,  # noqa: F401
+)
 from careeros.modules.resume_health.infrastructure import (
     models as resume_health_models,  # noqa: F401
 )

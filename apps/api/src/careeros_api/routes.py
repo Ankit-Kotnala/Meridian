@@ -7,9 +7,12 @@ from careeros.foundation.database import ReadinessProbe
 from fastapi import APIRouter, Request, Response, status
 
 from careeros_api.career_record_routes import router as career_record_router
+from careeros_api.change_studio_routes import router as change_studio_router
 from careeros_api.config import Settings
 from careeros_api.constants import SCORING_DISCLAIMER
 from careeros_api.identity_routes import router as identity_router
+from careeros_api.job_match_routes import router as job_match_router
+from careeros_api.resume_builder_routes import router as resume_builder_router
 from careeros_api.resume_health_routes import router as resume_health_router
 from careeros_api.role_readiness_routes import router as role_readiness_router
 from careeros_api.schemas import (
@@ -23,8 +26,11 @@ logger = structlog.get_logger(__name__)
 router = APIRouter()
 router.include_router(identity_router)
 router.include_router(resume_health_router)
+router.include_router(resume_builder_router)
 router.include_router(career_record_router)
 router.include_router(role_readiness_router)
+router.include_router(job_match_router)
+router.include_router(change_studio_router)
 
 
 def _settings(request: Request) -> Settings:

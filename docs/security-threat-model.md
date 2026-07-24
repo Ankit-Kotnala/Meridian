@@ -1,6 +1,6 @@
 # CareerOS security threat model
 
-Status: Phase 4 Role Explorer controls implemented in the working tree
+Status: Phase 7 Resume Builder and verified export controls implemented and locally verified
 Method: asset/trust-boundary analysis with STRIDE-style threat enumeration  
 Last reviewed: 2026-07-19
 
@@ -19,12 +19,21 @@ and provenance, private PDF/DOCX evidence attachments, conflicts, achievement
 drafts, reminder preferences, immutable evidence history, and redacted Career
 Record audit. Phase 4 adds role taxonomy, saved roles, owner-scoped readiness
 analyses, evidence-linked competency results, idempotency records, and redacted
-Role Explorer audit. Their implemented controls are called out below. The product
-still does not fetch job/evidence URLs, make model requests, export documents,
-bill, or perform administrator actions; controls described for those later paths
-remain target requirements, not implementation claims. The fictional dashboard
-preview remains isolated at `/demo/dashboard` and does not use authenticated
-account state.
+Role Explorer audit. Phase 5 adds owned job postings, constrained job-URL
+imports, source-spanned requirement extraction, evidence-linked match analyses,
+opportunity priorities, idempotency records, and redacted Job Match audit. Phase
+6 adds Change Studio change sets, claim-ledger rows, clarifying questions,
+immutable output versions, provider-run metadata, idempotency records, and
+redacted Change Studio audit. Phase 7 adds structured resumes, immutable resume
+versions, private exported objects, round-trip verification reports, short-lived
+download intents, idempotency records, and redacted Resume Builder audit. Their
+implemented controls are called out below. The product still does not fetch
+evidence URLs, bill, or perform administrator actions; controls described for
+those later paths remain target requirements, not implementation claims. The
+deterministic local AI provider is implemented for development/tests, while
+production remote-provider enablement remains a deployment and security review
+decision. The fictional dashboard preview remains isolated at `/demo/dashboard`
+and does not use authenticated account state.
 
 ## Security objectives
 
@@ -104,43 +113,44 @@ a safe production network policy.
 
 ## Threat and control register
 
-| ID  | Threat / abuse case                                                    | Primary controls                                                                                                                                                                                                          | Verification                                                                                                                        | Residual risk / owner                                                 |
-| --- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| T01 | Broken access control / IDOR by changing UUID                          | Ownership-scoped repository methods; tenant context; deny-by-default policies; task/object recheck; cross-user audit                                                                                                      | API integration and signed-object tests change IDs/tenant headers                                                                   | Policy/query omissions remain possible; every data phase              |
-| T02 | Tenant-isolation failure through joins, search, analytics, or pgvector | Ownership columns/indexes; scoped joins/vector filters; aggregation thresholds; no client-selected unrestricted tenant                                                                                                    | Static query review, adversarial multi-tenant fixtures, property tests                                                              | Future org delegation complexity; Phases 1–10                         |
-| T03 | Public/signed object leakage or key guessing                           | Private buckets; randomized tenant-scoped keys; short-lived operation-specific URLs; content disposition; authorization before issue/finalize                                                                             | Signed-PUT binding, owner-scoped finalize/resource denial, destination-origin rejection, and anonymous bucket HTTP 403              | URL forwarding within short TTL; Phase 2                              |
-| T04 | File polyglot, wrong extension, malformed parser exploit               | Signature and MIME allowlist; parser isolation; patched libraries; safe failure; original quarantine                                                                                                                      | Malformed/polyglot/wrong-extension corpus                                                                                           | Unknown parser zero-days; sandbox and rapid patching; Phase 2         |
-| T05 | Malware or macro-enabled document                                      | Malware scan before parsing; reject/quarantine macro formats; never invoke office macros/content                                                                                                                          | EICAR and macro fixtures in isolated test environment                                                                               | Scanner evasion; layered isolation; Phase 2                           |
-| T06 | Zip/decompression bomb or huge document                                | Compressed/uncompressed byte, entry, ratio, page, CPU, memory, and wall-clock limits; streaming; kill worker                                                                                                              | Signature, malformed/encrypted/polyglot, macro/traversal, expansion entry/ratio, PDF-page, character, timeout, and image-only cases | Resource exhaustion below thresholds; tune/load test                  |
-| T07 | Path traversal / unsafe temporary filenames                            | Server-generated keys/names; ignore archive paths; canonical temp root; no user path joins; cleanup finally/timeout                                                                                                       | Traversal and symlink fixture tests                                                                                                 | Library-level extraction behavior; Phase 2                            |
-| T08 | Uploaded content executes or reaches network                           | No execution; restricted UID/filesystem/capabilities; no unnecessary egress; CPU/memory/time caps; disposable workdir                                                                                                     | Compose policy inspection and restricted worker runtime checks                                                                      | Local Compose is less isolated; production gate Phase 10              |
-| T09 | SSRF through job URL, redirects, DNS rebinding, alternate IP forms     | HTTP(S) only; normalized URL; resolve and validate every connection/redirect; block loopback/private/link-local/metadata/reserved IPv4/IPv6; pinned connection; proxy with egress allow policy; time/byte/redirect limits | IPv4/IPv6/decimal DNS-rebind/redirect/metadata test server                                                                          | Public server may proxy sensitive content; sanitize/minimize; Phase 5 |
-| T10 | Remote script/content injection from job import                        | Fetch raw response without browser execution; content-type allowlist; sanitize; store text/source safely; CSP and output encoding                                                                                         | Script/event-handler/SVG/HTML fixtures                                                                                              | Sanitizer bypass; plain-text default                                  |
-| T11 | SQL injection or unsafe dynamic filters                                | SQLAlchemy parameters; allowlisted sort/filter fields; no model output in SQL; least-privilege DB role                                                                                                                    | Injection API tests and code scanning                                                                                               | Unsafe future raw SQL; review gate                                    |
-| T12 | Stored/reflected/DOM XSS or model-output injection                     | React escaping; HTML sanitizer only where rich text required; CSP; safe links; no dangerous HTML; validate model output                                                                                                   | XSS corpus, component/e2e CSP tests                                                                                                 | Rich editor/preview surface; Phases 6–7                               |
-| T13 | CSRF on cookie-authenticated mutation                                  | SameSite cookies, CSRF token/origin checks, safe method semantics, CORS allowlist                                                                                                                                         | Cross-origin mutation tests                                                                                                         | Browser behavior/config drift; Phase 1                                |
-| T14 | Credential stuffing, enumeration, brute force                          | Generic responses; IP/account/device-aware limits; progressive delay; breached-password policy where lawful; email verification; monitoring                                                                               | Abuse/load tests; response equivalence                                                                                              | Distributed botnets and user reuse; Phase 1                           |
-| T15 | Session theft/replay/fixation                                          | Secure HTTP-only scoped cookies; rotate hashed refresh/session secrets; invalidate on logout/reset/delete; short lifetimes; session UI; OAuth state/PKCE                                                                  | Replay, rotation, fixation, logout-all tests                                                                                        | Compromised endpoint/browser; optional MFA later                      |
-| T16 | Password/reset/token compromise                                        | Argon2id calibrated parameters; strong random one-time hashed tokens; expiry/rate limits; no token logging; email-link origin allowlist                                                                                   | Hash configuration and reuse/expiry tests                                                                                           | Email-account compromise; Phase 1                                     |
-| T17 | Rate-limit bypass or costly endpoint abuse                             | Limits at edge and application keyed by IP/account/tenant/device; normalized identity; quotas, concurrency and body caps; backpressure                                                                                    | Header/IP variants, distributed/concurrency/load tests                                                                              | Proxy attribution errors; tune with telemetry                         |
-| T18 | Prompt injection in resume, evidence, or job                           | Treat content as quoted untrusted data; separate system policy; strip/flag unsafe control chars; least-data prompts; no tools by default                                                                                  | Adversarial golden fixtures and policy regression                                                                                   | Novel semantic injections; deterministic verifier is final gate       |
-| T19 | AI fabricates/changes factual claim                                    | Strict schema; evidence IDs and claim ledger; deterministic entity/number/technology/credential checks; reject/question; explicit user review                                                                             | Unsupported claim, changed ownership/date, metric grounding tests                                                                   | Paraphrase meaning detection; high-risk confirmation                  |
-| T20 | Malformed or malicious model output reaches shell/SQL/HTML/path        | Parse/validate strict JSON; bounded strings/enums; output encoding; never execute or directly interpolate                                                                                                                 | Schema fuzz and sink-specific tests                                                                                                 | Downstream library bug; keep privilege minimal                        |
-| T21 | Sensitive data leaks to AI provider                                    | Field/purpose minimization, configurable redaction, consent, no provider training by default, approved regions/retention, DPA, provider disable switch                                                                    | Payload snapshot/privacy tests                                                                                                      | Provider/legal changes; Phase 6 review                                |
-| T22 | Sensitive data leaks through logs, traces, errors, analytics           | Central redaction, allowlisted fields, route templates not raw URLs, safe IDs, payload-free events, production error masking                                                                                              | Secret/PII canary tests and log review                                                                                              | Free-form exceptions; structured logging only                         |
-| T23 | Excessive AI or render cost                                            | Per-user/tenant/plan quota, idempotency, max tokens/pages, concurrency, timeouts, circuit breaker, cost accounting and alerts                                                                                             | Retry/idempotency/budget tests                                                                                                      | Provider price/usage spikes; configurable kill switch                 |
-| T24 | Queue replay, forged job, duplicate side effect                        | Authenticated private broker; durable job record; ownership/state/idempotency check; payload references not raw secrets; bounded retry/dead letter                                                                        | Duplicate/reordered/forged payload tests                                                                                            | Redis local durability differs from production; deployment ADR        |
-| T25 | Dependency or build compromise                                         | Lockfiles/hashes, least-privilege CI, pinned actions/images, review of updates, SCA/container/secret scanning, provenance and SBOM objective                                                                              | CI security jobs and reproducible build                                                                                             | Registry/upstream compromise; ongoing                                 |
-| T26 | Secret committed or exposed in image/client                            | `.env.example` placeholders; secret scanning; server-only vars; build/image inspection; managed secret injection                                                                                                          | Git/image/bundle secret scans                                                                                                       | Human error or CI artifact leakage                                    |
-| T27 | Admin abuse or support overreach                                       | Separate role/permissions, just-in-time purpose-bound access, no raw default, re-auth/MFA target, immutable audit, alerts, dual control for destructive actions                                                           | Permission matrix and audit tests                                                                                                   | Authorized insider misuse; governance and monitoring                  |
-| T28 | Audit tampering or missing evidence                                    | Append-oriented audit store, server-generated actor/request/time, restricted mutation, retention/export controls, coverage tests                                                                                          | Critical-action audit assertions                                                                                                    | DB superuser compromise; external/WORM export later                   |
-| T29 | Data remains after deletion or appears in backup/vector/cache          | Data inventory and erasure orchestration; tombstones; object/vector/cache/provider deletion; backup expiry policy; status to user                                                                                         | End-to-end deletion and restore-window tests                                                                                        | Immutable backup retention; disclose and minimize                     |
-| T30 | Billing webhook replay/forgery                                         | Signature/timestamp verification, raw-body validation, event idempotency, state-machine constraints, amount/plan lookup server-side                                                                                       | Replay/order/signature tests                                                                                                        | Provider account compromise; Phase 10                                 |
-| T31 | Denial of service against API, DB, queue, object store                 | Body/query bounds, timeouts, pools, backpressure, per-tenant concurrency, queue isolation, autoscaling and graceful degradation                                                                                           | Load/soak/failure tests                                                                                                             | Large distributed attack; upstream protection                         |
-| T32 | Sensitive health/readiness metadata disclosure                         | Minimal status/version; no credentials, stack traces, hostnames, bucket names, or raw dependency errors; admin detail separately protected                                                                                | Response snapshot tests                                                                                                             | Version fingerprinting; patch promptly                                |
-| T33 | Cache key collision or cross-tenant result reuse                       | Namespace by environment/version/tenant/user/resource; cache only authorized representations; short TTL/invalidation                                                                                                      | Cross-tenant cache tests                                                                                                            | Future caching complexity; introduce only with tests                  |
-| T34 | OAuth account-link takeover                                            | State, nonce, PKCE, exact redirect allowlist, verified provider identity, explicit authenticated link/unlink, conflict handling                                                                                           | Login/link CSRF and provider-account collision tests                                                                                | Compromised provider identity; Phase 1                                |
-| T35 | Insecure deletion/reset/retry operation                                | Re-auth for sensitive actions, confirmation, ownership, idempotency, audit, safe allowlisted retry states                                                                                                                 | Cross-user/replay/unsafe retry tests                                                                                                | Social engineering; clear UX and notices                              |
+| ID   | Threat / abuse case                                                    | Primary controls                                                                                                                                                                                                                   | Verification                                                                                                                        | Residual risk / owner                                                                                        |
+| ---- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| T01  | Broken access control / IDOR by changing UUID                          | Ownership-scoped repository methods; tenant context; deny-by-default policies; task/object recheck; cross-user audit                                                                                                               | API integration and signed-object tests change IDs/tenant headers                                                                   | Policy/query omissions remain possible; every data phase                                                     |
+| T02  | Tenant-isolation failure through joins, search, analytics, or pgvector | Ownership columns/indexes; scoped joins/vector filters; aggregation thresholds; no client-selected unrestricted tenant                                                                                                             | Static query review, adversarial multi-tenant fixtures, property tests                                                              | Future org delegation complexity; Phases 1–10                                                                |
+| T03  | Public/signed object leakage or key guessing                           | Private buckets; randomized tenant-scoped keys; short-lived operation-specific URLs; content disposition; authorization before issue/finalize                                                                                      | Signed-PUT binding, owner-scoped finalize/resource denial, destination-origin rejection, and anonymous bucket HTTP 403              | URL forwarding within short TTL; Phase 2                                                                     |
+| T04  | File polyglot, wrong extension, malformed parser exploit               | Signature and MIME allowlist; parser isolation; patched libraries; safe failure; original quarantine                                                                                                                               | Malformed/polyglot/wrong-extension corpus                                                                                           | Unknown parser zero-days; sandbox and rapid patching; Phase 2                                                |
+| T05  | Malware or macro-enabled document                                      | Malware scan before parsing; reject/quarantine macro formats; never invoke office macros/content                                                                                                                                   | EICAR and macro fixtures in isolated test environment                                                                               | Scanner evasion; layered isolation; Phase 2                                                                  |
+| T06  | Zip/decompression bomb or huge document                                | Compressed/uncompressed byte, entry, ratio, page, CPU, memory, and wall-clock limits; streaming; kill worker                                                                                                                       | Signature, malformed/encrypted/polyglot, macro/traversal, expansion entry/ratio, PDF-page, character, timeout, and image-only cases | Resource exhaustion below thresholds; tune/load test                                                         |
+| T07  | Path traversal / unsafe temporary filenames                            | Server-generated keys/names; ignore archive paths; canonical temp root; no user path joins; cleanup finally/timeout                                                                                                                | Traversal and symlink fixture tests                                                                                                 | Library-level extraction behavior; Phase 2                                                                   |
+| T08  | Uploaded content executes or reaches network                           | No execution; restricted UID/filesystem/capabilities; no unnecessary egress; CPU/memory/time caps; disposable workdir                                                                                                              | Compose policy inspection and restricted worker runtime checks                                                                      | Local Compose is less isolated; production gate Phase 10                                                     |
+| T09  | SSRF through job URL, redirects, DNS rebinding, alternate IP forms     | HTTP(S) only; normalized URL; resolve and validate every connection/redirect; block loopback/private/link-local/metadata/reserved IPv4/IPv6; target pinned connection or proxy with egress allow policy; time/byte/redirect limits | IPv4/IPv6/decimal DNS-rebind/redirect/metadata test server                                                                          | Phase 5 validates before each request/redirect but does not yet socket-pin the connection; sanitize/minimize |
+| T10  | Remote script/content injection from job import                        | Fetch raw response without browser execution; content-type allowlist; sanitize; store text/source safely; CSP and output encoding                                                                                                  | Script/event-handler/SVG/HTML fixtures                                                                                              | Sanitizer bypass; plain-text default                                                                         |
+| T11  | SQL injection or unsafe dynamic filters                                | SQLAlchemy parameters; allowlisted sort/filter fields; no model output in SQL; least-privilege DB role                                                                                                                             | Injection API tests and code scanning                                                                                               | Unsafe future raw SQL; review gate                                                                           |
+| T12  | Stored/reflected/DOM XSS or model-output injection                     | React escaping; HTML sanitizer only where rich text required; CSP; safe links; no dangerous HTML; validate model output                                                                                                            | XSS corpus, component/e2e CSP tests                                                                                                 | Rich editor/preview surface; Phases 6–7                                                                      |
+| T13  | CSRF on cookie-authenticated mutation                                  | SameSite cookies, CSRF token/origin checks, safe method semantics, CORS allowlist                                                                                                                                                  | Cross-origin mutation tests                                                                                                         | Browser behavior/config drift; Phase 1                                                                       |
+| T14  | Credential stuffing, enumeration, brute force                          | Generic responses; IP/account/device-aware limits; progressive delay; breached-password policy where lawful; email verification; monitoring                                                                                        | Abuse/load tests; response equivalence                                                                                              | Distributed botnets and user reuse; Phase 1                                                                  |
+| T15  | Session theft/replay/fixation                                          | Secure HTTP-only scoped cookies; rotate hashed refresh/session secrets; invalidate on logout/reset/delete; short lifetimes; session UI; OAuth state/PKCE                                                                           | Replay, rotation, fixation, logout-all tests                                                                                        | Compromised endpoint/browser; optional MFA later                                                             |
+| T16  | Password/reset/token compromise                                        | Argon2id calibrated parameters; strong random one-time hashed tokens; expiry/rate limits; no token logging; email-link origin allowlist                                                                                            | Hash configuration and reuse/expiry tests                                                                                           | Email-account compromise; Phase 1                                                                            |
+| T17  | Rate-limit bypass or costly endpoint abuse                             | Limits at edge and application keyed by IP/account/tenant/device; normalized identity; quotas, concurrency and body caps; backpressure                                                                                             | Header/IP variants, distributed/concurrency/load tests                                                                              | Proxy attribution errors; tune with telemetry                                                                |
+| T18  | Prompt injection in resume, evidence, or job                           | Treat content as quoted untrusted data; separate system policy; strip/flag unsafe control chars; least-data prompts; no tools by default                                                                                           | Adversarial golden fixtures and policy regression                                                                                   | Novel semantic injections; deterministic verifier is final gate                                              |
+| T19  | AI fabricates/changes factual claim                                    | Strict schema; evidence IDs and claim ledger; deterministic entity/number/technology/credential checks; reject/question; explicit user review                                                                                      | Unsupported claim, changed ownership/date, metric grounding tests                                                                   | Paraphrase meaning detection; high-risk confirmation                                                         |
+| T20  | Malformed or malicious model output reaches shell/SQL/HTML/path        | Parse/validate strict JSON; bounded strings/enums; output encoding; never execute or directly interpolate                                                                                                                          | Schema fuzz and sink-specific tests                                                                                                 | Downstream library bug; keep privilege minimal                                                               |
+| T21  | Sensitive data leaks to AI provider                                    | Field/purpose minimization, configurable redaction, consent, no provider training by default, approved regions/retention, DPA, provider disable switch                                                                             | Payload snapshot/privacy tests                                                                                                      | Provider/legal changes; Phase 6 review                                                                       |
+| T22  | Sensitive data leaks through logs, traces, errors, analytics           | Central redaction, allowlisted fields, route templates not raw URLs, safe IDs, payload-free events, production error masking                                                                                                       | Secret/PII canary tests and log review                                                                                              | Free-form exceptions; structured logging only                                                                |
+| T23  | Excessive AI or render cost                                            | Per-user/tenant/plan quota, idempotency, max tokens/pages, concurrency, timeouts, circuit breaker, cost accounting and alerts                                                                                                      | Retry/idempotency/budget tests                                                                                                      | Provider price/usage spikes; configurable kill switch                                                        |
+| T23a | Export file looks correct but drops, duplicates, or reorders facts     | Immutable version pinning, deterministic templates, searchable output, PDF/DOCX reparse, critical mismatch blocking, hash storage, no download intent for blocked exports                                                          | Renderer round-trip, blocked-export download denial, cross-user download, and Playwright export workflow tests                      | Complex font/layout behavior; constrained templates until broader renderer corpus passes                     |
+| T24  | Queue replay, forged job, duplicate side effect                        | Authenticated private broker; durable job record; ownership/state/idempotency check; payload references not raw secrets; bounded retry/dead letter                                                                                 | Duplicate/reordered/forged payload tests                                                                                            | Redis local durability differs from production; deployment ADR                                               |
+| T25  | Dependency or build compromise                                         | Lockfiles/hashes, least-privilege CI, pinned actions/images, review of updates, SCA/container/secret scanning, provenance and SBOM objective                                                                                       | CI security jobs and reproducible build                                                                                             | Registry/upstream compromise; ongoing                                                                        |
+| T26  | Secret committed or exposed in image/client                            | `.env.example` placeholders; secret scanning; server-only vars; build/image inspection; managed secret injection                                                                                                                   | Git/image/bundle secret scans                                                                                                       | Human error or CI artifact leakage                                                                           |
+| T27  | Admin abuse or support overreach                                       | Separate role/permissions, just-in-time purpose-bound access, no raw default, re-auth/MFA target, immutable audit, alerts, dual control for destructive actions                                                                    | Permission matrix and audit tests                                                                                                   | Authorized insider misuse; governance and monitoring                                                         |
+| T28  | Audit tampering or missing evidence                                    | Append-oriented audit store, server-generated actor/request/time, restricted mutation, retention/export controls, coverage tests                                                                                                   | Critical-action audit assertions                                                                                                    | DB superuser compromise; external/WORM export later                                                          |
+| T29  | Data remains after deletion or appears in backup/vector/cache          | Data inventory and erasure orchestration; tombstones; object/vector/cache/provider deletion; backup expiry policy; status to user                                                                                                  | End-to-end deletion and restore-window tests                                                                                        | Immutable backup retention; disclose and minimize                                                            |
+| T30  | Billing webhook replay/forgery                                         | Signature/timestamp verification, raw-body validation, event idempotency, state-machine constraints, amount/plan lookup server-side                                                                                                | Replay/order/signature tests                                                                                                        | Provider account compromise; Phase 10                                                                        |
+| T31  | Denial of service against API, DB, queue, object store                 | Body/query bounds, timeouts, pools, backpressure, per-tenant concurrency, queue isolation, autoscaling and graceful degradation                                                                                                    | Load/soak/failure tests                                                                                                             | Large distributed attack; upstream protection                                                                |
+| T32  | Sensitive health/readiness metadata disclosure                         | Minimal status/version; no credentials, stack traces, hostnames, bucket names, or raw dependency errors; admin detail separately protected                                                                                         | Response snapshot tests                                                                                                             | Version fingerprinting; patch promptly                                                                       |
+| T33  | Cache key collision or cross-tenant result reuse                       | Namespace by environment/version/tenant/user/resource; cache only authorized representations; short TTL/invalidation                                                                                                               | Cross-tenant cache tests                                                                                                            | Future caching complexity; introduce only with tests                                                         |
+| T34  | OAuth account-link takeover                                            | State, nonce, PKCE, exact redirect allowlist, verified provider identity, explicit authenticated link/unlink, conflict handling                                                                                                    | Login/link CSRF and provider-account collision tests                                                                                | Compromised provider identity; Phase 1                                                                       |
+| T35  | Insecure deletion/reset/retry operation                                | Re-auth for sensitive actions, confirmation, ownership, idempotency, audit, safe allowlisted retry states                                                                                                                          | Cross-user/replay/unsafe retry tests                                                                                                | Social engineering; clear UX and notices                                                                     |
 
 ## File-processing security design
 
@@ -232,20 +242,41 @@ operational principle for broker publication. Backup expiry, account-wide export
 embeddings, OCR artifacts, and provider erasure remain later-phase production
 policy because those stores are not part of Phase 2.
 
+### Resume export storage and verification
+
+Phase 7 exported resume files use separate randomized private object keys scoped
+by owner and immutable version. API responses expose the export ID, status,
+format, size, hash, and verification report, never the internal object key.
+Download URLs are produced only through short-lived owner-checked download
+intents and are unavailable for failed, deleted, or verification-blocked exports.
+
+Rendering input is an immutable structured resume version whose bullets carry
+eligible evidence IDs. Server validation rejects unsupported edits before render.
+Generated PDF/DOCX bytes are parsed again by the document extractor; critical
+missing bullets, duplicate bullet text, unreadable output, ordering failures, or
+grounding mismatches block the export. Text and JSON exports still receive a
+structured verification report and hash, but do not require binary reparse.
+
+Export deletion rechecks ownership, removes the private object, marks the export
+deleted, and leaves redacted audit/status metadata. Verification failures and
+render errors store safe codes/messages only; logs must not include resume text,
+download URLs, object keys, or rendered bytes.
+
 ## URL-import security design
 
 The server, never the user's browser session, performs a constrained fetch. URL
 normalization rejects credentials, fragments where irrelevant, unsupported
 schemes, ambiguous hosts, and malformed encodings. Resolution validates all
-addresses; connection uses the validated destination while preserving correct TLS
-hostname verification. Each redirect repeats policy and DNS checks. IPv4-mapped
-IPv6 and alternate address representations are normalized before network-range
-decisions.
+addresses before each request and redirect. IPv4-mapped IPv6 and alternate
+address representations are normalized before network-range decisions.
 
 The fetcher caps DNS/connect/read/total time, redirects, decompressed bytes, and
 content type. It does not send user cookies or internal credentials and does not
-execute JavaScript. A production egress proxy/firewall blocks metadata and private
-networks even if application validation fails.
+execute JavaScript. Phase 5's local importer relies on the HTTP client's normal
+TLS hostname verification but does not yet pin the TCP socket to the prevalidated
+address, so DNS rebinding between validation and connection remains a documented
+production hardening item. A production egress proxy/firewall blocks metadata and
+private networks even if application validation fails.
 
 ## AI and grounding security design
 
@@ -286,13 +317,15 @@ reads. Admin capabilities are separate and audited.
 The pre-authentication and Phase 2 guest-intake rate key is deliberately separate
 from identity. Local
 Compose publishes only `web-edge`; the Next.js container has no host port. The
-edge discards `Forwarded`, `X-Forwarded-For`, `X-Real-IP`, and vendor address
-headers supplied by the client, then writes the direct socket peer. The
-server-only BFF normalizes that value and HMAC-signs it; the API verifies the
-signature in constant time and uses only the opaque signature as the pre-auth/
-first-guest upload rate subject. Invalid or unavailable signals fail closed in
-staging and production. This mechanism grants no session, capability, owner, or
-tenant authority.
+edge is built as a dedicated minimized image. Both shipped Node runtimes remove
+npm, Corepack, and package-manager executables after the build stage, so their
+transitive packages are not deployed. The edge discards `Forwarded`,
+`X-Forwarded-For`, `X-Real-IP`, and vendor address headers supplied by the client,
+then writes the direct socket peer. The server-only BFF normalizes that value and
+HMAC-signs it; the API verifies the signature in constant time and uses only the
+opaque signature as the pre-auth/first-guest upload rate subject. Invalid or
+unavailable signals fail closed in staging and production. This mechanism grants
+no session, capability, owner, or tenant authority.
 
 The local policy is intentionally single-hop. Behind a cloud load balancer, the
 edge sees the balancer socket address, so attribution collapses until a
@@ -431,6 +464,68 @@ gates pass as recorded in `PLANS.md`; hosted run `29378312134` also passes.
 - Unit, migration-shape, API, repository integration, web component, and
   Playwright workflow coverage exercise owner scope, idempotency, stale versions,
   no-signal behavior, evidence relevance, comparison, and disclaimer display.
+- The consolidated local `scripts/verify-phase4.ps1` gate passed on 2026-07-19,
+  including real dependency integrations, migration rollback/forward repair,
+  worker hardening probes, and the isolated Role Explorer browser journey.
+
+### Phase 5 implemented controls and verification status
+
+- Migration `20260719_0006` adds owner-scoped job postings, current extracted
+  requirements, immutable match analyses, requirement match rows, evidence-link
+  snapshots, opportunity priorities, idempotency records, and redacted audit
+  events with constraints, foreign keys, and scoped indexes.
+- All routes require authenticated account sessions. Mutations require CSRF;
+  create/import/analyze/priority operations require bounded idempotency keys; and
+  job update/delete require strict `If-Match`. Cross-user job, analysis, and
+  priority reads return safe not-found responses.
+- Job Match consumes eligible evidence only through the Career Record application
+  snapshot and role context only through the Role Readiness application service.
+  It does not accept client evidence IDs as proof and does not query Phase 3 or
+  Phase 4 tables directly.
+- URL import accepts HTTP(S) only, rejects credentials and non-public resolved
+  addresses, repeats validation for redirects, caps redirects/time/bytes, avoids
+  cookies/scripts/browser execution, and sanitizes HTML to plain text. The
+  remaining socket-pinning hardening item is documented above and in ADR 0011.
+- Application Readiness and Opportunity Priority are deterministic, versioned,
+  evidence-linked internal measurements. Responses include the canonical
+  disclaimer and never describe the result as an employer score, ATS score,
+  hiring probability, or guarantee.
+- Unit, provider, migration-shape, API, repository integration, web component,
+  and Playwright workflow coverage exercise owner scope, idempotency, stale
+  versions, source spans, sanitizer/SSRF rejection, injected job text, hard gaps,
+  matrix display, and disclaimer visibility. Final consolidated local Phase 5
+  verification is recorded in `PLANS.md`.
+
+### Phase 6 implemented controls and verification status
+
+- Migration `20260719_0007` adds owner-scoped change sets, operations,
+  claim-ledger rows, clarifying questions, immutable versions, provider runs,
+  idempotency records, and redacted audit events with scoped indexes and
+  constraints.
+- Change Studio consumes Career Record evidence and Job Match requirements only
+  through application services. It reauthorizes by owner and never trusts a
+  client-provided evidence or requirement ID as proof.
+- All reads require authenticated account sessions. Mutations require CSRF,
+  bounded idempotency keys, and current `If-Match` versions where an existing
+  change set is modified. Cross-user change sets and clarifications return safe
+  not-found responses.
+- Provider output is treated as hostile JSON. Strict parsing rejects unknown
+  fields and invalid IDs/enums/ranges; deterministic grounding blocks unsafe sink
+  content, prompt-injection text, unsupported facts, unauthorized evidence,
+  ungrounded numbers, ownership/leadership inflation, and causation claims not
+  supported by evidence.
+- The deterministic local provider only reuses eligible evidence text already
+  linked to saved job requirements. The HTTP JSON provider is HTTPS-only,
+  credential-required, timeout/retry/response-size bounded, and protected by a
+  circuit breaker; production rejects deterministic provider configuration.
+- Accept/edit/alternative/lock/reject/undo/redo/restore/answer actions are
+  explicit user decisions, append audit records, and preserve immutable output
+  versions. Clarification answers do not become eligible evidence by themselves.
+- Unit, adversarial grounding/provider, migration-shape, API, repository
+  integration, web component, and Playwright workflow coverage exercise owner
+  scope, idempotency, stale versions, malformed provider output, unsupported
+  claims, numeric eligibility, provenance display, and the primary review flow.
+  Final consolidated local Phase 6 verification is recorded in `PLANS.md`.
 
 ## Privacy, retention, and consent
 
@@ -563,8 +658,9 @@ integrity, ownership, migrations, object references, and documented RPO/RTO.
   unreachable in production until a reviewed provider and operating process can
   supply method, verifier, scope, source, and time without trusting the claimant.
 - External HTTP(S) evidence URLs are stored as untrusted provenance metadata only;
-  Phase 3 does not fetch them. Any future fetch must use the Phase 5 redirect/DNS/
-  private-address/size/time SSRF policy rather than reusing a generic HTTP client.
+  Career Record does not fetch them. Any future evidence fetch must use or harden
+  the Phase 5 redirect/DNS/private-address/size/time SSRF policy rather than
+  reusing a generic HTTP client.
 - Phase 4 uses a small CareerOS-authored seed role taxonomy. External taxonomy
   provider ingestion, admin curation workflow, localization, and market-specific
   role calibration remain later work.
@@ -574,14 +670,16 @@ integrity, ownership, migrations, object references, and documented RPO/RTO.
   use.
 - The high-severity image gate has two exact-version exceptions in `.grype.yaml`:
   CPython 3.13.14 `CVE-2026-15308` has no supported 3.13 fix and the current API
-  does not parse untrusted HTML; Next.js 16.2.10 vendors undici 6.26.0 affected by
+  does not parse untrusted HTML; Next.js 16.2.11 vendors undici 6.26.0 affected by
   WebSocket-only `GHSA-vxpw-j846-p89q`, while the product has no WebSocket client
   path.
   A Python base-image or Next.js update must remove the corresponding exception.
-- The 2026-07-15 scan also reports medium findings in CPython 3.13.14 whose listed
-  fixes are 3.15 prereleases, plus vendored `undici` 6.26.0 and `tar` 7.5.15
-  findings below the configured fixable-high gate. Dependency/base-image upgrades
-  must remove them when compatible stable releases are available; `pnpm audit`
+- The 2026-07-24 scan reports medium findings in CPython 3.13.14 whose listed
+  fixes are 3.15 prereleases plus the ignored, unreachable vendored `undici`
+  WebSocket finding. npm's newly disclosed fixable `tar` and `brace-expansion`
+  findings were removed from the shipped web and edge images by removing
+  build-only package managers. Dependency/base-image upgrades must remove the
+  remaining findings when compatible stable releases are available; `pnpm audit`
   and `pip-audit` currently report no known actionable application dependency.
 
 Any new external data flow, public endpoint, file type, AI tool, administrator

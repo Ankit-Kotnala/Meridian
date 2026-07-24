@@ -6,12 +6,6 @@ import os
 from uuid import uuid4
 
 import pytest
-from role_readiness_memory import (
-    PRODUCT_ROLE_ID,
-    FixedClock,
-    StaticSnapshotProvider,
-    UuidFactory,
-)
 from sqlalchemy import delete, select
 
 from careeros.foundation.config import DatabaseOptions
@@ -36,6 +30,12 @@ from careeros.modules.role_readiness.infrastructure.models import (
 )
 from careeros.modules.role_readiness.infrastructure.repository import (
     SqlAlchemyRoleReadinessUnitOfWorkFactory,
+)
+from role_readiness_memory import (
+    PRODUCT_ROLE_ID,
+    FixedClock,
+    StaticSnapshotProvider,
+    UuidFactory,
 )
 
 
