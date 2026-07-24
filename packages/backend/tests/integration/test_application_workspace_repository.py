@@ -288,32 +288,31 @@ async def test_application_aggregate_is_owner_scoped_and_hard_deleted() -> None:
                 None,
                 2,
             )
-            first_events = await uow.list_events(
-                owner_id,
-                created.application.id,
-                None,
-                None,
-                2,
-            )
-            later_events = await uow.list_events(
-                owner_id,
-                created.application.id,
-                first_events[-1].occurred_at,
-                first_events[-1].id,
-                2,
-            )
+            event_pages = []
+            event_cursor_at = None
+            event_cursor_id = None
+            while True:
+                event_page = await uow.list_events(
+                    owner_id,
+                    created.application.id,
+                    event_cursor_at,
+                    event_cursor_id,
+                    2,
+                )
+                event_pages.append(event_page)
+                if len(event_page) < 2:
+                    break
+                event_cursor_at = event_page[-1].occurred_at
+                event_cursor_id = event_page[-1].id
+            all_events = tuple(event for page in event_pages for event in page)
 
             assert len(task_page) == 1
             assert len(pack_page) == 1
             assert not hasattr(pack_page[0], "documents")
-            assert len(first_events) == 2
-            assert {event.id for event in first_events}.isdisjoint(
-                event.id for event in later_events
-            )
-            assert any(
-                event.event_kind.value == "resume_version_changed"
-                for event in (*first_events, *later_events)
-            )
+            assert len(event_pages[0]) == 2
+            assert len({event.id for event in all_events}) == len(all_events)
+            assert len(all_events) == summary.event_count
+            assert any(event.event_kind.value == "resume_version_changed" for event in all_events)
             assert await uow.get_application_summary(other_id, created.application.id) is None
             assert (
                 await uow.list_tasks(
