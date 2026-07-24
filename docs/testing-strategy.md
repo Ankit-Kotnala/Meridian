@@ -1,6 +1,6 @@
 # CareerOS testing strategy
 
-Status: Phase 8 targeted verification passed; final consolidated closeout pending
+Status: Phase 8 local closeout passed; hosted Phase 8 CI pending
 Last reviewed: 2026-07-24
 
 ## Objectives
@@ -435,7 +435,9 @@ Phase 8 keeps every Phase 7 gate and adds blocking coverage for ADR 0014:
   optimistic concurrency, stable idempotency replay and fingerprint conflict,
   resume-change reason/audit history, task/note/event creation, application and
   document deletion, pack generation, numeric grounding, and cross-document
-  consistency.
+  consistency. Database-backed tests require stage/outcome enum parity and prove
+  that a resume change, refreshed evidence snapshot, workflow event, and audit
+  record commit or roll back as one real transaction.
 - Source-adapter tests require the exact job ID/version/source hash and
   requirement snapshot; immutable resume ID/version/number whose per-claim hashes
   are revalidated; and evidence ID/revision ID/revision number/statement hash.
@@ -455,13 +457,16 @@ Phase 8 keeps every Phase 7 gate and adds blocking coverage for ADR 0014:
   filters/calendar ranges and opaque cursors, independent pagination for tasks,
   notes, events, and pack summaries, no-store responses, ETags/`If-Match`, CSRF,
   stable idempotency, terminal-state conflict, tombstoned document content, and
-  redacted audit metadata.
+  redacted audit metadata. Opaque cursors reject non-ASCII input before decoding,
+  and an omitted event time remains stable across an idempotent retry instead of
+  adding the current clock to its request fingerprint.
 - Web component tests cover stale base/cursor response rejection, cursor reset
   after filter/error changes, paginated saved-job selection, one stable
   idempotency key per unchanged user intent, key rotation after an edit or
   success, lazy child-panel loading, preserved drafts across tab changes, live
   task/pack counts, semantic grouped controls, and accessible loading, empty,
-  success, failure, retry, and conflict states.
+  success, failure, retry, and conflict states. Conflict handling reloads
+  authoritative state without allowing a stale response to overwrite it.
 - The Phase 8 Playwright journey registers and verifies a real account, creates
   confirmed fictional evidence, saves and analyzes a job, creates an immutable
   resume and application, exercises board/table/calendar and non-drag stage
@@ -471,16 +476,23 @@ Phase 8 keeps every Phase 7 gate and adds blocking coverage for ADR 0014:
   suites, and the mobile path includes the keyboard-safe alternative to
   pointer-only stage/view changes.
 
-Current targeted results are `201 passed` for the backend portfolio and
-`104 passed` for the API portfolio. The current full web suite passes all
-`121 tests` across 35 files in 55.8 seconds with exit code 0. Desktop and mobile
-Phase 8 product journeys pass against the rebuilt production web/edge stack. An
-interim consolidated run also exercised migration head
-`20260724_0009`, rollback to `20260719_0008`, forward repair, integrations,
-runtime, and containers. Because UI hardening and documentation followed that
-baseline, `scripts/verify-phase8.ps1` and `scripts/security-scan.ps1` must be run
-again on the frozen final tree; until both pass, these targeted results are not
-Phase 8 closeout or hosted-CI evidence.
+Final local closeout passed on 2026-07-24 for implementation revision `964cd9c`.
+`scripts/verify-phase8.ps1` exited 0 in 273 seconds: the backend portfolio
+reported `206 passed`, the API portfolio `104 passed`, and the web portfolio
+`121 passed` across 35 files; the production build emitted 39 routes. The
+isolated database reached head `20260724_0009`, rolled back to
+`20260719_0008`, and repaired forward. Integration, worker, runtime, and
+container probes passed. Playwright discovered 16 tests and completed with 10
+passed and 6 intentional inherited mobile skips; Application Workspace itself
+passed its full desktop and mobile journeys.
+
+The separate `scripts/security-scan.ps1` exited 0 in 287.7 seconds. Gitleaks was
+clean, pnpm and pip audits found no known vulnerabilities (unpublished local
+workspace packages were skipped), API and worker had no fixable-high findings,
+and web plus `web-edge` had no vulnerabilities. Three medium Python-runtime
+findings remain with fixes only in Python 3.15 prereleases; they are nonblocking
+under the documented policy and remain tracked. Hosted Phase 8 CI is pending
+until the pull request is raised.
 
 ## Backend test portfolio
 

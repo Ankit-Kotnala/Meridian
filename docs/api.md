@@ -1,6 +1,6 @@
 # CareerOS API conventions and route plan
 
-Status: Phase 8 Application Workspace API implemented; final closeout pending
+Status: Phase 8 Application Workspace API complete and locally verified; hosted CI pending
 Base path for product APIs: `/api/v1`  
 Last reviewed: 2026-07-24
 
@@ -651,10 +651,14 @@ DELETE /api/v1/applications/{applicationId}/documents/{documentId}
 Application, task, note, event, and pack creates require bounded idempotency keys
 with request-fingerprint conflict detection. The web reuses one key for an
 unchanged user intent and rotates it only after relevant input changes or a
-successful mutation. Mutable application and task writes use positive quoted
-`If-Match` versions. Stage/outcome transitions are validated and audited,
-terminal-stage reopening requires a reason, resume changes require a reason, and
-nested resources are fetched by both owner and application parent.
+successful mutation. Omitting an event time does not put a changing server clock
+value in the request fingerprint; the timestamp is assigned only when the
+operation executes. Mutable application and task writes use positive quoted
+`If-Match` versions. Stage/outcome transitions are validated against matching
+database constraints and audited, terminal-stage reopening requires a reason,
+and a resume change plus its evidence snapshot, workflow event, and audit record
+execute in one transaction. Nested resources are fetched by both owner and
+application parent.
 
 The server-side application snapshot pins the exact job ID/version/source
 SHA-256 and typed requirement snapshot; resume ID/immutable version ID/version
@@ -673,8 +677,9 @@ application requires current ownership/version and leaves redacted audit history
 
 Application, task, note, event, and pack-list responses use opaque cursor
 pagination with bounded limits; the application detail response stays
-lightweight and clients load child collections on demand. Calendar ranges are
-bounded to 366 days and 500 entries. All responses are private `no-store`.
+lightweight and clients load child collections on demand. Cursor input is
+validated as ASCII before strict decoding. Calendar ranges are bounded to 366
+days and 500 entries. All responses are private `no-store`.
 There is no autonomous submission, email/social-network delivery, contact
 scraping, or message-sending endpoint in the first release.
 
@@ -925,9 +930,19 @@ It retains the prior gates and adds migration `20260724_0009`, generated-contrac
 drift, Application Workspace repository/source integration, exact historical
 revision/hash provenance, legacy-source refusal, owner/nested-parent denial,
 opaque pagination, stable idempotency, `If-Match` conflicts, consistency and
-deletion behavior, and complete desktop/mobile application workflows. The
-current targeted API portfolio reports `104 passed`; backend and web targeted
-portfolios and both product journeys also pass as recorded in `PLANS.md`.
-Because final UI hardening and documentation followed the interim consolidated
-baseline, the final `verify-phase8.ps1` rerun and separate security scan remain
-pending. No final or hosted Phase 8 API result is claimed yet.
+deletion behavior, and complete desktop/mobile application workflows.
+`scripts/verify-phase8.ps1` exited 0 in 273 seconds on 2026-07-24 for
+implementation revision `964cd9c`: the API portfolio reported `104 passed`, the
+backend portfolio `206 passed`, the web portfolio `121 passed` across 35 files,
+and the production build emitted 39 routes. Migration head
+`20260724_0009`, downgrade to `20260719_0008`, forward repair, integrations,
+worker/runtime/container probes, and the configured browser portfolio all
+passed. Playwright discovered 16 tests and completed with 10 passed and 6
+intentional inherited mobile skips; Application Workspace passed its full
+desktop and mobile journeys.
+
+The separate security scan also passed with no known dependency-audit
+vulnerabilities, no fixable-high API/worker findings, and no web or `web-edge`
+vulnerabilities. The three remaining medium Python-runtime findings have fixes
+only in Python 3.15 prereleases and are nonblocking under policy. Hosted Phase 8
+CI remains pending until the pull request is raised.

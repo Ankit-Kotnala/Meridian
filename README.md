@@ -13,13 +13,13 @@ claim under the user's control.
 
 ## Repository status
 
-**Phase 8 Application Workspace and grounded application packs are implemented in
-this working tree; the final consolidated Phase 8 verification and security scan
-are pending.**
+**Phase 8 Application Workspace and grounded application packs are complete and
+locally verified; hosted Phase 8 CI remains pending until the pull request is
+raised.**
 Phases 0 through 7 are hosted verified; PR #20 merged Phases 5 through 7 after
-hosted CI run `30119088488` passed every required job. The current Phase 8
-targeted backend, API, web, and desktop/mobile workflow evidence is recorded in
-`PLANS.md` without being presented as final closeout. The repository uses a
+hosted CI run `30119088488` passed every required job. Phase 8 implementation
+revision `964cd9c` passed the consolidated local gate and separate security scan
+on 2026-07-24; no hosted Phase 8 result is claimed yet. The repository uses a
 shared Python modular monolith, one root uv workspace, generated API contracts,
 thin deployable applications, and executable dependency boundaries.
 
@@ -305,9 +305,9 @@ create/version/export/download-intent workflow backed by confirmed career
 evidence.
 Use `.\scripts\verify-phase8.ps1` for migration `20260724_0009`, Application
 Workspace repository integration, immutable-source and consistency tests, and
-the complete desktop/mobile create/track/generate workflow. The Phase 8
-implementation currently has passing focused evidence; its final consolidated
-rerun remains pending and must pass before the phase is called complete.
+the complete desktop/mobile create/track/generate workflow. The final local
+Phase 8 run passed on 2026-07-24; hosted CI is still required after the phase
+branch is pushed.
 
 The Phase 0 migration enables the pgvector extension. Phase 1 migration
 `20260715_0002` adds the identity, session, OAuth, organization, consent, audit,
@@ -402,11 +402,11 @@ Read [AGENTS.md](AGENTS.md) before contributing. The principal references are:
 - [Implementation checklist](docs/implementation-checklist.md)
 - [Architecture decisions](docs/adr/README.md)
 
-## Verification Status Through Phase 8 Implementation
+## Verification Status Through Phase 8 Local Closeout
 
-Phases 0 through 7 have recorded local and hosted evidence. Phase 8 has current
-focused and product-journey evidence in `PLANS.md`, while its final consolidated
-gate and security scan remain explicitly pending.
+Phases 0 through 7 have recorded local and hosted evidence. Phase 8 has complete
+local closeout evidence in `PLANS.md`; hosted Phase 8 CI remains explicitly
+pending until the pull request is raised.
 Exact current and historical results are recorded separately in `PLANS.md`; never
 infer a pass from the command list below:
 
@@ -469,15 +469,27 @@ format, lint, type, unit, build, container, migration, integration, runtime,
 worker hardening, renderer/round-trip tests, and isolated Resume Builder browser
 gates all passed. PR #20 subsequently merged the Phase 5–7 stack at `f9807dc`
 after hosted CI run `30119088488` passed every required job.
-Phase 8 targeted verification currently reports `201 passed` in the backend
-portfolio, `104 passed` in the API portfolio, and `121 passed` across 35 web test
-files. The complete Application Workspace product journey passes separately on
-desktop and mobile, including application creation, tracking, stage changes,
-tasks/notes/events, pack generation, and consistency review. Outcome, deletion,
-and audit behavior pass in the backend/API portfolios. These targeted results do
-not replace the pending final
-`scripts/verify-phase8.ps1` rerun or the separate security scan, and no hosted
-Phase 8 result is claimed.
+Phase 8 local closeout passed on implementation revision `964cd9c` on
+2026-07-24. `scripts/verify-phase8.ps1` exited 0 in 273 seconds with `206 passed`
+in the backend portfolio, `104 passed` in the API portfolio, and `121 passed`
+across 35 web test files. The production web build emitted 39 routes. A fresh
+database reached migration `20260724_0009`, downgraded to `20260719_0008`, and
+repaired forward; integration, worker, and container probes passed. Playwright
+discovered 16 tests and finished with 10 passed and 6 intentional inherited
+mobile skips, while Application Workspace itself passed its complete desktop and
+mobile journeys.
+
+Closeout hardening keeps migration `20260719_0007` immutable, refuses unpinned
+legacy grounding sources, aligns database enums with the domain, makes resume
+changes one real transaction, keeps omitted event-time retries idempotent,
+rejects non-ASCII cursors, and reloads authoritative UI state safely after
+conflicts. The separate `scripts/security-scan.ps1` exited 0 in 287.7 seconds:
+Gitleaks was clean; pnpm and pip audits found no known vulnerabilities
+(unpublished local workspace packages were skipped); API and worker had no
+fixable-high findings; and web plus `web-edge` had no vulnerabilities. Three
+medium Python-runtime findings remain with fixes available only in Python 3.15
+prereleases, so they are nonblocking under the documented policy and remain
+tracked. No hosted Phase 8 result is claimed yet.
 
 ## License and production use
 

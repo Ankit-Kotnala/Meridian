@@ -2,8 +2,8 @@
 
 Last updated: 2026-07-24
 Plan owner: engineering  
-Current status: **Phase 8 implementation complete; final Phase 8 closeout gate
-and security scan pending**
+Current status: **Phase 8 complete and locally verified; hosted Phase 8 CI
+pending, with Phase 9 next**
 
 ## Status legend
 
@@ -984,13 +984,14 @@ announce the same export status.
 
 ## Phase 8 scope and status
 
-Current status: **implementation complete; final consolidated closeout pending**.
+Current status: **complete and locally verified; hosted CI pending**.
 Phase 8 adds an authenticated, owner-scoped Application Workspace that connects
 one exact saved-job revision, one immutable resume version, and the resume's
 eligible evidence revisions to application tracking, grounded application packs,
 and deterministic consistency results. The final `scripts/verify-phase8.ps1`
-rerun and separate security scan remain required before changing this status to
-complete locally.
+run and separate security scan passed on 2026-07-24 for implementation revision
+`964cd9c`; hosted Phase 8 evidence can be recorded only after the pull request
+workflow passes.
 
 ### Included
 
@@ -1028,7 +1029,8 @@ complete locally.
 - [x] Application, task, note, event, and pack creates use bounded idempotency
       keys and request fingerprints. The web holds one stable key for one user
       intent, reuses it for an unchanged retry, and rotates it only after relevant
-      input changes or a successful mutation.
+      input changes or a successful mutation. An omitted event time does not add
+      a changing clock value to the retry fingerprint.
 - [x] The deterministic synchronous pack generator can produce tailored resume,
       cover letter, professional bio, interest/fit answers, recruiter and hiring
       manager messages, referral and LinkedIn notes, follow-up email, interview
@@ -1044,11 +1046,14 @@ complete locally.
       CSRF on mutations, private no-store responses, safe problems, bounded
       cursor pagination/filter/sort/calendar ranges, stable idempotency, and
       generated OpenAPI contracts. The lightweight application detail excludes
-      unbounded child collections.
+      unbounded child collections. Cursor decoding rejects non-ASCII input before
+      decoding, and database stage/outcome constraints match the domain enums.
 - [x] `/applications` and `/applications/{applicationId}` provide board, table,
       and calendar representations, non-drag stage actions, lazy on-demand detail
       panels, cursor-based load-more flows, loading/empty/success/error/conflict
-      states, and complete keyboard-operable desktop/mobile workflows.
+      states, conflict-safe authoritative reloads, and complete keyboard-operable
+      desktop/mobile workflows. Resume changes persist their new evidence
+      snapshot, reason, workflow event, and audit record in one transaction.
 - [x] ADR 0014 and API, architecture, security, grounding, testing, checklist,
       README, generated-contract, Make/CI/verification, and this plan surface are
       aligned with the implemented slice.
@@ -1056,19 +1061,17 @@ complete locally.
       transition, or message-sending endpoint or control was added. Generated
       messages remain user-reviewed text.
 
-### Verification evidence and remaining gate
+### Local closeout evidence — 2026-07-24 / implementation `964cd9c`
 
-| Check                                   | Status  | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| --------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Predecessor Phase 7 gate                | Pass    | `scripts/verify-phase7.ps1` passed on 2026-07-19, including migration head `20260719_0008`, rollback/forward repair, renderer round-trip checks, integrations, and the authenticated Resume Builder workflow.                                                                                                                                                                                                                                               |
-| Phase 8 backend portfolio               | Pass    | The current targeted backend run reports `201 passed`, covering the domain/service rules, exact source adapters, migration shape/graph, forward-compatible nullable/all-complete Change Studio pins, readable-but-unpinned legacy rows, downstream legacy refusal, consistency, ownership, optimistic concurrency, idempotency, audit, deletion, and repository integration surfaces.                                                                       |
-| Phase 8 API portfolio                   | Pass    | The current targeted API run reports `104 passed`, including authentication/CSRF, owner and nested-parent scope, pagination, calendar bounds, idempotency replay/conflict, ETags/`If-Match`, safe problems, pack consistency, and deletion routes.                                                                                                                                                                                                          |
-| Phase 8 web portfolio                   | Pass    | The current complete web portfolio reports 35 files and `121 passed` in 55.8 seconds, including request-race protection, saved-job pagination, stable user-intent idempotency keys, lazy detail panels, preserved drafts, live counts, accessible grouped controls, and loading/empty/success/failure states. This focused/full-web pass does not replace the pending consolidated phase gate.                                                              |
-| Phase 8 product journeys                | Pass    | The complete Application Workspace journey passes separately on desktop and mobile against the rebuilt production web/edge stack. It covers registration, verified evidence, saved job/analysis, resume creation, application creation, board/table/calendar, stage changes, task/note/event activity, pack generation/consistency review, and responsive keyboard-safe controls. Outcome/deletion/audit behavior is covered by the backend/API portfolios. |
-| Interim migration/runtime baseline      | Pass    | An earlier `scripts/verify-phase8.ps1` baseline reached migration head `20260724_0009`, rolled back to `20260719_0008`, repaired forward, passed integrations/runtime/container checks, and completed the configured browser portfolio. Later UI hardening means this evidence is retained as an interim baseline, not the final-tree closeout.                                                                                                             |
-| Final `scripts/verify-phase8.ps1` rerun | Pending | Required after the documentation and final UI hardening are frozen. Do not report Phase 8 complete until the command exits successfully on the final tree and its exact counts/skips are recorded here.                                                                                                                                                                                                                                                     |
-| Final separate security scan            | Pending | `scripts/security-scan.ps1` must pass on the final Phase 8 tree; the phase verifier does not replace source, dependency, application-image, and minimized edge-runtime scans.                                                                                                                                                                                                                                                                               |
-| Hosted Phase 8 CI                       | Pending | No hosted Phase 8 result is claimed. Record the workflow run and implementation revision only after the final branch is pushed and every required hosted job passes.                                                                                                                                                                                                                                                                                        |
+| Check                           | Status  | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Predecessor Phase 7 gate        | Pass    | `scripts/verify-phase7.ps1` passed on 2026-07-19, including migration head `20260719_0008`, rollback/forward repair, renderer round-trip checks, integrations, and the authenticated Resume Builder workflow.                                                                                                                                                                                                                                                                                                                                           |
+| Final Phase 8 consolidated gate | Pass    | `scripts/verify-phase8.ps1` exited 0 in 273 seconds on 2026-07-24. It passed format/contract/lint/type/build gates, emitted 39 production web routes, reported `206 passed` for the backend portfolio, `104 passed` for the API portfolio, and `121 passed` across 35 web files, then passed integration, worker, runtime, and container probes.                                                                                                                                                                                                        |
+| Migration and repair            | Pass    | The isolated fresh database reached head `20260724_0009`, downgraded to `20260719_0008`, and repaired forward. Compatibility tests retain the immutable shipped `20260719_0007` migration and verify the nullable/all-complete forward provenance addition, legacy refusal, database enum parity, and a real atomic resume-change transaction.                                                                                                                                                                                                          |
+| Phase 8 browser portfolio       | Pass    | Playwright discovered 16 tests and finished with 10 passed and 6 intentional inherited mobile skips. Application Workspace itself passed the complete desktop and mobile workflow against the production web/edge stack: registration, evidence, saved job/analysis, resume and application creation, board/table/calendar, stage changes, task/note/event activity, pack generation/consistency review, and keyboard-safe controls. The configured skips remain only on predecessor product journeys whose mobile coverage is intentionally inherited. |
+| Closeout regression portfolio   | Pass    | Backend/API/web coverage verifies downstream refusal of incomplete legacy provenance, stable idempotency when an event omits its time, strict rejection of non-ASCII cursors, and conflict-safe UI reload. Outcome, deletion, audit, source hashing, numeric grounding, request-race protection, pagination, preserved drafts, live counts, and accessible state handling also pass.                                                                                                                                                                    |
+| Separate Phase 8 security scan  | Pass    | `scripts/security-scan.ps1` exited 0 in 287.7 seconds on 2026-07-24. Gitleaks was clean; pnpm and pip audits found no known vulnerabilities, with unpublished local workspace packages explicitly skipped; API and worker had no fixable-high findings; and web plus `web-edge` had no vulnerabilities. Three medium Python-runtime findings remain with fixes only in Python 3.15 prereleases and are nonblocking under the current policy while tracked for a stable fix.                                                                             |
+| Hosted Phase 8 CI               | Pending | No hosted Phase 8 result is claimed. Record the workflow run and implementation revision only after the final branch is pushed and every required hosted job passes.                                                                                                                                                                                                                                                                                                                                                                                    |
 
 ### Known limitations and deferred work
 
@@ -1155,24 +1158,24 @@ Detailed checkboxes live in `docs/implementation-checklist.md`.
 
 ## Risk register
 
-| ID  | Risk                                                             | Likelihood / impact | Mitigation and gate                                                                                                                                                                                         | Earliest owner phase   |
-| --- | ---------------------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| R1  | Cross-tenant data exposure through IDOR or object keys           | Medium / Critical   | Ownership-scoped queries, policy tests, private buckets, audit events                                                                                                                                       | 1 and every data phase |
-| R2  | Malicious or resource-exhausting documents                       | High / Critical     | Signature/limit checks, scanning, isolated no-network worker, time/memory/CPU caps, hostile fixtures                                                                                                        | 2                      |
-| R3  | AI fabricates or is redirected by document instructions          | High / Critical     | Untrusted-content delimiters, strict schemas, evidence ledger, deterministic grounding, adversarial tests                                                                                                   | 5–6                    |
-| R4  | Score labels mislead users                                       | Medium / High       | Canonical disclaimer, deterministic versioned formulas, explanations, no probability language                                                                                                               | 2, 4, 5                |
-| R5  | PDF/DOCX looks correct but parses badly                          | High / High         | Constrained templates, searchable text, round-trip verification and blocking critical failures                                                                                                              | 7                      |
-| R6  | Dependency/toolchain churn breaks the greenfield baseline        | Medium / Medium     | Conservative pins, lockfiles, CI cache keys, scheduled upgrades in small changes                                                                                                                            | 0 onward               |
-| R7  | Queue retry duplicates work or cost                              | Medium / High       | Idempotency records, bounded retries/timeouts, job state machine, budgets and dead letters                                                                                                                  | 2 onward               |
-| R8  | Sensitive content leaks through logs/telemetry/providers         | Medium / Critical   | Data classification, default redaction, payload-free telemetry, provider minimization and consent                                                                                                           | 0 onward               |
-| R9  | Local Compose health hides production gaps                       | High / High         | Separate readiness, production threat review, load/restore/failure tests, protected deploy                                                                                                                  | 10                     |
-| R10 | Broad roadmap produces unfinished horizontal scaffolding         | High / Medium       | One vertical phase at a time, dependency gates, no completion on placeholders                                                                                                                               | Every phase            |
-| R11 | Public demo is mistaken for functional analysis                  | Medium / Medium     | Isolate it at `/demo/dashboard`, retain the fictional-preview label, and keep it free of upload/score claims or account persistence                                                                         | 0–1                    |
-| R12 | Retention/deletion becomes inconsistent across stores            | Medium / High       | Data inventory, deletion tombstones/jobs, object/vector/backup policy and tests per entity                                                                                                                  | 1 onward               |
-| R13 | Generated contracts drift from implemented OpenAPI               | Medium / High       | FastAPI remains authoritative; pin normalized export/client generation and fail CI on either drift                                                                                                          | 0 onward               |
-| R14 | Hosted CI and local behavior diverge after architecture changes  | Low / Medium        | Runs 29360385761, 29367040183, 29378312134, 29657932938, and 30119088488 verify the merged predecessor through Phase 7; retain clean contract-output, container, migration, browser, and supply-chain gates | 0 onward               |
-| R15 | Upstream runtime findings do not all have supported stable fixes | Low / High          | Two exact-version Grype exceptions document reachability and removal conditions; monitor remaining findings and refresh runtimes promptly                                                                   | 0–1                    |
-| R16 | Workspace/migration move regresses runtime or existing databases | Medium / High       | One root lock, preserved revision IDs, fresh/existing upgrade tests, root-context image builds, and direct runtime Alembic verification                                                                     | 0                      |
+| ID  | Risk                                                             | Likelihood / impact | Mitigation and gate                                                                                                                                                                                                                   | Earliest owner phase   |
+| --- | ---------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| R1  | Cross-tenant data exposure through IDOR or object keys           | Medium / Critical   | Ownership-scoped queries, policy tests, private buckets, audit events                                                                                                                                                                 | 1 and every data phase |
+| R2  | Malicious or resource-exhausting documents                       | High / Critical     | Signature/limit checks, scanning, isolated no-network worker, time/memory/CPU caps, hostile fixtures                                                                                                                                  | 2                      |
+| R3  | AI fabricates or is redirected by document instructions          | High / Critical     | Untrusted-content delimiters, strict schemas, evidence ledger, deterministic grounding, adversarial tests                                                                                                                             | 5–6                    |
+| R4  | Score labels mislead users                                       | Medium / High       | Canonical disclaimer, deterministic versioned formulas, explanations, no probability language                                                                                                                                         | 2, 4, 5                |
+| R5  | PDF/DOCX looks correct but parses badly                          | High / High         | Constrained templates, searchable text, round-trip verification and blocking critical failures                                                                                                                                        | 7                      |
+| R6  | Dependency/toolchain churn breaks the greenfield baseline        | Medium / Medium     | Conservative pins, lockfiles, CI cache keys, scheduled upgrades in small changes                                                                                                                                                      | 0 onward               |
+| R7  | Queue retry duplicates work or cost                              | Medium / High       | Idempotency records, bounded retries/timeouts, job state machine, budgets and dead letters                                                                                                                                            | 2 onward               |
+| R8  | Sensitive content leaks through logs/telemetry/providers         | Medium / Critical   | Data classification, default redaction, payload-free telemetry, provider minimization and consent                                                                                                                                     | 0 onward               |
+| R9  | Local Compose health hides production gaps                       | High / High         | Separate readiness, production threat review, load/restore/failure tests, protected deploy                                                                                                                                            | 10                     |
+| R10 | Broad roadmap produces unfinished horizontal scaffolding         | High / Medium       | One vertical phase at a time, dependency gates, no completion on placeholders                                                                                                                                                         | Every phase            |
+| R11 | Public demo is mistaken for functional analysis                  | Medium / Medium     | Isolate it at `/demo/dashboard`, retain the fictional-preview label, and keep it free of upload/score claims or account persistence                                                                                                   | 0–1                    |
+| R12 | Retention/deletion becomes inconsistent across stores            | Medium / High       | Data inventory, deletion tombstones/jobs, object/vector/backup policy and tests per entity                                                                                                                                            | 1 onward               |
+| R13 | Generated contracts drift from implemented OpenAPI               | Medium / High       | FastAPI remains authoritative; pin normalized export/client generation and fail CI on either drift                                                                                                                                    | 0 onward               |
+| R14 | Hosted CI and local behavior diverge after architecture changes  | Low / Medium        | Runs 29360385761, 29367040183, 29378312134, 29657932938, and 30119088488 verify the merged predecessor through Phase 7; retain clean contract-output, container, migration, browser, and supply-chain gates                           | 0 onward               |
+| R15 | Upstream runtime findings do not all have supported stable fixes | Low / High          | Three medium Python-runtime findings have fixes only in Python 3.15 prereleases and are nonblocking under the documented fixable-high policy; retain removal-bound exceptions, monitor stable releases, and refresh runtimes promptly | 0–1                    |
+| R16 | Workspace/migration move regresses runtime or existing databases | Medium / High       | One root lock, preserved revision IDs, fresh/existing upgrade tests, root-context image builds, and direct runtime Alembic verification                                                                                               | 0                      |
 
 ## Change and verification protocol
 
@@ -1190,8 +1193,8 @@ At the end of every phase:
 
 ## Next phase
 
-After the pending final Phase 8 gate and security scan pass, the next product
-phase is **Phase 9 - Interview Prep, Networking, Career Growth, and Analytics**.
+The next product phase is **Phase 9 - Interview Prep, Networking, Career Growth,
+and Analytics**.
 It must add evidence-linked defense/STAR stories, role-specific interview
 workflows, consent-based contacts and interactions without scraping or sending,
 goals/reviews, deterministic Career Health, and privacy-safe reproducible

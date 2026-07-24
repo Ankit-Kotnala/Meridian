@@ -1,6 +1,6 @@
 # CareerOS architecture
 
-Status: accepted target architecture; Phase 8 implemented with final closeout pending
+Status: accepted target architecture; Phase 8 complete and locally verified, hosted CI pending
 Last reviewed: 2026-07-24
 
 ## Architectural objective
@@ -31,8 +31,8 @@ grounding authority. Phase 8 adds the Application Workspace bounded context for
 owner-scoped workflow, immutable job/resume/evidence pins, paginated activity,
 grounded packs, consistency findings, deletion, and purpose-minimized Phase 9
 query views. It also consumes upstream modules only through owner-authorizing
-application interfaces. Historical evidence, current Phase 8 targeted results,
-and the pending final closeout gate are recorded in `PLANS.md`.
+application interfaces. Historical evidence and the completed Phase 8 local
+closeout gate are recorded in `PLANS.md`; hosted Phase 8 CI remains pending.
 
 ## System principles
 
@@ -299,10 +299,17 @@ document replaces its sensitive body and links with an audited tombstone;
 deleting an application is ownership/version checked and preserves only a
 redacted audit event.
 
+Database constraints use the same stage/outcome vocabulary as the domain. An
+omitted event time is excluded from the idempotency fingerprint and assigned only
+when the create executes. A resume change, rebuilt evidence snapshot, explicit
+reason, workflow event, and audit record share one database transaction.
+
 Reads are purpose-bounded. Application lists and task/note/event/pack child
 collections use opaque bounded cursor pagination; the main detail response stays
-lightweight. The web loads each activity/pack panel on demand, retains mounted
-draft state, and exposes authoritative non-drag board/table/calendar controls.
+lightweight. Cursor input is checked for ASCII before strict decoding. The web
+loads each activity/pack panel on demand, retains mounted draft state, performs a
+conflict-safe authoritative reload, and exposes non-drag board/table/calendar
+controls.
 Interview preparation receives only grounded claims, evidence pins, requirements,
 and basic application context without notes, contacts, or offers. Analytics
 receives content-minimized workflow dimensions and milestones without notes,
@@ -651,8 +658,13 @@ renderer round-trip integration, and the authenticated create/version/export/
 download-intent browser workflow. Phase 8 adds `scripts/verify-phase8.ps1` (or
 `make verify-phase8`) for migration `20260724_0009`, Application Workspace
 repository and immutable-source integration, and the complete desktop/mobile
-create/track/generate browser workflow. Current targeted Phase 8 suites and both
-product journeys pass, but the consolidated final-tree rerun and separate
-security scan remain pending as recorded in `PLANS.md`. Later phases add load,
+create/track/generate browser workflow. The final local run exited 0 in 273
+seconds on 2026-07-24 for implementation revision `964cd9c`: 206 backend, 104
+API, and 121 web tests passed; the production build emitted 39 routes; migration
+rollback/forward repair, integrations, worker/runtime/container probes, and the
+configured browser portfolio passed. Playwright completed 10 of 16 discovered
+tests with 6 intentional inherited mobile skips, while Application Workspace
+passed its full desktop and mobile journeys. The separate security scan exited 0
+in 287.7 seconds. Hosted Phase 8 CI remains pending. Later phases add load,
 account-wide deletion, backup, and restore gates. The complete strategy is in
 `docs/testing-strategy.md`.

@@ -1,6 +1,6 @@
 # CareerOS security threat model
 
-Status: Phase 8 Application Workspace controls implemented; final closeout pending
+Status: Phase 8 Application Workspace controls locally verified; hosted CI pending
 Method: asset/trust-boundary analysis with STRIDE-style threat enumeration  
 Last reviewed: 2026-07-24
 
@@ -26,8 +26,8 @@ opportunity priorities, idempotency records, and redacted Job Match audit. Phase
 immutable output versions, provider-run metadata, idempotency records, and
 redacted Change Studio audit. Phase 7 adds structured resumes, immutable resume
 versions, private exported objects, round-trip verification reports, short-lived
-download intents, idempotency records, and redacted Resume Builder audit. Their
-Phase 8 adds owner-scoped applications, contacts, workflow activity, tasks,
+download intents, idempotency records, and redacted Resume Builder audit. Phase
+8 adds owner-scoped applications, contacts, workflow activity, tasks,
 notes, outcomes, rejection/offer text, immutable source pins, grounded packs,
 consistency findings, idempotency records, and redacted audit. Its implemented
 controls are called out below. The product still does not fetch evidence URLs,
@@ -290,14 +290,18 @@ application scope; nested reads constrain both rather than authorizing from an I
 alone. Application/task mutations use optimistic concurrency. Retried creates use
 bounded idempotency keys and fingerprints, and the web retains one key for the
 same unchanged user intent. A reused key with different input conflicts instead
-of duplicating or mutating the earlier side effect.
+of duplicating or mutating the earlier side effect. Omitted event time is not
+replaced with a moving clock value before fingerprinting, so a retry remains the
+same request.
 
 Contacts, notes, rejection reasons, offer summaries, and generated pack bodies
 are restricted career content and never belong in general logs, analytics
 snapshots, or operational errors. List/child APIs use bounded opaque pagination,
-calendar ranges are bounded, and the main detail response avoids unbounded eager
-activity. The web loads sensitive child panels only when used and does not treat
-hidden controls as authorization.
+strict cursor validation rejects non-ASCII input before decoding, calendar ranges
+are bounded, and the main detail response avoids unbounded eager activity. The
+web loads sensitive child panels only when used, reloads authoritative state
+safely after a concurrency conflict, and does not treat hidden controls as
+authorization.
 
 Pack generation is deterministic and synchronous in this phase. Every factual
 claim retains exact evidence-revision and supported-requirement links; numeric
@@ -605,7 +609,11 @@ gates pass as recorded in `PLANS.md`; hosted run `29378312134` also passes.
 - Authenticated reads and nested-parent checks prevent ID-only authorization;
   mutations require CSRF, and application/task changes require strict
   `If-Match`. Application, task, note, event, and pack creates reuse stable
-  per-intent idempotency keys and reject a conflicting fingerprint.
+  per-intent idempotency keys and reject a conflicting fingerprint. Event retries
+  remain stable when time is omitted, and malformed non-ASCII cursors fail closed.
+- Database stage/outcome constraints match the domain enums. A resume change,
+  refreshed evidence snapshot, explicit reason, workflow event, and audit record
+  commit or roll back together in one transaction.
 - The deterministic synchronous generator preserves exact
   evidence-revision/requirement links, blocks unsupported numeric/factual
   material, hashes documents, and reports source and cross-document consistency.
@@ -615,11 +623,19 @@ gates pass as recorded in `PLANS.md`; hosted run `29378312134` also passes.
   responses, and lazy web panels bound response/query growth. Accessible
   board/table/calendar and non-drag actions avoid treating drag or hidden UI as
   authority.
-- Current targeted evidence is `201 passed` backend, `104 passed` API, and
-  `121/121 passed` across 35 web files. Complete desktop and mobile product
-  journeys pass. The final consolidated `scripts/verify-phase8.ps1` rerun and
-  separate security scan remain pending after final hardening; no final or hosted
-  Phase 8 security result is claimed.
+- Final local closeout passed on 2026-07-24 for implementation revision
+  `964cd9c`. `scripts/verify-phase8.ps1` exited 0 in 273 seconds with `206 passed`
+  backend, `104 passed` API, `121/121 passed` across 35 web files, a 39-route
+  production build, migration rollback/forward repair, integration/worker/
+  container probes, and the configured browser portfolio. Playwright discovered
+  16 tests and completed with 10 passed and 6 intentional inherited mobile skips;
+  Application Workspace itself passed complete desktop and mobile journeys.
+- `scripts/security-scan.ps1` exited 0 in 287.7 seconds. Gitleaks was clean; pnpm
+  and pip audits found no known vulnerabilities, with unpublished local workspace
+  packages skipped; API and worker had no fixable-high findings; and web plus
+  `web-edge` had no vulnerabilities. Three medium Python-runtime findings remain
+  with fixes only in Python 3.15 prereleases and are nonblocking under policy.
+  Hosted Phase 8 CI remains pending until the pull request is raised.
 - No submission, send, scrape, or autonomous stage-changing capability exists.
   The production provider, durable generation worker, load/soak, backup/restore,
   and protected deployment review remain later gates.

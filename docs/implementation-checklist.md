@@ -406,10 +406,18 @@ Resume Builder/Application Workspace generation input.
 List and child reads are cursor-paginated, detail panels load on demand, and
 application/task writes use optimistic concurrency. Application, task, note,
 event, and pack creates reuse one stable idempotency key for an unchanged user
-intent. Current focused backend/API/web suites and complete desktop/mobile
-journeys pass; the full web suite is `121/121` across 35 files. The final
-consolidated `scripts/verify-phase8.ps1` rerun and separate security scan remain
-pending before phase closeout.
+intent, including when event time is omitted. Closeout coverage also verifies the
+immutable `20260719_0007` migration, legacy refusal, database enum parity, an
+atomic resume-change transaction, non-ASCII cursor rejection, and conflict-safe
+UI reload.
+
+Phase 8 local closeout passed on 2026-07-24 for implementation revision
+`964cd9c`: `scripts/verify-phase8.ps1` exited 0 with `206` backend, `104` API,
+and `121/121` web tests across 35 files, a 39-route production build, migration
+rollback/forward repair, integration/worker/container probes, and the complete
+desktop/mobile Application Workspace workflow. The separate security scan also
+passed; hosted Phase 8 CI remains pending until the pull request is raised.
+Phase 9 is the next product phase.
 
 ## Phase 9 — Interview Prep, Networking, Career Growth, and Analytics
 
