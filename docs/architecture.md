@@ -1,6 +1,6 @@
 # CareerOS architecture
 
-Status: accepted target architecture; Phase 8 complete and locally verified, hosted CI pending
+Status: accepted target architecture; Phase 8 complete and hosted verified
 Last reviewed: 2026-07-24
 
 ## Architectural objective
@@ -31,8 +31,8 @@ grounding authority. Phase 8 adds the Application Workspace bounded context for
 owner-scoped workflow, immutable job/resume/evidence pins, paginated activity,
 grounded packs, consistency findings, deletion, and purpose-minimized Phase 9
 query views. It also consumes upstream modules only through owner-authorizing
-application interfaces. Historical evidence and the completed Phase 8 local
-closeout gate are recorded in `PLANS.md`; hosted Phase 8 CI remains pending.
+application interfaces. Historical evidence and the completed Phase 8 local and
+hosted closeout gates are recorded in `PLANS.md`.
 
 ## System principles
 
@@ -665,6 +665,7 @@ rollback/forward repair, integrations, worker/runtime/container probes, and the
 configured browser portfolio passed. Playwright completed 10 of 16 discovered
 tests with 6 intentional inherited mobile skips, while Application Workspace
 passed its full desktop and mobile journeys. The separate security scan exited 0
-in 287.7 seconds. Hosted Phase 8 CI remains pending. Later phases add load,
+in 287.7 seconds. PR #21 workflow run `30126993025` passed every required hosted
+job at head `645536b`. Later phases add load,
 account-wide deletion, backup, and restore gates. The complete strategy is in
 `docs/testing-strategy.md`.

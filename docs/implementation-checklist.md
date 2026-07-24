@@ -416,7 +416,8 @@ Phase 8 local closeout passed on 2026-07-24 for implementation revision
 and `121/121` web tests across 35 files, a 39-route production build, migration
 rollback/forward repair, integration/worker/container probes, and the complete
 desktop/mobile Application Workspace workflow. The separate security scan also
-passed; hosted Phase 8 CI remains pending until the pull request is raised.
+passed; PR #21 workflow run `30126993025` passed every required hosted job at
+head `645536b`.
 Phase 9 is the next product phase.
 
 ## Phase 9 — Interview Prep, Networking, Career Growth, and Analytics

@@ -1,6 +1,6 @@
 # CareerOS API conventions and route plan
 
-Status: Phase 8 Application Workspace API complete and locally verified; hosted CI pending
+Status: Phase 8 Application Workspace API complete and hosted verified
 Base path for product APIs: `/api/v1`  
 Last reviewed: 2026-07-24
 
@@ -944,5 +944,5 @@ desktop and mobile journeys.
 The separate security scan also passed with no known dependency-audit
 vulnerabilities, no fixable-high API/worker findings, and no web or `web-edge`
 vulnerabilities. The three remaining medium Python-runtime findings have fixes
-only in Python 3.15 prereleases and are nonblocking under policy. Hosted Phase 8
-CI remains pending until the pull request is raised.
+only in Python 3.15 prereleases and are nonblocking under policy. PR #21 workflow
+run `30126993025` passed every required hosted job at head `645536b`.

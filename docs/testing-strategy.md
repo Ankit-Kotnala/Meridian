@@ -1,6 +1,6 @@
 # CareerOS testing strategy
 
-Status: Phase 8 local closeout passed; hosted Phase 8 CI pending
+Status: Phase 8 local and hosted closeout passed
 Last reviewed: 2026-07-24
 
 ## Objectives
@@ -491,8 +491,10 @@ clean, pnpm and pip audits found no known vulnerabilities (unpublished local
 workspace packages were skipped), API and worker had no fixable-high findings,
 and web plus `web-edge` had no vulnerabilities. Three medium Python-runtime
 findings remain with fixes only in Python 3.15 prereleases; they are nonblocking
-under the documented policy and remain tracked. Hosted Phase 8 CI is pending
-until the pull request is raised.
+under the documented policy and remain tracked. PR #21 workflow run
+`30126993025` passed every required hosted job at head `645536b`. Its replacement
+run followed a test-only pagination correction that traverses every cursor page;
+the fresh-database integration suite also passed in full.
 
 ## Backend test portfolio
 

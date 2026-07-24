@@ -1,6 +1,6 @@
 # CareerOS security threat model
 
-Status: Phase 8 Application Workspace controls locally verified; hosted CI pending
+Status: Phase 8 Application Workspace controls hosted verified
 Method: asset/trust-boundary analysis with STRIDE-style threat enumeration  
 Last reviewed: 2026-07-24
 
@@ -635,7 +635,8 @@ gates pass as recorded in `PLANS.md`; hosted run `29378312134` also passes.
   packages skipped; API and worker had no fixable-high findings; and web plus
   `web-edge` had no vulnerabilities. Three medium Python-runtime findings remain
   with fixes only in Python 3.15 prereleases and are nonblocking under policy.
-  Hosted Phase 8 CI remains pending until the pull request is raised.
+  PR #21 workflow run `30126993025` passed every required hosted job at head
+  `645536b`.
 - No submission, send, scrape, or autonomous stage-changing capability exists.
   The production provider, durable generation worker, load/soak, backup/restore,
   and protected deployment review remain later gates.

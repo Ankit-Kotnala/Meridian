@@ -14,12 +14,12 @@ claim under the user's control.
 ## Repository status
 
 **Phase 8 Application Workspace and grounded application packs are complete and
-locally verified; hosted Phase 8 CI remains pending until the pull request is
-raised.**
+hosted verified in PR #21.**
 Phases 0 through 7 are hosted verified; PR #20 merged Phases 5 through 7 after
 hosted CI run `30119088488` passed every required job. Phase 8 implementation
 revision `964cd9c` passed the consolidated local gate and separate security scan
-on 2026-07-24; no hosted Phase 8 result is claimed yet. The repository uses a
+on 2026-07-24; PR #21 run `30126993025` passed every required hosted job at head
+`645536b`. The repository uses a
 shared Python modular monolith, one root uv workspace, generated API contracts,
 thin deployable applications, and executable dependency boundaries.
 
@@ -402,11 +402,11 @@ Read [AGENTS.md](AGENTS.md) before contributing. The principal references are:
 - [Implementation checklist](docs/implementation-checklist.md)
 - [Architecture decisions](docs/adr/README.md)
 
-## Verification Status Through Phase 8 Local Closeout
+## Verification Status Through Phase 8 Hosted Closeout
 
-Phases 0 through 7 have recorded local and hosted evidence. Phase 8 has complete
-local closeout evidence in `PLANS.md`; hosted Phase 8 CI remains explicitly
-pending until the pull request is raised.
+Phases 0 through 8 have recorded local and hosted evidence. Phase 8's complete
+closeout evidence, including PR #21 workflow run `30126993025`, is recorded in
+`PLANS.md`.
 Exact current and historical results are recorded separately in `PLANS.md`; never
 infer a pass from the command list below:
 
@@ -489,7 +489,7 @@ Gitleaks was clean; pnpm and pip audits found no known vulnerabilities
 fixable-high findings; and web plus `web-edge` had no vulnerabilities. Three
 medium Python-runtime findings remain with fixes available only in Python 3.15
 prereleases, so they are nonblocking under the documented policy and remain
-tracked. No hosted Phase 8 result is claimed yet.
+tracked. PR #21 workflow run `30126993025` passed every required hosted job.
 
 ## License and production use
 
