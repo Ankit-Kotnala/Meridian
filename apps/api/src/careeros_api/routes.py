@@ -7,12 +7,16 @@ from careeros.foundation.database import ReadinessProbe
 from fastapi import APIRouter, Request, Response, status
 
 from careeros_api.application_workspace_routes import router as application_workspace_router
+from careeros_api.career_analytics_routes import router as career_analytics_router
 from careeros_api.career_record_routes import router as career_record_router
 from careeros_api.change_studio_routes import router as change_studio_router
 from careeros_api.config import Settings
 from careeros_api.constants import SCORING_DISCLAIMER
 from careeros_api.identity_routes import router as identity_router
 from careeros_api.job_match_routes import router as job_match_router
+from careeros_api.modules.career_growth import router as career_growth_router
+from careeros_api.modules.interview_prep import router as interview_prep_router
+from careeros_api.modules.networking import router as networking_router
 from careeros_api.resume_builder_routes import router as resume_builder_router
 from careeros_api.resume_health_routes import router as resume_health_router
 from careeros_api.role_readiness_routes import router as role_readiness_router
@@ -33,6 +37,10 @@ router.include_router(role_readiness_router)
 router.include_router(job_match_router)
 router.include_router(change_studio_router)
 router.include_router(application_workspace_router)
+router.include_router(interview_prep_router)
+router.include_router(networking_router)
+router.include_router(career_growth_router)
+router.include_router(career_analytics_router)
 
 
 def _settings(request: Request) -> Settings:

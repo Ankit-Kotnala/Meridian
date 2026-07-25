@@ -5,7 +5,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
-from dataclasses import replace
+from dataclasses import fields, replace
 from datetime import date, datetime, timedelta
 from uuid import UUID
 
@@ -33,6 +33,8 @@ from application_workspace_memory import (
 from careeros.modules.application_workspace.application import (
     ApplicationEventCursor,
     ApplicationFilter,
+    ApplicationInterviewEvidenceReference,
+    ApplicationReference,
     ApplicationResumeSnapshot,
     ApplicationSourceClaim,
     ApplicationSourceEvidenceReference,
@@ -178,6 +180,14 @@ class _VersionedEvidenceProvider:
             for reference in references
         )
 
+    async def validate_current(
+        self,
+        owner_user_id: UUID,
+        references: tuple[ApplicationInterviewEvidenceReference, ...],
+    ) -> None:
+        assert owner_user_id == OWNER_ID
+        assert references
+
 
 async def _create(
     service: ApplicationWorkspaceService,
@@ -223,6 +233,33 @@ async def test_create_snapshots_exact_inputs_and_replays_idempotently() -> None:
     )
     assert listed.data[0].application.id == record.id
     assert listed.data[0].event_count == 1
+
+
+@pytest.mark.asyncio
+async def test_interview_evidence_validation_is_application_bound_and_owner_scoped() -> None:
+    state = MemoryApplicationWorkspace()
+    service = _service(state)
+    record = (await _create(service)).application
+    pin = record.evidence_pins[0]
+    reference = ApplicationInterviewEvidenceReference(
+        evidence_id=pin.evidence_id,
+        evidence_revision_id=pin.evidence_revision_id,
+        revision_number=pin.revision_number,
+        statement_sha256=pin.statement_sha256,
+        strength=pin.strength,
+        has_numeric_claim=pin.has_numeric_claim,
+    )
+
+    await service.validate_interview_evidence(OWNER_ID, record.id, (reference,))
+
+    with pytest.raises(ApplicationWorkspaceConflict, match="immutable application ledger"):
+        await service.validate_interview_evidence(
+            OWNER_ID,
+            record.id,
+            (replace(reference, evidence_revision_id=OTHER_ID),),
+        )
+    with pytest.raises(ApplicationWorkspaceNotFound):
+        await service.validate_interview_evidence(OTHER_ID, record.id, (reference,))
 
 
 @pytest.mark.asyncio
@@ -777,3 +814,29 @@ async def test_downstream_dtos_are_purpose_minimized() -> None:
     assert analytics[0].outcome_at is not None
     assert not hasattr(analytics[0], "company")
     assert not hasattr(analytics[0], "offer_summary")
+
+
+@pytest.mark.asyncio
+async def test_application_reference_is_content_free_and_owner_scoped() -> None:
+    state = MemoryApplicationWorkspace()
+    service = _service(state)
+    created = await _create(service)
+
+    reference = await service.get_application_reference(
+        OWNER_ID,
+        created.application.id,
+    )
+
+    assert reference == ApplicationReference(
+        application_id=created.application.id,
+        stage=ApplicationStage.SAVED,
+    )
+    assert tuple(field.name for field in fields(reference)) == (
+        "application_id",
+        "stage",
+    )
+    with pytest.raises(ApplicationWorkspaceNotFound):
+        await service.get_application_reference(
+            OTHER_ID,
+            created.application.id,
+        )

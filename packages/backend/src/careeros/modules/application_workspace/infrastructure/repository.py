@@ -15,10 +15,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from careeros.foundation.database import Database
 from careeros.modules.application_workspace.application import (
+    ApplicationAnalyticsCursor,
+    ApplicationAnalyticsSourceState,
     ApplicationCalendarEntry,
     ApplicationFilter,
     ApplicationMilestones,
     ApplicationPackView,
+    ApplicationReference,
     ApplicationSummary,
     PageCursor,
 )
@@ -339,6 +342,29 @@ class SqlAlchemyApplicationWorkspaceUnitOfWork:
             pack_count=int(packs),
         )
 
+    async def get_application_reference(
+        self,
+        owner_user_id: UUID,
+        application_id: UUID,
+    ) -> ApplicationReference | None:
+        row = (
+            await self.session.execute(
+                select(
+                    ApplicationRecordModel.id,
+                    ApplicationRecordModel.stage,
+                ).where(
+                    ApplicationRecordModel.owner_user_id == owner_user_id,
+                    ApplicationRecordModel.id == application_id,
+                )
+            )
+        ).one_or_none()
+        if row is None:
+            return None
+        return ApplicationReference(
+            application_id=row.id,
+            stage=ApplicationStage(row.stage),
+        )
+
     async def list_tasks(
         self,
         owner_user_id: UUID,
@@ -472,19 +498,68 @@ class SqlAlchemyApplicationWorkspaceUnitOfWork:
     async def list_application_records(
         self,
         owner_user_id: UUID,
+        after: ApplicationAnalyticsCursor | None,
         limit: int,
     ) -> list[ApplicationRecord]:
+        statement = self._active_applications(owner_user_id)
+        if after is not None:
+            statement = statement.where(
+                or_(
+                    ApplicationRecordModel.created_at > after.created_at,
+                    and_(
+                        ApplicationRecordModel.created_at == after.created_at,
+                        ApplicationRecordModel.id > after.application_id,
+                    ),
+                )
+            )
         models = (
             await self.session.scalars(
-                self._active_applications(owner_user_id)
-                .order_by(
+                statement.order_by(
                     ApplicationRecordModel.created_at.asc(),
                     ApplicationRecordModel.id.asc(),
-                )
-                .limit(limit)
+                ).limit(limit)
             )
         ).all()
         return [_application(model) for model in models]
+
+    async def get_analytics_source_state(
+        self,
+        owner_user_id: UUID,
+    ) -> ApplicationAnalyticsSourceState:
+        application_state = (
+            await self.session.execute(
+                select(
+                    func.count(ApplicationRecordModel.id),
+                    func.coalesce(func.sum(ApplicationRecordModel.version), 0),
+                    func.max(ApplicationRecordModel.updated_at),
+                ).where(
+                    ApplicationRecordModel.owner_user_id == owner_user_id,
+                )
+            )
+        ).one()
+        event_state = (
+            await self.session.execute(
+                select(
+                    func.count(ApplicationEventModel.id),
+                    func.max(ApplicationEventModel.created_at),
+                )
+                .join(
+                    ApplicationRecordModel,
+                    (ApplicationRecordModel.owner_user_id == ApplicationEventModel.owner_user_id)
+                    & (ApplicationRecordModel.id == ApplicationEventModel.application_id),
+                )
+                .where(
+                    ApplicationEventModel.owner_user_id == owner_user_id,
+                )
+            )
+        ).one()
+        return ApplicationAnalyticsSourceState(
+            application_count=int(application_state[0] or 0),
+            application_version_sum=int(application_state[1] or 0),
+            event_count=int(event_state[0] or 0),
+            max_application_updated_at=application_state[2],
+            max_event_created_at=event_state[1],
+        )
 
     async def list_application_milestones(
         self,

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date, timedelta
 from uuid import UUID, uuid4
 
 import pytest
@@ -17,6 +18,7 @@ from careeros.modules.role_readiness.application import (
 from careeros.modules.role_readiness.domain import (
     RoleReadinessIdempotencyConflict,
     RoleReadinessNotFound,
+    RoleReadinessValidationError,
     RoleReadinessVersionConflict,
     SkillMatchState,
 )
@@ -157,3 +159,27 @@ async def test_analysis_saved_role_authorization_and_comparison_are_owner_scoped
     assert product.latest_analysis is not None
     assert product.demonstrated_count >= 1
     assert engineer.latest_analysis is None
+
+
+@pytest.mark.asyncio
+async def test_analytics_source_window_allows_only_the_timezone_guard() -> None:
+    owner = uuid4()
+    service, _ = _service(MemoryRoleReadiness())
+    start = date(2010, 1, 1)
+
+    assert (
+        await service.list_analytics_history(
+            owner,
+            window_start=start,
+            window_end=start + timedelta(days=3_652),
+            limit=1,
+        )
+        == ()
+    )
+    with pytest.raises(RoleReadinessValidationError, match="timezone guard"):
+        await service.list_analytics_history(
+            owner,
+            window_start=start,
+            window_end=start + timedelta(days=3_653),
+            limit=1,
+        )

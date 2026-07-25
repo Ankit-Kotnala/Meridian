@@ -5,7 +5,7 @@ from pathlib import Path
 from alembic.config import Config
 from alembic.script import ScriptDirectory
 
-EXPECTED_HEAD = "20260724_0009"
+EXPECTED_HEAD = "20260724_0010"
 
 
 def test_migration_graph_has_one_expected_head() -> None:
@@ -16,6 +16,7 @@ def test_migration_graph_has_one_expected_head() -> None:
     assert scripts.get_heads() == [EXPECTED_HEAD]
     assert [revision.revision for revision in scripts.walk_revisions()] == [
         EXPECTED_HEAD,
+        "20260724_0009",
         "20260719_0008",
         "20260719_0007",
         "20260719_0006",

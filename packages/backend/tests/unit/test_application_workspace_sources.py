@@ -10,6 +10,7 @@ from uuid import UUID
 import pytest
 
 from careeros.modules.application_workspace.application import (
+    ApplicationInterviewEvidenceReference,
     ApplicationSourceEvidenceReference,
 )
 from careeros.modules.application_workspace.domain import ApplicationWorkspaceConflict
@@ -18,10 +19,11 @@ from careeros.modules.application_workspace.infrastructure import (
     JobMatchApplicationSnapshotProvider,
     ResumeBuilderVersionSnapshotProvider,
 )
-from careeros.modules.career_record.application import CareerRecordService
+from careeros.modules.career_record.application import CareerRecordNotFound, CareerRecordService
 from careeros.modules.job_match.application import JobMatchService
 
 _OWNER_ID = UUID("00000000-0000-4000-8000-000000001001")
+_OTHER_OWNER_ID = UUID("00000000-0000-4000-8000-000000001011")
 _JOB_ID = UUID("00000000-0000-4000-8000-000000001002")
 _ANALYSIS_ID = UUID("00000000-0000-4000-8000-000000001003")
 _REQUIREMENT_ID = UUID("00000000-0000-4000-8000-000000001004")
@@ -114,7 +116,7 @@ async def test_evidence_snapshot_uses_one_bounded_bulk_application_query() -> No
         has_numeric_claim=False,
     )
     record = SimpleNamespace(
-        item=SimpleNamespace(id=_EVIDENCE_ID),
+        item=SimpleNamespace(id=_EVIDENCE_ID, current_revision=4),
         revision=current_revision,
         revisions=(revision, current_revision),
     )
@@ -144,6 +146,136 @@ async def test_evidence_snapshot_uses_one_bounded_bulk_application_query() -> No
     assert pins[0].evidence_revision_id == _REVISION_ID
     assert pins[0].statement == statement
     assert pins[0].statement_sha256 == hashlib.sha256(statement.encode()).hexdigest()
+
+
+@pytest.mark.asyncio
+async def test_interview_evidence_validation_accepts_only_exact_current_eligible_pin() -> None:
+    service = create_autospec(CareerRecordService, instance=True)
+    statement = "Led current evidence-backed product delivery."
+    digest = hashlib.sha256(statement.encode()).hexdigest()
+    revision = SimpleNamespace(
+        id=_REVISION_ID,
+        evidence_id=_EVIDENCE_ID,
+        revision=4,
+        statement=statement,
+        strength=SimpleNamespace(value="confirmed"),
+        has_numeric_claim=False,
+    )
+    record = SimpleNamespace(
+        item=SimpleNamespace(id=_EVIDENCE_ID, current_revision=4),
+        revision=revision,
+    )
+    service.get_evidence_batch_with_eligibility.return_value = (
+        (record, SimpleNamespace(eligible=True)),
+    )
+    reference = ApplicationInterviewEvidenceReference(
+        evidence_id=_EVIDENCE_ID,
+        evidence_revision_id=_REVISION_ID,
+        revision_number=4,
+        statement_sha256=digest,
+        strength="confirmed",
+        has_numeric_claim=False,
+    )
+    provider = CareerRecordApplicationEvidenceSnapshotProvider(service)
+
+    await provider.validate_current(_OWNER_ID, (reference,))
+
+    service.get_evidence_batch_with_eligibility.assert_awaited_once_with(
+        _OWNER_ID,
+        (_EVIDENCE_ID,),
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("reason_code", "label"),
+    [
+        ("lifecycle_archived", "revoked"),
+        ("strength_unsupported", "downgraded"),
+        ("source_unavailable", "unavailable"),
+        ("open_conflict", "conflicted"),
+        ("attachment_not_clean", "unsafe attachment"),
+        ("numeric_dimensions_incomplete", "unsupported number"),
+    ],
+)
+async def test_interview_evidence_validation_rejects_every_canonical_ineligibility(
+    reason_code: str,
+    label: str,
+) -> None:
+    del label
+    service = create_autospec(CareerRecordService, instance=True)
+    statement = "Led a 12-person current product launch."
+    revision = SimpleNamespace(
+        id=_REVISION_ID,
+        evidence_id=_EVIDENCE_ID,
+        revision=4,
+        statement=statement,
+        strength=SimpleNamespace(value="confirmed"),
+        has_numeric_claim=True,
+    )
+    record = SimpleNamespace(
+        item=SimpleNamespace(id=_EVIDENCE_ID, current_revision=4),
+        revision=revision,
+    )
+    service.get_evidence_batch_with_eligibility.return_value = (
+        (record, SimpleNamespace(eligible=False, reason_codes=(reason_code,))),
+    )
+    reference = ApplicationInterviewEvidenceReference(
+        evidence_id=_EVIDENCE_ID,
+        evidence_revision_id=_REVISION_ID,
+        revision_number=4,
+        statement_sha256=hashlib.sha256(statement.encode()).hexdigest(),
+        strength="confirmed",
+        has_numeric_claim=True,
+    )
+
+    with pytest.raises(ApplicationWorkspaceConflict, match="no longer eligible"):
+        await CareerRecordApplicationEvidenceSnapshotProvider(service).validate_current(
+            _OWNER_ID,
+            (reference,),
+        )
+
+
+@pytest.mark.asyncio
+async def test_interview_evidence_validation_rejects_revised_hash_and_cross_owner_absence() -> None:
+    service = create_autospec(CareerRecordService, instance=True)
+    statement = "A later current evidence revision."
+    revision = SimpleNamespace(
+        id=_CURRENT_REVISION_ID,
+        evidence_id=_EVIDENCE_ID,
+        revision=5,
+        statement=statement,
+        strength=SimpleNamespace(value="confirmed"),
+        has_numeric_claim=False,
+    )
+    record = SimpleNamespace(
+        item=SimpleNamespace(id=_EVIDENCE_ID, current_revision=5),
+        revision=revision,
+    )
+    service.get_evidence_batch_with_eligibility.return_value = (
+        (record, SimpleNamespace(eligible=True)),
+    )
+    historical = ApplicationInterviewEvidenceReference(
+        evidence_id=_EVIDENCE_ID,
+        evidence_revision_id=_REVISION_ID,
+        revision_number=4,
+        statement_sha256=hashlib.sha256(b"Historical evidence revision.").hexdigest(),
+        strength="confirmed",
+        has_numeric_claim=False,
+    )
+    provider = CareerRecordApplicationEvidenceSnapshotProvider(service)
+
+    with pytest.raises(ApplicationWorkspaceConflict, match="exact current revision"):
+        await provider.validate_current(_OWNER_ID, (historical,))
+
+    service.get_evidence_batch_with_eligibility.reset_mock()
+    service.get_evidence_batch_with_eligibility.side_effect = CareerRecordNotFound
+    with pytest.raises(ApplicationWorkspaceConflict, match="no longer available"):
+        await provider.validate_current(_OTHER_OWNER_ID, (historical,))
+    service.get_evidence_batch_with_eligibility.assert_awaited_once_with(
+        _OTHER_OWNER_ID,
+        (_EVIDENCE_ID,),
+    )
 
 
 @pytest.mark.asyncio

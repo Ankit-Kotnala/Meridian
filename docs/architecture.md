@@ -1,7 +1,8 @@
 # CareerOS architecture
 
-Status: accepted target architecture; Phase 8 complete and locally verified, hosted CI pending
-Last reviewed: 2026-07-24
+Status: accepted target architecture; Phase 8 hosted verified; Phase 9 locally
+and security verified with hosted CI pending
+Last reviewed: 2026-07-25
 
 ## Architectural objective
 
@@ -23,16 +24,25 @@ Match bounded context used by thin API and web adapters. It also implements the
 Phase 6 Change Studio bounded context for truth-locked suggestions, claim-ledger
 grounding, user-controlled review actions, immutable output versions, and
 provider-run metadata. Phase 7 adds the Resume Builder bounded context for
-structured resumes, immutable versions, deterministic rendering, round-trip
-verification, private exports, and short-lived download intents. Phase 6 and
+structured resumes, immutable versions, deterministic synchronous rendering,
+initial round-trip verification, private exports, and short-lived download
+intents. Phase 6 and
 Phase 7 consume upstream modules only through application boundaries; they do not
 read another module's tables directly or let clients choose evidence as
 grounding authority. Phase 8 adds the Application Workspace bounded context for
 owner-scoped workflow, immutable job/resume/evidence pins, paginated activity,
 grounded packs, consistency findings, deletion, and purpose-minimized Phase 9
 query views. It also consumes upstream modules only through owner-authorizing
-application interfaces. Historical evidence and the completed Phase 8 local
-closeout gate are recorded in `PLANS.md`; hosted Phase 8 CI remains pending.
+application interfaces. Historical evidence and the completed Phase 8 local and
+hosted closeout gates are recorded in `PLANS.md`.
+Phase 9 adds four independent bounded contexts: `interview_prep`, `networking`,
+`career_growth`, and `career_analytics`. Application Workspace supplies
+purpose-minimized immutable interview/application outcome views; Career Record
+supplies current eligible achievement/skill/evidence views; and Role Readiness
+supplies content-free readiness history. The downstream modules consume those
+views through application interfaces and never query predecessor tables
+directly. Phase 9's consolidated local and security gates pass; hosted CI
+completion remains open until its workflow evidence is recorded in `PLANS.md`.
 
 ## System principles
 
@@ -249,13 +259,16 @@ Every section and bullet is server-validated before it can become the current
 draft or an immutable version. Bullets must remain evidence-backed; unsupported
 client edits are rejected rather than rendered. Exports are pinned to a specific
 immutable version and format, rendered to private object storage, hashed, parsed
-again where applicable, and blocked before download if critical text, ordering,
-duplication, searchability, or grounding checks fail.
+again where applicable, and blocked before download when the implemented
+critical text, searchability, or grounding checks fail. Exact occurrence-count,
+duplication/omission, and reading-order comparison are not yet release-blocking;
+Phase 10 owns that canonical fidelity manifest.
 
 The Phase 7 local renderer and verifier execute immediately inside the service
 while persisting job status, attempts, warnings, failures, timeout/retry fields,
-and dead-letter metadata. That preserves the same idempotent job contract the
-worker can claim later without introducing a second rendering policy.
+and dead-letter-shaped metadata. No worker currently claims those records.
+Phase 10 must add a transactional outbox, fenced worker leases/recovery, and
+durable object cleanup without introducing a second rendering policy.
 
 ## Application Workspace Boundary
 
@@ -602,15 +615,73 @@ adds `change_studio`, migration `20260719_0007`, API/generated contracts, the
 `change-studio` web feature, deterministic local provider, HTTP provider
 boundary, grounding verifier, and focused adversarial/integration/browser suites.
 Phase 7 adds `resume_builder`, migration `20260719_0008`, API/generated
-contracts, the `resume-builder` web feature, deterministic PDF/DOCX/text/JSON
-rendering, round-trip verification, private export storage, and focused
-integration/browser suites. Phase 8 adds `application_workspace`, migration
+contracts, the `resume-builder` web feature, deterministic synchronous
+PDF/DOCX/text/JSON rendering, initial round-trip verification, private export
+storage, and focused integration/browser suites. Phase 8 adds
+`application_workspace`, migration
 `20260724_0009`, API/generated contracts, the `applications` web feature,
 immutable source adapters, deterministic grounded packs, consistency/deletion
-rules, cursor-paginated activity, and desktop/mobile product journeys. OCR
-providers, browser extension, Terraform, production AI/provider decisions,
-external CRM/calendar connections, and production deployment workflows remain
-absent until their owning phases.
+rules, cursor-paginated activity, and desktop/mobile product journeys.
+Phase 9 adds four independent backend contexts: `interview_prep`, `networking`,
+`career_growth`, and `career_analytics`; additive migration `20260724_0010`;
+generated API contracts; the corresponding workspace web modules; a
+deterministic Career Health engine; complete-watermark, timezone-aware
+non-causal aggregation; and durable analytics/local-reminder worker paths.
+Interview and Growth pin exact authorized evidence revisions. New Interview
+question-bank and follow-up generation traverses Application Workspace's
+application boundary back to live Career Record eligibility before creating
+output; exact STAR-story create, generated-artifact, and career-review
+finalization replays remain immutable historical results. Other mutable creates
+preserve stable resource identity and return its current owner-authorized
+representation; they never revive deleted or redacted content. Growth
+achievement/skill insights are live derived views and are not separately
+persisted as factual authority. Growth insight checks compare stored evidence
+links with the live eligible revision ID/number/hash/timestamp tuple before
+counting or returning them. Networking owns its append-only contact-consent
+ledger, parent tombstone, purpose-specific child-redaction lifecycle, bounded
+collections, and safe terminal reminder-history pruning. Analytics accepts only
+purpose-minimized owner-authorized source views.
+
+Defense-map composition validates each story's support independently, preventing
+one stale story from contaminating other results. Reactivating a completed or
+cancelled reminder creates a new occurrence/outbox pair without reusing terminal
+work or reviving redacted content. Analytics dead-letter and expired-lease
+recovery terminalize the associated job atomically so queue reconciliation cannot
+leave an orphaned `queued` job.
+
+Transaction-scoped owner, idempotency, and parent locks serialize Phase 9
+collection quotas and concurrent child/generation mutations. Database constraints
+and validation functions enforce Growth target ownership, exact evidence
+revision number/timestamp/hash provenance on both insert and every update,
+immediate review predecessors, and the review's latest version tuple.
+Networking reminder occurrences carry the same owner/contact/reminder tuple as
+their parent; occurrence, outbox, worker audit, and worker log context propagate
+one validated trace ID; and every Networking cursor is bound to owner,
+collection, parent, normalized filters, and sort semantics. Analytics
+job/snapshot identity includes the selected IANA timezone. Its supplemental
+freshness watermark recomputes and hashes the exact bounded, canonical-eligible
+achievement and Role Readiness point set for the same guarded window used by
+aggregation. Stored payload hashes and pre/post source watermarks fail tampered,
+eligibility-drifted, or otherwise stale results closed. Broker messages contain
+durable UUIDs rather than contact or career content.
+
+The public Analytics window accepts a maximum 3,650-day delta. Its supplemental
+adapter expands UTC selection by one day on each side, so only the internal
+Career Record and Role Readiness query contracts accept the resulting 3,652-day
+guarded delta. Provider validation becomes `source_limit_exceeded`; provider or
+storage unavailability remains inside the Analytics boundary as
+`source_unavailable`. API and worker composition share the owned Resume Health
+source reader and clean-attachment status bridge, and the worker binds the
+durable refresh trace before aggregation and retry logging.
+
+No Phase 9 module imports another module's tables or adds an external send/scrape
+capability. OCR providers, browser extension, Terraform, production AI/provider
+decisions, external CRM/calendar connections, and production deployment
+workflows remain absent until their owning phases.
+Phase 10 must also replace Resume Builder's synchronous in-service render/verify
+path with durable outbox-backed worker execution and make a real guarded
+fictional local database/object-store seed available; persisted job-shaped
+fields and the preview-only seed are not substitutes for those capabilities.
 
 ## Architecture verification
 
@@ -665,6 +736,18 @@ rollback/forward repair, integrations, worker/runtime/container probes, and the
 configured browser portfolio passed. Playwright completed 10 of 16 discovered
 tests with 6 intentional inherited mobile skips, while Application Workspace
 passed its full desktop and mobile journeys. The separate security scan exited 0
-in 287.7 seconds. Hosted Phase 8 CI remains pending. Later phases add load,
+in 287.7 seconds. PR #21 workflow runs `30126993025` and `30128304892` passed
+every required hosted job.
+
+Phase 9 adds `scripts/verify-phase9.ps1` (or `make verify-phase9`) for migration
+`20260724_0010`, rollback to `20260724_0009`, canonical and pre-release-drift
+forward repair, all four bounded-context repository/API suites, durable
+analytics/local-reminder processing, generated contracts, and the authenticated
+desktop/mobile career-workspace journey. The final local tree passed with 339
+backend, 122 API, 84 worker, and 146 web tests across 43 files, 48 production
+routes, 33 PostgreSQL integrations with 7 inherited warnings, and 12 Playwright
+passes with 6 intentional inherited mobile skips. The separate security scan
+also passed. Exact closeout evidence remains in `PLANS.md`; hosted Phase 9 CI is
+still pending and is not inferred from the local results. Phase 10 adds load,
 account-wide deletion, backup, and restore gates. The complete strategy is in
 `docs/testing-strategy.md`.

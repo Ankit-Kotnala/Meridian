@@ -10,6 +10,7 @@ from .attachment_storage import (
 )
 from .identifiers import UuidIdentifierFactory
 from .repository import SqlAlchemyCareerRecordUnitOfWorkFactory
+from .resume_health_source import ResumeHealthSourceQuery
 
 __all__ = [
     "ATTACHMENT_PARSER_VERSION",
@@ -19,6 +20,7 @@ __all__ = [
     "AttachmentS3ObjectStorage",
     "AttachmentS3Options",
     "BoundedAttachmentExtractor",
+    "ResumeHealthSourceQuery",
     "SqlAlchemyAttachmentUnitOfWorkFactory",
     "SqlAlchemyCareerRecordUnitOfWorkFactory",
     "SystemClock",

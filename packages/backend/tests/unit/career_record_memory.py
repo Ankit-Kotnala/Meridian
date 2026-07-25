@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from types import TracebackType
 from uuid import UUID, uuid4
 
 from careeros.modules.career_record.application.models import (
+    CareerRecordAnalyticsGrowthPoint,
+    CareerRecordAnalyticsSourceState,
     EvidenceFilter,
     EvidenceRecord,
     PageCursor,
@@ -32,6 +34,7 @@ from careeros.modules.career_record.domain import (
     ImportProposal,
     ReminderPreferences,
     Skill,
+    exact_claim_sha256,
 )
 
 
@@ -58,10 +61,20 @@ class FakeResumeSourceQuery:
         self.available.add(source.snapshot_id)
 
     async def resolve_exact_span(
-        self, owner_user_id: UUID, locator: ResumeSourceLocator
+        self,
+        owner_user_id: UUID,
+        locator: ResumeSourceLocator,
+        expected_claim: str | None = None,
     ) -> ValidatedResumeSource | None:
         source = self.sources.get((owner_user_id, locator.snapshot_id))
-        if source is None or source.block_id != locator.block_id:
+        if (
+            source is None
+            or source.block_id != locator.block_id
+            or (
+                expected_claim is not None
+                and exact_claim_sha256(expected_claim) != source.source_sha256
+            )
+        ):
             return None
         return source
 
@@ -242,6 +255,18 @@ class MemoryCareerRecord:
         record = self.evidence.get(evidence_id)
         return record if record is not None and record.item.owner_user_id == owner_user_id else None
 
+    async def get_evidence_batch(
+        self,
+        owner_user_id: UUID,
+        evidence_ids: tuple[UUID, ...],
+    ) -> list[EvidenceRecord]:
+        return [
+            record
+            for evidence_id in evidence_ids
+            if (record := self.evidence.get(evidence_id)) is not None
+            and record.item.owner_user_id == owner_user_id
+        ]
+
     async def list_evidence(
         self,
         owner_user_id: UUID,
@@ -278,6 +303,56 @@ class MemoryCareerRecord:
 
     async def add_evidence(self, record: EvidenceRecord) -> None:
         self.evidence[record.item.id] = record
+
+    async def list_analytics_growth(
+        self,
+        owner_user_id: UUID,
+        window_start: date,
+        window_end: date,
+        limit: int,
+    ) -> list[CareerRecordAnalyticsGrowthPoint]:
+        return [
+            CareerRecordAnalyticsGrowthPoint(
+                evidence_id=record.item.id,
+                evidence_revision_id=record.revision.id,
+                category=record.revision.evidence_type.value,
+                occurred_at=record.revision.created_at,
+            )
+            for record in sorted(
+                self.evidence.values(),
+                key=lambda value: (value.revision.created_at, str(value.revision.id)),
+            )
+            if record.item.owner_user_id == owner_user_id
+            and record.item.lifecycle.value == "active"
+            and record.revision.evidence_type.value == "achievement"
+            and record.revision.strength.value in {"supported", "confirmed", "verified"}
+            and window_start <= record.revision.created_at.date() <= window_end
+        ][:limit]
+
+    async def get_analytics_source_state(
+        self,
+        owner_user_id: UUID,
+    ) -> CareerRecordAnalyticsSourceState:
+        records = [
+            record
+            for record in self.evidence.values()
+            if record.item.owner_user_id == owner_user_id
+            and record.item.lifecycle.value == "active"
+            and record.revision.evidence_type.value == "achievement"
+            and record.revision.strength.value in {"supported", "confirmed", "verified"}
+        ]
+        return CareerRecordAnalyticsSourceState(
+            record_count=len(records),
+            item_version_sum=sum(record.item.version for record in records),
+            max_item_updated_at=max(
+                (record.item.updated_at for record in records),
+                default=None,
+            ),
+            max_revision_created_at=max(
+                (record.revision.created_at for record in records),
+                default=None,
+            ),
+        )
 
     async def save_evidence_item(self, item: EvidenceItem) -> None:
         record = self.evidence[item.id]

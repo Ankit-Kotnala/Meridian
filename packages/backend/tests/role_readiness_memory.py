@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from types import TracebackType
 from uuid import UUID, uuid4
 
@@ -10,6 +10,8 @@ from careeros.modules.role_readiness.application.models import (
     AnalysisRecord,
     PageCursor,
     RoleFilter,
+    RoleReadinessAnalyticsPoint,
+    RoleReadinessAnalyticsSourceState,
 )
 from careeros.modules.role_readiness.domain import (
     CompetencyDimension,
@@ -254,6 +256,53 @@ class MemoryRoleReadiness:
                 and record.analysis.idempotency_key == idempotency_key
             ),
             None,
+        )
+
+    async def list_analytics_history(
+        self,
+        owner_user_id: UUID,
+        window_start: date,
+        window_end: date,
+        limit: int,
+    ) -> list[RoleReadinessAnalyticsPoint]:
+        return [
+            RoleReadinessAnalyticsPoint(
+                analysis_id=record.analysis.id,
+                role_label=self.roles[record.analysis.role_id].title,
+                raw_score_basis_points=record.analysis.raw_score_basis_points,
+                label=record.analysis.readiness_label.value,
+                engine_version=record.analysis.engine_version,
+                created_at=record.analysis.created_at,
+            )
+            for record in sorted(
+                self.analyses.values(),
+                key=lambda value: (value.analysis.created_at, str(value.analysis.id)),
+            )
+            if record.analysis.owner_user_id == owner_user_id
+            and window_start <= record.analysis.created_at.date() <= window_end
+        ][:limit]
+
+    async def get_analytics_source_state(
+        self,
+        owner_user_id: UUID,
+    ) -> RoleReadinessAnalyticsSourceState:
+        records = [
+            record
+            for record in self.analyses.values()
+            if record.analysis.owner_user_id == owner_user_id
+        ]
+        roles = [self.roles[record.analysis.role_id] for record in records]
+        return RoleReadinessAnalyticsSourceState(
+            record_count=len(records),
+            role_version_sum=sum(role.version for role in roles),
+            max_analysis_created_at=max(
+                (record.analysis.created_at for record in records),
+                default=None,
+            ),
+            max_role_updated_at=max(
+                (role.updated_at for role in roles),
+                default=None,
+            ),
         )
 
     async def add_audit(self, event: RoleReadinessAuditEvent) -> None:

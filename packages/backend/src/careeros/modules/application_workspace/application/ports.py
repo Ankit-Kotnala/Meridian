@@ -21,11 +21,15 @@ from careeros.modules.application_workspace.domain import (
 )
 
 from .models import (
+    ApplicationAnalyticsCursor,
+    ApplicationAnalyticsSourceState,
     ApplicationCalendarEntry,
     ApplicationFilter,
+    ApplicationInterviewEvidenceReference,
     ApplicationJobSnapshot,
     ApplicationMilestones,
     ApplicationPackView,
+    ApplicationReference,
     ApplicationResumeSnapshot,
     ApplicationSourceEvidenceReference,
     ApplicationSummary,
@@ -57,6 +61,12 @@ class EvidenceSnapshotProvider(Protocol):
         owner_user_id: UUID,
         references: tuple[ApplicationSourceEvidenceReference, ...],
     ) -> tuple[ApplicationEvidencePin, ...]: ...
+
+    async def validate_current(
+        self,
+        owner_user_id: UUID,
+        references: tuple[ApplicationInterviewEvidenceReference, ...],
+    ) -> None: ...
 
 
 class ApplicationWorkspaceUnitOfWork(Protocol):
@@ -112,8 +122,16 @@ class ApplicationWorkspaceUnitOfWork(Protocol):
     ) -> int: ...
 
     async def list_application_records(
-        self, owner_user_id: UUID, limit: int
+        self,
+        owner_user_id: UUID,
+        after: ApplicationAnalyticsCursor | None,
+        limit: int,
     ) -> list[ApplicationRecord]: ...
+
+    async def get_analytics_source_state(
+        self,
+        owner_user_id: UUID,
+    ) -> ApplicationAnalyticsSourceState: ...
 
     async def list_application_milestones(
         self,
@@ -134,6 +152,12 @@ class ApplicationWorkspaceUnitOfWork(Protocol):
         owner_user_id: UUID,
         application_id: UUID,
     ) -> ApplicationSummary | None: ...
+
+    async def get_application_reference(
+        self,
+        owner_user_id: UUID,
+        application_id: UUID,
+    ) -> ApplicationReference | None: ...
 
     async def get_application_record(
         self, owner_user_id: UUID, application_id: UUID, *, for_update: bool = False

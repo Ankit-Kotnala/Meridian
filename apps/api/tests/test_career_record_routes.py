@@ -1,6 +1,7 @@
 """Authenticated Phase 3 HTTP workflow and ownership contract tests."""
 
 import sys
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import create_autospec
@@ -11,6 +12,14 @@ from careeros.foundation.database import Database
 from careeros.modules.career_record.application import (
     AttachmentWorkflowService,
     CareerRecordService,
+    ValidatedResumeSource,
+)
+from careeros.modules.career_record.domain import (
+    CareerEntity,
+    CareerEntityKind,
+    EmploymentType,
+    PartialDate,
+    exact_claim_sha256,
 )
 from careeros.modules.identity.application import IdentityService
 from careeros.modules.identity.application.models import CurrentUser
@@ -19,6 +28,7 @@ from careeros.modules.identity.domain.errors import AuthenticationRequired
 from careeros.modules.resume_health.application import ResumeHealthService
 from fastapi.testclient import TestClient
 
+from careeros_api.career_record_routes import _matches_accepted_proposal
 from careeros_api.config import Settings
 from careeros_api.main import create_app
 from conftest import FakeDatabase
@@ -317,6 +327,126 @@ def test_career_wire_validation_rejects_invented_dates_and_attachment_shortcuts(
     assert shortcut.status_code == 422
     assert not state.entities
     assert not state.evidence
+
+
+def test_resume_source_evidence_binds_the_exact_claim_before_persistence(
+    settings: Settings,
+    fake_database: FakeDatabase,
+) -> None:
+    owner_id = uuid4()
+    identity = create_autospec(IdentityService, instance=True)
+    principal = _principal(owner_id)
+    identity.authenticate.return_value = principal
+    identity.get_current_user.return_value = _user(owner_id)
+    state = MemoryCareerRecord()
+    sources = FakeResumeSourceQuery()
+    document_id, snapshot_id, block_id = (uuid4() for _ in range(3))
+    statement = "Built a deterministic fictional reporting workflow."
+    sources.add(
+        owner_id,
+        ValidatedResumeSource(
+            document_id=document_id,
+            snapshot_id=snapshot_id,
+            snapshot_revision=1,
+            schema_version="canonical-resume/1.0.0",
+            parser_version="local/1",
+            block_id=block_id,
+            page=1,
+            start_offset=10,
+            end_offset=62,
+            source_sha256=exact_claim_sha256(statement),
+            review_excerpt=statement,
+        ),
+    )
+    career = CareerRecordService(
+        unit_of_work=state,
+        clock=FixedClock(),
+        identifiers=UuidFactory(),
+        resume_sources=sources,
+    )
+    source_payload = {
+        "sourceType": "resume",
+        "documentId": str(document_id),
+        "snapshotId": str(snapshot_id),
+        "blockId": str(block_id),
+        "page": 1,
+        "start": 10,
+        "end": 62,
+        "url": None,
+    }
+    with _authenticated_client(settings, fake_database, identity, career) as client:
+        exact = client.post(
+            "/api/v1/evidence",
+            json={
+                "type": "resume_statement",
+                "title": "Client-controlled label",
+                "description": statement,
+                "source": source_payload,
+                "metrics": [],
+                "experienceIds": [],
+                "skillIds": [],
+                "attachmentIds": [],
+            },
+            headers=_write_headers(),
+        )
+        evidence_count = len(state.evidence)
+        audit_count = len(state.audits)
+        spoofed = client.post(
+            "/api/v1/evidence",
+            json={
+                "type": "resume_statement",
+                "title": "Kubernetes",
+                "description": "Led an unrelated Kubernetes migration.",
+                "source": source_payload,
+                "metrics": [],
+                "experienceIds": [],
+                "skillIds": [],
+                "attachmentIds": [],
+            },
+            headers=_write_headers(),
+        )
+
+    assert exact.status_code == 201
+    assert exact.json()["title"] == statement
+    assert exact.json()["state"] == "supported"
+    assert exact.json()["factualEligible"] is True
+    assert spoofed.status_code == 409
+    assert spoofed.json()["code"] == "career_record_source_unavailable"
+    assert len(state.evidence) == evidence_count
+    assert len(state.audits) == audit_count
+
+
+def test_legacy_import_context_is_removed_after_a_factual_entity_edit() -> None:
+    owner_id, profile_id, entity_id = (uuid4() for _ in range(3))
+    now = datetime(2026, 7, 15, 12, tzinfo=UTC)
+    accepted = CareerEntity(
+        id=entity_id,
+        owner_user_id=owner_id,
+        profile_id=profile_id,
+        kind=CareerEntityKind.EXPERIENCE,
+        title="Fictional Engineer",
+        organization="Example Corp",
+        description="Built a fictional workflow.",
+        official_title="Fictional Engineer",
+        display_title=None,
+        employment_type=EmploymentType.FULL_TIME,
+        location=None,
+        external_url=None,
+        start_date=PartialDate(2024, 1),
+        end_date=None,
+        is_current=True,
+        sort_order=0,
+        group_id=None,
+        version=1,
+        created_at=now,
+        updated_at=now,
+    )
+
+    assert _matches_accepted_proposal(accepted, accepted)
+    assert not _matches_accepted_proposal(
+        replace(accepted, title="Edited title", version=2),
+        accepted,
+    )
 
 
 def test_production_composition_builds_career_and_attachment_services(

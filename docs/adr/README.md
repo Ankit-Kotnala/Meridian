@@ -22,6 +22,7 @@ status; consult `PLANS.md` for current behavior.
 | [0012](0012-phase6-change-studio.md)                                  | Phase 6 Change Studio provider gateway, grounding, and immutable change review       | Accepted                               |
 | [0013](0013-phase7-resume-builder-export-verification.md)             | Phase 7 Resume Builder, immutable versions, verified export, and download intents    | Accepted                               |
 | [0014](0014-phase8-application-workspace-and-packs.md)                | Phase 8 exact job/resume/evidence pins, grounded workspace packs, and no send/submit | Accepted                               |
+| [0015](0015-phase9-interview-networking-growth-analytics.md)          | Phase 9 grounded interview, consent CRM, Career Health, and private analytics        | Accepted                               |
 
 ## Lifecycle
 

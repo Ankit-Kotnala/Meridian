@@ -3,7 +3,7 @@
 Status: mandatory product policy  
 Applies to: extraction, suggestions, rewrites, application materials, networking
 messages, interview content, summaries, and any future generative capability  
-Last reviewed: 2026-07-24
+Last reviewed: 2026-07-25
 
 ## Policy statement
 
@@ -75,6 +75,15 @@ Numbers use the stricter rule: generated metrics must map to confirmed or verifi
 metric evidence. The evidence stores original wording/value, unit, time period,
 baseline/comparator where relevant, approximation/precision, personal
 attribution, and source span.
+
+For legacy `canonical-resume/1.0.0` whole-block locators, `Supported` means only
+the exact original block statement after boundary whitespace removal. No
+case-folding, punctuation removal, internal whitespace normalization, numeric
+normalization, fuzzy match, substring, title, context, relationship, or semantic
+inference expands that scope. Career Record derives the display title from the
+source, rejects structured metadata/links on new exact-block evidence, and
+revalidates existing rows before every eligibility-sensitive read. A mismatched
+legacy row stays readable for history but is never generation input.
 
 ## Generation lifecycle
 
@@ -380,6 +389,42 @@ A future provider or worker may change wording or throughput only behind the sam
 strict schema, immutable input, grounding, idempotency, cost/retry, and
 consistency gates.
 
+## Phase 9 Interview Prep enforcement
+
+Phase 9 Interview Prep consumes an owner-authorized immutable Application
+Workspace context rather than client-selected facts. A ready or generated STAR
+story must link every factual situation/task/action/result/personal-contribution
+field to exact application claims and their eligible evidence revision
+ID/number/hash pins. Draft stories may be incomplete, but they remain visibly
+non-ready and cannot be treated as grounded output.
+
+A new story, or an edit that results in `ready`, reauthorizes every selected
+evidence pin through Application Workspace against live canonical Career Record
+eligibility and the exact current revision, strength, and numeric state before
+the story or its audit is persisted. Exact create idempotency replays remain the
+same historical artifact. Defense Map reads perform the same live check for
+matching ready stories; a rejected pin leaves the stored story unchanged but
+classifies it as partial and needing review rather than defended.
+
+A number in any story field requires both a metric explanation and exact claim/
+evidence provenance for that field; every numeric token must occur in the pinned
+evidence. Missing or changed evidence, historical hash disagreement, unsupported
+numbers, and cross-owner application context fail closed.
+
+Role-specific questions and follow-up drafts are deterministic. They select only
+the immutable session claims/requirements requested by the owner, validate
+numeric tokens against the pinned context, remain private review-only text, and
+are never sent by CareerOS. Before creating a new question bank, every evidence
+pin in its session context is rechecked through Application Workspace against
+live canonical Career Record eligibility and exact current revision
+ID/number/hash, strength, and numeric state. A new follow-up applies the same
+check to its selected claims. Revoked, revised, downgraded, conflicted,
+unavailable, unsafe-attachment, or otherwise ineligible evidence blocks new
+generation; an exact idempotent replay returns its already persisted immutable
+artifact instead of rewriting history. Phase 9 does not enable a production
+model provider, email/calendar/social tool, contact scraper, or autonomous
+action.
+
 ## Phase 0 boundary
 
 Phase 0 defines this policy and provider/domain boundaries only. It does not call
@@ -394,4 +439,5 @@ ledger, grounding verifier, Change Studio, and adversarial suite. Generative
 production features outside this reviewed Change Studio path cannot ship before
 equivalent gates pass. Phase 8's application packs are implemented as the
 deterministic constrained path described above; they do not enable a production
-model provider.
+model provider. Phase 9's Interview Prep questions and follow-up drafts are the
+deterministic constrained path described above and likewise do not enable one.

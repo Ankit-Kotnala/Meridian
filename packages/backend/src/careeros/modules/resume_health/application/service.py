@@ -154,6 +154,38 @@ class ResumeHealthPolicy:
             raise ValueError("object cleanup policy must be positive")
 
 
+class ResumeHealthSourceReader:
+    """Purpose-limited owned resume reads for another application context."""
+
+    def __init__(self, unit_of_work: UnitOfWorkFactory) -> None:
+        self._uow = unit_of_work
+
+    async def get_document(self, scope: OwnerScope, document_id: UUID) -> DocumentView:
+        async with self._uow() as uow:
+            document = await uow.get_document(scope, document_id)
+            snapshot = await uow.get_latest_snapshot(scope, document_id)
+            analysis = await uow.get_latest_analysis_for_document(scope, document_id)
+        if document is None:
+            raise ResumeResourceNotFound
+        return _document_view(
+            document,
+            snapshot.id if snapshot is not None else None,
+            analysis[0].id if analysis is not None else None,
+        )
+
+    async def get_canonical_resume(
+        self,
+        scope: OwnerScope,
+        document_id: UUID,
+    ) -> CanonicalSnapshotView:
+        async with self._uow() as uow:
+            current = await uow.get_latest_snapshot(scope, document_id)
+            original = await uow.get_first_snapshot(scope, document_id)
+        if current is None or original is None:
+            raise ResumeResourceNotFound
+        return _snapshot_view(current, original.resume)
+
+
 class ResumeHealthService:
     """Short request/transaction use cases; document bytes stay in object storage."""
 
@@ -173,6 +205,7 @@ class ResumeHealthService:
         self._storage = storage
         self._limits = limits
         self._policy = policy or ResumeHealthPolicy()
+        self._source_reader = ResumeHealthSourceReader(unit_of_work)
 
     async def begin_guest_session(self) -> IssuedGuestSession:
         now = self._clock.now()
@@ -439,17 +472,7 @@ class ResumeHealthService:
         return tuple(views)
 
     async def get_document(self, scope: OwnerScope, document_id: UUID) -> DocumentView:
-        async with self._uow() as uow:
-            document = await uow.get_document(scope, document_id)
-            snapshot = await uow.get_latest_snapshot(scope, document_id)
-            analysis = await uow.get_latest_analysis_for_document(scope, document_id)
-        if document is None:
-            raise ResumeResourceNotFound
-        return _document_view(
-            document,
-            snapshot.id if snapshot is not None else None,
-            analysis[0].id if analysis is not None else None,
-        )
+        return await self._source_reader.get_document(scope, document_id)
 
     async def get_plain_text(self, scope: OwnerScope, document_id: UUID) -> str:
         artifact = await self._artifact(scope, document_id, ArtifactKind.PLAIN_TEXT)
@@ -486,12 +509,7 @@ class ResumeHealthService:
     async def get_canonical_resume(
         self, scope: OwnerScope, document_id: UUID
     ) -> CanonicalSnapshotView:
-        async with self._uow() as uow:
-            current = await uow.get_latest_snapshot(scope, document_id)
-            original = await uow.get_first_snapshot(scope, document_id)
-        if current is None or original is None:
-            raise ResumeResourceNotFound
-        return _snapshot_view(current, original.resume)
+        return await self._source_reader.get_canonical_resume(scope, document_id)
 
     async def correct_canonical_resume(
         self,

@@ -92,6 +92,28 @@ Phase 3 implements this boundary without a generation feature. Later role,
 matching, and generation modules must consume it rather than inventing their own
 state filter.
 
+#### V1 exact-source closeout interlock
+
+The 2026-07-25 full-specification audit found that a valid v1 block locator was
+being treated as proof of a client-supplied statement. The application boundary
+now requires the submitted statement's UTF-8 SHA-256, after boundary whitespace
+is removed, to equal the immutable original block digest. Case, punctuation,
+internal whitespace, digits, Unicode code points, subsets, and supersets remain
+significant. A corrected block is not an exact extracted source.
+
+Because a v1 locator describes one whole generic block rather than semantic
+fields, newly `Supported` evidence is restricted to a `resume_statement` with a
+server-derived title and no client-supplied context, organization/project, dates,
+metrics, entity links, or skill links. Legacy rows remain immutable, but live
+eligibility revalidates both the digest and that statement-only scope; a mismatch
+returns `supported_scope_mismatch`. An explicit owner confirmation can establish
+a broader user-attested scope through the normal state machine.
+
+Legacy import proposals are review context, not exact field provenance. Their
+source label says so, and accepted context is attached to a current entity only
+while every accepted factual field still equals the immutable proposal snapshot.
+Later factual edits remove that source context.
+
 ### Resume provenance and source deletion
 
 Resume Health remains the owner of uploaded resumes, canonical snapshots, and

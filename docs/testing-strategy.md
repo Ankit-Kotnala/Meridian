@@ -1,7 +1,8 @@
 # CareerOS testing strategy
 
-Status: Phase 8 local closeout passed; hosted Phase 8 CI pending
-Last reviewed: 2026-07-24
+Status: Phase 8 local and hosted closeout passed; Phase 9 implementation is
+complete with final consolidated/security reruns and hosted CI pending
+Last reviewed: 2026-07-25
 
 ## Objectives
 
@@ -427,6 +428,13 @@ tree. It verifies migration head `20260719_0008`, rollback to `20260719_0007`,
 forward repair, real integration tests, prior Playwright journeys, and the new
 Resume Builder primary workflow.
 
+That historical gate verifies the implemented synchronous vertical slice, not
+the later release-scale design. The five selectable template IDs currently share
+one renderer structure, and the verification suite does not yet make exact
+occurrence counts and reading-order comparison blocking. Durable worker
+dispatch/recovery, distinct layouts, and a canonical cross-format fidelity
+manifest remain Phase 10 prerequisites.
+
 ## Application Workspace and grounded-pack coverage (Phase 8)
 
 Phase 8 keeps every Phase 7 gate and adds blocking coverage for ADR 0014:
@@ -491,8 +499,142 @@ clean, pnpm and pip audits found no known vulnerabilities (unpublished local
 workspace packages were skipped), API and worker had no fixable-high findings,
 and web plus `web-edge` had no vulnerabilities. Three medium Python-runtime
 findings remain with fixes only in Python 3.15 prereleases; they are nonblocking
-under the documented policy and remain tracked. Hosted Phase 8 CI is pending
-until the pull request is raised.
+under the documented policy and remain tracked. PR #21 workflow runs
+`30126993025` and `30128304892` passed every required hosted job. The replacement
+implementation run followed a test-only pagination correction that traverses
+every cursor page; the fresh-database integration suite also passed in full.
+
+## Interview, networking, growth, and analytics coverage (Phase 9)
+
+Phase 9 retains every Phase 8 gate and adds blocking coverage for ADR 0015:
+
+- Interview service/repository/API tests cover exact claim/evidence revision and
+  statement-hash pins, undefended strong-claim warnings, story/session/note
+  owner and nested-parent denial, immutable source snapshots, strict versions,
+  idempotent question/follow-up generation, deletion/audit, non-ASCII cursor
+  rejection, and the absence of any send action. New ready-story and generation
+  adversarial cases reject revoked, revised, downgraded, unavailable, conflicted,
+  unsafe-attachment, unsupported-number, and cross-owner evidence while
+  preserving draft history and exact immutable idempotent replay. Defense Map
+  cases revalidate matching ready stories and classify stale support as
+  partial/needs-review without rewriting it. Real PostgreSQL cases verify that
+  ready-story validation precedes story/idempotency/audit persistence and
+  serialize duplicate question-bank generation and per-session child quotas;
+  owner/session/idempotency locks prevent create races.
+- Networking tests cover owner/contact/organization scope, explicit grant and
+  withdrawal ordering for each consent purpose, denial before consent,
+  collection/storage parent tombstoning and full child redaction, outreach-only
+  preservation of notes and non-template, non-referral inbound/mutual history,
+  outbound/template/referral/reminder redaction, prevention of any terminal
+  transition from restoring redacted sensitive content, organization detachment,
+  and safe explicit reminder reactivation that creates a fresh occurrence/outbox
+  rather than reusing terminal work. Cursor cases reject values across
+  owner/collection/parent/filter/sort purposes, stable keysets, idempotency
+  fingerprints, version conflicts, race-safe collection quotas, recurrence,
+  composite reminder-occurrence ownership, occurrence/outbox/audit trace
+  propagation, safe terminal-history pruning, dead-letter preservation, leases,
+  retry/dead-letter/recovery, and the allowlisted read-only reminder execution
+  view. Wire, service, and fresh-PostgreSQL cases also reject arbitrary consent
+  policy text and verify that every retained ledger field is content-free. They
+  assert that no scrape/import/delivery interface exists.
+- Career Growth golden and boundary cases cover goal/milestone and
+  development transitions, exact evidence pins, completed-certification evidence
+  requirements, completed annual-resume-refresh evidence, achievement-only
+  history, skill-evidence coverage, six-check Promotion Readiness, current
+  evidence revalidation and idempotent immutable review finalization/versioning,
+  stale/revoked exact-pin exclusion from promotion/finalized-review/annual-refresh
+  insight checks and returned annual links, deletion/audit, Career Health
+  component weights/age bands/cadences/rounding/labels, snapshot tamper
+  rejection, insufficient data, and the canonical disclaimer.
+- Analytics aggregation tests cover complete keyset traversal beyond one page,
+  source-watermark drift before/after work, eligibility-only point-set drift,
+  exact window-aware supplemental watermarking, durable idempotent refresh/outbox
+  processing, duplicate delivery, retry/dead-letter/reconciliation, bounded
+  Role Readiness source overflow with stable `source_limit_exceeded` retry state,
+  transient supplemental failure with stable `source_unavailable` state, public
+  3,648/3,649/3,650-day boundary windows and date-min/date-max guard clamping,
+  shared API/worker resume and clean-attachment eligibility composition, durable
+  trace rebinding,
+  stale fail-closed reports, five-record suppression, scope/window bounds, owner
+  isolation, exact selected-cohort event buckets, IANA timezone midnight
+  boundaries, timezone-specific snapshot identity, versioned
+  metric/cohort/timestamp/suppression definitions, requirement-coverage trends,
+  exact resume-version outcomes, owner active/history quotas, payload tamper
+  rejection, purpose-minimized source fields, canonical-eligible
+  achievement-only growth, and rejection of causal, prediction, or guarantee
+  language.
+- Migration tests cover a fresh `20260724_0010` schema, all four repository
+  contexts, owner/composite foreign keys, check/index parity, rollback to
+  `20260724_0009`, forward repair, and a pre-release Phase 8 database stamped
+  without its canonical provenance tuple/check and resume-change event/audit enum
+  values. Negative PostgreSQL cases reject orphan/wrong-owner Growth targets,
+  mismatched or tampered evidence ID/revision/number/timestamp/hash provenance,
+  including mutations of non-key link fields, cross-review or skipped
+  predecessors, mismatched latest review tuples, invalid occurrence/outbox trace
+  IDs, and reminder occurrences whose owner/contact/reminder tuple disagrees.
+  A two-transaction PostgreSQL regression proves Growth target deletion waits
+  for an in-flight evidence-link insert and cleanup cannot leave an orphan.
+  The repair leaves Phase 8-owned objects intact on downgrade and produces a
+  clean metadata check.
+- Worker tests cover UUID-only analytics payloads, transactional outbox publish
+  transitions, lost/expired leases, bounded retry and dead-letter handling,
+  per-invocation database disposal, safe structured logs, local-only reminder
+  occurrence processing, persisted reminder trace binding in log context, and the
+  absence of content/destination/provider payloads. Analytics regressions assert
+  that dead-letter and expired-lease recovery atomically terminalize the paired
+  job rather than leaving an orphaned `queued` record.
+- Web component tests cover loading/empty/success/failure/conflict states,
+  request epochs and aborts, stable per-intent idempotency, quoted versions,
+  cursor-based load-more, exact disclaimers and non-causal text, suppressed
+  values, Growth achievement/skill/promotion/annual-refresh insights, Analytics
+  coverage/version tables and timezone definitions, execution failures,
+  keyboard/mobile/reduced-motion behavior, and non-color text/table summaries.
+  The Phase 9 Playwright portfolio exercises all four workspaces on the
+  production web/edge and API/worker stack, including the new Growth and
+  Analytics outputs on desktop and mobile.
+
+`scripts/verify-phase9.ps1` is the consolidated Phase 9 gate. It requires
+migration rollback/repair, repository/API/worker integration, generated
+contracts, production build, predecessor browser journeys, and the new complete
+desktop/mobile Phase 9 journey. The latest complete stack execution before the
+exact-claim interlock passed with 347 backend, 123 API, 84 worker, and 146 web
+tests across 43 files; the production build emitted 48 routes. PostgreSQL
+integration passed 37 tests with 7 inherited SQLAlchemy cycle warnings.
+Playwright passed 12 tests with 6 intentional inherited mobile skips, and the
+Phase 9 desktop/mobile journeys both passed. A transient Docker Desktop 502
+occurred only while the wrapper restored the primary stack after all checks;
+bounded restoration retries are now present. After the exact-claim interlock,
+the complete backend and API portfolios pass 355 and 134 tests respectively, so
+one exact final-tree consolidated stack rerun remains mandatory.
+
+Closeout regressions also prove one stale story does not contaminate another;
+delayed STAR-story creation and career-review finalization retries return their
+immutable historical results; Networking does not materialize interview content
+for an application ID/stage lookup and serializes organization deletion against
+contact reassignment; Analytics aliases cannot weaken generated required fields,
+joint outbox/job claims use a job-version causal acknowledgement fence, lease
+validity is checked after the final watermark, terminal failures log safe codes,
+and account deletion preserves audit ownership invariants. Exact resume
+provenance rejects reviewed text that differs from the immutable extracted block,
+requires an exact whole-block statement digest, rejects metadata/link scope
+injection, dynamically excludes mismatched legacy rows, and removes accepted
+legacy import context after a factual entity edit. Case, internal whitespace,
+punctuation, number, homoglyph, subset, and superset adversarial cases are
+covered; boundary whitespace alone is accepted.
+
+The prior security execution found Gitleaks, `pnpm audit`, and `pip-audit` clean
+for actionable source/application dependencies, while web and `web-edge` images
+had no vulnerability. The `brace-expansion` advisory remains resolved by the
+`5.0.8` workspace override and minimatch 3.1.5/5.1.9 compatibility patches. The
+only nonblocking runtime findings were the three medium CPython 3.13.14 CVEs
+listed in `PLANS.md`, whose fixes are available only in Python 3.15 prereleases.
+The exact closeout tree must be scanned again; hosted Phase 9 CI remains pending
+and is not claimed.
+
+Phase 10 verification must first cover durable asynchronous Resume Builder
+render/verify dispatch and recovery, distinct-template cross-format fidelity,
+and an idempotent production-guarded fictional local database/object seed; the
+synchronous renderer and preview-only `make seed` do not satisfy those gates.
 
 ## Backend test portfolio
 

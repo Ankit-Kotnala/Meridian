@@ -1,8 +1,9 @@
 # CareerOS API conventions and route plan
 
-Status: Phase 8 Application Workspace API complete and locally verified; hosted CI pending
+Status: Phase 8 API hosted verified; Phase 9 API locally and security verified,
+with hosted CI pending
 Base path for product APIs: `/api/v1`  
-Last reviewed: 2026-07-24
+Last reviewed: 2026-07-25
 
 ## Implementation truth
 
@@ -40,13 +41,21 @@ application-submission or message-sending route. `/docs` and `/openapi.json` are
 development documentation endpoints and may be restricted or disabled in
 production.
 
+Phase 9 adds authenticated Interview Prep, Networking, Career Growth, and Career
+Analytics operations. Interview and Growth consume exact owner-authorized
+evidence through application interfaces. Networking owns separate contact
+consent and local-only reminder state. Analytics uses durable jobs and immutable
+timezone-specific snapshots without accepting raw career/contact prose. No Phase
+9 route sends a message, imports or scrapes contacts, changes an external system,
+or submits an application.
+
 `packages/contracts` derives its public types and client from the implemented
 FastAPI OpenAPI document. The normalized artifact under
 `packages/contracts/openapi` and generated files under
 `packages/contracts/src/generated` are committed review artifacts; neither is an
 independent contract authority. Problem, pagination, and product schemas are not
 published until corresponding Pydantic models and operations exist. Phase 1
-contract evidence is recorded in `PLANS.md`. Phase 2 through Phase 8 changes
+contract evidence is recorded in `PLANS.md`. Phase 2 through Phase 9 changes
 regenerate both artifacts; the final drift result must be recorded there before a
 phase is marked complete.
 
@@ -492,6 +501,15 @@ supplied state. Archive is reversible but ineligible; material edit creates an
 immutable successor and invalidates prior confirmation. External URL provenance
 is stored and validated as HTTP(S) metadata only—Phase 3 does not fetch it.
 
+For a legacy whole-block resume source, the submitted description must match the
+immutable original block byte-for-byte after boundary whitespace removal. The
+server derives its title and rejects additional type, context, organization/
+project, date, metric, entity-link, or skill-link scope. Any mismatch returns the
+redacted `career_record_source_unavailable` problem before evidence or audit
+persistence. Live eligibility rechecks persisted exact claims and returns
+`supported_scope_mismatch` for a spoofed or drifted legacy row while preserving
+its immutable history.
+
 The evidence response includes server-authoritative factual/numeric eligibility,
 reason codes, provenance, immutable history, conflicts, attachments, links, and
 downstream usage. Inferred, Unsupported, archived, deleted, conflicted,
@@ -624,6 +642,13 @@ and records a verification report. Download intent is ownership-checked,
 short-lived, unavailable when a critical verification result blocks release, and
 never exposes the private object key.
 
+Current implementation boundary: export rendering, upload, reparse, and
+verification complete synchronously inside the application service before the
+job-shaped response returns. Durable outbox-backed worker dispatch, reload-safe
+polling, distinct template layouts, and release-blocking occurrence/read-order
+fidelity checks are planned Phase 10 prerequisites, not implemented Phase 7
+behavior.
+
 ### Phase 8 — Applications and application packs
 
 ```text
@@ -686,31 +711,176 @@ scraping, or message-sending endpoint in the first release.
 ### Phase 9 — Interview, networking, growth, and analytics
 
 ```text
-GET    /api/v1/star-stories
-POST   /api/v1/star-stories
-PATCH  /api/v1/star-stories/{storyId}
-POST   /api/v1/interviews
-GET    /api/v1/interviews/{interviewId}
-POST   /api/v1/interviews/{interviewId}/questions
-GET    /api/v1/contacts
-POST   /api/v1/contacts
-PATCH  /api/v1/contacts/{contactId}
-DELETE /api/v1/contacts/{contactId}
-POST   /api/v1/contacts/{contactId}/interactions
-GET    /api/v1/career-goals
-POST   /api/v1/career-goals
-PATCH  /api/v1/career-goals/{goalId}
-GET    /api/v1/career-reviews
-POST   /api/v1/career-reviews
-GET    /api/v1/analytics/overview
-GET    /api/v1/analytics/applications
-GET    /api/v1/analytics/readiness
+GET    /api/v1/interview-prep/stories
+POST   /api/v1/interview-prep/stories
+GET    /api/v1/interview-prep/stories/{story_id}
+PATCH  /api/v1/interview-prep/stories/{story_id}
+DELETE /api/v1/interview-prep/stories/{story_id}
+GET    /api/v1/interview-prep/applications/{application_id}/defense-map
+GET    /api/v1/interview-prep/sessions
+POST   /api/v1/interview-prep/sessions
+GET    /api/v1/interview-prep/sessions/{session_id}
+PATCH  /api/v1/interview-prep/sessions/{session_id}
+DELETE /api/v1/interview-prep/sessions/{session_id}
+GET    /api/v1/interview-prep/sessions/{session_id}/questions
+POST   /api/v1/interview-prep/sessions/{session_id}/questions
+POST   /api/v1/interview-prep/sessions/{session_id}/questions/generate
+GET    /api/v1/interview-prep/sessions/{session_id}/notes
+POST   /api/v1/interview-prep/sessions/{session_id}/notes
+PATCH  /api/v1/interview-prep/sessions/{session_id}/notes/{note_id}
+DELETE /api/v1/interview-prep/sessions/{session_id}/notes/{note_id}
+GET    /api/v1/interview-prep/sessions/{session_id}/follow-up-drafts
+POST   /api/v1/interview-prep/sessions/{session_id}/follow-up-drafts/generate
+
+GET    /api/v1/networking/organizations
+POST   /api/v1/networking/organizations
+GET    /api/v1/networking/organizations/{organization_id}
+PATCH  /api/v1/networking/organizations/{organization_id}
+DELETE /api/v1/networking/organizations/{organization_id}
+GET    /api/v1/networking/contacts
+POST   /api/v1/networking/contacts
+GET    /api/v1/networking/contacts/{contact_id}
+PATCH  /api/v1/networking/contacts/{contact_id}
+DELETE /api/v1/networking/contacts/{contact_id}
+GET    /api/v1/networking/contacts/{contact_id}/consent
+POST   /api/v1/networking/contacts/{contact_id}/consent/grants
+POST   /api/v1/networking/contacts/{contact_id}/consent/withdrawals
+GET    /api/v1/networking/contacts/{contact_id}/notes
+POST   /api/v1/networking/contacts/{contact_id}/notes
+GET    /api/v1/networking/contacts/{contact_id}/interactions
+POST   /api/v1/networking/contacts/{contact_id}/interactions
+GET    /api/v1/networking/contacts/{contact_id}/referrals
+POST   /api/v1/networking/contacts/{contact_id}/referrals
+PATCH  /api/v1/networking/referrals/{referral_id}
+GET    /api/v1/networking/templates
+POST   /api/v1/networking/templates
+PATCH  /api/v1/networking/templates/{template_id}
+GET    /api/v1/networking/contacts/{contact_id}/reminders
+POST   /api/v1/networking/contacts/{contact_id}/reminders
+PATCH  /api/v1/networking/reminders/{reminder_id}
+GET    /api/v1/networking/reminders/{reminder_id}/execution
+
+GET    /api/v1/career-growth/insights
+GET    /api/v1/career-growth/goals
+POST   /api/v1/career-growth/goals
+GET    /api/v1/career-growth/goals/{goal_id}
+PUT    /api/v1/career-growth/goals/{goal_id}
+DELETE /api/v1/career-growth/goals/{goal_id}
+POST   /api/v1/career-growth/goals/{goal_id}/milestones
+PUT    /api/v1/career-growth/goals/{goal_id}/milestones/{milestone_id}
+DELETE /api/v1/career-growth/goals/{goal_id}/milestones/{milestone_id}
+GET    /api/v1/career-growth/development-items
+POST   /api/v1/career-growth/development-items
+GET    /api/v1/career-growth/development-items/{item_id}
+PUT    /api/v1/career-growth/development-items/{item_id}
+DELETE /api/v1/career-growth/development-items/{item_id}
+GET    /api/v1/career-growth/reviews
+POST   /api/v1/career-growth/reviews
+GET    /api/v1/career-growth/reviews/{review_id}
+DELETE /api/v1/career-growth/reviews/{review_id}
+POST   /api/v1/career-growth/reviews/{review_id}/versions
+POST   /api/v1/career-growth/reviews/{review_id}/finalizations
+GET    /api/v1/career-growth/career-health/analyses
+POST   /api/v1/career-growth/career-health/analyses
+GET    /api/v1/career-growth/career-health/analyses/{analysis_id}
+DELETE /api/v1/career-growth/career-health/analyses/{analysis_id}
+
+POST   /api/v1/analytics/refreshes
+GET    /api/v1/analytics/refreshes/{job_id}
+GET    /api/v1/analytics/report
 ```
 
-Analytics responses include metric definition/window, cohort sufficiency where
-applicable, and non-causal interpretation language.
+Interview stories pin exact authorized application claim, evidence revision,
+revision number, and statement hash tuples. Defense maps are derived from the
+current owner-authorized application view; unsupported strong claims stay
+visibly undefended. Each story's pins are revalidated independently, so stale
+support on one story cannot contaminate another story's defense result. Session
+questions, private notes/reflections, and follow-up
+drafts are nested by both owner and session. A generated follow-up is review-only
+text: no send endpoint exists. A new generated question bank revalidates every
+session evidence pin, and a new follow-up revalidates every selected claim's
+pins, against live canonical Career Record eligibility plus exact current
+revision identity, number, hash, strength, and numeric state. Changed,
+unavailable, or ineligible evidence fails closed. An exact idempotent replay
+returns the already persisted immutable result before this new-generation check.
 
-### Phases 1–10 — Settings, privacy, and connected services
+Networking contact consent is purpose-specific and append-only. Grant and
+withdrawal records are not inferred from account consent or imported application
+contacts. Withdrawing collection or storage consent also withdraws every active
+purpose, irreversibly tombstones the contact parent, and redacts all contact
+child personal/free-text fields; content-free consent, audit, and queue state
+remains where required. Consent policy versions are server-owned enum values:
+clients must attest the current `networking-contact-consent/1` value, and the
+database permits only that value plus the internal deletion-policy identifier,
+preventing arbitrary contact content from entering the retained ledger.
+Outreach-only withdrawal preserves the contact, note
+bodies, and inbound/mutual history while cancelling referrals/reminders and
+redacting outbound, template-linked, or referral interactions plus referral
+context and reminder titles. Organization/contact deletion, consent, child
+collections, templates, and local reminders are ownership-scoped and audited.
+Every collection uses a bounded, ASCII-validated opaque cursor tied to its owner,
+parent, and filter purpose. Owner/contact quotas bound organizations, contacts,
+templates, notes, interactions, referrals, reminders, consent history, and
+reminder occurrences. Reminder execution returns either `null` or only
+occurrence ID/number, scheduled time, occurrence/queue status, attempt limits,
+and a safe error code; it never returns a lease, contact content, message, or
+destination and exposes no delivery action.
+Reactivating an explicitly completed or cancelled reminder creates a fresh
+occurrence and outbox row; it does not reuse terminal work or revive content
+redacted by a consent withdrawal.
+
+Career Growth uses exact eligible evidence pins for goals, milestones,
+development items, and immutable review versions. The insights response derives
+current eligible `achievement` evidence and skill-evidence coverage directly
+from Career Record, returns the six deterministic Promotion Readiness checks and
+their non-predictive disclaimer, and lists annual resume-refresh development
+items; it does not persist a competing achievement/skill authority. Promotion
+checks for completed milestones, completed promotion plans, finalized reviews,
+and completed annual refreshes, plus the annual-refresh evidence links returned
+by insights, include only stored pins whose evidence ID, revision ID/number,
+statement hash, and revision timestamp still match the live eligible Career
+Record snapshot.
+Versioned writes require quoted `If-Match`; creates/finalizations/analyses use
+stable idempotency. Finalization requires at least one evidence link and
+revalidates that the exact evidence ID, revision ID/number, statement hash, and
+eligibility are still current before creating the immutable final version.
+Career Health v1 returns the canonical internal-score disclaimer,
+formula/configuration versions, applicable-component trace, and
+`insufficient_data` instead of a deceptive number when its minimum input
+threshold is not met. Snapshot hashes are verified before stored analyses are
+returned.
+
+Analytics refreshes are durable owner-scoped jobs with bounded windows,
+IANA timezone validation, idempotency, owner-serialized active/history quotas,
+leases, retries, dead-letter state, source watermarks, and private `no-store`
+polling. The timezone is part of job and snapshot identity and controls local
+calendar cohorts and event buckets. Reports include versioned metric, cohort,
+timestamp, and suppression definitions; exact freshness/source watermarks;
+requirement-coverage trends; observed outcomes grouped by exact immutable resume
+version; cohort sufficiency; and null-suppressed rates/averages below a
+denominator of five. The stored payload hash is revalidated before display.
+Interview/offer event buckets are calculated only from applications in the
+report's selected cohort. Achievement points are restricted to current canonical
+Career Record evidence whose type is exactly `achievement`. Supplemental reads
+reject more than 500 Role Readiness points or 2,000 achievement points, and the
+freshness token hashes the exact bounded readiness/achievement point set for the
+same guarded source window used by the refresh. Eligibility or point-set drift
+therefore persists a safe stale audit state and retries without presenting the
+stale output as current. Every report uses the canonical non-causal
+interpretation. No raw resume, evidence, contact, note, offer, rejection, or
+generated-document prose enters the aggregate.
+Dead-letter and expired-lease reconciliation terminalize the associated job in
+the same transaction, so a terminal outbox cannot strand its job in `queued`.
+
+All four Phase 9 route families advertise the shared safe `413` body-limit
+problem and a typed `429` quota problem. Domain collection limits raise the
+family-specific quota code; they are not reported as a generic validation or
+conflict failure.
+
+### Phase 10 planned API — Settings, privacy, and connected services
+
+The endpoints in this subsection are design targets only. They are not
+implemented or present in the current OpenAPI contract.
 
 ```text
 GET    /api/v1/settings
@@ -727,11 +897,15 @@ GET    /api/v1/connected-services
 DELETE /api/v1/connected-services/{connectionId}
 ```
 
-Sensitive actions require recent authentication and idempotency. Data export/
-deletion are tracked async operations covering relational, object, vector, cache,
-provider, and documented backup-lifecycle behavior.
+When implemented, sensitive actions will require recent authentication and
+idempotency. Data export/deletion will be tracked async operations covering
+relational, object, vector, cache, provider, and documented backup-lifecycle
+behavior.
 
-### Phase 10 — Billing and administration
+### Phase 10 planned API — Billing and administration
+
+The endpoints in this subsection are design targets only. They are not
+implemented or present in the current OpenAPI contract.
 
 ```text
 GET    /api/v1/plans
@@ -751,9 +925,10 @@ GET    /api/v1/admin/templates
 PATCH  /api/v1/admin/templates/{templateId}
 ```
 
-Webhook endpoints authenticate the raw provider payload and use provider event ID
-plus request hash for idempotency. Admin retry is allowed only for classified
-safe states and does not bypass tenant ownership or duplicate side effects.
+When implemented, webhook endpoints will authenticate the raw provider payload
+and use provider event ID plus request hash for idempotency. Admin retry will be
+allowed only for classified safe states and will not bypass tenant ownership or
+duplicate side effects.
 
 ## Score response requirements
 
@@ -944,5 +1119,23 @@ desktop and mobile journeys.
 The separate security scan also passed with no known dependency-audit
 vulnerabilities, no fixable-high API/worker findings, and no web or `web-edge`
 vulnerabilities. The three remaining medium Python-runtime findings have fixes
-only in Python 3.15 prereleases and are nonblocking under policy. Hosted Phase 8
-CI remains pending until the pull request is raised.
+only in Python 3.15 prereleases and are nonblocking under policy. PR #21 workflow
+runs `30126993025` and `30128304892` passed every required hosted job.
+
+Phase 9's consolidated gate is:
+
+```powershell
+.\scripts\verify-phase9.ps1
+```
+
+It retains every predecessor gate and adds migration `20260724_0010`, rollback to
+`20260724_0009`, canonical and pre-release-drift forward repair, the four Phase 9
+repository/API portfolios, durable analytics and local-reminder workers,
+generated-contract drift, and the authenticated desktop/mobile Phase 9 career
+workspace journey. The final local tree passed with 339 backend, 122 API, 84
+worker, and 146 web tests across 43 files; the production build emitted 48
+routes. PostgreSQL integration passed 33 tests with 7 inherited SQLAlchemy cycle
+warnings, and Playwright completed 12 tests with 6 intentional inherited mobile
+skips while the Phase 9 desktop/mobile journeys both passed. The separate
+security scan also passed; hosted Phase 9 CI remains pending. Exact authoritative
+evidence and residual findings are recorded in `PLANS.md`.

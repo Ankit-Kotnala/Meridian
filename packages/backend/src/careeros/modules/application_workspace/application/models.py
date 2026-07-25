@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+import hashlib
 import json
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -355,6 +356,14 @@ class ApplicationCalendarEntry:
 
 
 @dataclass(frozen=True, slots=True)
+class ApplicationReference:
+    """Content-free application identity exposed to other product modules."""
+
+    application_id: UUID
+    stage: ApplicationStage
+
+
+@dataclass(frozen=True, slots=True)
 class ApplicationInterviewContext:
     """Evidence-backed facts exposed to Phase 9 without notes, contacts, or offers."""
 
@@ -369,6 +378,38 @@ class ApplicationInterviewContext:
     resume_version_number: int
     claims: tuple[ApplicationDocumentClaim, ...]
     evidence_pins: tuple[ApplicationEvidencePin, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ApplicationInterviewEvidenceReference:
+    """Content-minimized evidence identity used for live generation eligibility checks."""
+
+    evidence_id: UUID
+    evidence_revision_id: UUID
+    revision_number: int
+    statement_sha256: str
+    strength: str
+    has_numeric_claim: bool
+
+    def __post_init__(self) -> None:
+        if type(self.revision_number) is not int or not 1 <= self.revision_number <= 2_147_483_647:
+            raise ApplicationWorkspaceValidationError(
+                "interview evidence revision number is invalid"
+            )
+        digest = self.statement_sha256.strip().lower()
+        if len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest):
+            raise ApplicationWorkspaceValidationError(
+                "interview evidence statement hash is invalid"
+            )
+        object.__setattr__(self, "statement_sha256", digest)
+        if self.strength not in {"supported", "confirmed", "verified"}:
+            raise ApplicationWorkspaceValidationError(
+                "interview evidence strength is not generation eligible"
+            )
+        if type(self.has_numeric_claim) is not bool:
+            raise ApplicationWorkspaceValidationError(
+                "interview evidence numeric-claim marker is invalid"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -397,6 +438,7 @@ class ApplicationAnalyticsSnapshot:
     job_analysis_id: UUID | None
     resume_version_id: UUID
     resume_version_number: int
+    requirement_coverage_basis_points: int | None
     application_deadline: date | None
     first_applied_at: datetime | None
     first_response_at: datetime | None
@@ -405,3 +447,99 @@ class ApplicationAnalyticsSnapshot:
     outcome_at: datetime | None
     created_at: datetime
     updated_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class ApplicationAnalyticsCursor:
+    """Internal keyset cursor for complete, bounded analytics source reads."""
+
+    created_at: datetime
+    application_id: UUID
+
+    def __post_init__(self) -> None:
+        if self.created_at.tzinfo is None or self.created_at.utcoffset() is None:
+            raise ApplicationWorkspaceValidationError("analytics cursor is invalid")
+
+
+@dataclass(frozen=True, slots=True)
+class ApplicationAnalyticsPage:
+    """One purpose-minimized source page; callers must follow ``next_cursor``."""
+
+    data: tuple[ApplicationAnalyticsSnapshot, ...]
+    next_cursor: ApplicationAnalyticsCursor | None
+
+
+@dataclass(frozen=True, slots=True)
+class ApplicationAnalyticsSourceState:
+    """Content-free source facts used to detect concurrent aggregation changes."""
+
+    application_count: int
+    application_version_sum: int
+    event_count: int
+    max_application_updated_at: datetime | None
+    max_event_created_at: datetime | None
+
+    def __post_init__(self) -> None:
+        if min(self.application_count, self.application_version_sum, self.event_count) < 0:
+            raise ApplicationWorkspaceValidationError("analytics source state is invalid")
+        for value in (self.max_application_updated_at, self.max_event_created_at):
+            if value is not None and (value.tzinfo is None or value.utcoffset() is None):
+                raise ApplicationWorkspaceValidationError("analytics source state is invalid")
+
+    def watermark(self) -> ApplicationAnalyticsWatermark:
+        payload = {
+            "applicationCount": self.application_count,
+            "applicationVersionSum": self.application_version_sum,
+            "eventCount": self.event_count,
+            "maxApplicationUpdatedAt": (
+                self.max_application_updated_at.isoformat()
+                if self.max_application_updated_at is not None
+                else None
+            ),
+            "maxEventCreatedAt": (
+                self.max_event_created_at.isoformat()
+                if self.max_event_created_at is not None
+                else None
+            ),
+            "v": 1,
+        }
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        return ApplicationAnalyticsWatermark(
+            token=f"sha256:{hashlib.sha256(encoded).hexdigest()}",
+            application_count=self.application_count,
+            event_count=self.event_count,
+            max_updated_at=max(
+                (
+                    value
+                    for value in (
+                        self.max_application_updated_at,
+                        self.max_event_created_at,
+                    )
+                    if value is not None
+                ),
+                default=None,
+            ),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class ApplicationAnalyticsWatermark:
+    """Stable content-free token persisted with a Phase 9 analytics snapshot."""
+
+    token: str
+    application_count: int
+    event_count: int
+    max_updated_at: datetime | None
+
+    def __post_init__(self) -> None:
+        if (
+            len(self.token) != 71
+            or not self.token.startswith("sha256:")
+            or any(character not in "0123456789abcdef" for character in self.token[7:])
+            or min(self.application_count, self.event_count) < 0
+        ):
+            raise ApplicationWorkspaceValidationError("analytics watermark is invalid")
+        if self.max_updated_at is not None and (
+            self.max_updated_at.tzinfo is None or self.max_updated_at.utcoffset() is None
+        ):
+            raise ApplicationWorkspaceValidationError("analytics watermark is invalid")

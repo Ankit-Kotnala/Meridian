@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import date
 from types import TracebackType
 from typing import Any, NoReturn, cast
 from uuid import UUID
 
-from sqlalchemy import delete, or_, select, update
+from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,6 +17,8 @@ from careeros.modules.role_readiness.application.models import (
     AnalysisRecord,
     PageCursor,
     RoleFilter,
+    RoleReadinessAnalyticsPoint,
+    RoleReadinessAnalyticsSourceState,
 )
 from careeros.modules.role_readiness.application.ports import RoleReadinessUnitOfWork
 from careeros.modules.role_readiness.domain import (
@@ -255,6 +258,77 @@ class SqlAlchemyRoleReadinessUnitOfWork:
         )
         records = await self._analysis_records(owner_user_id, [model] if model else [])
         return records[0] if records else None
+
+    async def list_analytics_history(
+        self,
+        owner_user_id: UUID,
+        window_start: date,
+        window_end: date,
+        limit: int,
+    ) -> list[RoleReadinessAnalyticsPoint]:
+        rows = (
+            await self.session.execute(
+                select(
+                    RoleReadinessAnalysisModel.id,
+                    RoleDefinitionModel.title,
+                    RoleReadinessAnalysisModel.raw_score_basis_points,
+                    RoleReadinessAnalysisModel.readiness_label,
+                    RoleReadinessAnalysisModel.engine_version,
+                    RoleReadinessAnalysisModel.created_at,
+                )
+                .join(
+                    RoleDefinitionModel,
+                    RoleDefinitionModel.id == RoleReadinessAnalysisModel.role_id,
+                )
+                .where(
+                    RoleReadinessAnalysisModel.owner_user_id == owner_user_id,
+                    func.date(RoleReadinessAnalysisModel.created_at) >= window_start,
+                    func.date(RoleReadinessAnalysisModel.created_at) <= window_end,
+                )
+                .order_by(
+                    RoleReadinessAnalysisModel.created_at.asc(),
+                    RoleReadinessAnalysisModel.id.asc(),
+                )
+                .limit(limit)
+            )
+        ).all()
+        return [
+            RoleReadinessAnalyticsPoint(
+                analysis_id=row[0],
+                role_label=row[1],
+                raw_score_basis_points=row[2],
+                label=row[3],
+                engine_version=row[4],
+                created_at=row[5],
+            )
+            for row in rows
+        ]
+
+    async def get_analytics_source_state(
+        self,
+        owner_user_id: UUID,
+    ) -> RoleReadinessAnalyticsSourceState:
+        row = (
+            await self.session.execute(
+                select(
+                    func.count(RoleReadinessAnalysisModel.id),
+                    func.coalesce(func.sum(RoleDefinitionModel.version), 0),
+                    func.max(RoleReadinessAnalysisModel.created_at),
+                    func.max(RoleDefinitionModel.updated_at),
+                )
+                .join(
+                    RoleDefinitionModel,
+                    RoleDefinitionModel.id == RoleReadinessAnalysisModel.role_id,
+                )
+                .where(RoleReadinessAnalysisModel.owner_user_id == owner_user_id)
+            )
+        ).one()
+        return RoleReadinessAnalyticsSourceState(
+            record_count=int(row[0] or 0),
+            role_version_sum=int(row[1] or 0),
+            max_analysis_created_at=row[2],
+            max_role_updated_at=row[3],
+        )
 
     async def add_audit(self, event: RoleReadinessAuditEvent) -> None:
         self.session.add(_audit_model(event))

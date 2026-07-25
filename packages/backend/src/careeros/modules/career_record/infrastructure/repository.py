@@ -4,16 +4,19 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Sequence
+from datetime import date
 from types import TracebackType
 from typing import Any, NoReturn
 from uuid import UUID
 
-from sqlalchemy import and_, delete, exists, or_, select, update
+from sqlalchemy import and_, delete, exists, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from careeros.foundation.database import Database
 from careeros.modules.career_record.application.models import (
+    CareerRecordAnalyticsGrowthPoint,
+    CareerRecordAnalyticsSourceState,
     EvidenceFilter,
     EvidenceRecord,
     PageCursor,
@@ -425,6 +428,101 @@ class SqlAlchemyCareerRecordUnitOfWork:
             )
         ).all()
         return await self._evidence_records(owner_user_id, list(models))
+
+    async def list_analytics_growth(
+        self,
+        owner_user_id: UUID,
+        window_start: date,
+        window_end: date,
+        limit: int,
+    ) -> list[CareerRecordAnalyticsGrowthPoint]:
+        rows = (
+            await self.session.execute(
+                select(
+                    EvidenceRevisionModel.evidence_id,
+                    EvidenceRevisionModel.id,
+                    EvidenceRevisionModel.evidence_type,
+                    EvidenceRevisionModel.created_at,
+                )
+                .join(
+                    EvidenceItemModel,
+                    and_(
+                        EvidenceItemModel.owner_user_id == EvidenceRevisionModel.owner_user_id,
+                        EvidenceItemModel.id == EvidenceRevisionModel.evidence_id,
+                        EvidenceItemModel.current_revision == EvidenceRevisionModel.revision,
+                    ),
+                )
+                .where(
+                    EvidenceItemModel.owner_user_id == owner_user_id,
+                    EvidenceItemModel.lifecycle == EvidenceLifecycle.ACTIVE.value,
+                    EvidenceRevisionModel.evidence_type == EvidenceType.ACHIEVEMENT.value,
+                    EvidenceRevisionModel.strength.in_(
+                        (
+                            EvidenceStrength.SUPPORTED.value,
+                            EvidenceStrength.CONFIRMED.value,
+                            EvidenceStrength.VERIFIED.value,
+                        )
+                    ),
+                    func.date(EvidenceRevisionModel.created_at) >= window_start,
+                    func.date(EvidenceRevisionModel.created_at) <= window_end,
+                )
+                .order_by(
+                    EvidenceRevisionModel.created_at.asc(),
+                    EvidenceRevisionModel.id.asc(),
+                )
+                .limit(limit)
+            )
+        ).all()
+        return [
+            CareerRecordAnalyticsGrowthPoint(
+                evidence_id=row[0],
+                evidence_revision_id=row[1],
+                category=row[2],
+                occurred_at=row[3],
+            )
+            for row in rows
+        ]
+
+    async def get_analytics_source_state(
+        self,
+        owner_user_id: UUID,
+    ) -> CareerRecordAnalyticsSourceState:
+        row = (
+            await self.session.execute(
+                select(
+                    func.count(EvidenceRevisionModel.id),
+                    func.coalesce(func.sum(EvidenceItemModel.version), 0),
+                    func.max(EvidenceItemModel.updated_at),
+                    func.max(EvidenceRevisionModel.created_at),
+                )
+                .join(
+                    EvidenceItemModel,
+                    and_(
+                        EvidenceItemModel.owner_user_id == EvidenceRevisionModel.owner_user_id,
+                        EvidenceItemModel.id == EvidenceRevisionModel.evidence_id,
+                        EvidenceItemModel.current_revision == EvidenceRevisionModel.revision,
+                    ),
+                )
+                .where(
+                    EvidenceItemModel.owner_user_id == owner_user_id,
+                    EvidenceItemModel.lifecycle == EvidenceLifecycle.ACTIVE.value,
+                    EvidenceRevisionModel.evidence_type == EvidenceType.ACHIEVEMENT.value,
+                    EvidenceRevisionModel.strength.in_(
+                        (
+                            EvidenceStrength.SUPPORTED.value,
+                            EvidenceStrength.CONFIRMED.value,
+                            EvidenceStrength.VERIFIED.value,
+                        )
+                    ),
+                )
+            )
+        ).one()
+        return CareerRecordAnalyticsSourceState(
+            record_count=int(row[0] or 0),
+            item_version_sum=int(row[1] or 0),
+            max_item_updated_at=row[2],
+            max_revision_created_at=row[3],
+        )
 
     async def add_evidence(self, record: EvidenceRecord) -> None:
         _validate_record_ownership(record)

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import datetime
+from datetime import date, datetime
 from types import TracebackType
 from typing import Protocol, Self
 from uuid import UUID
@@ -17,7 +17,13 @@ from careeros.modules.role_readiness.domain import (
 )
 from careeros.modules.role_readiness.domain.scoring import CareerReadinessSnapshot
 
-from .models import AnalysisRecord, PageCursor, RoleFilter
+from .models import (
+    AnalysisRecord,
+    PageCursor,
+    RoleFilter,
+    RoleReadinessAnalyticsPoint,
+    RoleReadinessAnalyticsSourceState,
+)
 
 
 class Clock(Protocol):
@@ -85,6 +91,19 @@ class RoleReadinessUnitOfWork(Protocol):
     async def find_analysis_by_idempotency(
         self, owner_user_id: UUID, idempotency_key: str
     ) -> AnalysisRecord | None: ...
+
+    async def list_analytics_history(
+        self,
+        owner_user_id: UUID,
+        window_start: date,
+        window_end: date,
+        limit: int,
+    ) -> list[RoleReadinessAnalyticsPoint]: ...
+
+    async def get_analytics_source_state(
+        self,
+        owner_user_id: UUID,
+    ) -> RoleReadinessAnalyticsSourceState: ...
 
     async def add_audit(self, event: RoleReadinessAuditEvent) -> None: ...
 

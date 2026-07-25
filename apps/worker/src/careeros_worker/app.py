@@ -17,6 +17,13 @@ from celery import Celery  # type: ignore[import-untyped,unused-ignore]
 from careeros_worker.base import SafeTask
 from careeros_worker.config import WorkerSettings, get_settings
 from careeros_worker.logging import configure_worker_logging
+from careeros_worker.task_names import (
+    DISPATCH_CAREER_ANALYTICS_OUTBOX_TASK,
+    PROCESS_CAREER_ANALYTICS_REFRESH_TASK,
+    PROCESS_NETWORKING_LOCAL_REMINDERS_TASK,
+    RECONCILE_CAREER_ANALYTICS_TASK,
+    RECONCILE_NETWORKING_REMINDERS_TASK,
+)
 
 
 def create_celery_app(settings: WorkerSettings | None = None) -> Celery:
@@ -31,6 +38,14 @@ def create_celery_app(settings: WorkerSettings | None = None) -> Celery:
         task_cls=SafeTask,
     )
     visibility_timeout = max(resolved.task_time_limit_seconds * 2, 3600)
+    networking_time_limit = min(
+        resolved.task_time_limit_seconds,
+        resolved.networking_reminder_lease_seconds - 5,
+    )
+    networking_soft_time_limit = min(
+        resolved.task_soft_time_limit_seconds,
+        networking_time_limit - 1,
+    )
     application.conf.update(
         accept_content=["json"],
         broker_connection_retry_on_startup=True,
@@ -42,6 +57,12 @@ def create_celery_app(settings: WorkerSettings | None = None) -> Celery:
         result_serializer="json",
         task_acks_late=True,
         task_acks_on_failure_or_timeout=True,
+        task_annotations={
+            PROCESS_NETWORKING_LOCAL_REMINDERS_TASK: {
+                "soft_time_limit": networking_soft_time_limit,
+                "time_limit": networking_time_limit,
+            }
+        },
         task_default_queue="default",
         task_ignore_result=True,
         task_publish_retry=True,
@@ -58,6 +79,11 @@ def create_celery_app(settings: WorkerSettings | None = None) -> Celery:
         task_time_limit=resolved.task_time_limit_seconds,
         task_track_started=True,
         task_routes={
+            PROCESS_CAREER_ANALYTICS_REFRESH_TASK: {"queue": "default"},
+            DISPATCH_CAREER_ANALYTICS_OUTBOX_TASK: {"queue": "maintenance"},
+            RECONCILE_CAREER_ANALYTICS_TASK: {"queue": "maintenance"},
+            PROCESS_NETWORKING_LOCAL_REMINDERS_TASK: {"queue": "maintenance"},
+            RECONCILE_NETWORKING_REMINDERS_TASK: {"queue": "maintenance"},
             PROCESS_EVIDENCE_ATTACHMENT_TASK: {"queue": "career-record"},
             DISPATCH_EVIDENCE_ATTACHMENT_OUTBOX_TASK: {"queue": "maintenance"},
             CLEANUP_EVIDENCE_ATTACHMENT_OBJECTS_TASK: {"queue": "maintenance"},
@@ -74,6 +100,22 @@ def create_celery_app(settings: WorkerSettings | None = None) -> Celery:
         worker_send_task_events=True,
         worker_cancel_long_running_tasks_on_connection_loss=True,
         beat_schedule={
+            "dispatch-career-analytics-outbox": {
+                "task": DISPATCH_CAREER_ANALYTICS_OUTBOX_TASK,
+                "schedule": float(resolved.analytics_outbox_interval_seconds),
+            },
+            "reconcile-career-analytics": {
+                "task": RECONCILE_CAREER_ANALYTICS_TASK,
+                "schedule": float(resolved.analytics_reconciliation_interval_seconds),
+            },
+            "process-networking-local-reminders": {
+                "task": PROCESS_NETWORKING_LOCAL_REMINDERS_TASK,
+                "schedule": float(resolved.networking_reminder_interval_seconds),
+            },
+            "reconcile-networking-local-reminders": {
+                "task": RECONCILE_NETWORKING_REMINDERS_TASK,
+                "schedule": float(resolved.networking_reconciliation_interval_seconds),
+            },
             "dispatch-career-record-attachment-outbox": {
                 "task": DISPATCH_EVIDENCE_ATTACHMENT_OUTBOX_TASK,
                 "schedule": 5.0,

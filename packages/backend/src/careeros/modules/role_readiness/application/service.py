@@ -6,7 +6,7 @@ import hashlib
 import json
 import re
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from uuid import UUID
 
 from careeros.modules.role_readiness.domain import (
@@ -37,6 +37,8 @@ from .models import (
     RoleComparisonView,
     RoleDetail,
     RoleFilter,
+    RoleReadinessAnalyticsPoint,
+    RoleReadinessAnalyticsWatermark,
     RoleReadinessView,
     SavedRoleView,
     SaveRole,
@@ -52,6 +54,9 @@ from .ports import (
 )
 
 _IDEMPOTENCY_KEY = re.compile(r"^[A-Za-z0-9._:-]{8,128}$")
+# Career Analytics expands its public 3,650-day window by one UTC day on both
+# sides before reading this purpose-limited source.
+_ANALYTICS_SOURCE_MAX_WINDOW_DAYS = 3_652
 
 
 @dataclass(frozen=True, slots=True)
@@ -365,6 +370,42 @@ class RoleReadinessService:
             records = await uow.list_analyses(owner_user_id, role_id, after, page_size + 1)
             views = [await self._analysis_view(uow, record) for record in records]
         return page_result(views, cursor=after, limit=page_size)
+
+    async def list_analytics_history(
+        self,
+        owner_user_id: UUID,
+        *,
+        window_start: date,
+        window_end: date,
+        limit: int,
+    ) -> tuple[RoleReadinessAnalyticsPoint, ...]:
+        """Return purpose-minimized, deterministically bounded history."""
+
+        if (
+            window_end < window_start
+            or (window_end - window_start).days > _ANALYTICS_SOURCE_MAX_WINDOW_DAYS
+        ):
+            raise RoleReadinessValidationError(
+                "analytics source window exceeds the bounded timezone guard"
+            )
+        if not 1 <= limit <= self._policy.max_history + 1:
+            raise RoleReadinessValidationError("analytics history limit is out of range")
+        async with self._uow() as uow:
+            values = await uow.list_analytics_history(
+                owner_user_id,
+                window_start,
+                window_end,
+                limit,
+            )
+        return tuple(values)
+
+    async def analytics_watermark(
+        self,
+        owner_user_id: UUID,
+    ) -> RoleReadinessAnalyticsWatermark:
+        async with self._uow() as uow:
+            state = await uow.get_analytics_source_state(owner_user_id)
+        return state.watermark()
 
     async def compare_roles(
         self, owner_user_id: UUID, role_ids: tuple[UUID, ...]

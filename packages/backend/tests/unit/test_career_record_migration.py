@@ -71,7 +71,7 @@ def _constraints(table: Table, kind: type[Any]) -> set[tuple[str | None, tuple[s
     return {
         (constraint.name, tuple(constraint.columns.keys()))
         for constraint in table.constraints
-        if isinstance(constraint, kind)
+        if isinstance(constraint, kind) and constraint.info.get("introduced_in_revision") is None
     }
 
 

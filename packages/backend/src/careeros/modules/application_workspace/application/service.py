@@ -35,6 +35,7 @@ from careeros.modules.application_workspace.domain import (
     ApplicationWorkspaceConflict,
     ApplicationWorkspaceIdempotencyConflict,
     ApplicationWorkspaceNotFound,
+    ApplicationWorkspaceUnavailable,
     ApplicationWorkspaceValidationError,
     ApplicationWorkspaceVersionConflict,
     ConsistencyStatus,
@@ -43,13 +44,18 @@ from careeros.modules.application_workspace.domain import (
 )
 
 from .models import (
+    ApplicationAnalyticsCursor,
+    ApplicationAnalyticsPage,
     ApplicationAnalyticsSnapshot,
+    ApplicationAnalyticsWatermark,
     ApplicationCalendarEntry,
     ApplicationEventCursor,
     ApplicationFilter,
     ApplicationInterviewContext,
+    ApplicationInterviewEvidenceReference,
     ApplicationMilestones,
     ApplicationPackView,
+    ApplicationReference,
     ApplicationResumeSnapshot,
     ApplicationSourceClaim,
     ApplicationSummary,
@@ -109,7 +115,8 @@ class ApplicationWorkspacePolicy:
     max_manual_events_per_application: int = 300
     max_packs_per_application: int = 100
     max_calendar_entries: int = 500
-    max_analytics_records: int = 1_000
+    analytics_page_size: int = 100
+    max_analytics_page_size: int = 200
 
     def __post_init__(self) -> None:
         if not 1 <= self.default_page_size <= self.max_page_size <= 200:
@@ -122,11 +129,14 @@ class ApplicationWorkspacePolicy:
                 self.max_manual_events_per_application,
                 self.max_packs_per_application,
                 self.max_calendar_entries,
-                self.max_analytics_records,
+                self.analytics_page_size,
+                self.max_analytics_page_size,
             )
             < 1
         ):
             raise ValueError("application workspace collection limits are invalid")
+        if self.analytics_page_size > self.max_analytics_page_size:
+            raise ValueError("application workspace analytics page limits are invalid")
 
 
 class ApplicationWorkspaceService:
@@ -192,24 +202,76 @@ class ApplicationWorkspaceService:
     async def list_analytics_snapshots(
         self,
         owner_user_id: UUID,
-        *,
-        limit: int = 1_000,
     ) -> tuple[ApplicationAnalyticsSnapshot, ...]:
-        if not 1 <= limit <= self._policy.max_analytics_records:
+        """Read every owner record without silent truncation.
+
+        Phase 9 uses ``list_analytics_page`` directly and compares watermarks
+        before and after aggregation. This compatibility helper applies the same
+        check and retries a bounded number of times when the source changes.
+        """
+
+        for _attempt in range(3):
+            before = await self.get_analytics_watermark(owner_user_id)
+            cursor = None
+            snapshots: list[ApplicationAnalyticsSnapshot] = []
+            while True:
+                page = await self.list_analytics_page(
+                    owner_user_id,
+                    cursor=cursor,
+                )
+                snapshots.extend(page.data)
+                if page.next_cursor is None:
+                    break
+                cursor = page.next_cursor
+            after = await self.get_analytics_watermark(owner_user_id)
+            if before.token == after.token:
+                return tuple(snapshots)
+        raise ApplicationWorkspaceUnavailable("analytics source changed during aggregation")
+
+    async def list_analytics_page(
+        self,
+        owner_user_id: UUID,
+        *,
+        cursor: ApplicationAnalyticsCursor | None = None,
+        limit: int | None = None,
+    ) -> ApplicationAnalyticsPage:
+        page_size = limit or self._policy.analytics_page_size
+        if not 1 <= page_size <= self._policy.max_analytics_page_size:
             raise ApplicationWorkspaceValidationError("analytics limit is out of range")
         async with self._uow() as uow:
-            records = await uow.list_application_records(owner_user_id, limit)
+            records = await uow.list_application_records(
+                owner_user_id,
+                cursor,
+                page_size + 1,
+            )
+            visible = records[:page_size]
             milestones = await uow.list_application_milestones(
                 owner_user_id,
-                tuple(record.id for record in records),
+                tuple(record.id for record in visible),
             )
-        return tuple(
+        snapshots = tuple(
             _analytics_snapshot(
                 record,
                 milestones.get(record.id, ApplicationMilestones()),
             )
-            for record in records
+            for record in visible
         )
+        next_cursor = None
+        if len(records) > page_size:
+            anchor = visible[-1]
+            next_cursor = ApplicationAnalyticsCursor(
+                created_at=anchor.created_at,
+                application_id=anchor.id,
+            )
+        return ApplicationAnalyticsPage(data=snapshots, next_cursor=next_cursor)
+
+    async def get_analytics_watermark(
+        self,
+        owner_user_id: UUID,
+    ) -> ApplicationAnalyticsWatermark:
+        async with self._uow() as uow:
+            state = await uow.get_analytics_source_state(owner_user_id)
+        return state.watermark()
 
     async def get_application(
         self,
@@ -221,6 +283,19 @@ class ApplicationWorkspaceService:
         if summary is None:
             raise ApplicationWorkspaceNotFound
         return summary
+
+    async def get_application_reference(
+        self,
+        owner_user_id: UUID,
+        application_id: UUID,
+    ) -> ApplicationReference:
+        """Return only content-free workflow metadata after owner-scoped lookup."""
+
+        async with self._uow() as uow:
+            reference = await uow.get_application_reference(owner_user_id, application_id)
+        if reference is None:
+            raise ApplicationWorkspaceNotFound
+        return reference
 
     async def list_tasks(
         self,
@@ -343,6 +418,47 @@ class ApplicationWorkspaceService:
             claims=record.resume_claims,
             evidence_pins=record.evidence_pins,
         )
+
+    async def validate_interview_evidence(
+        self,
+        owner_user_id: UUID,
+        application_id: UUID,
+        references: tuple[ApplicationInterviewEvidenceReference, ...],
+    ) -> None:
+        """Re-authorize immutable application pins against current Career Record policy."""
+
+        async with self._uow() as uow:
+            record = await uow.get_application_record(owner_user_id, application_id)
+        if record is None:
+            raise ApplicationWorkspaceNotFound
+
+        references_by_id: dict[UUID, ApplicationInterviewEvidenceReference] = {}
+        for reference in references:
+            existing = references_by_id.get(reference.evidence_id)
+            if existing is not None and existing != reference:
+                raise ApplicationWorkspaceConflict(
+                    "interview evidence references disagree on an exact revision"
+                )
+            references_by_id.setdefault(reference.evidence_id, reference)
+
+        pinned_by_id = {pin.evidence_id: pin for pin in record.evidence_pins}
+        for reference in references_by_id.values():
+            pinned = pinned_by_id.get(reference.evidence_id)
+            if pinned is None or (
+                pinned.evidence_revision_id != reference.evidence_revision_id
+                or pinned.revision_number != reference.revision_number
+                or pinned.statement_sha256 != reference.statement_sha256
+                or pinned.strength != reference.strength
+                or pinned.has_numeric_claim is not reference.has_numeric_claim
+            ):
+                raise ApplicationWorkspaceConflict(
+                    "interview evidence is outside the immutable application ledger"
+                )
+        if references_by_id:
+            await self._evidence.validate_current(
+                owner_user_id,
+                tuple(references_by_id.values()),
+            )
 
     async def create_application(
         self,
@@ -2105,6 +2221,16 @@ def _analytics_snapshot(
     record: ApplicationRecord,
     milestones: ApplicationMilestones,
 ) -> ApplicationAnalyticsSnapshot:
+    supported_requirement_ids = {support.requirement_id for support in record.requirement_support}
+    requirement_coverage = (
+        min(
+            10_000,
+            (len(supported_requirement_ids) * 10_000 + len(record.job_requirements) // 2)
+            // len(record.job_requirements),
+        )
+        if record.job_requirements
+        else None
+    )
     return ApplicationAnalyticsSnapshot(
         application_id=record.id,
         stage=record.stage,
@@ -2117,6 +2243,7 @@ def _analytics_snapshot(
         job_analysis_id=record.job_analysis_id,
         resume_version_id=record.resume_version_id,
         resume_version_number=record.resume_version_number,
+        requirement_coverage_basis_points=requirement_coverage,
         application_deadline=record.application_deadline,
         first_applied_at=milestones.first_applied_at,
         first_response_at=milestones.first_response_at,
