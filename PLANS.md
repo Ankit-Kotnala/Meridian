@@ -1,8 +1,9 @@
 # CareerOS implementation plan
 
-Last updated: 2026-07-19
+Last updated: 2026-07-24
 Plan owner: engineering  
-Current status: **Phase 7 complete locally; Phase 8 is next**
+Current status: **Phase 8 complete and hosted verified in PR #21; Phase 9 is
+next**
 
 ## Status legend
 
@@ -654,11 +655,13 @@ integration tests execute. The final rerun passed after that readiness fix.
 
 ## Phase 5 scope and status
 
-Current status: **complete locally**. Phase 5 adds the Job Match, Requirement
-Matrix, and Opportunity Prioritizer vertical slice. It preserves Phase 3
-evidence authority and Phase 4 role context while adding exact job imports,
-source-spanned requirements, SSRF-hardened URL fetching, deterministic
+Current status: **complete and hosted verified**. Phase 5 adds the Job Match,
+Requirement Matrix, and Opportunity Prioritizer vertical slice. It preserves
+Phase 3 evidence authority and Phase 4 role context while adding exact job
+imports, source-spanned requirements, SSRF-hardened URL fetching, deterministic
 Application Readiness, hard-gap visibility, and explainable pursuit priority.
+PR #20 merged the Phase 5–7 stack at `f9807dc` after hosted CI run `30119088488`
+passed all required jobs.
 
 ### Included
 
@@ -764,11 +767,12 @@ visible alert, so the test now asserts the accessible status region.
 
 ## Phase 6 scope and status
 
-Current status: **complete locally**. Phase 6 adds Change Studio and
+Current status: **complete and hosted verified**. Phase 6 adds Change Studio and
 truth-locked AI: an authenticated, owner-scoped review workflow that turns
 eligible Career Record evidence plus saved Job Match requirements into
 structured, grounded suggestions. Provider output remains untrusted until strict
 schema validation, deterministic grounding, and explicit user action complete.
+The merged Phase 5–7 stack passed hosted CI run `30119088488` on PR #20.
 
 ### Included
 
@@ -867,11 +871,12 @@ the assertion now targets a stable visible occurrence.
 
 ## Phase 7 scope and status
 
-Current status: **complete locally**. Phase 7 adds Resume Builder and verified
-export: an authenticated, owner-scoped workflow that turns eligible Career
-Record evidence and optional Change Studio output into structured resume drafts,
-immutable versions, ATS-readable PDF/DOCX/text/JSON exports, round-trip
-verification reports, and short-lived download intents.
+Current status: **complete and hosted verified**. Phase 7 adds Resume Builder and
+verified export: an authenticated, owner-scoped workflow that turns eligible
+Career Record evidence and optional Change Studio output into structured resume
+drafts, immutable versions, ATS-readable PDF/DOCX/text/JSON exports, round-trip
+verification reports, and short-lived download intents. PR #20 merged at
+`f9807dc` after hosted CI run `30119088488` passed every required job.
 
 ### Included
 
@@ -977,6 +982,118 @@ announce the same export status.
   primary one-page workflow. Broader unusual-font, locale, and complex-layout
   fixture coverage remains future corpus expansion.
 
+## Phase 8 scope and status
+
+Current status: **complete and hosted verified**.
+Phase 8 adds an authenticated, owner-scoped Application Workspace that connects
+one exact saved-job revision, one immutable resume version, and the resume's
+eligible evidence revisions to application tracking, grounded application packs,
+and deterministic consistency results. The final `scripts/verify-phase8.ps1`
+run and separate security scan passed on 2026-07-24 for implementation revision
+`964cd9c`. PR #21 hosted workflow run `30126993025` then passed every required
+job at head `645536b`.
+
+### Included
+
+- [x] Migration `20260724_0009` adds owner-scoped applications, workflow events,
+      tasks, notes, application packs, generated documents, idempotency records,
+      and redacted audit events with ownership-aware foreign keys, constraints,
+      indexes, and optimistic-concurrency versions.
+- [x] The already-shipped Phase 6 migration `20260719_0007` remains immutable.
+      Migration `20260724_0009` forward-adds nullable
+      `evidence_revision_id`, `evidence_revision_number`, and
+      `evidence_statement_sha256` to Change Studio claims under an all-null or
+      all-complete constraint. Existing claims stay readable and explicitly
+      unpinned; they are never backfilled from today's evidence and fail closed
+      when Resume Builder or Application Workspace requires grounded generation.
+      New Change Studio claims require the complete revision tuple.
+- [x] `careeros.modules.application_workspace` provides framework-independent
+      workflow, provenance, pack, consistency, deletion, interview-context, and
+      analytics-snapshot policies behind application ports and SQLAlchemy
+      persistence. It reads Job Match, Resume Builder, and Career Record only
+      through explicit owner-authorizing application services.
+- [x] An application pins the exact job ID/version/source SHA-256, analysis and
+      typed requirement snapshot, and resume ID/version ID/version number after
+      validating the immutable resume's per-claim hashes. It copies evidence ID/
+      revision ID/revision number/statement SHA-256. Legacy resume versions
+      without that complete immutable claim/evidence ledger are refused rather
+      than silently upgraded or treated as grounded.
+- [x] Changing the selected resume creates a fresh evidence snapshot and requires
+      an explicit reason that is preserved with the previous/next resume and
+      evidence revision identifiers in workflow and audit history.
+- [x] The stage state machine, terminal outcome/reopen rules, deadlines,
+      follow-ups, contacts, referrals, tasks, notes, events, rejection reasons,
+      offer summaries, and deletion behavior are enforced server-side.
+      Application and task mutations use strict `If-Match`; every nested lookup
+      scopes by owner and application parent.
+- [x] Application, task, note, event, and pack creates use bounded idempotency
+      keys and request fingerprints. The web holds one stable key for one user
+      intent, reuses it for an unchanged retry, and rotates it only after relevant
+      input changes or a successful mutation. An omitted event time does not add
+      a changing clock value to the retry fingerprint.
+- [x] The deterministic synchronous pack generator can produce tailored resume,
+      cover letter, professional bio, interest/fit answers, recruiter and hiring
+      manager messages, referral and LinkedIn notes, follow-up email, interview
+      introduction, and achievement summary. Each claim links only to its exact
+      pinned evidence revisions and supported requirements; unsupported facts or
+      numbers produce blocking findings rather than plausible prose.
+- [x] The consistency engine checks source pins, claim/evidence/requirement
+      linkage, document hashes, numeric support, and cross-document claim
+      agreement. Document deletion replaces sensitive content and links with an
+      audited tombstone; application deletion is ownership/version checked and
+      leaves a redacted audit event.
+- [x] Authenticated `/api/v1/applications` and application-pack APIs enforce
+      CSRF on mutations, private no-store responses, safe problems, bounded
+      cursor pagination/filter/sort/calendar ranges, stable idempotency, and
+      generated OpenAPI contracts. The lightweight application detail excludes
+      unbounded child collections. Cursor decoding rejects non-ASCII input before
+      decoding, and database stage/outcome constraints match the domain enums.
+- [x] `/applications` and `/applications/{applicationId}` provide board, table,
+      and calendar representations, non-drag stage actions, lazy on-demand detail
+      panels, cursor-based load-more flows, loading/empty/success/error/conflict
+      states, conflict-safe authoritative reloads, and complete keyboard-operable
+      desktop/mobile workflows. Resume changes persist their new evidence
+      snapshot, reason, workflow event, and audit record in one transaction.
+- [x] ADR 0014 and API, architecture, security, grounding, testing, checklist,
+      README, generated-contract, Make/CI/verification, and this plan surface are
+      aligned with the implemented slice.
+- [x] No submission, email delivery, social-network action, autonomous stage
+      transition, or message-sending endpoint or control was added. Generated
+      messages remain user-reviewed text.
+
+### Local closeout evidence — 2026-07-24 / implementation `964cd9c`
+
+| Check                           | Status | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Predecessor Phase 7 gate        | Pass   | `scripts/verify-phase7.ps1` passed on 2026-07-19, including migration head `20260719_0008`, rollback/forward repair, renderer round-trip checks, integrations, and the authenticated Resume Builder workflow.                                                                                                                                                                                                                                                                                                                                           |
+| Final Phase 8 consolidated gate | Pass   | `scripts/verify-phase8.ps1` exited 0 in 273 seconds on 2026-07-24. It passed format/contract/lint/type/build gates, emitted 39 production web routes, reported `206 passed` for the backend portfolio, `104 passed` for the API portfolio, and `121 passed` across 35 web files, then passed integration, worker, runtime, and container probes.                                                                                                                                                                                                        |
+| Migration and repair            | Pass   | The isolated fresh database reached head `20260724_0009`, downgraded to `20260719_0008`, and repaired forward. Compatibility tests retain the immutable shipped `20260719_0007` migration and verify the nullable/all-complete forward provenance addition, legacy refusal, database enum parity, and a real atomic resume-change transaction.                                                                                                                                                                                                          |
+| Phase 8 browser portfolio       | Pass   | Playwright discovered 16 tests and finished with 10 passed and 6 intentional inherited mobile skips. Application Workspace itself passed the complete desktop and mobile workflow against the production web/edge stack: registration, evidence, saved job/analysis, resume and application creation, board/table/calendar, stage changes, task/note/event activity, pack generation/consistency review, and keyboard-safe controls. The configured skips remain only on predecessor product journeys whose mobile coverage is intentionally inherited. |
+| Closeout regression portfolio   | Pass   | Backend/API/web coverage verifies downstream refusal of incomplete legacy provenance, stable idempotency when an event omits its time, strict rejection of non-ASCII cursors, and conflict-safe UI reload. Outcome, deletion, audit, source hashing, numeric grounding, request-race protection, pagination, preserved drafts, live counts, and accessible state handling also pass.                                                                                                                                                                    |
+| Separate Phase 8 security scan  | Pass   | `scripts/security-scan.ps1` exited 0 in 287.7 seconds on 2026-07-24. Gitleaks was clean; pnpm and pip audits found no known vulnerabilities, with unpublished local workspace packages explicitly skipped; API and worker had no fixable-high findings; and web plus `web-edge` had no vulnerabilities. Three medium Python-runtime findings remain with fixes only in Python 3.15 prereleases and are nonblocking under the current policy while tracked for a stable fix.                                                                             |
+| Hosted Phase 8 CI               | Pass   | PR #21 workflow run `30126993025` passed every required job at head `645536b`: GitGuardian, API, worker, web/contracts, supply chain, containers, browser smoke, and all seven phase E2E jobs. The first hosted run exposed a test-only pagination assumption; `645536b` made the assertion traverse every cursor page, and both the complete fresh-database integration suite and the replacement hosted run passed.                                                                                                                                   |
+
+### Known limitations and deferred work
+
+- The first pack generator is deterministic and synchronous. It persists
+  immutable inputs, document hashes, idempotency, status, consistency, and audit,
+  but it does not call a production language provider or durable worker.
+  Provider wording and worker throughput may be added only behind the same
+  grounding, schema, retry/cost, and consistency rules.
+- Generated messages are drafts for explicit user review. CareerOS does not
+  submit an application, send email, message a social network, scrape contacts,
+  or infer workflow-stage changes.
+- A pre-Phase-8 Change Studio claim without the complete revision tuple remains
+  readable for audit/history but cannot seed new grounded output. The safe user
+  path is to regenerate from currently eligible evidence; automatic backfill
+  would misrepresent historical provenance.
+- Calendar, contact, and activity records are local workspace data. External
+  calendar/CRM connectors, consented contact imports, reminders, interview
+  preparation, and non-causal analytics belong to Phase 9.
+- Production provider selection, queue/worker sizing, load/soak evidence,
+  backup/restore, regional deployment, and protected release approval remain
+  Phase 10 decisions and cannot be inferred from a healthy local Compose stack.
+
 ## Roadmap and phase gates
 
 | Phase                                                       | Outcomes                                                                                                                           | Depends on  | Exit evidence                                                                                          |
@@ -1041,24 +1158,24 @@ Detailed checkboxes live in `docs/implementation-checklist.md`.
 
 ## Risk register
 
-| ID  | Risk                                                             | Likelihood / impact | Mitigation and gate                                                                                                                                                                                                                                    | Earliest owner phase   |
-| --- | ---------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------- |
-| R1  | Cross-tenant data exposure through IDOR or object keys           | Medium / Critical   | Ownership-scoped queries, policy tests, private buckets, audit events                                                                                                                                                                                  | 1 and every data phase |
-| R2  | Malicious or resource-exhausting documents                       | High / Critical     | Signature/limit checks, scanning, isolated no-network worker, time/memory/CPU caps, hostile fixtures                                                                                                                                                   | 2                      |
-| R3  | AI fabricates or is redirected by document instructions          | High / Critical     | Untrusted-content delimiters, strict schemas, evidence ledger, deterministic grounding, adversarial tests                                                                                                                                              | 5–6                    |
-| R4  | Score labels mislead users                                       | Medium / High       | Canonical disclaimer, deterministic versioned formulas, explanations, no probability language                                                                                                                                                          | 2, 4, 5                |
-| R5  | PDF/DOCX looks correct but parses badly                          | High / High         | Constrained templates, searchable text, round-trip verification and blocking critical failures                                                                                                                                                         | 7                      |
-| R6  | Dependency/toolchain churn breaks the greenfield baseline        | Medium / Medium     | Conservative pins, lockfiles, CI cache keys, scheduled upgrades in small changes                                                                                                                                                                       | 0 onward               |
-| R7  | Queue retry duplicates work or cost                              | Medium / High       | Idempotency records, bounded retries/timeouts, job state machine, budgets and dead letters                                                                                                                                                             | 2 onward               |
-| R8  | Sensitive content leaks through logs/telemetry/providers         | Medium / Critical   | Data classification, default redaction, payload-free telemetry, provider minimization and consent                                                                                                                                                      | 0 onward               |
-| R9  | Local Compose health hides production gaps                       | High / High         | Separate readiness, production threat review, load/restore/failure tests, protected deploy                                                                                                                                                             | 10                     |
-| R10 | Broad roadmap produces unfinished horizontal scaffolding         | High / Medium       | One vertical phase at a time, dependency gates, no completion on placeholders                                                                                                                                                                          | Every phase            |
-| R11 | Public demo is mistaken for functional analysis                  | Medium / Medium     | Isolate it at `/demo/dashboard`, retain the fictional-preview label, and keep it free of upload/score claims or account persistence                                                                                                                    | 0–1                    |
-| R12 | Retention/deletion becomes inconsistent across stores            | Medium / High       | Data inventory, deletion tombstones/jobs, object/vector/backup policy and tests per entity                                                                                                                                                             | 1 onward               |
-| R13 | Generated contracts drift from implemented OpenAPI               | Medium / High       | FastAPI remains authoritative; pin normalized export/client generation and fail CI on either drift                                                                                                                                                     | 0 onward               |
-| R14 | Hosted CI and local behavior diverge after architecture changes  | Low / Medium        | Runs 29360385761, 29367040183, 29378312134, and 29657932938 verify foundation through Phase 3; Beat liveness is now asserted consistently across Compose versions; retain clean contract-output, container, migration, browser, and supply-chain gates | 0 onward               |
-| R15 | Upstream runtime findings do not all have supported stable fixes | Low / High          | Two exact-version Grype exceptions document reachability and removal conditions; monitor remaining findings and refresh runtimes promptly                                                                                                              | 0–1                    |
-| R16 | Workspace/migration move regresses runtime or existing databases | Medium / High       | One root lock, preserved revision IDs, fresh/existing upgrade tests, root-context image builds, and direct runtime Alembic verification                                                                                                                | 0                      |
+| ID  | Risk                                                             | Likelihood / impact | Mitigation and gate                                                                                                                                                                                                                   | Earliest owner phase   |
+| --- | ---------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| R1  | Cross-tenant data exposure through IDOR or object keys           | Medium / Critical   | Ownership-scoped queries, policy tests, private buckets, audit events                                                                                                                                                                 | 1 and every data phase |
+| R2  | Malicious or resource-exhausting documents                       | High / Critical     | Signature/limit checks, scanning, isolated no-network worker, time/memory/CPU caps, hostile fixtures                                                                                                                                  | 2                      |
+| R3  | AI fabricates or is redirected by document instructions          | High / Critical     | Untrusted-content delimiters, strict schemas, evidence ledger, deterministic grounding, adversarial tests                                                                                                                             | 5–6                    |
+| R4  | Score labels mislead users                                       | Medium / High       | Canonical disclaimer, deterministic versioned formulas, explanations, no probability language                                                                                                                                         | 2, 4, 5                |
+| R5  | PDF/DOCX looks correct but parses badly                          | High / High         | Constrained templates, searchable text, round-trip verification and blocking critical failures                                                                                                                                        | 7                      |
+| R6  | Dependency/toolchain churn breaks the greenfield baseline        | Medium / Medium     | Conservative pins, lockfiles, CI cache keys, scheduled upgrades in small changes                                                                                                                                                      | 0 onward               |
+| R7  | Queue retry duplicates work or cost                              | Medium / High       | Idempotency records, bounded retries/timeouts, job state machine, budgets and dead letters                                                                                                                                            | 2 onward               |
+| R8  | Sensitive content leaks through logs/telemetry/providers         | Medium / Critical   | Data classification, default redaction, payload-free telemetry, provider minimization and consent                                                                                                                                     | 0 onward               |
+| R9  | Local Compose health hides production gaps                       | High / High         | Separate readiness, production threat review, load/restore/failure tests, protected deploy                                                                                                                                            | 10                     |
+| R10 | Broad roadmap produces unfinished horizontal scaffolding         | High / Medium       | One vertical phase at a time, dependency gates, no completion on placeholders                                                                                                                                                         | Every phase            |
+| R11 | Public demo is mistaken for functional analysis                  | Medium / Medium     | Isolate it at `/demo/dashboard`, retain the fictional-preview label, and keep it free of upload/score claims or account persistence                                                                                                   | 0–1                    |
+| R12 | Retention/deletion becomes inconsistent across stores            | Medium / High       | Data inventory, deletion tombstones/jobs, object/vector/backup policy and tests per entity                                                                                                                                            | 1 onward               |
+| R13 | Generated contracts drift from implemented OpenAPI               | Medium / High       | FastAPI remains authoritative; pin normalized export/client generation and fail CI on either drift                                                                                                                                    | 0 onward               |
+| R14 | Hosted CI and local behavior diverge after architecture changes  | Low / Medium        | Runs 29360385761, 29367040183, 29378312134, 29657932938, and 30119088488 verify the merged predecessor through Phase 7; retain clean contract-output, container, migration, browser, and supply-chain gates                           | 0 onward               |
+| R15 | Upstream runtime findings do not all have supported stable fixes | Low / High          | Three medium Python-runtime findings have fixes only in Python 3.15 prereleases and are nonblocking under the documented fixable-high policy; retain removal-bound exceptions, monitor stable releases, and refresh runtimes promptly | 0–1                    |
+| R16 | Workspace/migration move regresses runtime or existing databases | Medium / High       | One root lock, preserved revision IDs, fresh/existing upgrade tests, root-context image builds, and direct runtime Alembic verification                                                                                               | 0                      |
 
 ## Change and verification protocol
 
@@ -1076,8 +1193,9 @@ At the end of every phase:
 
 ## Next phase
 
-The next product phase is **Phase 8 - Application Workspace and Application
-Packs**. It must add application records, stage/event/task workflows, exact
-job/resume/evidence version links, grounded application packs, consistency
-checks, deletion/audit behavior, and accessible Kanban/table/calendar views
-without adding autonomous submission.
+The next product phase is **Phase 9 - Interview Prep, Networking, Career Growth,
+and Analytics**.
+It must add evidence-linked defense/STAR stories, role-specific interview
+workflows, consent-based contacts and interactions without scraping or sending,
+goals/reviews, deterministic Career Health, and privacy-safe reproducible
+analytics whose language remains correlation-only and never predictive.

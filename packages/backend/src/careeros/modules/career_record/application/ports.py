@@ -162,6 +162,12 @@ class CareerRecordUnitOfWork(Protocol):
         self, owner_user_id: UUID, evidence_id: UUID, *, for_update: bool = False
     ) -> EvidenceRecord | None: ...
 
+    async def get_evidence_batch(
+        self,
+        owner_user_id: UUID,
+        evidence_ids: tuple[UUID, ...],
+    ) -> list[EvidenceRecord]: ...
+
     async def list_evidence(
         self,
         owner_user_id: UUID,

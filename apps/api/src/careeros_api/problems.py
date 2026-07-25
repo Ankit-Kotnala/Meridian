@@ -4,6 +4,15 @@ from collections.abc import Mapping
 from typing import cast
 
 import structlog
+from careeros.modules.application_workspace.domain.errors import (
+    ApplicationWorkspaceConflict,
+    ApplicationWorkspaceError,
+    ApplicationWorkspaceIdempotencyConflict,
+    ApplicationWorkspaceNotFound,
+    ApplicationWorkspaceUnavailable,
+    ApplicationWorkspaceValidationError,
+    ApplicationWorkspaceVersionConflict,
+)
 from careeros.modules.career_record.application.attachment_workflow import (
     AttachmentConflict,
     AttachmentFenced,
@@ -266,6 +275,24 @@ def install_problem_handlers(app: FastAPI) -> None:
             detail=detail,
         )
 
+    @app.exception_handler(ApplicationWorkspaceError)
+    async def application_workspace_problem(
+        request: Request, exc: ApplicationWorkspaceError
+    ) -> JSONResponse:
+        status_code, code, title, detail = _application_workspace_problem_details(exc)
+        logger.info(
+            "application_workspace_request_rejected",
+            error_code=code,
+            status_code=status_code,
+        )
+        return problem_response(
+            request,
+            status_code=status_code,
+            code=code,
+            title=title,
+            detail=detail,
+        )
+
     @app.exception_handler(RoleReadinessError)
     async def role_readiness_problem(request: Request, exc: RoleReadinessError) -> JSONResponse:
         status_code, code, title, detail = _role_readiness_problem_details(exc)
@@ -503,6 +530,59 @@ def _career_record_problem_details(
     return (
         status.HTTP_400_BAD_REQUEST,
         "career_record_rejected",
+        "Request rejected",
+        "The request could not be completed.",
+    )
+
+
+def _application_workspace_problem_details(
+    exc: ApplicationWorkspaceError,
+) -> tuple[int, str, str, str]:
+    if isinstance(exc, ApplicationWorkspaceUnavailable):
+        return (
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "application_workspace_unavailable",
+            "Application workspace unavailable",
+            "Application workspace services are temporarily unavailable.",
+        )
+    if isinstance(exc, ApplicationWorkspaceNotFound):
+        return (
+            status.HTTP_404_NOT_FOUND,
+            "application_workspace_not_found",
+            "Resource not found",
+            "The requested resource was not found.",
+        )
+    if isinstance(exc, ApplicationWorkspaceVersionConflict):
+        return (
+            status.HTTP_409_CONFLICT,
+            "application_workspace_version_conflict",
+            "Version conflict",
+            "This application changed. Refresh and try again.",
+        )
+    if isinstance(exc, ApplicationWorkspaceIdempotencyConflict):
+        return (
+            status.HTTP_409_CONFLICT,
+            "application_workspace_idempotency_conflict",
+            "Request conflict",
+            "This request key was already used for a different operation.",
+        )
+    if isinstance(exc, ApplicationWorkspaceValidationError):
+        return (
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "application_workspace_validation_error",
+            "Request validation failed",
+            "Review the submitted application workspace values.",
+        )
+    if isinstance(exc, ApplicationWorkspaceConflict):
+        return (
+            status.HTTP_409_CONFLICT,
+            "application_workspace_conflict",
+            "Request conflict",
+            "The request conflicts with current application workspace state.",
+        )
+    return (
+        status.HTTP_400_BAD_REQUEST,
+        "application_workspace_rejected",
         "Request rejected",
         "The request could not be completed.",
     )

@@ -54,6 +54,11 @@ ResumeTemplate = Literal[
 ResumeFormat = Literal["pdf", "docx", "text", "json"]
 ResumeExportStatus = Literal["pending", "rendering", "verified", "blocked", "failed", "deleted"]
 ResumeVerificationStatus = Literal["passed", "warning", "failed"]
+ResumeEvidenceLinkBasis = Literal[
+    "evidence_statement",
+    "evidence_skill",
+    "change_studio_claim",
+]
 
 
 class ResumeCreateRequest(ResumeBuilderSchema):
@@ -119,11 +124,22 @@ class ResumeExportRequest(ResumeBuilderSchema):
     format: ResumeFormat
 
 
+class ResumeEvidenceReferenceResponse(ResumeBuilderSchema):
+    evidence_id: UUID
+    evidence_revision_id: UUID
+    revision_number: PositiveVersion
+    statement_sha256: str = Field(min_length=64, max_length=64)
+    claim_sha256: str = Field(min_length=64, max_length=64)
+    link_basis: ResumeEvidenceLinkBasis
+    source_skill_id: UUID | None
+
+
 class ResumeBulletResponse(ResumeBuilderSchema):
     id: UUID
     text: str
     evidence_ids: list[UUID] = Field(max_length=20)
     source: str
+    evidence_references: list[ResumeEvidenceReferenceResponse] = Field(max_length=20)
 
 
 class ResumeSectionResponse(ResumeBuilderSchema):

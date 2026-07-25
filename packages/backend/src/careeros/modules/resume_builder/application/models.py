@@ -9,6 +9,7 @@ from uuid import UUID
 
 from careeros.modules.resume_builder.domain import (
     ResumeDocument,
+    ResumeEvidenceReference,
     ResumeExport,
     ResumeFormat,
     ResumeSection,
@@ -52,6 +53,8 @@ class ResumeSourceBullet:
     text: str
     evidence_ids: tuple[UUID, ...]
     source: str
+    evidence_references: tuple[ResumeEvidenceReference, ...] = ()
+    section_kind: str = "experience"
 
 
 @dataclass(frozen=True, slots=True)

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import hashlib
 import re
 from contextlib import suppress
 from dataclasses import dataclass, replace
@@ -1499,6 +1501,11 @@ class CareerRecordService:
                 eligible.append(
                     ReadinessSnapshotEvidence(
                         id=refreshed.item.id,
+                        evidence_revision_id=refreshed.revision.id,
+                        revision_number=refreshed.revision.revision,
+                        statement_sha256=hashlib.sha256(
+                            refreshed.revision.statement.encode("utf-8")
+                        ).hexdigest(),
                         title=refreshed.revision.title,
                         statement=refreshed.revision.statement,
                         context=refreshed.revision.context,
@@ -1554,6 +1561,40 @@ class CareerRecordService:
             raise CareerRecordNotFound
         decision, refreshed = await self._evaluate_record(owner_user_id, record)
         return refreshed, decision
+
+    async def get_evidence_batch_with_eligibility(
+        self,
+        owner_user_id: UUID,
+        evidence_ids: tuple[UUID, ...],
+    ) -> tuple[tuple[EvidenceRecord, EligibilityDecision], ...]:
+        """Return a bounded exact-ID snapshot without per-evidence database reads."""
+
+        unique_ids = tuple(dict.fromkeys(evidence_ids))
+        if not unique_ids or len(unique_ids) > 200:
+            raise CareerRecordValidationError("evidence batch must contain between 1 and 200 IDs")
+        async with self._uow() as uow:
+            records = await uow.get_evidence_batch(owner_user_id, unique_ids)
+        records_by_id = {
+            record.item.id: record
+            for record in records
+            if record.item.lifecycle is not EvidenceLifecycle.DELETED
+        }
+        if set(records_by_id) != set(unique_ids):
+            raise CareerRecordNotFound
+
+        semaphore = asyncio.Semaphore(8)
+
+        async def evaluate(
+            evidence_id: UUID,
+        ) -> tuple[EvidenceRecord, EligibilityDecision]:
+            async with semaphore:
+                decision, refreshed = await self._evaluate_record(
+                    owner_user_id,
+                    records_by_id[evidence_id],
+                )
+            return refreshed, decision
+
+        return tuple(await asyncio.gather(*(evaluate(value) for value in unique_ids)))
 
     async def create_achievement(
         self, owner_user_id: UUID, command: CreateAchievement, context: RequestContext

@@ -1,5 +1,6 @@
 """Application-layer public API for Phase 7 resume builder."""
 
+from ..domain import ResumeBuilderNotFound
 from .models import (
     CreateResume,
     DownloadIntentView,
@@ -38,6 +39,7 @@ __all__ = [
     "IdentifierFactory",
     "RenderedResume",
     "RequestContext",
+    "ResumeBuilderNotFound",
     "ResumeBuilderPolicy",
     "ResumeBuilderService",
     "ResumeBuilderUnitOfWork",

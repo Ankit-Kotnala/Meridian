@@ -21,6 +21,16 @@ from sqlalchemy import (
 from careeros.modules.change_studio.infrastructure import models
 from careeros.modules.identity.infrastructure import models as identity_models  # noqa: F401
 
+_FORWARD_PROVENANCE_COLUMNS = {
+    "evidence_revision_id",
+    "evidence_revision_number",
+    "evidence_statement_sha256",
+}
+_FORWARD_PROVENANCE_CONSTRAINT = (
+    "ck_change_operation_claims_evidence_provenance_complete",
+    (),
+)
+
 
 def _phase_tables() -> dict[str, Table]:
     return {
@@ -91,7 +101,7 @@ def test_phase6_tables_are_owner_scoped() -> None:
             assert "owner_user_id" in {element.column.name for element in elements}
 
 
-def test_phase6_migration_matches_registered_orm_schema() -> None:
+def test_phase6_migration_matches_schema_before_forward_provenance_extension() -> None:
     revision = _revision_module()
     capture = _OperationCapture()
     revision.__dict__["op"] = capture
@@ -103,8 +113,13 @@ def test_phase6_migration_matches_registered_orm_schema() -> None:
 
     for name, table in expected.items():
         migrated = capture.metadata.tables[name]
-        assert tuple(table.c.keys()) == tuple(migrated.c.keys()), name
-        for column in table.c:
+        expected_columns = tuple(
+            column
+            for column in table.c
+            if name != "change_operation_claims" or column.name not in _FORWARD_PROVENANCE_COLUMNS
+        )
+        assert tuple(column.name for column in expected_columns) == tuple(migrated.c.keys()), name
+        for column in expected_columns:
             migrated_column = migrated.c[column.name]
             assert str(column.type) == str(migrated_column.type), f"{name}.{column.name}"
             assert column.nullable == migrated_column.nullable, f"{name}.{column.name}"
@@ -113,9 +128,10 @@ def test_phase6_migration_matches_registered_orm_schema() -> None:
             ForeignKeyConstraint,
             UniqueConstraint,
         ):
-            assert _constraints(table, constraint_type) == _constraints(
-                migrated, constraint_type
-            ), name
+            expected_constraints = _constraints(table, constraint_type)
+            if name == "change_operation_claims" and constraint_type is CheckConstraint:
+                expected_constraints.discard(_FORWARD_PROVENANCE_CONSTRAINT)
+            assert expected_constraints == _constraints(migrated, constraint_type), name
         expected_indexes = {
             (index.name, tuple(index.columns.keys()), index.unique) for index in table.indexes
         }
@@ -123,3 +139,6 @@ def test_phase6_migration_matches_registered_orm_schema() -> None:
             (index.name, tuple(index.columns.keys()), index.unique) for index in migrated.indexes
         }
         assert expected_indexes == migrated_indexes, name
+
+    legacy_claims = capture.metadata.tables["change_operation_claims"]
+    assert _FORWARD_PROVENANCE_COLUMNS.isdisjoint(legacy_claims.c.keys())

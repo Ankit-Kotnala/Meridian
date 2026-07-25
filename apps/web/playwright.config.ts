@@ -10,7 +10,7 @@ export default defineConfig({
   testIgnore: fullStack ? [] : ["**/*-journey.spec.ts"],
   fullyParallel: !fullStack,
   forbidOnly: Boolean(process.env.CI),
-  preserveOutput: fullStack ? "never" : "always",
+  preserveOutput: fullStack ? "failures-only" : "always",
   retries: process.env.CI ? 2 : 0,
   ...(process.env.CI || fullStack ? { workers: 1 } : {}),
   reporter: process.env.CI ? "github" : "list",

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from uuid import UUID, uuid4
 
 import pytest
@@ -16,6 +17,7 @@ from careeros.modules.change_studio.domain import (
     ChangeOperationType,
     ChangeStudioIdempotencyConflict,
     ChangeStudioNotFound,
+    ChangeStudioValidationError,
     ChangeStudioVersionConflict,
     ChangeTargetKind,
     ClaimKind,
@@ -96,9 +98,26 @@ async def test_create_change_set_generates_grounded_operations_and_questions() -
     assert created.operations[0].grounding_status is GroundingStatus.GROUNDED
     assert created.operations[0].requires_confirmation is True
     assert created.claims[0].evidence_id == EVIDENCE_ID
+    assert created.claims[0].evidence_is_pinned
+    assert created.claims[0].evidence_revision_id is not None
+    assert created.claims[0].evidence_revision_number is not None
+    assert created.claims[0].evidence_statement_sha256 is not None
     assert created.questions[0].requirement_id == MISSING_REQUIREMENT_ID
     assert created.provider_runs[0].input_evidence_ids == (EVIDENCE_ID,)
     assert memory.audits[-1].target_id == created.change_set.id
+
+    with pytest.raises(
+        ChangeStudioValidationError,
+        match="either complete or explicitly legacy",
+    ):
+        replace(created.claims[0], evidence_revision_id=None)
+    legacy = replace(
+        created.claims[0],
+        evidence_revision_id=None,
+        evidence_revision_number=None,
+        evidence_statement_sha256=None,
+    )
+    assert not legacy.evidence_is_pinned
 
 
 @pytest.mark.asyncio

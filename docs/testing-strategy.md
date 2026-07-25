@@ -1,7 +1,7 @@
 # CareerOS testing strategy
 
-Status: Phase 7 implementation locally verified
-Last reviewed: 2026-07-19
+Status: Phase 8 local and hosted closeout passed
+Last reviewed: 2026-07-24
 
 ## Objectives
 
@@ -426,6 +426,75 @@ Phase 7 keeps every Phase 6 gate and adds blocking coverage for ADR 0013:
 tree. It verifies migration head `20260719_0008`, rollback to `20260719_0007`,
 forward repair, real integration tests, prior Playwright journeys, and the new
 Resume Builder primary workflow.
+
+## Application Workspace and grounded-pack coverage (Phase 8)
+
+Phase 8 keeps every Phase 7 gate and adds blocking coverage for ADR 0014:
+
+- Domain and service tests cover stage/outcome/reopen rules, owner scope, strict
+  optimistic concurrency, stable idempotency replay and fingerprint conflict,
+  resume-change reason/audit history, task/note/event creation, application and
+  document deletion, pack generation, numeric grounding, and cross-document
+  consistency. Database-backed tests require stage/outcome enum parity and prove
+  that a resume change, refreshed evidence snapshot, workflow event, and audit
+  record commit or roll back as one real transaction.
+- Source-adapter tests require the exact job ID/version/source hash and
+  requirement snapshot; immutable resume ID/version/number whose per-claim hashes
+  are revalidated; and evidence ID/revision ID/revision number/statement hash.
+  Historical revisions are read explicitly. A legacy Change Studio claim remains
+  readable for history but cannot seed Resume Builder; a legacy resume/change
+  source without the complete provenance ledger cannot seed Application
+  Workspace. Neither path silently backfills current evidence into old history.
+- Migration tests assert every Phase 8 child carries explicit owner and
+  application scope, composite foreign keys prevent cross-owner nesting, stage
+  and outcome values are constrained, and migration `20260724_0009` matches the
+  registered SQLAlchemy metadata. Upgrade-compatibility cases keep the shipped
+  `20260719_0007` migration immutable, prove that Phase 8 forward-adds an
+  all-null/all-complete Change Studio evidence revision tuple, preserve an
+  existing claim as readable but explicitly unpinned, and require full pins for
+  every new claim.
+- Repository and API tests cover two-user denial, nested-parent denial, bounded
+  filters/calendar ranges and opaque cursors, independent pagination for tasks,
+  notes, events, and pack summaries, no-store responses, ETags/`If-Match`, CSRF,
+  stable idempotency, terminal-state conflict, tombstoned document content, and
+  redacted audit metadata. Opaque cursors reject non-ASCII input before decoding,
+  and an omitted event time remains stable across an idempotent retry instead of
+  adding the current clock to its request fingerprint.
+- Web component tests cover stale base/cursor response rejection, cursor reset
+  after filter/error changes, paginated saved-job selection, one stable
+  idempotency key per unchanged user intent, key rotation after an edit or
+  success, lazy child-panel loading, preserved drafts across tab changes, live
+  task/pack counts, semantic grouped controls, and accessible loading, empty,
+  success, failure, retry, and conflict states. Conflict handling reloads
+  authoritative state without allowing a stale response to overwrite it.
+- The Phase 8 Playwright journey registers and verifies a real account, creates
+  confirmed fictional evidence, saves and analyzes a job, creates an immutable
+  resume and application, exercises board/table/calendar and non-drag stage
+  control, records tasks/notes/events, and generates and reviews a grounded pack
+  and its consistency result. The same complete product journey passes separately
+  on desktop and mobile; outcome/deletion/audit behavior is covered by backend/API
+  suites, and the mobile path includes the keyboard-safe alternative to
+  pointer-only stage/view changes.
+
+Final local closeout passed on 2026-07-24 for implementation revision `964cd9c`.
+`scripts/verify-phase8.ps1` exited 0 in 273 seconds: the backend portfolio
+reported `206 passed`, the API portfolio `104 passed`, and the web portfolio
+`121 passed` across 35 files; the production build emitted 39 routes. The
+isolated database reached head `20260724_0009`, rolled back to
+`20260719_0008`, and repaired forward. Integration, worker, runtime, and
+container probes passed. Playwright discovered 16 tests and completed with 10
+passed and 6 intentional inherited mobile skips; Application Workspace itself
+passed its full desktop and mobile journeys.
+
+The separate `scripts/security-scan.ps1` exited 0 in 287.7 seconds. Gitleaks was
+clean, pnpm and pip audits found no known vulnerabilities (unpublished local
+workspace packages were skipped), API and worker had no fixable-high findings,
+and web plus `web-edge` had no vulnerabilities. Three medium Python-runtime
+findings remain with fixes only in Python 3.15 prereleases; they are nonblocking
+under the documented policy and remain tracked. PR #21 workflow run
+`30126993025` passed every required hosted job at head `645536b`. Its replacement
+run followed a test-only pagination correction that traverses every cursor page;
+the fresh-database integration suite also passed in full.
 
 ## Backend test portfolio
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -18,7 +19,7 @@ from .entities import (
     ValidationStatus,
     _text,
 )
-from .errors import ProviderOutputRejected
+from .errors import ChangeStudioValidationError, ProviderOutputRejected
 
 SCHEMA_VERSION = "change-studio-provider-output/1"
 GROUNDING_VERSION = "change-studio-grounding/1.0.0"
@@ -75,11 +76,23 @@ class MetricContext:
 @dataclass(frozen=True, slots=True)
 class EvidenceGroundingContext:
     id: UUID
+    evidence_revision_id: UUID
+    revision_number: int
+    statement_sha256: str
     title: str
     statement: str
     context: str | None
     strength: str
     metrics: tuple[MetricContext, ...]
+
+    def __post_init__(self) -> None:
+        if self.revision_number < 1:
+            raise ChangeStudioValidationError("evidence grounding revision must be positive")
+        if (
+            re.fullmatch(r"[0-9a-f]{64}", self.statement_sha256) is None
+            or hashlib.sha256(self.statement.encode("utf-8")).hexdigest() != self.statement_sha256
+        ):
+            raise ChangeStudioValidationError("evidence grounding statement hash is invalid")
 
     @property
     def source_text(self) -> str:

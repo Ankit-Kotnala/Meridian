@@ -114,6 +114,9 @@ class ChangeClaimResponse(ChangeStudioSchema):
     claim_kind: ClaimKind
     text: str
     evidence_id: UUID
+    evidence_revision_id: UUID | None
+    evidence_revision_number: PositiveVersion | None
+    evidence_statement_sha256: str | None = Field(min_length=64, max_length=64)
     evidence_title: str
     evidence_strength: str
     source_excerpt: str
