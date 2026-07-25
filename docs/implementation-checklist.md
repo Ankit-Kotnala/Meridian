@@ -444,8 +444,9 @@ rollback/forward repair, integration/worker/container probes, and the complete
 desktop/mobile Application Workspace workflow. The separate security scan also
 passed; PR #21 workflow runs `30126993025` and `30128304892` passed every
 required hosted job.
-Phase 9 is locally complete and security verified. Hosted final-tree CI remains
-pending and is not claimed; exact local evidence is recorded in `PLANS.md`.
+Phase 9 is complete and hosted verified. PR #22 workflow run `30161489265`
+passed every required job at implementation/merge head `1454792`; exact evidence
+is recorded in `PLANS.md`.
 
 ## Phase 9 — Interview Prep, Networking, Career Growth, and Analytics
 
@@ -494,8 +495,8 @@ Dependencies: Phases 3 and 8.
 - [x] Test claim/story grounding, sensitive note/contact ownership and consent,
       reminder idempotency, score goldens, aggregation isolation, small cohorts,
       non-causal language, and accessible charts/tables/workflows.
-- [~] Publish the locally and security-verified final tree through hosted CI and
-  record the green workflow evidence in `PLANS.md`.
+- [x] Publish the locally and security-verified final tree through hosted CI and
+      record the green workflow evidence in `PLANS.md`.
 
 Exit: every ready/generated factual story field links exact eligible
 claims/evidence and every new generated artifact revalidates its pins (incomplete

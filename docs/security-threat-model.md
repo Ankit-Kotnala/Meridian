@@ -1,7 +1,6 @@
 # CareerOS security threat model
 
-Status: Phase 8 controls hosted verified; Phase 9 implementation is complete
-with final consolidated/security reruns and hosted CI pending
+Status: Phase 8 and Phase 9 controls complete and hosted verified
 Method: asset/trust-boundary analysis with STRIDE-style threat enumeration  
 Last reviewed: 2026-07-25
 
@@ -791,8 +790,9 @@ gates pass as recorded in `PLANS.md`; hosted run `29378312134` also passes.
   gate reported 365 backend, 134 API, 84 worker, and 150 web tests across 43
   files; 48 production routes; 39 PostgreSQL integration passes with 7 inherited
   SQLAlchemy cycle warnings; and 12 Playwright passes with 6 intentional
-  inherited mobile skips. Both Phase 9 desktop/mobile journeys passed. Hosted CI
-  remains pending and is not claimed; `PLANS.md` is the authoritative evidence
+  inherited mobile skips. Both Phase 9 desktop/mobile journeys passed. PR #22
+  workflow run `30161489265` passed every required hosted job at
+  implementation/merge head `1454792`; `PLANS.md` is the authoritative evidence
   record.
 
 ## Privacy, retention, and consent

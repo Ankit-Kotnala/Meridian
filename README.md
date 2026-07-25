@@ -14,8 +14,7 @@ claim under the user's control.
 ## Repository status
 
 **Phase 8 Application Workspace and grounded application packs are complete and
-hosted verified in PR #21. Phase 9 is locally complete and security verified;
-its hosted CI closeout is still pending.**
+hosted verified in PR #21. Phase 9 is complete and hosted verified in PR #22.**
 Phases 0 through 7 are hosted verified; PR #20 merged Phases 5 through 7 after
 hosted CI run `30119088488` passed every required job. Phase 8 implementation
 revision `964cd9c` passed the consolidated local gate and separate security scan
@@ -484,8 +483,8 @@ Read [AGENTS.md](AGENTS.md) before contributing. The principal references are:
 Phases 0 through 8 have recorded local and hosted evidence. Phase 8's complete
 closeout evidence, including PR #21 workflow runs `30126993025` and
 `30128304892`, is recorded in `PLANS.md`.
-Phase 9's final-tree consolidated local gate and separate security scan pass as
-recorded in `PLANS.md`; hosted Phase 9 CI remains pending and is not claimed.
+Phase 9's final-tree consolidated local gate, separate security scan, and hosted
+PR #22 workflow run `30161489265` pass as recorded in `PLANS.md`.
 Exact current and historical results are recorded separately in `PLANS.md`; never
 infer a pass from the command list below:
 
@@ -595,8 +594,9 @@ and worker now use the digest-pinned Python 3.13.14 Alpine 3.24 runtime with
 OpenSSL 3.5.7, removing the newly disclosed fixable OpenSSL findings from the
 older slim image. They retain only `CVE-2025-15366`, `CVE-2025-15367`, and
 `CVE-2026-12003`, three nonblocking medium CPython 3.13.14 runtime findings whose
-listed fixes are available only in Python 3.15 prereleases. No hosted Phase 9
-result is claimed yet.
+listed fixes are available only in Python 3.15 prereleases. PR #22 workflow run
+`30161489265` passed every required hosted job at implementation/merge head
+`1454792`.
 
 ## Phase 9 limitations and boundaries
 

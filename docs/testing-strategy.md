@@ -1,7 +1,6 @@
 # CareerOS testing strategy
 
-Status: Phase 8 local and hosted closeout passed; Phase 9 implementation is
-complete with final consolidated/security reruns and hosted CI pending
+Status: Phase 8 and Phase 9 local, security, and hosted closeout passed
 Last reviewed: 2026-07-25
 
 ## Objectives
@@ -628,8 +627,9 @@ had no vulnerability. The `brace-expansion` advisory remains resolved by the
 `5.0.8` workspace override and minimatch 3.1.5/5.1.9 compatibility patches. The
 only nonblocking runtime findings were the three medium CPython 3.13.14 CVEs
 listed in `PLANS.md`, whose fixes are available only in Python 3.15 prereleases.
-The exact closeout tree must be scanned again; hosted Phase 9 CI remains pending
-and is not claimed.
+The exact merged tree passed the separate security gate again. PR #22 workflow
+run `30161489265` passed every required hosted job at implementation/merge head
+`1454792`.
 
 Phase 10 verification must first cover durable asynchronous Resume Builder
 render/verify dispatch and recovery, distinct-template cross-format fidelity,

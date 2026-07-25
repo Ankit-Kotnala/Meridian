@@ -1,7 +1,6 @@
 # CareerOS API conventions and route plan
 
-Status: Phase 8 API hosted verified; Phase 9 API locally and security verified,
-with hosted CI pending
+Status: Phase 8 and Phase 9 APIs complete and hosted verified
 Base path for product APIs: `/api/v1`  
 Last reviewed: 2026-07-25
 
@@ -1137,5 +1136,6 @@ worker, and 150 web tests across 43 files; the production build emitted 48
 routes. PostgreSQL integration passed 39 tests with 7 inherited SQLAlchemy cycle
 warnings, and Playwright completed 12 tests with 6 intentional inherited mobile
 skips while the Phase 9 desktop/mobile journeys both passed. The separate
-security scan also passed; hosted Phase 9 CI remains pending. Exact authoritative
+security scan also passed. PR #22 workflow run `30161489265` passed every
+required hosted job at implementation/merge head `1454792`. Exact authoritative
 evidence and residual findings are recorded in `PLANS.md`.

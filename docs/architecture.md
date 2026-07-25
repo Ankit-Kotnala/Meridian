@@ -1,7 +1,6 @@
 # CareerOS architecture
 
-Status: accepted target architecture; Phase 8 hosted verified; Phase 9 locally
-and security verified with hosted CI pending
+Status: accepted target architecture; Phases 8 and 9 complete and hosted verified
 Last reviewed: 2026-07-25
 
 ## Architectural objective
@@ -41,8 +40,8 @@ purpose-minimized immutable interview/application outcome views; Career Record
 supplies current eligible achievement/skill/evidence views; and Role Readiness
 supplies content-free readiness history. The downstream modules consume those
 views through application interfaces and never query predecessor tables
-directly. Phase 9's consolidated local and security gates pass; hosted CI
-completion remains open until its workflow evidence is recorded in `PLANS.md`.
+directly. Phase 9's consolidated local and security gates and PR #22 hosted
+workflow run `30161489265` pass; exact evidence is recorded in `PLANS.md`.
 
 ## System principles
 
@@ -747,7 +746,8 @@ desktop/mobile career-workspace journey. The final local tree passed with 365
 backend, 134 API, 84 worker, and 150 web tests across 43 files, 48 production
 routes, 39 PostgreSQL integrations with 7 inherited warnings, and 12 Playwright
 passes with 6 intentional inherited mobile skips. The separate security scan
-also passed. Exact closeout evidence remains in `PLANS.md`; hosted Phase 9 CI is
-still pending and is not inferred from the local results. Phase 10 adds load,
+also passed. PR #22 workflow run `30161489265` passed every required hosted job
+at implementation/merge head `1454792`; exact closeout evidence remains in
+`PLANS.md`. Phase 10 adds load,
 account-wide deletion, backup, and restore gates. The complete strategy is in
 `docs/testing-strategy.md`.
