@@ -788,8 +788,8 @@ gates pass as recorded in `PLANS.md`; hosted run `29378312134` also passes.
   Career Analytics collection limits use typed safe `429` problems, while their
   declared route responses include the shared streamed-body `413` boundary.
 - Phase 9's final local closeout and separate security scan pass. The consolidated
-  gate reported 339 backend, 122 API, 84 worker, and 146 web tests across 43
-  files; 48 production routes; 33 PostgreSQL integration passes with 7 inherited
+  gate reported 365 backend, 134 API, 84 worker, and 150 web tests across 43
+  files; 48 production routes; 39 PostgreSQL integration passes with 7 inherited
   SQLAlchemy cycle warnings; and 12 Playwright passes with 6 intentional
   inherited mobile skips. Both Phase 9 desktop/mobile journeys passed. Hosted CI
   remains pending and is not claimed; `PLANS.md` is the authoritative evidence

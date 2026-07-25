@@ -743,9 +743,9 @@ Phase 9 adds `scripts/verify-phase9.ps1` (or `make verify-phase9`) for migration
 `20260724_0010`, rollback to `20260724_0009`, canonical and pre-release-drift
 forward repair, all four bounded-context repository/API suites, durable
 analytics/local-reminder processing, generated contracts, and the authenticated
-desktop/mobile career-workspace journey. The final local tree passed with 339
-backend, 122 API, 84 worker, and 146 web tests across 43 files, 48 production
-routes, 33 PostgreSQL integrations with 7 inherited warnings, and 12 Playwright
+desktop/mobile career-workspace journey. The final local tree passed with 365
+backend, 134 API, 84 worker, and 150 web tests across 43 files, 48 production
+routes, 39 PostgreSQL integrations with 7 inherited warnings, and 12 Playwright
 passes with 6 intentional inherited mobile skips. The separate security scan
 also passed. Exact closeout evidence remains in `PLANS.md`; hosted Phase 9 CI is
 still pending and is not inferred from the local results. Phase 10 adds load,

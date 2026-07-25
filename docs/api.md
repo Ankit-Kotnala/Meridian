@@ -1132,9 +1132,9 @@ It retains every predecessor gate and adds migration `20260724_0010`, rollback t
 `20260724_0009`, canonical and pre-release-drift forward repair, the four Phase 9
 repository/API portfolios, durable analytics and local-reminder workers,
 generated-contract drift, and the authenticated desktop/mobile Phase 9 career
-workspace journey. The final local tree passed with 339 backend, 122 API, 84
-worker, and 146 web tests across 43 files; the production build emitted 48
-routes. PostgreSQL integration passed 33 tests with 7 inherited SQLAlchemy cycle
+workspace journey. The final local tree passed with 365 backend, 134 API, 84
+worker, and 150 web tests across 43 files; the production build emitted 48
+routes. PostgreSQL integration passed 39 tests with 7 inherited SQLAlchemy cycle
 warnings, and Playwright completed 12 tests with 6 intentional inherited mobile
 skips while the Phase 9 desktop/mobile journeys both passed. The separate
 security scan also passed; hosted Phase 9 CI remains pending. Exact authoritative
