@@ -55,7 +55,7 @@ from careeros.modules.resume_health.infrastructure.models import (
     SourceDocumentModel,
 )
 
-_FEATURE_VALUE_KEYS = frozenset(
+_FEATURE_VALUE_KEYS_V1 = frozenset(
     {
         "text_characters",
         "page_count",
@@ -74,6 +74,15 @@ _FEATURE_VALUE_KEYS = frozenset(
         "average_confidence_basis_points",
     }
 )
+_FEATURE_VALUE_KEYS_V2 = _FEATURE_VALUE_KEYS_V1 | {
+    "semantic_entity_count",
+    "semantic_field_count",
+    "parsed_semantic_field_count",
+    "source_anchored_field_count",
+    "reviewed_semantic_field_count",
+    "date_field_count",
+    "precise_date_field_count",
+}
 
 
 class SqlAlchemyResumeUnitOfWork:
@@ -1080,7 +1089,10 @@ def _analysis(model: ResumeHealthAnalysisModel) -> ResumeHealthAnalysis:
         engine_version=model.engine_version,
         configuration_version=model.configuration_version,
         feature_schema_version=model.feature_schema_version,
-        feature_values=_analysis_feature_values(model.feature_values),
+        feature_values=_analysis_feature_values(
+            model.feature_values,
+            model.feature_schema_version,
+        ),
         feature_set_hash=model.feature_set_hash,
         raw_score_basis_points=model.raw_score_basis_points,
         display_score=model.display_score,
@@ -1114,12 +1126,23 @@ def _feature_contribution(
     )
 
 
-def _analysis_feature_values(value: dict[str, Any]) -> dict[str, int | bool]:
+def _analysis_feature_values(
+    value: dict[str, Any],
+    feature_schema_version: str,
+) -> dict[str, int | bool]:
     """Reject corrupt or schema-drifted feature JSON at the persistence boundary."""
-    if set(value) != _FEATURE_VALUE_KEYS or type(value.get("image_only")) is not bool:
+    expected_keys = {
+        "resume-health-features/1": _FEATURE_VALUE_KEYS_V1,
+        "resume-health-features/2": _FEATURE_VALUE_KEYS_V2,
+    }.get(feature_schema_version)
+    if (
+        expected_keys is None
+        or set(value) != expected_keys
+        or type(value.get("image_only")) is not bool
+    ):
         raise ResumeStateConflict
     normalized: dict[str, int | bool] = {"image_only": value["image_only"]}
-    for key in _FEATURE_VALUE_KEYS - {"image_only"}:
+    for key in expected_keys - {"image_only"}:
         item = value.get(key)
         if type(item) is not int or item < 0:
             raise ResumeStateConflict

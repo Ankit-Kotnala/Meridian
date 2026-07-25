@@ -10,6 +10,8 @@ from uuid import UUID
 
 from careeros.modules.resume_health.domain.errors import ResumeStateConflict
 
+from .semantic import CanonicalSemantics
+
 
 class ResumeMediaType(StrEnum):
     PDF = "application/pdf"
@@ -374,9 +376,11 @@ class CanonicalResume:
     schema_version: str
     sections: tuple[CanonicalSection, ...]
     warnings: tuple[str, ...]
+    source_sections: tuple[CanonicalSection, ...] = ()
+    semantics: CanonicalSemantics | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        value: dict[str, Any] = {
             "schemaVersion": self.schema_version,
             "sections": [
                 {
@@ -402,39 +406,81 @@ class CanonicalResume:
             ],
             "warnings": list(self.warnings),
         }
+        if self.source_sections:
+            value["sourceSections"] = _sections_to_dict(self.source_sections)
+        if self.semantics is not None:
+            value["semantics"] = self.semantics.to_dict()
+        return value
 
     @classmethod
     def from_dict(cls, value: dict[str, Any]) -> CanonicalResume:
+        source_sections = value.get("sourceSections")
+        semantics = value.get("semantics")
         return cls(
             schema_version=str(value["schemaVersion"]),
-            sections=tuple(
-                CanonicalSection(
-                    id=UUID(str(section["id"])),
-                    kind=SectionKind(str(section["kind"])),
-                    title=str(section["title"]),
-                    confidence_basis_points=int(section["confidenceBasisPoints"]),
-                    blocks=tuple(
-                        CanonicalBlock(
-                            id=UUID(str(block["id"])),
-                            kind=BlockKind(str(block["kind"])),
-                            text=str(block["text"]),
-                            confidence_basis_points=int(block["confidenceBasisPoints"]),
-                            spans=tuple(
-                                SourceSpan(
-                                    page=int(span["page"]),
-                                    start=int(span["start"]),
-                                    end=int(span["end"]),
-                                )
-                                for span in block.get("spans", [])
-                            ),
+            sections=_sections_from_dict(value.get("sections", [])),
+            warnings=tuple(str(item) for item in value.get("warnings", [])),
+            source_sections=(
+                _sections_from_dict(source_sections) if isinstance(source_sections, list) else ()
+            ),
+            semantics=(
+                CanonicalSemantics.from_dict(semantics) if isinstance(semantics, dict) else None
+            ),
+        )
+
+
+def _sections_to_dict(sections: tuple[CanonicalSection, ...]) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": str(section.id),
+            "kind": section.kind.value,
+            "title": section.title,
+            "confidenceBasisPoints": section.confidence_basis_points,
+            "blocks": [
+                {
+                    "id": str(block.id),
+                    "kind": block.kind.value,
+                    "text": block.text,
+                    "confidenceBasisPoints": block.confidence_basis_points,
+                    "spans": [
+                        {"page": span.page, "start": span.start, "end": span.end}
+                        for span in block.spans
+                    ],
+                }
+                for block in section.blocks
+            ],
+        }
+        for section in sections
+    ]
+
+
+def _sections_from_dict(values: list[dict[str, Any]]) -> tuple[CanonicalSection, ...]:
+    return tuple(
+        CanonicalSection(
+            id=UUID(str(section["id"])),
+            kind=SectionKind(str(section["kind"])),
+            title=str(section["title"]),
+            confidence_basis_points=int(section["confidenceBasisPoints"]),
+            blocks=tuple(
+                CanonicalBlock(
+                    id=UUID(str(block["id"])),
+                    kind=BlockKind(str(block["kind"])),
+                    text=str(block["text"]),
+                    confidence_basis_points=int(block["confidenceBasisPoints"]),
+                    spans=tuple(
+                        SourceSpan(
+                            page=int(span["page"]),
+                            start=int(span["start"]),
+                            end=int(span["end"]),
                         )
-                        for block in section.get("blocks", [])
+                        for span in block.get("spans", [])
                     ),
                 )
-                for section in value.get("sections", [])
+                for block in section.get("blocks", [])
             ),
-            warnings=tuple(str(item) for item in value.get("warnings", [])),
         )
+        for section in values
+    )
 
 
 @dataclass(slots=True)

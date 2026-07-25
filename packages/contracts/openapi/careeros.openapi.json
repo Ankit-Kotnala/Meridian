@@ -313,6 +313,109 @@
         "title": "AchievementResponse",
         "type": "object"
       },
+      "AddSemanticEntityRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/SemanticValueInput"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Fields",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "contact",
+              "experience",
+              "education",
+              "project",
+              "skill",
+              "certification"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "operation": {
+            "const": "addEntity",
+            "title": "Operation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation",
+          "kind",
+          "fields"
+        ],
+        "title": "AddSemanticEntityRequest",
+        "type": "object"
+      },
+      "AddSemanticFieldRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "datePrecision": {
+            "anyOf": [
+              {
+                "enum": [
+                  "day",
+                  "month",
+                  "year",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dateprecision"
+          },
+          "entityId": {
+            "format": "uuid",
+            "title": "Entityid",
+            "type": "string"
+          },
+          "fieldType": {
+            "enum": [
+              "text",
+              "email",
+              "phone",
+              "url",
+              "date",
+              "bullet"
+            ],
+            "title": "Fieldtype",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "operation": {
+            "const": "addField",
+            "title": "Operation",
+            "type": "string"
+          },
+          "value": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "fieldType",
+          "value",
+          "operation",
+          "entityId"
+        ],
+        "title": "AddSemanticFieldRequest",
+        "type": "object"
+      },
       "AnalyticsBreakdownResponse": {
         "additionalProperties": false,
         "properties": {
@@ -3299,8 +3402,7 @@
         "additionalProperties": false,
         "properties": {
           "id": {
-            "maxLength": 160,
-            "minLength": 1,
+            "format": "uuid",
             "title": "Id",
             "type": "string"
           },
@@ -3340,6 +3442,10 @@
             "title": "Id",
             "type": "string"
           },
+          "legacyUpgradeRequired": {
+            "title": "Legacyupgraderequired",
+            "type": "boolean"
+          },
           "schemaVersion": {
             "title": "Schemaversion",
             "type": "string"
@@ -3349,6 +3455,60 @@
               "$ref": "#/components/schemas/CanonicalSectionResponse"
             },
             "title": "Sections",
+            "type": "array"
+          },
+          "semanticEntities": {
+            "items": {
+              "$ref": "#/components/schemas/SemanticEntityResponse"
+            },
+            "title": "Semanticentities",
+            "type": "array"
+          },
+          "semanticParserVersion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Semanticparserversion"
+          },
+          "semanticReviewState": {
+            "anyOf": [
+              {
+                "enum": [
+                  "unreviewed",
+                  "confirmed",
+                  "corrected",
+                  "user_added",
+                  "removed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Semanticreviewstate"
+          },
+          "semanticSchemaVersion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Semanticschemaversion"
+          },
+          "semanticWarnings": {
+            "items": {
+              "$ref": "#/components/schemas/ParserWarningResponse"
+            },
+            "title": "Semanticwarnings",
             "type": "array"
           },
           "version": {
@@ -3370,6 +3530,12 @@
           "version",
           "sections",
           "warnings",
+          "semanticSchemaVersion",
+          "semanticParserVersion",
+          "semanticReviewState",
+          "semanticEntities",
+          "semanticWarnings",
+          "legacyUpgradeRequired",
           "correctedByUser",
           "createdAt"
         ],
@@ -3379,19 +3545,62 @@
       "CanonicalResumeUpdateRequest": {
         "additionalProperties": false,
         "properties": {
+          "confirmNoChanges": {
+            "default": false,
+            "title": "Confirmnochanges",
+            "type": "boolean"
+          },
           "fields": {
             "items": {
               "$ref": "#/components/schemas/CanonicalFieldUpdate"
             },
             "maxItems": 250,
-            "minItems": 1,
             "title": "Fields",
+            "type": "array"
+          },
+          "semanticOperations": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "addEntity": "#/components/schemas/AddSemanticEntityRequest",
+                  "addField": "#/components/schemas/AddSemanticFieldRequest",
+                  "confirmField": "#/components/schemas/ConfirmSemanticFieldRequest",
+                  "correctField": "#/components/schemas/CorrectSemanticFieldRequest",
+                  "reclassifyEntity": "#/components/schemas/ReclassifySemanticEntityRequest",
+                  "removeEntity": "#/components/schemas/RemoveSemanticEntityRequest",
+                  "removeField": "#/components/schemas/RemoveSemanticFieldRequest"
+                },
+                "propertyName": "operation"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ConfirmSemanticFieldRequest"
+                },
+                {
+                  "$ref": "#/components/schemas/CorrectSemanticFieldRequest"
+                },
+                {
+                  "$ref": "#/components/schemas/AddSemanticFieldRequest"
+                },
+                {
+                  "$ref": "#/components/schemas/RemoveSemanticFieldRequest"
+                },
+                {
+                  "$ref": "#/components/schemas/ReclassifySemanticEntityRequest"
+                },
+                {
+                  "$ref": "#/components/schemas/AddSemanticEntityRequest"
+                },
+                {
+                  "$ref": "#/components/schemas/RemoveSemanticEntityRequest"
+                }
+              ]
+            },
+            "maxItems": 250,
+            "title": "Semanticoperations",
             "type": "array"
           }
         },
-        "required": [
-          "fields"
-        ],
         "title": "CanonicalResumeUpdateRequest",
         "type": "object"
       },
@@ -5477,6 +5686,27 @@
         "title": "ComponentResponse",
         "type": "object"
       },
+      "ConfirmSemanticFieldRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "fieldId": {
+            "format": "uuid",
+            "title": "Fieldid",
+            "type": "string"
+          },
+          "operation": {
+            "const": "confirmField",
+            "title": "Operation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation",
+          "fieldId"
+        ],
+        "title": "ConfirmSemanticFieldRequest",
+        "type": "object"
+      },
       "ConsentAttestationRequest": {
         "additionalProperties": false,
         "properties": {
@@ -6334,6 +6564,51 @@
           }
         },
         "title": "ContactUpdateRequest",
+        "type": "object"
+      },
+      "CorrectSemanticFieldRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "datePrecision": {
+            "anyOf": [
+              {
+                "enum": [
+                  "day",
+                  "month",
+                  "year",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dateprecision"
+          },
+          "fieldId": {
+            "format": "uuid",
+            "title": "Fieldid",
+            "type": "string"
+          },
+          "operation": {
+            "const": "correctField",
+            "title": "Operation",
+            "type": "string"
+          },
+          "value": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation",
+          "fieldId",
+          "value"
+        ],
+        "title": "CorrectSemanticFieldRequest",
         "type": "object"
       },
       "CsrfResponse": {
@@ -13270,6 +13545,50 @@
         "title": "ReadingOrderResponse",
         "type": "object"
       },
+      "ReclassifySemanticEntityRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "entityId": {
+            "format": "uuid",
+            "title": "Entityid",
+            "type": "string"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/SemanticFieldReclassificationRequest"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Fields",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "contact",
+              "experience",
+              "education",
+              "project",
+              "skill",
+              "certification"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "operation": {
+            "const": "reclassifyEntity",
+            "title": "Operation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation",
+          "entityId",
+          "kind",
+          "fields"
+        ],
+        "title": "ReclassifySemanticEntityRequest",
+        "type": "object"
+      },
       "ReferralCreateRequest": {
         "additionalProperties": false,
         "properties": {
@@ -13911,6 +14230,48 @@
           }
         },
         "title": "ReminderUpdateRequest",
+        "type": "object"
+      },
+      "RemoveSemanticEntityRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "entityId": {
+            "format": "uuid",
+            "title": "Entityid",
+            "type": "string"
+          },
+          "operation": {
+            "const": "removeEntity",
+            "title": "Operation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation",
+          "entityId"
+        ],
+        "title": "RemoveSemanticEntityRequest",
+        "type": "object"
+      },
+      "RemoveSemanticFieldRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "fieldId": {
+            "format": "uuid",
+            "title": "Fieldid",
+            "type": "string"
+          },
+          "operation": {
+            "const": "removeField",
+            "title": "Operation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation",
+          "fieldId"
+        ],
+        "title": "RemoveSemanticFieldRequest",
         "type": "object"
       },
       "ReorderItem": {
@@ -14754,7 +15115,7 @@
             "items": {
               "$ref": "#/components/schemas/ResumeHealthFeatureContributionResponse"
             },
-            "maxItems": 4,
+            "maxItems": 7,
             "title": "Featurecontributions",
             "type": "array"
           },
@@ -14835,7 +15196,11 @@
               "outcome_bullet_ratio",
               "duplicate_content_integrity",
               "page_fit",
-              "parser_warning_integrity"
+              "parser_warning_integrity",
+              "source_anchor_coverage",
+              "semantic_breadth",
+              "semantic_review_coverage",
+              "date_precision_coverage"
             ],
             "title": "Key",
             "type": "string"
@@ -14915,7 +15280,14 @@
               "chronology_signal_count",
               "warning_count",
               "reading_order_violation_count",
-              "average_confidence_basis_points"
+              "average_confidence_basis_points",
+              "semantic_entity_count",
+              "semantic_field_count",
+              "parsed_semantic_field_count",
+              "source_anchored_field_count",
+              "reviewed_semantic_field_count",
+              "date_field_count",
+              "precise_date_field_count"
             ],
             "title": "Key",
             "type": "string"
@@ -15022,7 +15394,7 @@
             "items": {
               "$ref": "#/components/schemas/ResumeHealthFeatureValueResponse"
             },
-            "maxItems": 15,
+            "maxItems": 24,
             "title": "Featurevalues",
             "type": "array"
           },
@@ -16667,6 +17039,264 @@
           "notes"
         ],
         "title": "SavedRoleUpdateRequest",
+        "type": "object"
+      },
+      "SemanticEntityResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/SemanticFieldResponse"
+            },
+            "title": "Fields",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "contact",
+              "experience",
+              "education",
+              "project",
+              "skill",
+              "certification"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "reviewState": {
+            "enum": [
+              "unreviewed",
+              "confirmed",
+              "corrected",
+              "user_added",
+              "removed"
+            ],
+            "title": "Reviewstate",
+            "type": "string"
+          },
+          "sourceSectionId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourcesectionid"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "reviewState",
+          "sourceSectionId",
+          "fields"
+        ],
+        "title": "SemanticEntityResponse",
+        "type": "object"
+      },
+      "SemanticFieldReclassificationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "fieldId": {
+            "format": "uuid",
+            "title": "Fieldid",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fieldId",
+          "name"
+        ],
+        "title": "SemanticFieldReclassificationRequest",
+        "type": "object"
+      },
+      "SemanticFieldResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "anchors": {
+            "items": {
+              "$ref": "#/components/schemas/SemanticSourceAnchorResponse"
+            },
+            "title": "Anchors",
+            "type": "array"
+          },
+          "confidence": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "integer"
+          },
+          "datePrecision": {
+            "anyOf": [
+              {
+                "enum": [
+                  "day",
+                  "month",
+                  "year",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dateprecision"
+          },
+          "fieldType": {
+            "enum": [
+              "text",
+              "email",
+              "phone",
+              "url",
+              "date",
+              "bullet"
+            ],
+            "title": "Fieldtype",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "reviewState": {
+            "enum": [
+              "unreviewed",
+              "confirmed",
+              "corrected",
+              "user_added",
+              "removed"
+            ],
+            "title": "Reviewstate",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "fieldType",
+          "value",
+          "confidence",
+          "reviewState",
+          "anchors"
+        ],
+        "title": "SemanticFieldResponse",
+        "type": "object"
+      },
+      "SemanticSourceAnchorResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "blockId": {
+            "format": "uuid",
+            "title": "Blockid",
+            "type": "string"
+          },
+          "end": {
+            "title": "End",
+            "type": "integer"
+          },
+          "excerpt": {
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "sourceSha256": {
+            "title": "Sourcesha256",
+            "type": "string"
+          },
+          "start": {
+            "title": "Start",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "blockId",
+          "page",
+          "start",
+          "end",
+          "sourceSha256",
+          "excerpt"
+        ],
+        "title": "SemanticSourceAnchorResponse",
+        "type": "object"
+      },
+      "SemanticValueInput": {
+        "additionalProperties": false,
+        "properties": {
+          "datePrecision": {
+            "anyOf": [
+              {
+                "enum": [
+                  "day",
+                  "month",
+                  "year",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dateprecision"
+          },
+          "fieldType": {
+            "enum": [
+              "text",
+              "email",
+              "phone",
+              "url",
+              "date",
+              "bullet"
+            ],
+            "title": "Fieldtype",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "value": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "fieldType",
+          "value"
+        ],
+        "title": "SemanticValueInput",
         "type": "object"
       },
       "SessionContextClaimResponse": {

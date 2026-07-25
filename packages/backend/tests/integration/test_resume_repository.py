@@ -16,6 +16,7 @@ from careeros.modules.resume_health.domain import (
     CanonicalBlock,
     CanonicalResume,
     CanonicalSection,
+    CanonicalSemantics,
     CanonicalSnapshot,
     DocumentStatus,
     FeatureContribution,
@@ -33,7 +34,14 @@ from careeros.modules.resume_health.domain import (
     ResumeMediaType,
     ScoreComponent,
     SectionKind,
+    SemanticEntity,
+    SemanticEntityKind,
+    SemanticField,
+    SemanticFieldType,
+    SemanticReviewState,
+    SemanticSourceAnchor,
     SourceDocument,
+    SourceSpan,
     UploadIntent,
     UploadStatus,
 )
@@ -178,29 +186,61 @@ async def test_repository_scopes_every_resource_and_persists_job_state() -> None
             assert persisted.status == JobStatus.RUNNING
             assert persisted.progress == 50
 
+        section_id = uuid4()
+        block_id = uuid4()
+        block = CanonicalBlock(
+            id=block_id,
+            kind=BlockKind.BULLET,
+            text="Built a fictional integration fixture.",
+            confidence_basis_points=9_000,
+            spans=(SourceSpan(1, 0, 38),),
+        )
+        section = CanonicalSection(
+            id=section_id,
+            kind=SectionKind.EXPERIENCE,
+            title="Experience",
+            confidence_basis_points=9_000,
+            blocks=(block,),
+        )
+        semantic_field = SemanticField(
+            id=uuid4(),
+            name="achievement",
+            field_type=SemanticFieldType.BULLET,
+            value=block.text,
+            confidence_basis_points=9_000,
+            review_state=SemanticReviewState.CONFIRMED,
+            anchors=(
+                SemanticSourceAnchor(
+                    block_id=block_id,
+                    page=1,
+                    start=0,
+                    end=38,
+                    source_sha256="ab" * 32,
+                ),
+            ),
+        )
         snapshot = CanonicalSnapshot(
             id=uuid4(),
             document_id=document.id,
             owner=first_scope,
             revision=1,
             resume=CanonicalResume(
-                schema_version="canonical-resume/1.0.0",
-                sections=(
-                    CanonicalSection(
-                        id=uuid4(),
-                        kind=SectionKind.EXPERIENCE,
-                        title="Experience",
-                        confidence_basis_points=9_000,
-                        blocks=(
-                            CanonicalBlock(
-                                id=uuid4(),
-                                kind=BlockKind.BULLET,
-                                text="Built a fictional integration fixture.",
-                                confidence_basis_points=9_000,
-                                spans=(),
-                            ),
+                schema_version="canonical-resume/2.0.0",
+                sections=(section,),
+                source_sections=(section,),
+                semantics=CanonicalSemantics(
+                    schema_version="canonical-semantics/1.0.0",
+                    parser_version="integration-semantic/1",
+                    entities=(
+                        SemanticEntity(
+                            id=uuid4(),
+                            kind=SemanticEntityKind.EXPERIENCE,
+                            review_state=SemanticReviewState.CONFIRMED,
+                            fields=(semantic_field,),
+                            source_section_id=section_id,
                         ),
                     ),
+                    review_state=SemanticReviewState.CONFIRMED,
                 ),
                 warnings=(),
             ),
@@ -235,9 +275,9 @@ async def test_repository_scopes_every_resource_and_persists_job_state() -> None
             snapshot_id=snapshot.id,
             owner=first_scope,
             status=AnalysisStatus.SUCCEEDED,
-            engine_version="resume-health/1.0.0",
-            configuration_version="resume-health-default/1",
-            feature_schema_version="resume-health-features/1",
+            engine_version="resume-health/2.0.0",
+            configuration_version="resume-health-default/2",
+            feature_schema_version="resume-health-features/2",
             feature_values={
                 "text_characters": 500,
                 "page_count": 1,
@@ -254,6 +294,13 @@ async def test_repository_scopes_every_resource_and_persists_job_state() -> None
                 "warning_count": 0,
                 "reading_order_violation_count": 0,
                 "average_confidence_basis_points": 9_000,
+                "semantic_entity_count": 1,
+                "semantic_field_count": 1,
+                "parsed_semantic_field_count": 1,
+                "source_anchored_field_count": 1,
+                "reviewed_semantic_field_count": 1,
+                "date_field_count": 0,
+                "precise_date_field_count": 0,
             },
             feature_set_hash=b"f" * 32,
             raw_score_basis_points=5_000,
@@ -291,6 +338,10 @@ async def test_repository_scopes_every_resource_and_persists_job_state() -> None
         async with factory() as uow:
             await uow.add_snapshot(snapshot)
             await uow.commit()
+        async with factory() as uow:
+            persisted_snapshot = await uow.get_latest_snapshot(first_scope, document.id)
+            assert persisted_snapshot is not None
+            assert persisted_snapshot.resume == snapshot.resume
         async with factory() as uow:
             await uow.add_job(analysis_job)
             await uow.add_analysis(analysis, (component,), (contribution,), (finding,))

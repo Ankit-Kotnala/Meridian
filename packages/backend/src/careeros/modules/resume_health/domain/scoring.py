@@ -1,12 +1,12 @@
-"""Deterministic, fixed-point Resume Health v1 scoring engine."""
+"""Deterministic, fixed-point Resume Health v2 scoring engine."""
 
 import json
 from dataclasses import asdict, dataclass
 from hashlib import sha256
 
-ENGINE_VERSION = "resume-health/1.0.0"
-CONFIGURATION_VERSION = "resume-health-default/1"
-FEATURE_SCHEMA_VERSION = "resume-health-features/1"
+ENGINE_VERSION = "resume-health/2.0.0"
+CONFIGURATION_VERSION = "resume-health-default/2"
+FEATURE_SCHEMA_VERSION = "resume-health-features/2"
 
 
 @dataclass(frozen=True, slots=True)
@@ -26,6 +26,13 @@ class ResumeHealthFeatures:
     warning_count: int
     reading_order_violation_count: int
     average_confidence_basis_points: int
+    semantic_entity_count: int
+    semantic_field_count: int
+    parsed_semantic_field_count: int
+    source_anchored_field_count: int
+    reviewed_semantic_field_count: int
+    date_field_count: int
+    precise_date_field_count: int
 
     def __post_init__(self) -> None:
         for name, value in asdict(self).items():
@@ -35,6 +42,23 @@ class ResumeHealthFeatures:
                 raise ValueError(f"{name} cannot be negative")
         if self.average_confidence_basis_points > 10_000:
             raise ValueError("average confidence must not exceed 10000")
+        bounded_counts = (
+            (self.recognized_section_count, self.section_count),
+            (self.concise_block_count, self.block_count),
+            (self.bullet_count, self.block_count),
+            (self.action_bullet_count, self.bullet_count),
+            (self.outcome_bullet_count, self.bullet_count),
+            (self.duplicate_block_count, self.block_count),
+            (self.chronology_signal_count, self.block_count),
+            (self.semantic_entity_count, self.semantic_field_count),
+            (self.parsed_semantic_field_count, self.semantic_field_count),
+            (self.source_anchored_field_count, self.parsed_semantic_field_count),
+            (self.reviewed_semantic_field_count, self.semantic_field_count),
+            (self.date_field_count, self.semantic_field_count),
+            (self.precise_date_field_count, self.date_field_count),
+        )
+        if any(value > total for value, total in bounded_counts):
+            raise ValueError("Resume Health feature counts are inconsistent")
 
 
 @dataclass(frozen=True, slots=True)
@@ -104,6 +128,24 @@ def score_resume_health(features: ResumeHealthFeatures) -> ResumeHealthScore:
     duplicate_score = _penalty(features.duplicate_block_count, 2_000)
     warning_score = _penalty(features.warning_count, 1_500)
     reading_order_score = _penalty(features.reading_order_violation_count, 2_500)
+    source_anchor_coverage = _ratio_or_neutral(
+        features.source_anchored_field_count,
+        features.parsed_semantic_field_count,
+    )
+    review_coverage = _ratio_or_neutral(
+        features.reviewed_semantic_field_count,
+        features.semantic_field_count,
+    )
+    date_precision_coverage = _ratio_or_neutral(
+        features.precise_date_field_count,
+        features.date_field_count,
+    )
+    semantic_breadth = min(
+        10_000,
+        features.semantic_entity_count * 2_000 + features.semantic_field_count * 300,
+    )
+    if features.semantic_field_count == 0:
+        semantic_breadth = 7_000
     section_breadth = min(10_000, features.recognized_section_count * 2_500)
     chronology = min(10_000, features.chronology_signal_count * 2_000)
     page_fit = (
@@ -119,16 +161,18 @@ def score_resume_health(features: ResumeHealthFeatures) -> ResumeHealthScore:
 
     component_inputs = {
         "machine_readability": (
-            ("searchable_text", searchable, 3_000),
-            ("parser_confidence", features.average_confidence_basis_points, 3_000),
-            ("reading_order_integrity", reading_order_score, 2_000),
-            ("recognized_section_ratio", recognized_ratio, 2_000),
+            ("searchable_text", searchable, 2_500),
+            ("parser_confidence", features.average_confidence_basis_points, 2_500),
+            ("reading_order_integrity", reading_order_score, 1_500),
+            ("recognized_section_ratio", recognized_ratio, 1_500),
+            ("source_anchor_coverage", source_anchor_coverage, 2_000),
         ),
         "recruiter_clarity": (
-            ("recognized_section_ratio", recognized_ratio, 3_000),
-            ("concise_block_ratio", concise_ratio, 3_000),
-            ("section_breadth", section_breadth, 2_000),
-            ("chronology_coverage", chronology, 2_000),
+            ("recognized_section_ratio", recognized_ratio, 2_500),
+            ("concise_block_ratio", concise_ratio, 2_500),
+            ("section_breadth", section_breadth, 1_500),
+            ("chronology_coverage", chronology, 1_500),
+            ("semantic_breadth", semantic_breadth, 2_000),
         ),
         "content_impact": (
             ("action_bullet_ratio", action_ratio, 3_500),
@@ -142,16 +186,20 @@ def score_resume_health(features: ResumeHealthFeatures) -> ResumeHealthScore:
             ("duplicate_content_integrity", duplicate_score, 2_000),
         ),
         "structure": (
-            ("section_breadth", section_breadth, 3_500),
-            ("recognized_section_ratio", recognized_ratio, 2_500),
-            ("page_fit", page_fit, 2_000),
-            ("concise_block_ratio", concise_ratio, 2_000),
+            ("section_breadth", section_breadth, 2_500),
+            ("recognized_section_ratio", recognized_ratio, 2_000),
+            ("page_fit", page_fit, 1_500),
+            ("concise_block_ratio", concise_ratio, 1_500),
+            ("semantic_breadth", semantic_breadth, 2_500),
         ),
         "consistency_truth": (
-            ("parser_confidence", features.average_confidence_basis_points, 3_500),
-            ("parser_warning_integrity", warning_score, 3_000),
-            ("duplicate_content_integrity", duplicate_score, 2_000),
-            ("chronology_coverage", chronology, 1_500),
+            ("parser_confidence", features.average_confidence_basis_points, 2_000),
+            ("parser_warning_integrity", warning_score, 2_000),
+            ("duplicate_content_integrity", duplicate_score, 1_500),
+            ("chronology_coverage", chronology, 1_000),
+            ("source_anchor_coverage", source_anchor_coverage, 1_500),
+            ("semantic_review_coverage", review_coverage, 1_000),
+            ("date_precision_coverage", date_precision_coverage, 1_000),
         ),
     }
     component_values = {
@@ -161,10 +209,12 @@ def score_resume_health(features: ResumeHealthFeatures) -> ResumeHealthScore:
 
     explanations = {
         "machine_readability": (
-            "Measures extractable text, parser confidence, reading order, and section recognition."
+            "Measures extractable text, parser confidence, reading order, section recognition, "
+            "and source-anchor coverage."
         ),
         "recruiter_clarity": (
-            "Measures observable organization, concise blocks, and readable chronology signals."
+            "Measures observable organization, concise blocks, semantic breadth, and readable "
+            "chronology signals."
         ),
         "content_impact": (
             "Measures action/outcome structure and repetition without judging hiring value."
@@ -172,10 +222,13 @@ def score_resume_health(features: ResumeHealthFeatures) -> ResumeHealthScore:
         "achievement_strength": (
             "Measures observable action-and-outcome phrasing; it does not verify the claims."
         ),
-        "structure": "Measures recognizable sections, hierarchy, length, and scan-friendly blocks.",
+        "structure": (
+            "Measures recognizable sections, typed semantic breadth, length, and scan-friendly "
+            "blocks."
+        ),
         "consistency_truth": (
-            "Measures parser confidence and detectable consistency warnings, not background "
-            "verification."
+            "Measures parser confidence, source anchors, explicit review, date precision, and "
+            "detectable consistency warnings, not background verification."
         ),
     }
     components = tuple(
@@ -248,6 +301,36 @@ def score_resume_health(features: ResumeHealthFeatures) -> ResumeHealthScore:
                 False,
             )
         )
+    if features.semantic_field_count and review_coverage < 10_000:
+        findings.append(
+            FindingResult(
+                "semantic_review_incomplete",
+                "warning",
+                "consistency_truth",
+                "Confirm, correct, or remove every typed field before relying on it.",
+                True,
+            )
+        )
+    if features.parsed_semantic_field_count and source_anchor_coverage < 10_000:
+        findings.append(
+            FindingResult(
+                "semantic_source_anchors_incomplete",
+                "warning",
+                "machine_readability",
+                "Some parsed fields lack exact source anchors and should not be reused yet.",
+                False,
+            )
+        )
+    if features.date_field_count and date_precision_coverage < 10_000:
+        findings.append(
+            FindingResult(
+                "date_precision_incomplete",
+                "info",
+                "consistency_truth",
+                "Confirm whether each detected date is day-, month-, or year-precise.",
+                True,
+            )
+        )
     return ResumeHealthScore(
         engine_version=ENGINE_VERSION,
         configuration_version=CONFIGURATION_VERSION,
@@ -293,6 +376,10 @@ def _ratio(numerator: int, denominator: int) -> int:
     if denominator <= 0:
         return 0
     return min(10_000, (numerator * 10_000 + denominator // 2) // denominator)
+
+
+def _ratio_or_neutral(numerator: int, denominator: int) -> int:
+    return 7_000 if denominator <= 0 else _ratio(numerator, denominator)
 
 
 def _penalty(count: int, each: int) -> int:
@@ -349,6 +436,13 @@ def _feature_values(features: ResumeHealthFeatures) -> dict[str, int | bool]:
         "warning_count": features.warning_count,
         "reading_order_violation_count": features.reading_order_violation_count,
         "average_confidence_basis_points": features.average_confidence_basis_points,
+        "semantic_entity_count": features.semantic_entity_count,
+        "semantic_field_count": features.semantic_field_count,
+        "parsed_semantic_field_count": features.parsed_semantic_field_count,
+        "source_anchored_field_count": features.source_anchored_field_count,
+        "reviewed_semantic_field_count": features.reviewed_semantic_field_count,
+        "date_field_count": features.date_field_count,
+        "precise_date_field_count": features.precise_date_field_count,
     }
 
 

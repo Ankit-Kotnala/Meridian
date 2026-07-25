@@ -34,6 +34,7 @@ from careeros.modules.resume_health.application.models import (
     ProcessingOutcome,
     ResumeRequestContext,
     ScoreComponentView,
+    SemanticReviewOperation,
     UploadIntentView,
 )
 from careeros.modules.resume_health.application.ports import (
@@ -44,8 +45,13 @@ from careeros.modules.resume_health.application.ports import (
     MalwareScanner,
     ObjectStorage,
     OcrProvider,
+    ResumeParserProvider,
     ResumeUnitOfWork,
     UnitOfWorkFactory,
+)
+from careeros.modules.resume_health.application.semantic_review import apply_semantic_review
+from careeros.modules.resume_health.application.semantic_validation import (
+    validate_parser_semantics,
 )
 from careeros.modules.resume_health.application.task_names import PROCESS_RESUME_TASK
 from careeros.modules.resume_health.domain import (
@@ -56,6 +62,7 @@ from careeros.modules.resume_health.domain import (
     CanonicalResume,
     CanonicalSection,
     CanonicalSnapshot,
+    DatePrecision,
     DocumentArtifact,
     DocumentStatus,
     FeatureContribution,
@@ -75,6 +82,7 @@ from careeros.modules.resume_health.domain import (
     ResumeMediaType,
     ScoreComponent,
     SectionKind,
+    SemanticReviewState,
     SourceDocument,
     SourceSpan,
     StorageObjectCleanup,
@@ -198,6 +206,7 @@ class ResumeHealthService:
         storage: ObjectStorage,
         limits: DocumentLimits,
         policy: ResumeHealthPolicy | None = None,
+        semantic_parser: ResumeParserProvider | None = None,
     ) -> None:
         self._uow = unit_of_work
         self._clock = clock
@@ -205,6 +214,7 @@ class ResumeHealthService:
         self._storage = storage
         self._limits = limits
         self._policy = policy or ResumeHealthPolicy()
+        self._semantic_parser = semantic_parser
         self._source_reader = ResumeHealthSourceReader(unit_of_work)
 
     async def begin_guest_session(self) -> IssuedGuestSession:
@@ -543,6 +553,8 @@ class ResumeHealthService:
                 raise ResumeVersionConflict
             if current.revision >= self._policy.max_canonical_revisions:
                 raise ResumeStateConflict
+            if current.resume.semantics is not None:
+                raise ResumeStateConflict
             found: set[UUID] = set()
             text_changed = False
             sections: list[CanonicalSection] = []
@@ -610,6 +622,112 @@ class ResumeHealthService:
                     context,
                     now,
                     {"revision": str(snapshot.revision)},
+                )
+            )
+            await uow.commit()
+        return _snapshot_view(snapshot, original.resume)
+
+    async def review_canonical_semantics(
+        self,
+        scope: OwnerScope,
+        document_id: UUID,
+        expected_revision: int,
+        operations: tuple[SemanticReviewOperation, ...],
+        context: ResumeRequestContext,
+        *,
+        confirm_no_changes: bool = False,
+    ) -> CanonicalSnapshotView:
+        if len(operations) > 250 or (not operations and not confirm_no_changes):
+            raise ResumeStateConflict
+        now = self._clock.now()
+        async with self._uow() as uow:
+            await uow.lock_intake_admission(scope)
+            document = await uow.get_document(scope, document_id, for_update=True)
+            current = await uow.get_latest_snapshot(scope, document_id, for_update=True)
+            original = await uow.get_first_snapshot(scope, document_id)
+            if document is None or current is None or original is None:
+                raise ResumeResourceNotFound
+            if document.status != DocumentStatus.READY:
+                raise ResumeStateConflict
+            if current.revision != expected_revision:
+                raise ResumeVersionConflict
+            if current.revision >= self._policy.max_canonical_revisions:
+                raise ResumeStateConflict
+            resume = current.resume
+            if resume.semantics is None:
+                if self._semantic_parser is None or document.content_sha256 is None:
+                    raise ResumeStateConflict
+                source_sections = original.resume.source_sections or original.resume.sections
+                parser_source = replace(resume, sections=source_sections)
+                semantics = await self._semantic_parser.parse(
+                    document.id,
+                    parser_source,
+                    document.content_sha256.hex(),
+                )
+                try:
+                    validate_parser_semantics(
+                        parser_source,
+                        semantics,
+                        document.content_sha256.hex(),
+                    )
+                except ValueError as exc:
+                    raise ResumeStateConflict from exc
+                resume = replace(
+                    resume,
+                    schema_version="canonical-resume/2.0.0",
+                    source_sections=source_sections,
+                    semantics=semantics,
+                )
+            current_semantics = resume.semantics
+            if current_semantics is None:
+                raise ResumeStateConflict
+            reviewed = apply_semantic_review(
+                current_semantics,
+                operations,
+                confirm_no_changes=confirm_no_changes,
+            )
+            revised_resume = replace(resume, semantics=reviewed)
+            if (
+                len(
+                    json.dumps(
+                        revised_resume.to_dict(),
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ).encode("utf-8")
+                )
+                > self._limits.max_serialized_artifact_bytes
+            ):
+                raise ResumeStateConflict
+            snapshot = CanonicalSnapshot(
+                id=uuid4(),
+                document_id=document.id,
+                owner=scope,
+                revision=current.revision + 1,
+                resume=revised_resume,
+                plain_text_sha256=current.plain_text_sha256,
+                parser_version=current.parser_version,
+                based_on_snapshot_id=current.id,
+                corrected_by_user=bool(operations),
+                created_at=now,
+            )
+            document.version += 1
+            document.updated_at = now
+            await uow.add_snapshot(snapshot)
+            await uow.save_document(document)
+            await uow.add_audit(
+                _audit(
+                    scope,
+                    "canonical_resume.reviewed",
+                    "succeeded",
+                    "document",
+                    document.id,
+                    context,
+                    now,
+                    {
+                        "revision": str(snapshot.revision),
+                        "operation_count": str(len(operations)),
+                        "confirmed_no_changes": str(confirm_no_changes).lower(),
+                    },
                 )
             )
             await uow.commit()
@@ -967,6 +1085,7 @@ class ResumeHealthProcessor:
         scanner: MalwareScanner,
         extractor: DocumentExtractor,
         limits: DocumentLimits,
+        semantic_parser: ResumeParserProvider | None = None,
         ocr: OcrProvider | None = None,
         execution_lease_seconds: int = 330,
         upload_cleanup_grace_seconds: int = 900,
@@ -978,6 +1097,7 @@ class ResumeHealthProcessor:
         self._scanner = scanner
         self._extractor = extractor
         self._limits = limits
+        self._semantic_parser = semantic_parser
         self._ocr = ocr
         if (
             execution_lease_seconds < 1
@@ -1180,6 +1300,18 @@ class ResumeHealthProcessor:
         if len(extraction.plain_text) > self._limits.max_extracted_characters:
             raise UnsafeDocument("extracted_text_limit_exceeded")
         canonical = _canonicalize(document.id, extraction)
+        if self._semantic_parser is not None:
+            semantics = await self._semantic_parser.parse(document.id, canonical, digest.hex())
+            try:
+                validate_parser_semantics(canonical, semantics, digest.hex())
+            except ValueError as exc:
+                raise UnsafeDocument("semantic_parser_invalid_output") from exc
+            canonical = replace(
+                canonical,
+                schema_version="canonical-resume/2.0.0",
+                source_sections=canonical.sections,
+                semantics=semantics,
+            )
         plain_bytes = extraction.plain_text.encode("utf-8")
         reading_bytes = json.dumps(
             [_block_to_json(item) for item in extraction.reading_order],
@@ -2223,6 +2355,27 @@ def _features(resume: CanonicalResume, page_count: int) -> ResumeHealthFeatures:
     normalized = [" ".join(block.text.casefold().split()) for block in blocks]
     duplicates = len(normalized) - len(set(normalized))
     confidences = [block.confidence_basis_points for block in blocks]
+    semantic_entities = (
+        [
+            entity
+            for entity in resume.semantics.entities
+            if entity.review_state is not SemanticReviewState.REMOVED
+        ]
+        if resume.semantics is not None
+        else []
+    )
+    semantic_fields = [
+        field
+        for entity in semantic_entities
+        for field in entity.fields
+        if field.review_state is not SemanticReviewState.REMOVED
+    ]
+    parsed_semantic_fields = [
+        field
+        for field in semantic_fields
+        if field.review_state is not SemanticReviewState.USER_ADDED
+    ]
+    date_fields = [field for field in semantic_fields if field.date_precision is not None]
     return ResumeHealthFeatures(
         text_characters=sum(len(block.text) for block in blocks),
         page_count=page_count,
@@ -2242,6 +2395,17 @@ def _features(resume: CanonicalResume, page_count: int) -> ResumeHealthFeatures:
         reading_order_violation_count=sum("reading_order" in item for item in resume.warnings),
         average_confidence_basis_points=(
             sum(confidences) // len(confidences) if confidences else 0
+        ),
+        semantic_entity_count=len(semantic_entities),
+        semantic_field_count=len(semantic_fields),
+        parsed_semantic_field_count=len(parsed_semantic_fields),
+        source_anchored_field_count=sum(bool(field.anchors) for field in parsed_semantic_fields),
+        reviewed_semantic_field_count=sum(
+            field.review_state is not SemanticReviewState.UNREVIEWED for field in semantic_fields
+        ),
+        date_field_count=len(date_fields),
+        precise_date_field_count=sum(
+            field.date_precision is not DatePrecision.UNKNOWN for field in date_fields
         ),
     )
 

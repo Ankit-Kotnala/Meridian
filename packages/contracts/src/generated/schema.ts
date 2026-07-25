@@ -3101,6 +3101,45 @@ export interface components {
             /** Version */
             version: number;
         };
+        /** AddSemanticEntityRequest */
+        AddSemanticEntityRequest: {
+            /** Fields */
+            fields: components["schemas"]["SemanticValueInput"][];
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "contact" | "experience" | "education" | "project" | "skill" | "certification";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            operation: "addEntity";
+        };
+        /** AddSemanticFieldRequest */
+        AddSemanticFieldRequest: {
+            /** Dateprecision */
+            datePrecision?: ("day" | "month" | "year" | "unknown") | null;
+            /**
+             * Entityid
+             * Format: uuid
+             */
+            entityId: string;
+            /**
+             * Fieldtype
+             * @enum {string}
+             */
+            fieldType: "text" | "email" | "phone" | "url" | "date" | "bullet";
+            /** Name */
+            name: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            operation: "addField";
+            /** Value */
+            value: string;
+        };
         /** AnalyticsBreakdownResponse */
         AnalyticsBreakdownResponse: {
             /** Count */
@@ -4145,7 +4184,10 @@ export interface components {
         };
         /** CanonicalFieldUpdate */
         CanonicalFieldUpdate: {
-            /** Id */
+            /**
+             * Id
+             * Format: uuid
+             */
             id: string;
             /** Value */
             value: string;
@@ -4169,10 +4211,22 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Legacyupgraderequired */
+            legacyUpgradeRequired: boolean;
             /** Schemaversion */
             schemaVersion: string;
             /** Sections */
             sections: components["schemas"]["CanonicalSectionResponse"][];
+            /** Semanticentities */
+            semanticEntities: components["schemas"]["SemanticEntityResponse"][];
+            /** Semanticparserversion */
+            semanticParserVersion: string | null;
+            /** Semanticreviewstate */
+            semanticReviewState: ("unreviewed" | "confirmed" | "corrected" | "user_added" | "removed") | null;
+            /** Semanticschemaversion */
+            semanticSchemaVersion: string | null;
+            /** Semanticwarnings */
+            semanticWarnings: components["schemas"]["ParserWarningResponse"][];
             /** Version */
             version: number;
             /** Warnings */
@@ -4180,8 +4234,15 @@ export interface components {
         };
         /** CanonicalResumeUpdateRequest */
         CanonicalResumeUpdateRequest: {
+            /**
+             * Confirmnochanges
+             * @default false
+             */
+            confirmNoChanges: boolean;
             /** Fields */
-            fields: components["schemas"]["CanonicalFieldUpdate"][];
+            fields?: components["schemas"]["CanonicalFieldUpdate"][];
+            /** Semanticoperations */
+            semanticOperations?: (components["schemas"]["ConfirmSemanticFieldRequest"] | components["schemas"]["CorrectSemanticFieldRequest"] | components["schemas"]["AddSemanticFieldRequest"] | components["schemas"]["RemoveSemanticFieldRequest"] | components["schemas"]["ReclassifySemanticEntityRequest"] | components["schemas"]["AddSemanticEntityRequest"] | components["schemas"]["RemoveSemanticEntityRequest"])[];
         };
         /** CanonicalSectionResponse */
         CanonicalSectionResponse: {
@@ -5087,6 +5148,19 @@ export interface components {
             /** Weightbasispoints */
             weightBasisPoints: number;
         };
+        /** ConfirmSemanticFieldRequest */
+        ConfirmSemanticFieldRequest: {
+            /**
+             * Fieldid
+             * Format: uuid
+             */
+            fieldId: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            operation: "confirmField";
+        };
         /** ConsentAttestationRequest */
         ConsentAttestationRequest: {
             /** Collectionattested */
@@ -5363,6 +5437,23 @@ export interface components {
             role?: string | null;
             /** Tags */
             tags?: string[] | null;
+        };
+        /** CorrectSemanticFieldRequest */
+        CorrectSemanticFieldRequest: {
+            /** Dateprecision */
+            datePrecision?: ("day" | "month" | "year" | "unknown") | null;
+            /**
+             * Fieldid
+             * Format: uuid
+             */
+            fieldId: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            operation: "correctField";
+            /** Value */
+            value: string;
         };
         /** CsrfResponse */
         CsrfResponse: {
@@ -7734,6 +7825,26 @@ export interface components {
              */
             documentId: string;
         };
+        /** ReclassifySemanticEntityRequest */
+        ReclassifySemanticEntityRequest: {
+            /**
+             * Entityid
+             * Format: uuid
+             */
+            entityId: string;
+            /** Fields */
+            fields: components["schemas"]["SemanticFieldReclassificationRequest"][];
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "contact" | "experience" | "education" | "project" | "skill" | "certification";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            operation: "reclassifyEntity";
+        };
         /** ReferralCreateRequest */
         ReferralCreateRequest: {
             /**
@@ -7971,6 +8082,32 @@ export interface components {
             status?: ("active" | "completed" | "cancelled") | null;
             /** Title */
             title?: string | null;
+        };
+        /** RemoveSemanticEntityRequest */
+        RemoveSemanticEntityRequest: {
+            /**
+             * Entityid
+             * Format: uuid
+             */
+            entityId: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            operation: "removeEntity";
+        };
+        /** RemoveSemanticFieldRequest */
+        RemoveSemanticFieldRequest: {
+            /**
+             * Fieldid
+             * Format: uuid
+             */
+            fieldId: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            operation: "removeField";
         };
         /** ReorderItem */
         ReorderItem: {
@@ -8304,7 +8441,7 @@ export interface components {
              * Key
              * @enum {string}
              */
-            key: "searchable_text" | "parser_confidence" | "reading_order_integrity" | "recognized_section_ratio" | "concise_block_ratio" | "section_breadth" | "chronology_coverage" | "action_bullet_ratio" | "outcome_bullet_ratio" | "duplicate_content_integrity" | "page_fit" | "parser_warning_integrity";
+            key: "searchable_text" | "parser_confidence" | "reading_order_integrity" | "recognized_section_ratio" | "concise_block_ratio" | "section_breadth" | "chronology_coverage" | "action_bullet_ratio" | "outcome_bullet_ratio" | "duplicate_content_integrity" | "page_fit" | "parser_warning_integrity" | "source_anchor_coverage" | "semantic_breadth" | "semantic_review_coverage" | "date_precision_coverage";
             /** Label */
             label: string;
             /** Rawcontributionbasispoints */
@@ -8326,7 +8463,7 @@ export interface components {
              * Key
              * @enum {string}
              */
-            key: "text_characters" | "page_count" | "image_only" | "section_count" | "recognized_section_count" | "block_count" | "concise_block_count" | "bullet_count" | "action_bullet_count" | "outcome_bullet_count" | "duplicate_block_count" | "chronology_signal_count" | "warning_count" | "reading_order_violation_count" | "average_confidence_basis_points";
+            key: "text_characters" | "page_count" | "image_only" | "section_count" | "recognized_section_count" | "block_count" | "concise_block_count" | "bullet_count" | "action_bullet_count" | "outcome_bullet_count" | "duplicate_block_count" | "chronology_signal_count" | "warning_count" | "reading_order_violation_count" | "average_confidence_basis_points" | "semantic_entity_count" | "semantic_field_count" | "parsed_semantic_field_count" | "source_anchored_field_count" | "reviewed_semantic_field_count" | "date_field_count" | "precise_date_field_count";
             /**
              * Kind
              * @enum {string}
@@ -8909,6 +9046,98 @@ export interface components {
         SavedRoleUpdateRequest: {
             /** Notes */
             notes: string | null;
+        };
+        /** SemanticEntityResponse */
+        SemanticEntityResponse: {
+            /** Fields */
+            fields: components["schemas"]["SemanticFieldResponse"][];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "contact" | "experience" | "education" | "project" | "skill" | "certification";
+            /**
+             * Reviewstate
+             * @enum {string}
+             */
+            reviewState: "unreviewed" | "confirmed" | "corrected" | "user_added" | "removed";
+            /** Sourcesectionid */
+            sourceSectionId: string | null;
+        };
+        /** SemanticFieldReclassificationRequest */
+        SemanticFieldReclassificationRequest: {
+            /**
+             * Fieldid
+             * Format: uuid
+             */
+            fieldId: string;
+            /** Name */
+            name: string;
+        };
+        /** SemanticFieldResponse */
+        SemanticFieldResponse: {
+            /** Anchors */
+            anchors: components["schemas"]["SemanticSourceAnchorResponse"][];
+            /** Confidence */
+            confidence: number;
+            /** Dateprecision */
+            datePrecision?: ("day" | "month" | "year" | "unknown") | null;
+            /**
+             * Fieldtype
+             * @enum {string}
+             */
+            fieldType: "text" | "email" | "phone" | "url" | "date" | "bullet";
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Reviewstate
+             * @enum {string}
+             */
+            reviewState: "unreviewed" | "confirmed" | "corrected" | "user_added" | "removed";
+            /** Value */
+            value: string;
+        };
+        /** SemanticSourceAnchorResponse */
+        SemanticSourceAnchorResponse: {
+            /**
+             * Blockid
+             * Format: uuid
+             */
+            blockId: string;
+            /** End */
+            end: number;
+            /** Excerpt */
+            excerpt: string;
+            /** Page */
+            page: number;
+            /** Sourcesha256 */
+            sourceSha256: string;
+            /** Start */
+            start: number;
+        };
+        /** SemanticValueInput */
+        SemanticValueInput: {
+            /** Dateprecision */
+            datePrecision?: ("day" | "month" | "year" | "unknown") | null;
+            /**
+             * Fieldtype
+             * @enum {string}
+             */
+            fieldType: "text" | "email" | "phone" | "url" | "date" | "bullet";
+            /** Name */
+            name: string;
+            /** Value */
+            value: string;
         };
         /** SessionContextClaimResponse */
         SessionContextClaimResponse: {

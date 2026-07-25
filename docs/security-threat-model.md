@@ -461,7 +461,11 @@ protected-route denial on desktop and mobile. Exact counts and commands are in
   route-template payload-free logging; and registered/guest browser workflows.
 
 These controls and the same-revision local container, integration, E2E, and scan
-gates pass as recorded in `PLANS.md`; hosted run `29378312134` also passes.
+gates pass as recorded in `PLANS.md`; the 2026-07-26 typed semantic closure also
+passes its exact implementation-tree Phase 2 verifier and separate security
+scan. Hosted run `29378312134` remains evidence for the original generic-block
+v1 slice; hosted evidence for the typed closure is pending authorization to
+publish.
 
 ### Phase 3 implemented controls and verification status
 
@@ -889,12 +893,14 @@ integrity, ownership, migrations, object references, and documented RPO/RTO.
   are Phase 2/3 local/initial adapters, not a production provider decision.
 - No application sandbox fully eliminates parser zero-day risk; isolation,
   patching, corpus testing, and kill switches remain necessary.
-- Resume and evidence-attachment parser timeout uses `asyncio.to_thread`;
-  cancelling the await does not
-  forcibly terminate the underlying Python thread. Celery task limits and the
-  non-root, read-only, CPU/memory/PID-bounded, no-edge-network worker constrain
-  impact, but killable per-parser subprocess isolation remains production
-  hardening work.
+- Resume Health parsing now uses a killable, reaped child process with bounded
+  request/result contracts, temporary-workspace cleanup, and POSIX resource
+  limits. Evidence-attachment and trusted CareerOS-created export extraction
+  still use the local `asyncio.to_thread` adapter; cancelling those awaits does
+  not forcibly terminate the underlying Python thread. Celery task limits and
+  the non-root, read-only, CPU/memory/PID-bounded, no-edge-network worker
+  constrain impact, but those remaining paths require a reviewed isolation
+  decision before production exposure to untrusted files.
 - Semantic grounding cannot perfectly detect meaning drift. High-risk claims,
   numbers, leadership, and ownership require stricter deterministic checks and
   user confirmation.

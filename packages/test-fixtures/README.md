@@ -8,12 +8,13 @@ Phase 2 document fixtures live in `generated/`. They contain only fictional
 `example.test` data and are reproducibly created by:
 
 ```powershell
-python packages/test-fixtures/scripts/generate-resume-documents.py
+uv run --package careeros-backend python packages/test-fixtures/scripts/generate-resume-documents.py
 ```
 
 `generated/manifest.json` pins the byte length and SHA-256 digest of each benign
-fixture. The corpus includes searchable PDF and DOCX resumes plus an image-only
-PDF for the insufficient-data path. Malformed, traversal, archive-expansion, and
-malware samples are generated inside isolated tests instead of being committed;
+fixture. The corpus includes searchable one- and two-column PDFs, DOCX,
+header/footer, table-heavy, date-locale, concurrent-role, unusual-font,
+bidirectional-control, long-document, and image-only cases. Malformed, traversal,
+archive-expansion, and malware samples are generated inside isolated tests instead of being committed;
 in particular, the EICAR signature is assembled only inside the scanner test so
 host antivirus software never encounters a checked-in signature.

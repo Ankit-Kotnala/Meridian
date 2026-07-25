@@ -1,6 +1,6 @@
 """Resume Health infrastructure adapters."""
 
-from .extractors import LocalDocumentExtractor
+from .extractors import LocalDocumentExtractor, LocalDocumentTextExtractor
 from .fakes import (
     DisabledOcrProvider,
     FakeDocumentExtractor,
@@ -11,10 +11,13 @@ from .fakes import (
     InMemoryResumeState,
     InMemoryResumeUnitOfWorkFactory,
 )
+from .isolated_extractor import IsolatedDocumentExtractor
+from .layout import LocalLayoutAnalyzer
 from .malware import ClamAvOptions, ClamAvScanner
 from .queue import CeleryJobPublisher, CeleryPublisherOptions
 from .repository import SqlAlchemyResumeUnitOfWorkFactory
 from .security import HmacGuestCapabilityManager, SystemClock
+from .semantic_parser import LocalResumeParserProvider
 from .storage import S3ObjectStorage, S3Options
 
 __all__ = [
@@ -31,7 +34,11 @@ __all__ = [
     "InMemoryObjectStorage",
     "InMemoryResumeState",
     "InMemoryResumeUnitOfWorkFactory",
+    "IsolatedDocumentExtractor",
     "LocalDocumentExtractor",
+    "LocalDocumentTextExtractor",
+    "LocalLayoutAnalyzer",
+    "LocalResumeParserProvider",
     "S3ObjectStorage",
     "S3Options",
     "SqlAlchemyResumeUnitOfWorkFactory",

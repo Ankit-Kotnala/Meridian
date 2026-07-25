@@ -107,6 +107,53 @@ class ParserWarningResponse(ResumeHealthSchema):
     field_id: str | None = None
 
 
+SemanticEntityKindValue = Literal[
+    "contact",
+    "experience",
+    "education",
+    "project",
+    "skill",
+    "certification",
+]
+SemanticFieldTypeValue = Literal["text", "email", "phone", "url", "date", "bullet"]
+SemanticReviewStateValue = Literal[
+    "unreviewed",
+    "confirmed",
+    "corrected",
+    "user_added",
+    "removed",
+]
+DatePrecisionValue = Literal["day", "month", "year", "unknown"]
+
+
+class SemanticSourceAnchorResponse(ResumeHealthSchema):
+    block_id: UUID
+    page: int
+    start: int
+    end: int
+    source_sha256: str
+    excerpt: str
+
+
+class SemanticFieldResponse(ResumeHealthSchema):
+    id: UUID
+    name: str
+    field_type: SemanticFieldTypeValue
+    value: str
+    confidence: int = Field(ge=0, le=100)
+    review_state: SemanticReviewStateValue
+    anchors: list[SemanticSourceAnchorResponse]
+    date_precision: DatePrecisionValue | None = None
+
+
+class SemanticEntityResponse(ResumeHealthSchema):
+    id: UUID
+    kind: SemanticEntityKindValue
+    review_state: SemanticReviewStateValue
+    source_section_id: UUID | None
+    fields: list[SemanticFieldResponse]
+
+
 class CanonicalResumeResponse(ResumeHealthSchema):
     id: UUID
     document_id: UUID
@@ -114,12 +161,18 @@ class CanonicalResumeResponse(ResumeHealthSchema):
     version: int
     sections: list[CanonicalSectionResponse]
     warnings: list[ParserWarningResponse]
+    semantic_schema_version: str | None
+    semantic_parser_version: str | None
+    semantic_review_state: SemanticReviewStateValue | None
+    semantic_entities: list[SemanticEntityResponse]
+    semantic_warnings: list[ParserWarningResponse]
+    legacy_upgrade_required: bool
     corrected_by_user: bool
     created_at: datetime
 
 
 class CanonicalFieldUpdate(ResumeHealthSchema):
-    id: str = Field(min_length=1, max_length=160)
+    id: UUID
     value: str = Field(min_length=1, max_length=10_000)
 
     @field_validator("value")
@@ -131,11 +184,106 @@ class CanonicalFieldUpdate(ResumeHealthSchema):
         return normalized
 
 
+class SemanticValueInput(ResumeHealthSchema):
+    name: str = Field(min_length=1, max_length=80)
+    field_type: SemanticFieldTypeValue
+    value: str = Field(min_length=1, max_length=10_000)
+    date_precision: DatePrecisionValue | None = None
+
+    @model_validator(mode="after")
+    def validate_semantic_value(self) -> Self:
+        self.value = self.value.strip()
+        if not self.value or "\x00" in self.value:
+            raise ValueError("semantic values must contain safe text")
+        if (self.field_type == "date") != (self.date_precision is not None):
+            raise ValueError("semantic date values require precision")
+        return self
+
+
+class ConfirmSemanticFieldRequest(ResumeHealthSchema):
+    operation: Literal["confirmField"]
+    field_id: UUID
+
+
+class CorrectSemanticFieldRequest(ResumeHealthSchema):
+    operation: Literal["correctField"]
+    field_id: UUID
+    value: str = Field(min_length=1, max_length=10_000)
+    date_precision: DatePrecisionValue | None = None
+
+    @field_validator("value")
+    @classmethod
+    def validate_value(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized or "\x00" in normalized:
+            raise ValueError("semantic values must contain safe text")
+        return normalized
+
+
+class AddSemanticFieldRequest(SemanticValueInput):
+    operation: Literal["addField"]
+    entity_id: UUID
+
+
+class RemoveSemanticFieldRequest(ResumeHealthSchema):
+    operation: Literal["removeField"]
+    field_id: UUID
+
+
+class SemanticFieldReclassificationRequest(ResumeHealthSchema):
+    field_id: UUID
+    name: str = Field(min_length=1, max_length=80)
+
+
+class ReclassifySemanticEntityRequest(ResumeHealthSchema):
+    operation: Literal["reclassifyEntity"]
+    entity_id: UUID
+    kind: SemanticEntityKindValue
+    fields: list[SemanticFieldReclassificationRequest] = Field(min_length=1, max_length=100)
+
+
+class AddSemanticEntityRequest(ResumeHealthSchema):
+    operation: Literal["addEntity"]
+    kind: SemanticEntityKindValue
+    fields: list[SemanticValueInput] = Field(min_length=1, max_length=100)
+
+
+class RemoveSemanticEntityRequest(ResumeHealthSchema):
+    operation: Literal["removeEntity"]
+    entity_id: UUID
+
+
+SemanticReviewOperationRequest = Annotated[
+    ConfirmSemanticFieldRequest
+    | CorrectSemanticFieldRequest
+    | AddSemanticFieldRequest
+    | RemoveSemanticFieldRequest
+    | ReclassifySemanticEntityRequest
+    | AddSemanticEntityRequest
+    | RemoveSemanticEntityRequest,
+    Field(discriminator="operation"),
+]
+
+
 class CanonicalResumeUpdateRequest(ResumeHealthSchema):
-    fields: list[CanonicalFieldUpdate] = Field(min_length=1, max_length=250)
+    fields: list[CanonicalFieldUpdate] = Field(default_factory=list, max_length=250)
+    semantic_operations: list[SemanticReviewOperationRequest] = Field(
+        default_factory=list,
+        max_length=250,
+    )
+    confirm_no_changes: bool = False
 
     @model_validator(mode="after")
     def require_unique_fields(self) -> Self:
+        modes = sum(
+            (
+                bool(self.fields),
+                bool(self.semantic_operations),
+                self.confirm_no_changes,
+            )
+        )
+        if modes != 1:
+            raise ValueError("choose exactly one canonical review mode")
         identifiers = [field.id for field in self.fields]
         if len(identifiers) != len(set(identifiers)):
             raise ValueError("canonical field identifiers must be unique")
@@ -235,6 +383,13 @@ ResumeHealthFeatureKey = Literal[
     "warning_count",
     "reading_order_violation_count",
     "average_confidence_basis_points",
+    "semantic_entity_count",
+    "semantic_field_count",
+    "parsed_semantic_field_count",
+    "source_anchored_field_count",
+    "reviewed_semantic_field_count",
+    "date_field_count",
+    "precise_date_field_count",
 ]
 ResumeHealthContributionKey = Literal[
     "searchable_text",
@@ -249,6 +404,10 @@ ResumeHealthContributionKey = Literal[
     "duplicate_content_integrity",
     "page_fit",
     "parser_warning_integrity",
+    "source_anchor_coverage",
+    "semantic_breadth",
+    "semantic_review_coverage",
+    "date_precision_coverage",
 ]
 BoundedFeatureInteger = Annotated[int, Field(strict=True, ge=0, le=100_000_000)]
 
@@ -288,7 +447,7 @@ class ResumeHealthComponentResponse(ResumeHealthSchema):
     contribution: int = Field(ge=0, le=100)
     raw_contribution_basis_points: int = Field(ge=0, le=10_000)
     explanation: str
-    feature_contributions: list[ResumeHealthFeatureContributionResponse] = Field(max_length=4)
+    feature_contributions: list[ResumeHealthFeatureContributionResponse] = Field(max_length=7)
 
 
 class ResumeFindingResponse(ResumeHealthSchema):
@@ -313,7 +472,7 @@ class ResumeHealthReportResponse(ResumeHealthSchema):
     engine_version: str
     configuration_version: str
     feature_schema_version: str = Field(min_length=1, max_length=80)
-    feature_values: list[ResumeHealthFeatureValueResponse] = Field(max_length=15)
+    feature_values: list[ResumeHealthFeatureValueResponse] = Field(max_length=24)
     feature_set_hash: str
     components: list[ResumeHealthComponentResponse]
     findings: list[ResumeFindingResponse]

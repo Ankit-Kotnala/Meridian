@@ -157,6 +157,7 @@ from careeros.modules.resume_health.infrastructure import (
     CeleryJobPublisher,
     CeleryPublisherOptions,
     HmacGuestCapabilityManager,
+    LocalResumeParserProvider,
     S3ObjectStorage,
     S3Options,
     SqlAlchemyResumeUnitOfWorkFactory,
@@ -374,6 +375,7 @@ def create_app(
                         resolved_settings.resume_guest_retention_hours * 3600
                     ),
                 ),
+                semantic_parser=LocalResumeParserProvider(),
             )
             if resolved_resume_dispatcher is None:
                 resolved_resume_dispatcher = OutboxDispatcher(

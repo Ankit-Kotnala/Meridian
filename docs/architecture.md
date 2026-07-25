@@ -390,9 +390,10 @@ read configured upload policy
   -> promote to randomized quarantine key
   -> commit document + job + outbox in one database transaction
   -> fail-closed ClamAV scan
-  -> isolated PDF/DOCX expansion/extraction + authoritative PDF page checks
-  -> immutable canonical snapshot + source spans + confidence + parser warnings
-  -> explicit user correction creates a new snapshot
+  -> killable child-process PDF/DOCX extraction + authoritative PDF page checks
+  -> independent layout analysis and deterministic semantic parser provider
+  -> immutable source blocks + typed source-anchored semantic snapshot
+  -> explicit typed review/no-change confirmation creates a successor
   -> deterministic fixed-point analysis bound to that snapshot
 ```
 
@@ -414,12 +415,20 @@ the local `python-docx` extractor; it is bounded by bytes, archive entries,
 expanded size/ratio, extracted characters/blocks, and artifact size until a
 rendering provider supplies layout-aware page enforcement.
 
-The local Resume Health and evidence-attachment extractors call blocking
-libraries through `asyncio.to_thread`.
-Application timeout cancels the await but is not a killable per-parser process
-boundary. Celery task limits and the non-root, read-only, CPU/memory/PID-bounded,
-no-edge-network worker constrain the residual thread; production parser sandbox
-selection remains a later hardening decision.
+Resume Health runs blocking parser libraries in a dedicated child process below
+the configured private temporary root. The parent supplies an allowlisted bounded
+JSON request, disables standard input/output, rejects oversized or malformed
+results, force-kills and awaits a timed-out child, then removes its workspace.
+POSIX children also receive CPU, address-space, and output limits; Celery and the
+non-root, read-only, CPU/memory/PID-bounded, no-edge-network worker remain the
+outer controls. The reusable renderer extractor used by trusted CareerOS-created
+exports still uses the local adapter in-process.
+
+Text extraction, layout analysis, semantic classification, malware scanning, and
+optional OCR are separate inward-facing ports. The deterministic local adapters
+require no third-party credentials. Layout analysis flags multi-column,
+table-heavy, repeated header/footer, reading-order, and bidirectional-control
+risks rather than claiming perfect rendered geometry.
 
 ### Private evidence attachments (Phase 3 implementation)
 
@@ -449,10 +458,12 @@ create durable records with purpose, owner, next attempt, and terminal status;
 explicit document deletion remains a fenced durable job and schedules a staging
 cleanup backstop.
 
-The canonical source is append-only: the parser creates revision 1, and a user
-correction creates a successor with `based_on_snapshot_id` while retaining the
-original values and source spans. All-no-op correction is rejected; the domain
-caps each document at 50 canonical revisions and 100 analysis jobs, while the API
+The canonical source is append-only: the parser creates revision 1 with immutable
+source blocks and a typed semantic sidecar. A typed user review creates a
+successor with `based_on_snapshot_id`; corrected facts retain their original
+anchor, and user-added facts carry no source anchor. Empty implicit review is
+rejected; an explicit no-change confirmation is recorded. The domain caps each
+document at 50 canonical revisions and 100 analysis jobs, while the API
 applies separate owner-scoped correction and analysis rate classes. A score
 analysis references exactly one snapshot. Source resumes remain provenance
 inputs; they do not replace the career-profile/evidence source of truth
@@ -547,14 +558,15 @@ score or override hard-gap display. Stored score output includes engine version,
 weight configuration, inputs, component contributions, missing-data treatment,
 and timestamp.
 
-Resume Health v1 is implemented without a model provider. It uses integer
+Resume Health v2 is implemented without a model provider. It uses integer
 fixed-point feature/component arithmetic and persists engine/configuration/
 feature-schema version, the complete typed feature record, each weighted feature
 contribution, and feature-set hash. It returns no number for image-only or sparse
 input and emits the canonical internal-score disclaimer. The report's semantic,
 keyboard-operable disclosures expose measured values and the raw/display
 score-weight-contribution trace without requiring color or chart interpretation.
-Exact features and weights are normative in `docs/scoring-methodology.md`.
+Historical v1 records remain strictly readable. Exact features and weights are
+normative in `docs/scoring-methodology.md`.
 
 AI output is untrusted until strict schema validation and deterministic claim-
 evidence verification pass. Phase 6 implements this for Change Studio: grounded

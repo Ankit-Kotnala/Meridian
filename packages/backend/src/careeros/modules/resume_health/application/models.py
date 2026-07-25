@@ -9,6 +9,7 @@ from uuid import UUID
 from careeros.modules.resume_health.domain import (
     AnalysisStatus,
     CanonicalResume,
+    DatePrecision,
     DocumentStatus,
     FindingSeverity,
     JobKind,
@@ -17,6 +18,8 @@ from careeros.modules.resume_health.domain import (
     OwnerScope,
     ProcessingStage,
     ResumeMediaType,
+    SemanticEntityKind,
+    SemanticFieldType,
 )
 
 
@@ -152,6 +155,7 @@ class ExtractionResult:
     image_only: bool
     warnings: tuple[str, ...]
     parser_version: str
+    layout_signals: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -171,6 +175,75 @@ class CanonicalSnapshotView:
 class CorrectionOperation:
     block_id: UUID
     text: str
+
+
+@dataclass(frozen=True, slots=True)
+class ConfirmSemanticField:
+    field_id: UUID
+
+
+@dataclass(frozen=True, slots=True)
+class CorrectSemanticField:
+    field_id: UUID
+    value: str
+    date_precision: DatePrecision | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class AddSemanticField:
+    entity_id: UUID
+    name: str
+    field_type: SemanticFieldType
+    value: str
+    date_precision: DatePrecision | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class RemoveSemanticField:
+    field_id: UUID
+
+
+@dataclass(frozen=True, slots=True)
+class SemanticFieldReclassification:
+    field_id: UUID
+    name: str
+
+
+@dataclass(frozen=True, slots=True)
+class ReclassifySemanticEntity:
+    entity_id: UUID
+    kind: SemanticEntityKind
+    fields: tuple[SemanticFieldReclassification, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class NewSemanticField:
+    name: str
+    field_type: SemanticFieldType
+    value: str
+    date_precision: DatePrecision | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class AddSemanticEntity:
+    kind: SemanticEntityKind
+    fields: tuple[NewSemanticField, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class RemoveSemanticEntity:
+    entity_id: UUID
+
+
+type SemanticReviewOperation = (
+    ConfirmSemanticField
+    | CorrectSemanticField
+    | AddSemanticField
+    | RemoveSemanticField
+    | ReclassifySemanticEntity
+    | AddSemanticEntity
+    | RemoveSemanticEntity
+)
 
 
 @dataclass(frozen=True, slots=True)

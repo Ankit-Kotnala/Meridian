@@ -1,6 +1,7 @@
 """Thin authorized HTTP adapters for Phase 2 Resume Health workflows."""
 
 import re
+from dataclasses import replace
 from datetime import UTC, datetime
 from typing import Annotated, Any, Literal, cast
 from uuid import UUID
@@ -11,27 +12,40 @@ from careeros.modules.identity.application.ports import AbuseLimiter
 from careeros.modules.identity.domain import AuthenticatedPrincipal
 from careeros.modules.resume_health.application import ResumeHealthService
 from careeros.modules.resume_health.application.models import (
+    AddSemanticEntity,
+    AddSemanticField,
     AnalysisView,
     CanonicalSnapshotView,
     ClaimGuestDocument,
+    ConfirmSemanticField,
     CorrectionOperation,
+    CorrectSemanticField,
     CreateUploadIntent,
     DocumentView,
     FeatureContributionView,
+    NewSemanticField,
     ProcessingJobView,
+    ReclassifySemanticEntity,
+    RemoveSemanticEntity,
+    RemoveSemanticField,
     ResumeRequestContext,
+    SemanticFieldReclassification,
+    SemanticReviewOperation,
     UploadIntentView,
 )
 from careeros.modules.resume_health.domain import (
     AnalysisStatus,
     CanonicalBlock,
     CanonicalResume,
+    DatePrecision,
     DocumentStatus,
     JobKind,
     JobStatus,
     OwnerScope,
     ProcessingStage,
     ResumeMediaType,
+    SemanticEntityKind,
+    SemanticFieldType,
 )
 from careeros.modules.resume_health.domain.errors import ResumeResourceNotFound
 from fastapi import APIRouter, Cookie, Depends, Header, Request, Response, status
@@ -60,12 +74,16 @@ from careeros_api.resume_health_dependencies import (
     set_guest_cookies,
 )
 from careeros_api.resume_health_schemas import (
+    AddSemanticEntityRequest,
+    AddSemanticFieldRequest,
     CanonicalFieldResponse,
     CanonicalResumeResponse,
     CanonicalResumeUpdateRequest,
     CanonicalSectionResponse,
     ClaimGuestDocumentRequest,
     ClaimGuestDocumentResponse,
+    ConfirmSemanticFieldRequest,
+    CorrectSemanticFieldRequest,
     DocumentListResponse,
     DocumentResponse,
     DocumentSummaryResponse,
@@ -77,6 +95,9 @@ from careeros_api.resume_health_schemas import (
     ProcessingJobResponse,
     ReadingOrderBlockResponse,
     ReadingOrderResponse,
+    ReclassifySemanticEntityRequest,
+    RemoveSemanticEntityRequest,
+    RemoveSemanticFieldRequest,
     ResumeFindingResponse,
     ResumeHealthComponentResponse,
     ResumeHealthContributionKey,
@@ -85,6 +106,9 @@ from careeros_api.resume_health_schemas import (
     ResumeHealthFeatureValueResponse,
     ResumeHealthReportResponse,
     ResumeHealthRequest,
+    SemanticEntityResponse,
+    SemanticFieldResponse,
+    SemanticSourceAnchorResponse,
     SourceSpanResponse,
     UploadIntentRequest,
     UploadIntentResponse,
@@ -143,6 +167,13 @@ _FEATURE_DEFINITIONS: dict[
     "warning_count": ("Parser warnings", "count"),
     "reading_order_violation_count": ("Reading-order warnings", "count"),
     "average_confidence_basis_points": ("Parser confidence", "percentage"),
+    "semantic_entity_count": ("Typed semantic records", "count"),
+    "semantic_field_count": ("Active typed fields", "count"),
+    "parsed_semantic_field_count": ("Parser-derived typed fields", "count"),
+    "source_anchored_field_count": ("Source-anchored typed fields", "count"),
+    "reviewed_semantic_field_count": ("Reviewed typed fields", "count"),
+    "date_field_count": ("Typed date fields", "count"),
+    "precise_date_field_count": ("Dates with explicit precision", "count"),
 }
 
 _CONTRIBUTION_LABELS: dict[ResumeHealthContributionKey, str] = {
@@ -158,6 +189,10 @@ _CONTRIBUTION_LABELS: dict[ResumeHealthContributionKey, str] = {
     "duplicate_content_integrity": "Duplicate-content integrity",
     "page_fit": "Page fit",
     "parser_warning_integrity": "Parser-warning integrity",
+    "source_anchor_coverage": "Source-anchor coverage",
+    "semantic_breadth": "Semantic record breadth",
+    "semantic_review_coverage": "Explicit semantic review coverage",
+    "date_precision_coverage": "Date-precision coverage",
 }
 
 _COMPONENT_FEATURE_ORDER: dict[str, tuple[ResumeHealthContributionKey, ...]] = {
@@ -166,12 +201,14 @@ _COMPONENT_FEATURE_ORDER: dict[str, tuple[ResumeHealthContributionKey, ...]] = {
         "parser_confidence",
         "reading_order_integrity",
         "recognized_section_ratio",
+        "source_anchor_coverage",
     ),
     "recruiter_clarity": (
         "recognized_section_ratio",
         "concise_block_ratio",
         "section_breadth",
         "chronology_coverage",
+        "semantic_breadth",
     ),
     "content_impact": (
         "action_bullet_ratio",
@@ -189,12 +226,16 @@ _COMPONENT_FEATURE_ORDER: dict[str, tuple[ResumeHealthContributionKey, ...]] = {
         "recognized_section_ratio",
         "page_fit",
         "concise_block_ratio",
+        "semantic_breadth",
     ),
     "consistency_truth": (
         "parser_confidence",
         "parser_warning_integrity",
         "duplicate_content_integrity",
         "chronology_coverage",
+        "source_anchor_coverage",
+        "semantic_review_coverage",
+        "date_precision_coverage",
     ),
 }
 
@@ -671,16 +712,27 @@ async def _correct(
     response: Response,
 ) -> CanonicalResumeResponse:
     await _check_mutation_rate(request, "resume_correction", scope)
-    snapshot = await service.correct_canonical_resume(
-        scope,
-        document_id,
-        expected_revision=expected_version,
-        corrections=tuple(
-            CorrectionOperation(block_id=UUID(field.id), text=field.value)
-            for field in payload.fields
-        ),
-        context=_resume_context(context),
-    )
+    if payload.fields:
+        snapshot = await service.correct_canonical_resume(
+            scope,
+            document_id,
+            expected_revision=expected_version,
+            corrections=tuple(
+                CorrectionOperation(block_id=field.id, text=field.value) for field in payload.fields
+            ),
+            context=_resume_context(context),
+        )
+    else:
+        snapshot = await service.review_canonical_semantics(
+            scope,
+            document_id,
+            expected_revision=expected_version,
+            operations=tuple(
+                _semantic_operation(operation) for operation in payload.semantic_operations
+            ),
+            confirm_no_changes=payload.confirm_no_changes,
+            context=_resume_context(context),
+        )
     response.headers["ETag"] = f'"{snapshot.revision}"'
     response.headers["Cache-Control"] = "no-store"
     return _canonical_response(snapshot)
@@ -1110,6 +1162,59 @@ def _canonical_response(view: CanonicalSnapshotView) -> CanonicalResumeResponse:
                 fields=fields,
             )
         )
+    semantics = view.resume.semantics
+    source_blocks = _blocks_by_id(
+        replace(view.resume, sections=view.resume.source_sections)
+        if view.resume.source_sections
+        else view.original_resume
+    )
+    semantic_entities = (
+        [
+            SemanticEntityResponse(
+                id=entity.id,
+                kind=entity.kind.value,
+                review_state=entity.review_state.value,
+                source_section_id=entity.source_section_id,
+                fields=[
+                    SemanticFieldResponse(
+                        id=field.id,
+                        name=field.name,
+                        field_type=field.field_type.value,
+                        value=field.value,
+                        confidence=(field.confidence_basis_points + 50) // 100,
+                        review_state=field.review_state.value,
+                        anchors=[
+                            SemanticSourceAnchorResponse(
+                                block_id=anchor.block_id,
+                                page=anchor.page,
+                                start=anchor.start,
+                                end=anchor.end,
+                                source_sha256=anchor.source_sha256,
+                                excerpt=(
+                                    _semantic_anchor_excerpt(
+                                        source_blocks[anchor.block_id],
+                                        anchor.page,
+                                        anchor.start,
+                                        anchor.end,
+                                    )
+                                    if anchor.block_id in source_blocks
+                                    else ""
+                                ),
+                            )
+                            for anchor in field.anchors
+                        ],
+                        date_precision=(
+                            field.date_precision.value if field.date_precision else None
+                        ),
+                    )
+                    for field in entity.fields
+                ],
+            )
+            for entity in semantics.entities
+        ]
+        if semantics is not None
+        else []
+    )
     return CanonicalResumeResponse(
         id=view.id,
         document_id=view.document_id,
@@ -1123,9 +1228,86 @@ def _canonical_response(view: CanonicalSnapshotView) -> CanonicalResumeResponse:
             )
             for warning in view.resume.warnings
         ],
+        semantic_schema_version=semantics.schema_version if semantics is not None else None,
+        semantic_parser_version=semantics.parser_version if semantics is not None else None,
+        semantic_review_state=semantics.review_state.value if semantics is not None else None,
+        semantic_entities=semantic_entities,
+        semantic_warnings=[
+            ParserWarningResponse(
+                code=warning,
+                message=_warning_message(warning),
+            )
+            for warning in (semantics.warnings if semantics is not None else ())
+        ],
+        legacy_upgrade_required=semantics is None,
         corrected_by_user=view.corrected_by_user,
         created_at=view.created_at,
     )
+
+
+def _semantic_anchor_excerpt(
+    block: CanonicalBlock,
+    page: int,
+    start: int,
+    end: int,
+) -> str:
+    spans = [
+        span
+        for span in block.spans
+        if span.page == page
+        and span.start <= start
+        and end <= span.end
+        and end - span.start <= len(block.text)
+    ]
+    if len(spans) != 1:
+        return ""
+    span = spans[0]
+    return block.text[start - span.start : end - span.start][:240]
+
+
+def _semantic_operation(value: object) -> SemanticReviewOperation:
+    if isinstance(value, ConfirmSemanticFieldRequest):
+        return ConfirmSemanticField(value.field_id)
+    if isinstance(value, CorrectSemanticFieldRequest):
+        return CorrectSemanticField(
+            value.field_id,
+            value.value,
+            DatePrecision(value.date_precision) if value.date_precision else None,
+        )
+    if isinstance(value, AddSemanticFieldRequest):
+        return AddSemanticField(
+            value.entity_id,
+            value.name,
+            SemanticFieldType(value.field_type),
+            value.value,
+            DatePrecision(value.date_precision) if value.date_precision else None,
+        )
+    if isinstance(value, RemoveSemanticFieldRequest):
+        return RemoveSemanticField(value.field_id)
+    if isinstance(value, ReclassifySemanticEntityRequest):
+        return ReclassifySemanticEntity(
+            value.entity_id,
+            SemanticEntityKind(value.kind),
+            tuple(
+                SemanticFieldReclassification(field.field_id, field.name) for field in value.fields
+            ),
+        )
+    if isinstance(value, AddSemanticEntityRequest):
+        return AddSemanticEntity(
+            SemanticEntityKind(value.kind),
+            tuple(
+                NewSemanticField(
+                    field.name,
+                    SemanticFieldType(field.field_type),
+                    field.value,
+                    DatePrecision(field.date_precision) if field.date_precision else None,
+                )
+                for field in value.fields
+            ),
+        )
+    if isinstance(value, RemoveSemanticEntityRequest):
+        return RemoveSemanticEntity(value.entity_id)
+    raise TypeError("unsupported semantic review operation")
 
 
 def _blocks_by_id(resume: CanonicalResume) -> dict[UUID, CanonicalBlock]:
@@ -1145,6 +1327,18 @@ def _warning_message(code: str) -> str:
             "Some content could not be classified confidently. Review it carefully."
         ),
         "dates_uncertain": "Some dates could not be interpreted confidently.",
+        "table_heavy_layout": (
+            "This document relies heavily on tables. Verify the reading order before reuse."
+        ),
+        "multi_column_layout": (
+            "Multiple text columns were detected. Verify the extracted reading order."
+        ),
+        "header_footer_excluded": (
+            "Repeated header or footer text was excluded from the career content."
+        ),
+        "bidirectional_controls_removed": (
+            "Hidden bidirectional text controls were removed before parsing."
+        ),
     }
     return messages.get(code, "Review this parser warning before reusing the content.")
 

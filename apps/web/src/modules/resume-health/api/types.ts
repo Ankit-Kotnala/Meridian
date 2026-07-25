@@ -14,6 +14,11 @@ export type CanonicalSection =
 export type CanonicalField = components["schemas"]["CanonicalFieldResponse"];
 export type CanonicalUpdate =
   components["schemas"]["CanonicalResumeUpdateRequest"];
+export type SemanticEntity = components["schemas"]["SemanticEntityResponse"];
+export type SemanticField = components["schemas"]["SemanticFieldResponse"];
+export type SemanticReviewOperation = NonNullable<
+  CanonicalUpdate["semanticOperations"]
+>[number];
 export type PlainText = components["schemas"]["PlainTextResponse"];
 export type ReadingOrder = components["schemas"]["ReadingOrderResponse"];
 export type ResumeHealthReport =

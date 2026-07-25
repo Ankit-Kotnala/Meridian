@@ -122,7 +122,9 @@ async function completeResumeHealth(page: Page): Promise<void> {
   ).toBeVisible();
   await page.getByLabel("Resume file").setInputFiles(resumeFixture);
   await page.getByRole("button", { name: "Upload and review" }).click();
-  await expect(page).toHaveURL(/\/resume-health\/account\/processing\//);
+  await expect(page).toHaveURL(
+    /\/resume-health\/account\/(?:processing|review)\//,
+  );
   await expect(page).toHaveURL(/\/resume-health\/account\/review\//, {
     timeout: 120_000,
   });
@@ -151,7 +153,9 @@ async function completeResumeHealth(page: Page): Promise<void> {
   expect(correctedCanonical).toEqual(
     expect.objectContaining({ correctedByUser: true }),
   );
-  await expect(page).toHaveURL(/\/resume-health\/account\/processing\//);
+  await expect(page).toHaveURL(
+    /\/resume-health\/account\/(?:processing|report)\//,
+  );
   await expect(page).toHaveURL(/\/resume-health\/account\/report\//, {
     timeout: 120_000,
   });

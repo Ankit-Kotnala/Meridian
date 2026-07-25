@@ -16,6 +16,7 @@ from careeros.modules.resume_health.application.models import (
     AnalysisView,
     CanonicalSnapshotView,
     ClaimGuestDocument,
+    CorrectSemanticField,
     DocumentView,
     FeatureContributionView,
     FinalizedUpload,
@@ -44,6 +45,7 @@ from pydantic import SecretStr
 from careeros_api.config import Settings
 from careeros_api.constants import SCORING_DISCLAIMER
 from careeros_api.main import create_app
+from careeros_api.resume_health_schemas import ResumeHealthComponentResponse
 from conftest import FakeDatabase
 
 _ORIGIN = "http://localhost:3000"
@@ -477,6 +479,90 @@ def test_account_correction_and_analysis_mutations_are_rate_limited() -> None:
         call("resume_analysis", subject, 1, settings.resume_analysis_rate_window_seconds),
         call("resume_analysis", subject, 1, settings.resume_analysis_rate_window_seconds),
     ]
+
+
+def test_account_semantic_review_uses_typed_operation_contract() -> None:
+    identity = _identity()
+    resume = _resume()
+    limiter = create_autospec(RedisSecurityStore, instance=True)
+    principal = _principal()
+    document = _document()
+    snapshot = _canonical_snapshot(document.id)
+    field_id = uuid4()
+    identity.authenticate.return_value = principal
+    resume.review_canonical_semantics.return_value = snapshot
+
+    with TestClient(
+        create_app(
+            _settings(),
+            database=FakeDatabase(),
+            identity=identity,
+            security_store=limiter,
+            resume_health=resume,
+        )
+    ) as client:
+        client.cookies.set("careeros_session", "opaque-access")
+        client.cookies.set("careeros_csrf", "opaque-csrf")
+        response = client.patch(
+            f"/api/v1/documents/{document.id}/canonical-resume",
+            json={
+                "semanticOperations": [
+                    {
+                        "operation": "correctField",
+                        "fieldId": str(field_id),
+                        "value": "Verified fictional title",
+                    }
+                ]
+            },
+            headers={
+                "Origin": _ORIGIN,
+                "X-CSRF-Token": "opaque-csrf",
+                "If-Match": '"2"',
+            },
+        )
+
+    assert response.status_code == 200
+    resume.review_canonical_semantics.assert_awaited_once_with(
+        OwnerScope(user_id=principal.user_id),
+        document.id,
+        expected_revision=2,
+        operations=(CorrectSemanticField(field_id, "Verified fictional title"),),
+        confirm_no_changes=False,
+        context=ANY,
+    )
+
+
+def test_canonical_block_correction_rejects_non_uuid_identifiers_at_transport() -> None:
+    identity = _identity()
+    resume = _resume()
+    limiter = create_autospec(RedisSecurityStore, instance=True)
+    principal = _principal()
+    document = _document()
+    identity.authenticate.return_value = principal
+
+    with TestClient(
+        create_app(
+            _settings(),
+            database=FakeDatabase(),
+            identity=identity,
+            security_store=limiter,
+            resume_health=resume,
+        )
+    ) as client:
+        client.cookies.set("careeros_session", "opaque-access")
+        client.cookies.set("careeros_csrf", "opaque-csrf")
+        response = client.patch(
+            f"/api/v1/documents/{document.id}/canonical-resume",
+            json={"fields": [{"id": "not-a-uuid", "value": "Verified fictional text"}]},
+            headers={
+                "Origin": _ORIGIN,
+                "X-CSRF-Token": "opaque-csrf",
+                "If-Match": '"2"',
+            },
+        )
+
+    assert response.status_code == 422
+    resume.correct_canonical_resume.assert_not_awaited()
 
 
 def test_guest_correction_and_analysis_mutations_are_rate_limited() -> None:
@@ -950,6 +1036,44 @@ def test_report_exposes_ordered_fixed_point_feature_trace() -> None:
         "rawContributionBasisPoints": 1_836,
     }
     resume.get_analysis.assert_awaited_once_with(OwnerScope(user_id=principal.user_id), analysis.id)
+
+
+def test_report_schema_accepts_complete_version_two_consistency_trace() -> None:
+    contribution = {
+        "label": "Measured feature",
+        "score": 80,
+        "rawScoreBasisPoints": 8_000,
+        "weight": 10,
+        "rawWeightBasisPoints": 1_000,
+        "contribution": 8,
+        "rawContributionBasisPoints": 800,
+    }
+    component = ResumeHealthComponentResponse.model_validate(
+        {
+            "key": "consistency_truth",
+            "label": "Consistency and Truth",
+            "score": 80,
+            "rawScoreBasisPoints": 8_000,
+            "weight": 10,
+            "contribution": 8,
+            "rawContributionBasisPoints": 800,
+            "explanation": "Seven deterministic v2 factors are exposed.",
+            "featureContributions": [
+                contribution | {"key": key}
+                for key in (
+                    "parser_confidence",
+                    "parser_warning_integrity",
+                    "duplicate_content_integrity",
+                    "chronology_coverage",
+                    "source_anchor_coverage",
+                    "semantic_review_coverage",
+                    "date_precision_coverage",
+                )
+            ],
+        }
+    )
+
+    assert len(component.feature_contributions) == 7
 
 
 def test_report_includes_versions_hash_and_canonical_disclaimer_without_false_zero() -> None:

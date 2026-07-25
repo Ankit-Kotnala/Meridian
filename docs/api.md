@@ -407,13 +407,22 @@ job, transfers retained content/job history atomically, removes guest retention,
 and revokes the guest capability. Prior guest audit records retain their original
 scope while the claim adds a new account-scoped audit event.
 
-Parser corrections create a new immutable canonical snapshot based on the prior
-snapshot. The response keeps original extracted values and source spans visible;
-the source document is never overwritten. Analysis binds to one snapshot and
-returns fixed-point score/components, engine/configuration/feature-schema
-versions, all persisted feature values, each component's feature score/weight/
-contribution in raw basis points and display units, feature hash, findings,
-warnings, and the canonical disclaimer. The web exposes that trace in semantic,
+Canonical responses retain immutable source sections/blocks and expose a
+versioned semantic sidecar for contact, experience, education, project, skill,
+and certification records. Parser-derived fields carry confidence, review state,
+date precision where applicable, and exact block/page/character/SHA-256 anchors.
+The patch contract accepts discriminated confirm, correct, add, remove, and
+reclassify operations, or an explicit no-change confirmation. User-added facts
+make no source-anchor claim. Every accepted review creates an optimistic,
+immutable successor snapshot; legacy block-only snapshots upgrade through that
+same explicit path and the source document is never overwritten.
+
+Analysis binds to one snapshot and returns fixed-point score/components,
+engine/configuration/feature-schema versions, all persisted feature values, each
+component's feature score/weight/contribution in raw basis points and display
+units, feature hash, findings, warnings, and the canonical disclaimer. Current
+Resume Health v2 includes semantic breadth, source-anchor coverage, explicit
+review coverage, and date-precision coverage. The web exposes that trace in
 keyboard-operable disclosure lists. Insufficient extracted data returns no
 numeric score rather than zero.
 
