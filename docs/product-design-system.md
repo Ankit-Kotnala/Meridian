@@ -1,7 +1,7 @@
 # CareerOS product design system
 
 Status: active baseline for the 2026 product-wide UX redesign
-Last reviewed: 2026-07-26
+Last reviewed: 2026-07-27
 
 ## Product direction
 

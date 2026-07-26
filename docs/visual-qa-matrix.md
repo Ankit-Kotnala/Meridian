@@ -1,7 +1,7 @@
 # CareerOS product-wide visual QA matrix
 
 Status: redesign verification record
-Run date: 2026-07-26
+Run date: 2026-07-27
 Environment: production Next.js image behind the local `web-edge` container at
 `http://localhost:3000`, with the real local FastAPI, PostgreSQL, Redis, MinIO,
 Mailpit, ClamAV, Celery worker, and scheduler services.
@@ -14,6 +14,13 @@ reduced-motion, and lab performance checks below. Representative landing
 desktop/mobile and protected Applications mobile captures were manually
 inspected through a sandbox-safe encoded-preview path; exhaustive manual review
 of every saved screenshot is not claimed.
+
+The final production-mode completion rerun on 2026-07-27 passed all 28 public
+route/viewport cases and all 168 protected route/viewport cases. It reported no
+horizontal overflow, console errors, page errors, reduced-motion failures, or
+lab-threshold regressions. The protected pass used a fresh fictional local
+account through the healthy FastAPI, PostgreSQL, Redis, MinIO, Mailpit, ClamAV,
+worker, and scheduler stack.
 
 ## Required viewport matrix
 
@@ -177,9 +184,6 @@ visual QA.
   by a Windows sandbox ACL helper error. Representative captures were reviewed
   through a sandbox-safe encoded-preview fallback; automated checks and that
   bounded review are not a substitute for exhaustive aesthetic inspection.
-- Docker Desktop became unavailable during the final backend-integrated desktop
-  rerun. Earlier complete protected-route evidence remains valid, while this
-  incremental rerun is recorded as blocked rather than passed.
 - Dynamic detail routes do not have stable production-like fixture IDs. Their
   component and journey coverage is identified explicitly in the matrix.
 - Several full-stack Resume Builder and downstream Application journeys receive

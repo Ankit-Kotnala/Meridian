@@ -1,6 +1,6 @@
 # CareerOS implementation plan
 
-Last updated: 2026-07-26
+Last updated: 2026-07-27
 Plan owner: engineering  
 Current status: **Phase 1/3 observed-onboarding, Settings, and resume-ready Career
 Record closure is locally verified; hosted evidence is pending explicit
@@ -22,9 +22,9 @@ release-hardening work remains open**
 
 No phase is complete until every exit gate passes. A skipped check is not a pass.
 
-## Product-wide UX redesign verification (2026-07-26)
+## Product-wide UX redesign verification (2026-07-27)
 
-This cross-cutting redesign is isolated on `codex/ux-redesign`. It changes the
+This cross-cutting redesign is isolated on `agent/enterprise-ui-redesign`. It changes the
 presentation and workflow clarity of existing product functionality; it does not
 claim a new implementation phase, publish a deployment, or change backend domain
 rules.
@@ -106,6 +106,30 @@ rules.
   and protected Applications mobile captures through a sandbox-safe encoded
   preview path.
 
+### Completion and publication gate (2026-07-27)
+
+- `pnpm format:check`, `pnpm lint`, and `pnpm typecheck`: pass, including strict
+  frontend architecture and repository-boundary enforcement.
+- `pnpm test`: pass — web 163, UI 12, contracts 3, boundary 4, and edge 2 tests.
+- `pnpm build`: pass; the production Next.js build compiled all 49 routes.
+- Production-mode public visual QA: 28/28 captures passed across four routes and
+  all seven required widths with zero overflow, console error, page error,
+  reduced-motion failure, or lab-threshold regression. Maximum observed LCP was
+  512 ms, CLS was 0, maximum interaction duration was 88 ms, and maximum encoded
+  JavaScript was 246,612 bytes.
+- Production-mode protected visual QA: 168/168 captures passed across 24 routes
+  and all seven required widths with zero overflow, console error, page error,
+  reduced-motion failure, or lab-threshold regression. Maximum observed LCP was
+  472 ms, CLS was 0, maximum interaction duration was 40 ms, and maximum encoded
+  JavaScript was 446,839 bytes.
+- The stale pre-redesign landing and mobile-navigation smoke assertions were
+  corrected to the shipped product language. The serial desktop/mobile Chromium
+  rerun passed 7 tests with 1 intentional desktop skip. The initial six-worker
+  attempt is retained as host-resource failure evidence; Chromium workers exited
+  before assertions completed.
+- `docker compose ps`: the API, web, edge, PostgreSQL, Redis, MinIO, Mailpit,
+  ClamAV, worker, and scheduler services were healthy during protected QA.
+
 ### Open verification and product risks
 
 - [!] The connected interactive browser and direct local-image tool remain
@@ -127,12 +151,6 @@ resume_builder_conflict` response when newly registered users create a
 - [!] No field RUM was available. LCP, CLS, JavaScript bytes, and Event Timing in
   the visual-QA record are local lab observations, not production Core Web
   Vitals or a hiring-outcome claim.
-- [!] A final backend-integrated protected desktop rerun could not be completed
-  after Docker Desktop became unavailable. `docker compose ps` failed with
-  `open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file
-specified`. Earlier complete protected-route and production-stack evidence
-  remains recorded above; this incremental pass does not misstate the stopped
-  daemon as a frontend failure.
 
 ## Repository assessment
 
