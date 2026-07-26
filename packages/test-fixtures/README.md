@@ -1,8 +1,10 @@
 # Test fixtures
 
-All records in this package are synthetic and explicitly marked fictional. Phase
-0's `seed` command prints the deterministic fixture; database seeding is
-introduced alongside the first durable product models.
+All records in this package are synthetic and explicitly marked fictional.
+`pnpm fixtures:preview` prints the presentation-only fixture without performing
+I/O. The real local PostgreSQL/private-object seed is the separately guarded
+`make seed` / `scripts/seed-local.ps1` workflow; it does not use this preview as
+persisted product data.
 
 Phase 2 document fixtures live in `generated/`. They contain only fictional
 `example.test` data and are reproducibly created by:

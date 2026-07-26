@@ -331,7 +331,7 @@ make test-e2e-stack-phase8 # isolated Phase 8 desktop/mobile Application Workspa
 make test-e2e-stack-phase9 # isolated Phase 9 desktop/mobile career workspace journeys
 make security-scan    # scan source, dependencies, app images, and trusted edge runtime
 make migrate          # apply the current database migrations
-make seed             # print the explicitly fictional Phase 0 fixture
+make seed             # migrate and idempotently seed fictional local Phase 1-9 data
 make verify           # full format/lint/type/test/contract/build/runtime gate
 make verify-phase1    # full gate plus isolated Phase 1 integration/E2E
 make verify-phase2    # full gate plus isolated Resume Health integration/E2E
@@ -462,9 +462,21 @@ prevent cross-owner links and more than one primary fact of a given kind.
 Historical career entities are not silently marked confirmed. Downgrading to
 `20260724_0010` removes only the closure tables; it is a test/forward-repair path,
 not a production rollback after users create those records.
-The seed command still prints only a fictional demo fixture and performs no
-database write. A command that prints a fixture or says a feature is deferred is
-not evidence that the product feature exists.
+`make seed` starts only local PostgreSQL/MinIO prerequisites, applies migrations,
+and runs the profile-gated seed container. Native PowerShell users can run
+`.\scripts\seed-local.ps1`. The command writes an explicitly fictional,
+provenance-valid graph across Phases 1 through 9 plus its private source and
+verified-export objects. Stable UUIDs, immutable-row checks, and existing-object
+verification make replays deterministic and non-destructive.
+
+The seed refuses dependency I/O unless the environment is explicitly
+`development`, an exact one-command confirmation is present, the database uses
+the local `careeros` identity/database on an allowlisted Compose/loopback host,
+the object endpoint is local MinIO, the bucket is `careeros-documents`, and the
+database is at reviewed migration head `20260726_0013`. The fresh fixture
+credential is printed only when the account is first created.
+`pnpm fixtures:preview` remains a no-I/O presentation fixture and is not
+evidence of persisted product state.
 
 For host-only package work, use the pinned tools rather than global substitutes:
 
@@ -668,9 +680,9 @@ listed fixes are available only in Python 3.15 prereleases. PR #22 workflow run
   constrained layouts, and a canonical blocking cross-format fidelity manifest.
   Rich graphics-heavy/multi-column templates remain intentionally unsupported
   until they can pass the same searchable exact-order corpus.
-- `make seed` still prints only a fictional fixture. The original project-wide
-  database seed covering every implemented phase remains unfinished and must not
-  be inferred from the labeled demo preview.
+- The guarded seed is strictly local development tooling. It is not an import,
+  backup restore, migration substitute, production bootstrap, or source of real
+  career claims.
 
 ## License and production use
 

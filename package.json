@@ -17,7 +17,7 @@
     "test": "turbo run test && pnpm test:edge",
     "test:edge": "node --test infra/docker/web-edge/*.test.mjs",
     "test:e2e": "pnpm --filter @careeros/web test:e2e",
-    "seed": "pnpm --filter @careeros/test-fixtures seed",
+    "fixtures:preview": "pnpm --filter @careeros/test-fixtures preview",
     "contracts:export": "uv run --package careeros-api python packages/contracts/scripts/export_openapi.py",
     "contracts:generate": "pnpm contracts:export && pnpm --filter @careeros/contracts generate",
     "contracts:check": "uv run --package careeros-api python packages/contracts/scripts/export_openapi.py --check && pnpm --filter @careeros/contracts check-generated",

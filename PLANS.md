@@ -1363,20 +1363,93 @@ owner-authorizing application interfaces.
   load/soak evidence, backup/restore, production providers, protected release,
   and deployment remain Phase 10.
 
+## Phase 10A scope and status
+
+Current status: **implemented and verified; draft review publication is the
+remaining action for this phase**. Phase 10A replaces the misleading
+presentation-only seed command with an explicitly fictional, guarded local
+PostgreSQL/MinIO graph across Phases 1 through 9. It adds no API route, worker
+task, web behavior, commercial/billing model, organization tenancy, production
+infrastructure, or PR #23 migration correction.
+
+### Included
+
+- [x] A separate `careeros.development.local_seed` composition root runs only
+      through the Compose `tools` profile and is not imported by API/worker
+      delivery applications.
+- [x] Before dependency I/O, exact guards require `development`, an explicit
+      confirmation, the local `careeros` database identity/name on an
+      allowlisted Compose/loopback host, local path-free MinIO, the
+      `careeros-documents` bucket, matching SSL settings, and migration head
+      `20260726_0013`.
+- [x] A deterministic UUIDv5 manifest creates 79 visibly fictional rows across
+      Identity, Resume Health, Career Record, Role Explorer, Job Match, Change
+      Studio, Resume Builder, Application Workspace, and all four Phase 9
+      contexts, plus two private source/export objects.
+- [x] Confirmed evidence, source spans, claim/number provenance, immutable
+      resume/application pins, verified export hashes, analytics suppression,
+      and non-causal interpretation remain internally valid.
+- [x] Existing immutable rows and deterministic objects are verified before
+      mutation; drift fails closed. Missing objects are created once and read
+      back. Mutable rows and an existing fixture account/password are preserved.
+- [x] The circular Resume Health upload/source-document relationship is created
+      in one transaction by deferring only the final upload link until both rows
+      exist. No database constraint is weakened.
+- [x] `make seed` and `scripts/seed-local.ps1` migrate and execute the guarded
+      container. `pnpm fixtures:preview` is renamed and remains explicitly
+      presentation-only with no persistence I/O.
+- [x] ADR 0018, README, architecture, threat model, testing strategy,
+      implementation checklist, and this plan describe the implemented boundary
+      and residual risk.
+
+### Verification evidence
+
+| Check                            | Status | Evidence                                                                                                                                                                                                                                                                                                                                                     |
+| -------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Pure seed policy and graph tests | Pass   | Focused Ruff plus `pytest packages/backend/tests/unit/test_local_seed.py -q` passed all 20 guard, determinism, provenance/hash, loader, migration-pin, create-once, replay, and object-drift tests. Canonical backend mypy passed 214 source files.                                                                                                          |
+| Compose and preview tooling      | Pass   | `docker compose --profile tools config --quiet`, fixture package lint/typecheck, and `pnpm fixtures:preview` passed; the preview printed labeled fictional JSON and performed no database/object I/O.                                                                                                                                                        |
+| First PostgreSQL/MinIO execution | Pass   | `scripts/seed-local.ps1` at migration head `20260726_0013` created and verified all 79 rows and both private objects, printed the public fixture password only for the newly created `.invalid` account, and represented Phases 1-9.                                                                                                                         |
+| Same-state replay                | Pass   | A second exact wrapper execution preserved the account, verified all 79 rows and both object byte streams, and reported `0 newly created`.                                                                                                                                                                                                                   |
+| Full repository verifier         | Pass   | `scripts/verify.ps1` passed Prettier, lock/contract drift, JS lint/boundaries/types/tests/build, Python Ruff/mypy/tests, Compose config, API/worker/web/edge image builds, forced stack recreation, idempotent migrations, five HTTP probes, and Celery broker ping. Counts: 163 web, 12 UI, 3 contracts, 2 edge, 447 backend, 145 API, and 89 worker tests. |
+| Restored primary stack           | Pass   | The `careeros` project is healthy after verification: API, ClamAV, Mailpit, MinIO, PostgreSQL, Redis, web, edge, worker, and scheduler are healthy; the profile-gated seed service is not part of normal startup.                                                                                                                                            |
+
+The first live execution exposed two defects that pure checks could not prove.
+The read-only seed container initially lacked a usable temporary directory; it
+now receives a bounded 16 MiB `noexec,nosuid,nodev` tmpfs. The following run
+reached PostgreSQL and exposed the intentionally circular Resume Health foreign
+keys; the transaction now inserts the upload without its final link, inserts the
+source document, then establishes that link before commit. The rejected
+transaction created no partial rows. Deterministic objects written before the
+rejected transaction were verified and preserved by the successful run rather
+than overwritten.
+
+### Known limitations and deferred work
+
+- This is local development data, not a production bootstrap, import, backup
+  restore, public demo-account provider, or source of real career claims.
+- Every later schema head intentionally reopens the migration-pin review.
+  Commercial rows, organization tenancy, privacy workflows, administration,
+  limits/cost controls, and production release work remain in their owning
+  Phase 10 PRs.
+- No browser journey is added because Phase 10A exposes no user-facing route or
+  UI behavior; the real acceptance surface is the guarded database/object replay.
+
 ## Full-specification completion audit
 
 Historical phase gates remain evidence for the vertical slices they actually
 tested; they do not waive requirements that the 2026-07-25 audit found absent or
 partial. Phase 2 semantic closure is implemented and locally/security verified;
-Phase 1/3 closure is locally verified and its hosted PR remains open. This
-backend-only Phase 7 closure is pending the fresh verification recorded above.
-Remaining work proceeds in dependency-ordered reviewable changes:
+Phase 1/3 closure is locally verified and its hosted PR remains open. The
+backend-only Phase 7 closure is verified in draft PR #24 while its two excluded
+frontend browser dependencies remain honestly blocked. Phase 10A is locally
+verified in the current branch. Remaining work proceeds in dependency-ordered
+reviewable changes:
 
-1. Complete the Phase 7 isolated verification and close this durable export PR.
-2. Implement the explicitly fictional local seed, then commercial/billing,
-   Coach/Organization tenancy, durable workflows, privacy/export/retention/
-   deletion, protected administration, security/cost hardening, and production
-   infrastructure/release work as separate phases.
+1. Review and merge the existing stacked closure PRs separately without
+   weakening their recorded blockers or expanding their scope.
+2. Implement commercial/billing, Coach/Organization tenancy, durable workflows,
+   privacy/export/retention/deletion, protected administration, security/cost
+   hardening, and production infrastructure/release work as separate phases.
 
 External pricing, provider accounts, legal text, support contacts, deployment
 region, retention policy, RPO/RTO, administrative policy, and production approval
@@ -1484,11 +1557,13 @@ At the end of every phase:
 
 ## Next phase
 
-After this Phase 7 closure is verified and raised as a draft PR, the next
-separate implementation phase is the explicitly fictional local seed (Phase
-10A). Commercial and remaining durable workflows, Coach/Organization tenancy,
-privacy/admin surfaces, and observability, performance, recovery, and protected
-release engineering follow in the documented PR order.
+After this Phase 10A branch is raised as a draft PR, the next separate
+implementation phase is Phase 10B commercial and billing. Coach/Organization
+tenancy, durable workflows, privacy/admin surfaces, and observability,
+performance, recovery, and protected release engineering follow in the
+documented PR order. This run stops after the Phase 10A draft PR. The separate
+PR #23 migration-head correction remains outside scope until it receives
+explicit approval.
 
 Publishing this review branch is part of the requested phase workflow; no PR is
 merged and no production deployment occurs without explicit later approval.

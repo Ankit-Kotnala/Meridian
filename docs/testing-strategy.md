@@ -674,9 +674,15 @@ run `30161489265` passed every required hosted job at implementation/merge head
 `1454792`.
 
 Phase 7 closure covers durable asynchronous Resume Builder render/verify/cleanup
-dispatch and recovery plus distinct-template cross-format fidelity. An idempotent,
-production-guarded fictional local database/object seed remains Phase 10 work;
-the presentation-only fixture does not satisfy that release requirement.
+dispatch and recovery plus distinct-template cross-format fidelity. Phase 10A
+adds pure coverage for deterministic Phase 1-9 graph construction, exact
+provenance/export hashes, the `20260726_0013` migration pin, fail-closed
+environment/database/object guards, and existing-object drift refusal. The live
+acceptance gate ran the guarded command twice against the same PostgreSQL/MinIO
+state: pass one verified 79 newly created rows and two private objects; pass two
+verified the same 79 rows and objects while creating zero rows and preserving
+the account. The presentation-only `pnpm fixtures:preview` remains deliberately
+separate and performs no database or object-store I/O.
 
 ## Backend test portfolio
 

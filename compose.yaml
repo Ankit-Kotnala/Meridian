@@ -231,6 +231,30 @@ services:
     restart: unless-stopped
     networks: [backend, edge]
 
+  local-seed:
+    profiles: ["tools"]
+    image: careeros-api:latest
+    environment:
+      <<: *app-environment
+      CAREEROS_ALLOW_LOCAL_SEED: ${CAREEROS_ALLOW_LOCAL_SEED:-}
+    command: ["python", "-m", "careeros.development.local_seed"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    read_only: true
+    init: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp/careeros:rw,noexec,nosuid,nodev,size=16777216,uid=10001,gid=10001,mode=0700
+    pids_limit: 64
+    mem_limit: 512m
+    cpus: 0.5
+    restart: "no"
+    networks: [backend]
+
   worker:
     build:
       context: .
