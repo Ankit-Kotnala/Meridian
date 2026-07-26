@@ -28,6 +28,7 @@ import {
   FieldLabel,
   Input,
   LoadingSkeleton,
+  PageHeader,
   Select,
   buttonStyles,
 } from "@careeros/ui";
@@ -489,7 +490,7 @@ export function InterviewPrepView() {
   if (state.status === "loading") {
     return (
       <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8" id="main-content">
-        <LoadingSkeleton />
+        <LoadingSkeleton variant="page" />
       </main>
     );
   }
@@ -499,25 +500,17 @@ export function InterviewPrepView() {
       className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8"
       id="main-content"
     >
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-primary">
-            Interview Prep
-          </p>
-          <h1 className="mt-1 text-2xl font-black text-foreground">
-            Defend every important resume claim
-          </h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-            Build evidence-linked STAR stories, practice grounded questions,
-            keep private reflections, and review follow-up drafts. CareerOS
-            never sends a message or invents a missing fact.
-          </p>
-        </div>
-        <Button onClick={() => void load()} variant="secondary">
-          <RefreshCcw aria-hidden="true" className="size-4" />
-          Refresh
-        </Button>
-      </header>
+      <PageHeader
+        actions={
+          <Button onClick={() => void load()} variant="secondary">
+            <RefreshCcw aria-hidden="true" className="size-4" />
+            Refresh
+          </Button>
+        }
+        description="Build evidence-linked STAR stories, practice grounded questions, keep private reflections, and review follow-up drafts. CareerOS never sends a message or invents a missing fact."
+        eyebrow="Create and prepare"
+        title="Interview Prep"
+      />
 
       {actionFailure && (
         <Alert title="Action failed" tone="danger">

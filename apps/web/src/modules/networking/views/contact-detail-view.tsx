@@ -1052,7 +1052,7 @@ export function ContactDetailView({ contactId }: { contactId: string }) {
         Networking
       </Link>
 
-      <header className="rounded-xl border border-line bg-white p-4 shadow-sm sm:p-5">
+      <header className="rounded-card border border-border bg-surface-raised p-4 sm:p-5">
         <div className="flex flex-wrap gap-2">
           <Badge tone="primary">
             {humanize(state.contact.relationshipStage)}

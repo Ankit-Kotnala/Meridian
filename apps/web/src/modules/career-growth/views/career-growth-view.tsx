@@ -31,6 +31,7 @@ import {
   ErrorState,
   Input,
   LoadingSkeleton,
+  PageHeader,
   Select,
 } from "@careeros/ui";
 
@@ -1392,7 +1393,7 @@ function CareerHealthPanel({
                 >
                   Component calculation
                 </h3>
-                <div className="mt-3 overflow-x-auto rounded-xl border border-line">
+                <div className="data-region table-scroll mt-3">
                   <table className="min-w-full divide-y divide-line text-left text-sm">
                     <caption className="sr-only">
                       Career Health component scores, weights, contributions,
@@ -1587,7 +1588,7 @@ function GrowthInsightsPanel({ insights }: { insights: CareerGrowthInsights }) {
         >
           {promotion.disclaimer}
         </p>
-        <div className="mt-5 overflow-x-auto rounded-xl border border-line">
+        <div className="data-region table-scroll mt-5">
           <table className="min-w-full divide-y divide-line text-left text-sm">
             <caption className="sr-only">
               Promotion preparation checks, evidence state, and next action
@@ -1696,7 +1697,7 @@ function GrowthInsightsPanel({ insights }: { insights: CareerGrowthInsights }) {
               title="No documented skills yet"
             />
           ) : (
-            <div className="mt-4 overflow-x-auto rounded-xl border border-line">
+            <div className="data-region table-scroll mt-4">
               <table className="min-w-full divide-y divide-line text-left text-sm">
                 <caption className="sr-only">
                   Documented skills and their eligible evidence coverage
@@ -2549,25 +2550,17 @@ export function CareerGrowthView() {
       className="mx-auto max-w-7xl space-y-8 p-4 sm:p-6 lg:p-8"
       id="main-content"
     >
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-primary">
-            Career Growth
-          </p>
-          <h1 className="mt-1 text-3xl font-black tracking-tight sm:text-4xl">
-            Turn career maintenance into a steady practice
-          </h1>
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
-            Plan goals, record milestone progress, attach revision-specific
-            evidence, preserve review history, and inspect every Career Health
-            input.
-          </p>
-        </div>
-        <Button onClick={() => void load()} variant="secondary">
-          <RefreshCcw aria-hidden="true" className="size-4" />
-          Reload data
-        </Button>
-      </header>
+      <PageHeader
+        actions={
+          <Button onClick={() => void load()} variant="secondary">
+            <RefreshCcw aria-hidden="true" className="size-4" />
+            Reload data
+          </Button>
+        }
+        description="Plan goals, record milestone progress, attach revision-specific evidence, preserve review history, and inspect every Career Health input."
+        eyebrow="Long-term growth"
+        title="Career Growth"
+      />
 
       {loadFailure && (
         <Alert title="Reload failed" tone="danger">
