@@ -25,6 +25,7 @@ status; consult `PLANS.md` for current behavior.
 | [0015](0015-phase9-interview-networking-growth-analytics.md)          | Phase 9 grounded interview, consent CRM, Career Health, and private analytics        | Accepted                               |
 | [0016](0016-phase2-semantic-resume-and-parser-isolation.md)           | Source-anchored semantic resumes, typed review, and killable parser isolation        | Accepted                               |
 | [0018](0018-phase10-fictional-local-seed.md)                          | Production-guarded, idempotent fictional local database/object seed                  | Accepted                               |
+| [0019](0019-phase10-commercial-billing-foundation.md)                 | Fail-closed plans, subscriptions, checkout, and ordered signed billing events        | Accepted                               |
 
 ## Lifecycle
 

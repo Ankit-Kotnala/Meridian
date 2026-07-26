@@ -676,13 +676,23 @@ run `30161489265` passed every required hosted job at implementation/merge head
 Phase 7 closure covers durable asynchronous Resume Builder render/verify/cleanup
 dispatch and recovery plus distinct-template cross-format fidelity. Phase 10A
 adds pure coverage for deterministic Phase 1-9 graph construction, exact
-provenance/export hashes, the `20260726_0013` migration pin, fail-closed
+provenance/export hashes, the `20260726_0014` migration pin, fail-closed
 environment/database/object guards, and existing-object drift refusal. The live
 acceptance gate ran the guarded command twice against the same PostgreSQL/MinIO
 state: pass one verified 79 newly created rows and two private objects; pass two
 verified the same 79 rows and objects while creating zero rows and preserving
 the account. The presentation-only `pnpm fixtures:preview` remains deliberately
 separate and performs no database or object-store I/O.
+
+Phase 10B adds domain, API, PostgreSQL, and migration coverage for fail-closed
+plan configuration, owner-scoped subscription reads, CSRF and return-origin
+checks, checkout/portal idempotency, signed raw-body verification, payload-hash
+collision, exact replay, stale event ordering, unmatched customer/plan state,
+reconciliation, redacted audit, and disabled production composition. The
+migration gate upgrades `20260726_0013` to `20260726_0014`, downgrades, repairs
+forward, and reopens the guarded seed pin. Generated contracts must contain the
+six commercial routes and stable problem schemas without duplicate operation
+identifiers.
 
 ## Backend test portfolio
 

@@ -491,10 +491,18 @@ The seed refuses dependency I/O unless the environment is explicitly
 `development`, an exact one-command confirmation is present, the database uses
 the local `careeros` identity/database on an allowlisted Compose/loopback host,
 the object endpoint is local MinIO, the bucket is `careeros-documents`, and the
-database is at reviewed migration head `20260726_0013`. The fresh fixture
+database is at reviewed migration head `20260726_0014`. The fresh fixture
 credential is printed only when the account is first created.
 `pnpm fixtures:preview` remains a no-I/O presentation fixture and is not
 evidence of persisted product state.
+
+Phase 10B adds a centralized server-owned catalog for Free, Job Hunt Sprint,
+Pro, and Coach/Organization plus owner-scoped subscription state, checkout,
+portal, reconciliation, and signed raw-webhook delivery. No price, entitlement,
+quota, provider reference, or live billing capability is inferred: every seeded
+plan remains `owner_decision_required`, and production API composition uses a
+disabled provider until reviewed owner configuration exists. The deterministic
+HMAC billing adapter and fictional plan values are test-only. See ADR 0019.
 
 For host-only package work, use the pinned tools rather than global substitutes:
 

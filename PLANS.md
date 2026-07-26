@@ -1565,6 +1565,51 @@ than overwritten.
 - No browser journey is added because Phase 10A exposes no user-facing route or
   UI behavior; the real acceptance surface is the guarded database/object replay.
 
+## Phase 10B scope and status
+
+Current status: **implemented and focused-verified; cumulative release verification
+continues on the collective Phase 10 branch**. The commercial boundary deliberately
+implements no invented pricing, entitlement, quota, provider, tax, or legal value.
+
+### Included
+
+- [x] Migration `20260726_0014` creates the exact four-plan catalog, owner-scoped
+      billing customers/subscriptions, operation-bound idempotency records,
+      provider event ledger, and redacted commercial audit with constraints,
+      indexes, composite ownership foreign keys, and one migration head.
+- [x] `owner_decision_required` plans are database- and domain-constrained to
+      empty pricing, provider references, entitlements, and quotas. Only a complete
+      reviewed price tuple can become purchasable.
+- [x] Provider-neutral checkout, portal, raw signed webhook, and reconciliation
+      ports use a disabled production adapter and deterministic HMAC test adapter.
+- [x] Checkout/portal enforce owner scope, CSRF at HTTP delivery, return-origin
+      allowlisting, HTTPS provider sessions, and request-fingerprint idempotency.
+- [x] Billing events persist provider event ID and raw-body SHA-256, replay exact
+      input, reject identifier/content collision, retain unmatched state, and
+      ignore stale provider sequence without reverting a subscription.
+- [x] Six FastAPI routes, stable payload-free problem responses, normalized
+      OpenAPI, generated TypeScript contracts, ADR 0019, and release/security/
+      testing documentation are included together.
+
+### Focused verification evidence
+
+| Check                 | Status | Evidence                                                                                                                                                                                                         |
+| --------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Domain/service        | Pass   | Ruff and strict commercial mypy passed; 6 service tests cover unconfigured plans, owner scope, URL policy, idempotency, signed webhook replay/collision/order, unmatched events, and portal requirements.        |
+| API contract          | Pass   | 3 FastAPI tests cover anonymous catalog, authenticated subscription, CSRF, safe disabled-provider problems, exact raw webhook bytes/headers, no-store responses, and complete unique OpenAPI operations.         |
+| PostgreSQL repository | Pass   | The local database upgraded to `20260726_0014`; the real repository test passed owner-scoped checkout/subscription, exact idempotent replay, signed applied/stale events, redacted audit, and cross-user denial. |
+| Migration             | Pass   | Local PostgreSQL upgraded `0013 -> 0014`, downgraded to `0013`, and repaired forward to the single `0014` head. Migration graph and guarded-seed regression tests pass.                                          |
+| Strict types          | Pass   | Canonical backend mypy passed 227 source files; API mypy passed 69 source files.                                                                                                                                 |
+| Generated contracts   | Pass   | OpenAPI and TypeScript artifacts regenerated from FastAPI with the six commercial operations; final drift/build gates remain part of the collective verifier.                                                    |
+
+### Owner decisions and residual risk
+
+Live payment provider/merchant account, pricing, taxes, entitlements, quotas,
+region, public/legal copy, and provider credential/key-rotation operations remain
+owner decisions. Billing therefore remains unavailable in runtime composition.
+Phase 10C owns Coach/Organization tenant authority, and Phase 10G owns centralized
+entitlement/quota/cost enforcement.
+
 ## Full-specification completion audit
 
 Historical phase gates remain evidence for the vertical slices they actually

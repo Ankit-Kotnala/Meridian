@@ -24,6 +24,7 @@ from careeros.modules.career_record.infrastructure import (
 from careeros.modules.change_studio.infrastructure import (
     models as change_studio_models,  # noqa: F401
 )
+from careeros.modules.commercial.infrastructure import models as commercial_models  # noqa: F401
 from careeros.modules.identity.infrastructure import models as identity_models  # noqa: F401
 from careeros.modules.interview_prep.infrastructure import (
     models as interview_prep_models,  # noqa: F401

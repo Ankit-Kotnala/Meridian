@@ -911,6 +911,31 @@ administrator sensitive actions, and deletion/retention failures.
 These checks are regression gates; a later failure reopens the affected phase in
 `PLANS.md`.
 
+## Phase 10 commercial boundary
+
+- [x] Plan rows cannot contain inferred pricing, entitlements, or quotas while
+      configuration is owner-decision-required; active pricing is complete or
+      rejected by domain and database constraints.
+- [x] Checkout and portal are owner scoped, CSRF protected, idempotent, and
+      restricted to allowlisted return origins. Provider session URLs must be
+      HTTPS, uncredentialed, unfragmented, and unexpired.
+- [x] Billing webhooks consume bounded raw bytes, require provider authentication,
+      persist an event ID plus SHA-256, reject identifier/content collisions,
+      replay exact events, and ignore older provider sequence values without
+      reverting subscription state.
+- [x] Provider customer references are mapped through durable owner state and are
+      never treated as bearer authority. Cross-user reads return not found.
+- [x] Commercial audit excludes raw payloads, provider customer/subscription
+      references, email, career content, credentials, and return URLs.
+- [x] Production composition is disabled until provider, merchant, tax, pricing,
+      entitlement, quota, regional, and legal decisions are reviewed. The
+      deterministic HMAC provider is test-only.
+
+Residual risk: a selected payment provider requires a provider-specific signature
+and event-semantics assessment, credential/key-rotation runbook, outage and
+reconciliation alerts, regional/privacy review, and contract tests before
+production enablement. ADR 0019 does not approve live billing.
+
 ## Incident and recovery expectations
 
 Phase 10 must document owners and playbooks for credential/session compromise,

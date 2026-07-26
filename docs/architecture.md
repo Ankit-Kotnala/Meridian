@@ -748,6 +748,20 @@ fail closed and non-destructive. The transaction defers only the circular
 Resume Health upload-to-source finalization until both immutable rows exist.
 The presentation-only fixture remains separate. See ADR 0018.
 
+### Phase 10 commercial boundary
+
+Migration `20260726_0014` and `careeros.modules.commercial` add the centralized
+four-plan catalog, owner-scoped billing customers/subscriptions, operation-bound
+idempotency records, signed provider-event ledger, and redacted commercial audit.
+Plan rows fail closed with empty price, provider reference, entitlements, and
+quotas until complete owner-reviewed configuration exists. FastAPI exposes the
+provider-neutral catalog/subscription routes; production composition uses a
+disabled provider, while deterministic local tests exercise HTTPS checkout and
+portal sessions plus bounded timestamped HMAC webhooks. Provider sequence and
+raw-body hash prevent reordered or conflicting events from reverting durable
+subscription state. No commercial module reads another product module's tables.
+See ADR 0019.
+
 ## Architecture verification
 
 Every phase retains the repository gates plus architecture-boundary,

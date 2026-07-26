@@ -562,7 +562,7 @@ Dependencies: all product phases and production/legal decisions.
       explicitly fictional, local-only database/object-store seed spanning
       Phases 1 through 9, guarded before I/O against non-development,
       nonlocal database/object targets, unexpected buckets, and schema drift.
-- [ ] Store Free/Sprint/Pro/Coach plan entitlements/quotas centrally; no scattered
+- [x] Store Free/Sprint/Pro/Coach plan entitlements/quotas centrally; no scattered
       prices. Implement billing adapter, checkout/portal, signed raw webhook validation,
       event idempotency/order/state, reconciliation, and test provider.
 - [ ] Build protected least-privilege admin system/job/dead-letter/safe retry,
