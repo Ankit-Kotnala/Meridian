@@ -22,6 +22,7 @@ from careeros_worker.task_names import (
     DISPATCH_RESUME_EXPORT_OUTBOX_TASK,
     PROCESS_CAREER_ANALYTICS_REFRESH_TASK,
     PROCESS_NETWORKING_LOCAL_REMINDERS_TASK,
+    PROCESS_ORGANIZATION_INVITATIONS_TASK,
     PROCESS_RESUME_EXPORT_TASK,
     RECONCILE_CAREER_ANALYTICS_TASK,
     RECONCILE_NETWORKING_REMINDERS_TASK,
@@ -49,6 +50,14 @@ def create_celery_app(settings: WorkerSettings | None = None) -> Celery:
         resolved.task_soft_time_limit_seconds,
         networking_time_limit - 1,
     )
+    invitation_time_limit = min(
+        resolved.task_time_limit_seconds,
+        resolved.organization_invitation_lease_seconds - 5,
+    )
+    invitation_soft_time_limit = min(
+        resolved.task_soft_time_limit_seconds,
+        invitation_time_limit - 1,
+    )
     application.conf.update(
         accept_content=["json"],
         broker_connection_retry_on_startup=True,
@@ -64,7 +73,11 @@ def create_celery_app(settings: WorkerSettings | None = None) -> Celery:
             PROCESS_NETWORKING_LOCAL_REMINDERS_TASK: {
                 "soft_time_limit": networking_soft_time_limit,
                 "time_limit": networking_time_limit,
-            }
+            },
+            PROCESS_ORGANIZATION_INVITATIONS_TASK: {
+                "soft_time_limit": invitation_soft_time_limit,
+                "time_limit": invitation_time_limit,
+            },
         },
         task_default_queue="default",
         task_ignore_result=True,
@@ -86,6 +99,7 @@ def create_celery_app(settings: WorkerSettings | None = None) -> Celery:
             DISPATCH_CAREER_ANALYTICS_OUTBOX_TASK: {"queue": "maintenance"},
             RECONCILE_CAREER_ANALYTICS_TASK: {"queue": "maintenance"},
             PROCESS_NETWORKING_LOCAL_REMINDERS_TASK: {"queue": "maintenance"},
+            PROCESS_ORGANIZATION_INVITATIONS_TASK: {"queue": "maintenance"},
             RECONCILE_NETWORKING_REMINDERS_TASK: {"queue": "maintenance"},
             PROCESS_EVIDENCE_ATTACHMENT_TASK: {"queue": "career-record"},
             DISPATCH_EVIDENCE_ATTACHMENT_OUTBOX_TASK: {"queue": "maintenance"},
@@ -106,6 +120,10 @@ def create_celery_app(settings: WorkerSettings | None = None) -> Celery:
         worker_send_task_events=True,
         worker_cancel_long_running_tasks_on_connection_loss=True,
         beat_schedule={
+            "deliver-organization-invitations": {
+                "task": PROCESS_ORGANIZATION_INVITATIONS_TASK,
+                "schedule": float(resolved.organization_invitation_interval_seconds),
+            },
             "dispatch-career-analytics-outbox": {
                 "task": DISPATCH_CAREER_ANALYTICS_OUTBOX_TASK,
                 "schedule": float(resolved.analytics_outbox_interval_seconds),

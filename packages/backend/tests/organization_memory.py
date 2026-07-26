@@ -221,6 +221,48 @@ class MemoryOrganizations:
     ) -> None:
         self.outboxes[outbox.invitation_id] = outbox
 
+    async def claim_invitation_outbox(
+        self,
+        *,
+        limit: int,
+        lease_token: UUID,
+        now: datetime,
+        lease_seconds: int,
+    ) -> list[OrganizationInvitationOutbox]:
+        claimed: list[OrganizationInvitationOutbox] = []
+        for item in sorted(
+            self.outboxes.values(),
+            key=lambda outbox: (outbox.next_attempt_at, outbox.created_at, outbox.id),
+        ):
+            if len(claimed) >= limit:
+                break
+            if (
+                not item.terminal
+                and item.next_attempt_at <= now
+                and (item.lease_expires_at is None or item.lease_expires_at <= now)
+            ):
+                item.claim(lease_token, now, lease_seconds)
+                claimed.append(item)
+        return claimed
+
+    async def get_invitation_outbox(
+        self,
+        outbox_id: UUID,
+        *,
+        for_update: bool = False,
+    ) -> OrganizationInvitationOutbox | None:
+        del for_update
+        return next((item for item in self.outboxes.values() if item.id == outbox_id), None)
+
+    async def save_invitation_outbox(
+        self,
+        outbox: OrganizationInvitationOutbox,
+        *,
+        expected_lease_token: UUID,
+    ) -> None:
+        del expected_lease_token
+        self.outboxes[outbox.invitation_id] = outbox
+
     async def add_grant(self, grant: OrganizationAccessGrant) -> None:
         self.grants[grant.id] = grant
 

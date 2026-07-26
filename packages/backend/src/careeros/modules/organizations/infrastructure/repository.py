@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from types import TracebackType
 from typing import Any, NoReturn, cast
 from uuid import UUID
@@ -274,6 +275,77 @@ class SqlAlchemyOrganizationUnitOfWork:
         outbox: OrganizationInvitationOutbox,
     ) -> None:
         self.session.add(OrganizationInvitationOutboxModel(**_outbox_values(outbox)))
+
+    async def claim_invitation_outbox(
+        self,
+        *,
+        limit: int,
+        lease_token: UUID,
+        now: datetime,
+        lease_seconds: int,
+    ) -> list[OrganizationInvitationOutbox]:
+        models = (
+            await self.session.scalars(
+                select(OrganizationInvitationOutboxModel)
+                .where(
+                    OrganizationInvitationOutboxModel.published_at.is_(None),
+                    OrganizationInvitationOutboxModel.dead_lettered_at.is_(None),
+                    OrganizationInvitationOutboxModel.cancelled_at.is_(None),
+                    OrganizationInvitationOutboxModel.next_attempt_at <= now,
+                    or_(
+                        OrganizationInvitationOutboxModel.lease_token.is_(None),
+                        OrganizationInvitationOutboxModel.lease_expires_at <= now,
+                    ),
+                )
+                .order_by(
+                    OrganizationInvitationOutboxModel.next_attempt_at,
+                    OrganizationInvitationOutboxModel.created_at,
+                    OrganizationInvitationOutboxModel.id,
+                )
+                .with_for_update(skip_locked=True)
+                .limit(limit)
+            )
+        ).all()
+        claimed: list[OrganizationInvitationOutbox] = []
+        for model in models:
+            outbox = _outbox(model)
+            outbox.claim(lease_token, now, lease_seconds)
+            model.lease_token = outbox.lease_token
+            model.lease_expires_at = outbox.lease_expires_at
+            claimed.append(outbox)
+        await self.flush()
+        return claimed
+
+    async def get_invitation_outbox(
+        self,
+        outbox_id: UUID,
+        *,
+        for_update: bool = False,
+    ) -> OrganizationInvitationOutbox | None:
+        statement = select(OrganizationInvitationOutboxModel).where(
+            OrganizationInvitationOutboxModel.id == outbox_id
+        )
+        if for_update:
+            statement = statement.with_for_update()
+        model = await self.session.scalar(statement)
+        return _outbox(model) if model is not None else None
+
+    async def save_invitation_outbox(
+        self,
+        outbox: OrganizationInvitationOutbox,
+        *,
+        expected_lease_token: UUID,
+    ) -> None:
+        result = await self.session.execute(
+            update(OrganizationInvitationOutboxModel)
+            .where(
+                OrganizationInvitationOutboxModel.id == outbox.id,
+                OrganizationInvitationOutboxModel.lease_token == expected_lease_token,
+            )
+            .values(**_outbox_values(outbox, include_identity=False))
+        )
+        if cast(Any, result).rowcount != 1:
+            raise OrganizationVersionConflict
 
     async def add_grant(self, grant: OrganizationAccessGrant) -> None:
         self.session.add(OrganizationAccessGrantModel(**_grant_values(grant)))
@@ -582,9 +654,12 @@ def _invitation(model: OrganizationInvitationModel) -> OrganizationInvitation:
         raise OrganizationUnavailable("stored invitation is invalid") from exc
 
 
-def _outbox_values(value: OrganizationInvitationOutbox) -> dict[str, object]:
-    return {
-        "id": value.id,
+def _outbox_values(
+    value: OrganizationInvitationOutbox,
+    *,
+    include_identity: bool = True,
+) -> dict[str, object]:
+    values: dict[str, object] = {
         "invitation_id": value.invitation_id,
         "organization_id": value.organization_id,
         "trace_id": value.trace_id,
@@ -595,9 +670,35 @@ def _outbox_values(value: OrganizationInvitationOutbox) -> dict[str, object]:
         "lease_expires_at": value.lease_expires_at,
         "published_at": value.published_at,
         "dead_lettered_at": value.dead_lettered_at,
+        "cancelled_at": value.cancelled_at,
         "last_error_code": value.last_error_code,
         "created_at": value.created_at,
     }
+    if include_identity:
+        values["id"] = value.id
+    return values
+
+
+def _outbox(model: OrganizationInvitationOutboxModel) -> OrganizationInvitationOutbox:
+    try:
+        return OrganizationInvitationOutbox(
+            id=model.id,
+            invitation_id=model.invitation_id,
+            organization_id=model.organization_id,
+            trace_id=model.trace_id,
+            attempts=model.attempts,
+            max_attempts=model.max_attempts,
+            next_attempt_at=model.next_attempt_at,
+            lease_token=model.lease_token,
+            lease_expires_at=model.lease_expires_at,
+            published_at=model.published_at,
+            dead_lettered_at=model.dead_lettered_at,
+            cancelled_at=model.cancelled_at,
+            last_error_code=model.last_error_code,
+            created_at=model.created_at,
+        )
+    except (TypeError, ValueError, OrganizationValidationError) as exc:
+        raise OrganizationUnavailable("stored invitation outbox is invalid") from exc
 
 
 def _grant_values(

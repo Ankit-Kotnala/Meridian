@@ -25,6 +25,15 @@ class HmacOrganizationInvitationManager:
         raw_secret = base64.urlsafe_b64encode(secrets.token_bytes(32)).rstrip(b"=").decode()
         return f"{invitation_id}.{raw_secret}", self.digest(raw_secret)
 
+    def issue_for_delivery(self, invitation_id: UUID) -> tuple[str, str]:
+        material = hmac.new(
+            self._secret,
+            b"careeros:organization-invitation:delivery:v1:" + invitation_id.bytes,
+            hashlib.sha256,
+        ).digest()
+        raw_secret = base64.urlsafe_b64encode(material).rstrip(b"=").decode()
+        return f"{invitation_id}.{raw_secret}", self.digest(raw_secret)
+
     def parse(self, encoded: str) -> tuple[UUID, str] | None:
         if len(encoded) > 128:
             return None

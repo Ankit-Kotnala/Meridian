@@ -16,6 +16,7 @@ from .networking import (
     process_networking_local_reminders,
     reconcile_networking_local_reminders,
 )
+from .organizations import deliver_organization_invitations
 from .resume_builder import (
     dispatch_resume_builder_export_outbox,
     process_resume_builder_export,
@@ -36,6 +37,7 @@ __all__ = [
     "dispatch_evidence_attachment_outbox",
     "dispatch_resume_builder_export_outbox",
     "dispatch_resume_health_outbox",
+    "deliver_organization_invitations",
     "ping",
     "process_career_analytics_refresh",
     "process_evidence_attachment",

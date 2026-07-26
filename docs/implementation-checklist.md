@@ -569,6 +569,11 @@ Dependencies: all product phases and production/legal decisions.
       member capabilities, non-disclosing durable invitations, minimized rosters,
       and explicit expiring/revocable summary grants; no implicit raw career-data
       access and no synthetic organization for individual accounts.
+- [x] Close durable background workflows with phase-owned database state,
+      identifier-only task delivery, bounded leases/timeouts/retries/dead-letter,
+      reconciliation, redacted telemetry, and live PostgreSQL worker coverage;
+      organization invitations now use deterministic replay-safe credentials and
+      bounded SMTP composition.
 - [ ] Build protected least-privilege admin system/job/dead-letter/safe retry,
       aggregate metrics, plans/flags, taxonomy/templates, redacted errors, and audit;
       no default unrestricted raw documents.

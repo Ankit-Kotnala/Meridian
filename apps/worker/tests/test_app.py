@@ -20,6 +20,7 @@ from careeros_worker.task_names import (
     DISPATCH_RESUME_EXPORT_OUTBOX_TASK,
     PROCESS_CAREER_ANALYTICS_REFRESH_TASK,
     PROCESS_NETWORKING_LOCAL_REMINDERS_TASK,
+    PROCESS_ORGANIZATION_INVITATIONS_TASK,
     PROCESS_RESUME_EXPORT_TASK,
     RECONCILE_CAREER_ANALYTICS_TASK,
     RECONCILE_NETWORKING_REMINDERS_TASK,
@@ -44,10 +45,15 @@ def test_celery_uses_json_and_safe_delivery_defaults() -> None:
         "soft_time_limit": 114,
         "time_limit": 115,
     }
+    assert app.conf.task_annotations[PROCESS_ORGANIZATION_INVITATIONS_TASK] == {
+        "soft_time_limit": 114,
+        "time_limit": 115,
+    }
     assert app.conf.task_routes[PROCESS_CAREER_ANALYTICS_REFRESH_TASK] == {"queue": "default"}
     assert app.conf.task_routes[DISPATCH_CAREER_ANALYTICS_OUTBOX_TASK] == {"queue": "maintenance"}
     assert app.conf.task_routes[RECONCILE_CAREER_ANALYTICS_TASK] == {"queue": "maintenance"}
     assert app.conf.task_routes[PROCESS_NETWORKING_LOCAL_REMINDERS_TASK] == {"queue": "maintenance"}
+    assert app.conf.task_routes[PROCESS_ORGANIZATION_INVITATIONS_TASK] == {"queue": "maintenance"}
     assert app.conf.task_routes[RECONCILE_NETWORKING_REMINDERS_TASK] == {"queue": "maintenance"}
     assert app.conf.task_routes[PROCESS_EVIDENCE_ATTACHMENT_TASK] == {"queue": "career-record"}
     assert app.conf.task_routes[DISPATCH_EVIDENCE_ATTACHMENT_OUTBOX_TASK] == {
@@ -64,6 +70,10 @@ def test_celery_uses_json_and_safe_delivery_defaults() -> None:
     assert app.conf.task_routes[PROCESS_RESUME_EXPORT_TASK] == {"queue": "resume-builder"}
     assert app.conf.task_routes[DISPATCH_RESUME_EXPORT_OUTBOX_TASK] == {"queue": "maintenance"}
     assert app.conf.task_routes[RECONCILE_RESUME_EXPORTS_TASK] == {"queue": "maintenance"}
+    assert app.conf.beat_schedule["deliver-organization-invitations"] == {
+        "task": PROCESS_ORGANIZATION_INVITATIONS_TASK,
+        "schedule": 5.0,
+    }
     assert app.conf.beat_schedule["dispatch-resume-health-outbox"]["task"] == (DISPATCH_OUTBOX_TASK)
     assert app.conf.beat_schedule["dispatch-career-record-attachment-outbox"] == {
         "task": DISPATCH_EVIDENCE_ATTACHMENT_OUTBOX_TASK,

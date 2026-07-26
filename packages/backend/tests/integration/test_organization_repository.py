@@ -20,7 +20,9 @@ from careeros.modules.organizations.application import (
     AcceptOrganizationInvitation,
     CreateOrganization,
     CreateOrganizationGrant,
+    InvitationDeliveryMessage,
     InviteOrganizationMember,
+    OrganizationInvitationDeliveryProcessor,
     OrganizationService,
     RequestContext,
 )
@@ -52,6 +54,14 @@ class FixedClock:
 class UuidFactory:
     def new(self) -> UUID:
         return uuid4()
+
+
+class CapturingInvitationSender:
+    def __init__(self) -> None:
+        self.messages: list[InvitationDeliveryMessage] = []
+
+    async def send(self, message: InvitationDeliveryMessage) -> None:
+        self.messages.append(message)
 
 
 def _context(user_id: UUID) -> RequestContext:
@@ -121,17 +131,18 @@ async def test_organization_repository_rechecks_membership_and_explicit_grant() 
             idempotency_key="integration-organization-invite",
             context=_context(owner_id),
         )
-        token, token_hash = tokens.issue_for_id(invitation.invitation.id)
-        async with uow_factory() as uow:
-            stored = await uow.get_invitation(
-                invitation.invitation.id,
-                for_update=True,
-            )
-            assert stored is not None
-            previous = stored.version
-            stored.mark_delivered(token_hash, _NOW)
-            await uow.save_invitation(stored, expected_version=previous)
-            await uow.commit()
+        sender = CapturingInvitationSender()
+        delivery = OrganizationInvitationDeliveryProcessor(
+            unit_of_work=uow_factory,
+            clock=FixedClock(),
+            identifiers=UuidFactory(),
+            invitation_tokens=tokens,
+            sender=sender,
+        )
+        delivered = await delivery.process_due(10)
+        assert delivered.claimed == delivered.delivered == 1
+        assert len(sender.messages) == 1
+        token = sender.messages[0].token
 
         coach = await service.accept_invitation(
             AcceptOrganizationInvitation(token),
@@ -174,6 +185,8 @@ async def test_organization_repository_rechecks_membership_and_explicit_grant() 
                 )
             )
             assert outbox is not None
+            assert outbox.published_at == _NOW
+            assert outbox.lease_token is None
             audits = tuple(
                 await session.scalars(
                     select(OrganizationAuditEventModel).where(
@@ -184,6 +197,7 @@ async def test_organization_repository_rechecks_membership_and_explicit_grant() 
             assert {item.action for item in audits} >= {
                 "organization_created",
                 "invitation_created",
+                "invitation_delivered",
                 "invitation_accepted",
                 "grant_created",
             }

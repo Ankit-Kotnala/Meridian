@@ -39,6 +39,8 @@ class EmailNormalizer(Protocol):
 class InvitationTokenManager(Protocol):
     def issue_for_id(self, invitation_id: UUID) -> tuple[str, str]: ...
 
+    def issue_for_delivery(self, invitation_id: UUID) -> tuple[str, str]: ...
+
     def parse(self, encoded: str) -> tuple[UUID, str] | None: ...
 
     def digest(self, secret: str) -> str: ...
@@ -129,6 +131,29 @@ class OrganizationUnitOfWork(Protocol):
     async def add_invitation_outbox(
         self,
         outbox: OrganizationInvitationOutbox,
+    ) -> None: ...
+
+    async def claim_invitation_outbox(
+        self,
+        *,
+        limit: int,
+        lease_token: UUID,
+        now: datetime,
+        lease_seconds: int,
+    ) -> list[OrganizationInvitationOutbox]: ...
+
+    async def get_invitation_outbox(
+        self,
+        outbox_id: UUID,
+        *,
+        for_update: bool = False,
+    ) -> OrganizationInvitationOutbox | None: ...
+
+    async def save_invitation_outbox(
+        self,
+        outbox: OrganizationInvitationOutbox,
+        *,
+        expected_lease_token: UUID,
     ) -> None: ...
 
     async def add_grant(self, grant: OrganizationAccessGrant) -> None: ...

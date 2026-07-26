@@ -929,3 +929,20 @@ assertions. Generated OpenAPI and TypeScript artifacts
 must pass drift, test, and build gates in the same change.
 
 Phase test commands and results are recorded in `PLANS.md` before completion.
+## Phase 10D durable workflow verification
+
+Phase 10D retains existing module-owned workflow state for resume analysis,
+evidence attachments, verified export/render/cleanup, analytics, and networking
+reminders. Organization invitation tests add deterministic context-separated
+token derivation, credential-redacted message models, lease claim/fencing,
+terminal cancellation, exponential retry and dead-letter behavior, bounded task
+results, message escaping, production SMTP/origin/secret validation, maintenance
+routing, beat schedule, and lease-aware task time limits.
+
+The PostgreSQL integration test creates an invitation and outbox atomically,
+claims it with `FOR UPDATE SKIP LOCKED`, delivers through the real processor,
+persists token digest/delivery/audit state, clears the lease, and accepts the
+exact captured credential. Migration `20260727_0017` must pass upgrade,
+downgrade on empty cancellation state, re-upgrade, single-head graph, guarded
+local seed, and Alembic drift detection. No test may assert provider exception
+text, raw recipient/token logging, or exactly-once SMTP semantics.

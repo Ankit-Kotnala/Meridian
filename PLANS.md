@@ -1613,7 +1613,7 @@ entitlement/quota/cost enforcement.
 ## Phase 10C scope and status
 
 Current status: **implemented and focused-verified; invitation delivery execution
-continues in Phase 10D and cumulative release verification remains pending**.
+was closed in Phase 10D and cumulative release verification remains pending**.
 
 ### Included
 
@@ -1654,13 +1654,60 @@ continues in Phase 10D and cumulative release verification remains pending**.
 
 ### Residual work
 
-Invitation creation is durable but delivery is intentionally not synchronous;
-Phase 10D must lease the outbox, issue/send the raw token exactly once per
-successful delivery attempt, bound retries, dead-letter failures, and provide
-safe operator recovery. Phase 10E must apply approved retention/deletion policy
+Phase 10D now executes invitation delivery durably with fenced leases, bounded
+retries, deterministic replay-safe credentials, cancellation, dead-letter, and
+redacted worker telemetry. Phase 10E must apply approved retention/deletion policy
 to invitation mailbox data. Live Coach/Organization billing, seat policy, plan
 entitlements, and quotas remain unavailable because those commercial values are
 owner decisions; Phase 10G owns centralized enforcement after review.
+
+## Phase 10D scope and status
+
+Current status: **implemented and focused-verified; cumulative release
+verification remains pending**.
+
+### Included
+
+- [x] Audited every existing asynchronous path. Resume analysis, evidence
+      attachments, verified export/render/cleanup, analytics refresh, and
+      networking reminders already retain phase-owned durable state, leases,
+      bounded retry/dead-letter, and reconciliation; no competing generic
+      workflow authority was introduced.
+- [x] Migration `20260727_0017` adds explicit organization invitation outbox
+      cancellation, a three-way terminal-state constraint, a due-work partial
+      index, and the invitation-expired audit action.
+- [x] Organization invitation delivery claims bounded due rows with PostgreSQL
+      `FOR UPDATE SKIP LOCKED`, UUID fencing leases, status/expiry rechecks,
+      explicit completion/cancellation, exponential retry capped at one hour,
+      and terminal dead-letter state.
+- [x] The invitation credential is deterministically reconstructed with a
+      context-separated HMAC and never persisted raw. At-least-once resend uses
+      the same credential and acceptance still requires exact active account
+      email, status, expiry, and keyed digest.
+- [x] The worker composes bounded SMTP at the deployable boundary, escapes message
+      content, uses operational-only task results/logs, and schedules a
+      maintenance task with batch-budgeted lease and task time limits.
+- [x] Production configuration rejects the local invitation secret, disabled or
+      local SMTP, missing STARTTLS, local sender, and local/non-HTTPS public app
+      origin. ADR 0021 records the durable-workflow and SMTP semantics.
+
+### Focused verification evidence
+
+| Check                 | Status | Evidence |
+| --------------------- | ------ | -------- |
+| Domain/application    | Pass   | Focused Ruff and strict backend mypy pass across 242 source files; 6 organization unit tests cover replay-safe token derivation, fencing, delivery, retry/dead-letter, role/grant behavior, and secret-redacted representations. |
+| Worker                | Pass   | Worker Ruff and strict mypy pass; all 92 worker tests pass, including SMTP escaping, safe failure mapping, bounded result counts, production configuration, routing, schedule, and lease-aware limits. |
+| PostgreSQL repository | Pass   | The real organization repository test now uses the actual durable processor, verifies claim/delivery/lease clearing/redacted audit, and accepts the exact captured credential. |
+| Migration             | Pass   | Local PostgreSQL upgraded `0016 -> 0017`, downgraded to `0016`, re-upgraded to the single `0017` head, and passed Alembic drift detection. Migration graph and 21 guarded local-seed tests pass. |
+
+### Residual work
+
+SMTP cannot prove exactly-once external side effects; an ambiguous provider
+acknowledgement may resend the same credential. Live provider selection,
+credentials, rotation, alert destinations, and authorized dead-letter replay are
+production/operator decisions. Invitation address retention and erasure continue
+in Phase 10E; aggregate protected dead-letter visibility and recovery continue in
+Phase 10F.
 
 ## Full-specification completion audit
 

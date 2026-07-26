@@ -82,6 +82,12 @@ def test_production_accepts_explicit_non_local_redis_urls() -> None:
             "s3_secret_access_key": "production-storage-secret",
             "malware_scanner_provider": "clamav",
             "clamav_host": "scanner.internal.example",
+            "organization_invitation_secret": "production-invitation-secret-at-least-32-bytes",
+            "email_provider": "smtp",
+            "email_from_address": "no-reply@example.com",
+            "smtp_host": "smtp.internal.example",
+            "smtp_start_tls": True,
+            "public_app_url": "https://app.example.com",
         }
     )
 

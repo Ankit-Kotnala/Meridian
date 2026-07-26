@@ -957,10 +957,17 @@ production enablement. ADR 0019 does not approve live billing.
       grant races. Audit contains identifiers and allowlisted role/scope labels,
       never mailbox, raw token, resume/evidence content, or object references.
 
+- [x] Invitation delivery uses bounded `SKIP LOCKED` claims, unexpired UUID
+      fencing, deterministic context-separated credentials, bounded SMTP timeouts
+      and batches, exponential retry, terminal cancellation/dead-letter, and
+      redacted operational-only telemetry. Production rejects the local secret,
+      local/non-TLS SMTP, local sender, and local/non-HTTPS public origin.
+
 Residual risk: invitation email remains personal data required for delivery and
-must follow the retention/deletion inventory in Phase 10E. Delivery is queued but
-not executed until Phase 10D supplies bounded leasing, retry, dead-letter,
-redacted observability, and a reviewed email-provider composition.
+must follow the retention/deletion inventory in Phase 10E. SMTP is at-least-once:
+an ambiguous acknowledgement can resend the same credential, but cannot mint a
+second credential or bypass exact-email/status/expiry/digest acceptance. A live
+provider and its credential-rotation/runbook review remain deployment decisions.
 
 ## Incident and recovery expectations
 

@@ -308,7 +308,7 @@ class OrganizationInvitationOutboxModel(Base):
             name="lease_pair_valid",
         ),
         CheckConstraint(
-            "NOT (published_at IS NOT NULL AND dead_lettered_at IS NOT NULL)",
+            "num_nonnulls(published_at, dead_lettered_at, cancelled_at) <= 1",
             name="terminal_state_valid",
         ),
         ForeignKeyConstraint(
@@ -323,9 +323,11 @@ class OrganizationInvitationOutboxModel(Base):
         UniqueConstraint("invitation_id", name="uq_organization_invitation_outbox_invitation"),
         Index(
             "ix_organization_invitation_outbox_pending",
-            "published_at",
-            "dead_lettered_at",
             "next_attempt_at",
+            "lease_expires_at",
+            postgresql_where=text(
+                "published_at IS NULL AND dead_lettered_at IS NULL AND cancelled_at IS NULL"
+            ),
         ),
     )
 
@@ -340,6 +342,7 @@ class OrganizationInvitationOutboxModel(Base):
     lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     dead_lettered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_error_code: Mapped[str | None] = mapped_column(String(80))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
@@ -388,7 +391,8 @@ class OrganizationAuditEventModel(Base):
         CheckConstraint(
             "action IN ('organization_created','organization_updated',"
             "'invitation_created','invitation_delivered','invitation_delivery_failed',"
-            "'invitation_accepted','invitation_revoked','member_suspended',"
+            "'invitation_expired','invitation_accepted','invitation_revoked',"
+            "'member_suspended',"
             "'grant_created','grant_revoked')",
             name="action_valid",
         ),

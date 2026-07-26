@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import StrEnum
 from types import MappingProxyType
 from uuid import UUID
@@ -124,6 +124,7 @@ class OrganizationAuditAction(StrEnum):
     INVITATION_CREATED = "invitation_created"
     INVITATION_DELIVERED = "invitation_delivered"
     INVITATION_DELIVERY_FAILED = "invitation_delivery_failed"
+    INVITATION_EXPIRED = "invitation_expired"
     INVITATION_ACCEPTED = "invitation_accepted"
     INVITATION_REVOKED = "invitation_revoked"
     MEMBER_SUSPENDED = "member_suspended"
@@ -273,6 +274,32 @@ class OrganizationInvitation:
         self.updated_at = now
         self.__post_init__()
 
+    def expire(self, now: datetime) -> None:
+        if (
+            self.status
+            not in {
+                InvitationStatus.PENDING_DELIVERY,
+                InvitationStatus.PENDING,
+            }
+            or self.expires_at > now
+        ):
+            raise OrganizationValidationError("invitation cannot expire")
+        self.status = InvitationStatus.EXPIRED
+        self.version += 1
+        self.updated_at = now
+        self.__post_init__()
+
+    def mark_delivery_dead_lettered(self, now: datetime) -> None:
+        if self.status not in {
+            InvitationStatus.PENDING_DELIVERY,
+            InvitationStatus.PENDING,
+        }:
+            raise OrganizationValidationError("invitation delivery cannot dead letter")
+        self.status = InvitationStatus.DELIVERY_DEAD_LETTERED
+        self.version += 1
+        self.updated_at = now
+        self.__post_init__()
+
     def revoke(self, now: datetime) -> None:
         if self.status not in {
             InvitationStatus.PENDING_DELIVERY,
@@ -363,6 +390,7 @@ class OrganizationInvitationOutbox:
     lease_expires_at: datetime | None = None
     published_at: datetime | None = None
     dead_lettered_at: datetime | None = None
+    cancelled_at: datetime | None = None
     last_error_code: str | None = None
 
     def __post_init__(self) -> None:
@@ -371,8 +399,77 @@ class OrganizationInvitationOutbox:
             raise OrganizationValidationError("invitation outbox attempts are invalid")
         if (self.lease_token is None) != (self.lease_expires_at is None):
             raise OrganizationValidationError("invitation outbox lease is inconsistent")
-        if self.published_at is not None and self.dead_lettered_at is not None:
+        terminals = (self.published_at, self.dead_lettered_at, self.cancelled_at)
+        if sum(item is not None for item in terminals) > 1:
             raise OrganizationValidationError("invitation outbox terminal state is invalid")
+        if any(item is not None for item in terminals) and self.lease_token is not None:
+            raise OrganizationValidationError("terminal invitation outbox cannot remain leased")
+        if self.last_error_code is not None:
+            _key(self.last_error_code, "invitation outbox error")
+
+    @property
+    def terminal(self) -> bool:
+        return any(
+            item is not None
+            for item in (self.published_at, self.dead_lettered_at, self.cancelled_at)
+        )
+
+    def claim(self, lease_token: UUID, now: datetime, lease_seconds: int) -> None:
+        if self.terminal or self.next_attempt_at > now or not 5 <= lease_seconds <= 900:
+            raise OrganizationValidationError("invitation outbox cannot be claimed")
+        if self.lease_expires_at is not None and self.lease_expires_at > now:
+            raise OrganizationValidationError("invitation outbox lease is active")
+        self.lease_token = lease_token
+        self.lease_expires_at = now + timedelta(seconds=lease_seconds)
+        self.__post_init__()
+
+    def complete(self, lease_token: UUID, now: datetime) -> None:
+        self._require_lease(lease_token, now)
+        self.published_at = now
+        self.last_error_code = None
+        self.lease_token = None
+        self.lease_expires_at = None
+        self.__post_init__()
+
+    def cancel(self, lease_token: UUID, now: datetime) -> None:
+        self._require_lease(lease_token, now)
+        self.cancelled_at = now
+        self.last_error_code = None
+        self.lease_token = None
+        self.lease_expires_at = None
+        self.__post_init__()
+
+    def fail(
+        self,
+        lease_token: UUID,
+        now: datetime,
+        error_code: str,
+        retry_base_seconds: int,
+    ) -> bool:
+        self._require_lease(lease_token, now)
+        _key(error_code, "invitation outbox error")
+        if not 1 <= retry_base_seconds <= 3_600:
+            raise OrganizationValidationError("invitation retry delay is invalid")
+        self.attempts += 1
+        self.last_error_code = error_code
+        self.lease_token = None
+        self.lease_expires_at = None
+        if self.attempts >= self.max_attempts:
+            self.dead_lettered_at = now
+        else:
+            delay = min(retry_base_seconds * (2 ** (self.attempts - 1)), 3_600)
+            self.next_attempt_at = now + timedelta(seconds=delay)
+        self.__post_init__()
+        return self.dead_lettered_at is not None
+
+    def _require_lease(self, lease_token: UUID, now: datetime) -> None:
+        if (
+            self.terminal
+            or self.lease_token != lease_token
+            or self.lease_expires_at is None
+            or self.lease_expires_at <= now
+        ):
+            raise OrganizationValidationError("invitation outbox lease is unavailable")
 
 
 @dataclass(frozen=True, slots=True)

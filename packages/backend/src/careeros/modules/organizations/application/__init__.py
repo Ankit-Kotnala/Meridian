@@ -1,5 +1,11 @@
 """Public organization application contract."""
 
+from .delivery import (
+    InvitationDeliveryBatchResult,
+    InvitationDeliveryMessage,
+    InvitationSender,
+    OrganizationInvitationDeliveryProcessor,
+)
 from .models import (
     AcceptOrganizationInvitation,
     CreateOrganization,
@@ -19,8 +25,12 @@ __all__ = [
     "CreateOrganization",
     "CreateOrganizationGrant",
     "GrantView",
+    "InvitationDeliveryBatchResult",
+    "InvitationDeliveryMessage",
+    "InvitationSender",
     "InvitationView",
     "InviteOrganizationMember",
+    "OrganizationInvitationDeliveryProcessor",
     "OrganizationPolicy",
     "OrganizationRoster",
     "OrganizationService",

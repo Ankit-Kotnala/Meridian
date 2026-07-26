@@ -778,8 +778,16 @@ download intents, and exports are absent from the grant vocabulary. The explicit
 application authorization query rechecks both memberships, coach/admin role,
 organization, subject, grantee, scope, status, and expiry on each use. Invitation
 creation commits an outbox row atomically, stores no raw token, and exposes no
-mailbox in the API response. Phase 10D owns leased delivery and dead-letter
-processing. See ADR 0020.
+mailbox in the API response.
+
+Phase 10D consumes that outbox with PostgreSQL `SKIP LOCKED`, UUID fencing leases,
+bounded SMTP timeouts and batches, exponential retry, explicit cancellation, and
+dead-letter state. A context-separated HMAC reconstructs the same high-entropy
+credential for every at-least-once attempt; only its digest is stored. Worker
+payloads and telemetry contain identifiers, safe error codes, and aggregate
+counts, never mailbox or token material. Other existing background paths retain
+their phase-owned durable state machines instead of introducing a competing
+generic workflow authority. See ADRs 0020 and 0021.
 
 ## Architecture verification
 
