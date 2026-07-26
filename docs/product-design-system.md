@@ -12,10 +12,13 @@ evidence graph remain the source of truth; resumes, application materials,
 messages, interview stories, and analytics are derived views.
 
 The visual direction is light-only. Warm neutral surfaces and forest green
-provide continuity, while blue is reserved for keyboard focus. Red appears only
-for destructive actions or critical gaps. Color always has a text or icon
-equivalent. Gradients, decorative metric cards, invented activity, fake customer
-logos, and vague “magic” affordances are not part of the system.
+provide continuity, teal adds a controlled secondary accent, and blue is
+reserved for keyboard focus. Red appears only for destructive actions or
+critical gaps. Color always has a text or icon equivalent. Low-contrast ambient
+gradients may reinforce canvas depth or elevation, but never encode status,
+replace a boundary, or reduce text contrast. Decorative metric cards, invented
+activity, fake customer logos, and vague “magic” affordances are not part of the
+system.
 
 CareerOS currently uses a system-native font stack because the repository does
 not include an approved self-hosted font asset. Introducing a network font would
@@ -31,6 +34,11 @@ inputs, not visual templates:
 - [Linear Method](https://linear.app/method/introduction): reduce work about
   work, keep workflows fast, and make the system opinionated enough to guide the
   next action.
+- [Linear UI refresh](https://linear.app/changelog/2026-03-12-ui-refresh) and
+  [design rationale](https://linear.app/now/behind-the-latest-design-refresh):
+  keep headers, navigation, and controls consistent; reduce unearned visual
+  attention; let structure be perceived through hierarchy rather than constant
+  decoration.
 - [GitHub Primer foundations](https://primer.style/product/getting-started/),
   [navigation](https://primer.style/product/ui-patterns/navigation/),
   [layout](https://primer.style/product/getting-started/foundations/layout/), and
@@ -49,6 +57,10 @@ inputs, not visual templates:
 - [Notion Agents](https://www.notion.com/product/agents): make automated work
   visible, scoped, and reviewable. CareerOS applies this as explicit sources,
   immutable snapshots, and accept/reject paths rather than autonomous mutation.
+- [Motion reduced-motion](https://motion.dev/docs/react-use-reduced-motion) and
+  [MotionConfig](https://www.motion.dev/docs/react-motion-config): honor the
+  operating-system preference centrally and keep opacity-only continuity where
+  transform or layout motion is disabled.
 - [Greenhouse MyGreenhouse stages](https://www.greenhouse.com/product-features/mygreenhouse-stages):
   make process stages and candidate-owned next steps legible. CareerOS applies
   this to application stage, deadline, follow-up, and exact document-version
@@ -74,6 +86,7 @@ not raw palette values.
 | Text          | `--foreground`, `--muted`, `--muted-strong`       | Primary and supporting text                            |
 | Structure     | `--border`, `--border-strong`                     | Boundaries and input affordances                       |
 | Brand/action  | `--primary`, `--primary-strong`, `--primary-soft` | Primary action, current navigation, selected state     |
+| Accent        | `--accent`, `--accent-strong`, `--accent-soft`    | Secondary emphasis and shell detail; never sole status |
 | Shell         | `--navy`                                          | Authenticated navigation shell and document preview    |
 | Status        | `--success`, `--warning`, `--danger`, `--info`    | Labeled semantic state only                            |
 | Focus         | `--focus`                                         | Keyboard focus ring; remains distinct from brand state |
@@ -104,17 +117,29 @@ tables use the lower half; page and section boundaries use the upper half.
 - Controls use `--radius-control`.
 - Cards and bounded data regions use `--radius-card`.
 - Small tags use `--radius-small` or a full pill only when the value is a status.
-- Borders carry most grouping. Shadows are restrained and never substitute for
-  hierarchy.
+- Borders carry most grouping. `--shadow-card` and `--shadow-card-hover` add
+  restrained separation; elevation never substitutes for hierarchy.
 
 ### Motion
 
-No motion dependency is installed. Current needs are satisfied by CSS color and
-transform transitions of 150–200 ms. Route meaning, progress, validation, and
-approval never depend on animation. `prefers-reduced-motion: reduce` removes
-non-essential animation and collapses transition duration. New animated patterns
-require a concrete comprehension benefit, reduced-motion behavior, and a bundle
-impact review before a library is added.
+`motion@12.42.2` is pinned for two bounded surfaces: the public landing narrative
+and the authenticated workspace shell. Both use `LazyMotion` with `domAnimation`
+and a shared `MotionConfig reducedMotion="user"`; the global CSS fallback also
+collapses non-essential animation and transition duration. The shared public
+header uses CSS rather than loading Motion on every informational route.
+
+Approved patterns are a one-time section reveal, an 8 px route-continuity fade,
+a short mobile-navigation entrance, and a slow illustrative-preview float. Route
+meaning, progress, validation, approval, and data state never depend on motion.
+No motion hides content or delays an action. Infinite movement is decorative,
+subtle, and removed by `prefers-reduced-motion: reduce`.
+
+The optimized seven-viewport rerun observed a maximum of 236,893 encoded
+JavaScript bytes on the landing/demo surfaces and 227,217 on login, compared
+with the earlier branch-wide public maximum of 208,134 bytes. This is local lab
+evidence, not a field payload guarantee. New motion still requires a concrete
+comprehension or continuity benefit, reduced-motion behavior, and a measured
+bundle review.
 
 ## Layout and responsive behavior
 

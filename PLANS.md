@@ -41,6 +41,16 @@ rules.
       opportunity, resume, application, preparation, networking, growth,
       analytics, and Settings top-level experiences without invented metrics,
       claims, customer evidence, or capabilities.
+- [x] Rebuilt the public home page as the first page-level enterprise pass:
+      a credible fictional workspace preview, platform-layer architecture,
+      controlled operating workflow, explicit trust controls, and restrained
+      technical-preview messaging replaced the flat documentation-style
+      presentation. The focused rerun passed at all seven required widths with
+      zero CLS, no overflow, and no browser or console error.
+- [x] Added a bounded enterprise interaction layer: pinned Motion with
+      `LazyMotion`, central OS reduced-motion handling, route-scoped landing and
+      workspace providers, CSS-only public navigation motion, subtle ambient
+      depth, and measured bundle impact.
 - [x] Documented design foundations, component ownership, provenance and
       approval patterns, responsive rules, accessibility expectations, and
       current official product-pattern research in
@@ -79,12 +89,30 @@ rules.
   underlying package-manager commands were run directly; this limitation is not
   recorded as a Make pass.
 
+### Interaction-polish incremental gate (2026-07-26)
+
+- `pnpm format:check`: pass.
+- `pnpm lint`: pass, including web architecture and repository boundaries.
+- `pnpm typecheck`: pass across all JavaScript/TypeScript packages.
+- `pnpm test`: pass — web 163, UI 12, contracts 3, boundary 4, and edge 2 tests.
+- `pnpm build`: pass; all 49 Next.js routes compiled in the repository build.
+- Isolated development-server visual QA: 28/28 public captures passed across the
+  seven required widths with zero overflow, console error, or page error.
+- Optimized-build visual QA: 21/21 landing, fictional-demo, and login captures
+  passed across the seven widths. Maximum observed LCP was 1008 ms, CLS was 0,
+  maximum Event Timing duration was 40 ms, and maximum encoded JavaScript was
+  236,893 bytes.
+- Representative human review completed for the current landing desktop/mobile
+  and protected Applications mobile captures through a sandbox-safe encoded
+  preview path.
+
 ### Open verification and product risks
 
-- [!] Connected interactive-browser and local-image review are blocked by the
-  Windows sandbox helper error `apply deny-read ACLs`. Playwright automation
-  and saved screenshots are available, but manual aesthetic inspection was
-  not claimed.
+- [!] The connected interactive browser and direct local-image tool remain
+  blocked by the Windows sandbox helper error `apply deny-read ACLs`.
+  Playwright completed the repeatable checks, and representative captures were
+  manually inspected through a sandbox-safe encoded preview; exhaustive human
+  review of every saved screenshot is not claimed.
 - [!] Dynamic detail routes require stable domain records. Their component and
   journey coverage is recorded separately from the seven-viewport top-level
   route pass.
@@ -99,6 +127,12 @@ resume_builder_conflict` response when newly registered users create a
 - [!] No field RUM was available. LCP, CLS, JavaScript bytes, and Event Timing in
   the visual-QA record are local lab observations, not production Core Web
   Vitals or a hiring-outcome claim.
+- [!] A final backend-integrated protected desktop rerun could not be completed
+  after Docker Desktop became unavailable. `docker compose ps` failed with
+  `open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file
+specified`. Earlier complete protected-route and production-stack evidence
+  remains recorded above; this incremental pass does not misstate the stopped
+  daemon as a frontend failure.
 
 ## Repository assessment
 

@@ -8,10 +8,12 @@ Mailpit, ClamAV, Celery worker, and scheduler services.
 
 This record distinguishes automated browser evidence from human visual review.
 The Windows browser sandbox could not apply its read ACLs, so the connected
-interactive browser and local image viewer could not open. Playwright completed
-the repeatable route, interaction, reflow, focus, error, reduced-motion, and lab
-performance checks below. The saved screenshots are available for human review;
-they have not been represented as manually inspected.
+interactive browser and direct local-image viewer could not open. Playwright
+completed the repeatable route, interaction, reflow, focus, error,
+reduced-motion, and lab performance checks below. Representative landing
+desktop/mobile and protected Applications mobile captures were manually
+inspected through a sandbox-safe encoded-preview path; exhaustive manual review
+of every saved screenshot is not claimed.
 
 ## Required viewport matrix
 
@@ -39,7 +41,7 @@ seven-viewport visual passes.
 
 | Area                               | Routes or states                                                                                                                                            | Automated coverage                                                           | Result / note                                                                                                             |
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Public home                        | `/`                                                                                                                                                         | 7/7 + saved screenshots                                                      | Pass                                                                                                                      |
+| Public home                        | `/`                                                                                                                                                         | 7/7 + saved screenshots                                                      | Pass; enterprise landing rerun passed at every required width                                                             |
 | Product information                | `/product`, `/features`, `/how-it-works`, `/security`, `/privacy`, `/terms`, `/accessibility`, `/pricing`, `/about`, `/contact`, `/resources`, `/changelog` | `/product` 7/7; all slugs share the same generated route and document layout | Pass; availability and preview language remain explicit                                                                   |
 | Fictional demo                     | `/demo/dashboard`                                                                                                                                           | 7/7 + saved screenshots                                                      | Pass; fictional label and scoring disclaimer visible                                                                      |
 | Authentication                     | `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email`, `/get-started`                                                               | 7/7 each; desktop/mobile auth journey                                        | Pass after reserving verification-state height to remove mobile CLS                                                       |
@@ -77,6 +79,36 @@ seven-viewport visual passes.
   issue on `/verify-email` at 320 and 360 px was corrected and both affected
   widths passed the targeted rerun.
 
+### Enterprise landing rerun
+
+- The redesigned `/` route was rerun at 320, 360, 393, 768, 1024, 1440, and
+  1920 px against the isolated Next.js development server.
+- All seven captures returned 200 with no horizontal overflow, console error, or
+  page error. Skip-link focus and reduced-motion checks passed.
+- CLS was 0 at every width. Observed LCP ranged from 292 to 884 ms and the
+  maximum Event Timing duration was 32 ms.
+- The focused report is saved as
+  `screenshots/ux-redesign/after/landing-enterprise-qa-results.json`.
+
+### Interaction-polish rerun
+
+- The current landing, fictional demo, login, and guest Resume Health surfaces
+  completed 28/28 development-server captures across all seven widths with no
+  overflow, console error, page error, or reduced-motion failure.
+- The optimized landing, fictional demo, and login surfaces completed 21/21
+  captures across all seven widths with no overflow, console error, page error,
+  or reduced-motion failure.
+- Optimized observations: maximum LCP 1008 ms, CLS 0, maximum Event Timing 40 ms,
+  and maximum encoded JavaScript 236,893 bytes. The route-scoped Motion provider
+  keeps the dependency out of the root layout; the public header uses CSS motion.
+- The reports are saved as
+  `screenshots/ux-redesign/after/interaction-polish-dev-qa-results.json` and
+  `screenshots/ux-redesign/after/interaction-polish-production-qa-results.json`.
+- The API-dependent guest surface later returned a truthful 503 after Docker
+  Desktop became unavailable. That stopped-daemon observation is not represented
+  as a frontend or accessibility pass, and does not replace the successful
+  28-capture development rerun completed while the API was available.
+
 ### Authenticated workspace
 
 - 168 captures: 24 protected top-level routes at seven viewports.
@@ -113,6 +145,11 @@ comparisons include:
   [demo after, 393 px](screenshots/ux-redesign/after/demo-393.png)
 - [Login after, 320 px](screenshots/ux-redesign/after/login-320.png) and
   [login after, 1920 px](screenshots/ux-redesign/after/login-1920.png)
+- [Protected Applications after, 393 px](screenshots/ux-redesign/after/applications-393.png)
+
+The current landing desktop/mobile and protected Applications mobile captures
+were manually inspected through the encoded-preview fallback. The remaining
+saved screenshots retain automated review only.
 
 ## Repeatability
 
@@ -128,11 +165,21 @@ pnpm --filter @careeros/web exec node scripts/capture-visual-qa.mjs `
   --screenshots=false
 ```
 
+For an isolated renderer whose port is not in the backend CSRF allow-list, pass
+`--authBaseUrl=http://localhost:3000` to authenticate through the approved local
+edge origin and reuse the resulting localhost session while capturing the
+isolated `--baseUrl`. This preserves the CSRF policy instead of weakening it for
+visual QA.
+
 ## Known verification constraints
 
-- Connected interactive-browser and local-image inspection were blocked by a
-  Windows sandbox ACL helper error. The screenshots therefore require human
-  review; automated checks are not a substitute for aesthetic inspection.
+- Connected interactive-browser and direct local-image inspection remain blocked
+  by a Windows sandbox ACL helper error. Representative captures were reviewed
+  through a sandbox-safe encoded-preview fallback; automated checks and that
+  bounded review are not a substitute for exhaustive aesthetic inspection.
+- Docker Desktop became unavailable during the final backend-integrated desktop
+  rerun. Earlier complete protected-route evidence remains valid, while this
+  incremental rerun is recorded as blocked rather than passed.
 - Dynamic detail routes do not have stable production-like fixture IDs. Their
   component and journey coverage is identified explicitly in the matrix.
 - Several full-stack Resume Builder and downstream Application journeys receive
