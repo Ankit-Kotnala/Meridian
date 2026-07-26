@@ -564,11 +564,11 @@ export function CareerProfileView() {
       />
 
       <section
-        className="mt-5 grid gap-4 sm:grid-cols-2"
+        className="mt-7 grid overflow-hidden rounded-[var(--radius-card)] border border-line bg-white sm:grid-cols-2 sm:divide-x sm:divide-line"
         aria-label="Career evidence actions"
       >
         <Link
-          className="surface-card rounded-2xl p-5 transition hover:border-primary/40"
+          className="p-5 transition-colors hover:bg-primary-soft/35"
           href="/evidence"
         >
           <Archive aria-hidden="true" className="size-5 text-primary" />
@@ -578,7 +578,7 @@ export function CareerProfileView() {
           </p>
         </Link>
         <Link
-          className="surface-card rounded-2xl p-5 transition hover:border-primary/40"
+          className="border-t border-line p-5 transition-colors hover:bg-primary-soft/35 sm:border-t-0"
           href="/achievement-inbox"
         >
           <Award aria-hidden="true" className="size-5 text-primary" />

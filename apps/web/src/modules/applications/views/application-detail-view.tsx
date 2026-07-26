@@ -12,6 +12,7 @@ import {
   ConfirmDialog,
   ErrorState,
   LoadingSkeleton,
+  PageHeader,
   Tabs,
   buttonStyles,
 } from "@careeros/ui";
@@ -205,7 +206,10 @@ export function ApplicationDetailView({
         All applications
       </Link>
 
-      <header className="rounded-xl border border-line bg-white p-4 shadow-sm sm:p-5">
+      <section
+        aria-labelledby="application-title"
+        className="rounded-card border border-border bg-surface-raised p-4 sm:p-5"
+      >
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -227,14 +231,16 @@ export function ApplicationDetailView({
                 </Badge>
               )}
             </div>
-            <h1 className="mt-3 text-2xl font-black text-foreground">
-              {application.jobTitle}
-            </h1>
-            <p className="mt-1 text-sm text-muted">
-              {[application.company, application.location]
-                .filter(Boolean)
-                .join(" · ") || "Company and location not recorded"}
-            </p>
+            <PageHeader
+              className="mt-3"
+              description={
+                [application.company, application.location]
+                  .filter(Boolean)
+                  .join(" · ") || "Company and location not recorded"
+              }
+              id="application-title"
+              title={application.jobTitle}
+            />
             <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm">
               <div>
                 <dt className="inline font-bold text-muted">Deadline: </dt>
@@ -277,7 +283,7 @@ export function ApplicationDetailView({
             />
           </div>
         </div>
-      </header>
+      </section>
 
       {failure && (
         <Alert
@@ -355,7 +361,7 @@ export function ApplicationDetailView({
         value={activeTab}
       />
 
-      <section className="rounded-xl border border-red-200 bg-white p-4 shadow-sm sm:p-5">
+      <section className="rounded-card border border-danger bg-surface-raised p-4 sm:p-5">
         <h2 className="text-lg font-black text-foreground">
           Delete application
         </h2>
@@ -396,7 +402,7 @@ export function ApplicationDetailView({
 export function ApplicationDetailLoading() {
   return (
     <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8" id="main-content">
-      <LoadingSkeleton />
+      <LoadingSkeleton variant="page" />
     </main>
   );
 }

@@ -156,7 +156,7 @@ export function ApplicationTable({
   onMove,
 }: CollectionProps) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-line bg-white shadow-sm">
+    <div className="data-region table-scroll rounded-card border border-border bg-surface-raised">
       <table className="min-w-[70rem] text-left text-sm">
         <caption className="sr-only">
           Applications with stage, pinned resume version, dates, and actions

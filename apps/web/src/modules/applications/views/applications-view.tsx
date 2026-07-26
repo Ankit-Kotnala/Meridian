@@ -26,6 +26,7 @@ import {
   ErrorState,
   Input,
   LoadingSkeleton,
+  PageHeader,
   Select,
   cn,
 } from "@careeros/ui";
@@ -396,31 +397,23 @@ export function ApplicationsView() {
       className="mx-auto max-w-[96rem] space-y-6 p-4 sm:p-6 lg:p-8"
       id="main-content"
     >
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-primary">
-            Application Workspace
-          </p>
-          <h1 className="mt-1 text-2xl font-black text-foreground">
-            Keep every application traceable
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted">
-            Track opportunities, exact resume versions, follow-ups, and
-            evidence-grounded application packs. CareerOS never submits an
-            application on your behalf.
-          </p>
-        </div>
-        <Button
-          onClick={() => {
-            void load();
-            if (view === "calendar") void loadCalendar();
-          }}
-          variant="secondary"
-        >
-          <RefreshCcw aria-hidden="true" className="size-4" />
-          Refresh
-        </Button>
-      </header>
+      <PageHeader
+        actions={
+          <Button
+            onClick={() => {
+              void load();
+              if (view === "calendar") void loadCalendar();
+            }}
+            variant="secondary"
+          >
+            <RefreshCcw aria-hidden="true" className="size-4" />
+            Refresh
+          </Button>
+        }
+        description="Track opportunities, exact resume versions, follow-ups, and evidence-grounded application packs. CareerOS never submits an application on your behalf."
+        eyebrow="Applications"
+        title="Keep every application traceable"
+      />
 
       {actionFailure && (
         <Alert
@@ -442,7 +435,7 @@ export function ApplicationsView() {
       )}
 
       <details
-        className="rounded-xl border border-line bg-white shadow-sm"
+        className="rounded-card border border-border bg-surface-raised"
         onToggle={(event) => setCreateOpen(event.currentTarget.open)}
         open={createOpen}
       >
@@ -465,10 +458,10 @@ export function ApplicationsView() {
 
       <section
         aria-label="Application filters"
-        className="rounded-xl border border-line bg-white p-4 shadow-sm"
+        className="rounded-card border border-border bg-surface-raised p-4"
       >
         <form
-          className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(14rem,1fr)_11rem_11rem_11rem_11rem_12rem_auto]"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(14rem,1fr)_11rem_11rem_11rem_11rem_12rem_auto]"
           key={routeKey}
           onSubmit={search}
         >
@@ -581,10 +574,10 @@ export function ApplicationsView() {
               <button
                 aria-pressed={view === item.value}
                 className={cn(
-                  "flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-primary-soft",
+                  "flex min-h-11 items-center gap-2 rounded-control border px-3 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-primary-soft",
                   view === item.value
-                    ? "bg-primary text-white"
-                    : "bg-white text-muted hover:text-foreground",
+                    ? "border-primary bg-primary text-white"
+                    : "border-transparent bg-surface-raised text-muted hover:border-border hover:text-foreground",
                 )}
                 key={item.value}
                 onClick={() =>
@@ -607,7 +600,7 @@ export function ApplicationsView() {
       </div>
 
       {view === "calendar" && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-white p-3 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface-raised p-3">
           <Button
             aria-label="Previous month"
             onClick={() => replaceQuery({ month: adjacentMonth(month, -1) })}
@@ -663,7 +656,7 @@ export function ApplicationsView() {
             title="Calendar unavailable"
           />
         ) : (
-          <LoadingSkeleton />
+          <LoadingSkeleton variant="list" />
         )
       ) : (
         <ApplicationBoard
@@ -693,7 +686,7 @@ export function ApplicationsView() {
 export function ApplicationsLoading() {
   return (
     <main className="mx-auto max-w-[96rem] p-4 sm:p-6 lg:p-8" id="main-content">
-      <LoadingSkeleton />
+      <LoadingSkeleton variant="page" />
     </main>
   );
 }

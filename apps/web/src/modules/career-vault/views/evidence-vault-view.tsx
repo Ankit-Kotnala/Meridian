@@ -352,12 +352,12 @@ export function EvidenceVaultView() {
               </Card>
             ))}
           </div>
-          <div className="hidden overflow-x-auto rounded-2xl border border-line bg-white shadow-sm md:block">
+          <div className="data-region table-scroll hidden md:block">
             <table className="w-full border-collapse text-left text-sm">
               <caption className="sr-only">
                 Evidence Vault results and generation eligibility
               </caption>
-              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-muted">
+              <thead className="text-xs uppercase tracking-wide text-muted">
                 <tr>
                   <th className="px-5 py-4" scope="col">
                     Evidence

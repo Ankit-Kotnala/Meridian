@@ -28,7 +28,9 @@ import {
   ErrorState,
   Input,
   LoadingSkeleton,
+  PageHeader,
   Select,
+  SectionHeader,
   cn,
 } from "@careeros/ui";
 
@@ -304,18 +306,24 @@ export function ResumeBuilderView() {
         {success || failure || ""}
       </div>
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-primary">
-            Resume Builder
-          </p>
-          <h1 className="mt-1 text-2xl font-black text-foreground">
-            Verified resume exports
-          </h1>
-        </div>
+      <PageHeader
+        description="Create evidence-backed resume versions, inspect exactly what each version contains, and verify the final file before downloading it."
+        eyebrow="Resume Builder"
+        title="Verified resume exports"
+      />
+
+      <section
+        aria-labelledby="create-resume-heading"
+        className="rounded-card border border-border bg-surface-raised p-4 sm:p-5"
+      >
+        <SectionHeader
+          description="A resume starts from confirmed Career Profile evidence. Creating one does not publish or export it."
+          id="create-resume-heading"
+          title="Create a resume"
+        />
         <form
           aria-label="Create a resume"
-          className="grid gap-2 sm:grid-cols-[minmax(0,12rem)_minmax(0,13rem)_11rem_auto]"
+          className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,12rem)_minmax(0,13rem)_12rem_auto]"
           onSubmit={(event) => void submitCreate(event)}
         >
           <label className="sr-only" htmlFor="resume-title">
@@ -325,6 +333,7 @@ export function ResumeBuilderView() {
             id="resume-title"
             maxLength={120}
             onChange={(event) => setTitle(event.target.value)}
+            placeholder="Resume title"
             required
             value={title}
           />
@@ -359,7 +368,7 @@ export function ResumeBuilderView() {
             Create
           </Button>
         </form>
-      </div>
+      </section>
 
       {failure && resumes.length > 0 && (
         <Alert title="Action failed" tone="danger">
@@ -380,18 +389,19 @@ export function ResumeBuilderView() {
       ) : (
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">
           <section aria-labelledby="editor-heading" className="space-y-4">
-            <div className="rounded-lg border border-line bg-white p-4 shadow-sm">
+            <div className="rounded-card border border-border bg-surface-raised p-4">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                   <h2
                     className="text-lg font-black text-foreground"
                     id="editor-heading"
                   >
-                    Structured editor
+                    Current working version
                   </h2>
                   {selected && (
                     <p className="mt-1 text-sm text-muted">
-                      Version {selected.currentVersion.versionNumber}
+                      Version {selected.currentVersion.versionNumber} · Changes
+                      remain in this version until you create a new snapshot.
                     </p>
                   )}
                 </div>
@@ -431,7 +441,7 @@ export function ResumeBuilderView() {
                     variant="secondary"
                   >
                     <Save aria-hidden="true" className="size-4" />
-                    Save
+                    Save changes
                   </Button>
                   <Button
                     disabled={!selected}
@@ -440,7 +450,7 @@ export function ResumeBuilderView() {
                     type="button"
                   >
                     <History aria-hidden="true" className="size-4" />
-                    Version
+                    Create version
                   </Button>
                 </div>
               </div>
@@ -450,12 +460,12 @@ export function ResumeBuilderView() {
               <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                 <section
                   aria-label="Resume sections"
-                  className="rounded-lg border border-line bg-white p-4 shadow-sm"
+                  className="rounded-card border border-border bg-surface-raised p-4"
                 >
                   <div className="space-y-3">
                     {selected.currentVersion.sections.map((section, index) => (
                       <article
-                        className="rounded-lg border border-line bg-slate-50 p-3"
+                        className="rounded-control border border-border bg-surface-subtle p-3"
                         key={section.id}
                       >
                         <div className="flex items-center justify-between gap-3">
@@ -508,7 +518,8 @@ export function ResumeBuilderView() {
                               >
                                 {item.text}
                                 <span className="ml-2 text-xs text-muted">
-                                  {item.evidenceIds.length} evidence
+                                  {item.evidenceIds.length} evidence source
+                                  {item.evidenceIds.length === 1 ? "" : "s"}
                                 </span>
                               </li>
                             ))
@@ -521,12 +532,12 @@ export function ResumeBuilderView() {
 
                 <section
                   aria-label="Plain text preview"
-                  className="rounded-lg border border-line bg-white p-4 shadow-sm"
+                  className="rounded-card border border-border bg-surface-raised p-4"
                 >
                   <h2 className="text-sm font-black text-foreground">
                     Recruiter preview
                   </h2>
-                  <pre className="mt-3 max-h-[34rem] overflow-auto whitespace-pre-wrap rounded-lg bg-slate-950 p-4 text-sm leading-6 text-white">
+                  <pre className="mt-3 max-h-[34rem] overflow-auto whitespace-pre-wrap rounded-control bg-navy p-4 text-sm leading-6 text-white">
                     {selected.currentVersion.plainText}
                   </pre>
                 </section>
@@ -537,14 +548,18 @@ export function ResumeBuilderView() {
           <aside className="space-y-4">
             <section
               aria-labelledby="export-heading"
-              className="rounded-lg border border-line bg-white p-4 shadow-sm"
+              className="rounded-card border border-border bg-surface-raised p-4"
             >
               <h2
                 className="text-lg font-black text-foreground"
                 id="export-heading"
               >
-                Export
+                Verify and export
               </h2>
+              <p className="mt-1 text-sm leading-6 text-muted">
+                Verification checks the selected version and format. The source
+                version remains immutable after export.
+              </p>
               <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_auto] xl:grid-cols-1">
                 <label className="sr-only" htmlFor="export-format">
                   Export format
@@ -629,22 +644,24 @@ export function ResumeBuilderView() {
 
             <section
               aria-labelledby="history-heading"
-              className="rounded-lg border border-line bg-white p-4 shadow-sm"
+              className="rounded-card border border-border bg-surface-raised p-4"
             >
               <h2
                 className="text-lg font-black text-foreground"
                 id="history-heading"
               >
-                History
+                Version history
               </h2>
               <div className="mt-4 space-y-2">
                 {versions.length === 0 ? (
-                  <p className="text-sm text-muted">No versions</p>
+                  <p className="text-sm text-muted">
+                    No saved version history yet.
+                  </p>
                 ) : (
                   versions.map((version) => (
                     <div
                       className={cn(
-                        "flex items-center justify-between gap-3 rounded-lg border border-line p-3",
+                        "flex items-center justify-between gap-3 rounded-control border border-border p-3",
                         selected?.currentVersionId === version.id &&
                           "bg-primary-soft",
                       )}
@@ -692,7 +709,7 @@ function IconButton({
   return (
     <button
       aria-label={label}
-      className="grid size-9 place-items-center rounded-lg border border-line bg-white text-muted shadow-sm transition hover:border-primary hover:text-primary focus:outline-none focus:ring-3 focus:ring-primary-soft disabled:cursor-not-allowed disabled:opacity-50"
+      className="grid size-9 place-items-center rounded-control border border-border bg-surface-raised text-muted transition hover:border-primary hover:text-primary focus:outline-none focus:ring-3 focus:ring-primary-soft disabled:cursor-not-allowed disabled:opacity-50"
       disabled={disabled || loading}
       onClick={onClick}
       title={label}
@@ -713,7 +730,7 @@ function ResumeBuilderLoading() {
       className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8"
       id="main-content"
     >
-      <LoadingSkeleton />
+      <LoadingSkeleton variant="page" />
     </main>
   );
 }

@@ -25,6 +25,7 @@ import {
   EmptyState,
   ErrorState,
   LoadingSkeleton,
+  PageHeader,
   ScoreBar,
   Select,
   cn,
@@ -287,20 +288,17 @@ export function RoleExplorerView() {
       <div aria-live="polite" className="sr-only">
         {success || failure || ""}
       </div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-primary">
-            Role Explorer
-          </p>
-          <h1 className="mt-1 text-2xl font-black text-foreground">
-            Role readiness
-          </h1>
-        </div>
-        <Button onClick={() => void load()} variant="secondary">
-          <RefreshCcw aria-hidden="true" className="size-4" />
-          Refresh
-        </Button>
-      </div>
+      <PageHeader
+        actions={
+          <Button onClick={() => void load()} variant="secondary">
+            <RefreshCcw aria-hidden="true" className="size-4" />
+            Refresh
+          </Button>
+        }
+        description="Compare your demonstrated, evidence-backed capabilities with a reusable target role. This is role readiness—not a job-specific match or an employer score."
+        eyebrow="Role Explorer"
+        title="Role readiness"
+      />
 
       {failure && (
         <Alert title="Role Explorer unavailable" tone="danger">
@@ -608,7 +606,7 @@ export function RoleExplorerView() {
           >
             Readiness history
           </h2>
-          <div className="overflow-x-auto rounded-lg border border-line bg-white">
+          <div className="data-region table-scroll">
             <table className="min-w-full divide-y divide-line text-sm">
               <caption className="sr-only">
                 Recent role readiness analyses
@@ -725,7 +723,7 @@ function ReadinessPanel({ analysis }: { analysis: RoleReadiness }) {
         </div>
       </div>
 
-      <div className="mt-6 overflow-x-auto rounded-lg border border-line">
+      <div className="data-region table-scroll mt-6">
         <table className="min-w-full divide-y divide-line text-sm">
           <caption className="sr-only">
             Requirement to evidence readiness results

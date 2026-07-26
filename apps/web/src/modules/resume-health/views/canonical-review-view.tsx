@@ -1,17 +1,12 @@
 "use client";
 
-import {
-  FileCheck2,
-  Plus,
-  RefreshCcw,
-  ShieldQuestion,
-  Trash2,
-} from "lucide-react";
+import { FileCheck2, Plus, RefreshCcw, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
   Alert,
+  ApprovalPanel,
   Badge,
   Button,
   Card,
@@ -1088,42 +1083,39 @@ export function CanonicalReviewView({
         ]}
       />
 
-      <Card className="sticky bottom-3 mt-5 flex flex-col gap-4 p-4 shadow-xl sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-start gap-3">
-          <ShieldQuestion
-            aria-hidden="true"
-            className="mt-0.5 size-5 shrink-0 text-primary"
-          />
-          <div>
-            <p className="text-sm font-extrabold">Explicit review required</p>
-            <p className="mt-1 text-xs leading-5 text-muted">
-              {fields.length > 0
-                ? "Confirming these values starts a new deterministic analysis from this reviewed snapshot."
-                : "Acknowledge that no reliable text was extracted. The report will show insufficient data instead of inventing a score."}
-            </p>
-            <label className="mt-3 flex items-start gap-2 text-xs font-bold text-foreground">
-              <input
-                checked={confirmNoChanges}
-                className="mt-0.5"
-                onChange={(event) => setConfirmNoChanges(event.target.checked)}
-                type="checkbox"
-              />
-              I reviewed the extracted content and confirm that no changes are
-              needed.
-            </label>
-          </div>
-        </div>
-        <Button
-          loading={saving}
-          loadingLabel="Saving review…"
-          onClick={() => void saveAndAnalyze()}
-        >
-          <FileCheck2 aria-hidden="true" className="size-4" />
+      <ApprovalPanel
+        actions={
+          <Button
+            loading={saving}
+            loadingLabel="Saving review…"
+            onClick={() => void saveAndAnalyze()}
+          >
+            <FileCheck2 aria-hidden="true" className="size-4" />
+            {fields.length > 0
+              ? "Save review and analyze"
+              : "Acknowledge and analyze"}
+          </Button>
+        }
+        className="sticky bottom-3 z-20 mt-5 shadow-[var(--shadow-md)]"
+        evidence={`Source: ${document.displayFilename}. The uploaded source remains unchanged.`}
+        title="Explicit review required"
+      >
+        <p>
           {fields.length > 0
-            ? "Save review and analyze"
-            : "Acknowledge and analyze"}
-        </Button>
-      </Card>
+            ? "Confirming these values starts a new deterministic analysis from this reviewed snapshot."
+            : "Acknowledge that no reliable text was extracted. The report will show insufficient data instead of inventing a score."}
+        </p>
+        <label className="mt-3 flex items-start gap-2 text-xs font-bold text-foreground">
+          <input
+            checked={confirmNoChanges}
+            className="mt-0.5"
+            onChange={(event) => setConfirmNoChanges(event.target.checked)}
+            type="checkbox"
+          />
+          I reviewed the extracted content and confirm that no changes are
+          needed.
+        </label>
+      </ApprovalPanel>
     </main>
   );
 }
