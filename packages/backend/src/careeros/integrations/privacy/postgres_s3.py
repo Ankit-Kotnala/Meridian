@@ -75,6 +75,9 @@ _SPECIAL_SCOPES: dict[str, tuple[str, ...]] = {
     "organization_invitations": ("invited_by_user_id", "accepted_by_user_id"),
     "organization_memberships": ("user_id",),
     "organizations": ("created_by_user_id",),
+    "platform_admin_audit_events": ("actor_user_id",),
+    "platform_feature_flags": ("updated_by_user_id",),
+    "platform_operator_assignments": ("user_id",),
     "user_profiles": ("user_id",),
     "users": ("id",),
 }

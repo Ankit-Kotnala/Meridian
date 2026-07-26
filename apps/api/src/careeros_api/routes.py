@@ -8,6 +8,7 @@ from fastapi import APIRouter, Request, Response, status
 
 from careeros_api.config import Settings
 from careeros_api.constants import SCORING_DISCLAIMER
+from careeros_api.modules.administration.routes import router as admin_router
 from careeros_api.modules.application_workspace.routes import router as application_workspace_router
 from careeros_api.modules.career_analytics.routes import router as career_analytics_router
 from careeros_api.modules.career_growth import router as career_growth_router
@@ -31,6 +32,7 @@ from careeros_api.schemas import (
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
+router.include_router(admin_router)
 router.include_router(identity_router)
 router.include_router(resume_health_router)
 router.include_router(resume_builder_router)

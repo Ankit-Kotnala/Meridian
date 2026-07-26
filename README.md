@@ -697,6 +697,17 @@ listed fixes are available only in Python 3.15 prereleases. PR #22 workflow run
 `30161489265` passed every required hosted job at implementation/merge head
 `1454792`.
 
+## Protected platform administration
+
+Phase 10F adds a fail-closed platform-operator boundary with no default operator
+and no self-service privilege endpoint. Persisted roles grant explicit system,
+job, catalog, or audit capabilities; every protected operation requires a
+purpose reason and writes a content-free, hash-chained audit event. Mutations
+also require CSRF and recent authentication. Aggregate job health is visible
+without raw career content, and only account-privacy and organization-invitation
+dead letters have a one-shot, idempotent, live-tested manual recovery adapter.
+See ADR 0023.
+
 ## Phase 9 limitations and boundaries
 
 - Networking consent records the account owner's explicit attestation; it is not

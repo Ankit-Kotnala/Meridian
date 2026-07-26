@@ -810,6 +810,23 @@ owners and accounts with billing-customer records block safely. Worker I/O runs
 outside the database row-lock transaction and only the terminal transition is
 lease fenced, allowing crash recovery without lock inversion. See ADR 0022.
 
+### Phase 10 protected administration boundary
+
+Migration `20260727_0019` introduces persisted platform-operator assignments,
+feature-flag metadata, idempotency, and a dedicated administration audit chain.
+Every request resolves a database assignment to an explicit capability and
+requires a bounded purpose reason; mutations also require CSRF and recent
+authentication. The API has no privilege-grant route and starts with zero
+operators.
+
+The administration read model exposes only aggregate health, catalog counts,
+UUID state, bounded attempt data, and safe error codes. A fixed allowlist can
+re-arm account-privacy and organization-invitation dead letters once per target;
+all other dead letters remain visible but non-retryable. Audit writes serialize
+under a transaction advisory lock and hash a canonical event payload containing
+a context-separated HMAC actor reference. Account erasure may null the actor FK
+without invalidating the retained chain. See ADR 0023.
+
 ## Architecture verification
 
 Every phase retains the repository gates plus architecture-boundary,

@@ -72,6 +72,7 @@ class Settings(BaseSettings):
     )
     auth_token_pepper: SecretStr = SecretStr("change-me-local-only-auth-token-pepper")
     account_operation_pepper: SecretStr = SecretStr("change-me-local-only-account-operation-pepper")
+    admin_audit_pepper: SecretStr = SecretStr("change-me-local-only-admin-audit-pepper")
     cookie_secure: bool = False
     session_ttl_seconds: int = Field(default=900, ge=300, le=3600)
     refresh_ttl_seconds: int = Field(default=2_592_000, ge=86_400, le=7_776_000)
@@ -305,7 +306,7 @@ class Settings(BaseSettings):
         parse_async_postgresql_url(value.get_secret_value())
         return value
 
-    @field_validator("auth_token_pepper", "account_operation_pepper")
+    @field_validator("auth_token_pepper", "account_operation_pepper", "admin_audit_pepper")
     @classmethod
     def require_strong_token_pepper(cls, value: SecretStr) -> SecretStr:
         if len(value.get_secret_value().encode("utf-8")) < 32:
@@ -391,6 +392,8 @@ class Settings(BaseSettings):
             == "change-me-local-only-account-operation-pepper"
         ):
             violations.append("the development account-operation pepper must be replaced")
+        if self.admin_audit_pepper.get_secret_value() == "change-me-local-only-admin-audit-pepper":
+            violations.append("the development admin-audit pepper must be replaced")
         if self.google_oauth_enabled and not self.google_redirect_uri.startswith("https://"):
             violations.append("google_redirect_uri must use HTTPS")
         if not self.s3_endpoint_url.startswith("https://"):

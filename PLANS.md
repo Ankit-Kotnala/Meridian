@@ -10,8 +10,9 @@ and hosted verified in PR #22; Phase 8 remains complete and hosted verified in
 PR #21. Phase 7 durable verified-export closure and Phase 10A's guarded fictional
 local seed are merged. The product-wide UX redesign is locally implemented and
 visually verified without changing backend phase completion. Commercial, tenancy, durable workflows, and primary-store privacy closure are
-implemented and focused-verified. Protected administration, security/cost,
-infrastructure/recovery, and final release-hardening work remains open**
+implemented and focused-verified. Protected administration is implemented and
+focused-verified. Security/cost, infrastructure/recovery, and final
+release-hardening work remains open**
 
 ## Status legend
 
@@ -1761,6 +1762,50 @@ backup expiry/restore, provider erasure, alert ownership, RPO/RTO, and user-faci
 deletion windows. Live billing-provider retention remains blocked on owner/legal
 selection. Phase 10F owns protected operator visibility and recovery; Phase 10G
 owns centralized abuse/quota/cost controls.
+
+## Phase 10F protected administration scope and status
+
+Current status: **implemented and focused-verified; cumulative release and
+protected-environment policy verification remain pending**.
+
+### Included
+
+- [x] Migration `20260727_0019` adds zero-default persisted operator assignments,
+      feature-flag metadata, idempotency, and a sequence-serialized hash-chained
+      administration audit with an erasure-safe HMAC actor reference.
+- [x] Explicit operations-viewer, job-operator, catalog-auditor, and
+      security-auditor capabilities are resolved from PostgreSQL on every request;
+      no email, tenant role, environment, UUID, or hidden control grants authority.
+- [x] Protected reads require an audited purpose reason. Mutations also require
+      CSRF and recent authentication; rejected authority and recent-auth attempts
+      are audited with safe outcomes.
+- [x] Aggregate system/catalog/dead-letter/audit endpoints are no-store and expose
+      no raw career content, PII, object keys, tokens, signed URLs, or provider
+      payloads. Generated OpenAPI/TypeScript contracts are current.
+- [x] Manual retry is a one-shot allowlist for account-privacy and organization-
+      invitation dead letters with idempotent replay. Other terminal states remain
+      visible and non-retryable until a feature-owned adapter is proven.
+- [x] Account export/erasure explicitly classifies the new admin tables; assignment
+      and idempotency state are removed while retained audit actor FKs are nulled
+      without invalidating the chain. ADR 0023 records the boundary.
+
+### Focused verification evidence
+
+| Check              | Status | Evidence                                                                                                                                                                                                |
+| ------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Domain/application | Pass   | Focused Ruff and strict mypy pass; 3 unit tests prove missing-role denial audit, recent-auth denial audit, idempotent replay, and a one-shot retry budget.                                              |
+| API/contracts      | Pass   | Admin route/config tests pass; contract typecheck, 3 contract tests, and OpenAPI/generated-client drift pass. Routes verify no-store reads plus CSRF/reason/idempotency mutation requirements.          |
+| PostgreSQL/privacy | Pass   | Three live PostgreSQL tests prove audit integrity through user erasure and re-arm account-privacy and invitation delivery dead letters; the combined PostgreSQL/MinIO privacy regression remains green. |
+| Migration/runtime  | Pass   | PostgreSQL passed `0019 -> 0018 -> 0019` with one head and no drift. Rebuilt API/worker images pass runtime imports; the worker and scheduler are healthy and Celery answers ping.                      |
+
+### Residual work
+
+Operator identities, provisioning review, access recertification, MFA policy,
+audit export/retention, alert destinations, and on-call ownership are production
+owner decisions. Phase 10H must encode their approved deployment controls and
+runbooks. Database-superuser tampering remains detectable rather than impossible.
+Additional retry kinds require their own feature-owned state-machine adapter and
+live failure/replay proof.
 
 ## Full-specification completion audit
 

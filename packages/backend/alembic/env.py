@@ -9,6 +9,9 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from careeros.foundation.config import database_url_from_environment
 from careeros.foundation.database import Base
+from careeros.modules.administration.infrastructure import (
+    models as administration_models,  # noqa: F401
+)
 from careeros.modules.application_workspace.infrastructure import (
     models as application_workspace_models,  # noqa: F401
 )

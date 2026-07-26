@@ -20,6 +20,7 @@ RUN UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy uv sync \
       --package careeros-worker \
       --no-dev \
       --no-editable \
+    && .venv/bin/python -c "import careeros_worker.app; import careeros_worker.runtime" \
     && uv cache clean \
     && /usr/local/bin/python -m pip uninstall --yes uv
 

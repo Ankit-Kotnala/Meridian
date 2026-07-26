@@ -29,6 +29,7 @@ status; consult `PLANS.md` for current behavior.
 | [0020](0020-phase10-organization-tenancy-and-delegated-access.md)     | Durable tenant roles, safe invitations, and explicit revocable summary grants        | Accepted                               |
 | [0021](0021-phase10-durable-background-workflows.md)                  | Phase-owned durable workflows and fenced invitation delivery                         | Accepted                               |
 | [0022](0022-phase10-account-privacy-operations.md)                    | Durable classified account export, primary-store erasure, and retained capability    | Accepted                               |
+| [0023](0023-phase10-protected-administration.md)                      | Persisted least-privilege operators, redacted recovery, and hash-chained audit       | Accepted                               |
 
 ## Lifecycle
 

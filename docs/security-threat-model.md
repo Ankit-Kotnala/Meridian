@@ -998,6 +998,30 @@ provider erasure runbooks, alert ownership, and accurate user-facing deletion
 windows. Billing deletion remains blocked until a live provider/legal policy is
 approved.
 
+## Phase 10 protected administration boundary
+
+- [x] No account receives platform authority by default, email domain,
+      organization role, deployment environment, or frontend visibility.
+- [x] Persisted roles map to explicit capabilities and are checked for every
+      request. No HTTP endpoint can grant or revoke platform authority.
+- [x] Protected reads require a purpose reason and emit an audit event. Mutations
+      additionally require CSRF, recent authentication, and idempotency.
+- [x] Operational payloads exclude raw resumes, evidence, notes, job text, email,
+      tokens, provider responses, signed URLs, and object keys.
+- [x] Manual recovery is an allowlist with live-tested state transitions and one
+      successful retry budget per target. Unsupported job types fail closed.
+- [x] Audit events use serialized sequence allocation, previous/event hashes,
+      and a context-separated HMAC actor reference that survives user erasure.
+      A verification endpoint is limited to security auditors.
+- [x] The dedicated audit pepper rejects the local default in production and is
+      independent from session and account-operation secrets.
+
+Residual risk: database-superuser mutation cannot be prevented by application
+code, only detected by the chain. Phase 10H must export audit evidence to a
+protected retention destination, define operator provisioning/review/offboarding,
+and assign alert/on-call ownership. MFA remains an explicit owner decision;
+recent authentication is enforced for the current mutation surface.
+
 ## Incident and recovery expectations
 
 Phase 10 must document owners and playbooks for credential/session compromise,

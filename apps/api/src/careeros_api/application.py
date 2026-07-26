@@ -11,6 +11,19 @@ from careeros.foundation.observability import configure_logging
 from careeros.integrations.email import DisabledEmailSender, SmtpEmailSender, SmtpOptions
 from careeros.integrations.oauth import GoogleOAuthOptions, GoogleOAuthProvider
 from careeros.integrations.privacy import PostgresS3AccountPrivacyStore
+from careeros.modules.administration.application import (
+    AdministrationPolicy,
+    AdministrationService,
+)
+from careeros.modules.administration.infrastructure import (
+    SqlAlchemyAdministrationUnitOfWorkFactory,
+)
+from careeros.modules.administration.infrastructure import (
+    SystemClock as AdministrationClock,
+)
+from careeros.modules.administration.infrastructure import (
+    UuidIdentifierFactory as AdministrationUuidFactory,
+)
 from careeros.modules.application_workspace.application import (
     ApplicationWorkspaceService,
     ApplicationWorkspaceUnitOfWorkFactory,
@@ -213,6 +226,9 @@ from redis.asyncio import Redis
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from careeros_api.modules.administration.problems import (
+    install_administration_problem_handler,
+)
 from careeros_api.modules.commercial.problems import install_commercial_problem_handler
 from careeros_api.config import Settings, get_settings
 from careeros_api.middleware import RequestBodyLimitMiddleware, install_request_context_middleware
@@ -288,6 +304,7 @@ def create_app(
     career_analytics: CareerAnalyticsService | None = None,
     commercial: CommercialService | None = None,
     organizations: OrganizationService | None = None,
+    administration: AdministrationService | None = None,
 ) -> FastAPI:
     """Build an application; injectable dependencies keep tests infrastructure-free."""
     resolved_settings = settings or get_settings()
@@ -325,6 +342,7 @@ def create_app(
         resolved_career_analytics = career_analytics
         resolved_commercial = commercial
         resolved_organizations = organizations
+        resolved_administration = administration
         resolved_resume_builder_storage: ResumeExportS3Storage | None = None
         resolved_privacy_storage: ResumeExportS3Storage | None = None
 
@@ -644,6 +662,19 @@ def create_app(
                     allowed_return_origins=frozenset(resolved_settings.allowed_origins),
                 )
 
+            if resolved_administration is None:
+                resolved_administration = AdministrationService(
+                    unit_of_work=SqlAlchemyAdministrationUnitOfWorkFactory(
+                        resolved_database,
+                        resolved_settings.admin_audit_pepper.get_secret_value(),
+                    ),
+                    clock=AdministrationClock(),
+                    identifiers=AdministrationUuidFactory(),
+                    policy=AdministrationPolicy(
+                        recent_auth_seconds=resolved_settings.recent_auth_ttl_seconds,
+                    ),
+                )
+
             if resolved_organizations is None:
                 resolved_organizations = OrganizationService(
                     unit_of_work=SqlAlchemyOrganizationUnitOfWorkFactory(resolved_database),
@@ -706,6 +737,7 @@ def create_app(
         application.state.career_analytics_service = resolved_career_analytics
         application.state.commercial_service = resolved_commercial
         application.state.organization_service = resolved_organizations
+        application.state.administration_service = resolved_administration
         application.state.attachment_workflow_service = resolved_attachment_workflow
         application.state.resume_outbox_dispatcher = resolved_resume_dispatcher
         application.state.readiness_dependencies = {"database": resolved_database}
@@ -769,6 +801,7 @@ def create_app(
             "Traceparent",
             "X-CSRF-Token",
             "X-Account-Operation-Token",
+            "X-Admin-Reason",
             "X-Guest-CSRF",
             "X-Request-ID",
         ],
@@ -780,6 +813,7 @@ def create_app(
     )
     install_request_context_middleware(application)
     install_problem_handlers(application)
+    install_administration_problem_handler(application)
     install_commercial_problem_handler(application)
     install_organization_problem_handler(application)
     install_interview_prep_problem_handler(application)

@@ -967,3 +967,20 @@ redact retained download metadata, and leave both operation records accessible
 without a user foreign key. Separate real-database assertions cover sole-owner
 and billing-retention blockers. Migration `20260727_0018` must pass upgrade,
 empty-state downgrade, re-upgrade, graph/seed regression, and Alembic drift.
+
+## Phase 10F protected administration verification
+
+Phase 10F tests persisted role-to-capability authorization, denied-request audit,
+recent-auth mutation denial, idempotent replay, and the single successful manual
+retry budget. API contracts cover authentication, CSRF, purpose reasons,
+idempotency, no-store responses, stable problems, and generated OpenAPI.
+
+The required PostgreSQL gate proves hash-chain verification before and after the
+operator user is erased, with a retained HMAC actor reference and nulled user FK.
+Separate live tests re-arm exhausted account-privacy and organization-invitation
+state exactly once and confirm their feature workers can reclaim the resulting
+due state. Migration `20260727_0019` must pass single-head, drift, empty-state
+downgrade/re-upgrade, guarded seed, and account export/deletion regression. No
+administration test may use real operator identities or assert raw failure text. The
+worker production image must import both its Celery app and task runtime during the
+image build so an undeclared optional dependency cannot survive to startup.
