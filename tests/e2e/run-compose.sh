@@ -12,7 +12,7 @@ case "$project_name" in
 esac
 
 verification_phase=${CAREEROS_E2E_PHASE:-2}
-expected_migration_head=${CAREEROS_EXPECTED_MIGRATION_HEAD:-20260724_0009}
+expected_migration_head=${CAREEROS_EXPECTED_MIGRATION_HEAD:-20260724_0010}
 case "$verification_phase" in
   2)
     rollback_revision=20260715_0002
@@ -35,8 +35,11 @@ case "$verification_phase" in
   8)
     rollback_revision=20260719_0008
     ;;
+  9)
+    rollback_revision=20260724_0009
+    ;;
   *)
-    echo "CAREEROS_E2E_PHASE must be 2, 3, 4, 5, 6, 7, or 8." >&2
+    echo "CAREEROS_E2E_PHASE must be 2, 3, 4, 5, 6, 7, 8, or 9." >&2
     exit 2
     ;;
 esac
@@ -213,6 +216,18 @@ run_browser_journeys() {
         e2e/change-studio-journey.spec.ts \
         e2e/resume-builder-journey.spec.ts \
         e2e/application-workspace-journey.spec.ts
+      ;;
+    9)
+      pnpm --filter @careeros/web exec playwright test \
+        e2e/auth-journey.spec.ts \
+        e2e/resume-health-journey.spec.ts \
+        e2e/career-record-journey.spec.ts \
+        e2e/role-readiness-journey.spec.ts \
+        e2e/job-match-journey.spec.ts \
+        e2e/change-studio-journey.spec.ts \
+        e2e/resume-builder-journey.spec.ts \
+        e2e/application-workspace-journey.spec.ts \
+        e2e/phase9-career-workspace-journey.spec.ts
       ;;
   esac
 }

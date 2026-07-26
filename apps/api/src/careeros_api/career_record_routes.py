@@ -179,10 +179,31 @@ def _skill_proficiency(value: str | None) -> SkillProficiency | None:
     }[value]
 
 
+def _matches_accepted_proposal(current: CareerEntity, proposed: CareerEntity) -> bool:
+    """Attach legacy import context only while every accepted factual field still matches."""
+
+    return (
+        current.kind is proposed.kind
+        and current.title == proposed.title
+        and current.organization == proposed.organization
+        and current.description == proposed.description
+        and current.official_title == proposed.official_title
+        and current.display_title == proposed.display_title
+        and current.employment_type == proposed.employment_type
+        and current.location == proposed.location
+        and current.external_url == proposed.external_url
+        and current.start_date == proposed.start_date
+        and current.end_date == proposed.end_date
+        and current.is_current == proposed.is_current
+        and current.group_id == proposed.group_id
+    )
+
+
 async def _accepted_provenance_by_entity(
     service: CareerRecordService, owner_user_id: UUID
 ) -> dict[UUID, list[ProvenanceResponse]]:
     result: dict[UUID, list[ProvenanceResponse]] = {}
+    current_entities = {entity.id: entity for entity in await service.list_entities(owner_user_id)}
     cursor: str | None = None
     while True:
         page = await service.list_import_proposals(
@@ -193,6 +214,12 @@ async def _accepted_provenance_by_entity(
         )
         for proposal in page.items:
             entity_id = proposal.target_entity_id or proposal.proposed_entity.id
+            current = current_entities.get(entity_id)
+            if current is None or not _matches_accepted_proposal(
+                current,
+                proposal.proposed_entity,
+            ):
+                continue
             available = await service.import_proposal_source_available(owner_user_id, proposal.id)
             result.setdefault(entity_id, []).append(
                 provenance_from_proposal(proposal, available=available)

@@ -1,6 +1,11 @@
 """Public Career Record application contract."""
 
-from ..domain import CareerRecordNotFound
+from ..domain import (
+    CareerRecordError,
+    CareerRecordNotFound,
+    CareerRecordUnavailable,
+    CareerRecordValidationError,
+)
 from .attachment_workflow import (
     CLEANUP_EVIDENCE_ATTACHMENT_OBJECTS_TASK,
     DISPATCH_EVIDENCE_ATTACHMENT_OUTBOX_TASK,
@@ -42,6 +47,9 @@ from .models import (
     AttachmentUploadView,
     CareerEntityData,
     CareerProfileView,
+    CareerRecordAnalyticsGrowthPoint,
+    CareerRecordAnalyticsSourceState,
+    CareerRecordAnalyticsWatermark,
     CareerRecordReadinessSnapshot,
     CreateAchievement,
     CreateCareerProfile,
@@ -112,12 +120,18 @@ __all__ = [
     "AttachmentWorkflowService",
     "CareerEntityData",
     "CareerProfileView",
+    "CareerRecordAnalyticsGrowthPoint",
+    "CareerRecordAnalyticsSourceState",
+    "CareerRecordAnalyticsWatermark",
+    "CareerRecordError",
     "CareerRecordNotFound",
     "CareerRecordPolicy",
     "CareerRecordReadinessSnapshot",
     "CareerRecordService",
+    "CareerRecordUnavailable",
     "CareerRecordUnitOfWork",
     "CareerRecordUnitOfWorkFactory",
+    "CareerRecordValidationError",
     "CleanupBatchResult",
     "Clock",
     "CreateAchievement",

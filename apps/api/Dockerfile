@@ -1,4 +1,4 @@
-FROM python:3.13-slim@sha256:bffeb7bd6a85767587059c6ba23e1e9122078e3aa3fa836099171b9bb5a9bb00 AS runtime
+FROM python:3.13-alpine3.24@sha256:399babc8b49529dabfd9c922f2b5eea81d611e4512e3ed250d75bd2e7683f4b0 AS runtime
 
 ENV PATH="/workspace/.venv/bin:${PATH}" \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -6,18 +6,16 @@ ENV PATH="/workspace/.venv/bin:${PATH}" \
 
 WORKDIR /workspace
 
-RUN python -m pip install --no-cache-dir "uv==0.11.21" \
-    && addgroup --system --gid 10001 app \
-    && adduser --system --uid 10001 --ingroup app --home /nonexistent --no-create-home app
+RUN python -m pip install --no-cache-dir "uv==0.11.21"
 
-COPY --chown=app:app pyproject.toml uv.lock .python-version ./
-COPY --chown=app:app apps/api/pyproject.toml apps/api/README.md ./apps/api/
-COPY --chown=app:app apps/worker/pyproject.toml apps/worker/README.md ./apps/worker/
-COPY --chown=app:app packages/backend/pyproject.toml packages/backend/README.md ./packages/backend/
-COPY --chown=app:app apps/api/src ./apps/api/src
-COPY --chown=app:app packages/backend/src ./packages/backend/src
-COPY --chown=app:app packages/backend/alembic.ini ./packages/backend/alembic.ini
-COPY --chown=app:app packages/backend/alembic ./packages/backend/alembic
+COPY --chown=10001:10001 pyproject.toml uv.lock .python-version ./
+COPY --chown=10001:10001 apps/api/pyproject.toml apps/api/README.md ./apps/api/
+COPY --chown=10001:10001 apps/worker/pyproject.toml apps/worker/README.md ./apps/worker/
+COPY --chown=10001:10001 packages/backend/pyproject.toml packages/backend/README.md ./packages/backend/
+COPY --chown=10001:10001 apps/api/src ./apps/api/src
+COPY --chown=10001:10001 packages/backend/src ./packages/backend/src
+COPY --chown=10001:10001 packages/backend/alembic.ini ./packages/backend/alembic.ini
+COPY --chown=10001:10001 packages/backend/alembic ./packages/backend/alembic
 
 RUN UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy uv sync \
       --frozen \
@@ -27,7 +25,7 @@ RUN UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy uv sync \
     && uv cache clean \
     && /usr/local/bin/python -m pip uninstall --yes uv
 
-USER app
+USER 10001:10001
 
 EXPOSE 8000
 

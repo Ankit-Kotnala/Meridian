@@ -1,5 +1,6 @@
 """Resume Health application API."""
 
+from ..domain import DocumentStatus, OwnerScope, ResumeHealthError
 from .models import (
     AnalysisView,
     CanonicalSnapshotView,
@@ -26,6 +27,7 @@ from .service import (
     ResumeHealthPolicy,
     ResumeHealthProcessor,
     ResumeHealthService,
+    ResumeHealthSourceReader,
     ResumeJobFailureRecorder,
     ResumeJobReconciler,
     ResumeMaintenance,
@@ -49,6 +51,7 @@ __all__ = [
     "CorrectionOperation",
     "CreateUploadIntent",
     "DocumentLimits",
+    "DocumentStatus",
     "DocumentView",
     "FeatureContributionView",
     "FinalizedUpload",
@@ -57,11 +60,14 @@ __all__ = [
     "JobReconciliationResult",
     "OutboxDispatchResult",
     "OutboxDispatcher",
+    "OwnerScope",
     "ProcessingJobView",
     "ProcessingOutcome",
+    "ResumeHealthError",
     "ResumeHealthPolicy",
     "ResumeHealthProcessor",
     "ResumeHealthService",
+    "ResumeHealthSourceReader",
     "ResumeJobFailureRecorder",
     "ResumeJobReconciler",
     "ResumeMaintenance",

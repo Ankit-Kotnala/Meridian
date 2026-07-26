@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import base64
 import binascii
+import hashlib
+import json
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
@@ -37,7 +39,10 @@ from careeros.modules.career_record.domain import (
     SkillProficiency,
     TimelineFinding,
 )
-from careeros.modules.career_record.domain.errors import CareerRecordCursorInvalid
+from careeros.modules.career_record.domain.errors import (
+    CareerRecordCursorInvalid,
+    CareerRecordValidationError,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,6 +103,10 @@ class ResumeSourceLocator:
     page: int
     start_offset: int
     end_offset: int
+
+    def __post_init__(self) -> None:
+        if self.page < 1 or self.start_offset < 0 or self.end_offset <= self.start_offset:
+            raise CareerRecordValidationError("resume source locator is invalid")
 
 
 @dataclass(frozen=True, slots=True)
@@ -304,6 +313,64 @@ class CareerRecordReadinessSnapshot:
     skills: tuple[ReadinessSnapshotSkill, ...]
     entities: tuple[ReadinessSnapshotEntity, ...]
     evidence: tuple[ReadinessSnapshotEvidence, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class CareerRecordAnalyticsGrowthPoint:
+    """Content-free current eligible achievement milestone for growth analytics."""
+
+    evidence_id: UUID
+    evidence_revision_id: UUID
+    category: str
+    occurred_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class CareerRecordAnalyticsSourceState:
+    record_count: int
+    item_version_sum: int
+    max_item_updated_at: datetime | None
+    max_revision_created_at: datetime | None
+
+    def watermark(self) -> CareerRecordAnalyticsWatermark:
+        payload = {
+            "itemVersionSum": self.item_version_sum,
+            "maxItemUpdatedAt": (
+                self.max_item_updated_at.isoformat()
+                if self.max_item_updated_at is not None
+                else None
+            ),
+            "maxRevisionCreatedAt": (
+                self.max_revision_created_at.isoformat()
+                if self.max_revision_created_at is not None
+                else None
+            ),
+            "recordCount": self.record_count,
+            "v": 1,
+        }
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        return CareerRecordAnalyticsWatermark(
+            token=f"sha256:{hashlib.sha256(encoded).hexdigest()}",
+            record_count=self.record_count,
+            max_updated_at=max(
+                (
+                    value
+                    for value in (
+                        self.max_item_updated_at,
+                        self.max_revision_created_at,
+                    )
+                    if value is not None
+                ),
+                default=None,
+            ),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class CareerRecordAnalyticsWatermark:
+    token: str
+    record_count: int
+    max_updated_at: datetime | None
 
 
 @dataclass(frozen=True, slots=True)

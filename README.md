@@ -14,12 +14,12 @@ claim under the user's control.
 ## Repository status
 
 **Phase 8 Application Workspace and grounded application packs are complete and
-hosted verified in PR #21.**
+hosted verified in PR #21. Phase 9 is complete and hosted verified in PR #22.**
 Phases 0 through 7 are hosted verified; PR #20 merged Phases 5 through 7 after
 hosted CI run `30119088488` passed every required job. Phase 8 implementation
 revision `964cd9c` passed the consolidated local gate and separate security scan
-on 2026-07-24; PR #21 run `30126993025` passed every required hosted job at head
-`645536b`. The repository uses a
+on 2026-07-24; PR #21 runs `30126993025` and `30128304892` passed every required
+hosted job. The repository uses a
 shared Python modular monolith, one root uv workspace, generated API contracts,
 thin deployable applications, and executable dependency boundaries.
 
@@ -184,6 +184,64 @@ application packs with consistency findings. Legacy resume sources without the
 complete immutable claim/evidence ledger are refused. The product does not submit
 applications or send messages on the user's behalf.
 
+Interview Prep is available at `/interview-prep`. It derives a Resume Defense
+Map from one owner-authorized Application Workspace snapshot, stores structured
+STAR stories, and supports role-specific questions, mock sessions, private
+notes/reflections, and grounded follow-up drafts. A ready or generated factual
+story must pin every STAR field to exact application claims and eligible evidence
+revisions; unsupported numbers are refused. Before a new question bank or
+follow-up draft is generated, the stored session pins are rechecked against live
+Career Record eligibility and the exact current evidence revision. Revised,
+revoked, downgraded, unavailable, conflicted, or otherwise ineligible evidence
+fails closed. An exact idempotent replay returns its existing immutable output
+rather than regenerating historical text. Drafts may remain incomplete, and no
+follow-up is sent by CareerOS.
+
+Networking is available at `/networking`. It is a private, owner-scoped CRM for
+organizations, contacts, relationship stages, tags, notes, interactions,
+referrals, reviewed templates, and local reminders. Contact collection, storage,
+and outreach use a dedicated purpose-specific attestation ledger. CareerOS does
+not treat account consent or Application Workspace contacts as third-party
+consent, and it does not scrape, import, or deliver outreach. Withdrawing consent
+for collection or storage irreversibly tombstones the contact and redacts all
+contact-child personal/free-text content; only content-free consent, audit, and
+queue state remains where required. Withdrawing outreach alone preserves the
+contact, private notes, and inbound/mutual history while cancelling local work
+and redacting outbound/template/referral/reminder material. Owner/contact
+collection limits and bounded safe reminder history prevent unbounded storage.
+Consent policy identifiers are fixed by the server and constrained again in the
+database, so arbitrary user/contact text cannot enter the retained ledger.
+
+Career Growth is available at `/career-growth`. Goals, milestones, development
+plans, learning/certification and internal-mobility preparation, evidence-backed
+quarterly/annual reviews, and annual resume-refresh tracking use exact current
+Career Record evidence pins. Live insights derive current eligible achievement
+history and skill-evidence coverage without copying a second source of truth.
+Completed-promotion, completed-milestone, finalized-review, and completed
+annual-refresh insight checks count or expose a stored link only while its exact
+revision number, hash, and revision timestamp still match the current eligible
+evidence. Promotion Readiness is a six-check preparation report, not an employer
+decision or forecast. Career Health v1 is a deterministic longitudinal
+maintenance measure with strict insufficient-data behavior and the canonical
+score disclaimer.
+
+Career Analytics is available at `/analytics`. Durable owner-scoped refresh jobs
+produce timezone-specific immutable snapshots for application stages, outcomes,
+rates, role/industry/source breakdowns, exact resume-version patterns,
+requirement-coverage trends, eligible achievement growth, and Role Readiness
+history. Reports expose versioned metric/cohort/timestamp definitions, suppress
+rates and averages below five records, fail stale or tampered snapshots closed,
+and describe correlations only. Achievement growth is re-evaluated through the
+canonical Career Record eligibility policy; application event buckets use only
+the selected application cohort; and the bounded Role Readiness/achievement
+point set is hashed for the exact guarded source window used by the refresh.
+The public window remains bounded to a 3,650-day delta; internal Career Record
+and Role Readiness reads allow only the additional day on each side required
+for timezone-safe UTC selection. API and worker composition use the same owned
+Resume Health and clean-attachment status queries when re-evaluating evidence.
+Raw resume, evidence, contact, note, offer, rejection, and generated-document
+prose are excluded.
+
 Authenticated Resume Health starts at `/resume-health/account`. The intentionally
 limited guest flow starts at `/resume-health/guest`, uses one opaque short-lived
 browser capability, permits one active intake, and defaults to 24-hour retention.
@@ -256,6 +314,7 @@ make test-e2e-stack-phase5 # isolated Phase 5 Job Match journey plus prior regre
 make test-e2e-stack-phase6 # isolated Phase 6 Change Studio journey plus prior regressions
 make test-e2e-stack-phase7 # isolated Phase 7 Resume Builder journey plus prior regressions
 make test-e2e-stack-phase8 # isolated Phase 8 desktop/mobile Application Workspace journeys
+make test-e2e-stack-phase9 # isolated Phase 9 desktop/mobile career workspace journeys
 make security-scan    # scan source, dependencies, app images, and trusted edge runtime
 make migrate          # apply the current database migrations
 make seed             # print the explicitly fictional Phase 0 fixture
@@ -268,6 +327,7 @@ make verify-phase5    # full gate plus isolated Job Match integration/E2E
 make verify-phase6    # full gate plus isolated Change Studio integration/E2E
 make verify-phase7    # full gate plus isolated Resume Builder integration/E2E
 make verify-phase8    # full gate plus isolated Application Workspace integration/E2E
+make verify-phase9    # full gate plus isolated Phase 9 career workspace integration/E2E
 make reset-db         # explicitly destructive local database reset
 ```
 
@@ -306,8 +366,10 @@ evidence.
 Use `.\scripts\verify-phase8.ps1` for migration `20260724_0009`, Application
 Workspace repository integration, immutable-source and consistency tests, and
 the complete desktop/mobile create/track/generate workflow. The final local
-Phase 8 run passed on 2026-07-24; hosted CI is still required after the phase
-branch is pushed.
+Phase 8 run passed on 2026-07-24; PR #21 runs `30126993025` and `30128304892`
+passed every required hosted job. Use `.\scripts\verify-phase9.ps1` for migration
+`20260724_0010`, its four product contexts, durable analytics/local-reminder
+workers, and the Phase 9 desktop/mobile career workspace journey.
 
 The Phase 0 migration enables the pgvector extension. Phase 1 migration
 `20260715_0002` adds the identity, session, OAuth, organization, consent, audit,
@@ -352,6 +414,20 @@ unpinned and cannot seed grounded Resume Builder/Application Workspace output;
 new claims require complete pins. Downgrading to `20260719_0008` deletes Phase 8
 workspace data and removes those forward-added fields; it is a
 test/forward-repair path, not a production rollback recommendation.
+Phase 9 migration `20260724_0010` adds owner-scoped Interview Prep, Networking,
+Career Growth, and Career Analytics records, including exact evidence pins,
+append-only contact consent, immutable review/score snapshots, and durable
+analytics/reminder state. Composite constraints and database validation enforce
+Growth target ownership, exact evidence revision number/timestamp/hash
+provenance on every evidence-link insert or mutation, the immediate
+review-predecessor chain, and the review's latest version ID/number/status tuple.
+Networking reminder occurrences and outbox entries persist the same validated
+trace ID for worker audit correlation. Analytics jobs and snapshots persist their
+IANA timezone as part of identity. The migration conditionally repairs a pre-release
+Phase 8 development database missing its canonical provenance tuple/check or
+resume-change event/audit enum values without changing migration
+`20260724_0009`. Downgrading to `20260724_0009` deletes Phase 9 data but
+preserves those canonical Phase 8 objects.
 The seed command still prints only a fictional demo fixture and performs no
 database write. A command that prints a fixture or says a feature is deferred is
 not evidence that the product feature exists.
@@ -402,11 +478,13 @@ Read [AGENTS.md](AGENTS.md) before contributing. The principal references are:
 - [Implementation checklist](docs/implementation-checklist.md)
 - [Architecture decisions](docs/adr/README.md)
 
-## Verification Status Through Phase 8 Hosted Closeout
+## Verification status through Phase 9 local closeout
 
 Phases 0 through 8 have recorded local and hosted evidence. Phase 8's complete
-closeout evidence, including PR #21 workflow run `30126993025`, is recorded in
-`PLANS.md`.
+closeout evidence, including PR #21 workflow runs `30126993025` and
+`30128304892`, is recorded in `PLANS.md`.
+Phase 9's final-tree consolidated local gate, separate security scan, and hosted
+PR #22 workflow run `30161489265` pass as recorded in `PLANS.md`.
 Exact current and historical results are recorded separately in `PLANS.md`; never
 infer a pass from the command list below:
 
@@ -435,6 +513,7 @@ Native PowerShell runs the equivalent quality/build/configuration checks with:
 .\scripts\verify-phase6.ps1
 .\scripts\verify-phase7.ps1
 .\scripts\verify-phase8.ps1
+.\scripts\verify-phase9.ps1
 docker compose up --build --detach --wait
 docker compose ps
 Invoke-WebRequest -UseBasicParsing http://localhost:3000/api/health
@@ -489,7 +568,66 @@ Gitleaks was clean; pnpm and pip audits found no known vulnerabilities
 fixable-high findings; and web plus `web-edge` had no vulnerabilities. Three
 medium Python-runtime findings remain with fixes available only in Python 3.15
 prereleases, so they are nonblocking under the documented policy and remain
-tracked. PR #21 workflow run `30126993025` passed every required hosted job.
+tracked. PR #21 workflow runs `30126993025` and `30128304892` passed every
+required hosted job.
+
+Phase 9 local closeout passed on 2026-07-25. The consolidated gate reported
+`365 passed` for the backend portfolio, `134 passed` for the API portfolio,
+`84 passed` for the worker portfolio, and `150 passed` across 43 web test files;
+the production build emitted 48 routes. The isolated PostgreSQL suite passed 39
+tests with 7 inherited SQLAlchemy cycle warnings. Playwright completed 12 tests
+with 6 intentional inherited mobile skips, and the Phase 9 desktop and mobile
+journeys both passed. Regression coverage isolates each interview story's stale
+support; returns immutable delayed-replay results for STAR-story creation and
+career-review finalization; narrows Networking's application lookup to a
+content-free ID/stage reference; keeps Analytics aliases exactly equal to the
+generated wire contracts; gives an explicitly reactivated reminder a fresh
+occurrence/outbox without reviving redacted content; and ensures Analytics
+dead-letter or expired-lease recovery cannot leave an orphaned queued job.
+
+The final security gate is also green: Gitleaks, `pnpm audit`, and `pip-audit`
+reported no actionable source or application-dependency finding, and the web and
+`web-edge` images had no vulnerability. The newly disclosed
+`brace-expansion` advisory is resolved by a workspace-wide `5.0.8` override plus
+compatibility patches for the pinned minimatch 3.1.5 and 5.1.9 consumers. API
+and worker now use the digest-pinned Python 3.13.14 Alpine 3.24 runtime with
+OpenSSL 3.5.7, removing the newly disclosed fixable OpenSSL findings from the
+older slim image. They retain only `CVE-2025-15366`, `CVE-2025-15367`, and
+`CVE-2026-12003`, three nonblocking medium CPython 3.13.14 runtime findings whose
+listed fixes are available only in Python 3.15 prereleases. PR #22 workflow run
+`30161489265` passed every required hosted job at implementation/merge head
+`1454792`.
+
+## Phase 9 limitations and boundaries
+
+- Networking consent records the account owner's explicit attestation; it is not
+  independent proof supplied by the third party.
+- Interview questions and follow-up drafts are deterministic and review-only.
+  No production model provider or external delivery connector is enabled.
+- Achievement history contains only current eligible Career Record evidence of
+  type `achievement`; revoked, unsupported, deleted, and unrelated evidence is
+  excluded.
+- Annual resume refresh is an evidence-backed planning and completion workflow.
+  It does not silently rewrite, publish, or export a resume.
+- Promotion Readiness is a current preparation checklist, not an employer
+  assessment, hiring probability, promotion guarantee, or measure of job-market
+  value.
+- Analytics depends on recorded workflow events, applies the selected IANA
+  timezone, suppresses small cohorts, and reports observed patterns rather than
+  causal effects.
+- Account-wide export/deletion retention, load/soak evidence, backup/restore,
+  production provider/region selection, and protected deployment remain Phase 10
+  work.
+- The Phase 7 export slice persists job-shaped status and verification records
+  but renders/verifies synchronously inside the application service. Its five
+  selectable template IDs currently share one renderer structure, and its
+  round-trip checks do not yet make occurrence counts and reading-order
+  comparison release-blocking. Durable worker execution, distinct verified
+  layouts, and a canonical cross-format fidelity manifest are Phase 10
+  prerequisites.
+- `make seed` still prints only a fictional fixture. The original project-wide
+  database seed covering every implemented phase remains unfinished and must not
+  be inferred from the labeled demo preview.
 
 ## License and production use
 

@@ -1,7 +1,7 @@
 # CareerOS scoring methodology
 
-Status: Resume Health v1, Role Readiness v1, Job Match v1, and Phase 6 Change Studio controls implemented
-Last reviewed: 2026-07-19
+Status: Resume Health v1, Role Readiness v1, Job Match v1, Phase 6 Change Studio controls, and Career Health v1 implemented
+Last reviewed: 2026-07-25
 
 ## Required interpretation
 
@@ -36,8 +36,8 @@ accessible action away.
 - **Truth Confidence:** internal confidence that displayed claims preserve known
   facts and connect to eligible evidence. It is not third-party background
   verification.
-- **Career Health Score:** later, longitudinal evidence/goal maintenance measure;
-  it must not be conflated with job-market value.
+- **Career Health Score:** a longitudinal evidence, goal, development, review,
+  and skill-evidence maintenance measure; it is not job-market value.
 
 ## Scoring invariants
 
@@ -284,6 +284,81 @@ or certification is never assumed required unless the role definition says so.
 The report separately lists strengths, gaps, unknowns, transferable/adjacent
 skills, and evidence to add. The numeric score alone must not order career choices.
 
+## Career Health
+
+Phase 9 implements deterministic engine `career-health/1.0.0`, immutable
+configuration `career-health-default/1`, and feature schema
+`career-health-features/1`. It measures maintenance of the user's own structured
+career record. It does not measure job-market value, predict an outcome, compare
+people, or infer an employer or ATS assessment.
+
+The configured components are:
+
+| Component                  | Weight | v1 measurement                                                                                                                              |
+| -------------------------- | -----: | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Evidence currency          |    25% | Mean age-band credit across currently eligible exact evidence revisions                                                                     |
+| Goal progress              |    30% | Equal-weight non-cancelled goal and milestone completion                                                                                    |
+| Development follow-through |    20% | Status credit for non-cancelled learning, certification, promotion, review, and mobility items, with no credit for overdue incomplete items |
+| Review cadence             |    15% | Recency of immutable finalized quarterly and annual review versions                                                                         |
+| Readiness maintenance      |    10% | Share of documented skills linked to currently eligible evidence revisions                                                                  |
+
+All values use integer basis points. Only applicable components enter the
+denominator:
+
+```text
+career_health_raw =
+  round_half_up(
+    sum(component_score_basis_points * configured_weight_basis_points),
+    sum(applicable_configured_weight_basis_points)
+  )
+```
+
+The engine returns `insufficient_data`, without component scores or a numeric
+aggregate, unless at least three components totaling at least 6000 configured
+basis points are applicable. Missing data is therefore not silently converted to
+zero or averaged into false precision. A complete result is labeled
+`well_maintained` at 8000 basis points or higher, `developing` from 6000 through
+7999, and `needs_attention` below 6000. Those labels describe record maintenance,
+not career quality.
+
+Evidence currency grants 10000 basis points through 90 days, 7500 through 180
+days, 5000 through 365 days, 2500 through 730 days, and zero thereafter.
+Milestones grant 0/5000/10000 for pending/in-progress/completed. Development
+items grant 0/5000/2500/10000 for planned/in-progress/paused/completed, while an
+overdue incomplete item receives zero. A finalized quarterly review is current
+through 100 days and partial through 190; an annual review is current through
+400 days and partial through 550. Current/partial/stale cadence credit is
+10000/5000/0.
+
+Each analysis persists its exact owner-authorized input snapshot, configuration,
+formula, SHA-256 snapshot hash, integer component trace, findings, formula
+versions, and computation time. Published analyses are immutable; changed source
+records create a new analysis. Evidence-derived inputs pin evidence ID, revision
+ID, revision number, and statement SHA-256 without copying raw evidence text.
+The stored snapshot hash is recomputed before an analysis is returned; a
+tampered snapshot fails closed. Every API and UI representation includes the
+canonical score disclaimer from this document.
+
+## Promotion Readiness interpretation
+
+Promotion Readiness is not a numerical score. It is a current six-check
+preparation report derived from eligible achievement evidence, skill-evidence
+coverage, evidenced completed milestones, an evidenced completed promotion plan,
+an evidence-backed finalized review, and an evidenced annual resume refresh. Its states
+(`insufficient_evidence`, `building`, and `review_ready`) describe whether those
+CareerOS preparation records are present; they do not rank people or infer a
+decision by an employer. A persisted completed-milestone, completed-promotion,
+finalized-review, or annual-refresh link contributes only while its evidence ID,
+revision ID/number, statement hash, and revision timestamp still match the
+current eligible Career Record snapshot; revoked or superseded pins do not
+continue to support the report.
+
+Every Promotion Readiness representation uses this separate required language:
+
+> Promotion Readiness summarizes CareerOS preparation signals from current
+> eligible evidence and owner-maintained records. It is not an employer decision,
+> hiring probability, promotion guarantee, or assessment of job-market value.
+
 ## Job-specific Application Readiness
 
 The initial configurable formula is:
@@ -488,11 +563,12 @@ Phase 2 implements and persists job-independent Resume Health v1. Phase 4
 implements and persists general Role Readiness v1. Phase 5 implements and
 persists exact-job Application Readiness v1 and Opportunity Priority v1. Phase 6
 implements Change Studio's grounded-change review controls and bounded local
-expected-score-effect display; it does not create a new scoring engine. The
-fictional dashboard at `/demo/dashboard` remains isolated from product data.
-Resume Health v1, Role Readiness v1, Application Readiness v1, and Opportunity
-Priority v1 must not be reused as employer, ATS, hiring-probability, or guarantee
-scores.
+expected-score-effect display; it does not create a new scoring engine. Phase 9
+implements and persists longitudinal Career Health v1 with strict
+insufficient-data handling. The fictional dashboard at `/demo/dashboard` remains
+isolated from product data. Resume Health v1, Role Readiness v1, Application
+Readiness v1, Opportunity Priority v1, and Career Health v1 must not be reused as
+employer, ATS, hiring-probability, or guarantee scores.
 
 The implementation, focused golden tests, and repository-wide local format, lint,
 type, unit, integration, container, migration, browser, accessibility, and

@@ -3,7 +3,7 @@
 import asyncio
 import os
 from dataclasses import replace
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from uuid import UUID, uuid4
 
@@ -131,6 +131,7 @@ def _evidence_record(
     title: str,
     statement: str,
     with_attachment: bool,
+    evidence_type: EvidenceType = EvidenceType.ACHIEVEMENT,
 ) -> EvidenceRecord:
     evidence_id = uuid4()
     revision_id = uuid4()
@@ -148,7 +149,7 @@ def _evidence_record(
         owner_user_id=owner_user_id,
         evidence_id=evidence_id,
         revision=1,
-        evidence_type=EvidenceType.ACHIEVEMENT,
+        evidence_type=evidence_type,
         title=title,
         statement=statement,
         context="Production migration",
@@ -261,6 +262,57 @@ def _evidence_record(
         skill_ids=(),
         usage=(usage,),
     )
+
+
+@pytest.mark.asyncio
+async def test_analytics_growth_includes_only_achievement_evidence() -> None:
+    database_url = os.environ.get("CAREEROS_TEST_DATABASE_URL")
+    if database_url is None:
+        pytest.skip("CAREEROS_TEST_DATABASE_URL is required for PostgreSQL integration tests")
+
+    database = Database(DatabaseOptions(url=database_url, pool_size=2, max_overflow=0))
+    factory = SqlAlchemyCareerRecordUnitOfWorkFactory(database)
+    owner_user_id, cleanup_user_id = uuid4(), uuid4()
+    now = datetime.now(UTC).replace(microsecond=0)
+    achievement = _evidence_record(
+        owner_user_id,
+        now,
+        title="Eligible achievement",
+        statement="Delivered the reviewed migration.",
+        with_attachment=False,
+    )
+    note = _evidence_record(
+        owner_user_id,
+        now + timedelta(seconds=1),
+        title="Eligible note",
+        statement="Private context that is not an achievement.",
+        with_attachment=False,
+        evidence_type=EvidenceType.NOTE,
+    )
+
+    try:
+        await _add_users(database, (owner_user_id, cleanup_user_id), now)
+        async with factory() as uow:
+            await uow.add_evidence(achievement)
+            await uow.add_evidence(note)
+            await uow.commit()
+        async with factory() as uow:
+            growth = await uow.list_analytics_growth(
+                owner_user_id,
+                date(2026, 1, 1),
+                date(2099, 12, 31),
+                101,
+            )
+
+        assert [point.evidence_revision_id for point in growth] == [achievement.revision.id]
+        assert growth[0].category == EvidenceType.ACHIEVEMENT.value
+    finally:
+        async with database.session() as session:
+            await session.execute(
+                delete(UserModel).where(UserModel.id.in_((owner_user_id, cleanup_user_id)))
+            )
+            await session.commit()
+        await database.dispose()
 
 
 async def _add_users(database: Database, user_ids: tuple[UUID, UUID], now: datetime) -> None:

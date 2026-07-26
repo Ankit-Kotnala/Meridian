@@ -9,11 +9,15 @@ from datetime import UTC, date, datetime
 from uuid import NAMESPACE_URL, UUID, uuid5
 
 from careeros.modules.application_workspace.application import (
+    ApplicationAnalyticsCursor,
+    ApplicationAnalyticsSourceState,
     ApplicationCalendarEntry,
     ApplicationFilter,
+    ApplicationInterviewEvidenceReference,
     ApplicationJobSnapshot,
     ApplicationMilestones,
     ApplicationPackView,
+    ApplicationReference,
     ApplicationResumeSnapshot,
     ApplicationSourceClaim,
     ApplicationSourceEvidenceReference,
@@ -157,6 +161,14 @@ class StaticEvidenceProvider:
             ),
         )
 
+    async def validate_current(
+        self,
+        owner_user_id: UUID,
+        references: tuple[ApplicationInterviewEvidenceReference, ...],
+    ) -> None:
+        assert owner_user_id == OWNER_ID
+        assert tuple(reference.evidence_id for reference in references) == (EVIDENCE_ID,)
+
 
 class MemoryApplicationWorkspace:
     def __init__(self) -> None:
@@ -283,16 +295,50 @@ class MemoryApplicationWorkspace:
     async def list_application_records(
         self,
         owner_user_id: UUID,
+        after: ApplicationAnalyticsCursor | None,
         limit: int,
     ) -> list[ApplicationRecord]:
-        return [
+        records = [
             deepcopy(record)
             for record in sorted(
                 self.applications.values(),
                 key=lambda item: (item.created_at, str(item.id)),
             )
             if self._active(record, owner_user_id)
-        ][:limit]
+            and (
+                after is None
+                or (record.created_at, str(record.id))
+                > (after.created_at, str(after.application_id))
+            )
+        ]
+        return records[:limit]
+
+    async def get_analytics_source_state(
+        self,
+        owner_user_id: UUID,
+    ) -> ApplicationAnalyticsSourceState:
+        applications = [
+            record for record in self.applications.values() if self._active(record, owner_user_id)
+        ]
+        events = [
+            event
+            for event in self.events.values()
+            if event.owner_user_id == owner_user_id
+            and self._active_parent(event.application_id, owner_user_id)
+        ]
+        return ApplicationAnalyticsSourceState(
+            application_count=len(applications),
+            application_version_sum=sum(record.version for record in applications),
+            event_count=len(events),
+            max_application_updated_at=max(
+                (record.updated_at for record in applications),
+                default=None,
+            ),
+            max_event_created_at=max(
+                (event.created_at for event in events),
+                default=None,
+            ),
+        )
 
     async def list_application_milestones(
         self,
@@ -422,6 +468,19 @@ class MemoryApplicationWorkspace:
         if record is None or not self._active(record, owner_user_id):
             return None
         return deepcopy(self._summary(record))
+
+    async def get_application_reference(
+        self,
+        owner_user_id: UUID,
+        application_id: UUID,
+    ) -> ApplicationReference | None:
+        record = self.applications.get(application_id)
+        if record is None or not self._active(record, owner_user_id):
+            return None
+        return ApplicationReference(
+            application_id=record.id,
+            stage=record.stage,
+        )
 
     async def get_application_record(
         self,

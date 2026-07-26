@@ -1,8 +1,9 @@
 # CareerOS product requirements
 
 Status: baseline product contract  
-Version: 0.1  
-Last reviewed: 2026-07-14
+Version: 0.2
+
+Last reviewed: 2026-07-25
 
 ## Product definition
 
@@ -325,26 +326,41 @@ inconsistencies.
 Provide a Resume Defense Map, STAR story library, role questions, mock-session
 structure, notes/reflection, and grounded follow-up. Each important claim can link
 evidence, situation/task/action/result, personal contribution, metric explanation,
-likely questions, and confidence. Warn when a strong claim lacks a defensible story.
+likely questions, and confidence. Warn when a strong claim lacks a defensible
+story. Revalidate live canonical evidence eligibility and exact current revision
+pins before creating a new generated question bank or follow-up.
 
 ### Module 15 — Networking CRM (Phase 9)
 
 Store contacts, organizations, relationship stage, last/next contact, notes,
 referral state, templates, history, reminders, tags, and search/filter. Collection
-and outreach require consent; private contacts are not scraped.
+storage, and outreach require separate purpose-specific consent; private contacts
+are not scraped. Collection/storage withdrawal tombstones parent PII and all
+child personal/free-text content while retaining only required content-free
+consent/audit/queue state. Outreach-only withdrawal preserves private notes and
+inbound/mutual history that is neither template-linked nor referral-related
+while removing outbound/template/referral/reminder material.
 
 ### Module 16 — Career Growth (Phase 9)
 
 Provide goals, achievement history, skill-evidence view, promotion/internal-
 mobility preparation, review summaries, learning/certification tracking,
-quarterly/annual review, and an explainable career health score.
+quarterly/annual review, an annual resume-refresh workflow, and an explainable
+career health score. Promotion Readiness is a preparation report over current
+eligible evidence and owner-maintained records; it is not an employer decision,
+promotion probability, guarantee, or assessment of job-market value.
 
 ### Module 17 — Analytics (Phase 9)
 
 Show applications/stages, interviews/offers, response/interview/offer rates, role,
 industry/source, pinned resume-version patterns, requirement trends, achievement
 growth, and readiness history. Small cohorts show uncertainty/suppression where
-needed; analysis is correlation, never causal proof.
+needed; analysis is correlation, never causal proof. Reports define their
+cohort, numerator/denominator, event timestamp, selected IANA timezone, and
+suppression policy under a versioned metric definition. Achievement growth uses
+current canonical eligibility, event buckets stay within the selected application
+cohort, supplemental history is bounded, and freshness tracks the exact point set
+for the report's guarded source window.
 
 ### Module 18 — Settings and Privacy (Phases 1–10)
 
@@ -436,7 +452,10 @@ owning phase exits:
 - licensed role taxonomy and regional job-source policy (Phases 4–5);
 - AI provider/data residency, prompt retention, and per-plan cost budgets (Phase 6);
 - renderer/template licensing and critical round-trip thresholds (Phase 7);
-- contact consent/import policy and outcome cohort suppression (Phase 9);
+- contact consent/import policy and outcome cohort suppression (Phase 9;
+  resolved by ADR 0015: explicit owner attestation is recorded separately for
+  collection/storage/outreach, no contact is scraped or backfilled as consent,
+  and rates/averages are suppressed below five records);
 - pricing, payment provider, production regions, RPO/RTO, retention, support/admin
   access, and legal texts (Phase 10).
 

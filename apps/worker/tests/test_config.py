@@ -120,6 +120,43 @@ def test_document_limits_and_scanner_settings_are_bounded() -> None:
     assert settings.document_temp_root.as_posix() == "/tmp/careeros"  # noqa: S108
 
 
+def test_phase9_worker_policies_are_bounded_and_configurable() -> None:
+    settings = WorkerSettings.model_validate(
+        {
+            "environment": "test",
+            "analytics_max_attempts": 4,
+            "analytics_job_lease_seconds": 420,
+            "analytics_retry_seconds": 45,
+            "analytics_outbox_interval_seconds": 7,
+            "analytics_reconciliation_interval_seconds": 75,
+            "networking_reminder_lease_seconds": 90,
+            "networking_reminder_retry_seconds": 40,
+            "networking_reminder_interval_seconds": 35,
+            "networking_reconciliation_interval_seconds": 80,
+        }
+    )
+
+    assert settings.analytics_max_attempts == 4
+    assert settings.analytics_job_lease_seconds == 420
+    assert settings.analytics_outbox_interval_seconds == 7
+    assert settings.analytics_reconciliation_interval_seconds == 75
+    assert settings.networking_reminder_lease_seconds == 90
+    assert settings.networking_reminder_retry_seconds == 40
+    assert settings.networking_reminder_interval_seconds == 35
+    assert settings.networking_reconciliation_interval_seconds == 80
+
+
+def test_analytics_lease_must_outlive_worker_hard_timeout() -> None:
+    with pytest.raises(ValidationError, match="analytics lease"):
+        WorkerSettings.model_validate(
+            {
+                "environment": "test",
+                "task_time_limit_seconds": 300,
+                "analytics_job_lease_seconds": 300,
+            }
+        )
+
+
 @pytest.mark.parametrize(
     ("values", "message"),
     [

@@ -315,6 +315,87 @@ class WorkerSettings(BaseSettings):
             "ATTACHMENT_JOB_RECONCILIATION_STALE_SECONDS",
         ),
     )
+    analytics_max_attempts: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        validation_alias=AliasChoices(
+            "CAREEROS_ANALYTICS_MAX_ATTEMPTS",
+            "ANALYTICS_MAX_ATTEMPTS",
+        ),
+    )
+    analytics_job_lease_seconds: int = Field(
+        default=360,
+        ge=30,
+        le=3_600,
+        validation_alias=AliasChoices(
+            "CAREEROS_ANALYTICS_JOB_LEASE_SECONDS",
+            "ANALYTICS_JOB_LEASE_SECONDS",
+        ),
+    )
+    analytics_retry_seconds: int = Field(
+        default=30,
+        ge=1,
+        le=3_600,
+        validation_alias=AliasChoices(
+            "CAREEROS_ANALYTICS_RETRY_SECONDS",
+            "ANALYTICS_RETRY_SECONDS",
+        ),
+    )
+    analytics_outbox_interval_seconds: int = Field(
+        default=5,
+        ge=1,
+        le=300,
+        validation_alias=AliasChoices(
+            "CAREEROS_ANALYTICS_OUTBOX_INTERVAL_SECONDS",
+            "ANALYTICS_OUTBOX_INTERVAL_SECONDS",
+        ),
+    )
+    analytics_reconciliation_interval_seconds: int = Field(
+        default=60,
+        ge=10,
+        le=3_600,
+        validation_alias=AliasChoices(
+            "CAREEROS_ANALYTICS_RECONCILIATION_INTERVAL_SECONDS",
+            "ANALYTICS_RECONCILIATION_INTERVAL_SECONDS",
+        ),
+    )
+    networking_reminder_lease_seconds: int = Field(
+        default=120,
+        ge=15,
+        le=300,
+        validation_alias=AliasChoices(
+            "CAREEROS_NETWORKING_REMINDER_LEASE_SECONDS",
+            "NETWORKING_REMINDER_LEASE_SECONDS",
+        ),
+    )
+    networking_reminder_retry_seconds: int = Field(
+        default=30,
+        ge=1,
+        le=3_600,
+        validation_alias=AliasChoices(
+            "CAREEROS_NETWORKING_REMINDER_RETRY_SECONDS",
+            "NETWORKING_REMINDER_RETRY_SECONDS",
+        ),
+    )
+    networking_reminder_interval_seconds: int = Field(
+        default=30,
+        ge=10,
+        le=3_600,
+        validation_alias=AliasChoices(
+            "CAREEROS_NETWORKING_REMINDER_INTERVAL_SECONDS",
+            "NETWORKING_REMINDER_INTERVAL_SECONDS",
+        ),
+    )
+    networking_reconciliation_interval_seconds: int = Field(
+        default=60,
+        ge=10,
+        le=3_600,
+        validation_alias=AliasChoices(
+            "CAREEROS_NETWORKING_RECONCILIATION_INTERVAL_SECONDS",
+            "NETWORKING_RECONCILIATION_INTERVAL_SECONDS",
+        ),
+    )
     result_expires_seconds: int = Field(
         default=3600,
         ge=60,
@@ -375,6 +456,8 @@ class WorkerSettings(BaseSettings):
             raise ValueError("document expansion limit must not be lower than upload limit")
         if self.document_processing_timeout_seconds >= self.task_soft_time_limit_seconds:
             raise ValueError("document processing timeout must be lower than the task soft limit")
+        if self.analytics_job_lease_seconds <= self.task_time_limit_seconds:
+            raise ValueError("analytics lease must exceed the worker hard time limit")
         validate_database_url_for_environment(
             self.database_url.get_secret_value(),
             self.environment,

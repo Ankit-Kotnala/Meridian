@@ -1,7 +1,7 @@
 # CareerOS implementation checklist
 
 Status: living delivery checklist  
-Last reviewed: 2026-07-24
+Last reviewed: 2026-07-25
 
 This checklist expands `PLANS.md`. Check an item only when it is implemented in
 real application state and its required test passes. An interface, empty route,
@@ -115,9 +115,10 @@ earlier baseline evidence remains historical.
 
 ## Phase 1 — Authentication, Application Shell, and Onboarding
 
-Dependencies: Phase 0 green. Current status: complete. The consolidated local gate
-and hosted CI run `29367040183` passed all eight checks against Phase 1 evidence
-commit `baab8f7`.
+Dependencies: Phase 0 green. Current status: authentication, sessions, and the
+application shell are complete and hosted verified; full onboarding and Settings
+closure is reopened. The historical consolidated gate and hosted CI run
+`29367040183` passed all eight checks against Phase 1 evidence commit `baab8f7`.
 
 - [x] Add users/profiles, hashed session/refresh material, OAuth accounts,
       organization/membership extension, consent, and audit models/migrations.
@@ -136,10 +137,13 @@ commit `baab8f7`.
       TopBar, active state, command search/notifications placeholders only when honest.
 - [x] Convert dashboard from public fictional preview to protected real skeleton;
       retain a separate explicit demo path only if product approves.
-- [x] Implement resumable/skippable onboarding through account/guest choice,
-      upload handoff, parsed review handoff, role/preferences, and dashboard; defer
-      actual upload processing to Phase 2 without fake completion.
-- [x] Build Settings skeleton for profile/account/sessions/consent with real state.
+- [~] Complete resumable/skippable onboarding through account/guest choice,
+  upload, processing, typed parse review, role/preferences, and dashboard.
+  Honest handoff links exist, but onboarding does not yet observe and persist
+  the complete Phase 2 pipeline state.
+- [~] Complete Settings for profile, preferences, sessions, consent, notifications,
+  privacy/export/deletion, and account security. The current skeleton exposes
+  only part of that real state.
 - [x] Pass anonymous, cross-user, session rotation/replay/fixation, CSRF, OAuth
       collision, rate-limit, audit, keyboard, responsive, and e2e auth journey tests.
 
@@ -156,7 +160,9 @@ local gate. Exact closeout evidence and residual limitations live in `PLANS.md`.
 ## Phase 2 — Resume Upload, Parsing, and General Health
 
 Dependencies: Phase 1 identity/ownership; Phase 0 object/queue health. Current
-status: complete; local gates and hosted run `29378312134` pass.
+status: secure intake/extraction and generic canonical-block Resume Health v1 are
+complete and hosted verified; typed semantic parsing/review closure is reopened.
+Historical local gates and hosted run `29378312134` pass for that slice.
 
 - [x] Migration `20260715_0003` adds exactly-one-owner guest sessions, upload
       intents, source documents, derived artifacts, processing jobs/outbox/object
@@ -186,13 +192,11 @@ status: complete; local gates and hosted run `29378312134` pass.
       image-only detection behind extractor/OCR/scanner/storage ports. DOCX has only
       a nominal local page value because no renderer is present. OCR is a disabled
       optional port, so image-only input returns insufficient data.
-- [x] The parser creates canonical sections/blocks as immutable revision 1.
-      Optimistic `If-Match` correction creates a successor snapshot, retains the
-      extracted original and spans, rejects an all-no-op update, and emits an audit
-      event. The API applies separate correction/analysis rate classes; the domain
-      caps canonical revisions and analysis history per document. Resume mutation
-      headers constrain `Idempotency-Key` to 8-128 `[A-Za-z0-9._:-]` characters and
-      `If-Match` to a quoted positive `int4` value no greater than `2147483647`.
+- [~] Retain immutable source sections/blocks while adding typed semantic contact,
+  experience, education, project, skill, and certification values with exact
+  source anchors, explicit review state, date precision, stable IDs, immutable
+  successor snapshots, and typed correction/add/remove/reclassification
+  operations. The current optimistic correction edits generic block text only.
 - [x] Parse, analyze, and delete jobs use owner-scoped state, request hashes,
       idempotency, progress, cancellation, bounded retries, dead letter, safe
       errors, trace IDs, allowlisted Celery payloads, per-invocation fencing, and a
@@ -207,21 +211,26 @@ status: complete; local gates and hosted run `29378312134` pass.
       persisted `resume-health-features/1` values and weighted contributions, feature
       hash, exact golden expectations, findings, and no numeric value for image-only/
       sparse input.
-- [x] Account and one-document/24-hour guest web flows implement direct upload,
-      real progress/cancel, processing polling, empty/loading/success/error,
-      plain-text/reading-order review, source-preserving correction, analysis,
-      report, explicit consented account claim, and durable deletion. Same-page
-      ambiguous transfer/finalize retry reuses in-memory intent/idempotency state;
-      reload recovery and resumable file transfer are not implemented.
+- [~] Account and one-document/24-hour guest web flows implement direct upload,
+  real progress/cancel, processing polling, empty/loading/success/error,
+  plain-text/reading-order review, source-preserving correction, analysis,
+  report, explicit consented account claim, and durable deletion. A typed
+  semantic review UI, explicit no-change confirmation, and legacy-upgrade
+  workflow remain open. Same-page
+  ambiguous transfer/finalize retry reuses in-memory intent/idempotency state;
+  reload recovery and resumable file transfer are not implemented.
 - [x] Reports show the canonical score disclaimer, components, findings, parser
       warnings, stored measured values, and exact feature score/weight/contribution
       details in keyboard-operable, color-independent disclosures; they never claim
       an employer ATS score, hiring probability, or guarantee.
-- [x] Focused unit/component/API/worker/integration/E2E coverage exists for the
-      implemented fixture and threat matrix. The full format/lint/type/build,
-      migration round-trip, real PostgreSQL/Redis/MinIO/ClamAV, desktop/mobile
-      Playwright, container-policy, and separate security-scan gates pass; hosted CI
-      run `29378312134` passes all corresponding jobs.
+- [~] Focused unit/component/API/worker/integration/E2E coverage exists for the
+  implemented fixture and threat matrix. Add two-column, header/footer,
+  table-heavy, date-precision/locale, concurrent-role, unusual-font,
+  bidirectional-Unicode, and long-document golden/adversarial fixtures. The
+  historical full format/lint/type/build,
+  migration round-trip, real PostgreSQL/Redis/MinIO/ClamAV, desktop/mobile
+  Playwright, container-policy, and separate security-scan gates pass; hosted CI
+  run `29378312134` passes all corresponding jobs.
 
 Exit: supported fixtures parse and can be corrected; scores reproduce/explain;
 malformed/hostile input fails safely; guest retention and user ownership hold.
@@ -231,16 +240,24 @@ Closeout evidence and residual limitations are recorded in `PLANS.md`.
 ## Phase 3 — Career Profile, Evidence Vault, and Achievement Inbox
 
 Dependencies: Phase 1 ownership; Phase 2 canonical/source-span model. Current
-status: locally complete and hosted verified. The consolidated
+status: the evidence graph and core Career Record CRUD are locally complete and
+hosted verified; resume-ready semantic closure is reopened. The historical
 `scripts/verify-phase3.ps1` gate passed on 2026-07-19.
 
-- [x] Add career profile, experience/education/project/skill/credential/etc.
-      entities with ownership, constraints, source provenance, and concurrency.
+- [~] Complete resume-ready personal/contact facts and career entities with
+  ownership, constraints, explicit field/entity confirmation and provenance,
+  concurrency, and experience-project-achievement relationships. Core typed
+  entity CRUD exists, but this semantic closure is incomplete.
 - [x] Implement profile CRUD, timeline/list, accessible reorder, promotion and
       concurrent-role grouping, conflict detection, and neutral gap display.
-- [x] Import/correction proposes profile changes rather than overwriting truth.
+- [~] Import/correction proposes profile changes rather than overwriting truth;
+  consume the Phase 2 typed semantic sidecar instead of generic blocks.
 - [x] Add evidence item/source/attachment/skill/metric/link models and audited
       Verified/Confirmed/Supported/Inferred/Unsupported transition rules.
+- [x] Bind legacy whole-block `Supported` evidence to the immutable original
+      statement digest, restrict new exact-source records to statement-only
+      scope, and dynamically exclude mismatched legacy scope without rewriting
+      history.
 - [x] Implement evidence CRUD/confirm/archive, private attachments, experience/
       skill/requirement links, and downstream usage view.
 - [x] Enforce generation-eligibility query boundaries; unsupported/inferred/
@@ -352,30 +369,39 @@ blocked; material changes require user control; adversarial suite is green.
 
 Dependencies: Phases 2 and 6.
 
-- [x] Implement structured editor for fields/sections/bullets, accessible reorder,
-      evidence-backed additions, bounded typography/layout, autosave, page/plain-text/
-      recruiter previews, version comparison, and restore.
-- [x] Implement five accessible ATS-friendly single-column-first templates without
-      essential text boxes/header/footer/icon-only content; searchable predictable text.
-- [x] Add idempotent isolated PDF/DOCX/text/JSON render jobs pinned to immutable
-      versions, with private objects, hashes, status, timeout/retry/dead letter.
-- [x] Parse PDF/DOCX outputs again and compare all critical entities/bullets/order,
-      searchability, duplicates/omissions, reading order, and claim grounding.
+- [~] Complete structured field/section/bullet CRUD, accessible reorder,
+  evidence-backed additions, bounded typography/layout, conflict-safe autosave,
+  page/plain-text/recruiter previews, semantic version comparison, and restore.
+  The current slice supports title/target/template changes, section reorder/
+  clone, manual save, and a plain preview, but not the complete editor contract.
+- [~] Provide five distinct accessible ATS-friendly single-column-first templates
+  without essential text boxes/header/footer/icon-only content. Five
+  selectable IDs exist, but they currently share one renderer structure.
+- [~] Move idempotent PDF/DOCX/text/JSON rendering and verification to a durable
+  isolated worker with outbox dispatch, leases, bounded retries, dead letter,
+  and cleanup. The current service persists job-shaped state but executes the
+  work synchronously.
+- [~] Parse outputs again and make critical entity/bullet occurrence counts,
+  duplicates/omissions, reading order, searchability, and claim grounding
+  release-blocking through one canonical cross-format fidelity manifest.
 - [x] Store/show verification report; block critical failures and clearly warn on
       allowed noncritical failures before download.
 - [x] Provide short-lived ownership-checked download intents and complete deletion.
-- [x] Test all templates at one/two pages, supported fonts/layouts, round-trip
-      goldens, renderer isolation/injection, cross-user download, failure blocking,
-      immutable restore/history, keyboard/mobile approval, and accessibility.
+- [~] Complete one/two-page coverage for every distinct template, supported
+  fonts/layouts, occurrence/read-order goldens, renderer isolation/injection,
+  cross-user download, failure blocking, immutable restore/history,
+  keyboard/mobile approval, and accessibility.
 
 Exit: output is searchable and critical fields/claims survive round trip; unsafe
 or broken exports cannot masquerade as verified.
 
-Phase 7 implementation note: the vertical slice persists durable export job
-status, attempts, retry/dead-letter fields, hashes, object keys, and verification
-reports while executing the local deterministic render/verify step immediately in
-the application service. Moving that work to a Celery task is a scale/isolation
-hardening step, not a different product policy.
+Phase 7 implementation note: its locally and hosted-verified vertical slice
+persists export status, attempt/retry/dead-letter-shaped fields, hashes, object
+keys, and verification reports while executing the deterministic render/verify
+step immediately in the application service. That historical gate remains valid
+for the implemented slice, but durable worker execution, distinct layouts, and
+complete blocking fidelity comparisons are inherited Phase 10 release
+prerequisites rather than completed functionality.
 
 ## Phase 8 — Application Workspace and Application Packs
 
@@ -416,37 +442,82 @@ Phase 8 local closeout passed on 2026-07-24 for implementation revision
 and `121/121` web tests across 35 files, a 39-route production build, migration
 rollback/forward repair, integration/worker/container probes, and the complete
 desktop/mobile Application Workspace workflow. The separate security scan also
-passed; PR #21 workflow run `30126993025` passed every required hosted job at
-head `645536b`.
-Phase 9 is the next product phase.
+passed; PR #21 workflow runs `30126993025` and `30128304892` passed every
+required hosted job.
+Phase 9 is complete and hosted verified. PR #22 workflow run `30161489265`
+passed every required job at implementation/merge head `1454792`; exact evidence
+is recorded in `PLANS.md`.
 
 ## Phase 9 — Interview Prep, Networking, Career Growth, and Analytics
 
 Dependencies: Phases 3 and 8.
 
-- [ ] Build Resume Defense Map and STAR library linking claim/evidence,
+- [x] Build Resume Defense Map and STAR library linking claim/evidence,
       situation/task/action/result, personal contribution, metric explanation,
       follow-up questions, and confidence; warn on undefended strong claims.
-- [ ] Add role-specific question bank, mock session, notes/reflection, and grounded
-      follow-up generator.
-- [ ] Add consent-based contacts/organizations/stages, interactions, referrals,
-      reminders, tags/templates/search/filter; never scrape private contacts.
-- [ ] Add goals, achievements/skill evidence, promotion/internal mobility,
+- [x] Add role-specific question bank, mock session, notes/reflection, and grounded
+      follow-up generator; revalidate exact canonical evidence before every new
+      generated bank or follow-up while preserving immutable idempotent replay.
+- [x] Add consent-based contacts/organizations/stages, interactions, referrals,
+      reminders, tags/templates/search/filter; never scrape private contacts; make
+      collection/storage withdrawal a parent-and-child tombstone while preserving
+      only the permitted history for outreach-only withdrawal.
+- [x] Make consent policy identifiers server-owned wire enums with application
+      validation and a database allowlist so retained ledger rows cannot carry
+      user-authored PII.
+- [x] Add goals, achievements/skill evidence, promotion/internal mobility,
       review/learning/certification, quarterly review, annual refresh, and deterministic
       Career Health methodology.
-- [ ] Add application/interview/offer/rate/role/industry/source/version/readiness/
+- [x] Add application/interview/offer/rate/role/industry/source/version/readiness/
       achievement analytics with windows, cohort safeguards, and correlation-only text.
-- [ ] Test claim/story grounding, sensitive note/contact ownership and consent,
+- [x] Derive current eligible achievement history and skill-evidence coverage
+      from Career Record without persisting a second factual authority.
+- [x] Add a six-check non-predictive Promotion Readiness report and require
+      eligible evidence before completing certifications, annual refreshes, or
+      finalizing factual reviews.
+- [x] Add IANA-timezone application cohorts, versioned metric/cohort/timestamp/
+      suppression definitions, requirement-coverage trends, and observed outcomes
+      by exact immutable resume version; restrict event buckets to the selected
+      application cohort and bind freshness to the exact windowed supplemental point
+      set.
+- [x] Add migration `20260724_0010`, generated contracts, transactional analytics
+      outbox processing, UUID-only worker payloads, local-only reminder
+      occurrence/retry/dead-letter processing, and read-only safe execution status.
+- [x] Enforce owner/idempotency/parent locks, collection quotas, full contact-child
+      redaction, parent PII tombstones, purpose-bound cursors, trace propagation and
+      bounded safe reminder retention, exact Growth evidence provenance on every
+      link mutation, current-pin insight filtering and review chains, and Career
+      Health/Analytics snapshot hash validation. Return typed `429` quota and
+      declared `413` body-limit problems.
+- [x] Add complete accessible desktop/mobile workflows for all four Phase 9
+      workspaces with loading/empty/success/failure/conflict and request-race
+      handling.
+- [x] Test claim/story grounding, sensitive note/contact ownership and consent,
       reminder idempotency, score goldens, aggregation isolation, small cohorts,
       non-causal language, and accessible charts/tables/workflows.
+- [x] Publish the locally and security-verified final tree through hosted CI and
+      record the green workflow evidence in `PLANS.md`.
 
-Exit: every story links evidence/claims; contact consent holds; analytics are
-privacy-safe, reproducible, and never causal or predictive.
+Exit: every ready/generated factual story field links exact eligible
+claims/evidence and every new generated artifact revalidates its pins (incomplete
+drafts remain explicitly non-ready); contact consent, parent tombstoning, and
+purpose-specific redaction hold; Growth factual finalization and live insight
+checks remain exact-current and evidence-backed; and analytics are bounded,
+privacy-safe, reproducible, timezone-specific, exact-cohort, and never causal or
+predictive.
 
 ## Phase 10 — Billing, Admin, Security Hardening, and Production Release
 
 Dependencies: all product phases and production/legal decisions.
 
+- [ ] Close the inherited Resume Builder release gaps: durable outbox-backed
+      render/verify workers with fast `202` acceptance and reload-safe polling,
+      distinct constrained layouts, a canonical cross-format fidelity manifest,
+      release-blocking occurrence/read-order/searchability/grounding checks, and
+      durable object-cleanup/deletion state.
+- [ ] Replace the preview-only `make seed` behavior with an idempotent,
+      explicitly fictional, local-only database/object-store seed spanning every
+      implemented phase, guarded so it cannot run against production.
 - [ ] Store Free/Sprint/Pro/Coach plan entitlements/quotas centrally; no scattered
       prices. Implement billing adapter, checkout/portal, signed raw webhook validation,
       event idempotency/order/state, reconciliation, and test provider.

@@ -4,7 +4,7 @@ from uuid import uuid4
 
 import pytest
 
-from careeros_worker.payloads import parse_job_payload
+from careeros_worker.payloads import parse_identifier_payload, parse_job_payload
 
 
 def test_valid_job_and_trace_ids_are_normalized() -> None:
@@ -14,6 +14,12 @@ def test_valid_job_and_trace_ids_are_normalized() -> None:
 
     assert parsed == job_id
     assert trace_id == "a" * 32
+
+
+def test_identifier_only_payload_accepts_exactly_one_canonical_uuid() -> None:
+    job_id = uuid4()
+
+    assert parse_identifier_payload(str(job_id)) == job_id
 
 
 @pytest.mark.parametrize(

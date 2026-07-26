@@ -1,5 +1,10 @@
 """Public Role Readiness application contract."""
 
+from ..domain import (
+    RoleReadinessError,
+    RoleReadinessUnavailable,
+    RoleReadinessValidationError,
+)
 from .models import (
     AnalysisRecord,
     AnalyzeRoleReadiness,
@@ -10,6 +15,9 @@ from .models import (
     RoleComparisonView,
     RoleDetail,
     RoleFilter,
+    RoleReadinessAnalyticsPoint,
+    RoleReadinessAnalyticsSourceState,
+    RoleReadinessAnalyticsWatermark,
     RoleReadinessView,
     SavedRoleView,
     SaveRole,
@@ -37,10 +45,16 @@ __all__ = [
     "RoleComparisonView",
     "RoleDetail",
     "RoleFilter",
+    "RoleReadinessAnalyticsPoint",
+    "RoleReadinessAnalyticsSourceState",
+    "RoleReadinessAnalyticsWatermark",
+    "RoleReadinessError",
     "RoleReadinessPolicy",
     "RoleReadinessService",
+    "RoleReadinessUnavailable",
     "RoleReadinessUnitOfWork",
     "RoleReadinessUnitOfWorkFactory",
+    "RoleReadinessValidationError",
     "RoleReadinessView",
     "SaveRole",
     "SavedRoleView",

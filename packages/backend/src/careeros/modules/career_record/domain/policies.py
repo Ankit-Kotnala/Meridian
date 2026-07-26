@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
+from hashlib import sha256
 from itertools import pairwise
 from uuid import UUID
 
@@ -148,6 +149,12 @@ def initial_strength(
     if exact_span_validated:
         raise CareerRecordValidationError("only exact-source input can carry validated span status")
     return EvidenceStrength.INFERRED
+
+
+def exact_claim_sha256(value: str) -> bytes:
+    """Hash an exact v1 source claim after removing boundary whitespace only."""
+
+    return sha256(value.strip().encode("utf-8")).digest()
 
 
 def initial_revision(
@@ -385,6 +392,7 @@ def evidence_eligibility(
     attachments: Sequence[EvidenceAttachment],
     conflicts: Sequence[EvidenceConflict],
     source_availability: Mapping[UUID, bool],
+    source_scope_validity: Mapping[UUID, bool],
     authorized_owner_user_id: UUID,
 ) -> EligibilityDecision:
     """Apply the sole deterministic downstream evidence-selection boundary."""
@@ -409,11 +417,18 @@ def evidence_eligibility(
     ]
     if sources and not any(effective_available):
         factual_reasons.append("source_unavailable")
-    if revision.strength is EvidenceStrength.SUPPORTED and not any(
-        source.exact_span_validated and effective_available[index]
-        for index, source in enumerate(sources)
-    ):
-        factual_reasons.append("supported_scope_unavailable")
+    if revision.strength is EvidenceStrength.SUPPORTED:
+        supported_sources = [
+            source.exact_span_validated and effective_available[index]
+            for index, source in enumerate(sources)
+        ]
+        if not any(supported_sources):
+            factual_reasons.append("supported_scope_unavailable")
+        elif not any(
+            supported and source_scope_validity.get(source.id, False)
+            for supported, source in zip(supported_sources, sources, strict=True)
+        ):
+            factual_reasons.append("supported_scope_mismatch")
     if any(attachment.status is not AttachmentStatus.CLEAN for attachment in attachments):
         factual_reasons.append("attachment_not_clean")
     numeric_reasons = list(factual_reasons)

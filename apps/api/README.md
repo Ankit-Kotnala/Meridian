@@ -1,8 +1,12 @@
 # CareerOS API
 
-Thin FastAPI delivery service for the shared CareerOS backend. Phase 1 composes
-the identity, account, consent, session, Google OAuth, and onboarding application
-services without moving domain or persistence ownership into the deployable.
+Thin FastAPI delivery service for the shared CareerOS backend. It composes the
+implemented identity, Resume Health, Career Record, Role Explorer, Job Match,
+Change Studio, Resume Builder, Application Workspace, Interview Prep,
+Networking, Career Growth, and Career Analytics application services without
+moving domain or persistence ownership into the deployable. FastAPI schemas are
+the OpenAPI source of truth; domain rules and repositories remain in
+`packages/backend`.
 
 ## Local commands
 
@@ -16,9 +20,10 @@ uv run mypy src tests
 uv run pytest
 ```
 
-Run the real PostgreSQL/Redis identity integrations and full browser workflow from
-the repository root with `.\scripts\verify-phase1.ps1` on PowerShell or
-`tests/e2e/run-compose.sh` in a POSIX environment.
+Run the complete current integration and browser portfolio from the repository
+root with `.\scripts\verify-phase9.ps1` on PowerShell or
+`CAREEROS_E2E_PHASE=9 tests/e2e/run-compose.sh` in a POSIX environment. Focused
+API tests remain credential-free through deterministic/local adapters.
 
 Migrations are owned by `packages/backend`. From the repository root, run
 `uv run --package careeros-backend alembic -c packages/backend/alembic.ini upgrade head`.
@@ -29,10 +34,15 @@ rejects debug mode, wildcard trusted hosts, and the known development database
 credential. Database URLs are represented as secrets and are never returned by
 the metadata endpoint.
 
-Alembic uses the same validated database setting as the API. The initial migration
-enables the `vector` PostgreSQL extension. Migration `20260715_0002` adds Phase 1
-identity/session/account tables and can downgrade to the foundation revision
-before a forward repair.
+Alembic uses the same validated database setting as the API. The initial
+migration enables the `vector` PostgreSQL extension. The current Phase 9 head is
+`20260724_0010`; it adds the Interview Prep, Networking, Career Growth, and
+Career Analytics tables after Phase 8 head `20260724_0009`. Migration lifecycle,
+rollback/forward-repair, and pre-release Phase 8 compatibility tests run through
+the Phase 9 verifier. All four Phase 9 route families declare the shared safe
+`413` streamed-body response and a typed `429` collection-quota response. Their
+domain handlers keep quota exhaustion distinct from validation, version, and
+idempotency conflicts.
 
 Operational endpoints:
 
@@ -42,8 +52,11 @@ Operational endpoints:
 - `GET /api/v1/meta` returns non-sensitive service metadata and the required
   scoring disclaimer.
 
-The authoritative implemented identity surface is the generated OpenAPI document.
-It includes registration/verification, login/refresh/logout/recovery, session
-management, Google OAuth, `/me`, onboarding, and consent operations. Browser
-sessions use HTTP-only cookies plus session-bound CSRF and origin checks; token or
-credential values must never be logged. See `docs/api.md` and ADR 0008.
+The implemented FastAPI schemas are authoritative. The normalized OpenAPI
+document under `packages/contracts/openapi` and the generated TypeScript schema
+are committed review artifacts and must not be hand-edited. Browser sessions use
+HTTP-only cookies plus session-bound CSRF and origin checks. Owner-scoped private
+reads are `no-store`; mutations use CSRF, idempotency keys, and quoted versions
+where defined. Token, credential, resume, evidence, contact, note, and
+generated-content values must never enter request logs. See `docs/api.md` and the
+ADR index.

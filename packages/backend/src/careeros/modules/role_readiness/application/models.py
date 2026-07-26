@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import base64
 import binascii
+import hashlib
 import json
 from dataclasses import dataclass
+from datetime import datetime
 from uuid import UUID
 
 from careeros.modules.role_readiness.domain import (
@@ -149,6 +151,66 @@ class RoleComparisonEntry:
 class RoleComparisonView:
     entries: tuple[RoleComparisonEntry, ...]
     note: str
+
+
+@dataclass(frozen=True, slots=True)
+class RoleReadinessAnalyticsPoint:
+    """Content-free role-readiness history exposed to Phase 9 analytics."""
+
+    analysis_id: UUID
+    role_label: str
+    raw_score_basis_points: int | None
+    label: str
+    engine_version: str
+    created_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class RoleReadinessAnalyticsSourceState:
+    record_count: int
+    role_version_sum: int
+    max_analysis_created_at: datetime | None
+    max_role_updated_at: datetime | None
+
+    def watermark(self) -> RoleReadinessAnalyticsWatermark:
+        payload = {
+            "maxAnalysisCreatedAt": (
+                self.max_analysis_created_at.isoformat()
+                if self.max_analysis_created_at is not None
+                else None
+            ),
+            "maxRoleUpdatedAt": (
+                self.max_role_updated_at.isoformat()
+                if self.max_role_updated_at is not None
+                else None
+            ),
+            "recordCount": self.record_count,
+            "roleVersionSum": self.role_version_sum,
+            "v": 1,
+        }
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        return RoleReadinessAnalyticsWatermark(
+            token=f"sha256:{hashlib.sha256(encoded).hexdigest()}",
+            record_count=self.record_count,
+            max_updated_at=max(
+                (
+                    value
+                    for value in (
+                        self.max_analysis_created_at,
+                        self.max_role_updated_at,
+                    )
+                    if value is not None
+                ),
+                default=None,
+            ),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class RoleReadinessAnalyticsWatermark:
+    token: str
+    record_count: int
+    max_updated_at: datetime | None
 
 
 def importance_weight(value: CompetencyImportance) -> int:

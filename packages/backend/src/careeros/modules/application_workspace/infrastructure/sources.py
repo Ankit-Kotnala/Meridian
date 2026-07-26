@@ -6,6 +6,7 @@ import hashlib
 from uuid import UUID
 
 from careeros.modules.application_workspace.application import (
+    ApplicationInterviewEvidenceReference,
     ApplicationJobSnapshot,
     ApplicationResumeSnapshot,
     ApplicationSourceClaim,
@@ -17,10 +18,13 @@ from careeros.modules.application_workspace.domain import (
     ApplicationRequirementSupport,
     ApplicationWorkspaceConflict,
     ApplicationWorkspaceNotFound,
+    ApplicationWorkspaceUnavailable,
 )
 from careeros.modules.career_record.application import (
+    CareerRecordError,
     CareerRecordNotFound,
     CareerRecordService,
+    CareerRecordUnavailable,
 )
 from careeros.modules.job_match.application import JobMatchNotFound, JobMatchService
 from careeros.modules.resume_builder.application import (
@@ -239,3 +243,62 @@ class CareerRecordApplicationEvidenceSnapshotProvider:
         if set(unique_ids) != {pin.evidence_id for pin in pins}:
             raise ApplicationWorkspaceConflict("resume evidence snapshot is incomplete")
         return tuple(pins)
+
+    async def validate_current(
+        self,
+        owner_user_id: UUID,
+        references: tuple[ApplicationInterviewEvidenceReference, ...],
+    ) -> None:
+        """Apply live canonical eligibility and require the exact current revision."""
+
+        references_by_id: dict[UUID, ApplicationInterviewEvidenceReference] = {}
+        for reference in references:
+            existing = references_by_id.get(reference.evidence_id)
+            if existing is not None and existing != reference:
+                raise ApplicationWorkspaceConflict(
+                    "interview evidence references disagree on an exact revision"
+                )
+            references_by_id.setdefault(reference.evidence_id, reference)
+        if not references_by_id:
+            return
+
+        try:
+            snapshots = await self._service.get_evidence_batch_with_eligibility(
+                owner_user_id,
+                tuple(references_by_id),
+            )
+        except CareerRecordNotFound as exc:
+            raise ApplicationWorkspaceConflict("interview evidence is no longer available") from exc
+        except CareerRecordUnavailable as exc:
+            raise ApplicationWorkspaceUnavailable from exc
+        except CareerRecordError as exc:
+            raise ApplicationWorkspaceConflict(
+                "interview evidence eligibility could not be verified"
+            ) from exc
+
+        records_by_id = {record.item.id: (record, decision) for record, decision in snapshots}
+        if set(records_by_id) != set(references_by_id):
+            raise ApplicationWorkspaceConflict(
+                "interview evidence eligibility snapshot is incomplete"
+            )
+
+        for evidence_id, reference in references_by_id.items():
+            record, decision = records_by_id[evidence_id]
+            revision = record.revision
+            statement_sha256 = hashlib.sha256(revision.statement.encode("utf-8")).hexdigest()
+            if not decision.eligible:
+                raise ApplicationWorkspaceConflict(
+                    "interview evidence is no longer eligible for generation"
+                )
+            if (
+                revision.id != reference.evidence_revision_id
+                or revision.evidence_id != reference.evidence_id
+                or record.item.current_revision != reference.revision_number
+                or revision.revision != reference.revision_number
+                or statement_sha256 != reference.statement_sha256
+                or revision.strength.value != reference.strength
+                or revision.has_numeric_claim is not reference.has_numeric_claim
+            ):
+                raise ApplicationWorkspaceConflict(
+                    "interview evidence pin does not match the exact current revision"
+                )

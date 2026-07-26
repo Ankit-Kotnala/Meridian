@@ -275,7 +275,11 @@ def provenance_from_proposal(proposal: ImportProposal, *, available: bool) -> Pr
     return ProvenanceResponse(
         id=uuid5(NAMESPACE_URL, f"careeros:proposal-source:{proposal.id}"),
         source_type="resume",
-        source_label="Reviewed resume source",
+        source_label=(
+            "Legacy resume context — owner-reviewed, not field-validated"
+            if proposal.status.value == "accepted"
+            else "Legacy resume context — needs semantic review"
+        ),
         source_document_id=value.document_id,
         source_snapshot_id=value.snapshot_id,
         source_revision=value.snapshot_revision,

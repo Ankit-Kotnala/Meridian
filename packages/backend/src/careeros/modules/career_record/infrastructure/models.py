@@ -321,6 +321,13 @@ class EvidenceRevisionModel(Base):
         ),
         UniqueConstraint("owner_user_id", "id", name="uq_evidence_revisions_owner_id"),
         UniqueConstraint(
+            "owner_user_id",
+            "evidence_id",
+            "id",
+            name="uq_evidence_revisions_owner_evidence_id",
+            info={"introduced_in_revision": "20260724_0010"},
+        ),
+        UniqueConstraint(
             "owner_user_id", "evidence_id", "revision", name="uq_evidence_revisions_number"
         ),
         Index(

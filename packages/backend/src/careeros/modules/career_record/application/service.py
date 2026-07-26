@@ -7,7 +7,8 @@ import hashlib
 import re
 from contextlib import suppress
 from dataclasses import dataclass, replace
-from datetime import datetime
+from datetime import date, datetime
+from hmac import compare_digest
 from uuid import UUID
 
 from careeros.modules.career_record.domain import (
@@ -54,6 +55,7 @@ from careeros.modules.career_record.domain import (
     Skill,
     VerificationDecision,
     evidence_eligibility,
+    exact_claim_sha256,
     initial_revision,
     material_revision,
     reorder_entities,
@@ -64,6 +66,8 @@ from careeros.modules.career_record.domain import (
 from .models import (
     CareerEntityData,
     CareerProfileView,
+    CareerRecordAnalyticsGrowthPoint,
+    CareerRecordAnalyticsWatermark,
     CareerRecordReadinessSnapshot,
     CreateAchievement,
     CreateCareerProfile,
@@ -99,6 +103,10 @@ from .ports import (
 )
 
 _IDEMPOTENCY_KEY = re.compile(r"^[A-Za-z0-9._:-]{8,128}$")
+# Career Analytics accepts a public 3,650-day delta and expands both ends by
+# one UTC day so every IANA timezone boundary is represented. This internal
+# source-only limit is therefore intentionally two days wider.
+_ANALYTICS_SOURCE_MAX_WINDOW_DAYS = 3_652
 
 
 @dataclass(frozen=True, slots=True)
@@ -850,11 +858,23 @@ class CareerRecordService:
         self._authorize(owner_user_id, context)
         self._validate_evidence_sources(command)
         validated_source = (
-            await self._resolve_source(owner_user_id, command.resume_source)
+            await self._resolve_source(
+                owner_user_id,
+                command.resume_source,
+                expected_claim=command.statement,
+            )
             if command.resume_source is not None
             else None
         )
-        exact_span = command.input_kind is EvidenceInputKind.EXACT_SOURCE_SPAN
+        exact_span = (
+            command.input_kind is EvidenceInputKind.EXACT_SOURCE_SPAN
+            and validated_source is not None
+        )
+        title = (
+            validated_source.review_excerpt[:300]
+            if exact_span and validated_source is not None
+            else command.title
+        )
         now = self._clock.now()
         evidence_id = self._ids.new()
         revision = initial_revision(
@@ -862,7 +882,7 @@ class CareerRecordService:
             owner_user_id=owner_user_id,
             evidence_id=evidence_id,
             evidence_type=command.evidence_type,
-            title=command.title,
+            title=title,
             statement=command.statement,
             context=command.context,
             organization=command.organization,
@@ -1474,6 +1494,63 @@ class CareerRecordService:
             if decision.eligible:
                 eligible.append(refreshed)
         return tuple(eligible)
+
+    async def list_analytics_growth(
+        self,
+        owner_user_id: UUID,
+        *,
+        window_start: date,
+        window_end: date,
+    ) -> tuple[CareerRecordAnalyticsGrowthPoint, ...]:
+        """Return current policy-eligible achievement milestones without evidence text."""
+
+        if (
+            window_end < window_start
+            or (window_end - window_start).days > _ANALYTICS_SOURCE_MAX_WINDOW_DAYS
+        ):
+            raise CareerRecordValidationError(
+                "analytics source window exceeds the bounded timezone guard"
+            )
+        async with self._uow() as uow:
+            candidates = await uow.list_analytics_growth(
+                owner_user_id,
+                window_start,
+                window_end,
+                self._policy.max_evidence + 1,
+            )
+            if len(candidates) > self._policy.max_evidence:
+                raise CareerRecordValidationError(
+                    "analytics achievement source exceeded its bounded history"
+                )
+            records = await uow.get_evidence_batch(
+                owner_user_id,
+                tuple(candidate.evidence_id for candidate in candidates),
+            )
+        records_by_id = {record.item.id: record for record in records}
+        eligible: list[CareerRecordAnalyticsGrowthPoint] = []
+        for candidate in candidates:
+            record = records_by_id.get(candidate.evidence_id)
+            if (
+                record is None
+                or record.revision.id != candidate.evidence_revision_id
+                or record.revision.evidence_type is not EvidenceType.ACHIEVEMENT
+                or candidate.category != EvidenceType.ACHIEVEMENT.value
+            ):
+                raise CareerRecordValidationError(
+                    "analytics achievement source changed during selection"
+                )
+            decision, _refreshed = await self._evaluate_record(owner_user_id, record)
+            if decision.eligible:
+                eligible.append(candidate)
+        return tuple(eligible)
+
+    async def analytics_watermark(
+        self,
+        owner_user_id: UUID,
+    ) -> CareerRecordAnalyticsWatermark:
+        async with self._uow() as uow:
+            state = await uow.get_analytics_source_state(owner_user_id)
+        return state.watermark()
 
     async def readiness_snapshot(
         self, owner_user_id: UUID, *, evidence_limit: int = 100
@@ -2150,9 +2227,17 @@ class CareerRecordService:
         )
 
     async def _resolve_source(
-        self, owner_user_id: UUID, locator: ResumeSourceLocator
+        self,
+        owner_user_id: UUID,
+        locator: ResumeSourceLocator,
+        *,
+        expected_claim: str | None = None,
     ) -> ValidatedResumeSource:
-        source = await self._resume_sources.resolve_exact_span(owner_user_id, locator)
+        source = await self._resume_sources.resolve_exact_span(
+            owner_user_id,
+            locator,
+            expected_claim,
+        )
         if source is None:
             raise CareerRecordSourceUnavailable("source span is unavailable or unauthorized")
         if (
@@ -2162,6 +2247,13 @@ class CareerRecordService:
             or source.page != locator.page
             or source.start_offset != locator.start_offset
             or source.end_offset != locator.end_offset
+            or (
+                expected_claim is not None
+                and not compare_digest(
+                    exact_claim_sha256(expected_claim),
+                    source.source_sha256,
+                )
+            )
         ):
             raise CareerRecordSourceUnavailable("source query returned a mismatched span")
         if not await self._resume_sources.is_available(owner_user_id, source):
@@ -2209,6 +2301,20 @@ class CareerRecordService:
             if command.resume_source is None or command.external_url_source is not None:
                 raise CareerRecordValidationError(
                     "resume-derived evidence requires exactly one resume source"
+                )
+            if command.input_kind is EvidenceInputKind.EXACT_SOURCE_SPAN and (
+                command.evidence_type is not EvidenceType.RESUME_STATEMENT
+                or command.context is not None
+                or command.organization is not None
+                or command.project is not None
+                or command.start_date is not None
+                or command.end_date is not None
+                or command.metrics
+                or command.entity_ids
+                or command.skill_ids
+            ):
+                raise CareerRecordValidationError(
+                    "exact resume evidence is limited to the exact source statement"
                 )
             return
         if command.input_kind is not EvidenceInputKind.MANUAL:
@@ -2494,28 +2600,98 @@ class CareerRecordService:
         present = [f"{label}: {value}" for label, value in answers if value is not None]
         return "\n".join(present) or None
 
-    async def _source_available(self, owner_user_id: UUID, source: EvidenceSource) -> bool:
+    async def _source_state(
+        self,
+        owner_user_id: UUID,
+        source: EvidenceSource,
+        expected_claim: str,
+    ) -> tuple[bool, bool]:
         if source.kind is EvidenceSourceKind.RESUME:
             if source.provenance is None:
-                return False
-            return await self._resume_sources.is_available(
-                owner_user_id, self._validated_source(source.provenance)
+                return False, False
+            persisted = self._validated_source(source.provenance)
+            available = await self._resume_sources.is_available(owner_user_id, persisted)
+            if not available:
+                return False, True
+            if not source.exact_span_validated:
+                return True, True
+            if not compare_digest(
+                exact_claim_sha256(expected_claim),
+                source.provenance.source_sha256,
+            ):
+                return True, False
+            locator = ResumeSourceLocator(
+                document_id=source.provenance.document_id,
+                snapshot_id=source.provenance.snapshot_id,
+                block_id=source.provenance.block_id,
+                page=source.provenance.page,
+                start_offset=source.provenance.start_offset,
+                end_offset=source.provenance.end_offset,
+            )
+            resolved = await self._resume_sources.resolve_exact_span(
+                owner_user_id,
+                locator,
+                expected_claim,
+            )
+            return (
+                True,
+                resolved is not None and resolved.provenance() == source.provenance,
             )
         if source.kind is EvidenceSourceKind.ATTACHMENT:
             if source.attachment_id is None or self._attachments is None:
-                return False
+                return False, True
             return (
-                await self._attachments.status(owner_user_id, source.attachment_id)
-                is AttachmentStatus.CLEAN
+                (
+                    await self._attachments.status(owner_user_id, source.attachment_id)
+                    is AttachmentStatus.CLEAN
+                ),
+                True,
             )
-        return source.available
+        return source.available, True
+
+    @staticmethod
+    def _supported_shape_valid(record: EvidenceRecord) -> bool:
+        revision = record.revision
+        return (
+            revision.evidence_type is EvidenceType.RESUME_STATEMENT
+            and revision.title == revision.statement.strip()[:300]
+            and revision.context is None
+            and revision.organization is None
+            and revision.project is None
+            and revision.start_date is None
+            and revision.end_date is None
+            and not record.metrics
+            and not record.entity_ids
+            and not record.skill_ids
+        )
 
     async def _evaluate_record(
         self, owner_user_id: UUID, record: EvidenceRecord
     ) -> tuple[EligibilityDecision, EvidenceRecord]:
-        source_availability = {
-            source.id: await self._source_available(owner_user_id, source)
+        source_states = {
+            source.id: await self._source_state(
+                owner_user_id,
+                source,
+                record.revision.statement,
+            )
             for source in record.sources
+        }
+        source_availability = {source_id: state[0] for source_id, state in source_states.items()}
+        exact_shape_valid = (
+            record.revision.strength is not EvidenceStrength.SUPPORTED
+            or self._supported_shape_valid(record)
+        )
+        source_scope_validity = {
+            source.id: (
+                state[1]
+                and (
+                    exact_shape_valid
+                    or not source.exact_span_validated
+                    or source.kind is not EvidenceSourceKind.RESUME
+                )
+            )
+            for source in record.sources
+            for state in (source_states[source.id],)
         }
         attachments: list[EvidenceAttachment] = []
         for attachment in record.attachments:
@@ -2534,6 +2710,7 @@ class CareerRecordService:
             attachments=attachments,
             conflicts=record.conflicts,
             source_availability=source_availability,
+            source_scope_validity=source_scope_validity,
             authorized_owner_user_id=owner_user_id,
         )
         return decision, replace(

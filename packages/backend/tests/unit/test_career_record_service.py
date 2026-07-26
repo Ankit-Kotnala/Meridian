@@ -1,7 +1,7 @@
 """Application-level Phase 3 tests using only deterministic inward ports."""
 
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from uuid import UUID, uuid4
 
@@ -49,6 +49,7 @@ from careeros.modules.career_record.domain import (
     TimelineFindingKind,
     VerificationDecision,
     VerificationMethod,
+    exact_claim_sha256,
 )
 
 NOW = datetime(2026, 7, 15, 12, tzinfo=UTC)
@@ -116,7 +117,7 @@ def _validated_source() -> tuple[ResumeSourceLocator, ValidatedResumeSource]:
         page=1,
         start_offset=10,
         end_offset=40,
-        source_sha256=b"s" * 32,
+        source_sha256=exact_claim_sha256("Built a deterministic reporting workflow."),
         review_excerpt="Built a deterministic reporting workflow.",
     )
     return locator, source
@@ -279,6 +280,124 @@ async def test_deleted_resume_blocks_pending_proposal_and_supported_eligibility(
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "spoofed_statement",
+    [
+        "Built a deterministic reporting Workflow.",
+        "Built 2 deterministic reporting workflows.",
+        "Built a deterministic reporting workflow!",
+        "Built a  deterministic reporting workflow.",
+        "Built a deterministic reporting workflow. Extra claim.",
+        "deterministic reporting workflow",
+    ],
+)
+async def test_exact_resume_evidence_rejects_any_nonexact_claim_without_persistence(
+    spoofed_statement: str,
+) -> None:
+    owner = uuid4()
+    memory = MemoryCareerRecord()
+    sources = FakeResumeSourceQuery()
+    service = _service(memory, sources)
+    locator, source = _validated_source()
+    sources.add(owner, source)
+
+    with pytest.raises(CareerRecordSourceUnavailable):
+        await service.create_evidence(
+            owner,
+            CreateEvidence(
+                evidence_type=EvidenceType.RESUME_STATEMENT,
+                title="Client-controlled title",
+                statement=spoofed_statement,
+                input_kind=EvidenceInputKind.EXACT_SOURCE_SPAN,
+                resume_source=locator,
+            ),
+            _context(owner),
+        )
+
+    assert memory.evidence == {}
+    assert memory.audits == []
+
+
+@pytest.mark.asyncio
+async def test_exact_resume_evidence_is_statement_only_and_derives_its_title() -> None:
+    owner = uuid4()
+    memory = MemoryCareerRecord()
+    sources = FakeResumeSourceQuery()
+    service = _service(memory, sources)
+    locator, source = _validated_source()
+    sources.add(owner, source)
+
+    exact = await service.create_evidence(
+        owner,
+        CreateEvidence(
+            evidence_type=EvidenceType.RESUME_STATEMENT,
+            title="Untrusted client label",
+            statement="  Built a deterministic reporting workflow.  ",
+            input_kind=EvidenceInputKind.EXACT_SOURCE_SPAN,
+            resume_source=locator,
+        ),
+        _context(owner),
+    )
+
+    assert exact.revision.title == exact.revision.statement
+    assert exact.revision.strength is EvidenceStrength.SUPPORTED
+    assert (await service.evaluate_evidence(owner, exact.item.id)).eligible
+
+    with pytest.raises(CareerRecordValidationError):
+        await service.create_evidence(
+            owner,
+            CreateEvidence(
+                evidence_type=EvidenceType.ACHIEVEMENT,
+                title="Injected metadata",
+                statement=source.review_excerpt,
+                organization="Unproven organization",
+                input_kind=EvidenceInputKind.EXACT_SOURCE_SPAN,
+                resume_source=locator,
+                skill_ids=(uuid4(),),
+            ),
+            _context(owner),
+        )
+
+
+@pytest.mark.asyncio
+async def test_legacy_supported_claim_mismatch_is_readable_but_ineligible() -> None:
+    owner = uuid4()
+    memory = MemoryCareerRecord()
+    sources = FakeResumeSourceQuery()
+    service = _service(memory, sources)
+    locator, source = _validated_source()
+    sources.add(owner, source)
+    exact = await service.create_evidence(
+        owner,
+        CreateEvidence(
+            evidence_type=EvidenceType.RESUME_STATEMENT,
+            title="Ignored",
+            statement=source.review_excerpt,
+            input_kind=EvidenceInputKind.EXACT_SOURCE_SPAN,
+            resume_source=locator,
+        ),
+        _context(owner),
+    )
+    spoofed_revision = replace(
+        exact.revision,
+        title="Kubernetes",
+        statement="Led an unrelated Kubernetes migration.",
+    )
+    memory.evidence[exact.item.id] = replace(
+        exact,
+        revision=spoofed_revision,
+        revisions=(spoofed_revision,),
+    )
+
+    stored = await service.get_evidence(owner, exact.item.id)
+    decision = await service.evaluate_evidence(owner, exact.item.id)
+
+    assert stored.revision.strength is EvidenceStrength.SUPPORTED
+    assert not decision.eligible
+    assert "supported_scope_mismatch" in decision.reason_codes
+
+
+@pytest.mark.asyncio
 async def test_manual_and_url_evidence_remain_inferred_until_owner_confirmation() -> None:
     owner = uuid4()
     memory = MemoryCareerRecord()
@@ -301,6 +420,81 @@ async def test_manual_and_url_evidence_remain_inferred_until_owner_confirmation(
     )
     assert confirmed.revision.strength is EvidenceStrength.CONFIRMED
     assert (await service.evaluate_evidence(owner, record.item.id)).factual_eligible
+
+
+@pytest.mark.asyncio
+async def test_analytics_growth_uses_canonical_eligibility_and_achievement_type() -> None:
+    owner = uuid4()
+    memory = MemoryCareerRecord()
+    service = _service(memory, FakeResumeSourceQuery())
+    achievement = await service.create_evidence(
+        owner,
+        CreateEvidence(
+            evidence_type=EvidenceType.ACHIEVEMENT,
+            title="Fictional delivery milestone",
+            statement="Completed the explicitly supported delivery milestone.",
+        ),
+        _context(owner),
+    )
+    confirmed = await service.confirm_evidence(
+        owner,
+        achievement.item.id,
+        achievement.item.version,
+        _context(owner),
+    )
+    note = await service.create_evidence(
+        owner,
+        CreateEvidence(
+            evidence_type=EvidenceType.NOTE,
+            title="Fictional note",
+            statement="Captured a confirmed note that is not an achievement.",
+        ),
+        _context(owner),
+    )
+    await service.confirm_evidence(
+        owner,
+        note.item.id,
+        note.item.version,
+        _context(owner),
+    )
+
+    eligible = await service.list_analytics_growth(
+        owner,
+        window_start=date(2026, 1, 1),
+        window_end=date(2026, 12, 31),
+    )
+    assert [point.evidence_revision_id for point in eligible] == [confirmed.revision.id]
+    assert all(point.category == EvidenceType.ACHIEVEMENT.value for point in eligible)
+    assert (await service.analytics_watermark(owner)).record_count == 1
+
+    memory.evidence[confirmed.item.id] = replace(
+        confirmed,
+        sources=tuple(replace(source, available=False) for source in confirmed.sources),
+    )
+    assert (
+        await service.list_analytics_growth(
+            owner,
+            window_start=date(2026, 1, 1),
+            window_end=date(2026, 12, 31),
+        )
+        == ()
+    )
+
+    guarded_start = date(2010, 1, 1)
+    assert (
+        await service.list_analytics_growth(
+            owner,
+            window_start=guarded_start,
+            window_end=guarded_start + timedelta(days=3_652),
+        )
+        == ()
+    )
+    with pytest.raises(CareerRecordValidationError, match="timezone guard"):
+        await service.list_analytics_growth(
+            owner,
+            window_start=guarded_start,
+            window_end=guarded_start + timedelta(days=3_653),
+        )
 
 
 @pytest.mark.asyncio

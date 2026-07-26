@@ -13,6 +13,17 @@ from careeros.modules.application_workspace.domain.errors import (
     ApplicationWorkspaceValidationError,
     ApplicationWorkspaceVersionConflict,
 )
+from careeros.modules.career_analytics.domain.errors import (
+    CareerAnalyticsConflict,
+    CareerAnalyticsError,
+    CareerAnalyticsIdempotencyConflict,
+    CareerAnalyticsNotFound,
+    CareerAnalyticsQuotaExceeded,
+    CareerAnalyticsSourceChanged,
+    CareerAnalyticsUnavailable,
+    CareerAnalyticsValidationError,
+    CareerAnalyticsVersionConflict,
+)
 from careeros.modules.career_record.application.attachment_workflow import (
     AttachmentConflict,
     AttachmentFenced,
@@ -71,6 +82,18 @@ from careeros.modules.job_match.domain.errors import (
     JobMatchUnavailable,
     JobMatchValidationError,
     JobMatchVersionConflict,
+)
+from careeros.modules.networking.domain.errors import (
+    NetworkingConflict,
+    NetworkingConsentRequired,
+    NetworkingError,
+    NetworkingIdempotencyConflict,
+    NetworkingLeaseConflict,
+    NetworkingNotFound,
+    NetworkingQuotaExceeded,
+    NetworkingUnavailable,
+    NetworkingValidationError,
+    NetworkingVersionConflict,
 )
 from careeros.modules.resume_builder.domain.errors import (
     ResumeBuilderConflict,
@@ -282,6 +305,41 @@ def install_problem_handlers(app: FastAPI) -> None:
         status_code, code, title, detail = _application_workspace_problem_details(exc)
         logger.info(
             "application_workspace_request_rejected",
+            error_code=code,
+            status_code=status_code,
+        )
+        return problem_response(
+            request,
+            status_code=status_code,
+            code=code,
+            title=title,
+            detail=detail,
+        )
+
+    @app.exception_handler(NetworkingError)
+    async def networking_problem(request: Request, exc: NetworkingError) -> JSONResponse:
+        status_code, code, title, detail = _networking_problem_details(exc)
+        logger.info(
+            "networking_request_rejected",
+            error_code=code,
+            status_code=status_code,
+        )
+        return problem_response(
+            request,
+            status_code=status_code,
+            code=code,
+            title=title,
+            detail=detail,
+        )
+
+    @app.exception_handler(CareerAnalyticsError)
+    async def career_analytics_problem(
+        request: Request,
+        exc: CareerAnalyticsError,
+    ) -> JSONResponse:
+        status_code, code, title, detail = _career_analytics_problem_details(exc)
+        logger.info(
+            "career_analytics_request_rejected",
             error_code=code,
             status_code=status_code,
         )
@@ -583,6 +641,147 @@ def _application_workspace_problem_details(
     return (
         status.HTTP_400_BAD_REQUEST,
         "application_workspace_rejected",
+        "Request rejected",
+        "The request could not be completed.",
+    )
+
+
+def _networking_problem_details(
+    exc: NetworkingError,
+) -> tuple[int, str, str, str]:
+    if isinstance(exc, NetworkingUnavailable):
+        return (
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "networking_unavailable",
+            "Networking workspace unavailable",
+            "Networking services are temporarily unavailable.",
+        )
+    if isinstance(exc, NetworkingNotFound):
+        return (
+            status.HTTP_404_NOT_FOUND,
+            "networking_not_found",
+            "Resource not found",
+            "The requested resource was not found.",
+        )
+    if isinstance(exc, NetworkingQuotaExceeded):
+        return (
+            status.HTTP_429_TOO_MANY_REQUESTS,
+            "networking_quota_exceeded",
+            "Networking limit reached",
+            "This networking collection has reached its safe storage limit.",
+        )
+    if isinstance(exc, NetworkingVersionConflict):
+        return (
+            status.HTTP_409_CONFLICT,
+            "networking_version_conflict",
+            "Version conflict",
+            "This networking resource changed. Refresh and try again.",
+        )
+    if isinstance(exc, NetworkingIdempotencyConflict):
+        return (
+            status.HTTP_409_CONFLICT,
+            "networking_idempotency_conflict",
+            "Request conflict",
+            "This request key was already used for a different operation.",
+        )
+    if isinstance(exc, NetworkingConsentRequired):
+        return (
+            status.HTTP_409_CONFLICT,
+            "networking_consent_required",
+            "Consent required",
+            "Record the required consent before continuing.",
+        )
+    if isinstance(exc, NetworkingLeaseConflict):
+        return (
+            status.HTTP_409_CONFLICT,
+            "networking_lease_conflict",
+            "Request conflict",
+            "This reminder is already being processed or its lease expired.",
+        )
+    if isinstance(exc, NetworkingValidationError):
+        return (
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "networking_validation_failed",
+            "Request validation failed",
+            "Review the submitted networking values.",
+        )
+    if isinstance(exc, NetworkingConflict):
+        return (
+            status.HTTP_409_CONFLICT,
+            "networking_conflict",
+            "Request conflict",
+            "The request conflicts with current networking state.",
+        )
+    return (
+        status.HTTP_400_BAD_REQUEST,
+        "networking_rejected",
+        "Request rejected",
+        "The request could not be completed.",
+    )
+
+
+def _career_analytics_problem_details(
+    exc: CareerAnalyticsError,
+) -> tuple[int, str, str, str]:
+    if isinstance(exc, CareerAnalyticsQuotaExceeded):
+        return (
+            status.HTTP_429_TOO_MANY_REQUESTS,
+            "career_analytics_quota_exceeded",
+            "Analytics refresh limit reached",
+            "No additional analytics refresh can be queued for this account.",
+        )
+    if isinstance(exc, CareerAnalyticsUnavailable):
+        return (
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "career_analytics_unavailable",
+            "Career analytics unavailable",
+            "Career analytics services are temporarily unavailable.",
+        )
+    if isinstance(exc, CareerAnalyticsNotFound):
+        return (
+            status.HTTP_404_NOT_FOUND,
+            "career_analytics_not_found",
+            "Resource not found",
+            "The requested resource was not found.",
+        )
+    if isinstance(exc, CareerAnalyticsVersionConflict):
+        return (
+            status.HTTP_409_CONFLICT,
+            "career_analytics_version_conflict",
+            "Version conflict",
+            "This analytics refresh changed. Refresh and try again.",
+        )
+    if isinstance(exc, CareerAnalyticsIdempotencyConflict):
+        return (
+            status.HTTP_409_CONFLICT,
+            "career_analytics_idempotency_conflict",
+            "Request conflict",
+            "This request key was already used for different analytics input.",
+        )
+    if isinstance(exc, CareerAnalyticsSourceChanged):
+        return (
+            status.HTTP_409_CONFLICT,
+            "career_analytics_source_changed",
+            "Analytics source changed",
+            "The source changed during aggregation. Retry the refresh.",
+        )
+    if isinstance(exc, CareerAnalyticsValidationError):
+        return (
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "career_analytics_validation_failed",
+            "Request validation failed",
+            "Review the submitted analytics values.",
+        )
+    if isinstance(exc, CareerAnalyticsConflict):
+        return (
+            status.HTTP_409_CONFLICT,
+            "career_analytics_conflict",
+            "Request conflict",
+            "The request conflicts with current analytics state.",
+        )
+    return (
+        status.HTTP_400_BAD_REQUEST,
+        "career_analytics_rejected",
         "Request rejected",
         "The request could not be completed.",
     )

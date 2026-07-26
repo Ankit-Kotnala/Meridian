@@ -131,6 +131,15 @@ class Settings(BaseSettings):
         default=SecretStr("redis://localhost:6379/0"),
         validation_alias=AliasChoices("CAREEROS_CELERY_BROKER_URL", "CELERY_BROKER_URL"),
     )
+    analytics_max_attempts: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        validation_alias=AliasChoices(
+            "CAREEROS_ANALYTICS_MAX_ATTEMPTS",
+            "ANALYTICS_MAX_ATTEMPTS",
+        ),
+    )
     malware_scanner_provider: MalwareScannerProvider = Field(
         default="disabled",
         validation_alias=AliasChoices(

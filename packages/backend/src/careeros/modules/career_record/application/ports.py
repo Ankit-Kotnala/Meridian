@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from datetime import datetime
+from datetime import date, datetime
 from types import TracebackType
 from typing import Protocol, Self
 from uuid import UUID
@@ -34,6 +34,8 @@ from .models import (
     AttachmentAdmissionRequest,
     AttachmentAdmissionResult,
     AttachmentFinalization,
+    CareerRecordAnalyticsGrowthPoint,
+    CareerRecordAnalyticsSourceState,
     EvidenceFilter,
     EvidenceRecord,
     PageCursor,
@@ -55,7 +57,10 @@ class ResumeSourceQuery(Protocol):
     """Owner-checked Phase 2 application query; never a table adapter."""
 
     async def resolve_exact_span(
-        self, owner_user_id: UUID, locator: ResumeSourceLocator
+        self,
+        owner_user_id: UUID,
+        locator: ResumeSourceLocator,
+        expected_claim: str | None = None,
     ) -> ValidatedResumeSource | None: ...
 
     async def is_available(self, owner_user_id: UUID, source: ValidatedResumeSource) -> bool: ...
@@ -175,6 +180,19 @@ class CareerRecordUnitOfWork(Protocol):
         after: PageCursor | None,
         limit: int,
     ) -> list[EvidenceRecord]: ...
+
+    async def list_analytics_growth(
+        self,
+        owner_user_id: UUID,
+        window_start: date,
+        window_end: date,
+        limit: int,
+    ) -> list[CareerRecordAnalyticsGrowthPoint]: ...
+
+    async def get_analytics_source_state(
+        self,
+        owner_user_id: UUID,
+    ) -> CareerRecordAnalyticsSourceState: ...
 
     async def add_evidence(self, record: EvidenceRecord) -> None: ...
 

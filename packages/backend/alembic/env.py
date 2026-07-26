@@ -12,6 +12,12 @@ from careeros.foundation.database import Base
 from careeros.modules.application_workspace.infrastructure import (
     models as application_workspace_models,  # noqa: F401
 )
+from careeros.modules.career_analytics.infrastructure import (
+    models as career_analytics_models,  # noqa: F401
+)
+from careeros.modules.career_growth.infrastructure import (
+    models as career_growth_models,  # noqa: F401
+)
 from careeros.modules.career_record.infrastructure import (
     models as career_record_models,  # noqa: F401
 )
@@ -19,7 +25,13 @@ from careeros.modules.change_studio.infrastructure import (
     models as change_studio_models,  # noqa: F401
 )
 from careeros.modules.identity.infrastructure import models as identity_models  # noqa: F401
+from careeros.modules.interview_prep.infrastructure import (
+    models as interview_prep_models,  # noqa: F401
+)
 from careeros.modules.job_match.infrastructure import models as job_match_models  # noqa: F401
+from careeros.modules.networking.infrastructure import (
+    models as networking_models,  # noqa: F401
+)
 from careeros.modules.resume_builder.infrastructure import (
     models as resume_builder_models,  # noqa: F401
 )

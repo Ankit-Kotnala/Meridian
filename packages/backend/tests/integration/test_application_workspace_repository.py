@@ -14,6 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from careeros.foundation.config import DatabaseOptions
 from careeros.foundation.database import Database
 from careeros.modules.application_workspace.application import (
+    ApplicationInterviewEvidenceReference,
     ApplicationJobSnapshot,
     ApplicationSourceEvidenceReference,
     ApplicationWorkspaceService,
@@ -127,6 +128,14 @@ class _EvidenceProvider:
             )
             for reference in unique_references.values()
         )
+
+    async def validate_current(
+        self,
+        owner_user_id: UUID,
+        references: tuple[ApplicationInterviewEvidenceReference, ...],
+    ) -> None:
+        del owner_user_id
+        assert references
 
 
 def _user(user_id: UUID, email: str) -> UserModel:

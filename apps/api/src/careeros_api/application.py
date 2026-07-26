@@ -26,6 +26,32 @@ from careeros.modules.application_workspace.infrastructure import (
 from careeros.modules.application_workspace.infrastructure import (
     UuidIdentifierFactory as ApplicationWorkspaceUuidFactory,
 )
+from careeros.modules.career_analytics.application import (
+    CareerAnalyticsPolicy,
+    CareerAnalyticsService,
+)
+from careeros.modules.career_analytics.infrastructure import (
+    ApplicationWorkspaceAnalyticsSource,
+    CareerRecordAnalyticsProvider,
+    CompositeSupplementalAnalyticsSource,
+    RoleReadinessAnalyticsProvider,
+    SqlAlchemyCareerAnalyticsUnitOfWorkFactory,
+)
+from careeros.modules.career_analytics.infrastructure import (
+    SystemClock as CareerAnalyticsClock,
+)
+from careeros.modules.career_analytics.infrastructure import (
+    Uuid4IdentifierFactory as CareerAnalyticsUuidFactory,
+)
+from careeros.modules.career_growth.application import CareerGrowthService
+from careeros.modules.career_growth.infrastructure import (
+    CareerRecordGrowthSourceProvider,
+    SqlAlchemyCareerGrowthUnitOfWorkFactory,
+)
+from careeros.modules.career_growth.infrastructure import SystemClock as CareerGrowthClock
+from careeros.modules.career_growth.infrastructure import (
+    UuidIdentifierFactory as CareerGrowthUuidFactory,
+)
 from careeros.modules.career_record.application import (
     AttachmentLimits,
     AttachmentWorkflowService,
@@ -35,6 +61,7 @@ from careeros.modules.career_record.infrastructure import (
     AttachmentAdmissionBridge,
     AttachmentS3ObjectStorage,
     AttachmentS3Options,
+    ResumeHealthSourceQuery,
     SqlAlchemyAttachmentUnitOfWorkFactory,
     SqlAlchemyCareerRecordUnitOfWorkFactory,
     UuidIdentifierFactory,
@@ -75,6 +102,15 @@ from careeros.modules.identity.infrastructure.security import (
     NormalizedEmailValidator,
     SystemClock,
 )
+from careeros.modules.interview_prep.application import InterviewPrepService
+from careeros.modules.interview_prep.infrastructure import (
+    ApplicationWorkspaceInterviewContextProvider,
+    SqlAlchemyInterviewPrepUnitOfWorkFactory,
+)
+from careeros.modules.interview_prep.infrastructure import SystemClock as InterviewPrepClock
+from careeros.modules.interview_prep.infrastructure import (
+    UuidIdentifierFactory as InterviewPrepUuidFactory,
+)
 from careeros.modules.job_match.application import JobMatchService
 from careeros.modules.job_match.infrastructure import (
     CareerRecordJobMatchSnapshotProvider,
@@ -87,6 +123,15 @@ from careeros.modules.job_match.infrastructure import (
 )
 from careeros.modules.job_match.infrastructure import (
     UuidIdentifierFactory as JobMatchUuidFactory,
+)
+from careeros.modules.networking.application import NetworkingService
+from careeros.modules.networking.infrastructure import (
+    ApplicationWorkspaceNetworkingReferenceProvider,
+    SqlAlchemyNetworkingUnitOfWorkFactory,
+)
+from careeros.modules.networking.infrastructure import SystemClock as NetworkingClock
+from careeros.modules.networking.infrastructure import (
+    UuidIdentifierFactory as NetworkingUuidFactory,
 )
 from careeros.modules.resume_builder.application import ResumeBuilderPolicy, ResumeBuilderService
 from careeros.modules.resume_builder.infrastructure import (
@@ -132,9 +177,10 @@ from redis.asyncio import Redis
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from careeros_api.career_record_resume_source import ResumeHealthSourceQuery
 from careeros_api.config import Settings, get_settings
 from careeros_api.middleware import RequestBodyLimitMiddleware, install_request_context_middleware
+from careeros_api.modules.career_growth import install_career_growth_problem_handler
+from careeros_api.modules.interview_prep import install_interview_prep_problem_handler
 from careeros_api.problems import install_problem_handlers
 from careeros_api.resume_builder_extractors import ResumeBuilderDocumentExtractor
 from careeros_api.routes import router
@@ -184,6 +230,10 @@ def create_app(
     change_studio: ChangeStudioService | None = None,
     resume_builder: ResumeBuilderService | None = None,
     application_workspace: ApplicationWorkspaceService | None = None,
+    interview_prep: InterviewPrepService | None = None,
+    networking: NetworkingService | None = None,
+    career_growth: CareerGrowthService | None = None,
+    career_analytics: CareerAnalyticsService | None = None,
 ) -> FastAPI:
     """Build an application; injectable dependencies keep tests infrastructure-free."""
     resolved_settings = settings or get_settings()
@@ -214,6 +264,10 @@ def create_app(
         resolved_change_studio = change_studio
         resolved_resume_builder = resume_builder
         resolved_application_workspace = application_workspace
+        resolved_interview_prep = interview_prep
+        resolved_networking = networking
+        resolved_career_growth = career_growth
+        resolved_career_analytics = career_analytics
         resolved_resume_builder_storage: ResumeExportS3Storage | None = None
 
         if resolved_identity is None and isinstance(resolved_database, Database):
@@ -482,6 +536,68 @@ def create_app(
                         resolved_career_record
                     ),
                 )
+            if resolved_interview_prep is None:
+                if resolved_application_workspace is None:
+                    raise RuntimeError("Interview Prep requires the Application Workspace boundary")
+                resolved_interview_prep = InterviewPrepService(
+                    unit_of_work=SqlAlchemyInterviewPrepUnitOfWorkFactory(resolved_database),
+                    clock=InterviewPrepClock(),
+                    identifiers=InterviewPrepUuidFactory(),
+                    application_context=ApplicationWorkspaceInterviewContextProvider(
+                        resolved_application_workspace
+                    ),
+                )
+            if resolved_networking is None:
+                if resolved_application_workspace is None:
+                    raise RuntimeError("Networking requires the Application Workspace boundary")
+                resolved_networking = NetworkingService(
+                    unit_of_work=SqlAlchemyNetworkingUnitOfWorkFactory(resolved_database),
+                    clock=NetworkingClock(),
+                    identifiers=NetworkingUuidFactory(),
+                    applications=ApplicationWorkspaceNetworkingReferenceProvider(
+                        resolved_application_workspace
+                    ),
+                )
+            if resolved_career_growth is None:
+                if resolved_career_record is None:
+                    raise RuntimeError("Career Growth requires the Career Record boundary")
+                resolved_career_growth = CareerGrowthService(
+                    unit_of_work=SqlAlchemyCareerGrowthUnitOfWorkFactory(resolved_database),
+                    clock=CareerGrowthClock(),
+                    identifiers=CareerGrowthUuidFactory(),
+                    career_source=CareerRecordGrowthSourceProvider(resolved_career_record),
+                )
+            if resolved_career_analytics is None:
+                if (
+                    resolved_application_workspace is None
+                    or resolved_role_readiness is None
+                    or resolved_career_record is None
+                ):
+                    raise RuntimeError(
+                        "Career Analytics requires Application Workspace, "
+                        "Role Readiness, and Career Record boundaries"
+                    )
+                resolved_career_analytics = CareerAnalyticsService(
+                    unit_of_work=SqlAlchemyCareerAnalyticsUnitOfWorkFactory(resolved_database),
+                    clock=CareerAnalyticsClock(),
+                    identifiers=CareerAnalyticsUuidFactory(),
+                    applications=ApplicationWorkspaceAnalyticsSource(
+                        resolved_application_workspace
+                    ),
+                    supplemental=CompositeSupplementalAnalyticsSource(
+                        readiness=cast(
+                            RoleReadinessAnalyticsProvider,
+                            resolved_role_readiness,
+                        ),
+                        career_record=cast(
+                            CareerRecordAnalyticsProvider,
+                            resolved_career_record,
+                        ),
+                    ),
+                    policy=CareerAnalyticsPolicy(
+                        max_attempts=resolved_settings.analytics_max_attempts,
+                    ),
+                )
 
         application.state.database = resolved_database
         application.state.identity_service = resolved_identity
@@ -493,6 +609,10 @@ def create_app(
         application.state.change_studio_service = resolved_change_studio
         application.state.resume_builder_service = resolved_resume_builder
         application.state.application_workspace_service = resolved_application_workspace
+        application.state.interview_prep_service = resolved_interview_prep
+        application.state.networking_service = resolved_networking
+        application.state.career_growth_service = resolved_career_growth
+        application.state.career_analytics_service = resolved_career_analytics
         application.state.attachment_workflow_service = resolved_attachment_workflow
         application.state.resume_outbox_dispatcher = resolved_resume_dispatcher
         application.state.readiness_dependencies = {"database": resolved_database}
@@ -564,5 +684,7 @@ def create_app(
     )
     install_request_context_middleware(application)
     install_problem_handlers(application)
+    install_interview_prep_problem_handler(application)
+    install_career_growth_problem_handler(application)
     application.include_router(router)
     return application

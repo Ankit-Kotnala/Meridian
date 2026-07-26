@@ -1,12 +1,15 @@
 ﻿import {
-  BarChart3,
+  Activity,
   Archive,
+  BarChart3,
+  BookOpenCheck,
   BriefcaseBusiness,
   ChevronLeft,
   ClipboardList,
   FileText,
   FileHeart,
   LayoutDashboard,
+  Network,
   Settings,
   Sparkles,
   Target,
@@ -18,7 +21,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { Badge, cn } from "@careeros/ui";
+import { cn } from "@careeros/ui";
 
 import { CareerOsLogo } from "@/shared/components/career-os-logo";
 
@@ -34,14 +37,14 @@ const availableNavigation: ReadonlyArray<{
   { href: "/role-explorer", icon: Target, label: "Role Explorer" },
   { href: "/job-match", icon: BriefcaseBusiness, label: "Job Match" },
   { href: "/applications", icon: ClipboardList, label: "Applications" },
+  { href: "/interview-prep", icon: BookOpenCheck, label: "Interview Prep" },
+  { href: "/networking", icon: Network, label: "Networking" },
+  { href: "/career-growth", icon: Activity, label: "Career Growth" },
+  { href: "/analytics", icon: BarChart3, label: "Analytics" },
   { href: "/change-studio", icon: Sparkles, label: "Change Studio" },
   { href: "/resume-builder", icon: FileText, label: "Resume Builder" },
   { href: "/onboarding", icon: UserRoundCheck, label: "Onboarding" },
   { href: "/settings", icon: Settings, label: "Settings" },
-];
-
-const upcomingNavigation: ReadonlyArray<{ icon: LucideIcon; label: string }> = [
-  { icon: BarChart3, label: "Analytics" },
 ];
 
 function isCurrent(pathname: string, href: string): boolean {
@@ -119,34 +122,6 @@ export function WorkspaceSidebar({
               </li>
             );
           })}
-        </ul>
-
-        <p
-          className={cn(
-            "mb-2 mt-6 px-2 text-[0.65rem] font-extrabold uppercase tracking-[0.14em] text-slate-400",
-            collapsed && "sr-only",
-          )}
-        >
-          Coming later
-        </p>
-        <ul className="space-y-1">
-          {upcomingNavigation.map(({ label, icon: Icon }) => (
-            <li key={label}>
-              <span
-                aria-disabled="true"
-                aria-label={`${label}, not available yet`}
-                className={cn(
-                  "flex min-h-11 items-center rounded-xl text-xs font-semibold text-slate-500",
-                  collapsed ? "justify-center px-2" : "gap-3 px-3",
-                )}
-                title={collapsed ? `${label} - coming later` : undefined}
-              >
-                <Icon aria-hidden="true" className="size-4 shrink-0" />
-                {!collapsed && <span className="flex-1">{label}</span>}
-                {!collapsed && <Badge tone="neutral">Later</Badge>}
-              </span>
-            </li>
-          ))}
         </ul>
       </nav>
 

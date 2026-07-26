@@ -33,6 +33,11 @@ def test_runtime_registers_cross_module_database_metadata() -> None:
     assert "evidence_attachments" in Base.metadata.tables
     assert "evidence_attachment_processing_jobs" in Base.metadata.tables
     assert "evidence_attachment_outbox" in Base.metadata.tables
+    assert "career_analytics_refresh_jobs" in Base.metadata.tables
+    assert "career_analytics_outbox" in Base.metadata.tables
+    assert "networking_reminders" in Base.metadata.tables
+    assert "networking_reminder_occurrences" in Base.metadata.tables
+    assert "networking_reminder_outbox" in Base.metadata.tables
 
 
 def test_runtime_translates_validated_settings_and_disposes_resources(
@@ -283,7 +288,7 @@ def test_outbox_dispatch_uses_database_only_and_disposes_it(
     monkeypatch.setattr(runtime, "S3ObjectStorage", ForbiddenStorage)
     settings = WorkerSettings.model_validate({"environment": "test"})
 
-    result = asyncio.run(runtime.dispatch_resume_outbox(settings, object(), 25))  # type: ignore[arg-type]
+    result = asyncio.run(runtime.dispatch_resume_outbox(settings, object(), 25))
 
     assert result == runtime.OutboxTaskResult(published=3, failed=1, dead_lettered=0)
     assert events == ["database"]
@@ -352,7 +357,8 @@ def test_attachment_runtime_translates_limits_and_disposes_private_resources(
     asyncio.run(exercise())
 
     assert events == ["storage", "database"]
-    assert captured["storage_options"].bucket == settings.s3_bucket
+    storage_options: Any = captured["storage_options"]
+    assert storage_options.bucket == settings.s3_bucket
 
 
 def test_attachment_failure_and_outbox_composition_are_database_only(

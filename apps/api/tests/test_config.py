@@ -88,6 +88,19 @@ def test_request_body_limit_has_safe_phase_one_default() -> None:
     assert Settings(_env_file=None).max_request_body_bytes == 1_048_576  # type: ignore[call-arg]
 
 
+def test_analytics_retry_budget_uses_the_shared_bounded_environment_setting(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("CAREEROS_ANALYTICS_MAX_ATTEMPTS", raising=False)
+    monkeypatch.setenv("ANALYTICS_MAX_ATTEMPTS", "7")
+
+    settings = Settings(_env_file=None)  # type: ignore[call-arg]
+
+    assert settings.analytics_max_attempts == 7
+    with pytest.raises(ValidationError, match="analytics_max_attempts"):
+        Settings.model_validate({"analytics_max_attempts": 11})
+
+
 @pytest.mark.parametrize(
     ("field", "value"),
     [
