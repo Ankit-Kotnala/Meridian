@@ -11,27 +11,45 @@ import { ProfileImportReviewView } from "../views/profile-import-review-view";
 
 const api = vi.hoisted(() => ({
   acceptProfileImportProposal: vi.fn(),
+  confirmExperience: vi.fn(),
+  confirmPersonalFact: vi.fn(),
+  createPersonalFact: vi.fn(),
   createExperience: vi.fn(),
+  createCareerRelationship: vi.fn(),
   getCareerItems: vi.fn(),
   getCareerProfile: vi.fn(),
+  getCareerRelationships: vi.fn(),
   getExperiences: vi.fn(),
+  getPersonalFacts: vi.fn(),
   getProfileImportProposal: vi.fn(),
   getSkills: vi.fn(),
   reorderExperiences: vi.fn(),
   rejectProfileImportProposal: vi.fn(),
+  updatePersonalFact: vi.fn(),
+  deletePersonalFact: vi.fn(),
+  deleteCareerRelationship: vi.fn(),
 }));
 
 vi.mock("../api/career-vault-api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../api/career-vault-api")>()),
   createExperience: api.createExperience,
+  createCareerRelationship: api.createCareerRelationship,
+  confirmExperience: api.confirmExperience,
+  confirmPersonalFact: api.confirmPersonalFact,
+  createPersonalFact: api.createPersonalFact,
   acceptProfileImportProposal: api.acceptProfileImportProposal,
   getCareerItems: api.getCareerItems,
   getCareerProfile: api.getCareerProfile,
+  getCareerRelationships: api.getCareerRelationships,
   getExperiences: api.getExperiences,
+  getPersonalFacts: api.getPersonalFacts,
   getProfileImportProposal: api.getProfileImportProposal,
   getSkills: api.getSkills,
   reorderExperiences: api.reorderExperiences,
   rejectProfileImportProposal: api.rejectProfileImportProposal,
+  updatePersonalFact: api.updatePersonalFact,
+  deletePersonalFact: api.deletePersonalFact,
+  deleteCareerRelationship: api.deleteCareerRelationship,
 }));
 
 const profile: CareerProfile = {
@@ -103,6 +121,7 @@ const proposal: ProfileImportProposal = {
   ],
   createdAt: "2026-07-15T00:00:00Z",
   id: "00000000-0000-4000-8000-000000000103",
+  sourceAvailable: true,
   sourceDocumentName: "fictional-resume.pdf",
   status: "pending",
   version: 1,
@@ -122,11 +141,14 @@ describe("Career Profile vertical slice", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     api.getCareerProfile.mockResolvedValue(profile);
+    api.getCareerRelationships.mockResolvedValue([]);
     api.getExperiences.mockResolvedValue([]);
+    api.getPersonalFacts.mockResolvedValue([]);
     api.getCareerItems.mockResolvedValue([]);
     api.getSkills.mockResolvedValue([]);
     api.getProfileImportProposal.mockResolvedValue(proposal);
     api.createExperience.mockResolvedValue(savedExperience);
+    api.confirmExperience.mockResolvedValue(savedExperience);
     api.acceptProfileImportProposal.mockResolvedValue({
       ...proposal,
       status: "accepted",
@@ -201,6 +223,116 @@ describe("Career Profile vertical slice", () => {
     expect(screen.getByRole("button", { name: "Try again" })).toBeEnabled();
   });
 
+  it("requires a separate owner action before manual experience facts are confirmed", async () => {
+    const needsReview = { ...savedExperience, userConfirmed: false };
+    api.getExperiences.mockResolvedValueOnce([needsReview]);
+    api.confirmExperience.mockResolvedValueOnce({
+      ...savedExperience,
+      version: 2,
+    });
+
+    render(<CareerProfileView />);
+
+    await screen.findByRole("heading", { name: "Career Profile" });
+    fireEvent.click(screen.getByRole("tab", { name: "List and reorder" }));
+    expect(screen.getByText("Confirmation needed")).toBeVisible();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirm current facts" }),
+    );
+
+    await waitFor(() =>
+      expect(api.confirmExperience).toHaveBeenCalledWith(needsReview),
+    );
+    expect(
+      await screen.findByText(/current facts are now eligible/i),
+    ).toBeVisible();
+    expect(screen.getByText("User confirmed")).toBeVisible();
+  });
+
+  it("keeps manually entered contact facts unconfirmed until explicit review", async () => {
+    const fact = {
+      confirmation: "needs_review" as const,
+      confirmedAt: null,
+      createdAt: "2026-07-26T00:00:00Z",
+      id: "00000000-0000-4000-8000-000000000701",
+      isPrimary: true,
+      kind: "email" as const,
+      label: "Work",
+      provenance: [],
+      updatedAt: "2026-07-26T00:00:00Z",
+      value: "alex@example.test",
+      version: 1,
+    };
+    api.getPersonalFacts.mockResolvedValueOnce([fact]);
+    api.confirmPersonalFact.mockResolvedValueOnce({
+      ...fact,
+      confirmation: "confirmed",
+      confirmedAt: "2026-07-26T00:01:00Z",
+      version: 2,
+    });
+
+    render(<CareerProfileView />);
+
+    expect(await screen.findByText("alex@example.test")).toBeVisible();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirm current value" }),
+    );
+
+    await waitFor(() =>
+      expect(api.confirmPersonalFact).toHaveBeenCalledWith(fact),
+    );
+    expect(await screen.findByText("Contact fact confirmed.")).toBeVisible();
+  });
+
+  it("records an explicit experience-project relationship", async () => {
+    const project = {
+      createdAt: "2026-07-26T00:00:00Z",
+      description: "",
+      endDate: null,
+      id: "00000000-0000-4000-8000-000000000711",
+      kind: "project" as const,
+      order: 0,
+      organization: null,
+      provenance: [],
+      startDate: null,
+      title: "Fictional project",
+      updatedAt: "2026-07-26T00:00:00Z",
+      url: null,
+      userConfirmed: false,
+      version: 1,
+    };
+    api.getExperiences.mockResolvedValueOnce([savedExperience]);
+    api.getCareerItems.mockResolvedValueOnce([project]);
+    api.createCareerRelationship.mockResolvedValueOnce({
+      createdAt: "2026-07-26T00:01:00Z",
+      experienceId: savedExperience.id,
+      id: "00000000-0000-4000-8000-000000000712",
+      kind: "experience_project",
+      projectId: project.id,
+    });
+
+    render(<CareerProfileView />);
+
+    await screen.findByText("Fictional project");
+    fireEvent.change(
+      screen.getByRole("combobox", {
+        name: "Experience to link to Fictional project",
+      }),
+      { target: { value: savedExperience.id } },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Link experience" }));
+
+    await waitFor(() =>
+      expect(api.createCareerRelationship).toHaveBeenCalledWith(
+        savedExperience.id,
+        project.id,
+      ),
+    );
+    expect(
+      await screen.findByText("Project linked to experience."),
+    ).toBeVisible();
+  });
+
   it("shows current and proposed values without applying until explicit confirmation", async () => {
     render(<ProfileImportReviewView proposalId={proposal.id} />);
 
@@ -218,9 +350,29 @@ describe("Career Profile vertical slice", () => {
     fireEvent.click(screen.getByRole("button", { name: "Accept changes" }));
 
     await waitFor(() =>
-      expect(api.acceptProfileImportProposal).toHaveBeenCalledWith(proposal, {
-        [proposal.changes[0]!.id]: "Proposed summary",
-      }),
+      expect(api.acceptProfileImportProposal).toHaveBeenCalledWith(
+        proposal,
+        {
+          [proposal.changes[0]!.id]: "Proposed summary",
+        },
+        expect.any(String),
+      ),
     );
+  });
+
+  it("keeps acceptance unavailable when the reviewed source cannot be revalidated", async () => {
+    api.getProfileImportProposal.mockResolvedValueOnce({
+      ...proposal,
+      sourceAvailable: false,
+    });
+
+    render(<ProfileImportReviewView proposalId={proposal.id} />);
+
+    expect(
+      await screen.findByText("Reviewed source is no longer available"),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Accept reviewed changes" }),
+    ).toBeDisabled();
   });
 });

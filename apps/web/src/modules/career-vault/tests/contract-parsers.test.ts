@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { parseEvidence } from "../api/contract-parsers";
+import {
+  parseEvidence,
+  parseProfileImportBatch,
+  parseProfileImportProposal,
+} from "../api/contract-parsers";
 
 const evidence = {
   archivedAt: null,
@@ -85,5 +89,85 @@ describe("Career Vault evidence contract parser", () => {
     expect(() =>
       parseEvidence({ ...evidence, startDate: "2024-01-01" }),
     ).toThrow("Invalid evidence start date response.");
+  });
+});
+
+const semanticProposal = {
+  conflictCode: null,
+  createdAt: "2026-07-26T00:00:00Z",
+  documentId: "00000000-0000-4000-8000-000000000501",
+  fields: [
+    {
+      acceptedValue: null,
+      anchors: [
+        {
+          blockId: "00000000-0000-4000-8000-000000000502",
+          digest: `sha256:${"ab".repeat(32)}`,
+          end: 117,
+          excerpt: "Software Engineer",
+          page: 1,
+          start: 100,
+        },
+      ],
+      confidence: 90,
+      datePrecision: null,
+      fieldType: "text",
+      id: "00000000-0000-4000-8000-000000000503",
+      name: "title",
+      proposedValue: "Software Engineer",
+      reviewState: "corrected",
+    },
+  ],
+  id: "00000000-0000-4000-8000-000000000504",
+  parserVersion: "local-semantic/1",
+  schemaVersion: "canonical-semantics/1.0.0",
+  semanticEntityId: "00000000-0000-4000-8000-000000000505",
+  semanticKind: "experience",
+  snapshotId: "00000000-0000-4000-8000-000000000506",
+  snapshotRevision: 2,
+  sourceAvailable: true,
+  status: "pending",
+  target: "entity",
+  targetRecordId: null,
+  updatedAt: "2026-07-26T00:00:00Z",
+  version: 1,
+};
+
+describe("Career Vault typed import contract parser", () => {
+  it("preserves semantic field identity and exact source excerpts", () => {
+    const parsed = parseProfileImportProposal(semanticProposal);
+
+    expect(parsed.changes[0]).toMatchObject({
+      field: "title",
+      id: semanticProposal.fields[0]!.id,
+      proposedValue: "Software Engineer",
+      source: {
+        available: true,
+        sourceType: "resume_semantic",
+        spans: [
+          {
+            end: 117,
+            excerpt: "Software Engineer",
+            start: 100,
+          },
+        ],
+      },
+    });
+  });
+
+  it("keeps incomplete semantic candidates as questions rather than facts", () => {
+    const parsed = parseProfileImportBatch({
+      proposals: [],
+      questions: [
+        {
+          code: "semantic_candidate_requires_review",
+          missingFields: ["employer"],
+          semanticEntityId: semanticProposal.semanticEntityId,
+        },
+      ],
+    });
+
+    expect(parsed.proposals).toEqual([]);
+    expect(parsed.questions[0]?.missingFields).toEqual(["employer"]);
   });
 });

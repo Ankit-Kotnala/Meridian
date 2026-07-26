@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
-    [ValidateSet(2, 3, 4, 5, 6, 7, 8, 9)]
-    [int]$Phase = 2
+    [ValidateSet(1, 2, 3, 4, 5, 6, 7, 8, 9)]
+    [int]$Phase = 1
 )
 
 $ErrorActionPreference = "Stop"
@@ -56,11 +56,33 @@ function Wait-ComposeServiceHealthy {
     throw "$Service did not become healthy within $TimeoutSeconds seconds; last health status was '$LastStatus'."
 }
 
+function Wait-ContainerExitCode {
+    param(
+        [string]$ContainerId,
+        [int]$Attempts = 10,
+        [int]$DelaySeconds = 2
+    )
+
+    $LastFailure = "no response"
+    for ($Attempt = 1; $Attempt -le $Attempts; $Attempt++) {
+        $WaitOutput = docker wait $ContainerId 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            return [int](($WaitOutput | Select-Object -Last 1).ToString().Trim())
+        }
+        $LastFailure = (($WaitOutput | Out-String).Trim())
+        if ($Attempt -lt $Attempts) {
+            Start-Sleep -Seconds $DelaySeconds
+        }
+    }
+
+    throw "Container wait failed after $Attempts attempts: $LastFailure"
+}
+
 $ExpectedMigrationHead = if ($env:CAREEROS_EXPECTED_MIGRATION_HEAD) {
     $env:CAREEROS_EXPECTED_MIGRATION_HEAD
 }
 else {
-    "20260724_0010"
+    "20260726_0011"
 }
 
 if ($Phase -eq 9) {
@@ -140,11 +162,17 @@ elseif ($Phase -eq 3) {
         "e2e/career-record-journey.spec.ts"
     )
 }
-else {
+elseif ($Phase -eq 2) {
     $RollbackRevision = "20260715_0002"
     $JourneySpecs = @(
         "e2e/auth-journey.spec.ts",
         "e2e/resume-health-journey.spec.ts"
+    )
+}
+else {
+    $RollbackRevision = "20260714_0001"
+    $JourneySpecs = @(
+        "e2e/auth-journey.spec.ts"
     )
 }
 
@@ -254,8 +282,10 @@ Push-Location $RepositoryRoot
 try {
     docker compose --project-name $ProjectName config --quiet
     Assert-LastExitCode "Isolated Compose configuration"
-    docker compose --project-name $ProjectName build api worker web web-edge
-    Assert-LastExitCode "Isolated application image build"
+    foreach ($Service in @("api", "worker", "web", "web-edge")) {
+        docker compose --project-name $ProjectName build $Service
+        Assert-LastExitCode "Isolated application image build for $Service"
+    }
     docker compose --project-name $ProjectName up --detach --wait --wait-timeout 900 postgres redis minio mailpit clamav
     Assert-LastExitCode "Isolated dependency startup"
     Wait-ComposeServiceHealthy -Service "clamav" -TimeoutSeconds 900 -PollSeconds 10
@@ -266,8 +296,7 @@ try {
     if (-not $InitContainer) {
         throw "Compose did not create the object-storage initializer."
     }
-    $InitExitCode = docker wait $InitContainer
-    Assert-LastExitCode "Object-storage initializer wait"
+    $InitExitCode = Wait-ContainerExitCode -ContainerId $InitContainer
     if ([int]$InitExitCode -ne 0) {
         throw "Object-storage initialization failed with exit code $InitExitCode."
     }

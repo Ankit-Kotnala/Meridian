@@ -36,6 +36,18 @@ function addSkipped(
   return Array.from(new Set([...state.skippedSteps, step]));
 }
 
+function handoffLabel(value: OnboardingState["resumeHandoff"]) {
+  return {
+    analysisReady: "Analysis ready",
+    failed: "Processing failed",
+    notStarted: "Not started",
+    processing: "Processing",
+    reviewRequired: "Review required",
+    reviewed: "Reviewed",
+    skipped: "Skipped",
+  }[value];
+}
+
 export function OnboardingView() {
   const router = useRouter();
   const [state, setState] = useState<OnboardingState>();
@@ -200,7 +212,6 @@ export function OnboardingView() {
                   onClick={() =>
                     void save({
                       currentStep: "parsedReview",
-                      resumeHandoff: "skipped",
                       skippedSteps: addSkipped(state, "resume"),
                     })
                   }
@@ -231,7 +242,6 @@ export function OnboardingView() {
                   onClick={() =>
                     void save({
                       currentStep: "preferences",
-                      parsedReviewHandoff: "skipped",
                       skippedSteps: addSkipped(state, "parsedReview"),
                     })
                   }
@@ -262,7 +272,6 @@ export function OnboardingView() {
                 seniority:
                   (optional("seniority") as OnboardingState["seniority"]) ??
                   null,
-                status: "completed",
                 targetRole: optional("targetRole"),
                 workModel:
                   (optional("workModel") as OnboardingState["workModel"]) ??
@@ -371,7 +380,6 @@ export function OnboardingView() {
                   void save({
                     currentStep: "complete",
                     skippedSteps: addSkipped(state, "preferences"),
-                    status: "completed",
                   })
                 }
                 type="button"
@@ -416,8 +424,7 @@ export function OnboardingView() {
               Resume handoff
             </p>
             <p className="mt-1 text-xs leading-5 text-muted">
-              Status:{" "}
-              {state.resumeHandoff === "skipped" ? "Skipped" : "Not started"}
+              Status: {handoffLabel(state.resumeHandoff)}
             </p>
           </div>
         </div>
@@ -431,10 +438,7 @@ export function OnboardingView() {
               Parsed review handoff
             </p>
             <p className="mt-1 text-xs leading-5 text-muted">
-              Status:{" "}
-              {state.parsedReviewHandoff === "skipped"
-                ? "Skipped"
-                : "Not started"}
+              Status: {handoffLabel(state.parsedReviewHandoff)}
             </p>
           </div>
         </div>

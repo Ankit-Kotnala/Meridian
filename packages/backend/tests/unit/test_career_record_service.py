@@ -15,26 +15,34 @@ from career_record_memory import (
 )
 
 from careeros.modules.career_record.application import (
+    AcceptSemanticImportProposal,
     CareerEntityData,
     CareerRecordService,
     CreateAchievement,
     CreateEvidence,
     CreateImportProposal,
+    CreateSemanticImportProposals,
     CreateSkill,
+    LinkCareerEntityRelationship,
     MetricInput,
     RequestContext,
     ResumeSourceLocator,
     UpdateReminderPreferences,
+    UpdateSkill,
     ValidatedResumeSource,
 )
 from careeros.modules.career_record.domain import (
     AchievementStatus,
     CareerEntityKind,
+    CareerFieldTarget,
+    CareerRecordIdempotencyConflict,
     CareerRecordNotFound,
     CareerRecordSourceUnavailable,
     CareerRecordTransitionRejected,
     CareerRecordValidationError,
     CareerRecordVersionConflict,
+    CareerRelationshipKind,
+    ConfirmationState,
     ConflictResolution,
     EmploymentType,
     EvidenceConflictKind,
@@ -46,7 +54,15 @@ from careeros.modules.career_record.domain import (
     PartialDate,
     ProposalStatus,
     ReminderCadence,
+    SemanticCandidateKind,
+    SemanticFieldOrigin,
+    SemanticImportAnchor,
+    SemanticImportField,
+    SemanticImportFieldState,
+    SemanticImportStatus,
+    SemanticImportTarget,
     TimelineFindingKind,
+    ValidatedSemanticCandidate,
     VerificationDecision,
     VerificationMethod,
     exact_claim_sha256,
@@ -123,6 +139,56 @@ def _validated_source() -> tuple[ResumeSourceLocator, ValidatedResumeSource]:
     return locator, source
 
 
+def _semantic_field(
+    name: str,
+    value: str,
+    *,
+    field_type: str = "text",
+    precision: str | None = None,
+    user_added: bool = False,
+) -> SemanticImportField:
+    anchor = SemanticImportAnchor(
+        block_id=uuid4(),
+        page=1,
+        start_offset=10,
+        end_offset=10 + len(value),
+        source_sha256=exact_claim_sha256("fictional reviewed resume"),
+        source_excerpt=value,
+    )
+    return SemanticImportField(
+        semantic_field_id=uuid4(),
+        name=name,
+        field_type=field_type,
+        value=value,
+        review_state=(
+            SemanticImportFieldState.USER_ADDED
+            if user_added
+            else SemanticImportFieldState.CONFIRMED
+        ),
+        confidence_basis_points=9_000,
+        date_precision=precision,
+        anchors=() if user_added else (anchor,),
+    )
+
+
+def _semantic_candidate(
+    document_id: UUID,
+    snapshot_id: UUID,
+    kind: SemanticCandidateKind,
+    fields: tuple[SemanticImportField, ...],
+) -> ValidatedSemanticCandidate:
+    return ValidatedSemanticCandidate(
+        document_id=document_id,
+        snapshot_id=snapshot_id,
+        snapshot_revision=3,
+        schema_version="canonical-semantics/1.0.0",
+        parser_version="local-semantic/1",
+        semantic_entity_id=uuid4(),
+        kind=kind,
+        fields=fields,
+    )
+
+
 @pytest.mark.asyncio
 async def test_profile_initializes_once_and_enforces_owner_and_versions() -> None:
     owner = uuid4()
@@ -143,6 +209,114 @@ async def test_profile_initializes_once_and_enforces_owner_and_versions() -> Non
         await service.update_entity(
             owner, entity.id, 99, _experience("Senior Engineer"), _context(owner)
         )
+
+
+@pytest.mark.asyncio
+async def test_manual_entity_requires_explicit_confirmation_for_readiness() -> None:
+    owner = uuid4()
+    memory = MemoryCareerRecord()
+    service = _service(memory, FakeResumeSourceQuery())
+    await service.get_or_create_profile(owner, _context(owner))
+
+    entity = await service.create_entity(
+        owner,
+        _experience(),
+        _context(owner),
+    )
+
+    assert memory.entity_confirmations[entity.id].state is ConfirmationState.NEEDS_REVIEW
+    assert (await service.readiness_snapshot(owner)).entities == ()
+
+    confirmed, confirmation = await service.confirm_entity(
+        owner,
+        entity.id,
+        entity.version,
+        _context(owner),
+    )
+    assert confirmation.state is ConfirmationState.CONFIRMED
+    assert [item.id for item in (await service.readiness_snapshot(owner)).entities] == [entity.id]
+    provenance = await memory.list_field_provenance(owner, entity.id)
+    assert provenance
+    assert {item.origin for item in provenance} == {SemanticFieldOrigin.OWNER_ATTESTATION}
+
+    updated = await service.update_entity(
+        owner,
+        entity.id,
+        confirmed.version,
+        _experience("Senior Engineer"),
+        _context(owner),
+    )
+    assert updated.title == "Senior Engineer"
+    assert memory.entity_confirmations[entity.id].state is ConfirmationState.NEEDS_REVIEW
+    assert (await service.readiness_snapshot(owner)).entities == ()
+
+    skill = await service.create_skill(
+        owner,
+        CreateSkill("Python"),
+        _context(owner),
+    )
+    assert (await service.readiness_snapshot(owner)).skills == ()
+    confirmed_skill, skill_confirmation = await service.confirm_skill(
+        owner,
+        skill.id,
+        skill.version,
+        _context(owner),
+    )
+    assert skill_confirmation.state is ConfirmationState.CONFIRMED
+    assert [item.id for item in (await service.readiness_snapshot(owner)).skills] == [skill.id]
+    await service.update_skill(
+        owner,
+        skill.id,
+        confirmed_skill.version,
+        UpdateSkill("Python", "Programming", None),
+        _context(owner),
+    )
+    assert memory.skill_confirmations[skill.id].state is ConfirmationState.NEEDS_REVIEW
+    assert (await service.readiness_snapshot(owner)).skills == ()
+
+    project = await service.create_entity(
+        owner,
+        CareerEntityData(
+            kind=CareerEntityKind.PROJECT,
+            title="Fictional project",
+            description="Owner-entered project.",
+        ),
+        _context(owner),
+    )
+    confirmed_project, _ = await service.confirm_entity(
+        owner,
+        project.id,
+        project.version,
+        _context(owner),
+    )
+    relationship = await service.link_entity_relationship(
+        owner,
+        LinkCareerEntityRelationship(
+            source_entity_id=updated.id,
+            target_entity_id=confirmed_project.id,
+            kind=CareerRelationshipKind.EXPERIENCE_PROJECT,
+        ),
+        _context(owner),
+    )
+    assert (await service.readiness_snapshot(owner)).relationships == ()
+    reconfirmed, _ = await service.confirm_entity(
+        owner,
+        updated.id,
+        updated.version,
+        _context(owner),
+    )
+    readiness = await service.readiness_snapshot(owner)
+    assert readiness.relationships[0].id == relationship.id
+    assert {item.id for item in readiness.entities} == {
+        reconfirmed.id,
+        confirmed_project.id,
+    }
+    await service.unlink_entity_relationship(
+        owner,
+        relationship.id,
+        _context(owner),
+    )
+    assert await service.list_entity_relationships(owner) == ()
 
 
 @pytest.mark.asyncio
@@ -277,6 +451,195 @@ async def test_deleted_resume_blocks_pending_proposal_and_supported_eligibility(
     decision = await service.evaluate_evidence(owner, evidence.item.id)
     assert not decision.factual_eligible
     assert "source_unavailable" in decision.reason_codes
+
+
+@pytest.mark.asyncio
+async def test_reviewed_semantic_import_preserves_field_provenance_and_requires_acceptance() -> (
+    None
+):
+    owner = uuid4()
+    other = uuid4()
+    document_id = uuid4()
+    snapshot_id = uuid4()
+    fields = (
+        _semantic_field("title", "Software Engineer"),
+        _semantic_field("employer", "Example Corp"),
+        _semantic_field(
+            "start_date",
+            "Jan 2022",
+            field_type="date",
+            precision="month",
+        ),
+        _semantic_field(
+            "end_date",
+            "Present",
+            field_type="date",
+            precision="unknown",
+        ),
+        _semantic_field(
+            "achievement",
+            "Built an owner-reviewed workflow.",
+            field_type="bullet",
+            user_added=True,
+        ),
+    )
+    candidate = _semantic_candidate(
+        document_id,
+        snapshot_id,
+        SemanticCandidateKind.EXPERIENCE,
+        fields,
+    )
+    memory = MemoryCareerRecord()
+    sources = FakeResumeSourceQuery()
+    sources.add_semantic(owner, document_id, snapshot_id, (candidate,))
+    service = _service(memory, sources)
+    await service.get_or_create_profile(owner, _context(owner))
+
+    with pytest.raises(CareerRecordSourceUnavailable):
+        await service.create_semantic_import_proposals(
+            other,
+            CreateSemanticImportProposals(document_id, snapshot_id),
+            _context(other),
+        )
+
+    batch = await service.create_semantic_import_proposals(
+        owner,
+        CreateSemanticImportProposals(document_id, snapshot_id),
+        _context(owner),
+    )
+    assert batch.questions == ()
+    assert len(batch.proposals) == 1
+    proposal = batch.proposals[0]
+    assert proposal.target is SemanticImportTarget.ENTITY
+    assert proposal.status is SemanticImportStatus.PENDING
+    assert memory.entities == {}
+
+    values = {field.semantic_field_id: field.value for field in fields}
+    values[fields[4].semantic_field_id] = "Built a reviewed workflow."
+    accepted = await service.accept_semantic_import_proposal(
+        owner,
+        proposal.id,
+        proposal.version,
+        AcceptSemanticImportProposal(values, "semantic:accept:experience"),
+        _context(owner),
+    )
+
+    assert accepted.entity is not None
+    assert accepted.entity.organization == "Example Corp"
+    assert accepted.entity.start_date == PartialDate(2022, 1)
+    assert accepted.entity.is_current
+    assert accepted.proposal.status is SemanticImportStatus.ACCEPTED
+    confirmation = memory.entity_confirmations[accepted.entity.id]
+    assert confirmation.state.value == "confirmed"
+    provenance = await memory.list_field_provenance(owner, accepted.entity.id)
+    assert all(item.target is CareerFieldTarget.ENTITY for item in provenance)
+    assert {item.origin for item in provenance} == {
+        SemanticFieldOrigin.RESUME_PARSER,
+        SemanticFieldOrigin.OWNER_EDIT,
+    }
+    user_edit = next(item for item in provenance if item.origin is SemanticFieldOrigin.OWNER_EDIT)
+    assert user_edit.anchors == ()
+    current_provenance = await service.current_field_provenance(owner, accepted.entity.id)
+    assert {item.field_name for item in current_provenance} == {
+        "title",
+        "official_title",
+        "display_title",
+        "organization",
+        "start_date",
+        "description",
+        "is_current",
+    }
+    assert all(
+        [
+            await service.field_provenance_source_available(owner, item)
+            for item in current_provenance
+        ]
+    )
+
+    replay = await service.accept_semantic_import_proposal(
+        owner,
+        proposal.id,
+        1,
+        AcceptSemanticImportProposal(values, "semantic:accept:experience"),
+        _context(owner),
+    )
+    assert replay.entity is not None and replay.entity.id == accepted.entity.id
+    with pytest.raises(CareerRecordIdempotencyConflict):
+        await service.accept_semantic_import_proposal(
+            owner,
+            proposal.id,
+            1,
+            AcceptSemanticImportProposal(values, "semantic:accept:different"),
+            _context(owner),
+        )
+
+
+@pytest.mark.asyncio
+async def test_semantic_contact_and_skill_candidates_do_not_overwrite_or_invent_missing_data() -> (
+    None
+):
+    owner = uuid4()
+    document_id = uuid4()
+    snapshot_id = uuid4()
+    contact = _semantic_candidate(
+        document_id,
+        snapshot_id,
+        SemanticCandidateKind.CONTACT,
+        (
+            _semantic_field("name", "Alex Example"),
+            _semantic_field("email", "alex@example.test", field_type="email"),
+        ),
+    )
+    skill = _semantic_candidate(
+        document_id,
+        snapshot_id,
+        SemanticCandidateKind.SKILL,
+        (_semantic_field("name", "Python"),),
+    )
+    incomplete = _semantic_candidate(
+        document_id,
+        snapshot_id,
+        SemanticCandidateKind.EXPERIENCE,
+        (_semantic_field("title", "Engineer"),),
+    )
+    memory = MemoryCareerRecord()
+    sources = FakeResumeSourceQuery()
+    sources.add_semantic(owner, document_id, snapshot_id, (contact, skill, incomplete))
+    service = _service(memory, sources)
+    await service.get_or_create_profile(owner, _context(owner))
+
+    batch = await service.create_semantic_import_proposals(
+        owner,
+        CreateSemanticImportProposals(document_id, snapshot_id),
+        _context(owner),
+    )
+
+    assert len(batch.proposals) == 2
+    assert batch.questions[0].missing_fields == ("employer", "start_date")
+    for proposal in batch.proposals:
+        values = {field.semantic_field_id: field.value for field in proposal.fields}
+        await service.accept_semantic_import_proposal(
+            owner,
+            proposal.id,
+            proposal.version,
+            AcceptSemanticImportProposal(values, f"semantic:accept:{proposal.id}"),
+            _context(owner),
+        )
+    assert {fact.kind.value for fact in memory.personal_facts.values()} == {
+        "name",
+        "email",
+    }
+    readiness = await service.readiness_snapshot(owner)
+    assert {fact.kind for fact in readiness.personal_facts} == {
+        "name",
+        "email",
+    }
+    assert {fact.value for fact in readiness.personal_facts} == {
+        "Alex Example",
+        "alex@example.test",
+    }
+    assert {skill.name for skill in memory.skills.values()} == {"Python"}
+    assert memory.entities == {}
 
 
 @pytest.mark.asyncio

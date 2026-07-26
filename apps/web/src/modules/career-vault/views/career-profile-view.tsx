@@ -28,11 +28,14 @@ import { requestErrorMessage } from "@/shared/api/browser-request";
 
 import {
   ApiRequestError,
+  confirmExperience,
   getCareerItems,
   createExperience,
   deleteExperience,
   getCareerProfile,
+  getCareerRelationships,
   getExperiences,
+  getPersonalFacts,
   getSkills,
   reorderExperiences,
   updateCareerProfile,
@@ -41,8 +44,10 @@ import {
 import type {
   CareerProfile,
   CareerProfileUpdate,
+  CareerRelationship,
   Experience,
   ExperienceInput,
+  PersonalFact,
   CareerItem,
   Skill,
 } from "../api/types";
@@ -61,6 +66,8 @@ export function CareerProfileView() {
   const [experiences, setExperiences] = useState<Experience[]>();
   const [careerItems, setCareerItems] = useState<CareerItem[]>();
   const [skills, setSkills] = useState<Skill[]>();
+  const [personalFacts, setPersonalFacts] = useState<PersonalFact[]>();
+  const [relationships, setRelationships] = useState<CareerRelationship[]>();
   const [editingProfile, setEditingProfile] = useState(false);
   const [editingExperience, setEditingExperience] = useState<
     Experience | "new"
@@ -78,17 +85,27 @@ export function CareerProfileView() {
   const load = useCallback(async () => {
     setFailure(undefined);
     try {
-      const [nextProfile, nextExperiences, nextItems, nextSkills] =
-        await Promise.all([
-          getCareerProfile(),
-          getExperiences(),
-          getCareerItems(),
-          getSkills(),
-        ]);
+      const [
+        nextProfile,
+        nextExperiences,
+        nextItems,
+        nextSkills,
+        nextPersonalFacts,
+        nextRelationships,
+      ] = await Promise.all([
+        getCareerProfile(),
+        getExperiences(),
+        getCareerItems(),
+        getSkills(),
+        getPersonalFacts(),
+        getCareerRelationships(),
+      ]);
       setProfile(nextProfile);
       setExperiences(nextExperiences);
       setCareerItems(nextItems);
       setSkills(nextSkills);
+      setPersonalFacts(nextPersonalFacts);
+      setRelationships(nextRelationships);
     } catch (error) {
       setFailure(
         requestErrorMessage(error, "We couldn’t load your career profile."),
@@ -233,7 +250,41 @@ export function CareerProfileView() {
     }
   }
 
-  if (!profile && !experiences && !careerItems && !skills && !failure) {
+  async function confirmCurrentExperience(value: Experience) {
+    setSaving(true);
+    setFailure(undefined);
+    setSuccess(undefined);
+    try {
+      const confirmed = await confirmExperience(value);
+      setExperiences((current = []) =>
+        current.map((item) => (item.id === confirmed.id ? confirmed : item)),
+      );
+      setSuccess(
+        "Experience confirmed. Its current facts are now eligible for grounded downstream use.",
+      );
+    } catch (error) {
+      setFailure(
+        error instanceof ApiRequestError && error.failure.status === 409
+          ? "This experience changed in another tab. Reload before confirming it."
+          : requestErrorMessage(
+              error,
+              "We couldnâ€™t confirm this experience.",
+            ),
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (
+    !profile &&
+    !experiences &&
+    !careerItems &&
+    !skills &&
+    !personalFacts &&
+    !relationships &&
+    !failure
+  ) {
     return (
       <main className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8" id="main-content">
         <LoadingSkeleton />
@@ -263,6 +314,7 @@ export function CareerProfileView() {
           setEditingExperience(value);
           setExperienceErrors({});
         }}
+        onConfirm={(value) => void confirmCurrentExperience(value)}
         onMove={(index, direction) => void moveExperience(index, direction)}
       />
     </div>
@@ -500,10 +552,15 @@ export function CareerProfileView() {
       </section>
 
       <CareerDetailsSections
+        experiences={list}
+        facts={personalFacts ?? []}
         items={careerItems ?? []}
+        onFactsChange={setPersonalFacts}
         onItemsChange={setCareerItems}
+        onRelationshipsChange={setRelationships}
         onSkillsChange={setSkills}
         skills={skills ?? []}
+        relationships={relationships ?? []}
       />
 
       <section

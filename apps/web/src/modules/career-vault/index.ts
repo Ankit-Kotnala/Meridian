@@ -3,6 +3,7 @@ export { CareerProfileView } from "./views/career-profile-view";
 export { EvidenceDetailView } from "./views/evidence-detail-view";
 export { EvidenceVaultView } from "./views/evidence-vault-view";
 export { ProfileImportReviewView } from "./views/profile-import-review-view";
+export { ProfileImportStartView } from "./views/profile-import-start-view";
 export {
   CareerVaultLoading,
   CareerVaultRouteError,

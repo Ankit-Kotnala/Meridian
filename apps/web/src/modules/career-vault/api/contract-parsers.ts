@@ -4,6 +4,7 @@ import type {
   AttachmentDownloadIntent,
   AttachmentUploadIntent,
   CareerProfile,
+  CareerRelationship,
   EvidenceAttachment,
   EvidenceConflict,
   EvidenceHistoryEvent,
@@ -15,8 +16,11 @@ import type {
   Skill,
   Experience,
   Page,
+  PersonalFact,
   ProfileConflict,
+  ProfileImportBatch,
   ProfileImportProposal,
+  ProfileImportQuestion,
   Provenance,
   ReminderPreferences,
   SourceSpan,
@@ -270,6 +274,49 @@ export function parseCareerProfile(value: unknown): CareerProfile {
   };
 }
 
+export function parsePersonalFact(value: unknown): PersonalFact {
+  const candidate = record(value, "personal fact");
+  const kind = nonEmpty(candidate.kind, "personal fact kind", 24);
+  if (!new Set(["name", "email", "phone", "location", "link"]).has(kind)) {
+    throw new Error("Invalid personal fact kind response.");
+  }
+  const confirmation = nonEmpty(
+    candidate.confirmation,
+    "personal fact confirmation",
+    24,
+  );
+  if (!new Set(["needs_review", "confirmed"]).has(confirmation)) {
+    throw new Error("Invalid personal fact confirmation response.");
+  }
+  return {
+    confirmation: confirmation as PersonalFact["confirmation"],
+    confirmedAt: nullableString(
+      candidate.confirmedAt,
+      "personal fact confirmation date",
+      80,
+    ),
+    createdAt: nonEmpty(candidate.createdAt, "personal fact created date", 80),
+    id: nonEmpty(candidate.id, "personal fact ID", 100),
+    isPrimary: boolean(candidate.isPrimary, "personal fact primary state"),
+    kind: kind as PersonalFact["kind"],
+    label: nullableString(candidate.label, "personal fact label", 80),
+    provenance: list(
+      candidate.provenance ?? [],
+      "personal fact provenance",
+      provenance,
+      20,
+    ),
+    updatedAt: nonEmpty(candidate.updatedAt, "personal fact updated date", 80),
+    value: nonEmpty(candidate.value, "personal fact value", 2_048),
+    version: integer(candidate.version, "personal fact version"),
+  };
+}
+
+export function parsePersonalFacts(value: unknown): PersonalFact[] {
+  const candidate = record(value, "personal fact list");
+  return list(candidate.data, "personal facts", parsePersonalFact, 100);
+}
+
 export function parseExperience(value: unknown): Experience {
   const candidate = record(value, "experience");
   return {
@@ -371,6 +418,7 @@ export function parseCareerItem(value: unknown): CareerItem {
     title: nonEmpty(candidate.title, "career item title", 300),
     updatedAt: nonEmpty(candidate.updatedAt, "career item updated date", 80),
     url: nullableHttpUrl(candidate.url, "career item URL"),
+    userConfirmed: boolean(candidate.userConfirmed, "career item confirmation"),
     version: integer(candidate.version, "career item version"),
   };
 }
@@ -378,6 +426,43 @@ export function parseCareerItem(value: unknown): CareerItem {
 export function parseCareerItems(value: unknown): CareerItem[] {
   const candidate = record(value, "career item list");
   return list(candidate.data, "career items", parseCareerItem, 500);
+}
+
+export function parseCareerRelationship(value: unknown): CareerRelationship {
+  const candidate = record(value, "career relationship");
+  const kind = nonEmpty(candidate.kind, "career relationship kind", 40);
+  if (kind !== "experience_project") {
+    throw new Error("Invalid career relationship kind response.");
+  }
+  return {
+    createdAt: nonEmpty(
+      candidate.createdAt,
+      "career relationship created date",
+      80,
+    ),
+    experienceId: nonEmpty(
+      candidate.experienceId,
+      "career relationship experience ID",
+      100,
+    ),
+    id: nonEmpty(candidate.id, "career relationship ID", 100),
+    kind,
+    projectId: nonEmpty(
+      candidate.projectId,
+      "career relationship project ID",
+      100,
+    ),
+  };
+}
+
+export function parseCareerRelationships(value: unknown): CareerRelationship[] {
+  const candidate = record(value, "career relationship list");
+  return list(
+    candidate.data,
+    "career relationships",
+    parseCareerRelationship,
+    500,
+  );
 }
 
 export function parseSkill(value: unknown): Skill {
@@ -399,8 +484,15 @@ export function parseSkill(value: unknown): Skill {
     id: nonEmpty(candidate.id, "skill ID", 100),
     name: nonEmpty(candidate.name, "skill name", 160),
     order: integer(candidate.order ?? 0, "skill order", 100_000),
+    provenance: list(
+      candidate.provenance ?? [],
+      "skill provenance",
+      provenance,
+      20,
+    ),
     proficiency: proficiency as Skill["proficiency"],
     updatedAt: nonEmpty(candidate.updatedAt, "skill updated date", 80),
+    userConfirmed: boolean(candidate.userConfirmed, "skill confirmation"),
     version: integer(candidate.version, "skill version"),
   };
 }
@@ -418,31 +510,153 @@ export function parseProfileImportProposal(
   if (!new Set(["pending", "accepted", "rejected"]).has(status)) {
     throw new Error("Invalid proposal status response.");
   }
+  const sourceAvailable = boolean(
+    candidate.sourceAvailable,
+    "proposal source availability",
+  );
+  const documentId = nonEmpty(
+    candidate.documentId,
+    "proposal source document ID",
+    100,
+  );
+  const snapshotId = nonEmpty(
+    candidate.snapshotId,
+    "proposal source snapshot ID",
+    100,
+  );
+  const snapshotRevision = integer(
+    candidate.snapshotRevision,
+    "proposal source revision",
+  );
+  const parserVersion = nonEmpty(
+    candidate.parserVersion,
+    "proposal parser version",
+    160,
+  );
+  const proposalId = nonEmpty(candidate.id, "proposal ID", 100);
   return {
-    changes: list(candidate.changes, "proposal changes", (item) => {
-      const change = record(item, "proposal change");
+    changes: list(candidate.fields, "proposal fields", (item) => {
+      const change = record(item, "proposal field");
+      const fieldId = nonEmpty(change.id, "proposal field ID", 100);
+      const reviewState = nonEmpty(
+        change.reviewState,
+        "proposal field review state",
+        30,
+      );
+      if (!new Set(["confirmed", "corrected", "user_added"]).has(reviewState)) {
+        throw new Error("Invalid proposal field review state response.");
+      }
+      const confidence =
+        typeof change.confidence === "number" ? change.confidence : null;
+      const proposedValue =
+        nullableString(change.acceptedValue, "accepted proposal value") ??
+        string(change.proposedValue, "proposal proposed value");
+      const spans = list(
+        change.anchors,
+        "proposal source anchors",
+        (anchorValue): SourceSpan => {
+          const anchor = record(anchorValue, "proposal source anchor");
+          const blockId = nonEmpty(
+            anchor.blockId,
+            "proposal source block ID",
+            100,
+          );
+          const start = integer(
+            anchor.start,
+            "proposal source start",
+            100_000_000,
+          );
+          return {
+            digest: nonEmpty(anchor.digest, "proposal source digest", 100),
+            end: integer(anchor.end, "proposal source end", 100_000_000),
+            excerpt: nonEmpty(anchor.excerpt, "proposal source excerpt", 1_000),
+            id: `${blockId}:${start}`,
+            page: integer(anchor.page, "proposal source page", 100_000),
+            start,
+          };
+        },
+        100,
+      );
       return {
-        conflict: nullableString(change.conflict, "proposal conflict", 1_000),
-        currentValue: nullableString(
-          change.currentValue,
-          "proposal current value",
+        conflict: nullableString(
+          candidate.conflictCode,
+          "proposal conflict",
+          1_000,
         ),
-        field: nonEmpty(change.field, "proposal field", 100),
-        id: nonEmpty(change.id, "proposal change ID", 100),
-        label: nonEmpty(change.label, "proposal change label", 200),
-        proposedValue: string(change.proposedValue, "proposal proposed value"),
-        source: provenance(change.source),
+        currentValue: null,
+        field: nonEmpty(change.name, "proposal field name", 100),
+        id: fieldId,
+        label: nonEmpty(change.name, "proposal field label", 100)
+          .replaceAll("_", " ")
+          .replace(/^\w/, (value) => value.toUpperCase()),
+        proposedValue,
+        source: {
+          available: sourceAvailable,
+          confidence,
+          id: `${proposalId}:${fieldId}`,
+          parserVersion,
+          sourceDocumentId: documentId,
+          sourceLabel:
+            reviewState === "user_added"
+              ? "Added during typed resume review; not extracted from the file"
+              : reviewState === "corrected"
+                ? "Corrected during typed review; original source anchor retained"
+                : "Confirmed typed resume field",
+          sourceRevision: snapshotRevision,
+          sourceSnapshotId: snapshotId,
+          sourceType: "resume_semantic",
+          spans,
+          userConfirmed: status === "accepted",
+        },
       };
     }),
     createdAt: nonEmpty(candidate.createdAt, "proposal created date", 80),
-    id: nonEmpty(candidate.id, "proposal ID", 100),
-    sourceDocumentName: nonEmpty(
-      candidate.sourceDocumentName,
-      "proposal source document",
-      250,
-    ),
+    id: proposalId,
+    sourceAvailable,
+    sourceDocumentName: `reviewed resume snapshot ${snapshotRevision}`,
     status: status as ProfileImportProposal["status"],
     version: integer(candidate.version, "proposal version"),
+  };
+}
+
+export function parseProfileImportBatch(value: unknown): ProfileImportBatch {
+  const candidate = record(value, "profile import batch");
+  return {
+    proposals: list(
+      candidate.proposals,
+      "profile import proposals",
+      parseProfileImportProposal,
+      500,
+    ),
+    questions: list(
+      candidate.questions,
+      "profile import questions",
+      (item): ProfileImportQuestion => {
+        const question = record(item, "profile import question");
+        const code = nonEmpty(
+          question.code,
+          "profile import question code",
+          80,
+        );
+        if (code !== "semantic_candidate_requires_review") {
+          throw new Error("Invalid profile import question code response.");
+        }
+        return {
+          code,
+          missingFields: stringList(
+            question.missingFields,
+            "profile import missing fields",
+            20,
+          ),
+          semanticEntityId: nonEmpty(
+            question.semanticEntityId,
+            "profile import semantic entity ID",
+            100,
+          ),
+        };
+      },
+      500,
+    ),
   };
 }
 

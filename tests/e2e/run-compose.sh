@@ -11,9 +11,12 @@ case "$project_name" in
     ;;
 esac
 
-verification_phase=${CAREEROS_E2E_PHASE:-2}
-expected_migration_head=${CAREEROS_EXPECTED_MIGRATION_HEAD:-20260724_0010}
+verification_phase=${CAREEROS_E2E_PHASE:-1}
+expected_migration_head=${CAREEROS_EXPECTED_MIGRATION_HEAD:-20260726_0011}
 case "$verification_phase" in
+  1)
+    rollback_revision=20260714_0001
+    ;;
   2)
     rollback_revision=20260715_0002
     ;;
@@ -39,7 +42,7 @@ case "$verification_phase" in
     rollback_revision=20260724_0009
     ;;
   *)
-    echo "CAREEROS_E2E_PHASE must be 2, 3, 4, 5, 6, 7, 8, or 9." >&2
+    echo "CAREEROS_E2E_PHASE must be 1, 2, 3, 4, 5, 6, 7, 8, or 9." >&2
     exit 2
     ;;
 esac
@@ -159,8 +162,35 @@ wait_service_healthy() {
   return 1
 }
 
+wait_container_exit_code() {
+  container_id=$1
+  attempts=${2:-10}
+  delay_seconds=${3:-2}
+  attempt=1
+  last_failure="no response"
+
+  while [ "$attempt" -le "$attempts" ]; do
+    if wait_output=$(docker wait "$container_id" 2>&1); then
+      printf '%s\n' "$wait_output"
+      return 0
+    fi
+    last_failure=$wait_output
+    if [ "$attempt" -lt "$attempts" ]; then
+      sleep "$delay_seconds"
+    fi
+    attempt=$((attempt + 1))
+  done
+
+  echo "Container wait failed after $attempts attempts: $last_failure" >&2
+  return 1
+}
+
 run_browser_journeys() {
   case "$verification_phase" in
+    1)
+      pnpm --filter @careeros/web exec playwright test \
+        e2e/auth-journey.spec.ts
+      ;;
     2)
       pnpm --filter @careeros/web exec playwright test \
         e2e/auth-journey.spec.ts \
@@ -255,7 +285,9 @@ trap 'exit 143' TERM
 cd "$repository_root"
 
 docker compose --project-name "$project_name" config --quiet
-docker compose --project-name "$project_name" build api worker web web-edge
+for service in api worker web web-edge; do
+  docker compose --project-name "$project_name" build "$service"
+done
 docker compose --project-name "$project_name" up --detach --wait --wait-timeout 900 postgres redis minio mailpit clamav
 wait_service_healthy clamav 900 10
 docker compose --project-name "$project_name" up --detach minio-init
@@ -264,7 +296,7 @@ if [ -z "$init_container" ]; then
   echo "Compose did not create the object-storage initializer." >&2
   exit 1
 fi
-init_exit=$(docker wait "$init_container")
+init_exit=$(wait_container_exit_code "$init_container")
 if [ "$init_exit" -ne 0 ]; then
   echo "Object-storage initialization failed with exit code $init_exit." >&2
   exit "$init_exit"

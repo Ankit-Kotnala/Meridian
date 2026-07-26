@@ -169,6 +169,38 @@ class CareerEntityModel(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
+class CareerEntityConfirmationModel(Base):
+    __tablename__ = "career_entity_confirmations"
+    __table_args__ = (
+        CheckConstraint("state IN ('needs_review','confirmed')", name="state_valid"),
+        CheckConstraint("version > 0", name="version_positive"),
+        CheckConstraint(
+            "(state = 'confirmed' AND confirmed_at IS NOT NULL) OR "
+            "(state = 'needs_review' AND confirmed_at IS NULL)",
+            name="confirmation_state_valid",
+        ),
+        ForeignKeyConstraint(
+            ["owner_user_id", "entity_id"],
+            ["career_entities.owner_user_id", "career_entities.id"],
+            name="fk_career_entity_confirmations_owner_entity",
+            ondelete="CASCADE",
+        ),
+        UniqueConstraint(
+            "owner_user_id", "entity_id", name="uq_career_entity_confirmations_owner_entity"
+        ),
+        {"info": {"introduced_in_revision": "20260726_0011"}},
+    )
+
+    entity_id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
+    owner_user_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    state: Mapped[str] = mapped_column(String(24), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, server_default=text("1"), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class CareerSkillModel(Base):
     __tablename__ = "career_skills"
     __table_args__ = (
@@ -210,6 +242,304 @@ class CareerSkillModel(Base):
     version: Mapped[int] = mapped_column(Integer, server_default=text("1"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class CareerSkillConfirmationModel(Base):
+    __tablename__ = "career_skill_confirmations"
+    __table_args__ = (
+        CheckConstraint("state IN ('needs_review','confirmed')", name="state_valid"),
+        CheckConstraint("version > 0", name="version_positive"),
+        CheckConstraint(
+            "(state = 'confirmed' AND confirmed_at IS NOT NULL) OR "
+            "(state = 'needs_review' AND confirmed_at IS NULL)",
+            name="confirmation_state_valid",
+        ),
+        ForeignKeyConstraint(
+            ["owner_user_id", "skill_id"],
+            ["career_skills.owner_user_id", "career_skills.id"],
+            name="fk_career_skill_confirmations_owner_skill",
+            ondelete="CASCADE",
+        ),
+        UniqueConstraint(
+            "owner_user_id", "skill_id", name="uq_career_skill_confirmations_owner_skill"
+        ),
+        {"info": {"introduced_in_revision": "20260726_0011"}},
+    )
+
+    skill_id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
+    owner_user_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    state: Mapped[str] = mapped_column(String(24), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, server_default=text("1"), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class CareerPersonalFactModel(Base):
+    __tablename__ = "career_personal_facts"
+    __table_args__ = (
+        CheckConstraint("kind IN ('name','email','phone','location','link')", name="kind_valid"),
+        CheckConstraint("confirmation IN ('needs_review','confirmed')", name="confirmation_valid"),
+        CheckConstraint("version > 0", name="version_positive"),
+        CheckConstraint(
+            "(confirmation = 'confirmed' AND confirmed_at IS NOT NULL) OR "
+            "(confirmation = 'needs_review' AND confirmed_at IS NULL)",
+            name="confirmation_state_valid",
+        ),
+        ForeignKeyConstraint(
+            ["owner_user_id", "profile_id"],
+            ["career_profiles.owner_user_id", "career_profiles.id"],
+            name="fk_career_personal_facts_owner_profile",
+            ondelete="CASCADE",
+        ),
+        UniqueConstraint("owner_user_id", "id", name="uq_career_personal_facts_owner_id"),
+        UniqueConstraint(
+            "owner_user_id",
+            "profile_id",
+            "kind",
+            "value_sha256",
+            name="uq_career_personal_facts_owner_value",
+        ),
+        Index(
+            "ix_career_personal_facts_owner_profile_kind",
+            "owner_user_id",
+            "profile_id",
+            "kind",
+            "created_at",
+        ),
+        Index(
+            "uq_career_personal_facts_owner_primary_kind",
+            "owner_user_id",
+            "profile_id",
+            "kind",
+            unique=True,
+            postgresql_where=text("is_primary"),
+        ),
+        {"info": {"introduced_in_revision": "20260726_0011"}},
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
+    owner_user_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    profile_id: Mapped[UUID] = mapped_column(Uuid, nullable=False)
+    kind: Mapped[str] = mapped_column(String(24), nullable=False)
+    value: Mapped[str] = mapped_column(String(2048), nullable=False)
+    value_sha256: Mapped[bytes] = mapped_column(LargeBinary(32), nullable=False)
+    label: Mapped[str | None] = mapped_column(String(80))
+    is_primary: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    confirmation: Mapped[str] = mapped_column(String(24), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, server_default=text("1"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class CareerFieldProvenanceModel(Base):
+    __tablename__ = "career_field_provenance"
+    __table_args__ = (
+        CheckConstraint("target IN ('personal_fact','entity','skill')", name="target_valid"),
+        CheckConstraint(
+            "origin IN ('resume_parser','resume_user_added','owner_edit','owner_attestation')",
+            name="origin_valid",
+        ),
+        CheckConstraint("octet_length(value_sha256) = 32", name="value_sha256_length"),
+        CheckConstraint(
+            "(target = 'personal_fact' AND personal_fact_id IS NOT NULL "
+            "AND entity_id IS NULL AND skill_id IS NULL) OR "
+            "(target = 'entity' AND personal_fact_id IS NULL "
+            "AND entity_id IS NOT NULL AND skill_id IS NULL) OR "
+            "(target = 'skill' AND personal_fact_id IS NULL "
+            "AND entity_id IS NULL AND skill_id IS NOT NULL)",
+            name="target_reference_valid",
+        ),
+        CheckConstraint(
+            "(origin = 'owner_attestation' AND document_id IS NULL "
+            "AND snapshot_id IS NULL AND snapshot_revision IS NULL "
+            "AND schema_version IS NULL AND parser_version IS NULL "
+            "AND semantic_entity_id IS NULL AND semantic_field_id IS NULL "
+            "AND anchors_json = '[]'::jsonb) OR "
+            "(origin <> 'owner_attestation' AND document_id IS NOT NULL "
+            "AND snapshot_id IS NOT NULL AND snapshot_revision > 0 "
+            "AND schema_version IS NOT NULL AND parser_version IS NOT NULL "
+            "AND semantic_entity_id IS NOT NULL AND semantic_field_id IS NOT NULL)",
+            name="semantic_identity_complete",
+        ),
+        ForeignKeyConstraint(
+            ["owner_user_id", "profile_id"],
+            ["career_profiles.owner_user_id", "career_profiles.id"],
+            name="fk_career_field_provenance_owner_profile",
+            ondelete="CASCADE",
+        ),
+        ForeignKeyConstraint(
+            ["owner_user_id", "personal_fact_id"],
+            ["career_personal_facts.owner_user_id", "career_personal_facts.id"],
+            name="fk_career_field_provenance_owner_fact",
+            ondelete="CASCADE",
+        ),
+        ForeignKeyConstraint(
+            ["owner_user_id", "entity_id"],
+            ["career_entities.owner_user_id", "career_entities.id"],
+            name="fk_career_field_provenance_owner_entity",
+            ondelete="CASCADE",
+        ),
+        ForeignKeyConstraint(
+            ["owner_user_id", "skill_id"],
+            ["career_skills.owner_user_id", "career_skills.id"],
+            name="fk_career_field_provenance_owner_skill",
+            ondelete="CASCADE",
+        ),
+        Index(
+            "ix_career_field_provenance_owner_target",
+            "owner_user_id",
+            "personal_fact_id",
+            "entity_id",
+            "skill_id",
+            "created_at",
+        ),
+        {"info": {"introduced_in_revision": "20260726_0011"}},
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
+    owner_user_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    profile_id: Mapped[UUID] = mapped_column(Uuid, nullable=False)
+    target: Mapped[str] = mapped_column(String(24), nullable=False)
+    personal_fact_id: Mapped[UUID | None] = mapped_column(Uuid)
+    entity_id: Mapped[UUID | None] = mapped_column(Uuid)
+    skill_id: Mapped[UUID | None] = mapped_column(Uuid)
+    field_name: Mapped[str] = mapped_column(String(80), nullable=False)
+    value_sha256: Mapped[bytes] = mapped_column(LargeBinary(32), nullable=False)
+    origin: Mapped[str] = mapped_column(String(32), nullable=False)
+    document_id: Mapped[UUID | None] = mapped_column(Uuid)
+    snapshot_id: Mapped[UUID | None] = mapped_column(Uuid)
+    snapshot_revision: Mapped[int | None] = mapped_column(Integer)
+    schema_version: Mapped[str | None] = mapped_column(String(80))
+    parser_version: Mapped[str | None] = mapped_column(String(120))
+    semantic_entity_id: Mapped[UUID | None] = mapped_column(Uuid)
+    semantic_field_id: Mapped[UUID | None] = mapped_column(Uuid)
+    anchors_json: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB,
+        server_default=text("'[]'::jsonb"),
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class CareerSemanticImportProposalModel(Base):
+    __tablename__ = "career_semantic_import_proposals"
+    __table_args__ = (
+        CheckConstraint("target IN ('personal_facts','entity','skill')", name="target_valid"),
+        CheckConstraint(
+            "semantic_kind IN "
+            "('contact','experience','education','project','skill','certification')",
+            name="semantic_kind_valid",
+        ),
+        CheckConstraint("status IN ('pending','accepted','rejected')", name="status_valid"),
+        CheckConstraint("snapshot_revision > 0", name="snapshot_revision_positive"),
+        CheckConstraint("version > 0", name="version_positive"),
+        CheckConstraint(
+            "(status = 'pending' AND reviewed_at IS NULL "
+            "AND accepted_values_json IS NULL AND decision_idempotency_key IS NULL) OR "
+            "(status = 'accepted' AND reviewed_at IS NOT NULL "
+            "AND accepted_values_json IS NOT NULL AND decision_idempotency_key IS NOT NULL) OR "
+            "(status = 'rejected' AND reviewed_at IS NOT NULL "
+            "AND accepted_values_json IS NULL AND decision_idempotency_key IS NOT NULL)",
+            name="decision_state_valid",
+        ),
+        ForeignKeyConstraint(
+            ["owner_user_id", "profile_id"],
+            ["career_profiles.owner_user_id", "career_profiles.id"],
+            name="fk_career_semantic_import_proposals_owner_profile",
+            ondelete="CASCADE",
+        ),
+        UniqueConstraint(
+            "owner_user_id",
+            "snapshot_id",
+            "semantic_entity_id",
+            name="uq_career_semantic_proposals_owner_snapshot_entity",
+        ),
+        UniqueConstraint("owner_user_id", "id", name="uq_career_semantic_proposals_owner_id"),
+        Index(
+            "ix_career_semantic_proposals_owner_status_created",
+            "owner_user_id",
+            "status",
+            "created_at",
+            "id",
+        ),
+        {"info": {"introduced_in_revision": "20260726_0011"}},
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
+    owner_user_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    profile_id: Mapped[UUID] = mapped_column(Uuid, nullable=False)
+    target: Mapped[str] = mapped_column(String(24), nullable=False)
+    target_record_id: Mapped[UUID | None] = mapped_column(Uuid)
+    document_id: Mapped[UUID] = mapped_column(Uuid, nullable=False)
+    snapshot_id: Mapped[UUID] = mapped_column(Uuid, nullable=False)
+    snapshot_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    schema_version: Mapped[str] = mapped_column(String(80), nullable=False)
+    parser_version: Mapped[str] = mapped_column(String(120), nullable=False)
+    semantic_entity_id: Mapped[UUID] = mapped_column(Uuid, nullable=False)
+    semantic_kind: Mapped[str] = mapped_column(String(24), nullable=False)
+    fields_json: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False)
+    accepted_values_json: Mapped[dict[str, str] | None] = mapped_column(JSONB)
+    decision_idempotency_key: Mapped[str | None] = mapped_column(String(128))
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    conflict_code: Mapped[str | None] = mapped_column(String(80))
+    version: Mapped[int] = mapped_column(Integer, server_default=text("1"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class CareerEntityRelationshipModel(Base):
+    __tablename__ = "career_entity_relationships"
+    __table_args__ = (
+        CheckConstraint("kind IN ('experience_project')", name="kind_valid"),
+        CheckConstraint("source_entity_id <> target_entity_id", name="different_entities"),
+        ForeignKeyConstraint(
+            ["owner_user_id", "profile_id"],
+            ["career_profiles.owner_user_id", "career_profiles.id"],
+            name="fk_career_entity_relationships_owner_profile",
+            ondelete="CASCADE",
+        ),
+        ForeignKeyConstraint(
+            ["owner_user_id", "source_entity_id"],
+            ["career_entities.owner_user_id", "career_entities.id"],
+            name="fk_career_entity_relationships_owner_source",
+            ondelete="CASCADE",
+        ),
+        ForeignKeyConstraint(
+            ["owner_user_id", "target_entity_id"],
+            ["career_entities.owner_user_id", "career_entities.id"],
+            name="fk_career_entity_relationships_owner_target",
+            ondelete="CASCADE",
+        ),
+        UniqueConstraint(
+            "owner_user_id",
+            "source_entity_id",
+            "target_entity_id",
+            "kind",
+            name="uq_career_entity_relationships_owner_pair_kind",
+        ),
+        UniqueConstraint("owner_user_id", "id", name="uq_career_entity_relationships_owner_id"),
+        {"info": {"introduced_in_revision": "20260726_0011"}},
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
+    owner_user_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    profile_id: Mapped[UUID] = mapped_column(Uuid, nullable=False)
+    source_entity_id: Mapped[UUID] = mapped_column(Uuid, nullable=False)
+    target_entity_id: Mapped[UUID] = mapped_column(Uuid, nullable=False)
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class CareerEntitySkillModel(Base):

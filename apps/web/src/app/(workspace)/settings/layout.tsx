@@ -11,8 +11,8 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
           Settings
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-          Manage real account state, active sessions, and explicit consent
-          choices.
+          Manage real account state, preferences, sessions, consent, privacy,
+          connections, and server-reported capability availability.
         </p>
       </header>
       <SettingsNavigation />

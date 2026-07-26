@@ -8,7 +8,7 @@ from careeros.modules.identity.domain import (
     AuthenticatedPrincipal,
     AuthMethod,
     ConsentDecision,
-    HandoffStatus,
+    ObservedResumeStatus,
     OnboardingStatus,
     OnboardingStep,
 )
@@ -71,8 +71,10 @@ class SessionSummary:
 class OnboardingView:
     status: OnboardingStatus
     current_step: OnboardingStep
-    resume_handoff: HandoffStatus
-    parsed_review_handoff: HandoffStatus
+    resume_handoff: ObservedResumeStatus
+    parsed_review_handoff: ObservedResumeStatus
+    latest_resume_document_id: UUID | None
+    resume_safe_error_code: str | None
     skipped_steps: tuple[OnboardingStep, ...]
     version: int
     display_name: str
@@ -86,11 +88,36 @@ class OnboardingView:
 
 
 @dataclass(frozen=True, slots=True)
+class OnboardingResumeObservation:
+    """Owner-scoped Resume Health state; no document content crosses this boundary."""
+
+    resume_status: ObservedResumeStatus
+    parsed_review_status: ObservedResumeStatus
+    document_id: UUID | None = None
+    safe_error_code: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class ConsentView:
     purpose: str
     decision: ConsentDecision
     policy_version: str
     recorded_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class AccountSecurityView:
+    has_password: bool
+    google_connected: bool
+
+
+@dataclass(frozen=True, slots=True)
+class SecurityActivityView:
+    id: UUID
+    event_type: str
+    outcome: str
+    occurred_at: datetime
+    current_session: bool
 
 
 @dataclass(frozen=True, slots=True)

@@ -114,7 +114,11 @@ def test_phase3_migration_matches_registered_orm_schema() -> None:
     revision.__dict__["op"] = capture
     revision.upgrade()
 
-    expected = _phase_tables()
+    expected = {
+        name: table
+        for name, table in _phase_tables().items()
+        if table.info.get("introduced_in_revision") is None
+    }
     captured_names = set(capture.metadata.tables) - {"users"}
     assert captured_names == set(expected)
 

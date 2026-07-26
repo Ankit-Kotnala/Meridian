@@ -1,6 +1,6 @@
 """Resume Health application API."""
 
-from ..domain import DocumentStatus, OwnerScope, ResumeHealthError
+from ..domain import DocumentStatus, OwnerScope, ResumeHealthError, SemanticReviewState
 from .models import (
     AddSemanticEntity,
     AddSemanticField,
@@ -93,5 +93,6 @@ __all__ = [
     "ScoreComponentView",
     "SemanticFieldReclassification",
     "SemanticReviewOperation",
+    "SemanticReviewState",
     "UploadIntentView",
 ]

@@ -161,6 +161,9 @@ information review; uncertain-field correction; target-role selection; location,
 work model, seniority, industry, language, and writing preferences; then
 dashboard. Nonessential steps are skippable and resumable. Guest data cannot be
 silently converted or retained without explicit account linkage and consent.
+Upload, processing, typed-review, and analysis completion are server-observed
+owner-scoped state. The browser may save intent and explicit skips but cannot
+assert those pipeline transitions.
 
 ## Functional module requirements
 
@@ -193,8 +196,11 @@ interfaces for parsing, text, layout, malware, and OCR providers.
   provenance.
 - Provide timeline/list views, CRUD, accessible reorder, conflict detection,
   promotion grouping, concurrent roles, and neutral gap indication.
-- A resume import proposes profile changes; it does not silently overwrite the
-  durable profile.
+- A resume import proposes typed profile changes from the owned reviewed semantic
+  snapshot; it does not silently overwrite the durable profile. Canonical facts,
+  entities, and skills expose explicit confirmation and per-field provenance.
+  Material edits revoke confirmation, and relationship edges remain
+  owner-scoped.
 
 ### Module 3 — Evidence Vault (Phase 3)
 
@@ -369,6 +375,9 @@ AI and consent, retention, export/deletion, billing/connections, and security
 activity. Defaults: no model training on user content, minimize provider payloads,
 no raw content in analytics/logs, configurable retention, recorded consent,
 document deletion, account export/deletion, and session invalidation.
+Until an export, deletion, billing, connection, or notification-delivery workflow
+is fully composed, Settings SHALL expose a server-owned disabled capability and
+an honest unavailable state rather than a simulated action.
 
 ## Administration and commercial requirements
 

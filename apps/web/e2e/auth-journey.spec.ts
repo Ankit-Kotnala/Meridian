@@ -173,6 +173,10 @@ async function completeResumeHealth(page: Page): Promise<void> {
       .or(page.getByText("Score unavailable")),
   ).toBeVisible();
 
+  await page.goto("/onboarding");
+  await expect(page.getByText("Status: Analysis ready")).toHaveCount(2);
+  await page.goto("/dashboard");
+
   await page.goto("/dashboard");
   await expect(
     page
@@ -284,6 +288,20 @@ test("a verified user completes honest onboarding and controls sessions", async 
     });
     await secondaryContext.close();
     secondaryContext = undefined;
+
+    await page.goto("/settings/security");
+    await expect(
+      page.getByRole("heading", { name: "Change password" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Security activity" }),
+    ).toBeVisible();
+    await page.goto("/settings/notifications");
+    await expect(
+      page.getByText("Scheduled delivery is not configured"),
+    ).toBeVisible();
+    await page.goto("/settings/privacy");
+    await expect(page.getByText("Export is unavailable")).toBeVisible();
 
     await page.locator("summary").filter({ hasText: "Account menu" }).click();
     await page.getByRole("button", { name: "Sign out", exact: true }).click();

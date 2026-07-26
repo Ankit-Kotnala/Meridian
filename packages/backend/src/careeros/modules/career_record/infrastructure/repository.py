@@ -30,10 +30,17 @@ from careeros.modules.career_record.domain import (
     AttachmentStatus,
     CareerAuditEvent,
     CareerEntity,
+    CareerEntityConfirmation,
     CareerEntityKind,
+    CareerEntityRelationship,
+    CareerFieldProvenance,
+    CareerFieldTarget,
     CareerProfile,
     CareerRecordConflict,
     CareerRecordIdempotencyConflict,
+    CareerRelationshipKind,
+    CareerSkillConfirmation,
+    ConfirmationState,
     ConflictResolution,
     ConflictStatus,
     EmploymentType,
@@ -58,10 +65,19 @@ from careeros.modules.career_record.domain import (
     ImportProposal,
     MetricPrecision,
     PartialDate,
+    PersonalFact,
+    PersonalFactKind,
     ProposalStatus,
     ReminderCadence,
     ReminderPreferences,
     ResumeProvenance,
+    SemanticCandidateKind,
+    SemanticFieldOrigin,
+    SemanticImportAnchor,
+    SemanticImportField,
+    SemanticImportProposal,
+    SemanticImportStatus,
+    SemanticImportTarget,
     Skill,
     SkillProficiency,
 )
@@ -69,10 +85,16 @@ from careeros.modules.career_record.domain import (
 from .models import (
     AchievementDraftModel,
     CareerAuditEventModel,
+    CareerEntityConfirmationModel,
     CareerEntityModel,
+    CareerEntityRelationshipModel,
     CareerEntitySkillModel,
+    CareerFieldProvenanceModel,
     CareerImportProposalModel,
+    CareerPersonalFactModel,
     CareerProfileModel,
+    CareerSemanticImportProposalModel,
+    CareerSkillConfirmationModel,
     CareerSkillModel,
     EvidenceAttachmentModel,
     EvidenceConflictModel,
@@ -192,6 +214,173 @@ class SqlAlchemyCareerRecordUnitOfWork:
             )
         )
 
+    async def get_entity_confirmation(
+        self, owner_user_id: UUID, entity_id: UUID, *, for_update: bool = False
+    ) -> CareerEntityConfirmation | None:
+        statement = select(CareerEntityConfirmationModel).where(
+            CareerEntityConfirmationModel.owner_user_id == owner_user_id,
+            CareerEntityConfirmationModel.entity_id == entity_id,
+        )
+        if for_update:
+            statement = statement.with_for_update()
+        model = await self.session.scalar(statement)
+        return _entity_confirmation(model) if model is not None else None
+
+    async def list_entity_confirmations(
+        self, owner_user_id: UUID, profile_id: UUID
+    ) -> list[CareerEntityConfirmation]:
+        models = (
+            await self.session.scalars(
+                select(CareerEntityConfirmationModel)
+                .join(
+                    CareerEntityModel,
+                    (CareerEntityModel.owner_user_id == CareerEntityConfirmationModel.owner_user_id)
+                    & (CareerEntityModel.id == CareerEntityConfirmationModel.entity_id),
+                )
+                .where(
+                    CareerEntityConfirmationModel.owner_user_id == owner_user_id,
+                    CareerEntityModel.profile_id == profile_id,
+                )
+                .order_by(CareerEntityConfirmationModel.entity_id)
+            )
+        ).all()
+        return [_entity_confirmation(model) for model in models]
+
+    async def add_entity_confirmation(self, confirmation: CareerEntityConfirmation) -> None:
+        self.session.add(CareerEntityConfirmationModel(**_entity_confirmation_values(confirmation)))
+        await self._flush()
+
+    async def save_entity_confirmation(self, confirmation: CareerEntityConfirmation) -> None:
+        await self._execute(
+            update(CareerEntityConfirmationModel)
+            .where(
+                CareerEntityConfirmationModel.owner_user_id == confirmation.owner_user_id,
+                CareerEntityConfirmationModel.entity_id == confirmation.entity_id,
+            )
+            .values(**_entity_confirmation_values(confirmation, include_identity=False))
+        )
+
+    async def list_personal_facts(
+        self, owner_user_id: UUID, profile_id: UUID
+    ) -> list[PersonalFact]:
+        models = (
+            await self.session.scalars(
+                select(CareerPersonalFactModel)
+                .where(
+                    CareerPersonalFactModel.owner_user_id == owner_user_id,
+                    CareerPersonalFactModel.profile_id == profile_id,
+                )
+                .order_by(
+                    CareerPersonalFactModel.kind,
+                    CareerPersonalFactModel.is_primary.desc(),
+                    CareerPersonalFactModel.created_at,
+                    CareerPersonalFactModel.id,
+                )
+            )
+        ).all()
+        return [_personal_fact(model) for model in models]
+
+    async def get_personal_fact(
+        self, owner_user_id: UUID, fact_id: UUID, *, for_update: bool = False
+    ) -> PersonalFact | None:
+        statement = select(CareerPersonalFactModel).where(
+            CareerPersonalFactModel.owner_user_id == owner_user_id,
+            CareerPersonalFactModel.id == fact_id,
+        )
+        if for_update:
+            statement = statement.with_for_update()
+        model = await self.session.scalar(statement)
+        return _personal_fact(model) if model is not None else None
+
+    async def add_personal_fact(self, fact: PersonalFact) -> None:
+        self.session.add(CareerPersonalFactModel(**_personal_fact_values(fact)))
+        await self._flush()
+
+    async def save_personal_fact(self, fact: PersonalFact) -> None:
+        await self._execute(
+            update(CareerPersonalFactModel)
+            .where(
+                CareerPersonalFactModel.owner_user_id == fact.owner_user_id,
+                CareerPersonalFactModel.id == fact.id,
+            )
+            .values(**_personal_fact_values(fact, include_identity=False))
+        )
+
+    async def delete_personal_fact(self, owner_user_id: UUID, fact_id: UUID) -> None:
+        await self._execute(
+            delete(CareerPersonalFactModel).where(
+                CareerPersonalFactModel.owner_user_id == owner_user_id,
+                CareerPersonalFactModel.id == fact_id,
+            )
+        )
+
+    async def add_field_provenance(self, provenance: CareerFieldProvenance) -> None:
+        self.session.add(CareerFieldProvenanceModel(**_field_provenance_values(provenance)))
+        await self._flush()
+
+    async def list_field_provenance(
+        self, owner_user_id: UUID, target_id: UUID
+    ) -> list[CareerFieldProvenance]:
+        models = (
+            await self.session.scalars(
+                select(CareerFieldProvenanceModel)
+                .where(
+                    CareerFieldProvenanceModel.owner_user_id == owner_user_id,
+                    or_(
+                        CareerFieldProvenanceModel.personal_fact_id == target_id,
+                        CareerFieldProvenanceModel.entity_id == target_id,
+                        CareerFieldProvenanceModel.skill_id == target_id,
+                    ),
+                )
+                .order_by(
+                    CareerFieldProvenanceModel.created_at,
+                    CareerFieldProvenanceModel.id,
+                )
+            )
+        ).all()
+        return [_field_provenance(model) for model in models]
+
+    async def add_entity_relationship(self, relationship: CareerEntityRelationship) -> None:
+        self.session.add(CareerEntityRelationshipModel(**_entity_relationship_values(relationship)))
+        await self._flush()
+
+    async def get_entity_relationship(
+        self, owner_user_id: UUID, relationship_id: UUID
+    ) -> CareerEntityRelationship | None:
+        model = await self.session.scalar(
+            select(CareerEntityRelationshipModel).where(
+                CareerEntityRelationshipModel.owner_user_id == owner_user_id,
+                CareerEntityRelationshipModel.id == relationship_id,
+            )
+        )
+        return _entity_relationship(model) if model is not None else None
+
+    async def list_entity_relationships(
+        self, owner_user_id: UUID, profile_id: UUID
+    ) -> list[CareerEntityRelationship]:
+        models = (
+            await self.session.scalars(
+                select(CareerEntityRelationshipModel)
+                .where(
+                    CareerEntityRelationshipModel.owner_user_id == owner_user_id,
+                    CareerEntityRelationshipModel.profile_id == profile_id,
+                )
+                .order_by(
+                    CareerEntityRelationshipModel.created_at,
+                    CareerEntityRelationshipModel.id,
+                )
+            )
+        ).all()
+        return [_entity_relationship(model) for model in models]
+
+    async def delete_entity_relationship(self, owner_user_id: UUID, relationship_id: UUID) -> None:
+        await self._execute(
+            delete(CareerEntityRelationshipModel).where(
+                CareerEntityRelationshipModel.owner_user_id == owner_user_id,
+                CareerEntityRelationshipModel.id == relationship_id,
+            )
+        )
+
     async def list_skills(self, owner_user_id: UUID, profile_id: UUID) -> list[Skill]:
         models = (
             await self.session.scalars(
@@ -237,6 +426,52 @@ class SqlAlchemyCareerRecordUnitOfWork:
                 CareerSkillModel.owner_user_id == owner_user_id,
                 CareerSkillModel.id == skill_id,
             )
+        )
+
+    async def get_skill_confirmation(
+        self, owner_user_id: UUID, skill_id: UUID, *, for_update: bool = False
+    ) -> CareerSkillConfirmation | None:
+        statement = select(CareerSkillConfirmationModel).where(
+            CareerSkillConfirmationModel.owner_user_id == owner_user_id,
+            CareerSkillConfirmationModel.skill_id == skill_id,
+        )
+        if for_update:
+            statement = statement.with_for_update()
+        model = await self.session.scalar(statement)
+        return _skill_confirmation(model) if model is not None else None
+
+    async def list_skill_confirmations(
+        self, owner_user_id: UUID, profile_id: UUID
+    ) -> list[CareerSkillConfirmation]:
+        models = (
+            await self.session.scalars(
+                select(CareerSkillConfirmationModel)
+                .join(
+                    CareerSkillModel,
+                    (CareerSkillModel.owner_user_id == CareerSkillConfirmationModel.owner_user_id)
+                    & (CareerSkillModel.id == CareerSkillConfirmationModel.skill_id),
+                )
+                .where(
+                    CareerSkillConfirmationModel.owner_user_id == owner_user_id,
+                    CareerSkillModel.profile_id == profile_id,
+                )
+                .order_by(CareerSkillConfirmationModel.skill_id)
+            )
+        ).all()
+        return [_skill_confirmation(model) for model in models]
+
+    async def add_skill_confirmation(self, confirmation: CareerSkillConfirmation) -> None:
+        self.session.add(CareerSkillConfirmationModel(**_skill_confirmation_values(confirmation)))
+        await self._flush()
+
+    async def save_skill_confirmation(self, confirmation: CareerSkillConfirmation) -> None:
+        await self._execute(
+            update(CareerSkillConfirmationModel)
+            .where(
+                CareerSkillConfirmationModel.owner_user_id == confirmation.owner_user_id,
+                CareerSkillConfirmationModel.skill_id == confirmation.skill_id,
+            )
+            .values(**_skill_confirmation_values(confirmation, include_identity=False))
         )
 
     async def add_entity_skill_link(self, link: EntitySkillLink) -> None:
@@ -328,6 +563,60 @@ class SqlAlchemyCareerRecordUnitOfWork:
                 CareerImportProposalModel.id == proposal.id,
             )
             .values(**_proposal_values(proposal, include_identity=False))
+        )
+
+    async def find_semantic_proposal(
+        self,
+        owner_user_id: UUID,
+        snapshot_id: UUID,
+        semantic_entity_id: UUID,
+    ) -> SemanticImportProposal | None:
+        model = await self.session.scalar(
+            select(CareerSemanticImportProposalModel).where(
+                CareerSemanticImportProposalModel.owner_user_id == owner_user_id,
+                CareerSemanticImportProposalModel.snapshot_id == snapshot_id,
+                CareerSemanticImportProposalModel.semantic_entity_id == semantic_entity_id,
+            )
+        )
+        return _semantic_proposal(model) if model is not None else None
+
+    async def get_semantic_proposal(
+        self, owner_user_id: UUID, proposal_id: UUID, *, for_update: bool = False
+    ) -> SemanticImportProposal | None:
+        statement = select(CareerSemanticImportProposalModel).where(
+            CareerSemanticImportProposalModel.owner_user_id == owner_user_id,
+            CareerSemanticImportProposalModel.id == proposal_id,
+        )
+        if for_update:
+            statement = statement.with_for_update()
+        model = await self.session.scalar(statement)
+        return _semantic_proposal(model) if model is not None else None
+
+    async def list_semantic_proposals(self, owner_user_id: UUID) -> list[SemanticImportProposal]:
+        models = (
+            await self.session.scalars(
+                select(CareerSemanticImportProposalModel)
+                .where(CareerSemanticImportProposalModel.owner_user_id == owner_user_id)
+                .order_by(
+                    CareerSemanticImportProposalModel.created_at.desc(),
+                    CareerSemanticImportProposalModel.id.desc(),
+                )
+            )
+        ).all()
+        return [_semantic_proposal(model) for model in models]
+
+    async def add_semantic_proposal(self, proposal: SemanticImportProposal) -> None:
+        self.session.add(CareerSemanticImportProposalModel(**_semantic_proposal_values(proposal)))
+        await self._flush()
+
+    async def save_semantic_proposal(self, proposal: SemanticImportProposal) -> None:
+        await self._execute(
+            update(CareerSemanticImportProposalModel)
+            .where(
+                CareerSemanticImportProposalModel.owner_user_id == proposal.owner_user_id,
+                CareerSemanticImportProposalModel.id == proposal.id,
+            )
+            .values(**_semantic_proposal_values(proposal, include_identity=False))
         )
 
     async def get_evidence(
@@ -1105,6 +1394,66 @@ def _entity_values(entity: CareerEntity, *, include_identity: bool = True) -> di
     return values
 
 
+def _entity_confirmation(
+    model: CareerEntityConfirmationModel,
+) -> CareerEntityConfirmation:
+    return CareerEntityConfirmation(
+        entity_id=model.entity_id,
+        owner_user_id=model.owner_user_id,
+        state=ConfirmationState(model.state),
+        version=model.version,
+        updated_at=model.updated_at,
+        confirmed_at=model.confirmed_at,
+    )
+
+
+def _entity_confirmation_values(
+    confirmation: CareerEntityConfirmation, *, include_identity: bool = True
+) -> dict[str, object]:
+    values: dict[str, object] = {
+        "state": confirmation.state.value,
+        "version": confirmation.version,
+        "updated_at": confirmation.updated_at,
+        "confirmed_at": confirmation.confirmed_at,
+    }
+    if include_identity:
+        values.update(
+            entity_id=confirmation.entity_id,
+            owner_user_id=confirmation.owner_user_id,
+        )
+    return values
+
+
+def _skill_confirmation(
+    model: CareerSkillConfirmationModel,
+) -> CareerSkillConfirmation:
+    return CareerSkillConfirmation(
+        skill_id=model.skill_id,
+        owner_user_id=model.owner_user_id,
+        state=ConfirmationState(model.state),
+        version=model.version,
+        updated_at=model.updated_at,
+        confirmed_at=model.confirmed_at,
+    )
+
+
+def _skill_confirmation_values(
+    confirmation: CareerSkillConfirmation, *, include_identity: bool = True
+) -> dict[str, object]:
+    values: dict[str, object] = {
+        "state": confirmation.state.value,
+        "version": confirmation.version,
+        "updated_at": confirmation.updated_at,
+        "confirmed_at": confirmation.confirmed_at,
+    }
+    if include_identity:
+        values.update(
+            skill_id=confirmation.skill_id,
+            owner_user_id=confirmation.owner_user_id,
+        )
+    return values
+
+
 def _skill(model: CareerSkillModel) -> Skill:
     return Skill(
         id=model.id,
@@ -1137,6 +1486,139 @@ def _skill_values(skill: Skill, *, include_identity: bool = True) -> dict[str, o
     if include_identity:
         values.update(id=skill.id, owner_user_id=skill.owner_user_id)
     return values
+
+
+def _personal_fact(model: CareerPersonalFactModel) -> PersonalFact:
+    return PersonalFact(
+        id=model.id,
+        owner_user_id=model.owner_user_id,
+        profile_id=model.profile_id,
+        kind=PersonalFactKind(model.kind),
+        value=model.value,
+        label=model.label,
+        is_primary=model.is_primary,
+        confirmation=ConfirmationState(model.confirmation),
+        version=model.version,
+        created_at=model.created_at,
+        updated_at=model.updated_at,
+        confirmed_at=model.confirmed_at,
+    )
+
+
+def _personal_fact_values(
+    fact: PersonalFact, *, include_identity: bool = True
+) -> dict[str, object]:
+    values: dict[str, object] = {
+        "profile_id": fact.profile_id,
+        "kind": fact.kind.value,
+        "value": fact.value,
+        "value_sha256": CareerFieldProvenance.digest_value(fact.value),
+        "label": fact.label,
+        "is_primary": fact.is_primary,
+        "confirmation": fact.confirmation.value,
+        "version": fact.version,
+        "created_at": fact.created_at,
+        "updated_at": fact.updated_at,
+        "confirmed_at": fact.confirmed_at,
+    }
+    if include_identity:
+        values.update(id=fact.id, owner_user_id=fact.owner_user_id)
+    return values
+
+
+def _field_provenance(
+    model: CareerFieldProvenanceModel,
+) -> CareerFieldProvenance:
+    target_id = {
+        CareerFieldTarget.PERSONAL_FACT: model.personal_fact_id,
+        CareerFieldTarget.ENTITY: model.entity_id,
+        CareerFieldTarget.SKILL: model.skill_id,
+    }[CareerFieldTarget(model.target)]
+    if target_id is None:
+        raise CareerRecordConflict("field provenance target is unavailable")
+    return CareerFieldProvenance(
+        id=model.id,
+        owner_user_id=model.owner_user_id,
+        profile_id=model.profile_id,
+        target=CareerFieldTarget(model.target),
+        target_id=target_id,
+        field_name=model.field_name,
+        value_sha256=model.value_sha256,
+        origin=SemanticFieldOrigin(model.origin),
+        document_id=model.document_id,
+        snapshot_id=model.snapshot_id,
+        snapshot_revision=model.snapshot_revision,
+        schema_version=model.schema_version,
+        parser_version=model.parser_version,
+        semantic_entity_id=model.semantic_entity_id,
+        semantic_field_id=model.semantic_field_id,
+        anchors=tuple(SemanticImportAnchor.from_dict(anchor) for anchor in model.anchors_json),
+        created_at=model.created_at,
+    )
+
+
+def _field_provenance_values(
+    provenance: CareerFieldProvenance,
+) -> dict[str, object]:
+    target_values: dict[str, object] = {
+        "personal_fact_id": None,
+        "entity_id": None,
+        "skill_id": None,
+    }
+    target_values[
+        {
+            CareerFieldTarget.PERSONAL_FACT: "personal_fact_id",
+            CareerFieldTarget.ENTITY: "entity_id",
+            CareerFieldTarget.SKILL: "skill_id",
+        }[provenance.target]
+    ] = provenance.target_id
+    return {
+        "id": provenance.id,
+        "owner_user_id": provenance.owner_user_id,
+        "profile_id": provenance.profile_id,
+        "target": provenance.target.value,
+        **target_values,
+        "field_name": provenance.field_name,
+        "value_sha256": provenance.value_sha256,
+        "origin": provenance.origin.value,
+        "document_id": provenance.document_id,
+        "snapshot_id": provenance.snapshot_id,
+        "snapshot_revision": provenance.snapshot_revision,
+        "schema_version": provenance.schema_version,
+        "parser_version": provenance.parser_version,
+        "semantic_entity_id": provenance.semantic_entity_id,
+        "semantic_field_id": provenance.semantic_field_id,
+        "anchors_json": [anchor.to_dict() for anchor in provenance.anchors],
+        "created_at": provenance.created_at,
+    }
+
+
+def _entity_relationship(
+    model: CareerEntityRelationshipModel,
+) -> CareerEntityRelationship:
+    return CareerEntityRelationship(
+        id=model.id,
+        owner_user_id=model.owner_user_id,
+        profile_id=model.profile_id,
+        source_entity_id=model.source_entity_id,
+        target_entity_id=model.target_entity_id,
+        kind=CareerRelationshipKind(model.kind),
+        created_at=model.created_at,
+    )
+
+
+def _entity_relationship_values(
+    relationship: CareerEntityRelationship,
+) -> dict[str, object]:
+    return {
+        "id": relationship.id,
+        "owner_user_id": relationship.owner_user_id,
+        "profile_id": relationship.profile_id,
+        "source_entity_id": relationship.source_entity_id,
+        "target_entity_id": relationship.target_entity_id,
+        "kind": relationship.kind.value,
+        "created_at": relationship.created_at,
+    }
 
 
 def _entity_skill_model(link: EntitySkillLink) -> CareerEntitySkillModel:
@@ -1254,6 +1736,65 @@ def _proposal_values(
         "end_offset": provenance.end_offset,
         "source_sha256": provenance.source_sha256,
         "review_excerpt": provenance.review_excerpt,
+        "status": proposal.status.value,
+        "conflict_code": proposal.conflict_code,
+        "version": proposal.version,
+        "created_at": proposal.created_at,
+        "updated_at": proposal.updated_at,
+        "reviewed_at": proposal.reviewed_at,
+    }
+    if include_identity:
+        values.update(id=proposal.id, owner_user_id=proposal.owner_user_id)
+    return values
+
+
+def _semantic_proposal(
+    model: CareerSemanticImportProposalModel,
+) -> SemanticImportProposal:
+    return SemanticImportProposal(
+        id=model.id,
+        owner_user_id=model.owner_user_id,
+        profile_id=model.profile_id,
+        target=SemanticImportTarget(model.target),
+        target_record_id=model.target_record_id,
+        document_id=model.document_id,
+        snapshot_id=model.snapshot_id,
+        snapshot_revision=model.snapshot_revision,
+        schema_version=model.schema_version,
+        parser_version=model.parser_version,
+        semantic_entity_id=model.semantic_entity_id,
+        semantic_kind=SemanticCandidateKind(model.semantic_kind),
+        fields=tuple(SemanticImportField.from_dict(field) for field in model.fields_json),
+        accepted_values=(
+            dict(model.accepted_values_json) if model.accepted_values_json is not None else None
+        ),
+        decision_idempotency_key=model.decision_idempotency_key,
+        status=SemanticImportStatus(model.status),
+        conflict_code=model.conflict_code,
+        version=model.version,
+        created_at=model.created_at,
+        updated_at=model.updated_at,
+        reviewed_at=model.reviewed_at,
+    )
+
+
+def _semantic_proposal_values(
+    proposal: SemanticImportProposal, *, include_identity: bool = True
+) -> dict[str, object]:
+    values: dict[str, object] = {
+        "profile_id": proposal.profile_id,
+        "target": proposal.target.value,
+        "target_record_id": proposal.target_record_id,
+        "document_id": proposal.document_id,
+        "snapshot_id": proposal.snapshot_id,
+        "snapshot_revision": proposal.snapshot_revision,
+        "schema_version": proposal.schema_version,
+        "parser_version": proposal.parser_version,
+        "semantic_entity_id": proposal.semantic_entity_id,
+        "semantic_kind": proposal.semantic_kind.value,
+        "fields_json": [field.to_dict() for field in proposal.fields],
+        "accepted_values_json": proposal.accepted_values,
+        "decision_idempotency_key": proposal.decision_idempotency_key,
         "status": proposal.status.value,
         "conflict_code": proposal.conflict_code,
         "version": proposal.version,

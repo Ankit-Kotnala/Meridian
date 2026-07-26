@@ -1,6 +1,6 @@
 """PostgreSQL integration coverage for identity persistence and owner scoping."""
 
-# ruff: noqa: S105 -- all credentials are isolated test fixtures.
+# ruff: noqa: S105, S106 -- all credentials are isolated test fixtures.
 
 import os
 from uuid import uuid4
@@ -12,7 +12,10 @@ from careeros.foundation.config import DatabaseOptions
 from careeros.foundation.database import Database
 from careeros.modules.identity.application.models import RequestContext
 from careeros.modules.identity.application.service import IdentityPolicy, IdentityService
-from careeros.modules.identity.domain.errors import ResourceNotFound
+from careeros.modules.identity.domain.errors import (
+    AuthenticationRequired,
+    ResourceNotFound,
+)
 from careeros.modules.identity.infrastructure.fakes import (
     CapturingEmailSender,
     DisabledGoogleOAuthProvider,
@@ -94,6 +97,30 @@ async def test_repository_persists_rotation_and_denies_cross_user_session_access
                 _context("first"),
             )
         assert await service.authenticate(second.access_token) == second.principal
+
+        await service.change_password(
+            first.principal,
+            current_password=password,
+            new_password="replacement integration password",
+            context=_context("first"),
+        )
+        with pytest.raises(AuthenticationRequired):
+            await service.authenticate(rotated.access_token)
+        factory = SqlAlchemyIdentityUnitOfWorkFactory(database)
+        async with factory() as uow:
+            owner_events = await uow.list_audit_events(
+                first.principal.user_id,
+                limit=100,
+            )
+        assert any(
+            event.event_type == "auth.password_change" and event.outcome == "success"
+            for event in owner_events
+        )
+        assert all(
+            event.actor_user_id != second.principal.user_id
+            and event.subject_user_id != second.principal.user_id
+            for event in owner_events
+        )
 
         async with database.session() as session:
             persisted = await session.scalar(

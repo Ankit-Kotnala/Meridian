@@ -59,6 +59,7 @@ from careeros.modules.change_studio.domain.errors import (
 from careeros.modules.identity.domain.errors import (
     AuthenticationRequired,
     CsrfRejected,
+    CurrentPasswordRejected,
     EmailVerificationRequired,
     IdentityConflict,
     IdentityError,
@@ -154,6 +155,11 @@ _ERRORS: Mapping[type[IdentityError], tuple[int, str, str]] = {
         status.HTTP_401_UNAUTHORIZED,
         "Authentication failed",
         "The email or password is incorrect.",
+    ),
+    CurrentPasswordRejected: (
+        status.HTTP_400_BAD_REQUEST,
+        "Current password rejected",
+        "The current password is incorrect.",
     ),
     EmailVerificationRequired: (
         status.HTTP_403_FORBIDDEN,

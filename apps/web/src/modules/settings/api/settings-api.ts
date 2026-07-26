@@ -9,6 +9,12 @@ export type ProfileState = components["schemas"]["MeResponse"];
 export type SessionState = components["schemas"]["SessionSummaryResponse"];
 export type ConsentState = components["schemas"]["ConsentResponse"];
 export type ConsentPurpose = components["schemas"]["ConsentRequest"]["purpose"];
+export type ReminderPreferences =
+  components["schemas"]["ReminderPreferencesResponse"];
+export type SecurityActivity =
+  components["schemas"]["SecurityActivityResponse"];
+export type SettingsCapabilities =
+  components["schemas"]["SettingsCapabilitiesResponse"];
 
 function record(value: unknown): Record<string, unknown> {
   if (typeof value !== "object" || value === null)
@@ -31,6 +37,63 @@ function parseProfile(value: unknown): ProfileState {
     throw new Error("Invalid profile response.");
   }
   return candidate as unknown as ProfileState;
+}
+
+function parseCapabilities(value: unknown): SettingsCapabilities {
+  const candidate = record(value);
+  if (
+    typeof candidate.hasPassword !== "boolean" ||
+    typeof candidate.googleConnected !== "boolean" ||
+    typeof candidate.googleOauthAvailable !== "boolean" ||
+    candidate.reminderPreferencesAvailable !== true ||
+    candidate.scheduledNotificationDeliveryAvailable !== false ||
+    typeof candidate.accountExportAvailable !== "boolean" ||
+    typeof candidate.accountDeletionAvailable !== "boolean" ||
+    typeof candidate.billingAvailable !== "boolean" ||
+    typeof candidate.guestResumeRetentionHours !== "number" ||
+    candidate.accountResumeRetention !== "untilDeleted"
+  ) {
+    throw new Error("Invalid settings capability response.");
+  }
+  return candidate as unknown as SettingsCapabilities;
+}
+
+function parseReminderPreferences(value: unknown): ReminderPreferences {
+  const candidate = record(value);
+  if (
+    typeof candidate.enabled !== "boolean" ||
+    (candidate.dayOfMonth !== null &&
+      candidate.dayOfMonth !== undefined &&
+      typeof candidate.dayOfMonth !== "number") ||
+    typeof candidate.timezone !== "string" ||
+    typeof candidate.updatedAt !== "string" ||
+    typeof candidate.version !== "number"
+  ) {
+    throw new Error("Invalid reminder preference response.");
+  }
+  return candidate as unknown as ReminderPreferences;
+}
+
+function parseSecurityActivity(value: unknown): SecurityActivity[] {
+  const candidate = record(value);
+  if (!Array.isArray(candidate.data)) {
+    throw new Error("Invalid security activity response.");
+  }
+  return candidate.data.map((item) => {
+    const activity = record(item);
+    if (
+      typeof activity.id !== "string" ||
+      typeof activity.eventType !== "string" ||
+      !["success", "accepted", "denied", "failed"].includes(
+        String(activity.outcome),
+      ) ||
+      typeof activity.occurredAt !== "string" ||
+      typeof activity.currentSession !== "boolean"
+    ) {
+      throw new Error("Invalid security activity response.");
+    }
+    return activity as unknown as SecurityActivity;
+  });
 }
 
 export async function getProfile(): Promise<ProfileState> {
@@ -125,4 +188,74 @@ export async function setConsent(
     { csrf: "session" },
   );
   return (await response.json()) as ConsentState;
+}
+
+export async function getSettingsCapabilities(): Promise<SettingsCapabilities> {
+  return parseCapabilities(
+    await (
+      await apiQuery("/api/v1/settings", { retryAfterRefresh: true })
+    ).json(),
+  );
+}
+
+export async function changePassword(
+  currentPassword: string | null,
+  newPassword: string,
+): Promise<void> {
+  const body = {
+    currentPassword,
+    newPassword,
+  } satisfies components["schemas"]["ChangePasswordRequest"];
+  await apiMutation(
+    "/api/v1/auth/change-password",
+    {
+      method: "POST",
+      body: JSON.stringify(body),
+    },
+    { csrf: "session" },
+  );
+}
+
+export async function getSecurityActivity(): Promise<SecurityActivity[]> {
+  return parseSecurityActivity(
+    await (
+      await apiQuery("/api/v1/security-activity", {
+        retryAfterRefresh: true,
+      })
+    ).json(),
+  );
+}
+
+export async function disconnectGoogle(): Promise<void> {
+  await apiMutation(
+    "/api/v1/auth/connections/google",
+    { method: "DELETE" },
+    { csrf: "session" },
+  );
+}
+
+export async function getReminderPreferences(): Promise<ReminderPreferences> {
+  return parseReminderPreferences(
+    await (
+      await apiQuery("/api/v1/achievements/reminder-preferences", {
+        retryAfterRefresh: true,
+      })
+    ).json(),
+  );
+}
+
+export async function updateReminderPreferences(
+  current: ReminderPreferences,
+  input: components["schemas"]["ReminderPreferencesUpdateRequest"],
+): Promise<ReminderPreferences> {
+  const response = await apiMutation(
+    "/api/v1/achievements/reminder-preferences",
+    {
+      method: "PATCH",
+      headers: { "If-Match": `"${current.version}"` },
+      body: JSON.stringify(input),
+    },
+    { csrf: "session" },
+  );
+  return parseReminderPreferences(await response.json());
 }

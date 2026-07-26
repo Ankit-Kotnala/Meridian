@@ -183,6 +183,11 @@ class MemoryIdentityUnitOfWork:
     async def save_oauth_account(self, account: OAuthAccount) -> None:
         self.oauth_accounts[account.id] = account
 
+    async def delete_oauth_account(self, user_id: UUID, provider: str) -> None:
+        for account_id, account in list(self.oauth_accounts.items()):
+            if account.user_id == user_id and account.provider == provider:
+                del self.oauth_accounts[account_id]
+
     async def add_consent_event(self, event: ConsentEvent) -> None:
         self.consents.append(event)
 
@@ -195,6 +200,13 @@ class MemoryIdentityUnitOfWork:
 
     async def add_audit_event(self, event: AuditEvent) -> None:
         self.audit_events.append(event)
+
+    async def list_audit_events(self, user_id: UUID, *, limit: int) -> list[AuditEvent]:
+        return [
+            event
+            for event in reversed(self.audit_events)
+            if event.actor_user_id == user_id or event.subject_user_id == user_id
+        ][:limit]
 
     async def get_onboarding(
         self, user_id: UUID, *, for_update: bool = False

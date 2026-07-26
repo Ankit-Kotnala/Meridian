@@ -1,8 +1,10 @@
 # CareerOS testing strategy
 
-Status: Phase 2 semantic closure final local/security verification in progress;
-Phase 8 and Phase 9 local, security, and hosted closeout passed
-Last reviewed: 2026-07-25
+Status: Phase 1/3 observed-onboarding, Settings, and resume-ready Career Record
+closure locally verified; hosted closure evidence is pending authorization.
+Phase 2 semantic closure is locally/security verified; Phase 8 and Phase 9 local,
+security, and hosted closeout passed
+Last reviewed: 2026-07-26
 
 ## Objectives
 
@@ -136,7 +138,9 @@ historical evidence only.
 - Backend unit and API tests cover registration/verification, enumeration-safe
   recovery, Argon2id settings, session rotation/replay-family revocation, one-use
   tokens, CSRF/origin policy, abuse limits, audit events, owner denial, optimistic
-  updates, Google OAuth validation/collision behavior, and the streamed body cap.
+  updates, Google OAuth validation/collision behavior, password rotation,
+  all-session invalidation, redacted owner-scoped security activity, fail-closed
+  Settings capabilities, and the streamed body cap.
 - Two integration tests use isolated real PostgreSQL and Redis. They are selected
   explicitly by the full-stack runner and fail when dependency URLs are absent;
   the fast unit runner does not disguise them as skipped coverage.
@@ -144,7 +148,9 @@ historical evidence only.
   forward re-upgrade, and verifies the runtime image reports one expected head.
 - Web/UI tests cover contract-bound requests, proxy allowlists and failures,
   validation, loading/empty/success/error feedback, session-bound CSRF, refresh
-  coalescing, protected navigation, and accessible form primitives.
+  coalescing, protected navigation, server-observed onboarding, all Settings
+  loading/empty/success/error states, unavailable capability disclosure, and
+  accessible form primitives.
 - The isolated Playwright journey creates a unique fictional user, reads the
   Mailpit verification link, signs in, persists honest Phase 2 onboarding skips,
   reaches the real empty dashboard, exercises keyboard/mobile navigation, creates
@@ -291,12 +297,38 @@ coverage; exact closeout results are recorded in `PLANS.md`:
   private attachment processing, unsupported eligibility, and incomplete drafts
   are covered in API/domain/component/integration suites rather than overstated as
   browser coverage.
+- Closure tests load reviewed typed Resume Health semantics through the
+  owner-scoped application port, exclude unreviewed/removed fields, require
+  essential experience dates, preserve exact field anchors, distinguish
+  parser/user-added/owner-edit origins, and validate the canonical value digest
+  before returning current provenance. They cover personal facts,
+  fact/entity/skill confirmation and edit revocation, explicit
+  experience-project relationships, downstream confirmed-only snapshots, and
+  legacy generic-proposal compatibility.
 
 The migration gate is fresh bootstrap plus
 `20260715_0003 -> 20260715_0004 -> 20260715_0003 -> 20260715_0004`, followed by a
 single-head/drift check. Final local counts and exact commands are recorded in
 `PLANS.md`; hosted CI evidence is recorded separately when an implementation
 revision is published.
+
+The resume-ready closure separately bootstraps the preceding
+`20260724_0010` head, upgrades to `20260726_0011`, runs `alembic check`, proves
+historical records are not silently confirmed and owner/primary-fact constraints
+fail closed, downgrades, and repairs forward. Real PostgreSQL repository tests
+round-trip confirmations, facts, provenance, and relationships with owner
+isolation and delete cascades. The consolidated Phase 3 runner still executes the
+complete predecessor portfolio and latest migration head.
+
+The closure migration test also deliberately removes canonical Phase 9 columns,
+foreign keys, unique/check constraints, and indexes to simulate a long-lived
+pre-release database. Upgrade backfills deterministic timezone, ordinal, and
+trace metadata, rejects conflicting rows instead of deleting them, preserves
+Phase 9-owned repairs on downgrade, and finishes with no Alembic drift. On
+2026-07-26 the exact cumulative gate passed in 336.3 seconds: 398 backend,
+145 API, 84 worker, 163 web, 12 UI, 3 contract, 41 real-dependency integration,
+and 4 Playwright tests passed; 2 narrower mobile journeys were intentionally
+skipped.
 
 ## Role Explorer and readiness coverage (Phase 4)
 

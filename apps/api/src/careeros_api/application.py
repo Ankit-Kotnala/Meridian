@@ -96,6 +96,9 @@ from careeros.modules.identity.infrastructure.redis_security import RedisSecurit
 from careeros.modules.identity.infrastructure.repository import (
     SqlAlchemyIdentityUnitOfWorkFactory,
 )
+from careeros.modules.identity.infrastructure.resume_health_onboarding import (
+    ResumeHealthOnboardingSource,
+)
 from careeros.modules.identity.infrastructure.security import (
     Argon2PasswordHasher,
     HmacTokenManager,
@@ -388,6 +391,11 @@ def create_app(
                     ),
                     clock=resume_clock,
                 )
+
+        if resolved_identity is not None and resolved_resume_health is not None:
+            resolved_identity.set_onboarding_resume_source(
+                ResumeHealthOnboardingSource(resolved_resume_health)
+            )
 
         if isinstance(resolved_database, Database):
             attachment_uow = SqlAlchemyAttachmentUnitOfWorkFactory(resolved_database)

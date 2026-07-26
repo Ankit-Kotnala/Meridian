@@ -116,8 +116,9 @@ earlier baseline evidence remains historical.
 ## Phase 1 — Authentication, Application Shell, and Onboarding
 
 Dependencies: Phase 0 green. Current status: authentication, sessions, and the
-application shell are complete and hosted verified; full onboarding and Settings
-closure is reopened. The historical consolidated gate and hosted CI run
+application shell are hosted verified. Server-observed onboarding and Settings
+closure are locally verified in the current tree; hosted closure evidence is
+pending authorization. The historical consolidated gate and hosted CI run
 `29367040183` passed all eight checks against Phase 1 evidence commit `baab8f7`.
 
 - [x] Add users/profiles, hashed session/refresh material, OAuth accounts,
@@ -137,13 +138,16 @@ closure is reopened. The historical consolidated gate and hosted CI run
       TopBar, active state, command search/notifications placeholders only when honest.
 - [x] Convert dashboard from public fictional preview to protected real skeleton;
       retain a separate explicit demo path only if product approves.
-- [~] Complete resumable/skippable onboarding through account/guest choice,
-  upload, processing, typed parse review, role/preferences, and dashboard.
-  Honest handoff links exist, but onboarding does not yet observe and persist
-  the complete Phase 2 pipeline state.
-- [~] Complete Settings for profile, preferences, sessions, consent, notifications,
-  privacy/export/deletion, and account security. The current skeleton exposes
-  only part of that real state.
+- [x] Complete resumable/skippable onboarding through account/guest choice,
+      upload, processing, typed parse review, role/preferences, and dashboard.
+      Pipeline progress is an owner-scoped server observation; the browser may
+      persist intent and explicit skips but cannot submit observed completion.
+- [x] Complete Phase 1 Settings for profile, writing/search/locale/timezone
+      preferences, sessions, consent, persisted achievement reminders, password
+      management, redacted security activity, Google connection state/removal,
+      privacy/retention disclosure, and fail-closed billing/export/deletion
+      capability presentation. Actual account export/deletion, billing, and
+      scheduled delivery remain their later owning workflows.
 - [x] Pass anonymous, cross-user, session rotation/replay/fixation, CSRF, OAuth
       collision, rate-limit, audit, keyboard, responsive, and e2e auth journey tests.
 
@@ -241,18 +245,22 @@ Closeout evidence and residual limitations are recorded in `PLANS.md`.
 ## Phase 3 — Career Profile, Evidence Vault, and Achievement Inbox
 
 Dependencies: Phase 1 ownership; Phase 2 canonical/source-span model. Current
-status: the evidence graph and core Career Record CRUD are locally complete and
-hosted verified; resume-ready semantic closure is reopened. The historical
+status: the evidence graph and core Career Record CRUD are hosted verified.
+Resume-ready semantic closure is locally verified in the current tree; hosted
+closure evidence is pending authorization. The historical
 `scripts/verify-phase3.ps1` gate passed on 2026-07-19.
 
-- [~] Complete resume-ready personal/contact facts and career entities with
-  ownership, constraints, explicit field/entity confirmation and provenance,
-  concurrency, and experience-project-achievement relationships. Core typed
-  entity CRUD exists, but this semantic closure is incomplete.
+- [x] Complete resume-ready personal/contact facts and career entities with
+      ownership, constraints, explicit fact/entity/skill confirmation,
+      canonical per-field provenance, concurrency, and explicit
+      experience-project relationships alongside the existing achievement and
+      evidence graph links.
 - [x] Implement profile CRUD, timeline/list, accessible reorder, promotion and
       concurrent-role grouping, conflict detection, and neutral gap display.
-- [~] Import/correction proposes profile changes rather than overwriting truth;
-  consume the Phase 2 typed semantic sidecar instead of generic blocks.
+- [x] Import/correction proposes profile changes rather than overwriting truth;
+      consume the owner-scoped reviewed Phase 2 typed semantic sidecar instead of
+      browser-authored generic blocks. Keep legacy generic proposals readable and
+      mark their creation route deprecated for v1 compatibility.
 - [x] Add evidence item/source/attachment/skill/metric/link models and audited
       Verified/Confirmed/Supported/Inferred/Unsupported transition rules.
 - [x] Bind legacy whole-block `Supported` evidence to the immutable original
@@ -280,6 +288,11 @@ isolated Playwright workflows pass. Two Phase 3 isolated mobile browser projects
 are intentionally skipped because the primary Career Record journey is desktop;
 shared responsive shell behavior remains covered by inherited auth flows. Exact
 closeout evidence and residual limitations live in `PLANS.md`.
+
+The 2026-07-26 closure gate adds 398 backend, 145 API, 84 worker, 163 web,
+41 real-dependency integration, and latest-head migration coverage; the exact
+`scripts/verify-phase3.ps1` command passed in 336.3 seconds. Hosted closure
+evidence remains pending explicit authorization to publish.
 
 ## Phase 4 — Role Explorer and Role Readiness
 

@@ -6,6 +6,34 @@ function Assert-LastExitCode([string]$Step) {
     }
 }
 
+function Assert-HttpEndpoint(
+    [string]$Endpoint,
+    [int]$Attempts = 10,
+    [int]$DelaySeconds = 2
+) {
+    $LastFailure = "no response"
+    for ($Attempt = 1; $Attempt -le $Attempts; $Attempt++) {
+        try {
+            $Response = Invoke-WebRequest `
+                -Uri $Endpoint `
+                -UseBasicParsing `
+                -TimeoutSec 10 `
+                -ErrorAction Stop
+            if ($Response.StatusCode -eq 200) {
+                return
+            }
+            $LastFailure = "HTTP $($Response.StatusCode)"
+        }
+        catch {
+            $LastFailure = $_.Exception.Message
+        }
+        if ($Attempt -lt $Attempts) {
+            Start-Sleep -Seconds $DelaySeconds
+        }
+    }
+    throw "Runtime probe failed for $Endpoint after $Attempts attempts: $LastFailure"
+}
+
 pnpm format:check
 Assert-LastExitCode "Prettier check"
 uv lock --check
@@ -77,7 +105,7 @@ foreach ($Service in @("api", "worker", "web", "web-edge")) {
     docker compose build $Service
     Assert-LastExitCode "Application image build for $Service"
 }
-docker compose up --detach --wait --wait-timeout 300
+docker compose up --detach --force-recreate --wait --wait-timeout 300
 Assert-LastExitCode "Application stack startup"
 docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
 Assert-LastExitCode "Container migration"
@@ -94,10 +122,7 @@ $Endpoints = @(
     "http://127.0.0.1:8025/api/v1/info"
 )
 foreach ($Endpoint in $Endpoints) {
-    $Response = Invoke-WebRequest -Uri $Endpoint -UseBasicParsing
-    if ($Response.StatusCode -ne 200) {
-        throw "Runtime probe failed for $Endpoint with status $($Response.StatusCode)."
-    }
+    Assert-HttpEndpoint -Endpoint $Endpoint
 }
 
 docker compose exec -T worker celery --app careeros_worker.app:celery_app inspect ping --timeout 5

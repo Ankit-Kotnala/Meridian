@@ -1,4 +1,9 @@
 export { SettingsNavigation } from "./components/settings-navigation";
+export { BillingSettings } from "./views/billing-settings";
+export { ConnectionSettings } from "./views/connection-settings";
 export { ConsentSettings } from "./views/consent-settings";
+export { NotificationSettings } from "./views/notification-settings";
+export { PrivacySettings } from "./views/privacy-settings";
 export { ProfileSettings } from "./views/profile-settings";
+export { SecuritySettings } from "./views/security-settings";
 export { SessionSettings } from "./views/session-settings";

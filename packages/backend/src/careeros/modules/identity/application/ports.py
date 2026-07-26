@@ -11,6 +11,7 @@ from careeros.modules.identity.application.models import (
     IssuedToken,
     OAuthIdentity,
     OAuthStart,
+    OnboardingResumeObservation,
 )
 from careeros.modules.identity.domain import (
     AuditEvent,
@@ -68,6 +69,12 @@ class GoogleOAuthProvider(Protocol):
     async def start(self, return_to: str, link_user_id: UUID | None = None) -> OAuthStart: ...
 
     async def complete(self, code: str, state: str) -> OAuthIdentity: ...
+
+
+class OnboardingResumeSource(Protocol):
+    """Read-only application boundary for an owner's latest Resume Health state."""
+
+    async def observe(self, owner_user_id: UUID) -> OnboardingResumeObservation: ...
 
 
 class IdentityUnitOfWork(Protocol):
@@ -144,11 +151,15 @@ class IdentityUnitOfWork(Protocol):
 
     async def save_oauth_account(self, account: OAuthAccount) -> None: ...
 
+    async def delete_oauth_account(self, user_id: UUID, provider: str) -> None: ...
+
     async def add_consent_event(self, event: ConsentEvent) -> None: ...
 
     async def list_current_consents(self, user_id: UUID) -> list[ConsentEvent]: ...
 
     async def add_audit_event(self, event: AuditEvent) -> None: ...
+
+    async def list_audit_events(self, user_id: UUID, *, limit: int) -> list[AuditEvent]: ...
 
     async def get_onboarding(
         self, user_id: UUID, *, for_update: bool = False

@@ -31,7 +31,9 @@ function parseOnboarding(value: unknown): OnboardingState {
   if (
     requiredStrings.some((key) => typeof value[key] !== "string") ||
     typeof value.version !== "number" ||
-    !Array.isArray(value.skippedSteps)
+    !Array.isArray(value.skippedSteps) ||
+    !("latestResumeDocumentId" in value) ||
+    !("resumeSafeErrorCode" in value)
   ) {
     throw new Error("Invalid onboarding response.");
   }
@@ -56,12 +58,9 @@ export async function updateOnboarding(
     displayName: next.displayName,
     industry: next.industry,
     language: next.language,
-    parsedReviewHandoff: next.parsedReviewHandoff,
     preferredLocation: next.preferredLocation,
-    resumeHandoff: next.resumeHandoff,
     seniority: next.seniority,
     skippedSteps: next.skippedSteps,
-    status: next.status,
     targetRole: next.targetRole,
     workModel: next.workModel,
     writingStyle: next.writingStyle,

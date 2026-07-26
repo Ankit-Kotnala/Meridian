@@ -1,24 +1,28 @@
 """Identity policy tests across registration, sessions, recovery, OAuth, and ownership."""
 
-# ruff: noqa: S105, S107 -- explicit non-production credentials exercise authentication policy.
+# ruff: noqa: S105, S106, S107 -- explicit non-production credentials exercise auth policy.
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import timedelta
 from urllib.parse import parse_qs, urlparse
+from uuid import UUID
 
 import pytest
 from identity_memory import MemoryIdentityUnitOfWork, MemoryIdentityUnitOfWorkFactory
 
-from careeros.modules.identity.application.models import RequestContext
+from careeros.modules.identity.application.models import (
+    OnboardingResumeObservation,
+    RequestContext,
+)
 from careeros.modules.identity.application.service import IdentityPolicy, IdentityService
 from careeros.modules.identity.domain import (
     ConsentDecision,
-    HandoffStatus,
-    OnboardingStatus,
+    ObservedResumeStatus,
     OnboardingStep,
 )
 from careeros.modules.identity.domain.errors import (
     AuthenticationRequired,
+    CurrentPasswordRejected,
     EmailVerificationRequired,
     InvalidCredentials,
     InvalidOrExpiredToken,
@@ -56,6 +60,16 @@ class FastPasswordHasher:
 
 
 @dataclass(slots=True)
+class MutableOnboardingResumeSource:
+    observation: OnboardingResumeObservation
+    observed_owner_ids: list[UUID] = field(default_factory=list)
+
+    async def observe(self, owner_user_id: UUID) -> OnboardingResumeObservation:
+        self.observed_owner_ids.append(owner_user_id)
+        return self.observation
+
+
+@dataclass(slots=True)
 class Harness:
     service: IdentityService
     store: MemoryIdentityUnitOfWork
@@ -63,7 +77,11 @@ class Harness:
     clock: FrozenClock
 
 
-def _harness(*, oauth_email: str = "oauth@example.com") -> Harness:
+def _harness(
+    *,
+    oauth_email: str = "oauth@example.com",
+    onboarding_source: MutableOnboardingResumeSource | None = None,
+) -> Harness:
     store = MemoryIdentityUnitOfWork()
     emails = CapturingEmailSender()
     clock = utc_test_clock()
@@ -77,6 +95,7 @@ def _harness(*, oauth_email: str = "oauth@example.com") -> Harness:
         limiter=InMemoryAbuseLimiter(),
         google=DeterministicGoogleOAuthProvider(FakeOAuthUser(email=oauth_email)),
         policy=IdentityPolicy(public_app_url="https://app.example.test"),
+        onboarding_resume_source=onboarding_source,
     )
     return Harness(service=service, store=store, emails=emails, clock=clock)
 
@@ -179,6 +198,48 @@ async def test_password_recovery_is_enumeration_safe_single_use_and_revokes_sess
 
 
 @pytest.mark.asyncio
+async def test_password_change_requires_current_secret_and_revokes_every_session() -> None:
+    harness = _harness()
+    issued = await _register_verify_login(harness)
+
+    with pytest.raises(CurrentPasswordRejected):
+        await harness.service.change_password(
+            issued.principal,
+            current_password="incorrect current password",
+            new_password="a replacement long password",
+            context=_context(),
+        )
+    assert await harness.service.authenticate(issued.access_token) == issued.principal
+
+    await harness.service.change_password(
+        issued.principal,
+        current_password="correct horse battery staple",
+        new_password="a replacement long password",
+        context=_context(),
+    )
+    with pytest.raises(AuthenticationRequired):
+        await harness.service.authenticate(issued.access_token)
+    await harness.service.login(
+        "alex@example.com",
+        "a replacement long password",
+        _context(),
+    )
+    events = await harness.service.list_security_activity(
+        issued.principal,
+        limit=100,
+    )
+    password_change = next(
+        event
+        for event in events
+        if event.event_type == "auth.password_change" and event.outcome == "success"
+    )
+    assert password_change.current_session
+    audit_text = repr(harness.store.audit_events)
+    assert "correct horse battery staple" not in audit_text
+    assert "a replacement long password" not in audit_text
+
+
+@pytest.mark.asyncio
 async def test_session_management_never_reveals_or_mutates_another_users_session() -> None:
     harness = _harness()
     alex = await _register_verify_login(harness)
@@ -202,9 +263,6 @@ async def test_onboarding_concurrency_and_consent_history_are_owner_scoped() -> 
         principal,
         expected_version=initial.version,
         current_step=OnboardingStep.RESUME,
-        status=OnboardingStatus.IN_PROGRESS,
-        resume_handoff=HandoffStatus.SKIPPED,
-        parsed_review_handoff=HandoffStatus.NOT_STARTED,
         skipped_steps=(OnboardingStep.RESUME,),
         profile_updates={"target_role": "Product Manager", "work_model": "hybrid"},
         context=_context(),
@@ -216,9 +274,6 @@ async def test_onboarding_concurrency_and_consent_history_are_owner_scoped() -> 
             principal,
             expected_version=initial.version,
             current_step=OnboardingStep.PREFERENCES,
-            status=OnboardingStatus.IN_PROGRESS,
-            resume_handoff=HandoffStatus.SKIPPED,
-            parsed_review_handoff=HandoffStatus.SKIPPED,
             skipped_steps=(),
             profile_updates={},
             context=_context(),
@@ -227,6 +282,57 @@ async def test_onboarding_concurrency_and_consent_history_are_owner_scoped() -> 
     consent = await harness.service.record_consent(principal, "product_analytics", True, _context())
     assert consent.decision is ConsentDecision.GRANTED
     assert await harness.service.list_consents(principal) == [consent]
+
+
+@pytest.mark.asyncio
+async def test_onboarding_advancement_uses_observed_resume_state_or_explicit_skip() -> None:
+    source = MutableOnboardingResumeSource(
+        OnboardingResumeObservation(
+            resume_status=ObservedResumeStatus.PROCESSING,
+            parsed_review_status=ObservedResumeStatus.NOT_STARTED,
+        )
+    )
+    harness = _harness(onboarding_source=source)
+    issued = await _register_verify_login(harness)
+    principal = issued.principal
+    initial = await harness.service.get_onboarding(principal)
+
+    with pytest.raises(ValueError, match="resume must be observed"):
+        await harness.service.update_onboarding(
+            principal,
+            expected_version=initial.version,
+            current_step=OnboardingStep.PARSED_REVIEW,
+            skipped_steps=(),
+            profile_updates={},
+            context=_context(),
+        )
+
+    source.observation = OnboardingResumeObservation(
+        resume_status=ObservedResumeStatus.REVIEW_REQUIRED,
+        parsed_review_status=ObservedResumeStatus.REVIEW_REQUIRED,
+    )
+    observed = await harness.service.get_onboarding(principal)
+    assert observed.resume_handoff is ObservedResumeStatus.REVIEW_REQUIRED
+    assert observed.current_step is OnboardingStep.PROFILE
+
+    resumed = await harness.service.update_onboarding(
+        principal,
+        expected_version=observed.version,
+        current_step=OnboardingStep.PARSED_REVIEW,
+        skipped_steps=(),
+        profile_updates={},
+        context=_context(),
+    )
+    assert resumed.current_step is OnboardingStep.PARSED_REVIEW
+
+    source.observation = OnboardingResumeObservation(
+        resume_status=ObservedResumeStatus.REVIEWED,
+        parsed_review_status=ObservedResumeStatus.REVIEWED,
+    )
+    ready = await harness.service.get_onboarding(principal)
+    assert ready.current_step is OnboardingStep.PREFERENCES
+    assert source.observed_owner_ids
+    assert set(source.observed_owner_ids) == {principal.user_id}
 
 
 @pytest.mark.asyncio
@@ -246,6 +352,12 @@ async def test_oauth_collision_requires_explicit_recently_authenticated_linking(
     )
     assert linked.return_to == "/settings"
     assert linked.session.principal.user_id == password_session.principal.user_id
+    account = await harness.service.get_account_security(password_session.principal)
+    assert account.has_password
+    assert account.google_connected
+    await harness.service.disconnect_google(password_session.principal, _context())
+    disconnected = await harness.service.get_account_security(password_session.principal)
+    assert not disconnected.google_connected
 
     harness.clock.value += timedelta(seconds=601)
     with pytest.raises(RecentAuthenticationRequired):

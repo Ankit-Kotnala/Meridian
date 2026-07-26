@@ -73,6 +73,18 @@ class ResetPasswordRequest(IdentitySchema):
         return value
 
 
+class ChangePasswordRequest(IdentitySchema):
+    current_password: str | None = Field(default=None, max_length=128)
+    new_password: str = Field(min_length=12, max_length=128)
+
+    @field_validator("current_password", "new_password")
+    @classmethod
+    def validate_password(cls, value: str | None) -> str | None:
+        if value is not None and ("\x00" in value or len(value.encode("utf-8")) > 1024):
+            raise ValueError("password contains unsupported content")
+        return value
+
+
 class CsrfResponse(IdentitySchema):
     csrf_token: str
 
@@ -171,9 +183,42 @@ class SessionListResponse(IdentitySchema):
     data: list[SessionSummaryResponse]
 
 
+class SecurityActivityResponse(IdentitySchema):
+    id: UUID
+    event_type: str
+    outcome: Literal["success", "accepted", "denied", "failed"]
+    occurred_at: datetime
+    current_session: bool
+
+
+class SecurityActivityListResponse(IdentitySchema):
+    data: list[SecurityActivityResponse] = Field(max_length=100)
+
+
+class SettingsCapabilitiesResponse(IdentitySchema):
+    has_password: bool
+    google_connected: bool
+    google_oauth_available: bool
+    reminder_preferences_available: Literal[True] = True
+    scheduled_notification_delivery_available: Literal[False] = False
+    account_export_available: bool
+    account_deletion_available: bool
+    billing_available: bool
+    guest_resume_retention_hours: int = Field(ge=1, le=168)
+    account_resume_retention: Literal["untilDeleted"] = "untilDeleted"
+
+
 WireOnboardingStatus = Literal["inProgress", "completed"]
 WireOnboardingStep = Literal["profile", "resume", "parsedReview", "preferences", "complete"]
-WireHandoffStatus = Literal["notStarted", "skipped"]
+WireHandoffStatus = Literal[
+    "notStarted",
+    "skipped",
+    "processing",
+    "reviewRequired",
+    "reviewed",
+    "analysisReady",
+    "failed",
+]
 
 
 class OnboardingResponse(IdentitySchema):
@@ -181,6 +226,8 @@ class OnboardingResponse(IdentitySchema):
     current_step: WireOnboardingStep
     resume_handoff: WireHandoffStatus
     parsed_review_handoff: WireHandoffStatus
+    latest_resume_document_id: UUID | None
+    resume_safe_error_code: str | None
     skipped_steps: list[WireOnboardingStep]
     version: int
     display_name: str
@@ -194,10 +241,7 @@ class OnboardingResponse(IdentitySchema):
 
 
 class OnboardingUpdateRequest(IdentitySchema):
-    status: WireOnboardingStatus
     current_step: WireOnboardingStep
-    resume_handoff: WireHandoffStatus
-    parsed_review_handoff: WireHandoffStatus
     skipped_steps: list[WireOnboardingStep] = Field(default_factory=list, max_length=5)
     display_name: str | None = Field(default=None, min_length=1, max_length=100)
     target_role: str | None = Field(default=None, max_length=160)
@@ -210,10 +254,6 @@ class OnboardingUpdateRequest(IdentitySchema):
 
     @model_validator(mode="after")
     def validate_completion(self) -> Self:
-        if self.status == "completed" and self.current_step != "complete":
-            raise ValueError("completed onboarding must use the complete step")
-        if self.status == "inProgress" and self.current_step == "complete":
-            raise ValueError("the complete step requires completed status")
         if len(set(self.skipped_steps)) != len(self.skipped_steps):
             raise ValueError("skipped steps must be unique")
         for field_name in {"display_name", "language", "writing_style"}:

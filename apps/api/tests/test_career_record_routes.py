@@ -19,6 +19,11 @@ from careeros.modules.career_record.domain import (
     CareerEntityKind,
     EmploymentType,
     PartialDate,
+    SemanticCandidateKind,
+    SemanticImportAnchor,
+    SemanticImportField,
+    SemanticImportFieldState,
+    ValidatedSemanticCandidate,
     exact_claim_sha256,
 )
 from careeros.modules.identity.application import IdentityService
@@ -75,7 +80,7 @@ def _user(user_id) -> CurrentUser:
     )
 
 
-def _services(owner_id):
+def _services(owner_id, sources: FakeResumeSourceQuery | None = None):
     identity = create_autospec(IdentityService, instance=True)
     principal = _principal(owner_id)
     identity.authenticate.return_value = principal
@@ -85,9 +90,58 @@ def _services(owner_id):
         unit_of_work=state,
         clock=FixedClock(),
         identifiers=UuidFactory(),
-        resume_sources=FakeResumeSourceQuery(),
+        resume_sources=sources or FakeResumeSourceQuery(),
     )
     return identity, career, state, principal
+
+
+def _semantic_candidate(document_id, snapshot_id) -> ValidatedSemanticCandidate:
+    def field(
+        name: str,
+        value: str,
+        *,
+        field_type: str = "text",
+        date_precision: str | None = None,
+    ) -> SemanticImportField:
+        return SemanticImportField(
+            semantic_field_id=uuid4(),
+            name=name,
+            field_type=field_type,
+            value=value,
+            review_state=SemanticImportFieldState.CONFIRMED,
+            confidence_basis_points=9_000,
+            date_precision=date_precision,
+            anchors=(
+                SemanticImportAnchor(
+                    block_id=uuid4(),
+                    page=1,
+                    start_offset=10,
+                    end_offset=10 + len(value),
+                    source_sha256=exact_claim_sha256("reviewed resume"),
+                    source_excerpt=value,
+                ),
+            ),
+        )
+
+    return ValidatedSemanticCandidate(
+        document_id=document_id,
+        snapshot_id=snapshot_id,
+        snapshot_revision=2,
+        schema_version="canonical-semantics/1.0.0",
+        parser_version="local-semantic/1",
+        semantic_entity_id=uuid4(),
+        kind=SemanticCandidateKind.EXPERIENCE,
+        fields=(
+            field("title", "Software Engineer"),
+            field("employer", "Example Corp"),
+            field(
+                "start_date",
+                "2024-01",
+                field_type="date",
+                date_precision="month",
+            ),
+        ),
+    )
 
 
 def _write_headers(*, version: int | None = None, idempotency: bool = False):
@@ -134,7 +188,14 @@ def test_primary_career_evidence_achievement_workflow_is_real_and_owner_scoped(
             headers=_write_headers(idempotency=True),
         )
         assert skill.status_code == 201
+        assert skill.json()["userConfirmed"] is False
         skill_id = skill.json()["id"]
+        confirmed_skill = client.post(
+            f"/api/v1/skills/{skill_id}/confirm",
+            headers=_write_headers(version=skill.json()["version"]),
+        )
+        assert confirmed_skill.status_code == 200
+        assert confirmed_skill.json()["userConfirmed"] is True
 
         experience = client.post(
             "/api/v1/experiences",
@@ -153,7 +214,14 @@ def test_primary_career_evidence_achievement_workflow_is_real_and_owner_scoped(
             headers=_write_headers(idempotency=True),
         )
         assert experience.status_code == 201
+        assert experience.json()["userConfirmed"] is False
         experience_id = experience.json()["id"]
+        confirmed_experience = client.post(
+            f"/api/v1/experiences/{experience_id}/confirm",
+            headers=_write_headers(version=experience.json()["version"]),
+        )
+        assert confirmed_experience.status_code == 200
+        assert confirmed_experience.json()["userConfirmed"] is True
         promoted = client.post(
             "/api/v1/experiences",
             json={
@@ -253,10 +321,206 @@ def test_primary_career_evidence_achievement_workflow_is_real_and_owner_scoped(
 
         identity.authenticate.return_value = _principal()
         hidden = client.get(f"/api/v1/evidence/{evidence_id}")
+        hidden_confirmation = client.post(
+            f"/api/v1/experiences/{experience_id}/confirm",
+            headers=_write_headers(version=3),
+        )
         assert hidden.status_code == 404
+        assert hidden_confirmation.status_code == 404
 
     assert len(state.entity_skill_links) == 1
     assert principal.user_id == owner_id
+
+
+def test_semantic_import_http_flow_is_typed_idempotent_and_owner_scoped(
+    settings: Settings, fake_database: FakeDatabase
+) -> None:
+    owner_id = uuid4()
+    document_id = uuid4()
+    snapshot_id = uuid4()
+    sources = FakeResumeSourceQuery()
+    candidate = _semantic_candidate(document_id, snapshot_id)
+    sources.add_semantic(owner_id, document_id, snapshot_id, (candidate,))
+    identity, career, state, _ = _services(owner_id, sources)
+
+    with _authenticated_client(settings, fake_database, identity, career) as client:
+        assert client.get("/api/v1/career-profile").status_code == 200
+        created = client.post(
+            "/api/v1/career-profile/semantic-import-proposals",
+            json={
+                "documentId": str(document_id),
+                "snapshotId": str(snapshot_id),
+            },
+            headers=_write_headers(),
+        )
+        assert created.status_code == 201
+        body = created.json()
+        assert body["questions"] == []
+        proposal = body["proposals"][0]
+        assert proposal["target"] == "entity"
+        assert proposal["status"] == "pending"
+        assert proposal["sourceAvailable"] is True
+        assert proposal["fields"][0]["anchors"][0]["digest"].startswith("sha256:")
+        assert (
+            proposal["fields"][0]["anchors"][0]["excerpt"] == proposal["fields"][0]["proposedValue"]
+        )
+        assert state.entities == {}
+
+        proposal_id = proposal["id"]
+        values = {item["id"]: item["proposedValue"] for item in proposal["fields"]}
+        missing_idempotency = client.post(
+            f"/api/v1/career-profile/semantic-import-proposals/{proposal_id}/accept",
+            json={"values": values},
+            headers=_write_headers(version=proposal["version"]),
+        )
+        assert missing_idempotency.status_code == 422
+
+        accepted = client.post(
+            f"/api/v1/career-profile/semantic-import-proposals/{proposal_id}/accept",
+            json={"values": values},
+            headers=_write_headers(version=proposal["version"], idempotency=True),
+        )
+        assert accepted.status_code == 200
+        assert accepted.json()["status"] == "accepted"
+        assert len(state.entities) == 1
+        imported = client.get("/api/v1/experiences")
+        assert imported.status_code == 200
+        assert imported.json()["data"][0]["userConfirmed"] is True
+        assert imported.json()["data"][0]["provenance"]
+        replay = client.post(
+            f"/api/v1/career-profile/semantic-import-proposals/{proposal_id}/accept",
+            json={"values": values},
+            headers=_write_headers(version=proposal["version"], idempotency=True),
+        )
+        assert replay.status_code == 200
+        assert len(state.entities) == 1
+
+        identity.authenticate.return_value = _principal(uuid4())
+        denied = client.get(f"/api/v1/career-profile/semantic-import-proposals/{proposal_id}")
+        assert denied.status_code == 404
+
+
+def test_personal_fact_http_flow_requires_confirmation_and_owner_scope(
+    settings: Settings, fake_database: FakeDatabase
+) -> None:
+    owner_id = uuid4()
+    identity, career, _state, _ = _services(owner_id)
+    with _authenticated_client(settings, fake_database, identity, career) as client:
+        assert client.get("/api/v1/career-profile").status_code == 200
+        invalid = client.post(
+            "/api/v1/personal-facts",
+            json={
+                "kind": "email",
+                "value": "not-an-email",
+                "label": None,
+                "isPrimary": True,
+            },
+            headers=_write_headers(),
+        )
+        assert invalid.status_code == 422
+        created = client.post(
+            "/api/v1/personal-facts",
+            json={
+                "kind": "email",
+                "value": "alex@example.test",
+                "label": "Work",
+                "isPrimary": True,
+            },
+            headers=_write_headers(),
+        )
+        assert created.status_code == 201
+        assert created.json()["confirmation"] == "needs_review"
+        fact_id = created.json()["id"]
+        confirmed = client.post(
+            f"/api/v1/personal-facts/{fact_id}/confirm",
+            headers=_write_headers(version=created.json()["version"]),
+        )
+        assert confirmed.status_code == 200
+        assert confirmed.json()["confirmation"] == "confirmed"
+        edited = client.patch(
+            f"/api/v1/personal-facts/{fact_id}",
+            json={
+                "value": "alex.updated@example.test",
+                "label": "Work",
+                "isPrimary": True,
+            },
+            headers=_write_headers(version=confirmed.json()["version"]),
+        )
+        assert edited.status_code == 200
+        assert edited.json()["confirmation"] == "needs_review"
+
+        identity.authenticate.return_value = _principal(uuid4())
+        hidden = client.post(
+            f"/api/v1/personal-facts/{fact_id}/confirm",
+            headers=_write_headers(version=edited.json()["version"]),
+        )
+        assert hidden.status_code == 404
+        identity.authenticate.return_value = _principal(owner_id)
+        deleted = client.delete(
+            f"/api/v1/personal-facts/{fact_id}",
+            headers=_write_headers(version=edited.json()["version"]),
+        )
+        assert deleted.status_code == 204
+        assert client.get("/api/v1/personal-facts").json()["data"] == []
+
+
+def test_experience_project_relationship_is_explicit_and_owner_scoped(
+    settings: Settings, fake_database: FakeDatabase
+) -> None:
+    owner_id = uuid4()
+    identity, career, _state, _ = _services(owner_id)
+    with _authenticated_client(settings, fake_database, identity, career) as client:
+        assert client.get("/api/v1/career-profile").status_code == 200
+        experience = client.post(
+            "/api/v1/experiences",
+            json={
+                "employer": "Example Corp",
+                "officialTitle": "Engineer",
+                "startDate": "2024-01",
+                "current": True,
+            },
+            headers=_write_headers(),
+        )
+        project = client.post(
+            "/api/v1/career-items",
+            json={
+                "kind": "project",
+                "title": "Fictional project",
+                "organization": None,
+                "description": "",
+                "startDate": None,
+                "endDate": None,
+                "url": None,
+            },
+            headers=_write_headers(),
+        )
+        assert experience.status_code == 201
+        assert project.status_code == 201
+        linked = client.post(
+            "/api/v1/career-relationships",
+            json={
+                "experienceId": experience.json()["id"],
+                "projectId": project.json()["id"],
+                "kind": "experience_project",
+            },
+            headers=_write_headers(),
+        )
+        assert linked.status_code == 201
+        assert client.get("/api/v1/career-relationships").json()["data"] == [linked.json()]
+
+        identity.authenticate.return_value = _principal(uuid4())
+        hidden = client.delete(
+            f"/api/v1/career-relationships/{linked.json()['id']}",
+            headers=_write_headers(),
+        )
+        assert hidden.status_code == 404
+        identity.authenticate.return_value = _principal(owner_id)
+        deleted = client.delete(
+            f"/api/v1/career-relationships/{linked.json()['id']}",
+            headers=_write_headers(),
+        )
+        assert deleted.status_code == 204
+        assert client.get("/api/v1/career-relationships").json()["data"] == []
 
 
 def test_career_mutation_requires_authenticated_session_and_csrf(

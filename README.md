@@ -128,14 +128,21 @@ credentials are not exposed on other host interfaces by default.
 Create an account at `/register`, follow the verification link captured by
 Mailpit, and sign in at `/login`. Other public flow routes are `/verify-email`,
 `/forgot-password`, `/reset-password`, and `/get-started`. `/dashboard`,
-`/onboarding`, `/settings`, `/settings/sessions`, `/settings/consent`,
-`/career-profile`, `/evidence`, and `/achievement-inbox` require an authenticated
-session. The labeled fictional preview remains available at
-`/demo/dashboard`; it is isolated from real account state.
+`/onboarding`, `/settings`, `/settings/profile`, `/settings/security`,
+`/settings/sessions`, `/settings/consent`, `/settings/notifications`,
+`/settings/privacy`, `/settings/connections`, `/settings/billing`,
+`/career-profile`, `/career-profile/imports`, `/evidence`, and
+`/achievement-inbox` require an authenticated session. The labeled fictional
+preview remains available at `/demo/dashboard`; it is isolated from real account
+state.
 
 Career Profile is independent of resume upload. It stores user-owned experience,
 typed career items, and skills with year/month precision, explicit grouping,
-optimistic concurrency, source provenance, and reviewable import proposals.
+optimistic concurrency, explicit confirmation, per-field provenance, personal
+facts, experience-to-project relationships, and reviewable typed import
+proposals. Resume import reads the owner-scoped reviewed semantic snapshot; it
+does not let the browser author resume-derived facts or silently overwrite the
+Career Record.
 Evidence Vault keeps evidence strength separate from lifecycle and downstream
 eligibility. Owner confirmation can produce `Confirmed`; no independent verifier
 is configured, so the production API cannot produce `Verified`. Achievement
@@ -372,6 +379,9 @@ Phase 8 run passed on 2026-07-24; PR #21 runs `30126993025` and `30128304892`
 passed every required hosted job. Use `.\scripts\verify-phase9.ps1` for migration
 `20260724_0010`, its four product contexts, durable analytics/local-reminder
 workers, and the Phase 9 desktop/mobile career workspace journey.
+The cross-phase resume-ready closure adds migration `20260726_0011`; the Phase 1
+and Phase 3 verifiers now exercise that head while rolling back to their
+respective predecessor checkpoints.
 
 The Phase 0 migration enables the pgvector extension. Phase 1 migration
 `20260715_0002` adds the identity, session, OAuth, organization, consent, audit,
@@ -430,6 +440,13 @@ Phase 8 development database missing its canonical provenance tuple/check or
 resume-change event/audit enum values without changing migration
 `20260724_0009`. Downgrading to `20260724_0009` deletes Phase 9 data but
 preserves those canonical Phase 8 objects.
+Resume-ready closure migration `20260726_0011` adds owner-scoped entity and skill
+confirmations, personal/contact facts, typed semantic import proposals,
+experience-to-project relationships, and per-field provenance. Its constraints
+prevent cross-owner links and more than one primary fact of a given kind.
+Historical career entities are not silently marked confirmed. Downgrading to
+`20260724_0010` removes only the closure tables; it is a test/forward-repair path,
+not a production rollback after users create those records.
 The seed command still prints only a fictional demo fixture and performs no
 database write. A command that prints a fixture or says a feature is deferred is
 not evidence that the product feature exists.

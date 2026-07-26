@@ -6,13 +6,17 @@ from typing import Annotated, Any, Literal, cast
 from uuid import UUID
 
 from careeros.modules.career_record.application import (
+    AcceptSemanticImportProposal,
     CareerEntityData,
     CareerRecordService,
     CreateAchievement,
     CreateEvidence,
     CreateImportProposal,
+    CreatePersonalFact,
+    CreateSemanticImportProposals,
     CreateSkill,
     EvidenceFilter,
+    LinkCareerEntityRelationship,
     MetricInput,
     ProposalFilter,
     RequestContext,
@@ -20,6 +24,7 @@ from careeros.modules.career_record.application import (
     ReviseEvidence,
     UpdateAchievement,
     UpdateCareerProfile,
+    UpdatePersonalFact,
     UpdateReminderPreferences,
     UpdateSkill,
 )
@@ -32,6 +37,7 @@ from careeros.modules.career_record.application.attachment_workflow import (
 from careeros.modules.career_record.domain import (
     CareerEntity,
     CareerEntityKind,
+    CareerRelationshipKind,
     ConflictResolution,
     EmploymentType,
     EvidenceInputKind,
@@ -41,6 +47,7 @@ from careeros.modules.career_record.domain import (
     EvidenceType,
     MetricPrecision,
     PartialDate,
+    PersonalFactKind,
     ProposalStatus,
     ReminderCadence,
     SkillProficiency,
@@ -63,12 +70,16 @@ from careeros_api.career_record_dependencies import (
 from careeros_api.career_record_presenters import (
     achievement_response,
     career_item_response,
+    career_relationship_response,
     evidence_response,
     experience_response,
+    field_provenance_response,
+    personal_fact_response,
     profile_response,
     proposal_response,
     provenance_from_proposal,
     reminder_response,
+    semantic_import_proposal_response,
     skill_response,
     timeline_finding_response,
 )
@@ -84,6 +95,9 @@ from careeros_api.career_record_schemas import (
     CareerItemResponse,
     CareerProfileResponse,
     CareerProfileUpdateRequest,
+    CareerRelationshipInput,
+    CareerRelationshipListResponse,
+    CareerRelationshipResponse,
     EvidenceConflictResolutionRequest,
     EvidenceInput,
     EvidenceMetricInput,
@@ -98,11 +112,21 @@ from careeros_api.career_record_schemas import (
     ImportProposalPageResponse,
     ImportProposalResponse,
     PageResponse,
+    PersonalFactInput,
+    PersonalFactListResponse,
+    PersonalFactResponse,
+    PersonalFactUpdateRequest,
     ProvenanceResponse,
     ReminderPreferencesResponse,
     ReminderPreferencesUpdateRequest,
     ReorderRequest,
     ResumeImportProposalRequest,
+    SemanticImportAcceptRequest,
+    SemanticImportBatchResponse,
+    SemanticImportCreateRequest,
+    SemanticImportProposalListResponse,
+    SemanticImportProposalResponse,
+    SemanticImportQuestionResponse,
     SkillInput,
     SkillListResponse,
     SkillResponse,
@@ -199,11 +223,31 @@ def _matches_accepted_proposal(current: CareerEntity, proposed: CareerEntity) ->
     )
 
 
+async def _current_field_provenance_responses(
+    service: CareerRecordService,
+    owner_user_id: UUID,
+    target_id: UUID,
+) -> list[ProvenanceResponse]:
+    responses: list[ProvenanceResponse] = []
+    for value in await service.current_field_provenance(owner_user_id, target_id):
+        responses.append(
+            field_provenance_response(
+                value,
+                available=await service.field_provenance_source_available(owner_user_id, value),
+            )
+        )
+    return responses
+
+
 async def _accepted_provenance_by_entity(
     service: CareerRecordService, owner_user_id: UUID
 ) -> dict[UUID, list[ProvenanceResponse]]:
     result: dict[UUID, list[ProvenanceResponse]] = {}
     current_entities = {entity.id: entity for entity in await service.list_entities(owner_user_id)}
+    for entity_id in current_entities:
+        result[entity_id] = await _current_field_provenance_responses(
+            service, owner_user_id, entity_id
+        )
     cursor: str | None = None
     while True:
         page = await service.list_import_proposals(
@@ -293,6 +337,207 @@ async def update_career_profile(
 
 
 @router.get(
+    "/personal-facts",
+    response_model=PersonalFactListResponse,
+    operation_id="careerPersonalFactsList",
+    responses=_PROBLEMS,
+)
+async def list_personal_facts(
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(current_principal)],
+    context: Annotated[RequestContext, Depends(career_request_context)],
+    service: Annotated[CareerRecordService, Depends(career_record_service)],
+) -> PersonalFactListResponse:
+    await service.get_or_create_profile(principal.user_id, context)
+    facts = await service.list_personal_facts(principal.user_id)
+    _private(response)
+    return PersonalFactListResponse(
+        data=[
+            personal_fact_response(
+                fact,
+                provenance=await _current_field_provenance_responses(
+                    service, principal.user_id, fact.id
+                ),
+            )
+            for fact in facts
+        ]
+    )
+
+
+@router.post(
+    "/personal-facts",
+    response_model=PersonalFactResponse,
+    status_code=status.HTTP_201_CREATED,
+    operation_id="careerPersonalFactCreate",
+    responses=_PROBLEMS,
+)
+async def create_personal_fact(
+    payload: PersonalFactInput,
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
+    context: Annotated[RequestContext, Depends(career_request_context)],
+    service: Annotated[CareerRecordService, Depends(career_record_service)],
+) -> PersonalFactResponse:
+    await service.get_or_create_profile(principal.user_id, context)
+    fact = await service.create_personal_fact(
+        principal.user_id,
+        CreatePersonalFact(
+            kind=PersonalFactKind(payload.kind),
+            value=payload.value,
+            label=payload.label,
+            is_primary=payload.is_primary,
+        ),
+        context,
+    )
+    _private(response, fact.version)
+    return personal_fact_response(fact)
+
+
+@router.patch(
+    "/personal-facts/{fact_id}",
+    response_model=PersonalFactResponse,
+    operation_id="careerPersonalFactUpdate",
+    responses=_PROBLEMS,
+)
+async def update_personal_fact(
+    fact_id: UUID,
+    payload: PersonalFactUpdateRequest,
+    response: Response,
+    if_match: Annotated[str, Header(alias="If-Match")],
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
+    context: Annotated[RequestContext, Depends(career_request_context)],
+    service: Annotated[CareerRecordService, Depends(career_record_service)],
+) -> PersonalFactResponse:
+    fact = await service.update_personal_fact(
+        principal.user_id,
+        fact_id,
+        parse_if_match_version(if_match),
+        UpdatePersonalFact(
+            value=payload.value,
+            label=payload.label,
+            is_primary=payload.is_primary,
+        ),
+        context,
+    )
+    _private(response, fact.version)
+    return personal_fact_response(fact)
+
+
+@router.post(
+    "/personal-facts/{fact_id}/confirm",
+    response_model=PersonalFactResponse,
+    operation_id="careerPersonalFactConfirm",
+    responses=_PROBLEMS,
+)
+async def confirm_personal_fact(
+    fact_id: UUID,
+    response: Response,
+    if_match: Annotated[str, Header(alias="If-Match")],
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
+    context: Annotated[RequestContext, Depends(career_request_context)],
+    service: Annotated[CareerRecordService, Depends(career_record_service)],
+) -> PersonalFactResponse:
+    fact = await service.confirm_personal_fact(
+        principal.user_id,
+        fact_id,
+        parse_if_match_version(if_match),
+        context,
+    )
+    _private(response, fact.version)
+    return personal_fact_response(
+        fact,
+        provenance=await _current_field_provenance_responses(service, principal.user_id, fact.id),
+    )
+
+
+@router.delete(
+    "/personal-facts/{fact_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    operation_id="careerPersonalFactDelete",
+    responses=_PROBLEMS,
+)
+async def delete_personal_fact(
+    fact_id: UUID,
+    if_match: Annotated[str, Header(alias="If-Match")],
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
+    context: Annotated[RequestContext, Depends(career_request_context)],
+    service: Annotated[CareerRecordService, Depends(career_record_service)],
+) -> None:
+    await service.delete_personal_fact(
+        principal.user_id,
+        fact_id,
+        parse_if_match_version(if_match),
+        context,
+    )
+
+
+@router.get(
+    "/career-relationships",
+    response_model=CareerRelationshipListResponse,
+    operation_id="careerRelationshipsList",
+    responses=_PROBLEMS,
+)
+async def list_career_relationships(
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(current_principal)],
+    context: Annotated[RequestContext, Depends(career_request_context)],
+    service: Annotated[CareerRecordService, Depends(career_record_service)],
+) -> CareerRelationshipListResponse:
+    await service.get_or_create_profile(principal.user_id, context)
+    relationships = await service.list_entity_relationships(principal.user_id)
+    _private(response)
+    return CareerRelationshipListResponse(
+        data=[career_relationship_response(relationship) for relationship in relationships]
+    )
+
+
+@router.post(
+    "/career-relationships",
+    response_model=CareerRelationshipResponse,
+    status_code=status.HTTP_201_CREATED,
+    operation_id="careerRelationshipCreate",
+    responses=_PROBLEMS,
+)
+async def create_career_relationship(
+    payload: CareerRelationshipInput,
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
+    context: Annotated[RequestContext, Depends(career_request_context)],
+    service: Annotated[CareerRecordService, Depends(career_record_service)],
+) -> CareerRelationshipResponse:
+    relationship = await service.link_entity_relationship(
+        principal.user_id,
+        LinkCareerEntityRelationship(
+            source_entity_id=payload.experience_id,
+            target_entity_id=payload.project_id,
+            kind=CareerRelationshipKind(payload.kind),
+        ),
+        context,
+    )
+    _private(response)
+    return career_relationship_response(relationship)
+
+
+@router.delete(
+    "/career-relationships/{relationship_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    operation_id="careerRelationshipDelete",
+    responses=_PROBLEMS,
+)
+async def delete_career_relationship(
+    relationship_id: UUID,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
+    context: Annotated[RequestContext, Depends(career_request_context)],
+    service: Annotated[CareerRecordService, Depends(career_record_service)],
+) -> None:
+    await service.unlink_entity_relationship(
+        principal.user_id,
+        relationship_id,
+        context,
+    )
+
+
+@router.get(
     "/experiences",
     response_model=ExperienceListResponse,
     operation_id="careerExperiencesList",
@@ -306,11 +551,15 @@ async def list_experiences(
 ) -> ExperienceListResponse:
     view = await service.get_or_create_profile(principal.user_id, context)
     provenance = await _accepted_provenance_by_entity(service, principal.user_id)
+    confirmations = await service.list_entity_confirmations(principal.user_id)
     values = tuple(item for item in view.entities if item.kind is CareerEntityKind.EXPERIENCE)
     _private(response)
     data = [
         experience_response(
             item,
+            user_confirmed=(
+                item.id in confirmations and confirmations[item.id].state.value == "confirmed"
+            ),
             findings=view.findings,
             skill_ids=await service.list_entity_skill_ids(principal.user_id, item.id),
             provenance=provenance.get(item.id, []),
@@ -346,7 +595,11 @@ async def create_experience(
         group_with_entity_id=payload.group_with_experience_id,
     )
     _private(response, created.version)
-    return experience_response(created, skill_ids=tuple(payload.skill_ids))
+    return experience_response(
+        created,
+        user_confirmed=False,
+        skill_ids=tuple(payload.skill_ids),
+    )
 
 
 @router.patch(
@@ -378,7 +631,43 @@ async def update_experience(
         replace_group=True,
     )
     _private(response, updated.version)
-    return experience_response(updated, skill_ids=tuple(payload.skill_ids))
+    return experience_response(
+        updated,
+        user_confirmed=False,
+        skill_ids=tuple(payload.skill_ids),
+    )
+
+
+@router.post(
+    "/experiences/{entity_id}/confirm",
+    response_model=ExperienceResponse,
+    operation_id="careerExperienceConfirm",
+    responses=_PROBLEMS,
+)
+async def confirm_experience(
+    entity_id: UUID,
+    response: Response,
+    if_match: Annotated[str, Header(alias="If-Match")],
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
+    context: Annotated[RequestContext, Depends(career_request_context)],
+    service: Annotated[CareerRecordService, Depends(career_record_service)],
+) -> ExperienceResponse:
+    current = await service.get_entity(principal.user_id, entity_id)
+    if current.kind is not CareerEntityKind.EXPERIENCE:
+        raise CareerRecordNotFound
+    entity, _confirmation = await service.confirm_entity(
+        principal.user_id,
+        entity_id,
+        parse_if_match_version(if_match),
+        context,
+    )
+    _private(response, entity.version)
+    return experience_response(
+        entity,
+        user_confirmed=True,
+        skill_ids=await service.list_entity_skill_ids(principal.user_id, entity.id),
+        provenance=await _current_field_provenance_responses(service, principal.user_id, entity.id),
+    )
 
 
 @router.delete(
@@ -436,10 +725,14 @@ async def reorder_experiences(
     )
     values = tuple(item for item in updated.entities if item.kind is CareerEntityKind.EXPERIENCE)
     provenance = await _accepted_provenance_by_entity(service, principal.user_id)
+    confirmations = await service.list_entity_confirmations(principal.user_id)
     _private(response, updated.profile.version)
     data = [
         experience_response(
             item,
+            user_confirmed=(
+                item.id in confirmations and confirmations[item.id].state.value == "confirmed"
+            ),
             findings=updated.findings,
             skill_ids=await service.list_entity_skill_ids(principal.user_id, item.id),
             provenance=provenance.get(item.id, []),
@@ -467,10 +760,17 @@ async def list_career_items(
     await service.get_or_create_profile(principal.user_id, context)
     values = await service.list_entities(principal.user_id)
     provenance = await _accepted_provenance_by_entity(service, principal.user_id)
+    confirmations = await service.list_entity_confirmations(principal.user_id)
     _private(response)
     return CareerItemListResponse(
         data=[
-            career_item_response(item, provenance=provenance.get(item.id, []))
+            career_item_response(
+                item,
+                user_confirmed=(
+                    item.id in confirmations and confirmations[item.id].state.value == "confirmed"
+                ),
+                provenance=provenance.get(item.id, []),
+            )
             for item in values
             if item.kind is not CareerEntityKind.EXPERIENCE
         ]
@@ -494,7 +794,7 @@ async def create_career_item(
     await service.get_or_create_profile(principal.user_id, context)
     created = await service.create_entity(principal.user_id, _career_item_data(payload), context)
     _private(response, created.version)
-    return career_item_response(created)
+    return career_item_response(created, user_confirmed=False)
 
 
 @router.patch(
@@ -523,7 +823,38 @@ async def update_career_item(
         context,
     )
     _private(response, updated.version)
-    return career_item_response(updated)
+    return career_item_response(updated, user_confirmed=False)
+
+
+@router.post(
+    "/career-items/{entity_id}/confirm",
+    response_model=CareerItemResponse,
+    operation_id="careerItemConfirm",
+    responses=_PROBLEMS,
+)
+async def confirm_career_item(
+    entity_id: UUID,
+    response: Response,
+    if_match: Annotated[str, Header(alias="If-Match")],
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
+    context: Annotated[RequestContext, Depends(career_request_context)],
+    service: Annotated[CareerRecordService, Depends(career_record_service)],
+) -> CareerItemResponse:
+    current = await service.get_entity(principal.user_id, entity_id)
+    if current.kind is CareerEntityKind.EXPERIENCE:
+        raise CareerRecordNotFound
+    entity, _confirmation = await service.confirm_entity(
+        principal.user_id,
+        entity_id,
+        parse_if_match_version(if_match),
+        context,
+    )
+    _private(response, entity.version)
+    return career_item_response(
+        entity,
+        user_confirmed=True,
+        provenance=await _current_field_provenance_responses(service, principal.user_id, entity.id),
+    )
 
 
 @router.delete(
@@ -561,8 +892,22 @@ async def list_skills(
 ) -> SkillListResponse:
     await service.get_or_create_profile(principal.user_id, context)
     values = await service.list_skills(principal.user_id)
+    confirmations = await service.list_skill_confirmations(principal.user_id)
     _private(response)
-    return SkillListResponse(data=[skill_response(item) for item in values])
+    return SkillListResponse(
+        data=[
+            skill_response(
+                item,
+                user_confirmed=(
+                    item.id in confirmations and confirmations[item.id].state.value == "confirmed"
+                ),
+                provenance=await _current_field_provenance_responses(
+                    service, principal.user_id, item.id
+                ),
+            )
+            for item in values
+        ]
+    )
 
 
 @router.post(
@@ -586,7 +931,7 @@ async def create_skill(
         context,
     )
     _private(response, created.version)
-    return skill_response(created)
+    return skill_response(created, user_confirmed=False)
 
 
 @router.patch(
@@ -612,7 +957,35 @@ async def update_skill(
         context,
     )
     _private(response, updated.version)
-    return skill_response(updated)
+    return skill_response(updated, user_confirmed=False)
+
+
+@router.post(
+    "/skills/{skill_id}/confirm",
+    response_model=SkillResponse,
+    operation_id="careerSkillConfirm",
+    responses=_PROBLEMS,
+)
+async def confirm_skill(
+    skill_id: UUID,
+    response: Response,
+    if_match: Annotated[str, Header(alias="If-Match")],
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
+    context: Annotated[RequestContext, Depends(career_request_context)],
+    service: Annotated[CareerRecordService, Depends(career_record_service)],
+) -> SkillResponse:
+    skill, _confirmation = await service.confirm_skill(
+        principal.user_id,
+        skill_id,
+        parse_if_match_version(if_match),
+        context,
+    )
+    _private(response, skill.version)
+    return skill_response(
+        skill,
+        user_confirmed=True,
+        provenance=await _current_field_provenance_responses(service, principal.user_id, skill.id),
+    )
 
 
 @router.delete(
@@ -674,11 +1047,159 @@ async def _present_proposal(
     )
 
 
+async def _present_semantic_proposal(
+    service: CareerRecordService,
+    owner_user_id: UUID,
+    proposal_id: UUID,
+) -> SemanticImportProposalResponse:
+    proposal = await service.get_semantic_import_proposal(owner_user_id, proposal_id)
+    source_available = await service.semantic_import_proposal_source_available(
+        owner_user_id, proposal_id
+    )
+    return semantic_import_proposal_response(proposal, source_available=source_available)
+
+
+@router.post(
+    "/career-profile/semantic-import-proposals",
+    response_model=SemanticImportBatchResponse,
+    status_code=status.HTTP_201_CREATED,
+    operation_id="careerSemanticImportProposalsCreate",
+    responses=_PROBLEMS,
+)
+async def create_semantic_import_proposals(
+    payload: SemanticImportCreateRequest,
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
+    context: Annotated[RequestContext, Depends(career_request_context)],
+    service: Annotated[CareerRecordService, Depends(career_record_service)],
+) -> SemanticImportBatchResponse:
+    await service.get_or_create_profile(principal.user_id, context)
+    result = await service.create_semantic_import_proposals(
+        principal.user_id,
+        CreateSemanticImportProposals(
+            document_id=payload.document_id,
+            snapshot_id=payload.snapshot_id,
+        ),
+        context,
+    )
+    _private(response)
+    return SemanticImportBatchResponse(
+        proposals=[
+            await _present_semantic_proposal(service, principal.user_id, proposal.id)
+            for proposal in result.proposals
+        ],
+        questions=[
+            SemanticImportQuestionResponse(
+                semantic_entity_id=question.semantic_entity_id,
+                code="semantic_candidate_requires_review",
+                missing_fields=list(question.missing_fields),
+            )
+            for question in result.questions
+        ],
+    )
+
+
+@router.get(
+    "/career-profile/semantic-import-proposals",
+    response_model=SemanticImportProposalListResponse,
+    operation_id="careerSemanticImportProposalsList",
+    responses=_PROBLEMS,
+)
+async def list_semantic_import_proposals(
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(current_principal)],
+    service: Annotated[CareerRecordService, Depends(career_record_service)],
+) -> SemanticImportProposalListResponse:
+    proposals = await service.list_semantic_import_proposals(principal.user_id)
+    _private(response)
+    return SemanticImportProposalListResponse(
+        data=[
+            await _present_semantic_proposal(service, principal.user_id, proposal.id)
+            for proposal in proposals
+        ]
+    )
+
+
+@router.get(
+    "/career-profile/semantic-import-proposals/{proposal_id}",
+    response_model=SemanticImportProposalResponse,
+    operation_id="careerSemanticImportProposalGet",
+    responses=_PROBLEMS,
+)
+async def get_semantic_import_proposal(
+    proposal_id: UUID,
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(current_principal)],
+    service: Annotated[CareerRecordService, Depends(career_record_service)],
+) -> SemanticImportProposalResponse:
+    proposal = await service.get_semantic_import_proposal(principal.user_id, proposal_id)
+    _private(response, proposal.version)
+    return await _present_semantic_proposal(service, principal.user_id, proposal.id)
+
+
+@router.post(
+    "/career-profile/semantic-import-proposals/{proposal_id}/accept",
+    response_model=SemanticImportProposalResponse,
+    operation_id="careerSemanticImportProposalAccept",
+    responses=_PROBLEMS,
+)
+async def accept_semantic_import_proposal(
+    proposal_id: UUID,
+    payload: SemanticImportAcceptRequest,
+    response: Response,
+    if_match: Annotated[str, Header(alias="If-Match")],
+    idempotency_key: Annotated[str, Header(alias="Idempotency-Key", min_length=8, max_length=128)],
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
+    context: Annotated[RequestContext, Depends(career_request_context)],
+    service: Annotated[CareerRecordService, Depends(career_record_service)],
+) -> SemanticImportProposalResponse:
+    accepted = await service.accept_semantic_import_proposal(
+        principal.user_id,
+        proposal_id,
+        parse_if_match_version(if_match),
+        AcceptSemanticImportProposal(
+            values=payload.values,
+            idempotency_key=idempotency_key,
+            target_record_id=payload.target_record_id,
+        ),
+        context,
+    )
+    _private(response, accepted.proposal.version)
+    return await _present_semantic_proposal(service, principal.user_id, accepted.proposal.id)
+
+
+@router.post(
+    "/career-profile/semantic-import-proposals/{proposal_id}/reject",
+    response_model=SemanticImportProposalResponse,
+    operation_id="careerSemanticImportProposalReject",
+    responses=_PROBLEMS,
+)
+async def reject_semantic_import_proposal(
+    proposal_id: UUID,
+    response: Response,
+    if_match: Annotated[str, Header(alias="If-Match")],
+    idempotency_key: Annotated[str, Header(alias="Idempotency-Key", min_length=8, max_length=128)],
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
+    context: Annotated[RequestContext, Depends(career_request_context)],
+    service: Annotated[CareerRecordService, Depends(career_record_service)],
+) -> SemanticImportProposalResponse:
+    proposal = await service.reject_semantic_import_proposal(
+        principal.user_id,
+        proposal_id,
+        parse_if_match_version(if_match),
+        idempotency_key,
+        context,
+    )
+    _private(response, proposal.version)
+    return await _present_semantic_proposal(service, principal.user_id, proposal.id)
+
+
 @router.post(
     "/career-profile/import-proposals",
     response_model=ImportProposalResponse,
     status_code=status.HTTP_201_CREATED,
     operation_id="careerImportProposalCreate",
+    deprecated=True,
     responses=_PROBLEMS,
 )
 async def create_import_proposal(
