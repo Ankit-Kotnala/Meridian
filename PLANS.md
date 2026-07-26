@@ -7,10 +7,11 @@ Record closure is locally verified; hosted evidence is pending explicit
 authorization to publish. Phase 2 semantic parsing/review closure is also
 locally/security verified with hosted evidence pending. Phase 9 remains complete
 and hosted verified in PR #22; Phase 8 remains complete and hosted verified in
-PR #21. Phase 7 backend durable verified-export closure is implemented and host
-verified; its final Docker-isolated gate is pending. Frontend editor extensions
-are excluded from this non-frontend slice. Commercial, administrative,
-operational, seed, and release-hardening work remains open**
+PR #21. Phase 7 durable verified-export closure and Phase 10A's guarded fictional
+local seed are merged. The product-wide UX redesign is locally implemented and
+visually verified without changing backend phase completion. Commercial,
+tenancy, privacy, administration, security/cost, infrastructure, and final
+release-hardening work remains open**
 
 ## Status legend
 
@@ -20,6 +21,84 @@ operational, seed, and release-hardening work remains open**
 - `[!]` blocked; the blocker and evidence must be recorded
 
 No phase is complete until every exit gate passes. A skipped check is not a pass.
+
+## Product-wide UX redesign verification (2026-07-26)
+
+This cross-cutting redesign is isolated on `codex/ux-redesign`. It changes the
+presentation and workflow clarity of existing product functionality; it does not
+claim a new implementation phase, publish a deployment, or change backend domain
+rules.
+
+### Implemented and verified
+
+- [x] Replaced the decorative dashboard direction with a warm-neutral,
+      forest-action, evidence-first token and component system.
+- [x] Added shared page, section, stepper, definition-list, approval, and state
+      patterns while keeping product behavior in feature modules.
+- [x] Reorganized authenticated navigation by user goal and implemented a
+      keyboard-operable mobile drawer and contextual account controls.
+- [x] Rebuilt public, identity, dashboard, onboarding, Career Record,
+      opportunity, resume, application, preparation, networking, growth,
+      analytics, and Settings top-level experiences without invented metrics,
+      claims, customer evidence, or capabilities.
+- [x] Documented design foundations, component ownership, provenance and
+      approval patterns, responsive rules, accessibility expectations, and
+      current official product-pattern research in
+      `docs/product-design-system.md`.
+- [x] Added `apps/web/scripts/capture-visual-qa.mjs` and the complete route/state
+      record in `docs/visual-qa-matrix.md`.
+- [x] Captured four representative public workflows at all seven required
+      viewports. The 28 committed redesigned captures returned 200 with no page
+      overflow, console error, or page error; skip-link and reduced-motion checks
+      passed.
+- [x] Exercised 24 authenticated top-level routes at 320, 360, 393, 768, 1024,
+      1440, and 1920 px. One Applications filter overflow at 1440 px was fixed,
+      rebuilt, and rerun successfully at all seven widths.
+- [x] Verified the production Next.js image behind the local edge container with
+      all Compose services healthy. The authenticated desktop/mobile journey
+      passes 2/2 and the production-stack smoke suite passes 7 with 1 intentional
+      project skip.
+
+### Required gate evidence
+
+- `pnpm format:check`: pass.
+- `pnpm lint`: pass.
+- `pnpm typecheck`: pass.
+- `pnpm test`: pass — web 163, UI 12, contracts 3, boundary 4, and edge 2 tests.
+- Exact Makefile Python format/lint commands: pass.
+- Exact Makefile Python mypy commands: pass — 208 backend, 65 API, and 12 worker
+  source files.
+- Exact Makefile Python test commands: pass — 398 backend architecture/unit,
+  145 API, and 84 worker tests.
+- `pnpm build`: pass; 49 routes compiled. The final Docker image build also
+  compiled all 49 routes and the stack reached healthy status.
+- `uv lock --check` and `pnpm contracts:check`: pass.
+- `docker compose config --quiet`: pass.
+- GNU Make is unavailable on this Windows host, so `make format-check`,
+  `make lint`, `make typecheck`, and `make test` cannot be invoked by name. Their
+  underlying package-manager commands were run directly; this limitation is not
+  recorded as a Make pass.
+
+### Open verification and product risks
+
+- [!] Connected interactive-browser and local-image review are blocked by the
+  Windows sandbox helper error `apply deny-read ACLs`. Playwright automation
+  and saved screenshots are available, but manual aesthetic inspection was
+  not claimed.
+- [!] Dynamic detail routes require stable domain records. Their component and
+  journey coverage is recorded separately from the seven-viewport top-level
+  route pass.
+- [!] The corrected full-stack E2E suite still receives the existing API `409
+resume_builder_conflict` response when newly registered users create a
+  resume after evidence confirmation. Resume Builder and downstream
+  Application journeys therefore remain open outside this presentation-only
+  redesign.
+- [!] The Job Match full-stack assertion expects a tailoring action even when
+  the deterministic result contains a mandatory gap. The honest UI result is
+  retained and the stale expectation remains open.
+- [!] No field RUM was available. LCP, CLS, JavaScript bytes, and Event Timing in
+  the visual-QA record are local lab observations, not production Core Web
+  Vitals or a hiring-outcome claim.
 
 ## Repository assessment
 

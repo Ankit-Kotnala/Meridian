@@ -517,6 +517,8 @@ Read [AGENTS.md](AGENTS.md) before contributing. The principal references are:
 - [Documentation index](docs/README.md)
 - [Architecture](docs/architecture.md)
 - [Product requirements](docs/product-requirements.md)
+- [Product design system](docs/product-design-system.md)
+- [Visual QA matrix](docs/visual-qa-matrix.md)
 - [Security threat model](docs/security-threat-model.md)
 - [Scoring methodology](docs/scoring-methodology.md)
 - [AI grounding policy](docs/ai-grounding-policy.md)

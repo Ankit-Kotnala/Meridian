@@ -1,0 +1,926 @@
+[
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 320,
+      "documentWidth": 320,
+      "reducedMotion": true,
+      "viewportWidth": 320
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 6,
+      "interactionMaxDurationMs": 16,
+      "lcpMs": 472,
+      "scriptEncodedBytes": 196706,
+      "scriptTransferBytes": 200906
+    },
+    "route": "/",
+    "routeName": "home",
+    "screenshot": "home-320.png",
+    "status": 200,
+    "url": "http://localhost:3000/",
+    "viewport": {
+      "width": 320,
+      "height": 720
+    },
+    "viewportName": "320"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 320,
+      "documentWidth": 320,
+      "reducedMotion": true,
+      "viewportWidth": 320
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 6,
+      "interactionMaxDurationMs": 24,
+      "lcpMs": 144,
+      "scriptEncodedBytes": 196706,
+      "scriptTransferBytes": 0
+    },
+    "route": "/demo/dashboard",
+    "routeName": "demo",
+    "screenshot": "demo-320.png",
+    "status": 200,
+    "url": "http://localhost:3000/demo/dashboard",
+    "viewport": {
+      "width": 320,
+      "height": 720
+    },
+    "viewportName": "320"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 320,
+      "documentWidth": 320,
+      "reducedMotion": true,
+      "viewportWidth": 320
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 2,
+      "interactionMaxDurationMs": 24,
+      "lcpMs": 152,
+      "scriptEncodedBytes": 188797,
+      "scriptTransferBytes": 0
+    },
+    "route": "/login",
+    "routeName": "login",
+    "screenshot": "login-320.png",
+    "status": 200,
+    "url": "http://localhost:3000/login",
+    "viewport": {
+      "width": 320,
+      "height": 720
+    },
+    "viewportName": "320"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 320,
+      "documentWidth": 320,
+      "reducedMotion": true,
+      "viewportWidth": 320
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 0,
+      "interactionMaxDurationMs": 0,
+      "lcpMs": 116,
+      "scriptEncodedBytes": 208134,
+      "scriptTransferBytes": 20237
+    },
+    "route": "/resume-health/guest",
+    "routeName": "guestResumeHealth",
+    "screenshot": "guestResumeHealth-320.png",
+    "status": 200,
+    "url": "http://localhost:3000/resume-health/guest",
+    "viewport": {
+      "width": 320,
+      "height": 720
+    },
+    "viewportName": "320"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 360,
+      "documentWidth": 360,
+      "reducedMotion": true,
+      "viewportWidth": 360
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 6,
+      "interactionMaxDurationMs": 24,
+      "lcpMs": 724,
+      "scriptEncodedBytes": 196706,
+      "scriptTransferBytes": 200906
+    },
+    "route": "/",
+    "routeName": "home",
+    "screenshot": "home-360.png",
+    "status": 200,
+    "url": "http://localhost:3000/",
+    "viewport": {
+      "width": 360,
+      "height": 780
+    },
+    "viewportName": "360"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 360,
+      "documentWidth": 360,
+      "reducedMotion": true,
+      "viewportWidth": 360
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 6,
+      "interactionMaxDurationMs": 24,
+      "lcpMs": 136,
+      "scriptEncodedBytes": 196706,
+      "scriptTransferBytes": 0
+    },
+    "route": "/demo/dashboard",
+    "routeName": "demo",
+    "screenshot": "demo-360.png",
+    "status": 200,
+    "url": "http://localhost:3000/demo/dashboard",
+    "viewport": {
+      "width": 360,
+      "height": 780
+    },
+    "viewportName": "360"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 360,
+      "documentWidth": 360,
+      "reducedMotion": true,
+      "viewportWidth": 360
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 2,
+      "interactionMaxDurationMs": 32,
+      "lcpMs": 156,
+      "scriptEncodedBytes": 188797,
+      "scriptTransferBytes": 0
+    },
+    "route": "/login",
+    "routeName": "login",
+    "screenshot": "login-360.png",
+    "status": 200,
+    "url": "http://localhost:3000/login",
+    "viewport": {
+      "width": 360,
+      "height": 780
+    },
+    "viewportName": "360"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 360,
+      "documentWidth": 360,
+      "reducedMotion": true,
+      "viewportWidth": 360
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 0,
+      "interactionMaxDurationMs": 0,
+      "lcpMs": 120,
+      "scriptEncodedBytes": 208134,
+      "scriptTransferBytes": 20237
+    },
+    "route": "/resume-health/guest",
+    "routeName": "guestResumeHealth",
+    "screenshot": "guestResumeHealth-360.png",
+    "status": 200,
+    "url": "http://localhost:3000/resume-health/guest",
+    "viewport": {
+      "width": 360,
+      "height": 780
+    },
+    "viewportName": "360"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 393,
+      "documentWidth": 393,
+      "reducedMotion": true,
+      "viewportWidth": 393
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 6,
+      "interactionMaxDurationMs": 24,
+      "lcpMs": 792,
+      "scriptEncodedBytes": 196706,
+      "scriptTransferBytes": 200906
+    },
+    "route": "/",
+    "routeName": "home",
+    "screenshot": "home-393.png",
+    "status": 200,
+    "url": "http://localhost:3000/",
+    "viewport": {
+      "width": 393,
+      "height": 852
+    },
+    "viewportName": "393"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 393,
+      "documentWidth": 393,
+      "reducedMotion": true,
+      "viewportWidth": 393
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 7,
+      "interactionMaxDurationMs": 24,
+      "lcpMs": 136,
+      "scriptEncodedBytes": 196706,
+      "scriptTransferBytes": 0
+    },
+    "route": "/demo/dashboard",
+    "routeName": "demo",
+    "screenshot": "demo-393.png",
+    "status": 200,
+    "url": "http://localhost:3000/demo/dashboard",
+    "viewport": {
+      "width": 393,
+      "height": 852
+    },
+    "viewportName": "393"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 393,
+      "documentWidth": 393,
+      "reducedMotion": true,
+      "viewportWidth": 393
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 1,
+      "interactionMaxDurationMs": 24,
+      "lcpMs": 144,
+      "scriptEncodedBytes": 188797,
+      "scriptTransferBytes": 0
+    },
+    "route": "/login",
+    "routeName": "login",
+    "screenshot": "login-393.png",
+    "status": 200,
+    "url": "http://localhost:3000/login",
+    "viewport": {
+      "width": 393,
+      "height": 852
+    },
+    "viewportName": "393"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 393,
+      "documentWidth": 393,
+      "reducedMotion": true,
+      "viewportWidth": 393
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 0,
+      "interactionMaxDurationMs": 0,
+      "lcpMs": 116,
+      "scriptEncodedBytes": 208134,
+      "scriptTransferBytes": 20237
+    },
+    "route": "/resume-health/guest",
+    "routeName": "guestResumeHealth",
+    "screenshot": "guestResumeHealth-393.png",
+    "status": 200,
+    "url": "http://localhost:3000/resume-health/guest",
+    "viewport": {
+      "width": 393,
+      "height": 852
+    },
+    "viewportName": "393"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 768,
+      "documentWidth": 768,
+      "reducedMotion": true,
+      "viewportWidth": 768
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 0,
+      "interactionMaxDurationMs": 0,
+      "lcpMs": 732,
+      "scriptEncodedBytes": 196706,
+      "scriptTransferBytes": 200906
+    },
+    "route": "/",
+    "routeName": "home",
+    "screenshot": "home-768.png",
+    "status": 200,
+    "url": "http://localhost:3000/",
+    "viewport": {
+      "width": 768,
+      "height": 1024
+    },
+    "viewportName": "768"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 768,
+      "documentWidth": 768,
+      "reducedMotion": true,
+      "viewportWidth": 768
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 2,
+      "interactionMaxDurationMs": 16,
+      "lcpMs": 136,
+      "scriptEncodedBytes": 196706,
+      "scriptTransferBytes": 0
+    },
+    "route": "/demo/dashboard",
+    "routeName": "demo",
+    "screenshot": "demo-768.png",
+    "status": 200,
+    "url": "http://localhost:3000/demo/dashboard",
+    "viewport": {
+      "width": 768,
+      "height": 1024
+    },
+    "viewportName": "768"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 768,
+      "documentWidth": 768,
+      "reducedMotion": true,
+      "viewportWidth": 768
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 1,
+      "interactionMaxDurationMs": 16,
+      "lcpMs": 148,
+      "scriptEncodedBytes": 188797,
+      "scriptTransferBytes": 0
+    },
+    "route": "/login",
+    "routeName": "login",
+    "screenshot": "login-768.png",
+    "status": 200,
+    "url": "http://localhost:3000/login",
+    "viewport": {
+      "width": 768,
+      "height": 1024
+    },
+    "viewportName": "768"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 768,
+      "documentWidth": 768,
+      "reducedMotion": true,
+      "viewportWidth": 768
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 2,
+      "interactionMaxDurationMs": 24,
+      "lcpMs": 136,
+      "scriptEncodedBytes": 208134,
+      "scriptTransferBytes": 20237
+    },
+    "route": "/resume-health/guest",
+    "routeName": "guestResumeHealth",
+    "screenshot": "guestResumeHealth-768.png",
+    "status": 200,
+    "url": "http://localhost:3000/resume-health/guest",
+    "viewport": {
+      "width": 768,
+      "height": 1024
+    },
+    "viewportName": "768"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 1024,
+      "documentWidth": 1024,
+      "reducedMotion": true,
+      "viewportWidth": 1024
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 1,
+      "interactionMaxDurationMs": 16,
+      "lcpMs": 508,
+      "scriptEncodedBytes": 196706,
+      "scriptTransferBytes": 200906
+    },
+    "route": "/",
+    "routeName": "home",
+    "screenshot": "home-1024.png",
+    "status": 200,
+    "url": "http://localhost:3000/",
+    "viewport": {
+      "width": 1024,
+      "height": 900
+    },
+    "viewportName": "1024"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 1024,
+      "documentWidth": 1024,
+      "reducedMotion": true,
+      "viewportWidth": 1024
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 2,
+      "interactionMaxDurationMs": 32,
+      "lcpMs": 140,
+      "scriptEncodedBytes": 196706,
+      "scriptTransferBytes": 0
+    },
+    "route": "/demo/dashboard",
+    "routeName": "demo",
+    "screenshot": "demo-1024.png",
+    "status": 200,
+    "url": "http://localhost:3000/demo/dashboard",
+    "viewport": {
+      "width": 1024,
+      "height": 900
+    },
+    "viewportName": "1024"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 1024,
+      "documentWidth": 1024,
+      "reducedMotion": true,
+      "viewportWidth": 1024
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 1,
+      "interactionMaxDurationMs": 16,
+      "lcpMs": 160,
+      "scriptEncodedBytes": 188797,
+      "scriptTransferBytes": 0
+    },
+    "route": "/login",
+    "routeName": "login",
+    "screenshot": "login-1024.png",
+    "status": 200,
+    "url": "http://localhost:3000/login",
+    "viewport": {
+      "width": 1024,
+      "height": 900
+    },
+    "viewportName": "1024"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 1024,
+      "documentWidth": 1024,
+      "reducedMotion": true,
+      "viewportWidth": 1024
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 2,
+      "interactionMaxDurationMs": 32,
+      "lcpMs": 164,
+      "scriptEncodedBytes": 208134,
+      "scriptTransferBytes": 20237
+    },
+    "route": "/resume-health/guest",
+    "routeName": "guestResumeHealth",
+    "screenshot": "guestResumeHealth-1024.png",
+    "status": 200,
+    "url": "http://localhost:3000/resume-health/guest",
+    "viewport": {
+      "width": 1024,
+      "height": 900
+    },
+    "viewportName": "1024"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 1440,
+      "documentWidth": 1440,
+      "reducedMotion": true,
+      "viewportWidth": 1440
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 2,
+      "interactionMaxDurationMs": 32,
+      "lcpMs": 488,
+      "scriptEncodedBytes": 196706,
+      "scriptTransferBytes": 200906
+    },
+    "route": "/",
+    "routeName": "home",
+    "screenshot": "home-1440.png",
+    "status": 200,
+    "url": "http://localhost:3000/",
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "viewportName": "1440"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 1440,
+      "documentWidth": 1440,
+      "reducedMotion": true,
+      "viewportWidth": 1440
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 1,
+      "interactionMaxDurationMs": 16,
+      "lcpMs": 136,
+      "scriptEncodedBytes": 196706,
+      "scriptTransferBytes": 0
+    },
+    "route": "/demo/dashboard",
+    "routeName": "demo",
+    "screenshot": "demo-1440.png",
+    "status": 200,
+    "url": "http://localhost:3000/demo/dashboard",
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "viewportName": "1440"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 1440,
+      "documentWidth": 1440,
+      "reducedMotion": true,
+      "viewportWidth": 1440
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 2,
+      "interactionMaxDurationMs": 24,
+      "lcpMs": 164,
+      "scriptEncodedBytes": 188797,
+      "scriptTransferBytes": 0
+    },
+    "route": "/login",
+    "routeName": "login",
+    "screenshot": "login-1440.png",
+    "status": 200,
+    "url": "http://localhost:3000/login",
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "viewportName": "1440"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 1440,
+      "documentWidth": 1440,
+      "reducedMotion": true,
+      "viewportWidth": 1440
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 0,
+      "interactionMaxDurationMs": 0,
+      "lcpMs": 116,
+      "scriptEncodedBytes": 208134,
+      "scriptTransferBytes": 20237
+    },
+    "route": "/resume-health/guest",
+    "routeName": "guestResumeHealth",
+    "screenshot": "guestResumeHealth-1440.png",
+    "status": 200,
+    "url": "http://localhost:3000/resume-health/guest",
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "viewportName": "1440"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 1920,
+      "documentWidth": 1920,
+      "reducedMotion": true,
+      "viewportWidth": 1920
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 2,
+      "interactionMaxDurationMs": 16,
+      "lcpMs": 736,
+      "scriptEncodedBytes": 196706,
+      "scriptTransferBytes": 200906
+    },
+    "route": "/",
+    "routeName": "home",
+    "screenshot": "home-1920.png",
+    "status": 200,
+    "url": "http://localhost:3000/",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "viewportName": "1920"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 1920,
+      "documentWidth": 1920,
+      "reducedMotion": true,
+      "viewportWidth": 1920
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 2,
+      "interactionMaxDurationMs": 32,
+      "lcpMs": 148,
+      "scriptEncodedBytes": 196706,
+      "scriptTransferBytes": 0
+    },
+    "route": "/demo/dashboard",
+    "routeName": "demo",
+    "screenshot": "demo-1920.png",
+    "status": 200,
+    "url": "http://localhost:3000/demo/dashboard",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "viewportName": "1920"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 1920,
+      "documentWidth": 1920,
+      "reducedMotion": true,
+      "viewportWidth": 1920
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 2,
+      "interactionMaxDurationMs": 16,
+      "lcpMs": 184,
+      "scriptEncodedBytes": 188797,
+      "scriptTransferBytes": 0
+    },
+    "route": "/login",
+    "routeName": "login",
+    "screenshot": "login-1920.png",
+    "status": 200,
+    "url": "http://localhost:3000/login",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "viewportName": "1920"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 1920,
+      "documentWidth": 1920,
+      "reducedMotion": true,
+      "viewportWidth": 1920
+    },
+    "pageErrors": [],
+    "performanceMetrics": {
+      "cls": 0,
+      "interactionEventCount": 0,
+      "interactionMaxDurationMs": 0,
+      "lcpMs": 136,
+      "scriptEncodedBytes": 208134,
+      "scriptTransferBytes": 20237
+    },
+    "route": "/resume-health/guest",
+    "routeName": "guestResumeHealth",
+    "screenshot": "guestResumeHealth-1920.png",
+    "status": 200,
+    "url": "http://localhost:3000/resume-health/guest",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "viewportName": "1920"
+  }
+]
