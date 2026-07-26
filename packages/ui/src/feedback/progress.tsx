@@ -23,7 +23,7 @@ export function Progress({
         aria-valuemax={100}
         aria-valuemin={0}
         {...(bounded === null ? {} : { "aria-valuenow": Math.round(bounded) })}
-        className="h-2 overflow-hidden rounded-full bg-slate-200"
+        className="h-2 overflow-hidden rounded-full bg-surface-inset"
         role="progressbar"
       >
         <div

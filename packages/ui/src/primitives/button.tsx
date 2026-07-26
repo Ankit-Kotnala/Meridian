@@ -3,15 +3,15 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { cn } from "../internal/cn";
 
 export const buttonStyles = {
-  base: "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold transition duration-200 disabled:cursor-not-allowed disabled:opacity-55",
+  base: "inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] px-4 text-sm font-bold transition-colors duration-150 aria-disabled:cursor-not-allowed aria-disabled:opacity-60 disabled:cursor-not-allowed disabled:opacity-60",
   primary:
-    "bg-primary text-white shadow-[0_8px_24px_rgba(91,70,245,.24)] hover:bg-primary-strong",
+    "border border-primary bg-primary text-white shadow-sm hover:border-primary-strong hover:bg-primary-strong",
   secondary:
-    "border border-line bg-white text-foreground shadow-sm hover:border-primary/40 hover:bg-primary-soft/50",
-  ghost: "text-muted hover:bg-slate-100 hover:text-foreground",
+    "border border-line-strong bg-white text-foreground shadow-sm hover:border-primary hover:bg-primary-soft/45",
+  ghost: "text-muted-strong hover:bg-surface-subtle hover:text-foreground",
   dark: "bg-navy text-white hover:bg-navy-hover",
   danger:
-    "bg-danger text-white shadow-[0_8px_24px_rgba(190,24,93,.18)] hover:bg-danger/90",
+    "border border-danger bg-danger text-white shadow-sm hover:border-danger-strong hover:bg-danger-strong",
 } as const;
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {

@@ -9,6 +9,7 @@
 
 html {
   scroll-behavior: smooth;
+  background: var(--background);
 }
 
 body {
@@ -16,7 +17,10 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-family-sans);
+  font-size: 1rem;
+  line-height: 1.5;
   text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
@@ -25,9 +29,8 @@ body {
 }
 
 :where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--focus) 70%, white);
-  outline-offset: 3px;
-  border-radius: 0.45rem;
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
 }
 
 button:not(:disabled),
@@ -35,8 +38,32 @@ button:not(:disabled),
   cursor: pointer;
 }
 
+a {
+  text-underline-offset: 0.18em;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: 1rem;
+  z-index: 100;
+  border-radius: var(--radius-control);
+  background: var(--foreground);
+  color: white;
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+  box-shadow: var(--shadow-lg);
+}
+
 .site-container {
-  width: min(100% - 2rem, 76rem);
+  width: min(100% - 2rem, var(--content-wide));
   margin-inline: auto;
 }
 
@@ -47,16 +74,132 @@ button:not(:disabled),
 }
 
 .eyebrow {
-  color: var(--primary-strong);
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
+  color: var(--muted-strong);
+  font-size: 0.6875rem;
+  font-weight: 750;
+  letter-spacing: 0.11em;
   line-height: 1.5;
   text-transform: uppercase;
 }
 
 .balanced {
   text-wrap: balance;
+}
+
+.workspace-page {
+  width: 100%;
+  max-width: var(--content-wide);
+  margin-inline: auto;
+  padding: var(--space-page-block) var(--space-page-inline) 4rem;
+}
+
+.workspace-page-narrow {
+  max-width: 64rem;
+}
+
+.workspace-content > main#main-content {
+  width: 100%;
+  max-width: var(--content-wide);
+  margin-inline: auto;
+  padding: var(--space-page-block) var(--space-page-inline) 4rem;
+}
+
+.workspace-content > main#main-content > header:first-child h1,
+.workspace-content > main#main-content > div:first-child h1 {
+  font-family: var(--font-family-display);
+  font-size: clamp(1.65rem, 2.5vw, 2rem);
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.workspace-content :where(h2, h3) {
+  text-wrap: pretty;
+}
+
+.workspace-content :where(.font-black, .font-extrabold) {
+  font-weight: 700;
+}
+
+.workspace-content .rounded-2xl {
+  border-radius: var(--radius-card);
+}
+
+.workspace-content .rounded-xl {
+  border-radius: var(--radius-control);
+}
+
+.workspace-content table {
+  font-variant-numeric: tabular-nums;
+}
+
+.workspace-content table thead {
+  background: var(--surface-subtle);
+}
+
+.workspace-content table tbody tr {
+  border-color: var(--border);
+}
+
+.workspace-content details > summary {
+  cursor: pointer;
+}
+
+.content-section {
+  scroll-margin-top: 6rem;
+}
+
+.data-region {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+.table-scroll table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-scroll th {
+  background: var(--surface-subtle);
+  color: var(--muted-strong);
+  font-size: 0.75rem;
+  font-weight: 750;
+  letter-spacing: 0.025em;
+}
+
+.table-scroll :is(th, td) {
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 1rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.table-scroll tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.table-scroll tbody tr:hover {
+  background: color-mix(in srgb, var(--primary-soft) 35%, transparent);
+}
+
+.text-link {
+  color: var(--primary-strong);
+  font-weight: 700;
+  text-decoration-line: underline;
+  text-decoration-color: color-mix(in srgb, var(--primary) 45%, transparent);
+  text-decoration-thickness: 1px;
+}
+
+.text-link:hover {
+  text-decoration-color: currentColor;
 }
 
 .sr-only:not(:focus):not(:active) {
@@ -67,6 +210,25 @@ button:not(:disabled),
   position: absolute;
   white-space: nowrap;
   width: 1px;
+}
+
+@media (forced-colors: active) {
+  :where(
+    a,
+    button,
+    input,
+    textarea,
+    select,
+    summary,
+    [tabindex]
+  ):focus-visible {
+    outline-color: Highlight;
+  }
+
+  .surface-card,
+  .data-region {
+    border-color: CanvasText;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
