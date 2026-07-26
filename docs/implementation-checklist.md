@@ -581,9 +581,14 @@ Dependencies: all product phases and production/legal decisions.
   across SQL/object/vector/cache/provider, backup expiry, status/retry, and tests.
   Durable primary PostgreSQL/S3 export and erasure are verified; backup/provider
   expiry and production retention policy remain Phase 10H work.
-- [ ] Finalize rate/abuse/cost limits, security headers/CSP, session/MFA decision,
-      audit integrity, scanner/parser sandbox/egress, dependency/container/IaC/SBOM/
-      provenance, secret/key rotation, and penetration review.
+- [~] Finalize rate/abuse/cost limits, security headers/CSP, session/MFA decision,
+  audit integrity, scanner/parser sandbox/egress, dependency/container/IaC/SBOM/
+  provenance, secret/key rotation, and penetration review. Central API
+  admission, atomic live-AI reservations, API/edge headers, isolated resume/
+  attachment parsing, audit verification, and bounded dual-key bearer/signing
+  rotation are implemented and focused-verified. Phase 10H owns supply-chain/
+  IaC evidence; operator MFA policy and independent penetration review remain
+  explicit owner/external release gates.
 - [ ] Select production regions/services/queue/object/provider topology and add
       approved ADRs, infrastructure, encrypted backup/PITR, tested restore, RPO/RTO,
       monitoring/alerts/runbooks/on-call, capacity/load/soak/failure testing.

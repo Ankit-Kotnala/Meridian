@@ -44,8 +44,8 @@ from careeros_api.modules.organizations.schemas import (
     InviteMemberRequest,
     MembershipResponse,
     OrganizationListResponse,
-    OrganizationResponse,
     OrganizationRosterResponse,
+    TenantOrganizationResponse,
     UpdateOrganizationRequest,
 )
 
@@ -85,7 +85,7 @@ async def list_organizations(
 
 @router.post(
     "/organizations",
-    response_model=OrganizationResponse,
+    response_model=TenantOrganizationResponse,
     status_code=status.HTTP_201_CREATED,
     operation_id="organizationsCreate",
     responses=_PROBLEMS,
@@ -103,7 +103,7 @@ async def create_organization(
         str,
         Header(alias="Idempotency-Key", min_length=8, max_length=128),
     ],
-) -> OrganizationResponse:
+) -> TenantOrganizationResponse:
     result = await service.create_organization(
         CreateOrganization(name=payload.name),
         idempotency_key=idempotency_key,
@@ -115,7 +115,7 @@ async def create_organization(
 
 @router.get(
     "/organizations/{organization_id}",
-    response_model=OrganizationResponse,
+    response_model=TenantOrganizationResponse,
     operation_id="organizationsGet",
     responses=_PROBLEMS,
 )
@@ -124,7 +124,7 @@ async def get_organization(
     response: Response,
     principal: Annotated[AuthenticatedPrincipal, Depends(current_principal)],
     service: Annotated[OrganizationService, Depends(organization_service)],
-) -> OrganizationResponse:
+) -> TenantOrganizationResponse:
     result = await service.get_organization(organization_id, principal.user_id)
     _private(response, result.organization.version)
     return organization_response(result)
@@ -132,7 +132,7 @@ async def get_organization(
 
 @router.patch(
     "/organizations/{organization_id}",
-    response_model=OrganizationResponse,
+    response_model=TenantOrganizationResponse,
     operation_id="organizationsUpdate",
     responses=_PROBLEMS,
 )
@@ -147,7 +147,7 @@ async def update_organization(
     context: Annotated[RequestContext, Depends(organization_request_context)],
     service: Annotated[OrganizationService, Depends(organization_service)],
     if_match: Annotated[str, Header(alias="If-Match")],
-) -> OrganizationResponse:
+) -> TenantOrganizationResponse:
     result = await service.update_organization(
         organization_id,
         UpdateOrganization(name=payload.name),
@@ -212,7 +212,7 @@ async def invite_member(
 
 @router.post(
     "/organization-invitations/accept",
-    response_model=OrganizationResponse,
+    response_model=TenantOrganizationResponse,
     operation_id="organizationInvitationsAccept",
     responses=_PROBLEMS,
 )
@@ -229,7 +229,7 @@ async def accept_invitation(
         str,
         Header(alias="Idempotency-Key", min_length=8, max_length=128),
     ],
-) -> OrganizationResponse:
+) -> TenantOrganizationResponse:
     result = await service.accept_invitation(
         AcceptOrganizationInvitation(token=payload.token),
         idempotency_key=idempotency_key,

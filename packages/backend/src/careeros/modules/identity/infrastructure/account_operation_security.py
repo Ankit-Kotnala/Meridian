@@ -17,11 +17,17 @@ class UuidAccountOperationIdentifierFactory:
 
 
 class HmacAccountOperationTokenManager:
-    def __init__(self, secret: str) -> None:
+    def __init__(self, secret: str, previous_secret: str | None = None) -> None:
         encoded = secret.encode("utf-8")
         if len(encoded) < 32:
             raise ValueError("account operation secret must contain at least 32 bytes")
+        previous = previous_secret.encode("utf-8") if previous_secret is not None else None
+        if previous is not None and len(previous) < 32:
+            raise ValueError("previous account operation secret must contain at least 32 bytes")
         self._secret = encoded
+        self._verification_secrets = (encoded,) + (
+            (previous,) if previous is not None and previous != encoded else ()
+        )
 
     def issue_for_id(self, operation_id: UUID) -> tuple[str, str]:
         material = hmac.new(
@@ -44,7 +50,11 @@ class HmacAccountOperationTokenManager:
             return None
 
     def verify(self, expected_digest: str, secret: str) -> bool:
-        return hmac.compare_digest(expected_digest, self._digest(secret))
+        matches = tuple(
+            hmac.compare_digest(expected_digest, self._digest_with(key, secret))
+            for key in self._verification_secrets
+        )
+        return any(matches)
 
     def fingerprint(self, user_id: UUID) -> str:
         return hmac.new(
@@ -54,8 +64,12 @@ class HmacAccountOperationTokenManager:
         ).hexdigest()
 
     def _digest(self, secret: str) -> str:
+        return self._digest_with(self._secret, secret)
+
+    @staticmethod
+    def _digest_with(key: bytes, secret: str) -> str:
         return hmac.new(
-            self._secret,
+            key,
             b"careeros:account-operation:token:v1:" + secret.encode(),
             hashlib.sha256,
         ).hexdigest()

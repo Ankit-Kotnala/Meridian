@@ -908,3 +908,20 @@ at implementation/merge head `1454792`; exact closeout evidence remains in
 `PLANS.md`. Phase 10 adds load,
 account-wide deletion, backup, and restore gates. The complete strategy is in
 `docs/testing-strategy.md`.
+
+## Phase 10G platform admission and hostile-work isolation
+
+The API owns a coarse Redis-backed admission layer in front of `/api/v1`, while
+feature services retain their narrower identity, upload, and operation limits.
+Only a BFF-signed socket-peer source is eligible in staging and production. The
+AI provider adapter is wrapped by an atomic Redis reservation boundary that
+combines rate, concurrency, UTC-month token, and UTC-month cost admission before
+network I/O. No plan quota is inferred from the commercial catalog.
+
+Resume and evidence-attachment parsing share foundation-level environment and
+egress primitives but retain feature-owned parsers, limits, result schemas, and
+state machines. Both run in killable children; the worker never duplicates their
+domain decisions. Response policy remains split correctly: the API applies a
+deny-by-default policy to JSON operations, and the edge overwrites browser-facing
+security headers for Next.js responses. ADR 0024 records topology and rotation
+constraints.

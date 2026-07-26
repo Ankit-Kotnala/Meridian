@@ -18,15 +18,15 @@ from careeros_api.modules.organizations.schemas import (
     InvitationRole,
     MembershipResponse,
     OrganizationListResponse,
-    OrganizationResponse,
     OrganizationRosterResponse,
+    TenantOrganizationResponse,
 )
 
 
-def organization_response(value: OrganizationView) -> OrganizationResponse:
+def organization_response(value: OrganizationView) -> TenantOrganizationResponse:
     organization = value.organization
     membership = value.membership
-    return OrganizationResponse(
+    return TenantOrganizationResponse(
         id=organization.id,
         name=organization.name,
         status=organization.status.value,

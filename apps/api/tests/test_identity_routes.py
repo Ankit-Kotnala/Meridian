@@ -25,6 +25,7 @@ from careeros.modules.identity.domain import (
     OnboardingStep,
 )
 from careeros.modules.identity.domain.errors import AuthenticationRequired
+from careeros.modules.identity.infrastructure.redis_security import RedisSecurityStore
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
 
@@ -73,8 +74,8 @@ def _principal(user_id=None) -> AuthenticatedPrincipal:
     )
 
 
-def _csrf(client: TestClient) -> str:
-    response = client.get("/api/v1/auth/csrf")
+def _csrf(client: TestClient, headers: dict[str, str] | None = None) -> str:
+    response = client.get("/api/v1/auth/csrf", headers=headers)
     assert response.status_code == 200
     assert response.headers["cache-control"] == "no-store"
     return response.json()["csrfToken"]
@@ -123,6 +124,7 @@ def test_staging_identity_rate_context_requires_the_authenticated_bff_source(
     settings: Settings, fake_database: FakeDatabase
 ) -> None:
     service = _service()
+    limiter = create_autospec(RedisSecurityStore, instance=True)
     key_material = "staging-bff-key-material-that-is-at-least-32-bytes"
     staging = settings.model_copy(
         update={
@@ -138,8 +140,15 @@ def test_staging_identity_rate_context_requires_the_authenticated_bff_source(
     signal, signature = _bff_client_signal("203.0.113.42", key_material)
     forged_signal = f"{signal[:-1]}{'0' if signal[-1] != '0' else '1'}"
 
-    with TestClient(create_app(staging, database=fake_database, identity=service)) as client:
-        csrf = _csrf(client)
+    with TestClient(
+        create_app(
+            staging,
+            database=fake_database,
+            identity=service,
+            request_limiter=limiter,
+        )
+    ) as client:
+        csrf = _csrf(client, {"X-CareerOS-Client-Signal": signal})
         forged = client.post(
             "/api/v1/auth/register",
             json=payload,
@@ -164,6 +173,51 @@ def test_staging_identity_rate_context_requires_the_authenticated_bff_source(
     context = service.register.await_args.args[3]
     assert context.source_key == f"bff:{signature}"
     assert "203.0.113.42" not in context.source_key
+
+
+def test_staging_accepts_previous_bff_signal_only_during_rotation(
+    settings: Settings, fake_database: FakeDatabase
+) -> None:
+    service = _service()
+    limiter = create_autospec(RedisSecurityStore, instance=True)
+    old_key = "old-staging-bff-key-that-is-at-least-thirty-two-bytes"
+    new_key = "new-staging-bff-key-that-is-at-least-thirty-two-bytes"
+    staging = settings.model_copy(
+        update={
+            "environment": "staging",
+            "bff_client_signal_secret": SecretStr(new_key),
+            "bff_client_signal_previous_secret": SecretStr(old_key),
+        }
+    )
+    payload = {
+        "email": "alex@example.com",
+        "password": _PASSWORD,
+        "displayName": "Alex Example",
+    }
+    signal, signature = _bff_client_signal("203.0.113.42", old_key)
+
+    with TestClient(
+        create_app(
+            staging,
+            database=fake_database,
+            identity=service,
+            request_limiter=limiter,
+        )
+    ) as client:
+        csrf = _csrf(client, {"X-CareerOS-Client-Signal": signal})
+        accepted = client.post(
+            "/api/v1/auth/register",
+            json=payload,
+            headers={
+                "Origin": _ORIGIN,
+                "X-CSRF-Token": csrf,
+                "X-CareerOS-Client-Signal": signal,
+            },
+        )
+
+    assert accepted.status_code == 202
+    context = service.register.await_args.args[3]
+    assert context.source_key == f"bff:{signature}"
 
 
 def test_login_sets_host_only_http_only_rotating_cookies(

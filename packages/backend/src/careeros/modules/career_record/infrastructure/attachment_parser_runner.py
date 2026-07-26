@@ -1,4 +1,4 @@
-"""Private subprocess entrypoint for isolated document parsing."""
+"""Private subprocess entrypoint for hostile evidence-attachment parsing."""
 
 from __future__ import annotations
 
@@ -10,8 +10,12 @@ from pathlib import Path
 from typing import Any
 
 from careeros.foundation.sandbox import install_parser_egress_guard
-from careeros.modules.resume_health.application.models import DocumentLimits, ExtractionResult
-from careeros.modules.resume_health.domain.errors import UnsafeDocument
+from careeros.modules.career_record.application.attachment_workflow import (
+    AttachmentExtractionSummary,
+    AttachmentLimits,
+    AttachmentMediaType,
+    UnsafeAttachment,
+)
 
 
 def main() -> int:
@@ -20,8 +24,8 @@ def main() -> int:
     try:
         request_path = Path(sys.argv[1]).resolve(strict=True)
         request = json.loads(request_path.read_text(encoding="utf-8"))
+        workspace = request_path.parent.resolve(strict=True)
         result_path = Path(str(request["resultPath"])).resolve()
-        workspace = request_path.parent
         if result_path.parent != workspace:
             return 2
         limits = _limits_from_dict(request["limits"])
@@ -31,18 +35,19 @@ def main() -> int:
         temp_root = limits.temp_root.resolve(strict=True)
         if source_path != temp_root and temp_root not in source_path.parents:
             return 2
-        from careeros.modules.resume_health.infrastructure.extractors import (
-            extract_local_document,
+        media_type = AttachmentMediaType(str(request["mediaType"]))
+        from careeros.modules.career_record.infrastructure.attachment_extractor import (
+            extract_local_attachment,
         )
 
-        extraction = extract_local_document(source_path, str(request["mediaType"]), limits)
+        extraction = extract_local_attachment(source_path, media_type, limits)
         result = {"status": "ok", "extraction": _result_to_dict(extraction)}
         exit_code = 0
-    except UnsafeDocument as exc:
-        result = {"status": "failed", "safeErrorCode": exc.code}
+    except UnsafeAttachment as exc:
+        result = {"status": "failed", "safeErrorCode": exc.code.value}
         exit_code = 1
     except Exception:
-        result = {"status": "failed", "safeErrorCode": "document_parser_crashed"}
+        result = {"status": "failed", "safeErrorCode": "attachment_parser_crashed"}
         exit_code = 1
     try:
         result_path.write_text(
@@ -54,8 +59,8 @@ def main() -> int:
     return exit_code
 
 
-def _limits_from_dict(value: dict[str, Any]) -> DocumentLimits:
-    return DocumentLimits(
+def _limits_from_dict(value: dict[str, Any]) -> AttachmentLimits:
+    return AttachmentLimits(
         max_upload_bytes=int(value["maxUploadBytes"]),
         max_pdf_pages=int(value["maxPdfPages"]),
         max_archive_entries=int(value["maxArchiveEntries"]),
@@ -63,51 +68,35 @@ def _limits_from_dict(value: dict[str, Any]) -> DocumentLimits:
         max_archive_ratio=int(value["maxArchiveRatio"]),
         max_extracted_characters=int(value["maxExtractedCharacters"]),
         max_extracted_blocks=int(value["maxExtractedBlocks"]),
-        max_serialized_artifact_bytes=int(value["maxSerializedArtifactBytes"]),
         processing_timeout_seconds=float(value["processingTimeoutSeconds"]),
         temp_root=Path(str(value["tempRoot"])),
     )
 
 
-def _apply_resource_limits(limits: DocumentLimits) -> None:
+def _apply_resource_limits(limits: AttachmentLimits) -> None:
     if platform.system() == "Windows":
         return
     resource = importlib.import_module("resource")
-
     cpu_seconds = max(1, round(limits.processing_timeout_seconds) + 1)
     memory_bytes = max(
         512 * 1024 * 1024,
         limits.max_archive_uncompressed_bytes * 4,
     )
-    output_bytes = max(
-        limits.max_serialized_artifact_bytes * 2,
-        4 * 1024 * 1024,
-    )
     resource.setrlimit(resource.RLIMIT_CPU, (cpu_seconds, cpu_seconds))
     resource.setrlimit(resource.RLIMIT_AS, (memory_bytes, memory_bytes))
-    resource.setrlimit(resource.RLIMIT_FSIZE, (output_bytes, output_bytes))
+    resource.setrlimit(resource.RLIMIT_FSIZE, (1_048_576, 1_048_576))
 
 
-def _result_to_dict(result: ExtractionResult) -> dict[str, Any]:
+def _result_to_dict(result: AttachmentExtractionSummary) -> dict[str, object]:
     return {
-        "plainText": result.plain_text,
-        "readingOrder": [
-            {
-                "kind": block.kind,
-                "text": block.text,
-                "confidenceBasisPoints": block.confidence_basis_points,
-                "spans": [
-                    {"page": span.page, "start": span.start, "end": span.end}
-                    for span in block.spans
-                ],
-            }
-            for block in result.reading_order
-        ],
+        "formatValid": result.format_valid,
         "pageCount": result.page_count,
-        "imageOnly": result.image_only,
-        "warnings": list(result.warnings),
+        "extractedCharacters": result.extracted_characters,
+        "extractedBlocks": result.extracted_blocks,
+        "archiveEntries": result.archive_entries,
+        "archiveUncompressedBytes": result.archive_uncompressed_bytes,
+        "maxArchiveRatio": result.max_archive_ratio,
         "parserVersion": result.parser_version,
-        "layoutSignals": list(result.layout_signals),
     }
 
 

@@ -56,11 +56,22 @@ def verified_client_source_key(request: Request) -> str:
         except ValueError:
             raise CsrfRejected from None
 
-    expected = hmac.new(
-        settings.bff_client_signal_secret.get_secret_value().encode("utf-8"),
-        _BFF_SIGNAL_CONTEXT + source.encode("ascii"),
-        hashlib.sha256,
-    ).hexdigest()
-    if not secrets.compare_digest(expected, signature):
+    previous = settings.bff_client_signal_previous_secret
+    keys = (
+        settings.bff_client_signal_secret.get_secret_value(),
+        *((previous.get_secret_value(),) if previous is not None else ()),
+    )
+    matches = tuple(
+        secrets.compare_digest(
+            hmac.new(
+                key.encode("utf-8"),
+                _BFF_SIGNAL_CONTEXT + source.encode("ascii"),
+                hashlib.sha256,
+            ).hexdigest(),
+            signature,
+        )
+        for key in keys
+    )
+    if not any(matches):
         raise CsrfRejected
     return f"bff:{signature}"

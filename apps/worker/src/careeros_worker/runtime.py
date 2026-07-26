@@ -92,7 +92,7 @@ from careeros.modules.career_record.infrastructure import (
     AttachmentClamAvScanner,
     AttachmentS3ObjectStorage,
     AttachmentS3Options,
-    BoundedAttachmentExtractor,
+    IsolatedAttachmentExtractor,
     ResumeHealthSourceQuery,
     SqlAlchemyAttachmentUnitOfWorkFactory,
     SqlAlchemyCareerRecordUnitOfWorkFactory,
@@ -300,7 +300,7 @@ class _AttachmentStorageResources:
 @dataclass(slots=True)
 class _AttachmentRuntimeResources(_AttachmentStorageResources):
     scanner: AttachmentClamAvScanner
-    extractor: BoundedAttachmentExtractor
+    extractor: IsolatedAttachmentExtractor
     limits: AttachmentLimits
 
 
@@ -444,7 +444,7 @@ async def _attachment_runtime_resources(
                     timeout_seconds=settings.clamav_timeout_seconds,
                 )
             ),
-            extractor=BoundedAttachmentExtractor(),
+            extractor=IsolatedAttachmentExtractor(),
             limits=_attachment_limits(settings),
         )
 
@@ -536,7 +536,12 @@ async def process_organization_invitations(
             clock=OrganizationClock(),
             identifiers=OrganizationUuidFactory(),
             invitation_tokens=HmacOrganizationInvitationManager(
-                settings.organization_invitation_secret.get_secret_value()
+                settings.organization_invitation_secret.get_secret_value(),
+                (
+                    settings.organization_invitation_previous_secret.get_secret_value()
+                    if settings.organization_invitation_previous_secret is not None
+                    else None
+                ),
             ),
             sender=OrganizationInvitationEmailSender(sender, settings.public_app_url),
             lease_seconds=settings.organization_invitation_lease_seconds,

@@ -2,7 +2,7 @@
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal, Self
+from typing import Any, Literal, Self
 from urllib.parse import urlsplit
 
 from careeros.foundation.config import validate_database_url_for_environment
@@ -93,6 +93,13 @@ class WorkerSettings(BaseSettings):
         default=SecretStr(_LOCAL_INVITATION_SECRET),
         min_length=32,
         validation_alias=AliasChoices("CAREEROS_AUTH_TOKEN_PEPPER", "AUTH_TOKEN_PEPPER"),
+    )
+    organization_invitation_previous_secret: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "CAREEROS_AUTH_TOKEN_PREVIOUS_PEPPER",
+            "AUTH_TOKEN_PREVIOUS_PEPPER",
+        ),
     )
     email_provider: Literal["smtp", "disabled"] = Field(
         default="smtp",
@@ -629,6 +636,23 @@ class WorkerSettings(BaseSettings):
         ),
     )
 
+    @field_validator("organization_invitation_previous_secret", mode="before")
+    @classmethod
+    def normalize_blank_previous_invitation_secret(cls, value: Any) -> Any:
+        if isinstance(value, str) and not value:
+            return None
+        return value
+
+    @field_validator("organization_invitation_previous_secret")
+    @classmethod
+    def validate_previous_invitation_secret(
+        cls,
+        value: SecretStr | None,
+    ) -> SecretStr | None:
+        if value is not None and len(value.get_secret_value().encode("utf-8")) < 32:
+            raise ValueError("previous invitation secret must contain at least 32 bytes")
+        return value
+
     @field_validator("public_app_url")
     @classmethod
     def validate_public_app_url(cls, value: str) -> str:
@@ -688,6 +712,12 @@ class WorkerSettings(BaseSettings):
             raise ValueError("account operation lease must exceed the worker hard time limit")
         if self.account_deletion_provider != self.account_export_provider:
             raise ValueError("account export and deletion providers must be enabled together")
+        if (
+            self.organization_invitation_previous_secret is not None
+            and self.organization_invitation_previous_secret.get_secret_value()
+            == self.organization_invitation_secret.get_secret_value()
+        ):
+            raise ValueError("previous invitation secret must differ from current secret")
         invitation_delivery_budget = (
             self.organization_invitation_batch_size * self.smtp_timeout_seconds + 5
         )

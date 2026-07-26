@@ -1219,3 +1219,19 @@ skips while the Phase 9 desktop/mobile journeys both passed. The separate
 security scan also passed. PR #22 workflow run `30161489265` passed every
 required hosted job at implementation/merge head `1454792`. Exact authoritative
 evidence and residual findings are recorded in `PLANS.md`.
+
+## Phase 10G platform admission and live-AI usage contract
+
+All `/api/v1` reads and mutations are admitted through separate coarse platform
+buckets before route handling. In staging and production, a missing/invalid
+BFF-signed source or unavailable limiter fails closed. Feature-specific limits
+continue to apply after platform admission. Rate rejection uses the standard
+problem schema, HTTP 429, a bounded `Retry-After`, and no owner, quota, token,
+cost, provider, or internal key metadata.
+
+The live Change Studio HTTP provider is unavailable unless explicit monthly token
+and cost ceilings plus per-call reservations are configured. Provider responses
+must include bounded `promptTokens`, `completionTokens`, and `costMicros` usage;
+missing or excessive usage fails without returning model output. API responses
+receive no-store and deny-by-default browser policy headers, while the public web
+edge owns the Next.js-compatible CSP and optional TLS-only HSTS policy.

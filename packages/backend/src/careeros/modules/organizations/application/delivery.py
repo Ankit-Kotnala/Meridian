@@ -162,11 +162,18 @@ class OrganizationInvitationDeliveryProcessor:
                     await uow.commit()
                     return "cancelled"
 
-                token, token_hash = self._tokens.issue_for_delivery(invitation.id)
-                if invitation.token_hash is not None and invitation.token_hash != token_hash:
-                    raise OrganizationValidationError(
-                        "stored invitation token does not match delivery credential"
+                if invitation.token_hash is None:
+                    token, token_hash = self._tokens.issue_for_delivery(invitation.id)
+                else:
+                    credential = self._tokens.issue_for_delivery_matching(
+                        invitation.id,
+                        invitation.token_hash,
                     )
+                    if credential is None:
+                        raise OrganizationValidationError(
+                            "stored invitation token does not match delivery credential"
+                        )
+                    token, token_hash = credential
                 await self._sender.send(
                     InvitationDeliveryMessage(
                         invitation_id=invitation.id,

@@ -41,6 +41,7 @@ _PROBLEMS: dict[int | str, dict[str, Any]] = {
     status.HTTP_404_NOT_FOUND: {"model": ProblemResponse},
     status.HTTP_409_CONFLICT: {"model": ProblemResponse},
     status.HTTP_422_UNPROCESSABLE_CONTENT: {"model": ProblemResponse},
+    status.HTTP_429_TOO_MANY_REQUESTS: {"model": ProblemResponse},
     status.HTTP_503_SERVICE_UNAVAILABLE: {"model": ProblemResponse},
 }
 

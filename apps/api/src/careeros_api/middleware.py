@@ -3,13 +3,19 @@
 import re
 from collections.abc import Awaitable, Callable
 from time import perf_counter
+from typing import cast
 from uuid import uuid4
 
 import structlog
+from careeros.modules.identity.application.ports import AbuseLimiter
+from careeros.modules.identity.domain.errors import CsrfRejected, RateLimited
 from fastapi import FastAPI, Request, Response
+from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from structlog.contextvars import bind_contextvars, clear_contextvars
 
+from careeros_api.client_signal import verified_client_source_key
+from careeros_api.config import Settings
 from careeros_api.problems import problem_response
 
 REQUEST_ID_HEADER = "X-Request-ID"
@@ -92,6 +98,59 @@ class RequestBodyLimitMiddleware:
         await response(scope, receive, send)
 
 
+class ResponseSecurityHeadersMiddleware:
+    """Apply a deny-by-default browser policy to API responses."""
+
+    def __init__(self, app: ASGIApp) -> None:
+        self._app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self._app(scope, receive, send)
+            return
+
+        async def secured_send(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                headers = MutableHeaders(raw=message["headers"])
+                headers["X-Content-Type-Options"] = "nosniff"
+                headers["X-Frame-Options"] = "DENY"
+                headers["Referrer-Policy"] = "no-referrer"
+                headers["Permissions-Policy"] = (
+                    "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+                )
+                headers["X-Permitted-Cross-Domain-Policies"] = "none"
+                path = str(scope.get("path", ""))
+                if path.startswith("/api/"):
+                    headers["Content-Security-Policy"] = (
+                        "default-src 'none'; base-uri 'none'; form-action 'none'; "
+                        "frame-ancestors 'none'; sandbox"
+                    )
+                    if "cache-control" not in headers:
+                        headers["Cache-Control"] = "no-store"
+            await send(message)
+
+        await self._app(scope, receive, secured_send)
+
+
+async def _enforce_platform_request_limit(request: Request) -> None:
+    if not request.url.path.startswith("/api/v1") or request.method in {"OPTIONS", "HEAD"}:
+        return
+    settings = cast(Settings, request.app.state.settings)
+    limiter = cast(AbuseLimiter | None, getattr(request.app.state, "request_limiter", None))
+    if limiter is None:
+        if settings.environment in {"staging", "production"}:
+            raise RuntimeError("platform request limiter is unavailable")
+        return
+    source_key = verified_client_source_key(request)
+    read = request.method == "GET"
+    await limiter.check(
+        "platform_api_read" if read else "platform_api_mutation",
+        source_key,
+        settings.api_read_rate_limit if read else settings.api_mutation_rate_limit,
+        settings.api_rate_limit_window_seconds,
+    )
+
+
 def _request_id(candidate: str | None) -> str:
     if candidate is not None and _SAFE_REQUEST_ID.fullmatch(candidate):
         return candidate
@@ -134,7 +193,25 @@ def install_request_context_middleware(app: FastAPI) -> None:
         started_at = perf_counter()
 
         try:
+            await _enforce_platform_request_limit(request)
             response = await call_next(request)
+        except RateLimited as exc:
+            response = problem_response(
+                request,
+                status_code=429,
+                code=exc.code,
+                title="Too many requests",
+                detail="Wait before trying again.",
+            )
+            response.headers["Retry-After"] = str(exc.retry_after_seconds)
+        except CsrfRejected:
+            response = problem_response(
+                request,
+                status_code=403,
+                code="client_signal_rejected",
+                title="Request rejected",
+                detail="The request could not be verified.",
+            )
         except Exception as exc:
             # Exception messages and tracebacks can contain database parameters or
             # provider payloads. Log only allowlisted request metadata and the

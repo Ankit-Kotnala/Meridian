@@ -1807,6 +1807,60 @@ runbooks. Database-superuser tampering remains detectable rather than impossible
 Additional retry kinds require their own feature-owned state-machine adapter and
 live failure/replay proof.
 
+## Phase 10G security, abuse, and AI-cost hardening scope and status
+
+Current status: **application and local edge controls are implemented and
+focused-verified; external penetration review and production topology validation
+remain release-approval gates**.
+
+### Included
+
+- [x] A coarse Redis-backed limiter admits every `/api/v1` read or mutation
+      before route execution. Staging and production fail closed without the
+      limiter or a valid BFF-signed source; client forwarding headers are ignored.
+- [x] Live HTTP AI composition requires explicit request, concurrency, monthly
+      token/cost, and worst-case per-call reservations. One Redis Lua transaction
+      atomically admits all limits by HMAC-pseudonymous owner and UTC month.
+- [x] Provider calls reserve worst-case usage before I/O and refund only bounded,
+      schema-valid reported usage. Missing, malformed, or over-reservation usage
+      fails closed and retains the full reservation; a typed 429 exposes only a
+      retry interval.
+- [x] API and edge response policy overwrites unsafe upstream security headers and
+      applies CSP, framing, MIME, permissions, referrer, cross-origin, no-store,
+      and explicit TLS-only HSTS controls.
+- [x] Resume and evidence-attachment parsers now run in credential-free killable
+      child processes with bounded JSON contracts, cleanup, descriptor closure,
+      timeouts, resource limits where supported, and standard-library egress/
+      child-process denial.
+- [x] Session, account-operation, guest-capability, organization-invitation, and
+      BFF signing secrets support one bounded previous value. Weak, blank, and
+      same-as-current rotation states are handled explicitly and regression-tested.
+- [x] ADR 0024 records the fail-closed behavior, rotation order, production
+      topology dependencies, CSP limitation, parser isolation limit, and external
+      review boundary.
+
+### Focused verification evidence
+
+| Check              | Status | Evidence                                                                                                                                                                                                                                                    |
+| ------------------ | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Backend policy     | Pass   | Backend Ruff and canonical mypy pass; 12 focused tests cover atomic AI budget/concurrency behavior, UTC month rollover, full-reservation failure, four dual-key capability families, credential stripping, egress denial, timeout termination, and cleanup. |
+| API and contracts  | Pass   | All 179 API tests pass, including central read/mutation admission, safe 429, security headers, current/previous BFF signatures, and fail-closed staging fixtures. OpenAPI drift, generated TypeScript typecheck, and 3 contract tests pass.                 |
+| Worker and parsers | Pass   | Worker Ruff/mypy and all 98 tests pass with the evidence attachment parser and rolling invitation-key support composed in the runtime. The complete backend architecture/unit suite passes 480 tests.                                                       |
+| Live Redis         | Pass   | The isolated Redis integration test proves atomic reservation, concurrency rejection, monthly token/cost rejection, settlement, lease release, and pseudonymous keys against database 15.                                                                   |
+| Edge policy        | Pass   | Node syntax and 4 header-policy tests prove forwarded-header replacement, malformed peer rejection, unsafe upstream-policy overwrite, and explicit HSTS behavior.                                                                                           |
+
+### Residual release gates
+
+The code does not claim that an application audit is an independent penetration
+test. External review, production trusted-hop validation, Redis HA/persistence and
+alerting, live-provider usage-schema review, and parser-host isolation remain
+release-approval inputs. MFA is not implemented; no operator exists by default,
+operator authority cannot be granted over HTTP, and production operator enablement
+remains blocked on an owner-approved MFA/provisioning/recertification policy. The
+AI usage and administration-audit peppers must not be rotated like bearer-token
+keys because doing so can split active budget or actor-pseudonym history; their
+runbooks require drain/reconciliation or a retention-boundary decision.
+
 ## Full-specification completion audit
 
 Historical phase gates remain evidence for the vertical slices they actually

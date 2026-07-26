@@ -412,7 +412,7 @@ class OrganizationService:
                 or invitation.token_hash is None
                 or invitation.expires_at <= now
                 or not self._tokens.verify(invitation.token_hash, secret)
-                or self._tokens.email_digest(email) != invitation.invited_email_digest
+                or not self._tokens.verify_email_digest(invitation.invited_email_digest, email)
             ):
                 raise OrganizationInvitationRejected
             existing = await uow.get_membership(

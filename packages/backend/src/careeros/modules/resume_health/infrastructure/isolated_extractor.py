@@ -10,6 +10,7 @@ from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
+from careeros.foundation.sandbox import sanitized_parser_environment
 from careeros.modules.resume_health.application.models import (
     DocumentLimits,
     ExtractedBlock,
@@ -85,6 +86,8 @@ class IsolatedDocumentExtractor:
                 stdout=asyncio.subprocess.DEVNULL,
                 stderr=asyncio.subprocess.DEVNULL,
                 cwd=str(workspace),
+                env=sanitized_parser_environment(workspace),
+                close_fds=True,
             )
             try:
                 await asyncio.wait_for(

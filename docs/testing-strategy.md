@@ -984,3 +984,19 @@ downgrade/re-upgrade, guarded seed, and account export/deletion regression. No
 administration test may use real operator identities or assert raw failure text. The
 worker production image must import both its Celery app and task runtime during the
 image build so an undeclared optional dependency cannot survive to startup.
+
+## Phase 10G security and AI-usage verification
+
+Phase 10G adds deterministic unit coverage for worst-case AI reservation/refund,
+invalid usage, UTC-month rollover, dual-key capability verification, parser
+credential stripping, audit-hook egress denial, timeout termination, and temporary
+cleanup. A real Redis test is required for the Lua admission transaction because
+mocked commands cannot prove atomic rate, concurrency, token, and cost behavior.
+
+API tests must cover coarse read/mutation buckets, safe 429 responses, staging
+fail-closed behavior, current/previous BFF signatures, and deny-by-default response
+headers. Edge tests must prove client forwarding headers and unsafe upstream
+policy headers are overwritten, and that HSTS is opt-in behind TLS. The complete
+backend architecture/unit, API, and worker portfolios remain blocking. These
+checks are internal engineering evidence and must not be represented as an
+independent penetration test.

@@ -5547,36 +5547,6 @@ export interface components {
             /** Nextcursor */
             nextCursor: string | null;
         };
-        /** OrganizationResponse */
-        careeros_api__modules__networking__schemas__OrganizationResponse: {
-            /**
-             * Createdat
-             * Format: date-time
-             */
-            createdAt: string;
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Industry */
-            industry: string | null;
-            /** Location */
-            location: string | null;
-            /** Name */
-            name: string;
-            /** Tags */
-            tags: string[];
-            /**
-             * Updatedat
-             * Format: date-time
-             */
-            updatedAt: string;
-            /** Version */
-            version: number;
-            /** Website */
-            website: string | null;
-        };
         /** PageResponse */
         careeros_api__modules__networking__schemas__PageResponse: {
             /** Hasmore */
@@ -5585,40 +5555,6 @@ export interface components {
             limit: number;
             /** Nextcursor */
             nextCursor: string | null;
-        };
-        /** OrganizationResponse */
-        careeros_api__organization_schemas__OrganizationResponse: {
-            /** Capabilities */
-            capabilities: string[];
-            /**
-             * Createdat
-             * Format: date-time
-             */
-            createdAt: string;
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Name */
-            name: string;
-            /**
-             * Role
-             * @enum {string}
-             */
-            role: "owner" | "admin" | "coach" | "member";
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "active" | "archived";
-            /**
-             * Updatedat
-             * Format: date-time
-             */
-            updatedAt: string;
-            /** Version */
-            version: number;
         };
         /** SourceSpanResponse */
         careeros_api__resume_health_schemas__SourceSpanResponse: {
@@ -8785,13 +8721,43 @@ export interface components {
         /** OrganizationListResponse */
         OrganizationListResponse: {
             /** Organizations */
-            organizations: components["schemas"]["careeros_api__organization_schemas__OrganizationResponse"][];
+            organizations: components["schemas"]["TenantOrganizationResponse"][];
         };
         /** OrganizationPageResponse */
         OrganizationPageResponse: {
             /** Data */
-            data: components["schemas"]["careeros_api__modules__networking__schemas__OrganizationResponse"][];
+            data: components["schemas"]["OrganizationResponse"][];
             page: components["schemas"]["careeros_api__modules__networking__schemas__PageResponse"];
+        };
+        /** OrganizationResponse */
+        OrganizationResponse: {
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Industry */
+            industry: string | null;
+            /** Location */
+            location: string | null;
+            /** Name */
+            name: string;
+            /** Tags */
+            tags: string[];
+            /**
+             * Updatedat
+             * Format: date-time
+             */
+            updatedAt: string;
+            /** Version */
+            version: number;
+            /** Website */
+            website: string | null;
         };
         /** OrganizationRosterResponse */
         OrganizationRosterResponse: {
@@ -11464,6 +11430,40 @@ export interface components {
              * @constant
              */
             userReviewed: true;
+        };
+        /** TenantOrganizationResponse */
+        TenantOrganizationResponse: {
+            /** Capabilities */
+            capabilities: string[];
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "owner" | "admin" | "coach" | "member";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "archived";
+            /**
+             * Updatedat
+             * Format: date-time
+             */
+            updatedAt: string;
+            /** Version */
+            version: number;
         };
         /** UpdateOrganizationRequest */
         UpdateOrganizationRequest: {
@@ -21244,6 +21244,15 @@ export interface operations {
                     "application/json": components["schemas"]["ProblemResponse"];
                 };
             };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
             /** @description Service Unavailable */
             503: {
                 headers: {
@@ -21324,6 +21333,15 @@ export interface operations {
             };
             /** @description Unprocessable Content */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -21423,6 +21441,15 @@ export interface operations {
                     "application/json": components["schemas"]["ProblemResponse"];
                 };
             };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
             /** @description Service Unavailable */
             503: {
                 headers: {
@@ -21509,6 +21536,15 @@ export interface operations {
             };
             /** @description Unprocessable Content */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -21613,6 +21649,15 @@ export interface operations {
                     "application/json": components["schemas"]["ProblemResponse"];
                 };
             };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
             /** @description Service Unavailable */
             503: {
                 headers: {
@@ -21703,6 +21748,15 @@ export interface operations {
             };
             /** @description Unprocessable Content */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -21803,6 +21857,15 @@ export interface operations {
                     "application/json": components["schemas"]["ProblemResponse"];
                 };
             };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
             /** @description Service Unavailable */
             503: {
                 headers: {
@@ -21889,6 +21952,15 @@ export interface operations {
             };
             /** @description Unprocessable Content */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -21989,6 +22061,15 @@ export interface operations {
                     "application/json": components["schemas"]["ProblemResponse"];
                 };
             };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
             /** @description Service Unavailable */
             503: {
                 headers: {
@@ -22081,6 +22162,15 @@ export interface operations {
                     "application/json": components["schemas"]["ProblemResponse"];
                 };
             };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
             /** @description Service Unavailable */
             503: {
                 headers: {
@@ -22166,6 +22256,15 @@ export interface operations {
             };
             /** @description Unprocessable Content */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -22266,6 +22365,15 @@ export interface operations {
                     "application/json": components["schemas"]["ProblemResponse"];
                 };
             };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
             /** @description Service Unavailable */
             503: {
                 headers: {
@@ -22355,6 +22463,15 @@ export interface operations {
             };
             /** @description Unprocessable Content */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -31804,7 +31921,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["careeros_api__modules__networking__schemas__OrganizationResponse"];
+                    "application/json": components["schemas"]["OrganizationResponse"];
                 };
             };
             /** @description Bad Request */
@@ -31909,7 +32026,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["careeros_api__modules__networking__schemas__OrganizationResponse"];
+                    "application/json": components["schemas"]["OrganizationResponse"];
                 };
             };
             /** @description Bad Request */
@@ -32131,7 +32248,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["careeros_api__modules__networking__schemas__OrganizationResponse"];
+                    "application/json": components["schemas"]["OrganizationResponse"];
                 };
             };
             /** @description Bad Request */
@@ -33514,7 +33631,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["careeros_api__organization_schemas__OrganizationResponse"];
+                    "application/json": components["schemas"]["TenantOrganizationResponse"];
                 };
             };
             /** @description Bad Request */
@@ -33692,7 +33809,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["careeros_api__organization_schemas__OrganizationResponse"];
+                    "application/json": components["schemas"]["TenantOrganizationResponse"];
                 };
             };
             /** @description Bad Request */
@@ -33779,7 +33896,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["careeros_api__organization_schemas__OrganizationResponse"];
+                    "application/json": components["schemas"]["TenantOrganizationResponse"];
                 };
             };
             /** @description Bad Request */
@@ -33874,7 +33991,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["careeros_api__organization_schemas__OrganizationResponse"];
+                    "application/json": components["schemas"]["TenantOrganizationResponse"];
                 };
             };
             /** @description Bad Request */

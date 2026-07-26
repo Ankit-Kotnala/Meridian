@@ -50,11 +50,17 @@ class Argon2PasswordHasher:
 class HmacTokenManager:
     """Issue opaque UUID/secret pairs while storing only keyed digests."""
 
-    def __init__(self, pepper: str) -> None:
+    def __init__(self, pepper: str, previous_pepper: str | None = None) -> None:
         encoded = pepper.encode("utf-8")
         if len(encoded) < 32:
             raise ValueError("auth token pepper must be at least 32 UTF-8 bytes")
+        previous = previous_pepper.encode("utf-8") if previous_pepper is not None else None
+        if previous is not None and len(previous) < 32:
+            raise ValueError("previous auth token pepper must be at least 32 UTF-8 bytes")
         self._pepper = encoded
+        self._verification_peppers = (encoded,) + (
+            (previous,) if previous is not None and previous != encoded else ()
+        )
 
     def issue(self) -> IssuedToken:
         return self.issue_for_id(uuid4())
@@ -68,7 +74,11 @@ class HmacTokenManager:
         )
 
     def digest(self, secret: str) -> bytes:
-        return hmac.new(self._pepper, secret.encode("utf-8"), hashlib.sha256).digest()
+        return self._digest_with(self._pepper, secret)
+
+    @staticmethod
+    def _digest_with(pepper: bytes, secret: str) -> bytes:
+        return hmac.new(pepper, secret.encode("utf-8"), hashlib.sha256).digest()
 
     def parse(self, encoded: str) -> tuple[UUID, str] | None:
         token_id, separator, secret = encoded.partition(".")
@@ -81,7 +91,11 @@ class HmacTokenManager:
         return parsed_id, secret
 
     def verify(self, expected: bytes, secret: str) -> bool:
-        return hmac.compare_digest(expected, self.digest(secret))
+        matches = tuple(
+            hmac.compare_digest(expected, self._digest_with(pepper, secret))
+            for pepper in self._verification_peppers
+        )
+        return any(matches)
 
 
 class NormalizedEmailValidator:

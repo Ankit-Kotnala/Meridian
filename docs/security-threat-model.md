@@ -1022,6 +1022,31 @@ protected retention destination, define operator provisioning/review/offboarding
 and assign alert/on-call ownership. MFA remains an explicit owner decision;
 recent authentication is enforced for the current mutation surface.
 
+## Phase 10G request, AI-cost, edge, parser, and rotation controls
+
+- Every `/api/v1` request receives a coarse read/mutation admission check. The
+  source is a BFF-authenticated socket-peer pseudonym rather than a user-selected
+  forwarding header; staging and production fail closed without that authority
+  or Redis.
+- Live AI requires an owner, explicit per-call reservations, monthly token and
+  cost ceilings, request rate, concurrency, and a lease. Redis admits all values
+  atomically. Missing or invalid provider usage retains worst-case cost and fails
+  safely instead of undercounting.
+- API and web-edge responses overwrite upstream security policy. HSTS is enabled
+  only behind reviewed TLS termination. The current Next.js CSP still needs
+  framework-required inline script/style support; script attributes, third-party
+  origins, framing, objects, and unlisted connections remain blocked.
+- Resume and evidence-attachment parser children receive no application
+  credentials and cannot use standard-library sockets or spawn another process.
+  Timeouts terminate and reap the child, and temporary files are always bounded
+  and cleaned.
+- Bearer/signing rotation accepts one explicit previous secret while issuing only
+  under the current secret. The previous value is removed only after the owning
+  maximum lifetime. AI-usage and audit-pseudonym peppers require a drain or
+  retention-boundary runbook rather than blind dual-key rotation.
+- Automated adversarial and configuration tests are recorded in `PLANS.md`. They
+  do not substitute for an independent production-topology penetration review.
+
 ## Incident and recovery expectations
 
 Phase 10 must document owners and playbooks for credential/session compromise,
@@ -1042,14 +1067,14 @@ integrity, ownership, migrations, object references, and documented RPO/RTO.
   are Phase 2/3 local/initial adapters, not a production provider decision.
 - No application sandbox fully eliminates parser zero-day risk; isolation,
   patching, corpus testing, and kill switches remain necessary.
-- Resume Health parsing now uses a killable, reaped child process with bounded
-  request/result contracts, temporary-workspace cleanup, and POSIX resource
-  limits. Evidence-attachment and trusted CareerOS-created export extraction
-  still use the local `asyncio.to_thread` adapter; cancelling those awaits does
-  not forcibly terminate the underlying Python thread. Celery task limits and
-  the non-root, read-only, CPU/memory/PID-bounded, no-edge-network worker
-  constrain impact, but those remaining paths require a reviewed isolation
-  decision before production exposure to untrusted files.
+- Resume Health and evidence-attachment parsing use killable, reaped child
+  processes with bounded request/result contracts, credential-free environments,
+  temporary-workspace cleanup, descriptor closure, standard-library egress denial,
+  and POSIX resource limits where supported. Trusted CareerOS-created export
+  round-trip validation retains its local adapter because it consumes only bytes
+  emitted by the product renderer. Python audit hooks and container controls are
+  defense in depth rather than a kernel security boundary; production parser-host
+  isolation, patch ownership, monitoring, and a kill switch remain required.
 - Semantic grounding cannot perfectly detect meaning drift. High-risk claims,
   numbers, leadership, and ownership require stricter deterministic checks and
   user confirmation.

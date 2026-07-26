@@ -53,7 +53,7 @@ class UpdateOrganizationRequest(CreateOrganizationRequest):
     pass
 
 
-class OrganizationResponse(OrganizationSchema):
+class TenantOrganizationResponse(OrganizationSchema):
     id: UUID
     name: str
     status: Literal["active", "archived"]
@@ -65,7 +65,7 @@ class OrganizationResponse(OrganizationSchema):
 
 
 class OrganizationListResponse(OrganizationSchema):
-    organizations: list[OrganizationResponse] = Field(max_length=100)
+    organizations: list[TenantOrganizationResponse] = Field(max_length=100)
 
 
 class MembershipResponse(OrganizationSchema):
