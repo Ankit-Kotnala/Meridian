@@ -762,6 +762,25 @@ raw-body hash prevent reordered or conflicting events from reverting durable
 subscription state. No commercial module reads another product module's tables.
 See ADR 0019.
 
+### Phase 10 organization tenancy boundary
+
+Migration `20260726_0015` extends the reserved Phase 1 organization tables and
+adds invitation, delivery-outbox, explicit access-grant, idempotency, and
+redacted-audit state under `careeros.modules.organizations`. Individual accounts
+still require no synthetic organization. Every tenant request resolves an active
+durable membership; route IDs and client headers carry no tenant authority.
+Server role capabilities govern roster and organization management, while
+coaches and members receive no implicit directory access.
+
+Delegation is subject-created, expiring, revocable, and limited to six named
+summary/collaboration scopes. Raw resumes, evidence, notes, contacts, objects,
+download intents, and exports are absent from the grant vocabulary. The explicit
+application authorization query rechecks both memberships, coach/admin role,
+organization, subject, grantee, scope, status, and expiry on each use. Invitation
+creation commits an outbox row atomically, stores no raw token, and exposes no
+mailbox in the API response. Phase 10D owns leased delivery and dead-letter
+processing. See ADR 0020.
+
 ## Architecture verification
 
 Every phase retains the repository gates plus architecture-boundary,

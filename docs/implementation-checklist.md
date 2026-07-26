@@ -565,6 +565,10 @@ Dependencies: all product phases and production/legal decisions.
 - [x] Store Free/Sprint/Pro/Coach plan entitlements/quotas centrally; no scattered
       prices. Implement billing adapter, checkout/portal, signed raw webhook validation,
       event idempotency/order/state, reconciliation, and test provider.
+- [x] Extend the reserved organization layer with server-derived owner/admin/coach/
+      member capabilities, non-disclosing durable invitations, minimized rosters,
+      and explicit expiring/revocable summary grants; no implicit raw career-data
+      access and no synthetic organization for individual accounts.
 - [ ] Build protected least-privilege admin system/job/dead-letter/safe retry,
       aggregate metrics, plans/flags, taxonomy/templates, redacted errors, and audit;
       no default unrestricted raw documents.

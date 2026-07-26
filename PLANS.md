@@ -1610,6 +1610,58 @@ owner decisions. Billing therefore remains unavailable in runtime composition.
 Phase 10C owns Coach/Organization tenant authority, and Phase 10G owns centralized
 entitlement/quota/cost enforcement.
 
+## Phase 10C scope and status
+
+Current status: **implemented and focused-verified; invitation delivery execution
+continues in Phase 10D and cumulative release verification remains pending**.
+
+### Included
+
+- [x] Migration `20260726_0015` extends the dormant Phase 1 organization and
+      membership tables rather than creating a competing tenant authority. It adds
+      admin/coach roles, membership lifecycle/version state, non-disclosing
+      invitations, atomic delivery outbox, summary grants, idempotency, audit,
+      constraints, composite foreign keys, and concurrency-safe partial indexes.
+- [x] Forward-only migration 20260726_0016 repairs databases whose already-run
+      Phase 7 revision predates its cleanup-table definition, while validating and
+      preserving correct schemas. It does not rewrite merged migration history.
+- [x] Active durable membership is the only organization authority. Role
+      capabilities are server mapped; coaches/members receive a minimized self-only
+      roster, suspension removes capability immediately, and individual accounts
+      remain valid without synthetic membership.
+- [x] Invitations bind an expiring token digest to the exact normalized active
+      account email. Creation returns no mailbox/token and records delivery as
+      queued; rejection does not disclose whether an account or invitation exists.
+- [x] Subject-created grants cover six summary/collaboration scopes only. Raw
+      resumes, evidence, notes, contacts, objects, download intents, and exports
+      are not grantable. Authorization rechecks both active memberships, role,
+      tenant, subject, grantee, scope, status, and expiry on every decision.
+- [x] Eleven organization HTTP operations enforce authentication, CSRF on mutations,
+      idempotency or optimistic version headers, no-store responses, stable safe
+      problems, and generated FastAPI/OpenAPI/TypeScript contracts.
+- [x] ADR 0020 plus architecture, threat-model, testing, checklist, and plan
+      documentation record the boundary and residual work.
+
+### Focused verification evidence
+
+| Check                 | Status | Evidence                                                                                                                                                                                                                      |
+| --------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Domain/service        | Pass   | Focused Ruff and strict mypy pass; 3 service tests cover idempotent ownership, outsider denial, role capabilities, exact-email invitation acceptance, roster minimization, summary grants, revoke, and suspension recheck.    |
+| API contract          | Pass   | 4 FastAPI tests cover create/list, CSRF, safe role denial, ETag/no-store, invitation non-disclosure, and explicit OpenAPI operations. API mypy passes 74 source files.                                                        |
+| PostgreSQL repository | Pass   | The real repository test exposed and closed a parent/audit flush-order defect, then passed organization/membership creation, durable invitation outbox, acceptance, grant authorization, outsider denial, and redacted audit. |
+| Migration             | Pass   | Local PostgreSQL upgraded `0014 -> 0015`, downgraded to `0014`, repaired forward, then applied forward-only drift repair `0016`; the single head is `0016`. Migration graph and 20 guarded local-seed tests pass.             |
+| Generated contracts   | Pass   | Official OpenAPI export, generated TypeScript drift check, 3 contract tests, and contract build pass with the organization operations.                                                                                        |
+
+### Residual work
+
+Invitation creation is durable but delivery is intentionally not synchronous;
+Phase 10D must lease the outbox, issue/send the raw token exactly once per
+successful delivery attempt, bound retries, dead-letter failures, and provide
+safe operator recovery. Phase 10E must apply approved retention/deletion policy
+to invitation mailbox data. Live Coach/Organization billing, seat policy, plan
+entitlements, and quotas remain unavailable because those commercial values are
+owner decisions; Phase 10G owns centralized enforcement after review.
+
 ## Full-specification completion audit
 
 Historical phase gates remain evidence for the vertical slices they actually

@@ -101,6 +101,9 @@ from careeros.modules.identity.application.ports import (
 )
 from careeros.modules.identity.application.service import IdentityPolicy
 from careeros.modules.identity.infrastructure.fakes import DisabledGoogleOAuthProvider
+from careeros.modules.identity.infrastructure.organization_directory import (
+    IdentityOrganizationAccountDirectory,
+)
 from careeros.modules.identity.infrastructure.redis_security import RedisSecurityStore
 from careeros.modules.identity.infrastructure.repository import (
     SqlAlchemyIdentityUnitOfWorkFactory,
@@ -144,6 +147,15 @@ from careeros.modules.networking.infrastructure import (
 from careeros.modules.networking.infrastructure import SystemClock as NetworkingClock
 from careeros.modules.networking.infrastructure import (
     UuidIdentifierFactory as NetworkingUuidFactory,
+)
+from careeros.modules.organizations.application import OrganizationService
+from careeros.modules.organizations.infrastructure import (
+    HmacOrganizationInvitationManager,
+    SqlAlchemyOrganizationUnitOfWorkFactory,
+)
+from careeros.modules.organizations.infrastructure import SystemClock as OrganizationClock
+from careeros.modules.organizations.infrastructure import (
+    UuidIdentifierFactory as OrganizationUuidFactory,
 )
 from careeros.modules.resume_builder.application import ResumeBuilderPolicy, ResumeBuilderService
 from careeros.modules.resume_builder.infrastructure import (
@@ -194,6 +206,7 @@ from careeros_api.config import Settings, get_settings
 from careeros_api.middleware import RequestBodyLimitMiddleware, install_request_context_middleware
 from careeros_api.modules.career_growth import install_career_growth_problem_handler
 from careeros_api.modules.interview_prep import install_interview_prep_problem_handler
+from careeros_api.modules.organizations.problems import install_organization_problem_handler
 from careeros_api.problems import install_problem_handlers
 from careeros_api.routes import router
 
@@ -247,6 +260,7 @@ def create_app(
     career_growth: CareerGrowthService | None = None,
     career_analytics: CareerAnalyticsService | None = None,
     commercial: CommercialService | None = None,
+    organizations: OrganizationService | None = None,
 ) -> FastAPI:
     """Build an application; injectable dependencies keep tests infrastructure-free."""
     resolved_settings = settings or get_settings()
@@ -282,6 +296,7 @@ def create_app(
         resolved_career_growth = career_growth
         resolved_career_analytics = career_analytics
         resolved_commercial = commercial
+        resolved_organizations = organizations
         resolved_resume_builder_storage: ResumeExportS3Storage | None = None
 
         if resolved_identity is None and isinstance(resolved_database, Database):
@@ -612,6 +627,18 @@ def create_app(
                     allowed_return_origins=frozenset(resolved_settings.allowed_origins),
                 )
 
+            if resolved_organizations is None:
+                resolved_organizations = OrganizationService(
+                    unit_of_work=SqlAlchemyOrganizationUnitOfWorkFactory(resolved_database),
+                    clock=OrganizationClock(),
+                    identifiers=OrganizationUuidFactory(),
+                    accounts=IdentityOrganizationAccountDirectory(resolved_database),
+                    emails=NormalizedEmailValidator(),
+                    invitation_tokens=HmacOrganizationInvitationManager(
+                        resolved_settings.auth_token_pepper.get_secret_value()
+                    ),
+                )
+
         application.state.database = resolved_database
         application.state.identity_service = resolved_identity
         application.state.security_store = resolved_security_store
@@ -627,6 +654,7 @@ def create_app(
         application.state.career_growth_service = resolved_career_growth
         application.state.career_analytics_service = resolved_career_analytics
         application.state.commercial_service = resolved_commercial
+        application.state.organization_service = resolved_organizations
         application.state.attachment_workflow_service = resolved_attachment_workflow
         application.state.resume_outbox_dispatcher = resolved_resume_dispatcher
         application.state.readiness_dependencies = {"database": resolved_database}
@@ -699,6 +727,7 @@ def create_app(
     install_request_context_middleware(application)
     install_problem_handlers(application)
     install_commercial_problem_handler(application)
+    install_organization_problem_handler(application)
     install_interview_prep_problem_handler(application)
     install_career_growth_problem_handler(application)
     application.include_router(router)

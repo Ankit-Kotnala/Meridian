@@ -936,6 +936,32 @@ and event-semantics assessment, credential/key-rotation runbook, outage and
 reconciliation alerts, regional/privacy review, and contract tests before
 production enablement. ADR 0019 does not approve live billing.
 
+## Phase 10 organization tenancy boundary
+
+- [x] Organization authority is derived from active durable membership; a route
+      identifier, header, invitation identifier, grant identifier, or billing
+      reference is never bearer authority.
+- [x] Owner/admin/coach/member capabilities are server mapped and rechecked.
+      Coaches and members see only their own roster entry, suspended memberships
+      have no capabilities, and owner suspension is rejected.
+- [x] Invitation creation is CSRF protected and idempotent. API responses exclude
+      email and token material; the database stores the normalized delivery
+      address, keyed email digest, and only a keyed token digest after delivery.
+- [x] Acceptance requires the exact active account email, token digest, invitation
+      status, expiry, and organization. Rejection responses do not reveal whether
+      the mailbox, account, invitation, or membership exists.
+- [x] Delegated grants permit only named summary/collaboration scopes, expire,
+      revoke with optimistic concurrency, and recheck subject/grantee active
+      membership and coach/admin role for every authorization decision.
+- [x] Partial unique indexes close concurrent duplicate open-invitation and active
+      grant races. Audit contains identifiers and allowlisted role/scope labels,
+      never mailbox, raw token, resume/evidence content, or object references.
+
+Residual risk: invitation email remains personal data required for delivery and
+must follow the retention/deletion inventory in Phase 10E. Delivery is queued but
+not executed until Phase 10D supplies bounded leasing, retry, dead-letter,
+redacted observability, and a reviewed email-provider composition.
+
 ## Incident and recovery expectations
 
 Phase 10 must document owners and playbooks for credential/session compromise,

@@ -163,42 +163,6 @@ class OAuthAccountModel(Base):
     last_login_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
-class OrganizationModel(Base):
-    __tablename__ = "organizations"
-    __table_args__ = (CheckConstraint("version > 0", name="version_positive"),)
-
-    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
-    name: Mapped[str] = mapped_column(String(160))
-    created_by_user_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("users.id", ondelete="RESTRICT"), index=True
-    )
-    version: Mapped[int] = mapped_column(Integer, server_default=text("1"))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-
-
-class OrganizationMembershipModel(Base):
-    __tablename__ = "organization_memberships"
-    __table_args__ = (
-        CheckConstraint("role IN ('owner','member')", name="role_valid"),
-        CheckConstraint("status IN ('active','invited','suspended')", name="status_valid"),
-        UniqueConstraint("organization_id", "user_id"),
-        Index("ix_organization_memberships_user_status", "user_id", "status"),
-    )
-
-    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
-    organization_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("organizations.id", ondelete="CASCADE"), index=True
-    )
-    user_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
-    role: Mapped[str] = mapped_column(String(16))
-    status: Mapped[str] = mapped_column(String(16))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-
-
 class ConsentEventModel(Base):
     __tablename__ = "consent_events"
     __table_args__ = (

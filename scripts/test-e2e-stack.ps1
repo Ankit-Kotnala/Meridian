@@ -83,7 +83,7 @@ $ExpectedMigrationHead = if ($env:CAREEROS_EXPECTED_MIGRATION_HEAD) {
     $env:CAREEROS_EXPECTED_MIGRATION_HEAD
 }
 else {
-    "20260726_0014"
+    "20260726_0016"
 }
 
 if ($Phase -eq 9) {

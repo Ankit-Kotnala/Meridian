@@ -33,6 +33,9 @@ from careeros.modules.job_match.infrastructure import models as job_match_models
 from careeros.modules.networking.infrastructure import (
     models as networking_models,  # noqa: F401
 )
+from careeros.modules.organizations.infrastructure import (
+    models as organization_models,  # noqa: F401
+)
 from careeros.modules.resume_builder.infrastructure import (
     models as resume_builder_models,  # noqa: F401
 )

@@ -912,4 +912,20 @@ fixture, failing assertion, sanitized request/trace ID, first-failure artifact,
 and whether it is deterministic. Fix root causes; never replace an assertion with
 a broad snapshot or sleep solely to make CI green.
 
+## Phase 10C organization tenancy verification
+
+Phase 10C adds domain/service tests for creation idempotency, optimistic updates,
+cross-user denial, exact-email invitation acceptance, coach roster minimization,
+role denial, explicit summary grants, revocation, and membership-suspension
+rechecks. FastAPI tests cover CSRF, idempotency and version headers, no-store/ETag
+responses, non-disclosing invitation payloads, safe problems, and complete unique
+OpenAPI operations. A real PostgreSQL test proves parent/child transaction order,
+owner scope, durable invitation outbox, acceptance, grants, redacted audit, and
+outsider denial. The migration gate upgrades `20260726_0014` to
+`20260726_0015`, then applies the forward-only `20260726_0016` Phase 7
+cleanup-schema repair. Downgrade and forward-repair tests preserve the
+Phase 7-owned table and rerun the guarded fictional seed and single-head graph
+assertions. Generated OpenAPI and TypeScript artifacts
+must pass drift, test, and build gates in the same change.
+
 Phase test commands and results are recorded in `PLANS.md` before completion.
