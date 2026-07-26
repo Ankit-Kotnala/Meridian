@@ -124,6 +124,34 @@ from careeros.modules.networking.infrastructure import (
     UuidIdentifierFactory as NetworkingUuidFactory,
 )
 from careeros.modules.networking.infrastructure import models as networking_models  # noqa: F401
+from careeros.modules.resume_builder.application import (
+    ExportOutboxDispatchResult,
+    ExportProcessingOutcome,
+    ExportReconciliationResult,
+    ResumeExportCleanupProcessor,
+    ResumeExportObjectCleanupProcessor,
+    ResumeExportOutboxDispatcher,
+    ResumeExportProcessor,
+    ResumeExportReconciler,
+    ResumeExportWorkerPolicy,
+)
+from careeros.modules.resume_builder.infrastructure import (
+    DeterministicResumeRenderer,
+    ResumeBuilderDocumentExtractor,
+    ResumeExportExtractionLimits,
+    ResumeExportS3Options,
+    ResumeExportS3Storage,
+    SqlAlchemyResumeBuilderUnitOfWorkFactory,
+)
+from careeros.modules.resume_builder.infrastructure import (
+    SystemClock as ResumeBuilderClock,
+)
+from careeros.modules.resume_builder.infrastructure import (
+    UuidIdentifierFactory as ResumeBuilderUuidFactory,
+)
+from careeros.modules.resume_builder.infrastructure import (
+    models as resume_builder_models,  # noqa: F401
+)
 from careeros.modules.resume_health.application import (
     CleanupResult,
     DocumentLimits,
@@ -164,7 +192,11 @@ from celery import Celery  # type: ignore[import-untyped,unused-ignore]
 from structlog.contextvars import bind_contextvars
 
 from careeros_worker.config import WorkerSettings
-from careeros_worker.publisher import CeleryAnalyticsPublisher, CeleryJobPublisher
+from careeros_worker.publisher import (
+    CeleryAnalyticsPublisher,
+    CeleryJobPublisher,
+    CeleryResumeExportPublisher,
+)
 
 logger = structlog.get_logger(__name__)
 _EXECUTION_LEASE_GRACE_SECONDS = 30
@@ -413,6 +445,123 @@ async def process_attachment_job(
             policy=_attachment_policy(settings),
         )
         return await processor.process_job(job_id, execution_token)
+
+
+async def process_resume_export(
+    settings: WorkerSettings,
+    export_id: UUID,
+    execution_token: str,
+) -> ExportProcessingOutcome:
+    """Render one pinned export using only its durable identifier."""
+
+    database = _database(settings)
+    storage: ResumeExportS3Storage | None = None
+    try:
+        storage = _resume_export_storage(settings)
+        processor = ResumeExportProcessor(
+            unit_of_work=SqlAlchemyResumeBuilderUnitOfWorkFactory(database),
+            clock=ResumeBuilderClock(),
+            identifiers=ResumeBuilderUuidFactory(),
+            renderer=DeterministicResumeRenderer(),
+            extractor=ResumeBuilderDocumentExtractor(_resume_export_document_limits(settings)),
+            storage=storage,
+            policy=_resume_export_policy(settings),
+        )
+        return await processor.process(export_id, execution_token)
+    finally:
+        try:
+            if storage is not None:
+                await storage.dispose()
+        finally:
+            await database.dispose()
+
+
+async def process_resume_export_cleanup(
+    settings: WorkerSettings,
+    export_id: UUID,
+    execution_token: str,
+) -> ExportProcessingOutcome:
+    """Delete one private resume export using durable fenced state."""
+
+    database = _database(settings)
+    storage: ResumeExportS3Storage | None = None
+    try:
+        storage = _resume_export_storage(settings)
+        processor = ResumeExportCleanupProcessor(
+            unit_of_work=SqlAlchemyResumeBuilderUnitOfWorkFactory(database),
+            clock=ResumeBuilderClock(),
+            identifiers=ResumeBuilderUuidFactory(),
+            storage=storage,
+            policy=_resume_export_policy(settings),
+        )
+        return await processor.process(export_id, execution_token)
+    finally:
+        try:
+            if storage is not None:
+                await storage.dispose()
+        finally:
+            await database.dispose()
+
+
+async def dispatch_resume_export_outbox(
+    settings: WorkerSettings,
+    application: Celery,
+    limit: int,
+) -> ExportOutboxDispatchResult:
+    """Publish a bounded batch of identifier-only resume export jobs."""
+
+    database = _database(settings)
+    try:
+        dispatcher = ResumeExportOutboxDispatcher(
+            unit_of_work=SqlAlchemyResumeBuilderUnitOfWorkFactory(database),
+            publisher=CeleryResumeExportPublisher(application),
+            clock=ResumeBuilderClock(),
+            identifiers=ResumeBuilderUuidFactory(),
+            policy=_resume_export_policy(settings),
+        )
+        return await dispatcher.dispatch_pending(limit)
+    finally:
+        await database.dispose()
+
+
+async def reconcile_resume_exports(
+    settings: WorkerSettings,
+    limit: int,
+) -> ExportReconciliationResult:
+    """Recover lost deliveries, expired leases, and orphaned attempt objects."""
+
+    database = _database(settings)
+    storage: ResumeExportS3Storage | None = None
+    try:
+        storage = _resume_export_storage(settings)
+        reconciler = ResumeExportReconciler(
+            unit_of_work=SqlAlchemyResumeBuilderUnitOfWorkFactory(database),
+            clock=ResumeBuilderClock(),
+            identifiers=ResumeBuilderUuidFactory(),
+            policy=_resume_export_policy(settings),
+        )
+        reconciled = await reconciler.reconcile(limit)
+        cleaner = ResumeExportObjectCleanupProcessor(
+            unit_of_work=SqlAlchemyResumeBuilderUnitOfWorkFactory(database),
+            clock=ResumeBuilderClock(),
+            identifiers=ResumeBuilderUuidFactory(),
+            storage=storage,
+            policy=_resume_export_policy(settings),
+        )
+        cleaned = await cleaner.cleanup_due(limit)
+        return ExportReconciliationResult(
+            requeued=reconciled.requeued,
+            dead_lettered=reconciled.dead_lettered,
+            object_cleanups_completed=cleaned.completed,
+            object_cleanup_failures=cleaned.failed,
+            object_cleanup_dead_letters=cleaned.dead_lettered,
+        )
+    finally:
+        try:
+            if storage is not None:
+                await storage.dispose()
+        finally:
+            await database.dispose()
 
 
 async def process_career_analytics_job(
@@ -936,6 +1085,50 @@ def _attachment_storage(settings: WorkerSettings) -> AttachmentS3ObjectStorage:
             connect_timeout_seconds=settings.database_connect_timeout_seconds,
             read_timeout_seconds=settings.database_command_timeout_seconds,
         )
+    )
+
+
+def _resume_export_storage(settings: WorkerSettings) -> ResumeExportS3Storage:
+    return ResumeExportS3Storage(
+        ResumeExportS3Options(
+            internal_endpoint_url=settings.s3_endpoint_url,
+            public_endpoint_url=settings.s3_public_endpoint_url,
+            region=settings.s3_region,
+            bucket=settings.s3_bucket,
+            access_key_id=settings.s3_access_key_id.get_secret_value(),
+            secret_access_key=settings.s3_secret_access_key.get_secret_value(),
+            use_ssl=settings.s3_use_ssl,
+            connect_timeout_seconds=settings.database_connect_timeout_seconds,
+            read_timeout_seconds=settings.database_command_timeout_seconds,
+        )
+    )
+
+
+def _resume_export_document_limits(
+    settings: WorkerSettings,
+) -> ResumeExportExtractionLimits:
+    return ResumeExportExtractionLimits(
+        max_bytes=settings.resume_export_max_bytes,
+        max_pdf_pages=max(settings.document_max_pages, 2),
+        max_archive_entries=settings.document_max_archive_entries,
+        max_archive_uncompressed_bytes=settings.document_max_uncompressed_bytes,
+        max_archive_ratio=settings.document_max_compression_ratio,
+        max_extracted_characters=settings.document_max_extracted_characters,
+        max_extracted_blocks=settings.document_max_extracted_blocks,
+        processing_timeout_seconds=settings.document_processing_timeout_seconds,
+    )
+
+
+def _resume_export_policy(settings: WorkerSettings) -> ResumeExportWorkerPolicy:
+    return ResumeExportWorkerPolicy(
+        max_export_bytes=settings.resume_export_max_bytes,
+        execution_lease_seconds=settings.resume_export_lease_seconds,
+        retry_delay_seconds=settings.resume_export_retry_seconds,
+        outbox_lease_seconds=settings.resume_export_outbox_lease_seconds,
+        outbox_max_attempts=settings.resume_export_outbox_max_attempts,
+        reconciliation_stale_seconds=settings.resume_export_reconciliation_stale_seconds,
+        orphan_cleanup_grace_seconds=settings.resume_export_orphan_cleanup_grace_seconds,
+        temp_root=(settings.document_temp_root / "resume-exports").resolve(),
     )
 
 

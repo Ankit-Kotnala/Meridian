@@ -386,36 +386,37 @@ Dependencies: Phases 2 and 6.
 - [~] Complete structured field/section/bullet CRUD, accessible reorder,
   evidence-backed additions, bounded typography/layout, conflict-safe autosave,
   page/plain-text/recruiter previews, semantic version comparison, and restore.
-  The current slice supports title/target/template changes, section reorder/
-  clone, manual save, and a plain preview, but not the complete editor contract.
-- [~] Provide five distinct accessible ATS-friendly single-column-first templates
-  without essential text boxes/header/footer/icon-only content. Five
-  selectable IDs exist, but they currently share one renderer structure.
-- [~] Move idempotent PDF/DOCX/text/JSON rendering and verification to a durable
-  isolated worker with outbox dispatch, leases, bounded retries, dead letter,
-  and cleanup. The current service persists job-shaped state but executes the
-  work synchronously.
-- [~] Parse outputs again and make critical entity/bullet occurrence counts,
-  duplicates/omissions, reading order, searchability, and claim grounding
-  release-blocking through one canonical cross-format fidelity manifest.
+  The backend now exposes additive source/layout/fact contracts; frontend
+  feature implementation remains outside this non-frontend closure.
+- [x] Provide five distinct accessible ATS-friendly single-column-first templates
+      without essential text boxes/header/footer/icon-only content.
+- [x] Move idempotent PDF/DOCX/text/JSON rendering and verification to a durable
+      isolated worker with outbox dispatch, leases, bounded retries, dead letter,
+      and cleanup.
+- [x] Parse outputs again and make critical entity/bullet occurrence counts,
+      duplicates/omissions, reading order, searchability, and claim grounding
+      release-blocking through one canonical cross-format fidelity manifest.
 - [x] Store/show verification report; block critical failures and clearly warn on
       allowed noncritical failures before download.
 - [x] Provide short-lived ownership-checked download intents and complete deletion.
 - [~] Complete one/two-page coverage for every distinct template, supported
   fonts/layouts, occurrence/read-order goldens, renderer isolation/injection,
   cross-user download, failure blocking, immutable restore/history,
-  keyboard/mobile approval, and accessibility.
+  keyboard/mobile approval, and accessibility. Backend renderer, grounding,
+  storage, and owner-scope coverage is complete; new frontend approval work
+  remains outside this closure.
 
 Exit: output is searchable and critical fields/claims survive round trip; unsafe
 or broken exports cannot masquerade as verified.
 
-Phase 7 implementation note: its locally and hosted-verified vertical slice
-persists export status, attempt/retry/dead-letter-shaped fields, hashes, object
-keys, and verification reports while executing the deterministic render/verify
-step immediately in the application service. That historical gate remains valid
-for the implemented slice, but durable worker execution, distinct layouts, and
-complete blocking fidelity comparisons are inherited Phase 10 release
-prerequisites rather than completed functionality.
+Phase 7 closure note: additive migrations `20260726_0012` and
+`20260726_0013` preserve the historical vertical-slice schema while adding the
+structured editor pins, canonical manifest, operation-typed outbox, fenced
+render/cleanup leases, pre-write attempt-object cleanup backstops, bounded
+retry/dead-letter recovery, truthful private-object deletion state, and
+fail-closed legacy deletion recovery. The historical 2026-07-19 gate remains
+evidence only for its original slice; current closure evidence is recorded in
+`PLANS.md`.
 
 ## Phase 8 — Application Workspace and Application Packs
 
@@ -524,14 +525,14 @@ predictive.
 
 Dependencies: all product phases and production/legal decisions.
 
-- [ ] Close the inherited Resume Builder release gaps: durable outbox-backed
-      render/verify workers with fast `202` acceptance and reload-safe polling,
-      distinct constrained layouts, a canonical cross-format fidelity manifest,
-      release-blocking occurrence/read-order/searchability/grounding checks, and
-      durable object-cleanup/deletion state.
-- [ ] Replace the preview-only `make seed` behavior with an idempotent,
-      explicitly fictional, local-only database/object-store seed spanning every
-      implemented phase, guarded so it cannot run against production.
+- [x] Close the inherited Resume Builder release gaps: durable outbox-backed
+      render/verify/cleanup workers with fast `202` acceptance and reload-safe
+      polling, distinct constrained layouts, a canonical cross-format fidelity
+      manifest, and release-blocking fidelity/grounding checks.
+- [x] Replace the preview-only `make seed` behavior with an idempotent,
+      explicitly fictional, local-only database/object-store seed spanning
+      Phases 1 through 9, guarded before I/O against non-development,
+      nonlocal database/object targets, unexpected buckets, and schema drift.
 - [ ] Store Free/Sprint/Pro/Coach plan entitlements/quotas centrally; no scattered
       prices. Implement billing adapter, checkout/portal, signed raw webhook validation,
       event idempotency/order/state, reconciliation, and test provider.

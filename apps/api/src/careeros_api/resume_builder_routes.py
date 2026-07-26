@@ -15,7 +15,12 @@ from careeros.modules.resume_builder.application import (
 )
 from careeros.modules.resume_builder.domain import (
     ResumeBullet,
+    ResumeFontFamily,
     ResumeFormat,
+    ResumeLayout,
+    ResumeLineSpacing,
+    ResumeMarginSize,
+    ResumePageSize,
     ResumeSection,
     ResumeTemplate,
 )
@@ -35,6 +40,7 @@ from careeros_api.resume_builder_presenters import (
     resume_response,
     resume_version_list_response,
     resume_version_response,
+    source_options_response,
     verification_response,
 )
 from careeros_api.resume_builder_schemas import (
@@ -42,9 +48,11 @@ from careeros_api.resume_builder_schemas import (
     ResumeDownloadIntentResponse,
     ResumeExportRecordResponse,
     ResumeExportRequest,
+    ResumeLayoutSchema,
     ResumeListResponse,
     ResumeResponse,
     ResumeSectionRequest,
+    ResumeSourceOptionsResponse,
     ResumeUpdateRequest,
     ResumeVerificationResponse,
     ResumeVersionListResponse,
@@ -108,6 +116,7 @@ async def create_resume(
             template=ResumeTemplate(payload.template),
             change_set_id=payload.change_set_id,
             change_set_version_id=payload.change_set_version_id,
+            layout=_layout(payload.layout),
         ),
         idempotency_key=idempotency_key,
         context=context,
@@ -155,12 +164,17 @@ async def update_resume(
         UpdateResume(
             title=payload.title,
             target_role=payload.target_role,
+            target_role_provided="target_role" in payload.model_fields_set,
             template=ResumeTemplate(payload.template) if payload.template is not None else None,
             sections=(
                 tuple(_section(section) for section in payload.sections)
                 if payload.sections is not None
                 else None
             ),
+            personal_fact_ids=(
+                tuple(payload.personal_fact_ids) if payload.personal_fact_ids is not None else None
+            ),
+            layout=_layout(payload.layout) if payload.layout is not None else None,
         ),
         expected_version=parse_if_match_version(if_match),
         idempotency_key=idempotency_key,
@@ -168,6 +182,23 @@ async def update_resume(
     )
     _private(response, value.resume.version)
     return resume_response(value)
+
+
+@router.get(
+    "/resumes/{resume_id}/source-options",
+    response_model=ResumeSourceOptionsResponse,
+    operation_id="resumeSourceOptionsGet",
+    responses=_PROBLEMS,
+)
+async def get_source_options(
+    resume_id: UUID,
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(current_principal)],
+    service: Annotated[ResumeBuilderService, Depends(resume_builder_service)],
+) -> ResumeSourceOptionsResponse:
+    value = await service.get_source_options(principal.user_id, resume_id)
+    _private(response)
+    return source_options_response(value)
 
 
 @router.get(
@@ -347,6 +378,7 @@ async def create_download_intent(
 @router.delete(
     "/exports/{export_id}",
     response_model=ResumeExportRecordResponse,
+    status_code=status.HTTP_202_ACCEPTED,
     operation_id="resumeExportDelete",
     responses=_PROBLEMS,
 )
@@ -379,7 +411,19 @@ def _section(value: ResumeSectionRequest) -> ResumeSection:
                 text=item.text,
                 evidence_ids=tuple(item.evidence_ids),
                 source=item.source,
+                entity_id=item.entity_id,
             )
             for item in value.items
         ),
+    )
+
+
+def _layout(value: ResumeLayoutSchema) -> ResumeLayout:
+    return ResumeLayout(
+        page_size=ResumePageSize(value.page_size),
+        page_limit=value.page_limit,
+        font_family=ResumeFontFamily(value.font_family),
+        font_size_pt=value.font_size_pt,
+        line_spacing=ResumeLineSpacing(value.line_spacing),
+        margins=ResumeMarginSize(value.margins),
     )

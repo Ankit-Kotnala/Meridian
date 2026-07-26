@@ -52,7 +52,24 @@ ResumeTemplate = Literal[
     "consulting_finance",
 ]
 ResumeFormat = Literal["pdf", "docx", "text", "json"]
-ResumeExportStatus = Literal["pending", "rendering", "verified", "blocked", "failed", "deleted"]
+ResumePageSize = Literal["letter", "a4"]
+ResumeFontFamily = Literal["sans", "serif"]
+ResumeLineSpacing = Literal["compact", "standard", "relaxed"]
+ResumeMarginSize = Literal["narrow", "standard", "wide"]
+ResumeExportStatus = Literal[
+    "pending",
+    "rendering",
+    "retry_wait",
+    "verified",
+    "blocked",
+    "failed",
+    "dead_lettered",
+    "deletion_pending",
+    "deleting",
+    "deletion_retry_wait",
+    "deletion_dead_lettered",
+    "deleted",
+]
 ResumeVerificationStatus = Literal["passed", "warning", "failed"]
 ResumeEvidenceLinkBasis = Literal[
     "evidence_statement",
@@ -61,12 +78,22 @@ ResumeEvidenceLinkBasis = Literal[
 ]
 
 
+class ResumeLayoutSchema(ResumeBuilderSchema):
+    page_size: ResumePageSize = "letter"
+    page_limit: Literal[1, 2] = 1
+    font_family: ResumeFontFamily = "sans"
+    font_size_pt: int = Field(default=10, ge=9, le=12)
+    line_spacing: ResumeLineSpacing = "standard"
+    margins: ResumeMarginSize = "standard"
+
+
 class ResumeCreateRequest(ResumeBuilderSchema):
     title: str = Field(min_length=1, max_length=120)
     target_role: str | None = Field(default=None, max_length=120)
     template: ResumeTemplate = "standard_professional"
     change_set_id: UUID | None = None
     change_set_version_id: UUID | None = None
+    layout: ResumeLayoutSchema = Field(default_factory=ResumeLayoutSchema)
 
     @field_validator("title")
     @classmethod
@@ -84,6 +111,7 @@ class ResumeBulletRequest(ResumeBuilderSchema):
     text: str = Field(min_length=1, max_length=450)
     evidence_ids: list[UUID] = Field(min_length=1, max_length=20)
     source: str = Field(min_length=1, max_length=80)
+    entity_id: UUID | None = None
 
     @field_validator("text", "source")
     @classmethod
@@ -108,6 +136,8 @@ class ResumeUpdateRequest(ResumeBuilderSchema):
     target_role: str | None = Field(default=None, max_length=120)
     template: ResumeTemplate | None = None
     sections: list[ResumeSectionRequest] | None = Field(default=None, min_length=1, max_length=12)
+    personal_fact_ids: list[UUID] | None = Field(default=None, max_length=20)
+    layout: ResumeLayoutSchema | None = None
 
     @field_validator("title")
     @classmethod
@@ -139,6 +169,7 @@ class ResumeBulletResponse(ResumeBuilderSchema):
     text: str
     evidence_ids: list[UUID] = Field(max_length=20)
     source: str
+    entity_id: UUID | None = None
     evidence_references: list[ResumeEvidenceReferenceResponse] = Field(max_length=20)
 
 
@@ -149,6 +180,33 @@ class ResumeSectionResponse(ResumeBuilderSchema):
     items: list[ResumeBulletResponse] = Field(max_length=24)
 
 
+class ResumePersonalFactResponse(ResumeBuilderSchema):
+    id: UUID
+    kind: str
+    value: str
+    label: str | None
+    is_primary: bool
+
+
+class ResumePartialDateResponse(ResumeBuilderSchema):
+    year: int = Field(ge=1900, le=2200)
+    month: int | None = Field(default=None, ge=1, le=12)
+
+
+class ResumeEntityResponse(ResumeBuilderSchema):
+    id: UUID
+    kind: str
+    title: str
+    organization: str | None
+    official_title: str | None
+    display_title: str | None
+    location: str | None
+    start_date: ResumePartialDateResponse | None
+    end_date: ResumePartialDateResponse | None
+    is_current: bool
+    evidence_ids: list[UUID] = Field(max_length=200)
+
+
 class ResumeVersionResponse(ResumeBuilderSchema):
     id: UUID
     resume_id: UUID
@@ -157,6 +215,9 @@ class ResumeVersionResponse(ResumeBuilderSchema):
     title: str
     target_role: str | None
     template: ResumeTemplate
+    layout: ResumeLayoutSchema = Field(default_factory=ResumeLayoutSchema)
+    personal_facts: list[ResumePersonalFactResponse] = Field(default_factory=list, max_length=20)
+    entities: list[ResumeEntityResponse] = Field(default_factory=list, max_length=100)
     sections: list[ResumeSectionResponse] = Field(max_length=12)
     plain_text: str
     source_evidence_ids: list[UUID] = Field(max_length=200)
@@ -170,6 +231,7 @@ class ResumeResponse(ResumeBuilderSchema):
     title: str
     target_role: str | None
     template: ResumeTemplate
+    layout: ResumeLayoutSchema = Field(default_factory=ResumeLayoutSchema)
     current_version_id: UUID
     current_version: ResumeVersionResponse
     version: PositiveVersion
@@ -200,6 +262,15 @@ class ResumeExportResponse(ResumeBuilderSchema):
     warnings: list[str] = Field(max_length=100)
     renderer_version: str
     parser_version: str | None
+    attempts: int = Field(default_factory=lambda: 0, ge=0)
+    max_attempts: int = Field(default_factory=lambda: 3, ge=1)
+    cleanup_attempts: int = Field(default_factory=lambda: 0, ge=0)
+    cleanup_max_attempts: int = Field(default_factory=lambda: 3, ge=1)
+    last_error: str | None = None
+    retry_at: datetime | None = None
+    dead_lettered_at: datetime | None = None
+    version_content_sha256: str | None = Field(default=None, min_length=64, max_length=64)
+    fidelity_manifest_sha256: str | None = Field(default=None, min_length=64, max_length=64)
     requested_at: datetime
     completed_at: datetime | None
     deleted_at: datetime | None
@@ -217,7 +288,12 @@ class ResumeVerificationResponse(ResumeBuilderSchema):
     duplicate_lines: list[str] = Field(max_length=500)
     reading_order: list[str] = Field(max_length=500)
     grounding_codes: list[str] = Field(max_length=40)
+    occurrence_mismatches: list[str] = Field(default_factory=list, max_length=500)
+    reading_order_failures: list[str] = Field(default_factory=list, max_length=500)
     file_sha256: str
+    manifest_sha256: str | None = Field(default=None, min_length=64, max_length=64)
+    version_content_sha256: str | None = Field(default=None, min_length=64, max_length=64)
+    page_count: int = Field(default_factory=lambda: 0, ge=0)
     parser_version: str
     created_at: datetime
 
@@ -232,3 +308,22 @@ class ResumeDownloadIntentResponse(ResumeBuilderSchema):
     method: Literal["GET"]
     url: str
     expires_at: datetime
+
+
+class ResumeSourceBulletResponse(ResumeBuilderSchema):
+    text: str
+    evidence_ids: list[UUID] = Field(max_length=20)
+    source: str
+    section_kind: str
+    entity_id: UUID | None = None
+    evidence_references: list[ResumeEvidenceReferenceResponse] = Field(max_length=20)
+
+
+class ResumeSourceOptionsResponse(ResumeBuilderSchema):
+    headline: str | None
+    summary: str | None
+    skills: list[str] = Field(max_length=200)
+    bullets: list[ResumeSourceBulletResponse] = Field(max_length=500)
+    source_evidence_ids: list[UUID] = Field(max_length=500)
+    personal_facts: list[ResumePersonalFactResponse] = Field(default_factory=list, max_length=20)
+    entities: list[ResumeEntityResponse] = Field(default_factory=list, max_length=100)

@@ -139,7 +139,6 @@ from careeros.modules.networking.infrastructure import (
 from careeros.modules.resume_builder.application import ResumeBuilderPolicy, ResumeBuilderService
 from careeros.modules.resume_builder.infrastructure import (
     CareerRecordResumeSourceProvider,
-    DeterministicResumeRenderer,
     ResumeExportS3Options,
     ResumeExportS3Storage,
     SqlAlchemyResumeBuilderUnitOfWorkFactory,
@@ -186,7 +185,6 @@ from careeros_api.middleware import RequestBodyLimitMiddleware, install_request_
 from careeros_api.modules.career_growth import install_career_growth_problem_handler
 from careeros_api.modules.interview_prep import install_interview_prep_problem_handler
 from careeros_api.problems import install_problem_handlers
-from careeros_api.resume_builder_extractors import ResumeBuilderDocumentExtractor
 from careeros_api.routes import router
 
 logger = structlog.get_logger(__name__)
@@ -504,21 +502,6 @@ def create_app(
                     sources=CareerRecordResumeSourceProvider(
                         resolved_career_record,
                         change_studio=resolved_change_studio,
-                    ),
-                    renderer=DeterministicResumeRenderer(),
-                    extractor=ResumeBuilderDocumentExtractor(
-                        DocumentLimits(
-                            max_upload_bytes=resolved_settings.resume_max_upload_bytes,
-                            max_pdf_pages=resolved_settings.resume_max_pages,
-                            max_archive_entries=resolved_settings.resume_max_archive_entries,
-                            max_archive_uncompressed_bytes=(
-                                resolved_settings.resume_max_expanded_bytes
-                            ),
-                            max_archive_ratio=resolved_settings.resume_max_compression_ratio,
-                            processing_timeout_seconds=(
-                                resolved_settings.resume_processing_timeout_seconds
-                            ),
-                        )
                     ),
                     storage=resolved_resume_builder_storage,
                     policy=ResumeBuilderPolicy(),

@@ -30,7 +30,13 @@ for (const file of listedFiles) {
   });
   if (info.ignored || info.inferredParser === null) continue;
 
-  const input = await readFile(file, "utf8");
+  let input;
+  try {
+    input = await readFile(file, "utf8");
+  } catch (error) {
+    if (error?.code === "ENOENT") continue;
+    throw error;
+  }
   const config =
     (await prettier.resolveConfig(file, { editorconfig: true })) ?? {};
   const formatted = await prettier.format(input, { ...config, filepath: file });

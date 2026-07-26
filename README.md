@@ -173,13 +173,18 @@ local deterministic provider only reuses eligible evidence text; remote provider
 configuration is HTTPS/API-key gated and still passes strict grounding before
 display.
 
-Resume Builder is available at `/resume-builder`. It creates structured,
-evidence-backed resume drafts from the owner-scoped Career Record and optional
-Change Studio output, preserves immutable versions, offers five constrained
-ATS-friendly templates, renders PDF/DOCX/text/JSON exports, re-parses generated
-files before download, shows the verification report, blocks critical failures,
-and issues only short-lived owner-checked download intents. Exported files remain
-pinned to the version and content hash that passed verification.
+Resume Builder is available at `/resume-builder`. Its existing web workflow
+continues to create evidence-backed drafts and immutable versions from the
+owner-scoped Career Record and optional Change Studio output. This backend-only
+closure adds additive source/layout/fact contracts without adding frontend
+behavior. PDF/DOCX/text/JSON export returns durable `202` state; an isolated
+worker renders and independently re-parses the output against one exact
+cross-format fidelity manifest. Omissions, duplications, order/searchability
+failures, page overflow, unsupported facts or numbers, and version/hash drift
+block download. Every attempt creates a durable deletion backstop before its
+private-object write, so a crash or uncertain write cannot strand an
+unreferenced file. Verified files atomically cancel that backstop and use
+short-lived owner-checked download intents plus durable fenced deletion.
 
 Application Workspace is available at `/applications`. It creates owner-scoped
 application records from one exact saved-job revision and one immutable resume
@@ -326,7 +331,7 @@ make test-e2e-stack-phase8 # isolated Phase 8 desktop/mobile Application Workspa
 make test-e2e-stack-phase9 # isolated Phase 9 desktop/mobile career workspace journeys
 make security-scan    # scan source, dependencies, app images, and trusted edge runtime
 make migrate          # apply the current database migrations
-make seed             # print the explicitly fictional Phase 0 fixture
+make seed             # migrate and idempotently seed fictional local Phase 1-9 data
 make verify           # full format/lint/type/test/contract/build/runtime gate
 make verify-phase1    # full gate plus isolated Phase 1 integration/E2E
 make verify-phase2    # full gate plus isolated Resume Health integration/E2E
@@ -368,10 +373,11 @@ by the inherited desktop/mobile suites. Use `.\scripts\verify-phase6.ps1` for
 migration `20260719_0007`, Change Studio repository integration, grounding/
 provider tests, and the desktop generate/review/accept/undo/answer workflow
 backed by confirmed career evidence and saved job requirements.
-Use `.\scripts\verify-phase7.ps1` for migration `20260719_0008`, Resume Builder
-repository integration, renderer/round-trip verification tests, and the desktop
-create/version/export/download-intent workflow backed by confirmed career
-evidence.
+Use `.\scripts\verify-phase7.ps1` for the Phase 7 base migration
+`20260719_0008` plus closure heads `20260726_0012`/`20260726_0013`, Resume
+Builder repository/S3 integration, durable worker and fidelity tests, and the
+existing authenticated Resume Builder export/download browser journey backed by
+confirmed career evidence. Frontend editor extensions are outside this gate.
 Use `.\scripts\verify-phase8.ps1` for migration `20260724_0009`, Application
 Workspace repository integration, immutable-source and consistency tests, and
 the complete desktop/mobile create/track/generate workflow. The final local
@@ -417,6 +423,15 @@ immutable resume versions, export records, verification reports, short-lived
 download intents, idempotency records, and redacted audit events. Downgrading to
 `20260719_0007` deletes Phase 7 resume-builder/export data and is likewise a
 test/forward-repair path.
+Phase 7 closure migration `20260726_0012` adds pinned layout, confirmed personal
+and entity display facts, canonical fidelity hashes/reports, durable render
+leases/retry/dead-letter state, and the transactional export outbox. Migration
+`20260726_0013` adds operation-typed outbox delivery plus separate fenced,
+retryable private-object cleanup states and pre-write attempt-object backstops,
+so deletion is never reported before storage confirms it and a worker crash
+cannot lose cleanup intent. Inconsistent legacy `deleted` rows are recovered to
+queued deletion without inventing timestamps or discarding object keys. Their
+downgrades refuse incompatible live durable state.
 Phase 8 migration `20260724_0009` adds owner-scoped applications, exact immutable
 source pins, workflow events, tasks, notes, packs, generated documents,
 idempotency records, and redacted audit events. It also forward-adds a nullable
@@ -447,9 +462,21 @@ prevent cross-owner links and more than one primary fact of a given kind.
 Historical career entities are not silently marked confirmed. Downgrading to
 `20260724_0010` removes only the closure tables; it is a test/forward-repair path,
 not a production rollback after users create those records.
-The seed command still prints only a fictional demo fixture and performs no
-database write. A command that prints a fixture or says a feature is deferred is
-not evidence that the product feature exists.
+`make seed` starts only local PostgreSQL/MinIO prerequisites, applies migrations,
+and runs the profile-gated seed container. Native PowerShell users can run
+`.\scripts\seed-local.ps1`. The command writes an explicitly fictional,
+provenance-valid graph across Phases 1 through 9 plus its private source and
+verified-export objects. Stable UUIDs, immutable-row checks, and existing-object
+verification make replays deterministic and non-destructive.
+
+The seed refuses dependency I/O unless the environment is explicitly
+`development`, an exact one-command confirmation is present, the database uses
+the local `careeros` identity/database on an allowlisted Compose/loopback host,
+the object endpoint is local MinIO, the bucket is `careeros-documents`, and the
+database is at reviewed migration head `20260726_0013`. The fresh fixture
+credential is printed only when the account is first created.
+`pnpm fixtures:preview` remains a no-I/O presentation fixture and is not
+evidence of persisted product state.
 
 For host-only package work, use the pinned tools rather than global substitutes:
 
@@ -576,6 +603,9 @@ format, lint, type, unit, build, container, migration, integration, runtime,
 worker hardening, renderer/round-trip tests, and isolated Resume Builder browser
 gates all passed. PR #20 subsequently merged the Phase 5–7 stack at `f9807dc`
 after hosted CI run `30119088488` passed every required job.
+That evidence remains the historical vertical-slice baseline. The 2026-07-26
+Phase 7A/B/C closure replaces synchronous rendering and shared template
+structure; its current verification evidence is recorded in `PLANS.md`.
 Phase 8 local closeout passed on implementation revision `964cd9c` on
 2026-07-24. `scripts/verify-phase8.ps1` exited 0 in 273 seconds with `206 passed`
 in the backend portfolio, `104 passed` in the API portfolio, and `121 passed`
@@ -646,16 +676,13 @@ listed fixes are available only in Python 3.15 prereleases. PR #22 workflow run
 - Account-wide export/deletion retention, load/soak evidence, backup/restore,
   production provider/region selection, and protected deployment remain Phase 10
   work.
-- The Phase 7 export slice persists job-shaped status and verification records
-  but renders/verifies synchronously inside the application service. Its five
-  selectable template IDs currently share one renderer structure, and its
-  round-trip checks do not yet make occurrence counts and reading-order
-  comparison release-blocking. Durable worker execution, distinct verified
-  layouts, and a canonical cross-format fidelity manifest are Phase 10
-  prerequisites.
-- `make seed` still prints only a fictional fixture. The original project-wide
-  database seed covering every implemented phase remains unfinished and must not
-  be inferred from the labeled demo preview.
+- Resume Builder now has durable render/cleanup workers, five distinct
+  constrained layouts, and a canonical blocking cross-format fidelity manifest.
+  Rich graphics-heavy/multi-column templates remain intentionally unsupported
+  until they can pass the same searchable exact-order corpus.
+- The guarded seed is strictly local development tooling. It is not an import,
+  backup restore, migration substitute, production bootstrap, or source of real
+  career claims.
 
 ## License and production use
 

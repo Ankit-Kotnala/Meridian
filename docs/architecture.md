@@ -256,18 +256,25 @@ Career Record, Evidence, Resume Health, or Change Studio tables directly.
 
 Every section and bullet is server-validated before it can become the current
 draft or an immutable version. Bullets must remain evidence-backed; unsupported
-client edits are rejected rather than rendered. Exports are pinned to a specific
-immutable version and format, rendered to private object storage, hashed, parsed
-again where applicable, and blocked before download when the implemented
-critical text, searchability, or grounding checks fail. Exact occurrence-count,
-duplication/omission, and reading-order comparison are not yet release-blocking;
-Phase 10 owns that canonical fidelity manifest.
+client edits are rejected rather than rendered. Confirmed personal/contact facts,
+evidence-linked entity display facts, layout controls, and every section/bullet
+are pinned into immutable version content hashes.
 
-The Phase 7 local renderer and verifier execute immediately inside the service
-while persisting job status, attempts, warnings, failures, timeout/retry fields,
-and dead-letter-shaped metadata. No worker currently claims those records.
-Phase 10 must add a transactional outbox, fenced worker leases/recovery, and
-durable object cleanup without introducing a second rendering policy.
+The API transaction persists an export plus an operation-typed outbox row and
+returns `202`. The isolated worker claims a fenced lease, renders one of five
+distinct constrained templates to private object storage, independently parses
+PDF/DOCX, and compares every format to the canonical
+`career-resume-fidelity-v1` manifest. Exact occurrence counts,
+duplication/omission, reading order, searchability, one/two-page bounds,
+grounding, numeric support, and both pinned hashes are release-blocking.
+Failed verification deletes the object before persisting `blocked`.
+
+Explicit deletion uses the same durable outbox and a separate fenced cleanup
+state machine. Broker/storage failures retry with bounded backoff and
+dead-letter visibly; the reconciler recovers lost delivery or expired leases.
+`deleted_at` is written only after the private object is gone. API and worker
+compose the same application policy, while broker payloads contain only an
+export UUID, redacted trace ID, and allowlisted operation.
 
 ## Application Workspace Boundary
 
@@ -642,10 +649,13 @@ adds `job_match`, migration `20260719_0006`, API/generated contracts, the
 adds `change_studio`, migration `20260719_0007`, API/generated contracts, the
 `change-studio` web feature, deterministic local provider, HTTP provider
 boundary, grounding verifier, and focused adversarial/integration/browser suites.
-Phase 7 adds `resume_builder`, migration `20260719_0008`, API/generated
-contracts, the `resume-builder` web feature, deterministic synchronous
-PDF/DOCX/text/JSON rendering, initial round-trip verification, private export
-storage, and focused integration/browser suites. Phase 8 adds
+Phase 7 adds `resume_builder`, base migration `20260719_0008`, closure
+migrations `20260726_0012`/`20260726_0013`, API/generated contracts, additive Resume Builder source/layout/fact contracts,
+and five distinct PDF/DOCX/text/JSON
+templates, durable fenced render/cleanup workers, canonical blocking fidelity
+verification, pre-write attempt-object cleanup backstops, private export
+storage, and focused integration/browser suites.
+Phase 8 adds
 `application_workspace`, migration
 `20260724_0009`, API/generated contracts, the `applications` web feature,
 immutable source adapters, deterministic grounded packs, consistency/deletion
@@ -715,10 +725,15 @@ No Phase 9 module imports another module's tables or adds an external send/scrap
 capability. OCR providers, browser extension, Terraform, production AI/provider
 decisions, external CRM/calendar connections, and production deployment
 workflows remain absent until their owning phases.
-Phase 10 must also replace Resume Builder's synchronous in-service render/verify
-path with durable outbox-backed worker execution and make a real guarded
-fictional local database/object-store seed available; persisted job-shaped
-fields and the preview-only seed are not substitutes for those capabilities.
+Resume Builder's formerly synchronous release gap is closed by the Phase 7
+additive migrations and worker path above. Phase 10A adds a separate local
+tooling composition root for an explicitly fictional database/object-store
+seed. It is not an API/task route and normal Compose startup excludes it behind
+the `tools` profile. Stable UUIDs, immutable-row and existing-object preflight,
+exact migration-head pinning, and development/database/MinIO guards make replays
+fail closed and non-destructive. The transaction defers only the circular
+Resume Health upload-to-source finalization until both immutable rows exist.
+The presentation-only fixture remains separate. See ADR 0018.
 
 ## Architecture verification
 

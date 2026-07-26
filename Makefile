@@ -36,6 +36,7 @@ help:
 	@echo "  verify-phase7    Run all platform gates and the isolated Resume Builder journey"
 	@echo "  verify-phase8    Run all platform gates and the isolated Application Workspace journey"
 	@echo "  verify-phase9    Run all platform gates and the isolated Phase 9 career workspace journey"
+	@echo "  seed             Migrate and idempotently seed fictional local Phase 1-9 data"
 
 setup:
 	@test -f .env || cp .env.example .env
@@ -145,7 +146,10 @@ security-scan:
 	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume careeros-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d careeros-web-edge:latest --config /etc/grype.yaml --fail-on high --only-fixed
 
 seed:
-	pnpm seed
+	docker compose up --detach --wait postgres minio minio-init
+	docker compose build api
+	docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
+	CAREEROS_ALLOW_LOCAL_SEED=fictional-careeros-local-seed-v1 docker compose --profile tools run --rm --no-deps local-seed
 
 migrate:
 	docker compose run --rm api alembic -c packages/backend/alembic.ini upgrade head

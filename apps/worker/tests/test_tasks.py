@@ -11,6 +11,12 @@ from careeros.modules.career_record.application import (
     CleanupBatchResult,
     SafeAttachmentError,
 )
+from careeros.modules.resume_builder.application import (
+    ExportOutboxDispatchResult,
+    ExportProcessingOutcome,
+    ExportReconciliationResult,
+)
+from careeros.modules.resume_builder.domain import ResumeExportStatus
 from careeros.modules.resume_health.application import (
     CleanupResult,
     JobReconciliationResult,
@@ -30,6 +36,7 @@ _DELIVERY_ID = "delivery-test-id"
 def _delivery_id(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(tasks.process_resume_health.request, "id", _DELIVERY_ID)
     monkeypatch.setattr(tasks.process_evidence_attachment.request, "id", _DELIVERY_ID)
+    monkeypatch.setattr(tasks.process_resume_builder_export.request, "id", _DELIVERY_ID)
 
 
 def _settings(*, max_retries: int = 3) -> WorkerSettings:
@@ -67,6 +74,77 @@ def test_process_task_returns_only_durable_status_metadata(
     assert result == {
         "job_id": str(job_id),
         "status": "succeeded",
+        "retryable": False,
+        "safe_error_code": None,
+    }
+
+
+def test_resume_export_task_returns_identifier_only_durable_status(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    export_id = uuid4()
+
+    async def fake_process(
+        _settings: WorkerSettings,
+        received_export_id: object,
+        execution_token: str,
+    ) -> ExportProcessingOutcome:
+        assert received_export_id == export_id
+        assert re.fullmatch(r"[0-9a-f]{64}", execution_token)
+        return ExportProcessingOutcome(
+            export_id,
+            ResumeExportStatus.VERIFIED,
+            False,
+            None,
+        )
+
+    monkeypatch.setattr(tasks, "get_settings", _settings)
+    monkeypatch.setattr(tasks, "process_resume_export", fake_process)
+
+    result = tasks.process_resume_builder_export.run(
+        export_id=str(export_id),
+        trace_id="f" * 32,
+    )
+
+    assert result == {
+        "export_id": str(export_id),
+        "status": "verified",
+        "retryable": False,
+        "safe_error_code": None,
+    }
+
+
+def test_resume_export_task_routes_allowlisted_cleanup_operation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    export_id = uuid4()
+
+    async def fake_cleanup(
+        _settings: WorkerSettings,
+        received_export_id: object,
+        execution_token: str,
+    ) -> ExportProcessingOutcome:
+        assert received_export_id == export_id
+        assert re.fullmatch(r"[0-9a-f]{64}", execution_token)
+        return ExportProcessingOutcome(
+            export_id,
+            ResumeExportStatus.DELETED,
+            False,
+            None,
+        )
+
+    monkeypatch.setattr(tasks, "get_settings", _settings)
+    monkeypatch.setattr(tasks, "process_resume_export_cleanup", fake_cleanup)
+
+    result = tasks.process_resume_builder_export.run(
+        export_id=str(export_id),
+        operation="delete",
+        trace_id="e" * 32,
+    )
+
+    assert result == {
+        "export_id": str(export_id),
+        "status": "deleted",
         "retryable": False,
         "safe_error_code": None,
     }
@@ -347,6 +425,18 @@ def test_maintenance_tasks_return_bounded_operational_counts(
     ) -> AttachmentReconciliationResult:
         return AttachmentReconciliationResult(requeued=3, dead_lettered=1)
 
+    async def fake_export_dispatch(*_args: object) -> ExportOutboxDispatchResult:
+        return ExportOutboxDispatchResult(published=7, failed=2, dead_lettered=1)
+
+    async def fake_export_reconcile(*_args: object) -> ExportReconciliationResult:
+        return ExportReconciliationResult(
+            requeued=4,
+            dead_lettered=2,
+            object_cleanups_completed=3,
+            object_cleanup_failures=1,
+            object_cleanup_dead_letters=1,
+        )
+
     monkeypatch.setattr(tasks, "get_settings", _settings)
     monkeypatch.setattr(tasks, "dispatch_resume_outbox", fake_dispatch)
     monkeypatch.setattr(tasks, "cleanup_expired_resume_data", fake_cleanup)
@@ -354,6 +444,8 @@ def test_maintenance_tasks_return_bounded_operational_counts(
     monkeypatch.setattr(tasks, "dispatch_attachment_outbox", fake_dispatch)
     monkeypatch.setattr(tasks, "cleanup_attachment_objects", fake_attachment_cleanup)
     monkeypatch.setattr(tasks, "reconcile_stale_attachment_jobs", fake_attachment_reconcile)
+    monkeypatch.setattr(tasks, "dispatch_resume_export_outbox", fake_export_dispatch)
+    monkeypatch.setattr(tasks, "reconcile_resume_exports", fake_export_reconcile)
 
     assert tasks.dispatch_resume_health_outbox.run(limit=25) == {
         "published": 4,
@@ -386,6 +478,18 @@ def test_maintenance_tasks_return_bounded_operational_counts(
         "requeued": 3,
         "dead_lettered": 1,
     }
+    assert tasks.dispatch_resume_builder_export_outbox.run(limit=25) == {
+        "published": 7,
+        "failed": 2,
+        "dead_lettered": 1,
+    }
+    assert tasks.reconcile_resume_builder_exports.run(limit=25) == {
+        "requeued": 4,
+        "dead_lettered": 2,
+        "object_cleanups_completed": 3,
+        "object_cleanup_failures": 1,
+        "object_cleanup_dead_letters": 1,
+    }
 
 
 @pytest.mark.parametrize("limit", [True, 0, 501, "100"])
@@ -397,6 +501,8 @@ def test_maintenance_tasks_reject_unbounded_or_mistyped_limits(limit: object) ->
         tasks.dispatch_resume_health_outbox,
         tasks.reconcile_resume_health_jobs,
         tasks.cleanup_expired_resume_health_data,
+        tasks.dispatch_resume_builder_export_outbox,
+        tasks.reconcile_resume_builder_exports,
     ):
         with pytest.raises(ValueError, match="maintenance limit"):
             task.run(limit=limit)
