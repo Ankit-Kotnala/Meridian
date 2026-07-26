@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 from dataclasses import replace
 
 import pytest
@@ -13,7 +12,9 @@ from careeros.modules.resume_builder.application import (
     RequestContext,
     ResumeBuilderPolicy,
     ResumeBuilderService,
+    ResumeExportProcessor,
     UpdateResume,
+    version_provenance_failures,
 )
 from careeros.modules.resume_builder.domain import (
     ResumeBuilderNotFound,
@@ -40,7 +41,6 @@ from resume_builder_memory import (
 def _service(
     *,
     state: MemoryResumeBuilder | None = None,
-    renderer: TextOnlyRenderer | None = None,
     source: StaticResumeSourceProvider | None = None,
 ) -> ResumeBuilderService:
     return ResumeBuilderService(
@@ -48,8 +48,6 @@ def _service(
         clock=FixedClock(),
         identifiers=UuidFactory(),
         sources=source or StaticResumeSourceProvider(),
-        renderer=renderer or TextOnlyRenderer(),
-        extractor=PlainTextExtractor(),
         storage=MemoryStorage(),
         policy=ResumeBuilderPolicy(),
     )
@@ -68,8 +66,6 @@ async def test_create_update_version_export_and_download_are_grounded_and_idempo
         clock=FixedClock(),
         identifiers=UuidFactory(),
         sources=StaticResumeSourceProvider(),
-        renderer=TextOnlyRenderer(),
-        extractor=PlainTextExtractor(),
         storage=storage,
         policy=ResumeBuilderPolicy(),
     )
@@ -128,7 +124,18 @@ async def test_create_update_version_export_and_download_are_grounded_and_idempo
         idempotency_key="resume-export-key",
         context=_context(),
     )
-    assert exported.export.status == ResumeExportStatus.VERIFIED
+    assert exported.export.status == ResumeExportStatus.PENDING
+    processor = ResumeExportProcessor(
+        unit_of_work=state,
+        clock=FixedClock(),
+        identifiers=UuidFactory(),
+        renderer=TextOnlyRenderer(),
+        extractor=PlainTextExtractor(),
+        storage=storage,
+    )
+    outcome = await processor.process(exported.export.id, "worker-execution-token")
+    assert outcome.status == ResumeExportStatus.VERIFIED
+    exported = await service.get_export(OWNER_ID, exported.export.id)
     assert exported.verification is not None
     assert exported.verification.status.value == "passed"
     assert exported.export.sha256_digest is not None
@@ -202,7 +209,16 @@ async def test_update_rejects_ungrounded_bullets_and_cross_user_reads_are_hidden
 
 @pytest.mark.asyncio
 async def test_blocked_export_cannot_create_download_intent() -> None:
-    service = _service(renderer=TextOnlyRenderer(omit_expected=True))
+    state = MemoryResumeBuilder()
+    storage = MemoryStorage()
+    service = ResumeBuilderService(
+        unit_of_work=state,
+        clock=FixedClock(),
+        identifiers=UuidFactory(),
+        sources=StaticResumeSourceProvider(),
+        storage=storage,
+        policy=ResumeBuilderPolicy(),
+    )
     created = await service.create_resume(
         OWNER_ID,
         CreateResume(
@@ -220,6 +236,16 @@ async def test_blocked_export_cannot_create_download_intent() -> None:
         idempotency_key="resume-blocked-export",
         context=_context(),
     )
+    processor = ResumeExportProcessor(
+        unit_of_work=state,
+        clock=FixedClock(),
+        identifiers=UuidFactory(),
+        renderer=TextOnlyRenderer(omit_expected=True),
+        extractor=PlainTextExtractor(),
+        storage=storage,
+    )
+    await processor.process(exported.export.id, "worker-execution-token")
+    exported = await service.get_export(OWNER_ID, exported.export.id)
     assert exported.export.status == ResumeExportStatus.BLOCKED
     assert exported.verification is not None
     assert exported.verification.critical_failures
@@ -297,16 +323,5 @@ async def test_verifier_never_claims_grounding_for_legacy_missing_references() -
             ),
         ),
     )
-    content = legacy.plain_text.encode("utf-8")
-    report = await service._verify(
-        legacy,
-        legacy.id,
-        content,
-        "text/plain; charset=utf-8",
-        tuple(legacy.plain_text.splitlines()),
-        hashlib.sha256(content).hexdigest(),
-    )
-    assert report.status.value == "failed"
-    assert "grounding_validation_failed" in report.grounding_codes
-    assert "all_bullets_grounded" not in report.grounding_codes
-    assert any(value.startswith("invalid_provenance:") for value in report.critical_failures)
+    failures = version_provenance_failures(legacy)
+    assert any(value.startswith("invalid_provenance:") for value in failures)

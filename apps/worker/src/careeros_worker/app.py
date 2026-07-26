@@ -19,10 +19,13 @@ from careeros_worker.config import WorkerSettings, get_settings
 from careeros_worker.logging import configure_worker_logging
 from careeros_worker.task_names import (
     DISPATCH_CAREER_ANALYTICS_OUTBOX_TASK,
+    DISPATCH_RESUME_EXPORT_OUTBOX_TASK,
     PROCESS_CAREER_ANALYTICS_REFRESH_TASK,
     PROCESS_NETWORKING_LOCAL_REMINDERS_TASK,
+    PROCESS_RESUME_EXPORT_TASK,
     RECONCILE_CAREER_ANALYTICS_TASK,
     RECONCILE_NETWORKING_REMINDERS_TASK,
+    RECONCILE_RESUME_EXPORTS_TASK,
 )
 
 
@@ -92,6 +95,9 @@ def create_celery_app(settings: WorkerSettings | None = None) -> Celery:
             DISPATCH_OUTBOX_TASK: {"queue": "maintenance"},
             RECONCILE_RESUME_TASK: {"queue": "maintenance"},
             CLEANUP_RESUME_TASK: {"queue": "maintenance"},
+            PROCESS_RESUME_EXPORT_TASK: {"queue": "resume-builder"},
+            DISPATCH_RESUME_EXPORT_OUTBOX_TASK: {"queue": "maintenance"},
+            RECONCILE_RESUME_EXPORTS_TASK: {"queue": "maintenance"},
         },
         timezone="UTC",
         worker_hijack_root_logger=False,
@@ -139,6 +145,14 @@ def create_celery_app(settings: WorkerSettings | None = None) -> Celery:
             "reconcile-stale-resume-health-jobs": {
                 "task": RECONCILE_RESUME_TASK,
                 "schedule": float(resolved.resume_job_reconciliation_interval_seconds),
+            },
+            "dispatch-resume-builder-export-outbox": {
+                "task": DISPATCH_RESUME_EXPORT_OUTBOX_TASK,
+                "schedule": float(resolved.resume_export_outbox_interval_seconds),
+            },
+            "reconcile-resume-builder-exports": {
+                "task": RECONCILE_RESUME_EXPORTS_TASK,
+                "schedule": float(resolved.resume_export_reconciliation_interval_seconds),
             },
         },
     )

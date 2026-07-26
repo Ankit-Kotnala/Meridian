@@ -347,7 +347,6 @@ def test_phase1_phase3_closure_upgrade_downgrade_and_constraints(
         assert not (_NEW_TABLES & asyncio.run(_table_names(target_url)))
 
         command.upgrade(config, "20260726_0011")
-        command.check(config)
         asyncio.run(_assert_phase9_schema_repairs(target_url))
         assert asyncio.run(_table_names(target_url)) >= _NEW_TABLES
         asyncio.run(
@@ -358,11 +357,13 @@ def test_phase1_phase3_closure_upgrade_downgrade_and_constraints(
                 entity_id,
             )
         )
+        command.upgrade(config, "head")
+        command.check(config)
 
         command.downgrade(config, "20260724_0010")
         asyncio.run(_assert_phase9_schema_repairs(target_url))
         assert not (_NEW_TABLES & asyncio.run(_table_names(target_url)))
-        command.upgrade(config, "20260726_0011")
+        command.upgrade(config, "head")
         command.check(config)
         assert asyncio.run(_table_names(target_url)) >= _NEW_TABLES
     finally:

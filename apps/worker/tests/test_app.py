@@ -17,10 +17,13 @@ from careeros_worker.app import create_celery_app
 from careeros_worker.config import WorkerSettings
 from careeros_worker.task_names import (
     DISPATCH_CAREER_ANALYTICS_OUTBOX_TASK,
+    DISPATCH_RESUME_EXPORT_OUTBOX_TASK,
     PROCESS_CAREER_ANALYTICS_REFRESH_TASK,
     PROCESS_NETWORKING_LOCAL_REMINDERS_TASK,
+    PROCESS_RESUME_EXPORT_TASK,
     RECONCILE_CAREER_ANALYTICS_TASK,
     RECONCILE_NETWORKING_REMINDERS_TASK,
+    RECONCILE_RESUME_EXPORTS_TASK,
 )
 
 
@@ -58,6 +61,9 @@ def test_celery_uses_json_and_safe_delivery_defaults() -> None:
     assert app.conf.task_routes[DISPATCH_OUTBOX_TASK] == {"queue": "maintenance"}
     assert app.conf.task_routes[RECONCILE_RESUME_TASK] == {"queue": "maintenance"}
     assert app.conf.task_routes[CLEANUP_RESUME_TASK] == {"queue": "maintenance"}
+    assert app.conf.task_routes[PROCESS_RESUME_EXPORT_TASK] == {"queue": "resume-builder"}
+    assert app.conf.task_routes[DISPATCH_RESUME_EXPORT_OUTBOX_TASK] == {"queue": "maintenance"}
+    assert app.conf.task_routes[RECONCILE_RESUME_EXPORTS_TASK] == {"queue": "maintenance"}
     assert app.conf.beat_schedule["dispatch-resume-health-outbox"]["task"] == (DISPATCH_OUTBOX_TASK)
     assert app.conf.beat_schedule["dispatch-career-record-attachment-outbox"] == {
         "task": DISPATCH_EVIDENCE_ATTACHMENT_OUTBOX_TASK,
@@ -89,6 +95,14 @@ def test_celery_uses_json_and_safe_delivery_defaults() -> None:
     }
     assert app.conf.beat_schedule["reconcile-networking-local-reminders"] == {
         "task": RECONCILE_NETWORKING_REMINDERS_TASK,
+        "schedule": 60.0,
+    }
+    assert app.conf.beat_schedule["dispatch-resume-builder-export-outbox"] == {
+        "task": DISPATCH_RESUME_EXPORT_OUTBOX_TASK,
+        "schedule": 5.0,
+    }
+    assert app.conf.beat_schedule["reconcile-resume-builder-exports"] == {
+        "task": RECONCILE_RESUME_EXPORTS_TASK,
         "schedule": 60.0,
     }
 

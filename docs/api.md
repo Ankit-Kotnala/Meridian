@@ -671,6 +671,7 @@ disclaimer wherever expected score movement appears.
 GET    /api/v1/resumes
 POST   /api/v1/resumes
 GET    /api/v1/resumes/{resumeId}
+GET    /api/v1/resumes/{resumeId}/source-options
 PATCH  /api/v1/resumes/{resumeId}
 GET    /api/v1/resumes/{resumeId}/versions
 POST   /api/v1/resumes/{resumeId}/versions
@@ -690,20 +691,28 @@ updates, version creation from the current draft, and restore require the curren
 quoted positive-int32 `If-Match` version. Resume reads return ETags and all
 responses are `no-store`.
 
-The service builds default drafts from eligible owner-scoped Career Record
-evidence and optional Change Studio current-version output. Every persisted
-bullet carries evidence IDs and server validation rejects unsupported edits. An
-export references one immutable version, stores a hash and private object key,
-and records a verification report. Download intent is ownership-checked,
-short-lived, unavailable when a critical verification result blocks release, and
-never exposes the private object key.
+The service builds default drafts and editor source options from eligible
+owner-scoped Career Record evidence and optional Change Studio current-version
+output. Every persisted bullet carries server-rehydrated exact evidence
+revision references; clients cannot supply grounding authority. Mutable updates
+accept selected confirmed personal facts, section/bullet structure, linked
+entities, one of five templates, and bounded page/font/spacing/margin layout.
 
-Current implementation boundary: export rendering, upload, reparse, and
-verification complete synchronously inside the application service before the
-job-shaped response returns. Durable outbox-backed worker dispatch, reload-safe
-polling, distinct template layouts, and release-blocking occurrence/read-order
-fidelity checks are planned Phase 10 prerequisites, not implemented Phase 7
-behavior.
+Export returns `202 Accepted` with `pending` durable state. The response pins an
+immutable version, `versionContentSha256`, and `fidelityManifestSha256`; clients
+poll `GET /api/v1/exports/{exportId}` through `rendering`/`retry_wait` to
+`verified`, `blocked`, or `dead_lettered`. Only `verified` can create a
+short-lived ownership-checked download intent. The worker independently checks
+exact occurrences, omissions/duplicates, reading order, searchability,
+one/two-page limit, factual/numeric grounding, and all version/manifest pins.
+
+Delete also returns `202 Accepted`, transitioning through
+`deletion_pending`, `deleting`, and optional `deletion_retry_wait` before
+`deleted`. A terminal cleanup outage is explicit as
+`deletion_dead_lettered`; `deletedAt` is never populated before private object
+storage confirms deletion. Both render and delete use operation-typed
+transactional outbox rows, fenced leases, bounded retry, reconciliation, and
+redacted audit events.
 
 ### Phase 8 — Applications and application packs
 

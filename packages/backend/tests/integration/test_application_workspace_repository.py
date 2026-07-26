@@ -60,9 +60,7 @@ from resume_builder_memory import (
     SKILL_EVIDENCE_ID,
     FixedClock,
     MemoryStorage,
-    PlainTextExtractor,
     StaticResumeSourceProvider,
-    TextOnlyRenderer,
 )
 
 
@@ -167,8 +165,6 @@ async def test_application_aggregate_is_owner_scoped_and_hard_deleted() -> None:
         clock=FixedClock(),
         identifiers=_RandomIdentifiers(),
         sources=StaticResumeSourceProvider(),
-        renderer=TextOnlyRenderer(),
-        extractor=PlainTextExtractor(),
         storage=MemoryStorage(),
         policy=ResumeBuilderPolicy(),
     )

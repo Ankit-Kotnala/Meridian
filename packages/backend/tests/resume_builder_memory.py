@@ -25,9 +25,15 @@ from careeros.modules.resume_builder.domain import (
     ResumeEvidenceLinkBasis,
     ResumeEvidenceReference,
     ResumeExport,
+    ResumeExportObjectCleanup,
+    ResumeExportOperation,
+    ResumeExportOutboxMessage,
+    ResumeExportStatus,
     ResumeFormat,
+    ResumePersonalFact,
     ResumeVerificationReport,
     ResumeVersion,
+    build_fidelity_manifest,
 )
 
 OWNER_ID = UUID("00000000-0000-4000-8000-000000000701")
@@ -38,6 +44,7 @@ CHANGE_SET_ID = UUID("00000000-0000-4000-8000-000000000705")
 CHANGE_SET_VERSION_ID = UUID("00000000-0000-4000-8000-000000000706")
 EVIDENCE_REVISION_ID = UUID("00000000-0000-4000-8000-000000000707")
 SKILL_EVIDENCE_REVISION_ID = UUID("00000000-0000-4000-8000-000000000708")
+PERSONAL_NAME_ID = UUID("00000000-0000-4000-8000-00000000070a")
 
 
 class FixedClock:
@@ -132,6 +139,19 @@ class StaticResumeSourceProvider:
                 else ()
             ),
             source_evidence_ids=evidence_ids,
+            personal_facts=(
+                (
+                    ResumePersonalFact(
+                        id=PERSONAL_NAME_ID,
+                        kind="name",
+                        value="Taylor Morgan",
+                        label=None,
+                        is_primary=True,
+                    ),
+                )
+                if self.with_evidence
+                else ()
+            ),
         )
 
 
@@ -160,10 +180,13 @@ class MemoryResumeBuilder:
         self.resumes: dict[UUID, ResumeDocument] = {}
         self.versions: dict[UUID, ResumeVersion] = {}
         self.exports: dict[UUID, ResumeExport] = {}
+        self.export_outbox: dict[UUID, ResumeExportOutboxMessage] = {}
+        self.export_object_cleanups: dict[UUID, ResumeExportObjectCleanup] = {}
         self.verifications: dict[UUID, ResumeVerificationReport] = {}
         self.downloads: dict[tuple[UUID, str], ResumeDownloadIntent] = {}
         self.idempotency: dict[tuple[UUID, str], ResumeBuilderIdempotencyRecord] = {}
         self.audits: list[ResumeBuilderAuditEvent] = []
+        self._lease_ids = UuidFactory()
 
     def __call__(self) -> MemoryResumeBuilder:
         return self
@@ -235,6 +258,7 @@ class MemoryResumeBuilder:
             title=version.title,
             target_role=version.target_role,
             template=version.template,
+            layout=version.layout,
             current_version_id=version.id,
             version=resume.version + 1,
             updated_at=now,
@@ -270,6 +294,43 @@ class MemoryResumeBuilder:
             return None
         return deepcopy(export)
 
+    async def get_export_system(
+        self, export_id: UUID, *, for_update: bool = False
+    ) -> ResumeExport | None:
+        _ = for_update
+        export = self.exports.get(export_id)
+        return deepcopy(export) if export is not None else None
+
+    async def list_recoverable_exports(self, now: datetime, limit: int) -> tuple[ResumeExport, ...]:
+        return tuple(
+            deepcopy(export)
+            for export in sorted(self.exports.values(), key=lambda item: item.requested_at)
+            if (
+                export.status is ResumeExportStatus.PENDING
+                or (
+                    export.status is ResumeExportStatus.RETRY_WAIT
+                    and export.retry_at is not None
+                    and export.retry_at <= now
+                )
+                or (
+                    export.status is ResumeExportStatus.RENDERING
+                    and export.lease_expires_at is not None
+                    and export.lease_expires_at <= now
+                )
+                or export.status is ResumeExportStatus.DELETION_PENDING
+                or (
+                    export.status is ResumeExportStatus.DELETION_RETRY_WAIT
+                    and export.retry_at is not None
+                    and export.retry_at <= now
+                )
+                or (
+                    export.status is ResumeExportStatus.DELETING
+                    and export.lease_expires_at is not None
+                    and export.lease_expires_at <= now
+                )
+            )
+        )[:limit]
+
     async def get_verification(
         self, owner_user_id: UUID, export_id: UUID
     ) -> ResumeVerificationReport | None:
@@ -286,6 +347,105 @@ class MemoryResumeBuilder:
 
     async def add_download_intent(self, intent: ResumeDownloadIntent) -> None:
         self.downloads[(intent.owner_user_id, intent.idempotency_key)] = deepcopy(intent)
+
+    async def add_export_outbox(self, message: ResumeExportOutboxMessage) -> None:
+        self.export_outbox[message.id] = deepcopy(message)
+
+    async def claim_export_outbox(
+        self, now: datetime, lease_expires_at: datetime, limit: int
+    ) -> tuple[ResumeExportOutboxMessage, ...]:
+        claimed: list[ResumeExportOutboxMessage] = []
+        for message_id, message in sorted(
+            self.export_outbox.items(),
+            key=lambda item: (item[1].available_at, item[1].created_at),
+        ):
+            if len(claimed) >= limit:
+                break
+            if (
+                message.available_at > now
+                or message.published_at is not None
+                or message.dead_lettered_at is not None
+                or (message.lease_expires_at is not None and message.lease_expires_at > now)
+            ):
+                continue
+            leased = replace(
+                message,
+                lease_token=self._lease_ids.new(),
+                leased_at=now,
+                lease_expires_at=lease_expires_at,
+            )
+            self.export_outbox[message_id] = leased
+            claimed.append(deepcopy(leased))
+        return tuple(claimed)
+
+    async def save_export_outbox(
+        self,
+        message: ResumeExportOutboxMessage,
+        *,
+        expected_lease_token: UUID,
+    ) -> bool:
+        current = self.export_outbox.get(message.id)
+        if (
+            current is None
+            or current.lease_token != expected_lease_token
+            or current.published_at is not None
+            or current.dead_lettered_at is not None
+        ):
+            return False
+        self.export_outbox[message.id] = deepcopy(message)
+        return True
+
+    async def has_active_export_outbox(
+        self,
+        export_id: UUID,
+        operation: ResumeExportOperation,
+    ) -> bool:
+        return any(
+            message.export_id == export_id
+            and message.operation is operation
+            and message.published_at is None
+            and message.dead_lettered_at is None
+            for message in self.export_outbox.values()
+        )
+
+    async def add_export_object_cleanup(self, cleanup: ResumeExportObjectCleanup) -> None:
+        self.export_object_cleanups[cleanup.id] = deepcopy(cleanup)
+
+    async def get_export_object_cleanup(
+        self,
+        owner_user_id: UUID,
+        export_id: UUID,
+        attempt_fence: int,
+        *,
+        for_update: bool = False,
+    ) -> ResumeExportObjectCleanup | None:
+        _ = for_update
+        cleanup = next(
+            (
+                value
+                for value in self.export_object_cleanups.values()
+                if value.owner_user_id == owner_user_id
+                and value.export_id == export_id
+                and value.attempt_fence == attempt_fence
+            ),
+            None,
+        )
+        return deepcopy(cleanup) if cleanup is not None else None
+
+    async def list_due_export_object_cleanups(
+        self, now: datetime, limit: int
+    ) -> tuple[ResumeExportObjectCleanup, ...]:
+        return tuple(
+            deepcopy(cleanup)
+            for cleanup in sorted(
+                self.export_object_cleanups.values(),
+                key=lambda item: (item.not_before, item.created_at),
+            )
+            if not cleanup.terminal and cleanup.not_before <= now
+        )[:limit]
+
+    async def save_export_object_cleanup(self, cleanup: ResumeExportObjectCleanup) -> None:
+        self.export_object_cleanups[cleanup.id] = deepcopy(cleanup)
 
     async def add_idempotency(self, record: ResumeBuilderIdempotencyRecord) -> None:
         self.idempotency[(record.owner_user_id, record.idempotency_key)] = deepcopy(record)
@@ -355,12 +515,7 @@ class TextOnlyRenderer:
 
     def render(self, version: ResumeVersion, *, fmt: str) -> RenderedResume:
         requested = ResumeFormat(fmt)
-        lines = [version.title]
-        if version.target_role:
-            lines.append(version.target_role)
-        for section in version.sections:
-            lines.append(section.title)
-            lines.extend(item.text for item in section.items)
+        lines = [entry.text for entry in build_fidelity_manifest(version).entries]
         content_lines = lines[:1] if self.omit_expected else lines
         media_type = "text/plain; charset=utf-8"
         if requested == ResumeFormat.JSON:

@@ -350,6 +350,12 @@ class ReadinessSnapshotEntity:
     title: str
     organization: str | None
     description: str | None
+    official_title: str | None = None
+    display_title: str | None = None
+    location: str | None = None
+    start_date: PartialDate | None = None
+    end_date: PartialDate | None = None
+    is_current: bool = False
 
 
 @dataclass(frozen=True, slots=True)

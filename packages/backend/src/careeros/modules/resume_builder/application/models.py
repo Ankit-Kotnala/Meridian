@@ -2,16 +2,20 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
 from careeros.modules.resume_builder.domain import (
     ResumeDocument,
+    ResumeEntityFact,
     ResumeEvidenceReference,
     ResumeExport,
+    ResumeExportStatus,
     ResumeFormat,
+    ResumeLayout,
+    ResumePersonalFact,
     ResumeSection,
     ResumeTemplate,
     ResumeVerificationReport,
@@ -33,14 +37,18 @@ class CreateResume:
     template: ResumeTemplate
     change_set_id: UUID | None = None
     change_set_version_id: UUID | None = None
+    layout: ResumeLayout = field(default_factory=ResumeLayout)
 
 
 @dataclass(frozen=True, slots=True)
 class UpdateResume:
     title: str | None = None
     target_role: str | None = None
+    target_role_provided: bool = False
     template: ResumeTemplate | None = None
     sections: tuple[ResumeSection, ...] | None = None
+    personal_fact_ids: tuple[UUID, ...] | None = None
+    layout: ResumeLayout | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,6 +63,7 @@ class ResumeSourceBullet:
     source: str
     evidence_references: tuple[ResumeEvidenceReference, ...] = ()
     section_kind: str = "experience"
+    entity_id: UUID | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,6 +73,8 @@ class ResumeSourceSnapshot:
     skills: tuple[str, ...]
     bullets: tuple[ResumeSourceBullet, ...]
     source_evidence_ids: tuple[UUID, ...]
+    personal_facts: tuple[ResumePersonalFact, ...] = ()
+    entities: tuple[ResumeEntityFact, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -100,6 +111,8 @@ class RenderedResume:
     content: bytes
     expected_lines: tuple[str, ...]
     renderer_version: str
+    reading_order: tuple[str, ...] = ()
+    page_count: int = 1
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,6 +121,7 @@ class ExtractedDocumentText:
     reading_order: tuple[str, ...]
     parser_version: str
     warnings: tuple[str, ...] = ()
+    page_count: int = 1
 
 
 @dataclass(frozen=True, slots=True)
@@ -129,3 +143,34 @@ class DownloadIntentView:
     url: str
     expires_at: datetime
     method: Literal["GET"] = "GET"
+
+
+@dataclass(frozen=True, slots=True)
+class ExportProcessingOutcome:
+    export_id: UUID
+    status: ResumeExportStatus
+    retryable: bool
+    safe_error_code: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class ExportOutboxDispatchResult:
+    published: int
+    failed: int
+    dead_lettered: int
+
+
+@dataclass(frozen=True, slots=True)
+class ExportObjectCleanupResult:
+    completed: int
+    failed: int
+    dead_lettered: int
+
+
+@dataclass(frozen=True, slots=True)
+class ExportReconciliationResult:
+    requeued: int
+    dead_lettered: int
+    object_cleanups_completed: int = 0
+    object_cleanup_failures: int = 0
+    object_cleanup_dead_letters: int = 0

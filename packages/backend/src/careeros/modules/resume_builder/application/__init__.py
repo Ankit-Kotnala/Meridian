@@ -1,9 +1,21 @@
 """Application-layer public API for Phase 7 resume builder."""
 
 from ..domain import ResumeBuilderNotFound
+from .export_workflow import (
+    ResumeExportCleanupProcessor,
+    ResumeExportObjectCleanupProcessor,
+    ResumeExportOutboxDispatcher,
+    ResumeExportProcessor,
+    ResumeExportReconciler,
+    ResumeExportWorkerPolicy,
+)
 from .models import (
     CreateResume,
     DownloadIntentView,
+    ExportObjectCleanupResult,
+    ExportOutboxDispatchResult,
+    ExportProcessingOutcome,
+    ExportReconciliationResult,
     ExportResume,
     ExtractedDocumentText,
     RenderedResume,
@@ -24,16 +36,26 @@ from .ports import (
     ResumeBuilderUnitOfWork,
     ResumeBuilderUnitOfWorkFactory,
     ResumeDocumentExtractor,
+    ResumeExportJobPublisher,
     ResumeObjectStorage,
     ResumeRenderer,
     ResumeSourceProvider,
 )
-from .service import ResumeBuilderPolicy, ResumeBuilderService
+from .service import (
+    ResumeBuilderPolicy,
+    ResumeBuilderService,
+    validate_resume_version,
+    version_provenance_failures,
+)
 
 __all__ = [
     "Clock",
     "CreateResume",
     "DownloadIntentView",
+    "ExportObjectCleanupResult",
+    "ExportOutboxDispatchResult",
+    "ExportProcessingOutcome",
+    "ExportReconciliationResult",
     "ExportResume",
     "ExtractedDocumentText",
     "IdentifierFactory",
@@ -45,8 +67,15 @@ __all__ = [
     "ResumeBuilderUnitOfWork",
     "ResumeBuilderUnitOfWorkFactory",
     "ResumeDocumentExtractor",
+    "ResumeExportCleanupProcessor",
+    "ResumeExportJobPublisher",
     "ResumeExportList",
+    "ResumeExportObjectCleanupProcessor",
+    "ResumeExportOutboxDispatcher",
+    "ResumeExportProcessor",
+    "ResumeExportReconciler",
     "ResumeExportRecord",
+    "ResumeExportWorkerPolicy",
     "ResumeList",
     "ResumeObjectStorage",
     "ResumeRecord",
@@ -57,4 +86,6 @@ __all__ = [
     "ResumeVersionList",
     "UpdateResume",
     "VerificationResult",
+    "validate_resume_version",
+    "version_provenance_failures",
 ]

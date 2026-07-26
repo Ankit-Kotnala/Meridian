@@ -619,14 +619,30 @@ export, deletion, billing, or delivery workflow appear enabled.
 
 - Migration `20260719_0008` adds owner-scoped resumes, immutable versions,
   exports, verification reports, short-lived download intents, idempotency, and
-  redacted audit with scoped constraints and indexes.
+  redacted audit. Additive migrations `20260726_0012`/`20260726_0013` add
+  immutable fact/layout pins, operation-typed outbox state, fenced leases,
+  cleanup state, and matching constraints/indexes.
 - Resume Builder consumes owner-authorized Career Record and Change Studio
   application views. Every current bullet and immutable-version claim must carry
   exact evidence revision provenance; unsupported and incomplete legacy source
   ledgers are refused rather than treated as grounded.
-- Exports pin one immutable version and content hash, use private randomized
-  object keys, reparse PDF/DOCX output, block critical verification failures, and
-  issue only short-lived owner-checked download intents.
+- Exports pin one immutable version plus canonical manifest/content hashes, use
+  private randomized object keys, reparse PDF/DOCX output in the resource-limited
+  worker, and block exact omission/duplicate/order/searchability/page/grounding
+  failures before any short-lived owner-checked download intent.
+- API transactions enqueue identifier-only render/delete operations. Fenced
+  leases, bounded retry/dead-letter, reconciliation, and redacted stage audits
+  contain replay and outage risk. Failed verification removes its object;
+  explicit deletion records `deleted_at` only after S3 confirms deletion, so an
+  orphan cannot be silently reported as gone.
+- Every render claim persists a distinct attempt-object cleanup backstop before
+  the S3 write. Successful verification cancels only the winning backstop in
+  the same transaction that publishes its object key; worker termination,
+  uncertain storage responses, and lease loss leave a bounded, audited cleanup
+  record rather than an undiscoverable object.
+- Presigned downloads force `private, no-store` and attachment disposition.
+  The API never returns internal object keys; anonymous bucket access remains
+  denied.
 - The final consolidated Phase 7 renderer, repository, API, web, migration, and
   browser evidence is recorded in `PLANS.md`.
 

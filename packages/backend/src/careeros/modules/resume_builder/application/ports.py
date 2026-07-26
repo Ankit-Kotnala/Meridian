@@ -14,6 +14,9 @@ from careeros.modules.resume_builder.domain import (
     ResumeBuilderIdempotencyRecord,
     ResumeDownloadIntent,
     ResumeExport,
+    ResumeExportObjectCleanup,
+    ResumeExportOperation,
+    ResumeExportOutboxMessage,
     ResumeVerificationReport,
     ResumeVersion,
 )
@@ -64,6 +67,15 @@ class ResumeObjectStorage(Protocol):
     async def dispose(self) -> None: ...
 
 
+class ResumeExportJobPublisher(Protocol):
+    async def publish(
+        self,
+        export_id: UUID,
+        trace_id: str,
+        operation: ResumeExportOperation,
+    ) -> None: ...
+
+
 class ResumeBuilderUnitOfWork(Protocol):
     async def __aenter__(self) -> Self: ...
 
@@ -110,6 +122,14 @@ class ResumeBuilderUnitOfWork(Protocol):
 
     async def get_export(self, owner_user_id: UUID, export_id: UUID) -> ResumeExport | None: ...
 
+    async def get_export_system(
+        self, export_id: UUID, *, for_update: bool = False
+    ) -> ResumeExport | None: ...
+
+    async def list_recoverable_exports(
+        self, now: datetime, limit: int
+    ) -> tuple[ResumeExport, ...]: ...
+
     async def get_verification(
         self, owner_user_id: UUID, export_id: UUID
     ) -> ResumeVerificationReport | None: ...
@@ -119,6 +139,42 @@ class ResumeBuilderUnitOfWork(Protocol):
     ) -> ResumeDownloadIntent | None: ...
 
     async def add_download_intent(self, intent: ResumeDownloadIntent) -> None: ...
+
+    async def add_export_outbox(self, message: ResumeExportOutboxMessage) -> None: ...
+
+    async def claim_export_outbox(
+        self, now: datetime, lease_expires_at: datetime, limit: int
+    ) -> tuple[ResumeExportOutboxMessage, ...]: ...
+
+    async def save_export_outbox(
+        self,
+        message: ResumeExportOutboxMessage,
+        *,
+        expected_lease_token: UUID,
+    ) -> bool: ...
+
+    async def has_active_export_outbox(
+        self,
+        export_id: UUID,
+        operation: ResumeExportOperation,
+    ) -> bool: ...
+
+    async def add_export_object_cleanup(self, cleanup: ResumeExportObjectCleanup) -> None: ...
+
+    async def get_export_object_cleanup(
+        self,
+        owner_user_id: UUID,
+        export_id: UUID,
+        attempt_fence: int,
+        *,
+        for_update: bool = False,
+    ) -> ResumeExportObjectCleanup | None: ...
+
+    async def list_due_export_object_cleanups(
+        self, now: datetime, limit: int
+    ) -> tuple[ResumeExportObjectCleanup, ...]: ...
+
+    async def save_export_object_cleanup(self, cleanup: ResumeExportObjectCleanup) -> None: ...
 
     async def add_idempotency(self, record: ResumeBuilderIdempotencyRecord) -> None: ...
 
