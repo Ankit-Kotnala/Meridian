@@ -579,21 +579,26 @@ Dependencies: all product phases and production/legal decisions.
       no default unrestricted raw documents.
 - [~] Complete data inventory, consent, user export, document/account deletion
   across SQL/object/vector/cache/provider, backup expiry, status/retry, and tests.
-  Durable primary PostgreSQL/S3 export and erasure are verified; backup/provider
-  expiry and production retention policy remain Phase 10H work.
+  Durable primary PostgreSQL/S3 export and erasure are verified. The Phase 10H
+  contract now requires backup-expiry, restore, and provider-erasure evidence;
+  the owner-approved retention policy and provider execution remain external gates.
 - [~] Finalize rate/abuse/cost limits, security headers/CSP, session/MFA decision,
   audit integrity, scanner/parser sandbox/egress, dependency/container/IaC/SBOM/
   provenance, secret/key rotation, and penetration review. Central API
   admission, atomic live-AI reservations, API/edge headers, isolated resume/
   attachment parsing, audit verification, and bounded dual-key bearer/signing
-  rotation are implemented and focused-verified. Phase 10H owns supply-chain/
-  IaC evidence; operator MFA policy and independent penetration review remain
+  rotation, image SBOMs, provenance, and pinned CI supply-chain gates are
+  implemented and focused-verified. Provider IaC is intentionally absent until
+  topology approval; operator MFA and independent penetration review remain
   explicit owner/external release gates.
-- [ ] Select production regions/services/queue/object/provider topology and add
-      approved ADRs, infrastructure, encrypted backup/PITR, tested restore, RPO/RTO,
-      monitoring/alerts/runbooks/on-call, capacity/load/soak/failure testing.
-- [ ] Add protected CI/CD environment, manual production approval, migration
-      preflight/rollback-forward repair, canary/rollback, and launch checklist.
+- [~] Select production regions/services/queue/object/provider topology and add
+  approved infrastructure, encrypted backup/PITR, RPO/RTO, monitoring/alerts,
+  and on-call. Provider-neutral contract/runbooks plus isolated local restore
+  and bounded load/soak proof are implemented; owner topology remains blocked.
+- [~] Add protected CI/CD environment, manual production approval, migration
+  preflight/rollback-forward repair, canary/rollback, and launch checklist.
+  The fail-closed workflow and contract are implemented; GitHub environment
+  reviewers/secret and provider deployment adapter require owner configuration.
 - [ ] Finalize legal terms/privacy/security/scoring/AI/public pricing content and
       remove or label all demo placeholders; verify no fabricated testimonial.
 - [ ] Run full format/lint/type/unit/component/integration/e2e/accessibility/

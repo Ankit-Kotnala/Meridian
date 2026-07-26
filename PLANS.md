@@ -1861,6 +1861,62 @@ AI usage and administration-audit peppers must not be rotated like bearer-token
 keys because doing so can split active budget or actor-pseudonym history; their
 runbooks require drain/reconciliation or a retention-boundary decision.
 
+## Phase 10H production infrastructure, recovery, load, and CI/CD scope and status
+
+Current status: **provider-neutral implementation and local operational proof are
+complete; final cumulative audit and hosted workflow execution remain pending,
+and production deployment is blocked on owner/external approvals**.
+
+### Included
+
+- [x] A strict deployment-contract validator binds an exact release SHA, change
+      ticket, migration head, four candidate archive checksums, deploy/rollback
+      image digests, canary window, provider topology, trusted proxies, recovery,
+      security/privacy/operations evidence, and four approval roles. Unknown
+      fields, secret-like fields, local/test/placeholders, missing evidence, or
+      open critical/high findings fail closed.
+- [x] The manually triggered release workflow builds the API, worker, web, and
+      web-edge images from pinned Dockerfiles, emits SHA-256 archive checksums and
+      SPDX JSON SBOMs, creates provenance/SBOM attestations, and uploads a bounded
+      14-day candidate bundle. `HANDOFF` is `main`-only and validates the protected
+      production-environment contract; it does not fabricate a provider deploy.
+- [x] CI now supplies live Redis to the API integration suite, asserts migration
+      `20260727_0019`, proves downgrade/forward repair through `0018`, statically
+      checks/self-tests the release controls, proves the unfilled contract is
+      rejected, and publishes SBOM artifacts after all four image scans.
+- [x] The local recovery verifier performs a binary PostgreSQL backup and MinIO
+      byte snapshot, restores both into randomized prefix-guarded isolated
+      targets, compares migration head/every table count/object path-size-SHA, and
+      cleans both targets in a finally path.
+- [x] The load gate is read-only, HTTPS-by-default, redirect-free, response/sample
+      bounded, target-rate paced for soak, and preserves machine-readable evidence
+      on success or threshold failure.
+- [x] ADR 0025 and the production operations runbook define protected approval,
+      preflight/canary/rollback-forward repair, recovery, monitoring, incident,
+      and secret-rotation responsibilities without claiming local Compose is
+      production.
+
+### Focused verification evidence
+
+| Check             | Status | Evidence                                                                                                                                                                                                                                                                                                                        |
+| ----------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Release controls  | Pass   | Ruff format/check and all three offline self-tests pass. The deliberately unfilled deployment template exits `2`; both workflow YAML files parse/format through Prettier. Hosted release execution is intentionally deferred until the branch is published and the repository plan supports attestations.                       |
+| Isolated recovery | Pass   | Live Compose restored migration `20260727_0019`, all 147 application tables/2,497 rows, and 20 objects/25,669 bytes with an exact object-manifest digest in 85.748 seconds. Independent checks found no temporary restore database or bucket afterward.                                                                         |
+| Load and soak     | Pass   | API health: 1,000 requests, 461.095 req/s, 44.987 ms p95, zero errors. API metadata: 250 requests, 462.785 req/s, 30.109 ms p95, zero errors. Edge home: 300 requests, 105.025 req/s, 209.072 ms p95, zero errors. Controlled 30-second API soak: 3,008 requests at 99.975 req/s, 26.172 ms p95, zero errors.                   |
+| Failure evidence  | Pass   | The first unpaced soak retained a failed aggregate report after 14,400 successes exposed local client socket exhaustion; the production gate gained an explicit target-rate pacer instead of weakening error thresholds. The oversized edge shell similarly drove a still-bounded 1 MiB response cap rather than being ignored. |
+
+### Residual production gates
+
+No cloud/provider topology, registry, region/data residency, production secret
+manager, encrypted PITR service, monitoring destination, on-call roster, RPO/RTO,
+operator MFA/provisioning, WORM audit export, legal retention/deletion policy, or
+external penetration reviewer has been owner-approved. The protected GitHub
+`production` environment and contract secret must be configured outside the
+repository. Artifact attestations for a private repository require an eligible
+GitHub plan. Provider-specific infrastructure and a deploy adapter require a
+follow-up ADR after those decisions; local recovery/load proof cannot substitute
+for provider restore, failure-domain, capacity, or rollback evidence.
+
 ## Full-specification completion audit
 
 Historical phase gates remain evidence for the vertical slices they actually
@@ -1868,15 +1924,16 @@ tested; they do not waive requirements that the 2026-07-25 audit found absent or
 partial. Phase 2 semantic closure is implemented and locally/security verified;
 Phase 1/3 closure is locally verified and its hosted PR remains open. The
 backend-only Phase 7 closure is verified in draft PR #24 while its two excluded
-frontend browser dependencies remain honestly blocked. Phase 10A is locally
-verified in the current branch. Remaining work proceeds in dependency-ordered
-reviewable changes:
+frontend browser dependencies remain honestly blocked. Phase 10A-H implementation
+is now present in the isolated release-closure branch, with cloud/legal/operator
+decisions fail-closed rather than invented. Remaining work is:
 
-1. Review and merge the existing stacked closure PRs separately without
-   weakening their recorded blockers or expanding their scope.
-2. Preserve the implemented Phase 10B-E boundaries while completing protected
-   administration, security/cost hardening, production infrastructure/recovery,
-   and the final release-candidate audit.
+1. Run and record the cumulative final-tree format, lint, type, unit, integration,
+   browser, security, migration, build, container, load, and restore audit.
+2. Publish one collective draft PR and require hosted CI before merge.
+3. Review and merge the existing stacked closure PRs without weakening their
+   recorded blockers, then obtain the owner/external production approvals listed
+   in Phase 10H before any production handoff.
 
 External pricing, provider accounts, legal text, support contacts, deployment
 region, retention policy, RPO/RTO, administrative policy, and production approval

@@ -1,0 +1,258 @@
+name: Release candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Exact 40-character commit SHA selected for the candidate
+        required: true
+        type: string
+      change_ticket:
+        description: Approved release/change record identifier
+        required: true
+        type: string
+      production_upload_origin:
+        description: Credential-free HTTPS object-upload origin compiled into the web image
+        required: true
+        type: string
+      production_handoff:
+        description: Package only, or enter the protected production handoff gate
+        required: true
+        default: PACKAGE_ONLY
+        type: choice
+        options:
+          - PACKAGE_ONLY
+          - HANDOFF
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-candidate-${{ inputs.release_sha }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    name: Build, inventory, and attest candidate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    outputs:
+      api_checksum: ${{ steps.checksums.outputs.api }}
+      worker_checksum: ${{ steps.checksums.outputs.worker }}
+      web_checksum: ${{ steps.checksums.outputs.web }}
+      web_edge_checksum: ${{ steps.checksums.outputs.web_edge }}
+    env:
+      RELEASE_SHA: ${{ inputs.release_sha }}
+      CHANGE_TICKET: ${{ inputs.change_ticket }}
+      PRODUCTION_UPLOAD_ORIGIN: ${{ inputs.production_upload_origin }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ inputs.release_sha }}
+          persist-credentials: false
+      - name: Validate immutable candidate inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$GITHUB_SHA" = "$RELEASE_SHA"
+          python - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+          from urllib.parse import urlsplit
+
+          ticket = os.environ["CHANGE_TICKET"].strip()
+          blocked_text = ("change-me", "fictional", "owner_decision_required", "tbd", "todo")
+          if (
+              not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/-]{2,127}", ticket)
+              or any(marker in ticket.casefold() for marker in blocked_text)
+          ):
+              raise SystemExit("change_ticket must be an approved bounded identifier")
+
+          value = os.environ["PRODUCTION_UPLOAD_ORIGIN"]
+          parsed = urlsplit(value)
+          blocked_hosts = (".invalid", ".local", ".test")
+          if (
+              parsed.scheme != "https"
+              or not parsed.hostname
+              or parsed.username
+              or parsed.password
+              or parsed.path not in ("", "/")
+              or parsed.query
+              or parsed.fragment
+              or parsed.hostname == "localhost"
+              or parsed.hostname.endswith(blocked_hosts)
+          ):
+              raise SystemExit("production_upload_origin must be credential-free production HTTPS")
+
+          metadata = {
+              "changeTicket": ticket,
+              "productionUploadOrigin": value.rstrip("/"),
+              "releaseSha": os.environ["RELEASE_SHA"],
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "schemaVersion": 1,
+              "workflowRunId": os.environ["GITHUB_RUN_ID"],
+          }
+          target = Path("release/release-metadata.json")
+          target.parent.mkdir(parents=True, exist_ok=True)
+          target.write_text(
+              json.dumps(metadata, sort_keys=True, separators=(",", ":")) + "\n",
+              encoding="utf-8",
+          )
+          PY
+      - name: Build release images from pinned Dockerfiles
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          docker build --pull=false --file apps/api/Dockerfile \
+            --tag "careeros-api:release-$RELEASE_SHA" .
+          docker build --pull=false --file apps/worker/Dockerfile \
+            --tag "careeros-worker:release-$RELEASE_SHA" .
+          docker build --pull=false --file apps/web/Dockerfile \
+            --build-arg "NEXT_PUBLIC_UPLOAD_ORIGIN=$PRODUCTION_UPLOAD_ORIGIN" \
+            --tag "careeros-web:release-$RELEASE_SHA" .
+          docker build --pull=false --file infra/docker/web-edge/Dockerfile \
+            --tag "careeros-web-edge:release-$RELEASE_SHA" .
+      - name: Generate API image SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+        with:
+          image: careeros-api:release-${{ inputs.release_sha }}
+          format: spdx-json
+          output-file: release/careeros-api.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+          dependency-snapshot: false
+      - name: Generate worker image SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+        with:
+          image: careeros-worker:release-${{ inputs.release_sha }}
+          format: spdx-json
+          output-file: release/careeros-worker.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+          dependency-snapshot: false
+      - name: Generate web image SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+        with:
+          image: careeros-web:release-${{ inputs.release_sha }}
+          format: spdx-json
+          output-file: release/careeros-web.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+          dependency-snapshot: false
+      - name: Generate web-edge image SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+        with:
+          image: careeros-web-edge:release-${{ inputs.release_sha }}
+          format: spdx-json
+          output-file: release/careeros-web-edge.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+          dependency-snapshot: false
+      - name: Archive candidate images and calculate checksums
+        id: checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          docker save --output release/careeros-api.tar "careeros-api:release-$RELEASE_SHA"
+          docker save --output release/careeros-worker.tar "careeros-worker:release-$RELEASE_SHA"
+          docker save --output release/careeros-web.tar "careeros-web:release-$RELEASE_SHA"
+          docker save --output release/careeros-web-edge.tar "careeros-web-edge:release-$RELEASE_SHA"
+          sha256sum release/*.tar > release/SHA256SUMS
+          api=$(awk '$2 == "release/careeros-api.tar" {print $1}' release/SHA256SUMS)
+          worker=$(awk '$2 == "release/careeros-worker.tar" {print $1}' release/SHA256SUMS)
+          web=$(awk '$2 == "release/careeros-web.tar" {print $1}' release/SHA256SUMS)
+          web_edge=$(awk '$2 == "release/careeros-web-edge.tar" {print $1}' release/SHA256SUMS)
+          for digest in "$api" "$worker" "$web" "$web_edge"; do
+            [[ "$digest" =~ ^[0-9a-f]{64}$ ]]
+          done
+          {
+            echo "api=sha256:$api"
+            echo "worker=sha256:$worker"
+            echo "web=sha256:$web"
+            echo "web_edge=sha256:$web_edge"
+          } >> "$GITHUB_OUTPUT"
+      - name: Attest candidate archive provenance
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4
+        with:
+          subject-checksums: release/SHA256SUMS
+      - name: Attest API SBOM
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4
+        with:
+          subject-path: release/careeros-api.tar
+          sbom-path: release/careeros-api.spdx.json
+      - name: Attest worker SBOM
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4
+        with:
+          subject-path: release/careeros-worker.tar
+          sbom-path: release/careeros-worker.spdx.json
+      - name: Attest web SBOM
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4
+        with:
+          subject-path: release/careeros-web.tar
+          sbom-path: release/careeros-web.spdx.json
+      - name: Attest web-edge SBOM
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4
+        with:
+          subject-path: release/careeros-web-edge.tar
+          sbom-path: release/careeros-web-edge.spdx.json
+      - name: Upload immutable release bundle
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: careeros-release-${{ inputs.release_sha }}
+          path: release/
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+
+  production-handoff:
+    name: Protected production handoff
+    needs: package
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      inputs.production_handoff == 'HANDOFF'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+    env:
+      RELEASE_SHA: ${{ inputs.release_sha }}
+      CHANGE_TICKET: ${{ inputs.change_ticket }}
+      PRODUCTION_DEPLOYMENT_CONTRACT_JSON: ${{ secrets.PRODUCTION_DEPLOYMENT_CONTRACT_JSON }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ inputs.release_sha }}
+          persist-credentials: false
+      - name: Validate owner-approved production contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_SHA" = "$RELEASE_SHA"
+          python scripts/release/validate_deployment_contract.py \
+            --json-env PRODUCTION_DEPLOYMENT_CONTRACT_JSON \
+            --expected-release-sha "$RELEASE_SHA" \
+            --expected-change-ticket "$CHANGE_TICKET" \
+            --expected-candidate-checksum "api=${{ needs.package.outputs.api_checksum }}" \
+            --expected-candidate-checksum "worker=${{ needs.package.outputs.worker_checksum }}" \
+            --expected-candidate-checksum "web=${{ needs.package.outputs.web_checksum }}" \
+            --expected-candidate-checksum "web-edge=${{ needs.package.outputs.web_edge_checksum }}" \
+            | tee deployment-contract-result.txt
+      - name: Record the provider handoff boundary
+        shell: bash
+        run: |
+          {
+            echo "## Production handoff authorized"
+            echo
+            echo "The protected production contract and immutable candidate checksums passed."
+            echo "This provider-neutral workflow does not execute a provider deployment."
+            echo "The approved provider-specific operator must deploy the recorded image digests."
+          } >> "$GITHUB_STEP_SUMMARY"

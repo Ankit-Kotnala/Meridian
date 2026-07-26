@@ -1059,6 +1059,19 @@ audit preservation, affected-user assessment, and legally appropriate notice.
 Backup is not complete until a restore into an isolated environment verifies
 integrity, ownership, migrations, object references, and documented RPO/RTO.
 
+Phase 10H implements a provider-neutral, fail-closed production handoff. CI emits
+image SBOMs and the manually triggered release workflow binds candidate archives
+to checksums and GitHub artifact attestations. A protected environment supplies
+a strict deployment contract containing no credentials; placeholders, missing
+evidence, open critical/high findings, or mismatched artifacts are rejected.
+
+The local restore and load gates reduce implementation risk but do not satisfy
+production backup durability, data residency, trusted-hop policy, alert routing,
+operator MFA, WORM audit retention, independent penetration review, or provider
+erasure. Those remain explicit production blockers. Speculative provider
+infrastructure is prohibited until the owner approves the topology and data
+boundary.
+
 ## Open decisions and residual risks
 
 - Production region, data residency, account/backup retention durations, RPO/RTO,

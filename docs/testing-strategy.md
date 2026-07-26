@@ -1000,3 +1000,28 @@ policy headers are overwritten, and that HSTS is opt-in behind TLS. The complete
 backend architecture/unit, API, and worker portfolios remain blocking. These
 checks are internal engineering evidence and must not be represented as an
 independent penetration test.
+
+## Phase 10H release, load, and recovery verification
+
+Release-control self-tests validate one accepted production contract, reject
+placeholders and mismatched release inputs, exercise bounded load calculations,
+and prove recovery path/prefix guards without external services. CI supplies a
+live Redis service to the API suite and asserts the current migration head plus
+the immediate downgrade/forward-repair path.
+
+The local recovery gate uses the real Compose PostgreSQL and MinIO services. It
+must create randomized isolated restore targets, compare the exact migration head
+and every application-table row count, compare object paths/sizes/SHA-256 bytes,
+and remove temporary targets even after failure. A successful local drill is not
+production PITR/RPO/RTO evidence.
+
+The read-only load gate records completed requests, safe error classes, statuses,
+p50/p95/p99/maximum latency, throughput, thresholds, and pass/fail. Threshold
+failures must still emit machine-readable evidence. HTTPS is mandatory except for
+explicit loopback tests, redirects are denied, and sustained tests use a target
+rate to avoid measuring client socket exhaustion.
+
+The release workflow itself becomes verified only after hosted execution. Its
+package stage must build all images, generate SBOMs, checksums, attestations, and
+the bounded artifact. Production handoff additionally requires the protected
+environment and owner-completed contract; it cannot be replaced by a local pass.

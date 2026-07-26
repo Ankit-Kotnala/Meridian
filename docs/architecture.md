@@ -925,3 +925,18 @@ domain decisions. Response policy remains split correctly: the API applies a
 deny-by-default policy to JSON operations, and the edge overwrites browser-facing
 security headers for Next.js responses. ADR 0024 records topology and rotation
 constraints.
+
+## Phase 10H release and recovery boundary
+
+CareerOS now produces checksum-bound API, worker, web, and web-edge candidate
+archives with SPDX SBOMs and GitHub artifact attestations from an exact commit.
+A strict deployment contract binds those artifacts to an approved topology,
+migration head, rollback digests, recovery/security/privacy/operations evidence,
+and four approval roles only after the protected production environment gate.
+
+The repository does not choose a cloud or execute a provider deployment. Local
+recovery restores PostgreSQL and MinIO into guarded randomized temporary targets
+and compares schema/data/object integrity before cleanup. The bounded HTTP load
+gate records threshold evidence and supports explicit sustained request pacing.
+Provider infrastructure requires an approved follow-up ADR. ADR 0025 and the
+production operations runbook define this boundary.

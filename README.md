@@ -13,15 +13,13 @@ claim under the user's control.
 
 ## Repository status
 
-**Phase 2 typed semantic parsing/review and Resume Health v2 closure is
-implemented and locally verified, including its separate security gate; hosted
-closure evidence remains pending authorization to publish. Phase 8 is hosted
-verified in PR #21 and Phase 9 in PR #22.** Phases 0 through 7 retain their
-historical hosted evidence; PR #20 merged Phases 5 through 7 after hosted CI run
-`30119088488` passed every required job. Phase 8 implementation revision
-`964cd9c` passed the consolidated local gate and separate security scan on
-2026-07-24; PR #21 runs `30126993025` and `30128304892` passed every required
-hosted job. The repository uses a
+**Phase 10A-H implementation is present in the isolated collective release-
+closure branch, with focused local verification through the provider-neutral
+release, recovery, load, and CI/CD controls. The cumulative final audit, hosted
+CI, and owner/external production approvals remain pending.** Phase 8 is hosted
+verified in PR #21 and Phase 9 in PR #22. Earlier phases retain their recorded
+historical evidence; the Phase 1/3 and backend-only Phase 7 closure PRs remain
+separate and preserve their documented browser/approval blockers. The repository uses a
 shared Python modular monolith, one root uv workspace, generated API contracts,
 thin deployable applications, and executable dependency boundaries.
 
@@ -63,8 +61,8 @@ packages/
   typescript-config/   Shared strict TypeScript configuration
   test-fixtures/       Explicitly fictional fixtures
 docs/                  Product, architecture, security, API, and ADRs
-infra/                 Implemented local container infrastructure
-scripts/               Cross-platform local and repository automation
+infra/                 Local containers and provider-neutral production handoff controls
+scripts/               Cross-platform local, repository, release, and recovery automation
 ```
 
 ## Prerequisites
