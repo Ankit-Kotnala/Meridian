@@ -10,3 +10,6 @@ DISPATCH_CAREER_ANALYTICS_OUTBOX_TASK = "careeros.worker.career_analytics.dispat
 RECONCILE_CAREER_ANALYTICS_TASK = "careeros.worker.career_analytics.reconcile"
 PROCESS_NETWORKING_LOCAL_REMINDERS_TASK = "careeros.worker.networking.process_local_reminders"
 RECONCILE_NETWORKING_REMINDERS_TASK = "careeros.worker.networking.reconcile_local_reminders"
+PROCESS_RESUME_EXPORT_TASK = "careeros.worker.resume_builder.process_export"
+DISPATCH_RESUME_EXPORT_OUTBOX_TASK = "careeros.worker.resume_builder.dispatch_outbox"
+RECONCILE_RESUME_EXPORTS_TASK = "careeros.worker.resume_builder.reconcile_exports"

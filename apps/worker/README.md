@@ -13,7 +13,7 @@ PostgreSQL.
 ```bash
 uv sync --frozen --all-packages --all-groups
 cd apps/worker
-uv run celery --app careeros_worker.app:celery_app worker --loglevel=INFO --queues=default,resume-health,career-record,maintenance
+uv run celery --app careeros_worker.app:celery_app worker --loglevel=INFO --queues=default,resume-health,resume-builder,career-record,maintenance
 uv run ruff format --check .
 uv run ruff check .
 uv run mypy src tests
@@ -32,6 +32,19 @@ representations. Production mode rejects the known local Redis default.
 The task `careeros.worker.health.ping` returns static service liveness metadata.
 The container health check uses Celery's remote-control ping so it verifies a
 running worker can communicate through the broker.
+
+## Phase 7 tasks
+
+- `careeros.worker.resume_builder.process_export` renders or deletes one
+  owner-scoped export from an identifier-only message and a fenced database
+  lease.
+- `careeros.worker.resume_builder.dispatch_outbox` publishes bounded
+  operation-typed render/delete work from the transactional outbox.
+- `careeros.worker.resume_builder.reconcile_exports` recovers lost deliveries
+  and expired leases, then processes due attempt-object cleanup backstops. A
+  backstop is committed before each object write, cancelled atomically only for
+  the verified winner, and otherwise retried or dead-lettered with safe audit
+  codes.
 
 ## Phase 9 tasks
 

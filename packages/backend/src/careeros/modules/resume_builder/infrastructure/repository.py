@@ -5,9 +5,10 @@ from __future__ import annotations
 from datetime import datetime
 from types import TracebackType
 from typing import Any, cast
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from sqlalchemy import select, update
+from sqlalchemy import or_, select, update
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,11 +22,22 @@ from careeros.modules.resume_builder.domain import (
     ResumeBullet,
     ResumeDocument,
     ResumeDownloadIntent,
+    ResumeEntityFact,
     ResumeEvidenceLinkBasis,
     ResumeEvidenceReference,
     ResumeExport,
+    ResumeExportObjectCleanup,
+    ResumeExportOperation,
+    ResumeExportOutboxMessage,
     ResumeExportStatus,
+    ResumeFontFamily,
     ResumeFormat,
+    ResumeLayout,
+    ResumeLineSpacing,
+    ResumeMarginSize,
+    ResumePageSize,
+    ResumePartialDate,
+    ResumePersonalFact,
     ResumeSection,
     ResumeTemplate,
     ResumeVerificationReport,
@@ -38,6 +50,8 @@ from .models import (
     ResumeBuilderIdempotencyModel,
     ResumeDownloadIntentModel,
     ResumeExportModel,
+    ResumeExportObjectCleanupModel,
+    ResumeExportOutboxModel,
     ResumeModel,
     ResumeVerificationReportModel,
     ResumeVersionModel,
@@ -228,6 +242,52 @@ class SqlAlchemyResumeBuilderUnitOfWork:
         )
         return _export(model) if model is not None else None
 
+    async def get_export_system(
+        self, export_id: UUID, *, for_update: bool = False
+    ) -> ResumeExport | None:
+        statement = select(ResumeExportModel).where(ResumeExportModel.id == export_id)
+        if for_update:
+            statement = statement.with_for_update()
+        model = await self.session.scalar(statement)
+        return _export(model) if model is not None else None
+
+    async def list_recoverable_exports(self, now: datetime, limit: int) -> tuple[ResumeExport, ...]:
+        models = (
+            await self.session.scalars(
+                select(ResumeExportModel)
+                .where(
+                    ResumeExportModel.deleted_at.is_(None),
+                    or_(
+                        ResumeExportModel.status == ResumeExportStatus.PENDING.value,
+                        (
+                            (ResumeExportModel.status == ResumeExportStatus.RETRY_WAIT.value)
+                            & (ResumeExportModel.retry_at <= now)
+                        ),
+                        (
+                            (ResumeExportModel.status == ResumeExportStatus.RENDERING.value)
+                            & (ResumeExportModel.lease_expires_at <= now)
+                        ),
+                        ResumeExportModel.status == ResumeExportStatus.DELETION_PENDING.value,
+                        (
+                            (
+                                ResumeExportModel.status
+                                == ResumeExportStatus.DELETION_RETRY_WAIT.value
+                            )
+                            & (ResumeExportModel.retry_at <= now)
+                        ),
+                        (
+                            (ResumeExportModel.status == ResumeExportStatus.DELETING.value)
+                            & (ResumeExportModel.lease_expires_at <= now)
+                        ),
+                    ),
+                )
+                .order_by(ResumeExportModel.requested_at, ResumeExportModel.id)
+                .limit(limit)
+                .with_for_update(skip_locked=True)
+            )
+        ).all()
+        return tuple(_export(model) for model in models)
+
     async def get_verification(
         self, owner_user_id: UUID, export_id: UUID
     ) -> ResumeVerificationReport | None:
@@ -252,6 +312,136 @@ class SqlAlchemyResumeBuilderUnitOfWork:
 
     async def add_download_intent(self, intent: ResumeDownloadIntent) -> None:
         self.session.add(_download_intent_model(intent))
+        await self._flush()
+
+    async def add_export_outbox(self, message: ResumeExportOutboxMessage) -> None:
+        self.session.add(_export_outbox_model(message))
+        await self._flush()
+
+    async def claim_export_outbox(
+        self, now: datetime, lease_expires_at: datetime, limit: int
+    ) -> tuple[ResumeExportOutboxMessage, ...]:
+        models = (
+            await self.session.scalars(
+                select(ResumeExportOutboxModel)
+                .where(
+                    ResumeExportOutboxModel.available_at <= now,
+                    ResumeExportOutboxModel.published_at.is_(None),
+                    ResumeExportOutboxModel.dead_lettered_at.is_(None),
+                    or_(
+                        ResumeExportOutboxModel.lease_token.is_(None),
+                        ResumeExportOutboxModel.lease_expires_at <= now,
+                    ),
+                )
+                .order_by(ResumeExportOutboxModel.available_at, ResumeExportOutboxModel.created_at)
+                .limit(limit)
+                .with_for_update(skip_locked=True)
+            )
+        ).all()
+        claimed: list[ResumeExportOutboxMessage] = []
+        for model in models:
+            model.lease_token = uuid4()
+            model.leased_at = now
+            model.lease_expires_at = lease_expires_at
+            claimed.append(_export_outbox(model))
+        await self._flush()
+        return tuple(claimed)
+
+    async def save_export_outbox(
+        self,
+        message: ResumeExportOutboxMessage,
+        *,
+        expected_lease_token: UUID,
+    ) -> bool:
+        try:
+            result = cast(
+                CursorResult[Any],
+                await self.session.execute(
+                    update(ResumeExportOutboxModel)
+                    .where(
+                        ResumeExportOutboxModel.id == message.id,
+                        ResumeExportOutboxModel.lease_token == expected_lease_token,
+                        ResumeExportOutboxModel.published_at.is_(None),
+                        ResumeExportOutboxModel.dead_lettered_at.is_(None),
+                    )
+                    .values(**_export_outbox_values(message, include_identity=False))
+                ),
+            )
+        except IntegrityError as exc:
+            await self.session.rollback()
+            _raise_integrity(exc)
+        return result.rowcount == 1
+
+    async def has_active_export_outbox(
+        self,
+        export_id: UUID,
+        operation: ResumeExportOperation,
+    ) -> bool:
+        message_id = await self.session.scalar(
+            select(ResumeExportOutboxModel.id)
+            .where(
+                ResumeExportOutboxModel.export_id == export_id,
+                ResumeExportOutboxModel.operation == operation.value,
+                ResumeExportOutboxModel.published_at.is_(None),
+                ResumeExportOutboxModel.dead_lettered_at.is_(None),
+            )
+            .limit(1)
+        )
+        return message_id is not None
+
+    async def add_export_object_cleanup(self, cleanup: ResumeExportObjectCleanup) -> None:
+        self.session.add(_export_object_cleanup_model(cleanup))
+        await self._flush()
+
+    async def get_export_object_cleanup(
+        self,
+        owner_user_id: UUID,
+        export_id: UUID,
+        attempt_fence: int,
+        *,
+        for_update: bool = False,
+    ) -> ResumeExportObjectCleanup | None:
+        statement = select(ResumeExportObjectCleanupModel).where(
+            ResumeExportObjectCleanupModel.owner_user_id == owner_user_id,
+            ResumeExportObjectCleanupModel.export_id == export_id,
+            ResumeExportObjectCleanupModel.attempt_fence == attempt_fence,
+        )
+        if for_update:
+            statement = statement.with_for_update()
+        model = await self.session.scalar(statement)
+        return _export_object_cleanup(model) if model is not None else None
+
+    async def list_due_export_object_cleanups(
+        self, now: datetime, limit: int
+    ) -> tuple[ResumeExportObjectCleanup, ...]:
+        models = (
+            await self.session.scalars(
+                select(ResumeExportObjectCleanupModel)
+                .where(
+                    ResumeExportObjectCleanupModel.completed_at.is_(None),
+                    ResumeExportObjectCleanupModel.cancelled_at.is_(None),
+                    ResumeExportObjectCleanupModel.dead_lettered_at.is_(None),
+                    ResumeExportObjectCleanupModel.not_before <= now,
+                )
+                .order_by(
+                    ResumeExportObjectCleanupModel.not_before,
+                    ResumeExportObjectCleanupModel.created_at,
+                )
+                .limit(limit)
+                .with_for_update(skip_locked=True)
+            )
+        ).all()
+        return tuple(_export_object_cleanup(model) for model in models)
+
+    async def save_export_object_cleanup(self, cleanup: ResumeExportObjectCleanup) -> None:
+        await self._execute(
+            update(ResumeExportObjectCleanupModel)
+            .where(
+                ResumeExportObjectCleanupModel.owner_user_id == cleanup.owner_user_id,
+                ResumeExportObjectCleanupModel.id == cleanup.id,
+            )
+            .values(**_export_object_cleanup_values(cleanup, include_identity=False))
+        )
         await self._flush()
 
     async def add_idempotency(self, record: ResumeBuilderIdempotencyRecord) -> None:
@@ -329,6 +519,7 @@ def _resume_values(resume: ResumeDocument, *, include_identity: bool) -> dict[st
         "title": resume.title,
         "target_role": resume.target_role,
         "template": resume.template.value,
+        "layout": _layout_payload(resume.layout),
         "current_version_id": resume.current_version_id,
         "source_change_set_id": resume.source_change_set_id,
         "source_change_set_version_id": resume.source_change_set_version_id,
@@ -358,6 +549,117 @@ def _resume(model: ResumeModel) -> ResumeDocument:
         version=model.version,
         created_at=model.created_at,
         updated_at=model.updated_at,
+        layout=_layout(model.layout),
+    )
+
+
+def _layout_payload(layout: ResumeLayout) -> dict[str, object]:
+    return {
+        "fontFamily": layout.font_family.value,
+        "fontSizePt": layout.font_size_pt,
+        "lineSpacing": layout.line_spacing.value,
+        "margins": layout.margins.value,
+        "pageLimit": layout.page_limit,
+        "pageSize": layout.page_size.value,
+    }
+
+
+def _layout(value: dict[str, object]) -> ResumeLayout:
+    return ResumeLayout(
+        page_size=ResumePageSize(str(value["pageSize"])),
+        page_limit=int(str(value["pageLimit"])),
+        font_family=ResumeFontFamily(str(value["fontFamily"])),
+        font_size_pt=int(str(value["fontSizePt"])),
+        line_spacing=ResumeLineSpacing(str(value["lineSpacing"])),
+        margins=ResumeMarginSize(str(value["margins"])),
+    )
+
+
+def _personal_facts_payload(
+    facts: tuple[ResumePersonalFact, ...],
+) -> list[dict[str, object]]:
+    return [
+        {
+            "id": str(fact.id),
+            "kind": fact.kind,
+            "value": fact.value,
+            "label": fact.label,
+            "isPrimary": fact.is_primary,
+        }
+        for fact in facts
+    ]
+
+
+def _personal_facts(values: list[dict[str, object]]) -> tuple[ResumePersonalFact, ...]:
+    return tuple(
+        ResumePersonalFact(
+            id=UUID(str(value["id"])),
+            kind=str(value["kind"]),
+            value=str(value["value"]),
+            label=str(value["label"]) if value.get("label") is not None else None,
+            is_primary=bool(value["isPrimary"]),
+        )
+        for value in values
+    )
+
+
+def _entities_payload(entities: tuple[ResumeEntityFact, ...]) -> list[dict[str, object]]:
+    return [
+        {
+            "id": str(entity.id),
+            "kind": entity.kind,
+            "title": entity.title,
+            "organization": entity.organization,
+            "officialTitle": entity.official_title,
+            "displayTitle": entity.display_title,
+            "location": entity.location,
+            "startDate": _partial_date_payload(entity.start_date),
+            "endDate": _partial_date_payload(entity.end_date),
+            "isCurrent": entity.is_current,
+            "evidenceIds": [str(value) for value in entity.evidence_ids],
+        }
+        for entity in entities
+    ]
+
+
+def _entities(values: list[dict[str, object]]) -> tuple[ResumeEntityFact, ...]:
+    return tuple(
+        ResumeEntityFact(
+            id=UUID(str(value["id"])),
+            kind=str(value["kind"]),
+            title=str(value["title"]),
+            organization=(
+                str(value["organization"]) if value.get("organization") is not None else None
+            ),
+            official_title=(
+                str(value["officialTitle"]) if value.get("officialTitle") is not None else None
+            ),
+            display_title=(
+                str(value["displayTitle"]) if value.get("displayTitle") is not None else None
+            ),
+            location=str(value["location"]) if value.get("location") is not None else None,
+            start_date=_partial_date(value.get("startDate")),
+            end_date=_partial_date(value.get("endDate")),
+            is_current=bool(value["isCurrent"]),
+            evidence_ids=tuple(
+                UUID(str(item)) for item in cast(list[object], value.get("evidenceIds", []))
+            ),
+        )
+        for value in values
+    )
+
+
+def _partial_date_payload(value: ResumePartialDate | None) -> dict[str, object] | None:
+    return {"year": value.year, "month": value.month} if value is not None else None
+
+
+def _partial_date(value: object) -> ResumePartialDate | None:
+    if value is None:
+        return None
+    raw = cast(dict[str, object], value)
+    return ResumePartialDate(
+        year=int(str(raw["year"])),
+        month=int(str(raw["month"])) if raw.get("month") is not None else None,
     )
 
 
@@ -369,6 +671,9 @@ def _version_values(version: ResumeVersion, *, include_identity: bool) -> dict[s
         "title": version.title,
         "target_role": version.target_role,
         "template": version.template.value,
+        "layout": _layout_payload(version.layout),
+        "personal_facts": _personal_facts_payload(version.personal_facts),
+        "entities": _entities_payload(version.entities),
         "sections": _sections_payload(version.sections),
         "plain_text": version.plain_text,
         "source_evidence_ids": [str(value) for value in version.source_evidence_ids],
@@ -401,6 +706,9 @@ def _version(model: ResumeVersionModel) -> ResumeVersion:
         source_change_set_id=model.source_change_set_id,
         source_change_set_version_id=model.source_change_set_version_id,
         created_at=model.created_at,
+        personal_facts=_personal_facts(model.personal_facts),
+        entities=_entities(model.entities),
+        layout=_layout(model.layout),
     )
 
 
@@ -416,6 +724,7 @@ def _sections_payload(sections: tuple[ResumeSection, ...]) -> list[dict[str, obj
                     "text": item.text,
                     "evidenceIds": [str(value) for value in item.evidence_ids],
                     "source": item.source,
+                    "entityId": str(item.entity_id) if item.entity_id is not None else None,
                     "evidenceReferences": [
                         {
                             "evidenceId": str(reference.evidence_id),
@@ -453,6 +762,11 @@ def _sections(values: list[dict[str, object]]) -> tuple[ResumeSection, ...]:
                     for value in cast(list[object], raw_item.get("evidenceIds", []))
                 ),
                 source=str(raw_item.get("source", "career_record")),
+                entity_id=(
+                    UUID(str(raw_item["entityId"]))
+                    if raw_item.get("entityId") is not None
+                    else None
+                ),
                 evidence_references=tuple(
                     ResumeEvidenceReference(
                         evidence_id=UUID(str(reference["evidenceId"])),
@@ -496,6 +810,9 @@ def _export_values(export: ResumeExport, *, include_identity: bool) -> dict[str,
         "media_type": export.media_type,
         "size_bytes": export.size_bytes,
         "sha256_digest": export.sha256_digest,
+        "version_content_sha256": export.version_content_sha256,
+        "fidelity_manifest": export.fidelity_manifest,
+        "fidelity_manifest_sha256": export.fidelity_manifest_sha256,
         "verification_status": (
             export.verification_status.value if export.verification_status is not None else None
         ),
@@ -506,7 +823,16 @@ def _export_values(export: ResumeExport, *, include_identity: bool) -> dict[str,
         "parser_version": export.parser_version,
         "idempotency_key": export.idempotency_key,
         "idempotency_fingerprint": export.idempotency_fingerprint,
+        "trace_id": export.trace_id,
         "attempts": export.attempts,
+        "max_attempts": export.max_attempts,
+        "cleanup_attempts": export.cleanup_attempts,
+        "cleanup_max_attempts": export.cleanup_max_attempts,
+        "fence": export.fence,
+        "execution_token_hash": export.execution_token_hash,
+        "lease_expires_at": export.lease_expires_at,
+        "retry_at": export.retry_at,
+        "dead_lettered_at": export.dead_lettered_at,
         "requested_at": export.requested_at,
         "completed_at": export.completed_at,
         "deleted_at": export.deleted_at,
@@ -550,6 +876,116 @@ def _export(model: ResumeExportModel) -> ResumeExport:
         completed_at=model.completed_at,
         deleted_at=model.deleted_at,
         last_error=model.last_error,
+        version_content_sha256=model.version_content_sha256,
+        fidelity_manifest=model.fidelity_manifest,
+        fidelity_manifest_sha256=model.fidelity_manifest_sha256,
+        trace_id=model.trace_id,
+        max_attempts=model.max_attempts,
+        fence=model.fence,
+        execution_token_hash=model.execution_token_hash,
+        lease_expires_at=model.lease_expires_at,
+        retry_at=model.retry_at,
+        dead_lettered_at=model.dead_lettered_at,
+        cleanup_attempts=model.cleanup_attempts,
+        cleanup_max_attempts=model.cleanup_max_attempts,
+    )
+
+
+def _export_outbox_values(
+    message: ResumeExportOutboxMessage, *, include_identity: bool
+) -> dict[str, object]:
+    values: dict[str, object] = {
+        "export_id": message.export_id,
+        "operation": message.operation.value,
+        "trace_id": message.trace_id,
+        "available_at": message.available_at,
+        "attempts": message.attempts,
+        "max_attempts": message.max_attempts,
+        "lease_token": message.lease_token,
+        "leased_at": message.leased_at,
+        "lease_expires_at": message.lease_expires_at,
+        "published_at": message.published_at,
+        "dead_lettered_at": message.dead_lettered_at,
+        "last_error": message.last_error,
+        "created_at": message.created_at,
+    }
+    if include_identity:
+        values.update({"id": message.id, "owner_user_id": message.owner_user_id})
+    return values
+
+
+def _export_outbox_model(message: ResumeExportOutboxMessage) -> ResumeExportOutboxModel:
+    return ResumeExportOutboxModel(**_export_outbox_values(message, include_identity=True))
+
+
+def _export_outbox(model: ResumeExportOutboxModel) -> ResumeExportOutboxMessage:
+    return ResumeExportOutboxMessage(
+        id=model.id,
+        owner_user_id=model.owner_user_id,
+        export_id=model.export_id,
+        operation=ResumeExportOperation(model.operation),
+        trace_id=model.trace_id,
+        available_at=model.available_at,
+        attempts=model.attempts,
+        max_attempts=model.max_attempts,
+        lease_token=model.lease_token,
+        leased_at=model.leased_at,
+        lease_expires_at=model.lease_expires_at,
+        published_at=model.published_at,
+        dead_lettered_at=model.dead_lettered_at,
+        last_error=model.last_error,
+        created_at=model.created_at,
+    )
+
+
+def _export_object_cleanup_values(
+    cleanup: ResumeExportObjectCleanup, *, include_identity: bool
+) -> dict[str, object]:
+    values: dict[str, object] = {
+        "export_id": cleanup.export_id,
+        "attempt_fence": cleanup.attempt_fence,
+        "object_key": cleanup.object_key,
+        "trace_id": cleanup.trace_id,
+        "not_before": cleanup.not_before,
+        "attempts": cleanup.attempts,
+        "max_attempts": cleanup.max_attempts,
+        "last_error": cleanup.last_error,
+        "completed_at": cleanup.completed_at,
+        "cancelled_at": cleanup.cancelled_at,
+        "dead_lettered_at": cleanup.dead_lettered_at,
+        "created_at": cleanup.created_at,
+    }
+    if include_identity:
+        values.update({"id": cleanup.id, "owner_user_id": cleanup.owner_user_id})
+    return values
+
+
+def _export_object_cleanup_model(
+    cleanup: ResumeExportObjectCleanup,
+) -> ResumeExportObjectCleanupModel:
+    return ResumeExportObjectCleanupModel(
+        **_export_object_cleanup_values(cleanup, include_identity=True)
+    )
+
+
+def _export_object_cleanup(
+    model: ResumeExportObjectCleanupModel,
+) -> ResumeExportObjectCleanup:
+    return ResumeExportObjectCleanup(
+        id=model.id,
+        owner_user_id=model.owner_user_id,
+        export_id=model.export_id,
+        attempt_fence=model.attempt_fence,
+        object_key=model.object_key,
+        trace_id=model.trace_id,
+        not_before=model.not_before,
+        attempts=model.attempts,
+        max_attempts=model.max_attempts,
+        last_error=model.last_error,
+        completed_at=model.completed_at,
+        cancelled_at=model.cancelled_at,
+        dead_lettered_at=model.dead_lettered_at,
+        created_at=model.created_at,
     )
 
 
@@ -569,6 +1005,11 @@ def _verification_values(
         "grounding_codes": list(verification.grounding_codes),
         "file_sha256": verification.file_sha256,
         "parser_version": verification.parser_version,
+        "occurrence_mismatches": list(verification.occurrence_mismatches),
+        "reading_order_failures": list(verification.reading_order_failures),
+        "manifest_sha256": verification.manifest_sha256,
+        "version_content_sha256": verification.version_content_sha256,
+        "page_count": verification.page_count,
         "created_at": verification.created_at,
     }
     if include_identity:
@@ -599,6 +1040,11 @@ def _verification(model: ResumeVerificationReportModel) -> ResumeVerificationRep
         file_sha256=model.file_sha256,
         parser_version=model.parser_version,
         created_at=model.created_at,
+        occurrence_mismatches=tuple(model.occurrence_mismatches),
+        reading_order_failures=tuple(model.reading_order_failures),
+        manifest_sha256=model.manifest_sha256,
+        version_content_sha256=model.version_content_sha256,
+        page_count=model.page_count,
     )
 
 

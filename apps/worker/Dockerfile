@@ -28,4 +28,4 @@ USER 10001:10001
 HEALTHCHECK --interval=30s --timeout=8s --start-period=15s --retries=3 \
   CMD ["python", "-m", "careeros_worker.healthcheck"]
 
-CMD ["celery", "--app", "careeros_worker.app:celery_app", "worker", "--loglevel=INFO", "--queues=default,resume-health,career-record,maintenance"]
+CMD ["celery", "--app", "careeros_worker.app:celery_app", "worker", "--loglevel=INFO", "--queues=default,resume-health,resume-builder,career-record,maintenance"]

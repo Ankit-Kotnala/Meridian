@@ -41,7 +41,10 @@ def validate_optional_target_role(value: str | None) -> str | None:
 
 
 def validate_sections(
-    sections: Iterable[ResumeSection], *, eligible_evidence_ids: set[UUID]
+    sections: Iterable[ResumeSection],
+    *,
+    eligible_evidence_ids: set[UUID],
+    eligible_entity_ids: set[UUID] | None = None,
 ) -> tuple[ResumeSection, ...]:
     normalized_sections: list[ResumeSection] = []
     seen_section_ids: set[UUID] = set()
@@ -64,6 +67,7 @@ def validate_sections(
             eligible_evidence_ids=eligible_evidence_ids,
             seen_item_ids=seen_item_ids,
             evidence_revisions=evidence_revisions,
+            eligible_entity_ids=eligible_entity_ids,
         )
         normalized_sections.append(
             ResumeSection(id=section.id, title=title, kind=kind, items=normalized_items)
@@ -79,6 +83,7 @@ def _validate_items(
     eligible_evidence_ids: set[UUID],
     seen_item_ids: set[UUID],
     evidence_revisions: dict[UUID, tuple[UUID, int, str]],
+    eligible_entity_ids: set[UUID] | None,
 ) -> tuple[ResumeBullet, ...]:
     normalized_items: list[ResumeBullet] = []
     for item in items:
@@ -102,6 +107,12 @@ def _validate_items(
         ]
         if unknown:
             raise ResumeBuilderValidationError("resume bullets must cite eligible evidence")
+        if (
+            item.entity_id is not None
+            and eligible_entity_ids is not None
+            and item.entity_id not in eligible_entity_ids
+        ):
+            raise ResumeBuilderValidationError("resume bullets must cite an eligible entity")
         references_by_id = {
             reference.evidence_id: reference for reference in item.evidence_references
         }
@@ -139,6 +150,7 @@ def _validate_items(
                 evidence_references=tuple(
                     references_by_id[evidence_id] for evidence_id in evidence_ids
                 ),
+                entity_id=item.entity_id,
             )
         )
     return tuple(normalized_items)

@@ -2,16 +2,21 @@
 
 from __future__ import annotations
 
+import asyncio
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import create_autospec
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from careeros.modules.identity.application import IdentityService
 from careeros.modules.identity.domain import AuthenticatedPrincipal, AuthMethod
 from careeros.modules.identity.domain.errors import AuthenticationRequired
-from careeros.modules.resume_builder.application import ResumeBuilderPolicy, ResumeBuilderService
+from careeros.modules.resume_builder.application import (
+    ResumeBuilderPolicy,
+    ResumeBuilderService,
+    ResumeExportProcessor,
+)
 from fastapi.testclient import TestClient
 
 from careeros_api.config import Settings
@@ -47,17 +52,24 @@ def _services(owner_id, *, renderer: TextOnlyRenderer | None = None):
     identity = create_autospec(IdentityService, instance=True)
     identity.authenticate.return_value = _principal(owner_id)
     state = MemoryResumeBuilder()
+    storage = MemoryStorage()
     resume_builder = ResumeBuilderService(
         unit_of_work=state,
         clock=FixedClock(),
         identifiers=UuidFactory(),
         sources=StaticResumeSourceProvider(),
-        renderer=renderer or TextOnlyRenderer(),
-        extractor=PlainTextExtractor(),
-        storage=MemoryStorage(),
+        storage=storage,
         policy=ResumeBuilderPolicy(),
     )
-    return identity, resume_builder
+    processor = ResumeExportProcessor(
+        unit_of_work=state,
+        clock=FixedClock(),
+        identifiers=UuidFactory(),
+        renderer=renderer or TextOnlyRenderer(),
+        extractor=PlainTextExtractor(),
+        storage=storage,
+    )
+    return identity, resume_builder, processor
 
 
 def _write_headers(*, version: int | None = None, idempotency: str | None = None):
@@ -91,7 +103,7 @@ def _authenticated_client(
 def test_resume_builder_primary_workflow_is_authenticated_and_owner_scoped(
     settings: Settings, fake_database: FakeDatabase
 ) -> None:
-    identity, resume_builder = _services(OWNER_ID)
+    identity, resume_builder, processor = _services(OWNER_ID)
     with _authenticated_client(settings, fake_database, identity, resume_builder) as client:
         empty = client.get("/api/v1/resumes")
         assert empty.status_code == 200
@@ -111,16 +123,37 @@ def test_resume_builder_primary_workflow_is_authenticated_and_owner_scoped(
         assert created.headers["ETag"] == '"1"'
         body = created.json()
         assert body["currentVersion"]["sections"][0]["items"][0]["evidenceIds"]
+        assert body["layout"]["pageLimit"] == 1
+        assert body["currentVersion"]["personalFacts"][0]["kind"] == "name"
+
+        options = client.get(f"/api/v1/resumes/{body['id']}/source-options")
+        assert options.status_code == 200
+        assert options.json()["personalFacts"][0]["value"] == "Taylor Morgan"
+        assert options.json()["bullets"][0]["evidenceReferences"]
 
         updated = client.patch(
             f"/api/v1/resumes/{body['id']}",
-            json={"template": "compact_technical", "title": "API Resume v2"},
+            json={
+                "template": "compact_technical",
+                "title": "API Resume v2",
+                "targetRole": None,
+                "layout": {
+                    "pageSize": "a4",
+                    "pageLimit": 2,
+                    "fontFamily": "serif",
+                    "fontSizePt": 11,
+                    "lineSpacing": "relaxed",
+                    "margins": "wide",
+                },
+            },
             headers=_write_headers(version=body["version"], idempotency="api-resume-update"),
         )
         assert updated.status_code == 200
         updated_body = updated.json()
         assert updated_body["version"] == 2
         assert updated_body["currentVersion"]["id"] != body["currentVersion"]["id"]
+        assert updated_body["targetRole"] is None
+        assert updated_body["layout"]["pageSize"] == "a4"
 
         versions = client.get(f"/api/v1/resumes/{body['id']}/versions")
         assert versions.status_code == 200
@@ -142,8 +175,12 @@ def test_resume_builder_primary_workflow_is_authenticated_and_owner_scoped(
         )
         assert exported.status_code == 202
         export_body = exported.json()
-        assert export_body["export"]["status"] == "verified"
-        assert export_body["verification"]["status"] == "passed"
+        assert export_body["export"]["status"] == "pending"
+        assert export_body["verification"] is None
+        outcome = asyncio.run(
+            processor.process(UUID(export_body["export"]["id"]), "api-worker-token")
+        )
+        assert outcome.status.value == "verified"
 
         intent = client.post(
             f"/api/v1/exports/{export_body['export']['id']}/download-intent",
@@ -151,6 +188,15 @@ def test_resume_builder_primary_workflow_is_authenticated_and_owner_scoped(
         )
         assert intent.status_code == 200
         assert intent.json()["url"].startswith("https://downloads.invalid/")
+
+        deletion = client.delete(
+            f"/api/v1/exports/{export_body['export']['id']}",
+            headers=_write_headers(idempotency="api-resume-delete"),
+        )
+        assert deletion.status_code == 202
+        assert deletion.json()["export"]["status"] == "deletion_pending"
+        assert deletion.json()["export"]["cleanupAttempts"] == 0
+        assert deletion.json()["export"]["deletedAt"] is None
 
         identity.authenticate.return_value = _principal(uuid4())
         hidden = client.get(f"/api/v1/resumes/{body['id']}")
@@ -160,7 +206,9 @@ def test_resume_builder_primary_workflow_is_authenticated_and_owner_scoped(
 def test_resume_builder_blocks_download_when_verification_fails(
     settings: Settings, fake_database: FakeDatabase
 ) -> None:
-    identity, resume_builder = _services(OWNER_ID, renderer=TextOnlyRenderer(omit_expected=True))
+    identity, resume_builder, processor = _services(
+        OWNER_ID, renderer=TextOnlyRenderer(omit_expected=True)
+    )
     with _authenticated_client(settings, fake_database, identity, resume_builder) as client:
         created = client.post(
             "/api/v1/resumes",
@@ -174,7 +222,11 @@ def test_resume_builder_blocks_download_when_verification_fails(
             headers=_write_headers(idempotency="api-blocked-export"),
         )
         assert exported.status_code == 202
-        assert exported.json()["export"]["status"] == "blocked"
+        assert exported.json()["export"]["status"] == "pending"
+        outcome = asyncio.run(
+            processor.process(UUID(exported.json()["export"]["id"]), "api-worker-token")
+        )
+        assert outcome.status.value == "blocked"
         blocked = client.post(
             f"/api/v1/exports/{exported.json()['export']['id']}/download-intent",
             headers=_write_headers(idempotency="api-blocked-download"),
@@ -186,7 +238,7 @@ def test_resume_builder_blocks_download_when_verification_fails(
 def test_resume_builder_mutation_requires_authenticated_session_and_csrf(
     settings: Settings, fake_database: FakeDatabase
 ) -> None:
-    identity, resume_builder = _services(OWNER_ID)
+    identity, resume_builder, _processor = _services(OWNER_ID)
     identity.authenticate.side_effect = AuthenticationRequired
     with TestClient(
         create_app(
