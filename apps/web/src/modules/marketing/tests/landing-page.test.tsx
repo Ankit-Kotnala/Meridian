@@ -15,6 +15,8 @@ describe("LandingPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("No made-up achievements")).toBeInTheDocument();
     expect(screen.getByText(/not a customer testimonial/i)).toBeInTheDocument();
-    expect(screen.getByText(/do not guarantee outcomes/i)).toBeInTheDocument();
+    expect(
+      screen.getAllByText(/do not guarantee outcomes/i).length,
+    ).toBeGreaterThan(0);
   });
 });

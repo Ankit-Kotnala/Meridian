@@ -20,8 +20,7 @@ const trustPoints = [
   {
     icon: ShieldCheck,
     title: "You approve material changes",
-    description:
-      "Future document changes remain visible, reviewable, and reversible.",
+    description: "Document changes remain visible, reviewable, and reversible.",
   },
 ] as const;
 
@@ -44,10 +43,10 @@ export function AuthPageShell({
       <aside className="hidden bg-navy px-8 py-10 text-white lg:flex lg:flex-col lg:justify-between xl:px-12">
         <CareerOsLogo href="/" inverted />
         <div className="my-16 max-w-md">
-          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-violet-300">
-            Your career. Verified. Elevated.
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-100/55">
+            Career truth before career polish
           </p>
-          <h2 className="mt-4 text-3xl font-black leading-tight tracking-[-0.035em]">
+          <h2 className="mt-4 font-display text-3xl font-semibold leading-tight tracking-[-0.035em]">
             A secure foundation for career information you control.
           </h2>
           <ul className="mt-8 space-y-5">
@@ -58,14 +57,14 @@ export function AuthPageShell({
                 title: pointTitle,
               }) => (
                 <li className="flex items-start gap-3" key={pointTitle}>
-                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/10 text-violet-200">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-[var(--radius-control)] bg-white/10 text-emerald-100">
                     <Icon aria-hidden="true" className="size-4" />
                   </span>
                   <span>
-                    <span className="block text-sm font-extrabold">
+                    <span className="block text-sm font-semibold">
                       {pointTitle}
                     </span>
-                    <span className="mt-1 block text-xs leading-5 text-slate-300">
+                    <span className="mt-1 block text-xs leading-5 text-emerald-50/65">
                       {pointDescription}
                     </span>
                   </span>
@@ -74,7 +73,7 @@ export function AuthPageShell({
             )}
           </ul>
         </div>
-        <p className="text-xs leading-5 text-slate-400">
+        <p className="text-xs leading-5 text-emerald-100/45">
           Internal readiness measures are not employer or
           applicant-tracking-system scores and do not guarantee employment
           outcomes.
@@ -84,9 +83,9 @@ export function AuthPageShell({
       <section className="flex min-h-screen items-center justify-center bg-background px-4 py-10 sm:px-8">
         <div className="w-full max-w-md">
           <CareerOsLogo className="mb-8 lg:hidden" href="/" />
-          <div className="surface-card rounded-2xl p-5 sm:p-8">
+          <div className="surface-card rounded-[var(--radius-card)] p-5 sm:p-8">
             <p className="eyebrow">{eyebrow}</p>
-            <h1 className="mt-2 text-2xl font-black tracking-[-0.035em] text-foreground sm:text-3xl">
+            <h1 className="mt-2 font-display text-2xl font-semibold tracking-[-0.035em] text-foreground sm:text-3xl">
               {title}
             </h1>
             <p className="mt-3 text-sm leading-6 text-muted">{description}</p>
@@ -94,10 +93,7 @@ export function AuthPageShell({
           </div>
           <p className="mt-5 text-center text-xs leading-5 text-muted">
             Need product context?{" "}
-            <Link
-              className="font-bold text-primary hover:text-primary-strong"
-              href="/security"
-            >
+            <Link className="text-link" href="/security">
               Read about security and privacy
             </Link>
           </p>

@@ -3,7 +3,7 @@ export const publicPages = {
     title: "Product overview",
     eyebrow: "CareerOS product",
     intro:
-      "One connected operating system for verified career information, readiness analysis, application materials, and job-search workflow.",
+      "One connected operating system for evidence-backed career information, readiness analysis, application materials, and job-search workflow.",
     sections: [
       [
         "A durable career profile",
@@ -80,22 +80,22 @@ export const publicPages = {
     ],
   },
   pricing: {
-    title: "Pricing",
-    eyebrow: "Plans for different career moments",
+    title: "Preview availability",
+    eyebrow: "Commercial launch not available",
     intro:
-      "The initial model includes Free, Job Hunt Sprint, Pro, and future Coach or Organization plans. Final prices will come from launch configuration.",
+      "CareerOS is a technical product preview. Final prices, entitlements, billing behavior, and support terms will come from reviewed launch configuration rather than marketing placeholders.",
     sections: [
       [
-        "Free",
-        "Build one profile and try limited general and role analyses, a report preview, and a verified export.",
+        "Current access",
+        "Preview account flows exist for technical verification with fictional or non-sensitive content. This is not a production service offer.",
       ],
       [
-        "Job Hunt Sprint",
-        "Time-limited higher usage for exact job matching, Change Studio, application packs, and multiple exports.",
+        "Commercial plans",
+        "No paid plan can be purchased. Plan names, prices, limits, and entitlements remain uncommitted until billing and support operations are ready.",
       ],
       [
-        "Pro",
-        "Ongoing role exploration, application workflow, interview preparation, achievement capture, and analytics.",
+        "Before launch",
+        "Counsel-reviewed legal notices, monitored support channels, configured entitlements, and production security review are required before public availability.",
       ],
     ],
   },
@@ -161,13 +161,13 @@ export const publicPages = {
   },
   about: {
     title: "About CareerOS",
-    eyebrow: "Your career. Verified. Elevated.",
+    eyebrow: "Career truth before career polish",
     intro:
       "CareerOS is a product concept for helping people manage the facts, evidence, applications, and growth of a career—not just one resume file.",
     sections: [
       [
         "The premise",
-        "A structured, verified career profile should be the source of truth for every career document and conversation.",
+        "A structured, evidence-backed career profile should be the source of truth for every career document and conversation.",
       ],
       [
         "The standard",
@@ -175,7 +175,7 @@ export const publicPages = {
       ],
       [
         "Current status",
-        "CareerOS now includes technical-preview account controls plus secure resume upload, parsed-field correction, and deterministic Resume Health. The public dashboard preview remains fictional and separate from protected account data.",
+        "CareerOS includes technical-preview account controls, secure resume upload, parsed-field correction, deterministic Resume Health, and later-phase career workflows. Public examples remain fictional and separate from protected account data.",
       ],
     ],
   },

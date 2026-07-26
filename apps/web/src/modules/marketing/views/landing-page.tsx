@@ -1,678 +1,366 @@
 import {
-  Activity,
-  Archive,
   ArrowRight,
-  BadgeCheck,
-  BriefcaseBusiness,
   Check,
   FileCheck2,
-  FileSearch,
+  GitBranch,
   LockKeyhole,
   MessageSquareText,
-  ScanSearch,
+  SearchCheck,
   ShieldCheck,
-  Sparkles,
-  Target,
-  Upload,
   UserRoundCheck,
-  WandSparkles,
-  Workflow,
 } from "lucide-react";
 import Link from "next/link";
-import type { ComponentType, SVGProps } from "react";
 
 import { Badge, buttonStyles, cn } from "@careeros/ui";
 
-import { ProductPreview } from "@/modules/marketing/components/product-preview";
-import { SiteFooter } from "@/modules/marketing/components/site-footer";
-import { SiteHeader } from "@/modules/marketing/components/site-header";
+import { SiteFooter } from "@/shared/components/public-site-footer";
+import { SiteHeader } from "@/shared/components/public-site-header";
 
-type Icon = ComponentType<SVGProps<SVGSVGElement>>;
-
-const principles: Array<{ icon: Icon; title: string; description: string }> = [
+const operatingModel = [
   {
-    icon: ShieldCheck,
-    title: "Truth-locked by design",
-    description:
-      "Suggested claims must trace back to career evidence you control. Missing facts become questions—not guesses.",
-  },
-  {
-    icon: Archive,
-    title: "One career source of truth",
-    description:
-      "Keep experience, achievements, skills, and proof in a durable profile instead of rebuilding every application.",
-  },
-  {
+    description: "Roles, projects, skills, achievements, and preferences.",
     icon: UserRoundCheck,
-    title: "You approve every change",
-    description:
-      "Review the original, rationale, requirement, and supporting evidence before accepting or editing material changes.",
+    label: "Structured career facts",
   },
-];
+  {
+    description: "Eligible sources and your explicit confirmation.",
+    icon: GitBranch,
+    label: "Evidence and provenance",
+  },
+  {
+    description: "Resumes, answers, stories, and messages you approve.",
+    icon: FileCheck2,
+    label: "Controlled outputs",
+  },
+] as const;
+
+const capabilityRows = [
+  [
+    "Maintain career truth",
+    "Keep experience, achievements, skills, and evidence in one durable record instead of copying facts between documents.",
+  ],
+  [
+    "Understand the requirement",
+    "Separate general resume health, role readiness, and exact job coverage so each measure answers one clear question.",
+  ],
+  [
+    "Create with control",
+    "See the original, proposed change, reason, evidence, and relevant requirement before accepting material edits.",
+  ],
+  [
+    "Carry context forward",
+    "Use the same reviewed record for applications, interview stories, networking, and long-term growth.",
+  ],
+] as const;
 
 const workflow = [
   {
-    number: "01",
-    icon: Upload,
-    title: "Bring your career history",
     description:
-      "Start with a resume, then correct uncertain fields and grow a structured profile over time.",
+      "Start manually or import a resume. Uncertain parsing is held for review.",
+    label: "Build the record",
   },
   {
-    number: "02",
-    icon: ScanSearch,
-    title: "Understand readiness",
     description:
-      "See general resume health, role readiness, or exact job requirement coverage—with plain-language explanations.",
+      "Attach eligible sources, capture achievements, and confirm what is true.",
+    label: "Connect evidence",
   },
   {
-    number: "03",
-    icon: WandSparkles,
-    title: "Create with evidence",
     description:
-      "Review grounded changes and generate consistent resumes, application answers, and interview stories.",
+      "Explore roles or bring a specific job description into a protected workflow.",
+    label: "Choose the context",
   },
   {
-    number: "04",
-    icon: Activity,
-    title: "Learn from the search",
     description:
-      "Track applications and outcomes as patterns, never as promises or proof of causation.",
+      "Compare, edit, accept, or reject every material document change before export.",
+    label: "Review the output",
   },
-];
+] as const;
 
-const capabilities: Array<{
-  icon: Icon;
-  eyebrow: string;
-  title: string;
-  description: string;
-  bullets: string[];
-  accent: string;
-}> = [
+const trustRows = [
   {
-    icon: FileSearch,
-    eyebrow: "General resume health",
-    title:
-      "See what your resume communicates before a job description enters the picture.",
     description:
-      "CareerOS evaluates machine readability, recruiter clarity, content impact, structure, consistency, and evidence confidence using internal, explainable readiness measures.",
-    bullets: [
-      "Parsing and reading-order previews",
-      "Prioritized issues and quick wins",
-      "No claim of an employer’s ATS score",
-    ],
-    accent: "bg-primary-soft text-primary",
-  },
-  {
-    icon: Archive,
-    eyebrow: "Career Evidence Vault",
-    title:
-      "Turn scattered career facts into a profile you can trust and reuse.",
-    description:
-      "Connect achievements, projects, metrics, files, and confirmations to the experience and skills they support. Every output keeps its provenance.",
-    bullets: [
-      "Verification and confirmation states",
-      "Source spans and attachment links",
-      "Unsupported evidence stays out of generated content",
-    ],
-    accent: "bg-success-soft text-success",
-  },
-  {
-    icon: Target,
-    eyebrow: "Roles and exact jobs",
-    title:
-      "Separate broad career readiness from the requirements of one opportunity.",
-    description:
-      "Explore target roles without a posting, then import an exact job when you are ready. CareerOS shows strengths, transferable evidence, unknowns, and hard gaps separately.",
-    bullets: [
-      "Requirement-to-evidence mapping",
-      "Role transition guidance",
-      "Mandatory gaps remain visible",
-    ],
-    accent: "bg-warning-soft text-warning",
-  },
-  {
-    icon: Workflow,
-    eyebrow: "Change Studio",
-    title:
-      "A review queue for meaningful edits—not an autopilot rewrite button.",
-    description:
-      "Compare original and suggested language, inspect the reason and supporting evidence, then accept, reject, edit, regenerate, or undo each operation.",
-    bullets: [
-      "Evidence-backed rationale",
-      "Human approval on material changes",
-      "Version history and restoration",
-    ],
-    accent: "bg-primary-soft text-primary",
-  },
-];
-
-const ecosystem = [
-  {
-    icon: FileCheck2,
-    title: "Verified exports",
-    description:
-      "Generate readable PDF and DOCX files, then parse them again to catch broken reading order or missing content.",
-  },
-  {
-    icon: BriefcaseBusiness,
-    title: "Application workspace",
-    description:
-      "Keep jobs, deadlines, tasks, documents, contacts, interviews, and exact resume versions together.",
-  },
-  {
+      "Missing facts produce a question, not polished prose that looks factual.",
     icon: MessageSquareText,
-    title: "Interview readiness",
-    description:
-      "Connect important resume claims to defensible STAR stories and identify where stronger evidence is still needed.",
+    title: "No made-up achievements",
   },
-];
-
-const trustItems: Array<{ icon: Icon; title: string; description: string }> = [
   {
+    description:
+      "Generated factual claims retain machine-checkable links to eligible evidence.",
+    icon: SearchCheck,
+    title: "Provenance stays visible",
+  },
+  {
+    description:
+      "Private uploads are validated and processed through constrained, ownership-aware paths.",
     icon: LockKeyhole,
-    title: "Private by default",
-    description:
-      "User content is not intended for model training by default, and raw resumes stay out of analytics and logs.",
+    title: "Sensitive data stays scoped",
   },
-  {
-    icon: ShieldCheck,
-    title: "Evidence before claims",
-    description:
-      "A grounding layer blocks unsupported career statements from accepted generated content.",
-  },
-  {
-    icon: ScanSearch,
-    title: "Explainable scores",
-    description:
-      "Deterministic, versioned formulas expose components and weights instead of asking an LLM for a final score.",
-  },
-  {
-    icon: UserRoundCheck,
-    title: "Meaningful control",
-    description:
-      "People can inspect, edit, reject, undo, restore, export, and delete their own career data.",
-  },
-];
-
-const plans: ReadonlyArray<{
-  name: string;
-  summary: string;
-  features: readonly string[];
-  featured: boolean;
-}> = [
-  {
-    name: "Free",
-    summary: "Start your source of truth.",
-    features: [
-      "One career profile",
-      "Limited readiness checks",
-      "Report preview",
-      "One verified export",
-    ],
-    featured: false,
-  },
-  {
-    name: "Job Hunt Sprint",
-    summary: "Focused tools for an active search.",
-    features: [
-      "Exact job matching",
-      "Change Studio",
-      "Application packs",
-      "Multiple verified exports",
-    ],
-    featured: true,
-  },
-  {
-    name: "Pro",
-    summary: "Continuous career operations.",
-    features: [
-      "Full role exploration",
-      "Application workspace",
-      "Interview preparation",
-      "Achievement capture and analytics",
-    ],
-    featured: false,
-  },
-];
+] as const;
 
 const faqs = [
-  {
-    question: "Does CareerOS know my employer’s ATS score?",
-    answer:
-      "No. CareerOS reports internal readiness measurements such as Resume Health, Machine Readability, and Requirement Coverage. They are not provided by an employer or applicant tracking system.",
-  },
-  {
-    question: "Will AI add impressive details that are missing?",
-    answer:
-      "No. Missing dates, metrics, ownership, team size, or outcomes should produce a question for you. Generated career claims must connect to supported evidence.",
-  },
-  {
-    question: "Can CareerOS guarantee interviews?",
-    answer:
-      "No. Hiring decisions involve many factors outside any application tool. CareerOS helps you improve clarity, evidence, consistency, and workflow without promising employment outcomes.",
-  },
-  {
-    question: "Is the dashboard on this site real user data?",
-    answer:
-      "No. The public demo dashboard is made entirely from fictional fixtures and remains separate from protected accounts. Signed-in Resume Health workspaces and short-lived guest checks use their own persisted document state.",
-  },
-];
+  [
+    "Does CareerOS know an employer’s ATS score?",
+    "No. CareerOS uses internal, explainable measurements for specific questions. They are not employer or applicant-tracking-system scores and do not guarantee outcomes.",
+  ],
+  [
+    "Will CareerOS invent stronger achievements?",
+    "No. If a useful detail is missing, CareerOS asks for it. Unsupported evidence is not generation input, and numbers need confirmed or independently verified support.",
+  ],
+  [
+    "Do I need a resume to start?",
+    "No. You can build a structured career profile directly. A resume can accelerate setup, but reviewed structured data becomes the lasting source of truth.",
+  ],
+  [
+    "Is this a production service?",
+    "Not yet. CareerOS is a technical product preview. Public legal notices, support channels, and commercial plans remain launch requirements.",
+  ],
+] as const;
 
 export function LandingPage() {
   return (
-    <div className="overflow-x-hidden bg-white">
+    <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
       <main id="main-content">
-        <section className="relative overflow-hidden border-b border-line bg-[linear-gradient(180deg,#fff_0%,#f7f5ff_100%)] py-16 sm:py-20 lg:py-24">
-          <div
-            aria-hidden="true"
-            className="absolute left-[8%] top-24 size-64 rounded-full bg-violet-200/30 blur-3xl"
-          />
-          <div className="site-container relative grid items-center gap-14 lg:grid-cols-[0.95fr_1.05fr] lg:gap-10">
+        <section className="border-b border-line bg-white">
+          <div className="site-container grid gap-12 py-16 sm:py-20 lg:grid-cols-[minmax(0,1.1fr)_minmax(22rem,0.9fr)] lg:items-center lg:py-28">
             <div>
-              <Badge className="mb-6" tone="primary">
-                <Sparkles aria-hidden="true" className="size-3" /> A career
-                application operating system
-              </Badge>
-              <h1 className="balanced max-w-3xl text-4xl font-black tracking-[-0.045em] text-foreground sm:text-5xl lg:text-[4rem] lg:leading-[1.04]">
-                Your career story, built on{" "}
-                <span className="text-primary">evidence.</span>
+              <Badge tone="neutral">Technical product preview</Badge>
+              <h1 className="balanced mt-6 max-w-4xl font-display text-4xl font-semibold leading-[1.08] tracking-[-0.045em] text-foreground sm:text-5xl lg:text-[4.25rem]">
+                Your career story, built on evidence.
               </h1>
-              <p className="mt-6 max-w-xl text-base leading-7 text-muted sm:text-lg sm:leading-8">
-                Build one verified career profile. Understand your readiness.
-                Tailor every application without inventing a single fact.
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-muted">
+                CareerOS keeps the facts of your career upstream, connects them
+                to supporting evidence, and helps you create application work
+                you can inspect and control.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
-                  className={cn(
-                    buttonStyles.base,
-                    buttonStyles.primary,
-                    "min-h-12 px-5",
-                  )}
-                  href="/demo/dashboard"
+                  className={cn(buttonStyles.base, buttonStyles.primary)}
+                  href="/register"
                 >
-                  Explore the fictional demo
+                  Create a preview account
                   <ArrowRight aria-hidden="true" className="size-4" />
                 </Link>
                 <Link
-                  className={cn(
-                    buttonStyles.base,
-                    buttonStyles.secondary,
-                    "min-h-12 px-5",
-                  )}
-                  href="/resume-health"
+                  className={cn(buttonStyles.base, buttonStyles.secondary)}
+                  href="/demo/dashboard"
                 >
-                  See how Resume Health works
+                  Explore the fictional demo
                 </Link>
               </div>
-              <ul className="mt-8 grid gap-3 text-sm font-semibold text-foreground sm:grid-cols-2">
-                {[
-                  "No made-up achievements",
-                  "No black-box hiring promises",
-                  "You approve every material edit",
-                  "Privacy-first by default",
-                ].map((item) => (
-                  <li className="flex items-center gap-2" key={item}>
-                    <span className="grid size-5 place-items-center rounded-full bg-success-soft text-success">
-                      <Check
-                        aria-hidden="true"
-                        className="size-3"
-                        strokeWidth={3}
-                      />
-                    </span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <ProductPreview />
-          </div>
-        </section>
-
-        <section className="py-20 sm:py-24" id="product">
-          <div className="site-container">
-            <div className="mx-auto max-w-2xl text-center">
-              <p className="eyebrow">A better foundation</p>
-              <h2 className="balanced mt-3 text-3xl font-black tracking-[-0.035em] text-foreground sm:text-4xl">
-                Your resume is an output. Your verified career profile is the
-                source.
-              </h2>
-              <p className="mt-5 text-base leading-7 text-muted">
-                Stop rebuilding the facts of your career for every application.
-                CareerOS organizes the evidence once, then helps you use it
-                consistently.
+              <p className="mt-4 text-xs leading-5 text-muted">
+                Use fictional or non-sensitive content during technical preview
+                testing. Production legal notices are not complete.
               </p>
             </div>
-            <div className="mt-12 grid gap-5 md:grid-cols-3">
-              {principles.map(({ icon: IconComponent, title, description }) => (
-                <article
-                  className="rounded-2xl border border-line bg-white p-6 shadow-[0_12px_36px_rgba(20,30,72,.06)]"
-                  key={title}
-                >
-                  <span className="grid size-11 place-items-center rounded-xl bg-primary-soft text-primary">
-                    <IconComponent aria-hidden="true" className="size-5" />
-                  </span>
-                  <h3 className="mt-5 text-lg font-extrabold tracking-[-0.02em]">
-                    {title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-6 text-muted">
-                    {description}
-                  </p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
 
-        <section className="border-y border-line bg-background py-20 sm:py-24">
-          <div className="site-container space-y-16 lg:space-y-24">
-            {capabilities.map(
-              (
-                {
-                  icon: IconComponent,
-                  eyebrow,
-                  title,
-                  description,
-                  bullets,
-                  accent,
-                },
-                index,
-              ) => (
-                <article
-                  className="grid items-center gap-9 lg:grid-cols-2 lg:gap-16"
-                  key={title}
-                >
-                  <div className={cn(index % 2 === 1 && "lg:order-2")}>
-                    <p className="eyebrow">{eyebrow}</p>
-                    <h2 className="balanced mt-3 text-3xl font-black tracking-[-0.035em] text-foreground">
-                      {title}
-                    </h2>
-                    <p className="mt-5 leading-7 text-muted">{description}</p>
-                    <ul className="mt-6 space-y-3 text-sm font-semibold text-foreground">
-                      {bullets.map((bullet) => (
-                        <li className="flex items-start gap-2.5" key={bullet}>
-                          <BadgeCheck
-                            aria-hidden="true"
-                            className="mt-0.5 size-4 shrink-0 text-success"
-                          />{" "}
-                          {bullet}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div
-                    className={cn(
-                      "rounded-[1.75rem] border border-line bg-white p-5 shadow-[0_18px_60px_rgba(20,30,72,.08)] sm:p-8",
-                      index % 2 === 1 && "lg:order-1",
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "grid size-12 place-items-center rounded-2xl",
-                        accent,
-                      )}
+            <aside
+              aria-labelledby="operating-model-title"
+              className="border-l-2 border-primary bg-surface-raised px-5 py-2 sm:px-7"
+            >
+              <p className="eyebrow">The operating model</p>
+              <h2
+                className="mt-2 text-xl font-semibold tracking-[-0.025em]"
+                id="operating-model-title"
+              >
+                One reviewed record. Many useful outputs.
+              </h2>
+              <ol className="mt-7">
+                {operatingModel.map(
+                  ({ description, icon: Icon, label }, index) => (
+                    <li
+                      className="relative grid grid-cols-[2.25rem_minmax(0,1fr)] gap-3 pb-6 last:pb-0"
+                      key={label}
                     >
-                      <IconComponent aria-hidden="true" className="size-6" />
-                    </div>
-                    <div className="mt-7 space-y-3">
-                      {bullets.map((bullet, bulletIndex) => (
-                        <div
-                          className="flex items-center justify-between gap-4 rounded-xl border border-line bg-slate-50/70 p-4"
-                          key={bullet}
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-white text-xs font-black text-primary shadow-sm">
-                              {bulletIndex + 1}
-                            </span>
-                            <span className="text-sm font-bold text-foreground">
-                              {bullet}
-                            </span>
-                          </div>
-                          <Check
-                            aria-hidden="true"
-                            className="size-4 shrink-0 text-success"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </article>
-              ),
-            )}
+                      {index < operatingModel.length - 1 && (
+                        <span
+                          aria-hidden="true"
+                          className="absolute bottom-0 left-[1.0625rem] top-8 w-px bg-line-strong"
+                        />
+                      )}
+                      <span className="grid size-9 place-items-center rounded-full border border-line-strong bg-white text-primary">
+                        <Icon aria-hidden="true" className="size-4" />
+                      </span>
+                      <span>
+                        <span className="block text-sm font-semibold">
+                          {label}
+                        </span>
+                        <span className="mt-1 block text-sm leading-6 text-muted">
+                          {description}
+                        </span>
+                      </span>
+                    </li>
+                  ),
+                )}
+              </ol>
+            </aside>
           </div>
         </section>
 
-        <section className="py-20 sm:py-24" id="how-it-works">
-          <div className="site-container">
-            <div className="max-w-2xl">
-              <p className="eyebrow">How it works</p>
-              <h2 className="balanced mt-3 text-3xl font-black tracking-[-0.035em] sm:text-4xl">
-                One connected workflow, from career history to interview room.
+        <section className="site-container py-16 sm:py-24" id="product">
+          <div className="grid gap-10 lg:grid-cols-[0.75fr_1.25fr]">
+            <header>
+              <p className="eyebrow">A career operating system</p>
+              <h2 className="balanced mt-3 font-display text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
+                Stop rebuilding your history for every opportunity.
               </h2>
-            </div>
-            <ol className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-              {workflow.map(
-                ({ number, icon: IconComponent, title, description }) => (
-                  <li
-                    className="relative rounded-2xl border border-line bg-white p-6"
-                    key={number}
-                  >
-                    <span className="absolute right-5 top-4 text-4xl font-black tracking-[-0.06em] text-slate-100">
-                      {number}
-                    </span>
-                    <span className="grid size-10 place-items-center rounded-xl bg-primary-soft text-primary">
-                      <IconComponent aria-hidden="true" className="size-5" />
-                    </span>
-                    <h3 className="mt-5 font-extrabold">{title}</h3>
-                    <p className="mt-2 text-sm leading-6 text-muted">
-                      {description}
-                    </p>
-                  </li>
-                ),
-              )}
-            </ol>
-            <div className="mt-8 grid gap-5 md:grid-cols-3">
-              {ecosystem.map(({ icon: IconComponent, title, description }) => (
-                <article
-                  className="rounded-2xl bg-navy p-6 text-white"
-                  key={title}
-                >
-                  <IconComponent
-                    aria-hidden="true"
-                    className="size-5 text-violet-300"
-                  />
-                  <h3 className="mt-5 font-extrabold">{title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-300">
-                    {description}
-                  </p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section
-          className="border-y border-line bg-[#f6f8fc] py-20 sm:py-24"
-          id="trust"
-        >
-          <div className="site-container grid items-start gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
-            <div>
-              <p className="eyebrow">Trust is a product feature</p>
-              <h2 className="balanced mt-3 text-3xl font-black tracking-[-0.035em] sm:text-4xl">
-                Designed for sensitive career data and honest output.
-              </h2>
-              <p className="mt-5 leading-7 text-muted">
-                CareerOS is being built around least-data AI requests, redacted
-                logs, configurable retention, clear consent, evidence
-                traceability, and user-controlled deletion.
+              <p className="mt-4 text-sm leading-7 text-muted">
+                A resume is one output. CareerOS treats your structured career
+                record and evidence graph as the durable source behind it.
               </p>
               <Link
-                className={cn(
-                  buttonStyles.base,
-                  buttonStyles.secondary,
-                  "mt-7",
-                )}
-                href="/security"
+                className="text-link mt-5 inline-flex text-sm"
+                href="/product"
               >
-                Read the security approach{" "}
-                <ArrowRight aria-hidden="true" className="size-4" />
+                Read the product overview
               </Link>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {trustItems.map(({ icon: IconComponent, title, description }) => (
-                <article
-                  className="rounded-2xl border border-line bg-white p-5 shadow-sm"
+            </header>
+            <dl className="divide-y divide-line border-y border-line">
+              {capabilityRows.map(([title, description]) => (
+                <div
+                  className="grid gap-2 py-5 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-7"
                   key={title}
                 >
-                  <IconComponent
-                    aria-hidden="true"
-                    className="size-5 text-primary"
-                  />
-                  <h3 className="mt-4 font-extrabold">{title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-muted">
+                  <dt className="font-semibold text-foreground">{title}</dt>
+                  <dd className="text-sm leading-6 text-muted">
                     {description}
-                  </p>
-                </article>
+                  </dd>
+                </div>
               ))}
-            </div>
+            </dl>
           </div>
         </section>
 
-        <section className="py-20 sm:py-24">
-          <div className="site-container">
-            <div className="mx-auto max-w-3xl rounded-[1.75rem] border border-dashed border-primary/35 bg-primary-soft/45 p-8 text-center sm:p-11">
-              <Badge tone="primary">
-                Illustrative scenario · not a customer testimonial
-              </Badge>
-              <p className="balanced mt-6 text-xl font-extrabold leading-8 tracking-[-0.02em] text-foreground sm:text-2xl">
-                “I can see which claims have evidence, which role gaps are real,
-                and what I still need to answer before I send an application.”
+        <section className="border-y border-line bg-white" id="how-it-works">
+          <div className="site-container py-16 sm:py-24">
+            <header className="max-w-2xl">
+              <p className="eyebrow">How it works</p>
+              <h2 className="balanced mt-3 font-display text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
+                Progress without surrendering control.
+              </h2>
+            </header>
+            <ol className="mt-10 grid border-l border-line md:grid-cols-4 md:border-l-0 md:border-t">
+              {workflow.map(({ description, label }, index) => (
+                <li className="relative px-5 py-6 md:px-6 md:pt-8" key={label}>
+                  <span className="absolute -left-[0.8rem] top-6 grid size-6 place-items-center rounded-full border border-line-strong bg-white text-[0.6875rem] font-bold text-muted md:-top-3 md:left-6">
+                    {index + 1}
+                  </span>
+                  <h3 className="font-semibold text-foreground">{label}</h3>
+                  <p className="mt-2 text-sm leading-6 text-muted">
+                    {description}
+                  </p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        <section className="site-container py-16 sm:py-24" id="trust">
+          <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr]">
+            <header>
+              <p className="eyebrow">Trust by construction</p>
+              <h2 className="balanced mt-3 font-display text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
+                Better career work starts with honest boundaries.
+              </h2>
+              <p className="mt-4 text-sm leading-7 text-muted">
+                Examples in this preview are illustrative product states, not a
+                customer testimonial. Readiness measures do not guarantee
+                outcomes.
               </p>
-              <p className="mt-4 text-sm text-muted">
-                Fictional product-use scenario for this public demo.
-              </p>
+            </header>
+            <div className="divide-y divide-line border-y border-line">
+              {trustRows.map(({ description, icon: Icon, title }) => (
+                <div className="flex gap-4 py-5" key={title}>
+                  <Icon
+                    aria-hidden="true"
+                    className="mt-0.5 size-5 shrink-0 text-primary"
+                  />
+                  <div>
+                    <h3 className="font-semibold text-foreground">{title}</h3>
+                    <p className="mt-1 text-sm leading-6 text-muted">
+                      {description}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
         <section
-          className="border-y border-line bg-background py-20 sm:py-24"
-          id="pricing"
+          className="border-y border-line bg-navy text-white"
+          id="availability"
         >
-          <div className="site-container">
-            <div className="mx-auto max-w-2xl text-center">
-              <p className="eyebrow">Plans that match the moment</p>
-              <h2 className="balanced mt-3 text-3xl font-black tracking-[-0.035em] sm:text-4xl">
-                Start small. Add depth when your search needs it.
+          <div className="site-container grid gap-8 py-14 md:grid-cols-[1fr_auto] md:items-center">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.1em] text-emerald-100/60">
+                Preview availability
+              </p>
+              <h2 className="mt-3 font-display text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">
+                Commercial plans are not available yet.
               </h2>
-              <p className="mt-4 leading-7 text-muted">
-                Prices and exact entitlements will be loaded from product
-                configuration before launch—not duplicated in the interface.
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-emerald-50/70">
+                Final prices and entitlements will come from launch
+                configuration. The current account flow exists for technical
+                verification with fictional or non-sensitive content.
               </p>
             </div>
-            <div className="mt-12 grid gap-5 lg:grid-cols-3">
-              {plans.map((plan) => (
-                <article
-                  className={cn(
-                    "relative rounded-2xl border bg-white p-6",
-                    plan.featured
-                      ? "border-primary shadow-[0_18px_50px_rgba(91,70,245,.14)]"
-                      : "border-line",
-                  )}
-                  key={plan.name}
-                >
-                  {plan.featured && (
-                    <Badge className="absolute right-5 top-5" tone="primary">
-                      Active-search favorite
-                    </Badge>
-                  )}
-                  <h3 className="text-xl font-black tracking-[-0.03em]">
-                    {plan.name}
-                  </h3>
-                  <p className="mt-2 text-sm text-muted">{plan.summary}</p>
-                  <p className="mt-7 text-2xl font-black tracking-tight">
-                    Pricing at launch
-                  </p>
-                  <ul className="mt-6 space-y-3 border-t border-line pt-6 text-sm">
-                    {plan.features.map((feature) => (
-                      <li className="flex items-start gap-2.5" key={feature}>
-                        <Check
-                          aria-hidden="true"
-                          className="mt-0.5 size-4 shrink-0 text-success"
-                        />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Link
-                    className={cn(
-                      buttonStyles.base,
-                      plan.featured
-                        ? buttonStyles.primary
-                        : buttonStyles.secondary,
-                      "mt-7 w-full",
-                    )}
-                    href="/register"
-                  >
-                    Join the product preview
-                  </Link>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="py-20 sm:py-24">
-          <div className="site-container grid gap-10 lg:grid-cols-[0.7fr_1.3fr] lg:gap-16">
-            <div>
-              <p className="eyebrow">Questions, answered</p>
-              <h2 className="balanced mt-3 text-3xl font-black tracking-[-0.035em]">
-                Clear limits build a more useful product.
-              </h2>
-            </div>
-            <div className="divide-y divide-line rounded-2xl border border-line bg-white px-5 sm:px-7">
-              {faqs.map((faq) => (
-                <details className="group py-5" key={faq.question}>
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-extrabold text-foreground marker:hidden">
-                    {faq.question}
-                    <span
-                      aria-hidden="true"
-                      className="text-xl font-normal text-primary transition group-open:rotate-45"
-                    >
-                      +
-                    </span>
-                  </summary>
-                  <p className="max-w-2xl pt-3 text-sm leading-6 text-muted">
-                    {faq.answer}
-                  </p>
-                </details>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-[linear-gradient(135deg,#0b1d42_0%,#17134d_56%,#3d2bb8_100%)] py-20 text-white">
-          <div className="site-container text-center">
-            <Sparkles
-              aria-hidden="true"
-              className="mx-auto size-7 text-violet-300"
-            />
-            <h2 className="balanced mx-auto mt-5 max-w-3xl text-3xl font-black tracking-[-0.04em] sm:text-4xl">
-              Build an application system that remembers the truth.
-            </h2>
-            <p className="mx-auto mt-5 max-w-xl leading-7 text-slate-300">
-              Run a short-lived guest Resume Health check, or sign in to keep
-              reviewed documents and reports in your protected workspace.
-            </p>
             <Link
               className={cn(
                 buttonStyles.base,
-                "mt-8 min-h-12 bg-white px-6 text-navy hover:bg-violet-50",
+                "bg-white text-navy hover:bg-surface-subtle",
               )}
-              href="/resume-health/guest"
+              href="/pricing"
             >
-              Check my resume{" "}
+              View preview status
+              <ArrowRight aria-hidden="true" className="size-4" />
+            </Link>
+          </div>
+        </section>
+
+        <section className="site-container grid gap-10 py-16 sm:py-24 lg:grid-cols-[0.65fr_1.35fr]">
+          <header>
+            <p className="eyebrow">Questions</p>
+            <h2 className="mt-3 font-display text-3xl font-semibold tracking-[-0.035em]">
+              Clear answers before you begin.
+            </h2>
+          </header>
+          <div className="divide-y divide-line border-y border-line">
+            {faqs.map(([question, answer]) => (
+              <details className="group py-5" key={question}>
+                <summary className="flex min-h-11 list-none items-center justify-between gap-4 font-semibold text-foreground [&::-webkit-details-marker]:hidden">
+                  {question}
+                  <span
+                    aria-hidden="true"
+                    className="grid size-7 shrink-0 place-items-center rounded-full border border-line text-muted group-open:bg-surface-subtle"
+                  >
+                    <Check className="size-3.5" />
+                  </span>
+                </summary>
+                <p className="max-w-3xl pb-1 pr-10 text-sm leading-7 text-muted">
+                  {answer}
+                </p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        <section className="border-t border-line bg-white">
+          <div className="site-container flex flex-col gap-6 py-14 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-primary">
+                <ShieldCheck aria-hidden="true" className="size-5" />
+                <span className="text-sm font-semibold">Evidence first</span>
+              </div>
+              <h2 className="mt-3 max-w-2xl font-display text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">
+                Build the record before polishing the story.
+              </h2>
+            </div>
+            <Link
+              className={cn(buttonStyles.base, buttonStyles.primary)}
+              href="/get-started"
+            >
+              Choose how to start
               <ArrowRight aria-hidden="true" className="size-4" />
             </Link>
           </div>

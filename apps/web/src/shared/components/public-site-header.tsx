@@ -12,15 +12,15 @@ const navigation = [
   { label: "Product", href: "/#product" },
   { label: "How it works", href: "/#how-it-works" },
   { label: "Trust", href: "/#trust" },
-  { label: "Pricing", href: "/#pricing" },
+  { label: "Availability", href: "/#availability" },
 ];
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-line/80 bg-white/90 backdrop-blur-xl">
-      <div className="site-container flex h-17 items-center justify-between gap-6">
+    <header className="sticky top-0 z-50 border-b border-border bg-surface-raised/96 backdrop-blur-md">
+      <div className="site-container flex h-16 items-center justify-between gap-6">
         <CareerOsLogo />
         <nav
           aria-label="Primary navigation"
@@ -28,7 +28,7 @@ export function SiteHeader() {
         >
           {navigation.map((item) => (
             <Link
-              className="text-sm font-semibold text-muted transition hover:text-foreground"
+              className="text-sm font-semibold text-muted transition-colors hover:text-foreground hover:underline"
               href={item.href}
               key={item.label}
             >
@@ -45,9 +45,9 @@ export function SiteHeader() {
           </Link>
           <Link
             className={cn(buttonStyles.base, buttonStyles.primary)}
-            href="/demo/dashboard"
+            href="/register"
           >
-            Explore the demo
+            Create an account
             <ArrowRight aria-hidden="true" className="size-4" />
           </Link>
         </div>
@@ -55,7 +55,7 @@ export function SiteHeader() {
           aria-controls="mobile-navigation"
           aria-expanded={open}
           aria-label={open ? "Close navigation menu" : "Open navigation menu"}
-          className="grid size-10 place-items-center rounded-xl border border-line bg-white text-foreground md:hidden"
+          className="grid size-11 place-items-center rounded-[var(--radius-control)] border border-line bg-white text-foreground shadow-sm md:hidden"
           onClick={() => setOpen((value) => !value)}
           type="button"
         >
@@ -75,7 +75,7 @@ export function SiteHeader() {
           <div className="mx-auto grid max-w-xl gap-1">
             {navigation.map((item) => (
               <Link
-                className="rounded-xl px-3 py-3 text-sm font-bold text-foreground hover:bg-slate-50"
+                className="rounded-[var(--radius-control)] px-3 py-3 text-sm font-bold text-foreground hover:bg-surface-subtle"
                 href={item.href}
                 key={item.label}
                 onClick={() => setOpen(false)}

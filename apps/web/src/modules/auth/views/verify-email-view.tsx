@@ -91,59 +91,61 @@ export function VerifyEmailView() {
       eyebrow="Email verification"
       title={state === "success" ? "Email verified" : "Verify your email"}
     >
-      {state === "checking" ? (
-        <p aria-live="polite" className="text-sm text-muted" role="status">
-          Verifying your email…
-        </p>
-      ) : state === "success" ? (
-        <div className="space-y-5">
-          <Alert title="Your email is verified" tone="success">
-            You can now sign in and continue the protected onboarding flow.
-          </Alert>
-          <Link className="font-bold text-primary" href="/login">
-            Continue to sign in
-          </Link>
-        </div>
-      ) : resent ? (
-        <div className="space-y-5">
-          <Alert title="Verification email requested" tone="success">
-            If the address is eligible, a new link will arrive. The same
-            response is shown for every address.
-          </Alert>
-          <Link className="font-bold text-primary" href="/login">
-            Return to sign in
-          </Link>
-        </div>
-      ) : (
-        <form className="space-y-5" noValidate onSubmit={onResend}>
-          <Alert title="This verification link can’t be used" tone="warning">
-            It may be expired, already used, or incomplete. Enter your email to
-            request a new link.
-          </Alert>
-          <FormErrorSummary message={failure} />
-          <TextField
-            autoCapitalize="none"
-            autoComplete="email"
-            error={emailError}
-            id="email"
-            inputMode="email"
-            label="Email address"
-            maxLength={254}
-            name="email"
-            required
-            spellCheck={false}
-            type="email"
-          />
-          <Button
-            className="w-full"
-            loading={resending}
-            loadingLabel="Requesting link…"
-            type="submit"
-          >
-            Send a new verification link
-          </Button>
-        </form>
-      )}
+      <div className="min-h-80">
+        {state === "checking" ? (
+          <p aria-live="polite" className="text-sm text-muted" role="status">
+            Verifying your email…
+          </p>
+        ) : state === "success" ? (
+          <div className="space-y-5">
+            <Alert title="Your email is verified" tone="success">
+              You can now sign in and continue the protected onboarding flow.
+            </Alert>
+            <Link className="font-bold text-primary" href="/login">
+              Continue to sign in
+            </Link>
+          </div>
+        ) : resent ? (
+          <div className="space-y-5">
+            <Alert title="Verification email requested" tone="success">
+              If the address is eligible, a new link will arrive. The same
+              response is shown for every address.
+            </Alert>
+            <Link className="font-bold text-primary" href="/login">
+              Return to sign in
+            </Link>
+          </div>
+        ) : (
+          <form className="space-y-5" noValidate onSubmit={onResend}>
+            <Alert title="This verification link can’t be used" tone="warning">
+              It may be expired, already used, or incomplete. Enter your email
+              to request a new link.
+            </Alert>
+            <FormErrorSummary message={failure} />
+            <TextField
+              autoCapitalize="none"
+              autoComplete="email"
+              error={emailError}
+              id="email"
+              inputMode="email"
+              label="Email address"
+              maxLength={254}
+              name="email"
+              required
+              spellCheck={false}
+              type="email"
+            />
+            <Button
+              className="w-full"
+              loading={resending}
+              loadingLabel="Requesting link…"
+              type="submit"
+            >
+              Send a new verification link
+            </Button>
+          </form>
+        )}
+      </div>
     </AuthPageShell>
   );
 }
