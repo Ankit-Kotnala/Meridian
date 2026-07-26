@@ -32,16 +32,25 @@ function NavigationLink({
       {...(active ? { "aria-current": "page" as const } : {})}
       {...(collapsed ? { "aria-label": label, title: label } : {})}
       className={cn(
-        "group relative flex min-h-10 items-center rounded-[var(--radius-control)] text-[0.8125rem] font-semibold transition-colors",
+        "group relative flex min-h-10 items-center rounded-[var(--radius-control)] text-[0.8125rem] font-semibold transition-[background-color,color,transform] duration-150",
         collapsed ? "justify-center px-2" : "gap-3 px-3",
         active
-          ? "bg-white/12 text-white before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:rounded-full before:bg-white"
-          : "text-emerald-50/75 hover:bg-white/7 hover:text-white",
+          ? "bg-white/13 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)] before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:rounded-full before:bg-accent"
+          : "text-emerald-50/72 hover:translate-x-0.5 hover:bg-white/7 hover:text-white",
       )}
       href={href}
       {...(onNavigate ? { onClick: onNavigate } : {})}
     >
-      <Icon aria-hidden="true" className="size-4 shrink-0" strokeWidth={2} />
+      <span
+        className={cn(
+          "grid size-7 shrink-0 place-items-center rounded-md transition-colors",
+          active
+            ? "bg-white/10 text-accent-soft"
+            : "text-emerald-50/70 group-hover:bg-white/8 group-hover:text-white",
+        )}
+      >
+        <Icon aria-hidden="true" className="size-4" strokeWidth={2} />
+      </span>
       {!collapsed && <span>{label}</span>}
     </Link>
   );
@@ -61,10 +70,10 @@ export function WorkspaceSidebar({
   const pathname = usePathname();
 
   return (
-    <div className="flex h-full flex-col bg-navy text-white">
+    <div className="relative flex h-full flex-col overflow-hidden bg-navy text-white before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-64 before:bg-[radial-gradient(circle_at_50%_0%,rgba(55,171,144,0.16),transparent_70%)]">
       <div
         className={cn(
-          "flex min-h-16 items-center border-b border-white/10",
+          "relative flex min-h-16 items-center border-b border-white/10",
           collapsed ? "justify-center px-2" : "justify-between px-4",
         )}
       >
@@ -83,7 +92,7 @@ export function WorkspaceSidebar({
 
       <nav
         aria-label="Application navigation"
-        className="flex-1 overflow-y-auto px-2 py-3"
+        className="relative flex-1 overflow-y-auto px-2 py-3"
       >
         {workspaceNavigationGroups.map((group, groupIndex) => (
           <section
@@ -116,7 +125,7 @@ export function WorkspaceSidebar({
         ))}
       </nav>
 
-      <div className="border-t border-white/10 p-2">
+      <div className="relative border-t border-white/10 bg-black/5 p-2 backdrop-blur-sm">
         <ul className="space-y-0.5">
           {workspaceUtilityNavigation.map((item) => (
             <li key={item.href}>

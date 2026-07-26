@@ -60,7 +60,7 @@ export function SiteFooter() {
                 {group.links.map(([label, href]) => (
                   <li key={label}>
                     <Link
-                      className="text-emerald-50/75 transition-colors hover:text-white hover:underline"
+                      className="inline-flex text-emerald-50/75 transition-[color,transform] hover:translate-x-0.5 hover:text-white hover:underline"
                       href={href}
                     >
                       {label}

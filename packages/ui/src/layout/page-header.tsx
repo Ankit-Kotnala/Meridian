@@ -22,7 +22,7 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        "mb-7 grid gap-5 border-b border-line pb-6 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end",
+        "relative mb-7 grid gap-5 border-b border-line pb-6 before:absolute before:-bottom-px before:left-0 before:h-px before:w-16 before:bg-primary sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end",
         className,
       )}
     >

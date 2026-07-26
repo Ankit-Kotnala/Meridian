@@ -12,6 +12,7 @@ const argumentsMap = Object.fromEntries(
 );
 
 const baseUrl = argumentsMap.baseUrl ?? "http://127.0.0.1:3000";
+const authBaseUrl = argumentsMap.authBaseUrl ?? baseUrl;
 const outputDirectory = path.resolve(
   process.cwd(),
   argumentsMap.output ?? "../../docs/screenshots/ux-redesign/after",
@@ -150,7 +151,7 @@ async function verificationLink(request, mailpitUrl, email) {
 
 async function bootstrapAuthenticatedStorage() {
   const context = await browser.newContext({
-    baseURL: baseUrl,
+    baseURL: authBaseUrl,
     colorScheme: "light",
     reducedMotion: "reduce",
     viewport: { width: 1024, height: 900 },

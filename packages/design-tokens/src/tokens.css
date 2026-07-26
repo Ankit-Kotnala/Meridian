@@ -1,19 +1,22 @@
 :root {
-  --background: #f6f7f4;
+  --background: #f5f7f3;
   --surface: #ffffff;
-  --surface-raised: #fcfdfb;
-  --surface-subtle: #eef1ec;
-  --surface-inset: #e8ece6;
-  --foreground: #17211b;
-  --muted: #5d6961;
-  --muted-strong: #465249;
-  --border: #dce2dc;
-  --border-strong: #b7c1b9;
+  --surface-raised: #fbfdfb;
+  --surface-subtle: #edf2ee;
+  --surface-inset: #e5ebe6;
+  --foreground: #132019;
+  --muted: #5a685f;
+  --muted-strong: #405148;
+  --border: #d8e1da;
+  --border-strong: #aebdb2;
   --primary: #246248;
   --primary-strong: #174a35;
   --primary-soft: #e5f1ea;
-  --navy: #132d24;
-  --navy-hover: #1d4134;
+  --accent: #167b79;
+  --accent-strong: #0e5e5c;
+  --accent-soft: #dff3f0;
+  --navy: #102d24;
+  --navy-hover: #194236;
   --success: #167451;
   --success-strong: #0d5b3e;
   --success-soft: #e3f3ea;
@@ -33,14 +36,23 @@
   --radius-card: 0.875rem;
   --radius-control: 0.625rem;
   --radius-small: 0.45rem;
-  --shadow-sm: 0 1px 2px rgb(20 38 29 / 0.06);
-  --shadow-md: 0 10px 28px rgb(20 38 29 / 0.08);
-  --shadow-lg: 0 24px 64px rgb(20 38 29 / 0.12);
+  --shadow-sm: 0 1px 2px rgb(13 39 30 / 0.07);
+  --shadow-card:
+    0 1px 2px rgb(13 39 30 / 0.045), 0 8px 24px -18px rgb(13 39 30 / 0.2);
+  --shadow-card-hover:
+    0 2px 4px rgb(13 39 30 / 0.055), 0 18px 42px -22px rgb(13 39 30 / 0.28);
+  --shadow-md: 0 12px 32px -12px rgb(13 39 30 / 0.16);
+  --shadow-lg: 0 28px 72px -24px rgb(13 39 30 / 0.24);
   --space-page-inline: clamp(1rem, 2.2vw, 2rem);
   --space-page-block: clamp(1.25rem, 3vw, 2.5rem);
   --content-wide: 78rem;
   --content-reading: 45rem;
-  --sidebar-width: 16rem;
+  --sidebar-width: 16.5rem;
+  --motion-fast: 140ms;
+  --motion-standard: 240ms;
+  --motion-slow: 420ms;
+  --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
   --font-family-sans:
     "Segoe UI Variable Text", "Aptos", "Segoe UI", ui-sans-serif, system-ui,
     -apple-system, BlinkMacSystemFont, sans-serif;
@@ -63,6 +75,9 @@
   --color-primary: var(--primary);
   --color-primary-strong: var(--primary-strong);
   --color-primary-soft: var(--primary-soft);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
   --color-navy: var(--navy);
   --color-navy-hover: var(--navy-hover);
   --color-success: var(--success);

@@ -9,18 +9,18 @@ import { buttonStyles, cn } from "@careeros/ui";
 import { CareerOsLogo } from "@/shared/components/career-os-logo";
 
 const navigation = [
-  { label: "Product", href: "/#product" },
-  { label: "How it works", href: "/#how-it-works" },
+  { label: "Platform", href: "/#platform" },
+  { label: "Workflow", href: "/#how-it-works" },
   { label: "Trust", href: "/#trust" },
-  { label: "Availability", href: "/#availability" },
+  { label: "Preview", href: "/#availability" },
 ];
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-surface-raised/96 backdrop-blur-md">
-      <div className="site-container flex h-16 items-center justify-between gap-6">
+    <header className="sticky top-0 z-50 border-b border-border/90 bg-surface-raised/82 shadow-[0_1px_0_rgba(19,45,36,0.03)] backdrop-blur-xl">
+      <div className="site-container flex h-[4.5rem] items-center justify-between gap-6">
         <CareerOsLogo />
         <nav
           aria-label="Primary navigation"
@@ -28,7 +28,7 @@ export function SiteHeader() {
         >
           {navigation.map((item) => (
             <Link
-              className="text-sm font-semibold text-muted transition-colors hover:text-foreground hover:underline"
+              className="nav-link text-sm font-semibold text-muted transition-colors hover:text-foreground"
               href={item.href}
               key={item.label}
             >
@@ -45,9 +45,9 @@ export function SiteHeader() {
           </Link>
           <Link
             className={cn(buttonStyles.base, buttonStyles.primary)}
-            href="/register"
+            href="/demo/dashboard"
           >
-            Create an account
+            Explore demo
             <ArrowRight aria-hidden="true" className="size-4" />
           </Link>
         </div>
@@ -69,7 +69,7 @@ export function SiteHeader() {
       {open && (
         <nav
           aria-label="Mobile navigation"
-          className="border-t border-line bg-white px-4 pb-5 pt-3 md:hidden"
+          className="mobile-nav-enter overflow-hidden border-t border-line bg-white/96 px-4 pb-5 pt-3 backdrop-blur-xl md:hidden"
           id="mobile-navigation"
         >
           <div className="mx-auto grid max-w-xl gap-1">
@@ -96,7 +96,7 @@ export function SiteHeader() {
                 href="/demo/dashboard"
                 onClick={() => setOpen(false)}
               >
-                View demo
+                Explore demo
               </Link>
             </div>
           </div>

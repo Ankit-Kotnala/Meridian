@@ -10,10 +10,11 @@ describe("LandingPage", () => {
     expect(
       screen.getByRole("heading", {
         level: 1,
-        name: /your career story, built on evidence/i,
+        name: /the system of record behind your career/i,
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText("No made-up achievements")).toBeInTheDocument();
+    expect(screen.getByText("No unsupported claims")).toBeInTheDocument();
+    expect(screen.getByText("Grounded by default")).toBeInTheDocument();
     expect(screen.getByText(/not a customer testimonial/i)).toBeInTheDocument();
     expect(
       screen.getAllByText(/do not guarantee outcomes/i).length,

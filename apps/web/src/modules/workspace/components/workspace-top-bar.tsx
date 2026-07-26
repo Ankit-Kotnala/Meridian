@@ -32,7 +32,7 @@ export function WorkspaceTopBar({
   const context = resolveWorkspaceContext(usePathname());
 
   return (
-    <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-4 border-b border-line bg-white/96 px-4 backdrop-blur-md sm:px-6">
+    <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-4 border-b border-line/90 bg-white/84 px-4 shadow-[0_1px_0_rgba(19,45,36,0.025)] backdrop-blur-xl sm:px-6">
       <div className="flex min-w-0 items-center gap-3">
         <button
           aria-label="Open application navigation"
@@ -56,7 +56,7 @@ export function WorkspaceTopBar({
       <details className="group relative">
         <summary
           aria-label={`Account menu for ${viewer.displayName}`}
-          className="flex min-h-11 list-none items-center gap-2 rounded-[var(--radius-control)] px-1.5 text-left hover:bg-surface-subtle [&::-webkit-details-marker]:hidden"
+          className="flex min-h-11 list-none items-center gap-2 rounded-[var(--radius-control)] border border-transparent px-1.5 text-left transition-colors hover:border-line hover:bg-white hover:shadow-sm [&::-webkit-details-marker]:hidden"
         >
           <span className="sr-only">Account menu</span>
           <span className="grid size-8 place-items-center rounded-full border border-primary/20 bg-primary-soft text-[0.6875rem] font-bold text-primary-strong">
