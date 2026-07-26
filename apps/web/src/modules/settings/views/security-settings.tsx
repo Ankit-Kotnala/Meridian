@@ -118,7 +118,7 @@ export function SecuritySettings() {
     }
   }
 
-  if (!capabilities && !failure) return <LoadingSkeleton />;
+  if (!capabilities && !failure) return <LoadingSkeleton variant="form" />;
   if (!capabilities || !activity)
     return (
       <ErrorState

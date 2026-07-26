@@ -42,8 +42,8 @@ export function WorkspaceShell({
     <div className="min-h-screen bg-background">
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 hidden transition-[width] duration-200 lg:block",
-          collapsed ? "w-[4.5rem]" : "w-[14.5rem]",
+          "fixed inset-y-0 left-0 z-40 hidden transition-[width] duration-200 motion-reduce:transition-none lg:block",
+          collapsed ? "w-[4.25rem]" : "w-[var(--sidebar-width)]",
         )}
       >
         <WorkspaceSidebar
@@ -54,7 +54,7 @@ export function WorkspaceShell({
 
       <dialog
         aria-label="Application navigation"
-        className="m-0 h-dvh max-h-none w-[min(19rem,88vw)] max-w-none bg-transparent p-0 backdrop:bg-navy/60 lg:hidden"
+        className="m-0 h-dvh max-h-none w-[min(20rem,90vw)] max-w-none bg-transparent p-0 backdrop:bg-foreground/45 lg:hidden"
         onCancel={(event) => {
           event.preventDefault();
           closeMobileNavigation();
@@ -70,8 +70,8 @@ export function WorkspaceShell({
 
       <div
         className={cn(
-          "transition-[padding] duration-200",
-          collapsed ? "lg:pl-[4.5rem]" : "lg:pl-[14.5rem]",
+          "transition-[padding] duration-200 motion-reduce:transition-none",
+          collapsed ? "lg:pl-[4.25rem]" : "lg:pl-[var(--sidebar-width)]",
         )}
       >
         <WorkspaceTopBar

@@ -1,22 +1,21 @@
 import type { ReactNode } from "react";
 
+import { PageHeader } from "@careeros/ui";
+
 import { SettingsNavigation } from "@/modules/settings";
 
 export default function SettingsLayout({ children }: { children: ReactNode }) {
   return (
-    <main className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8" id="main-content">
-      <header className="mb-6">
-        <p className="eyebrow">Protected account</p>
-        <h1 className="mt-2 text-2xl font-black tracking-[-0.035em] text-foreground sm:text-3xl">
-          Settings
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-          Manage real account state, preferences, sessions, consent, privacy,
-          connections, and server-reported capability availability.
-        </p>
-      </header>
-      <SettingsNavigation />
-      <div className="mt-5">{children}</div>
+    <main className="workspace-page" id="main-content">
+      <PageHeader
+        description="Manage real account state, preferences, sessions, consent, privacy, connections, and server-reported capability availability."
+        eyebrow="Protected account"
+        title="Settings"
+      />
+      <div className="grid gap-7 lg:grid-cols-[13.5rem_minmax(0,1fr)] lg:items-start">
+        <SettingsNavigation />
+        <div className="min-w-0">{children}</div>
+      </div>
     </main>
   );
 }

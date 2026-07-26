@@ -20,7 +20,7 @@ export default async function ProtectedWorkspaceLayout({
       accountActions={<LogoutButton />}
       viewer={{ displayName: user.displayName, email: user.email }}
     >
-      {children}
+      <div className="workspace-content">{children}</div>
     </WorkspaceShell>
   );
 }

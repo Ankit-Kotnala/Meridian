@@ -11,6 +11,8 @@ import {
   Card,
   ErrorState,
   LoadingSkeleton,
+  buttonStyles,
+  cn,
 } from "@careeros/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
@@ -64,7 +66,7 @@ export function ConnectionSettings() {
     }
   }
 
-  if (!capabilities && !failure) return <LoadingSkeleton />;
+  if (!capabilities && !failure) return <LoadingSkeleton variant="form" />;
   if (!capabilities)
     return (
       <ErrorState
@@ -103,7 +105,7 @@ export function ConnectionSettings() {
         </Alert>
       )}
       {notice && <Alert className="mt-5" title={notice} tone="success" />}
-      <div className="mt-5 flex flex-col gap-4 rounded-2xl border border-line p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-5 flex flex-col gap-4 rounded-[var(--radius-card)] border border-line p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <p className="font-extrabold text-foreground">Google</p>
@@ -131,14 +133,12 @@ export function ConnectionSettings() {
           </Button>
         ) : capabilities.googleOauthAvailable ? (
           <Link
-            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-extrabold text-white"
+            className={cn(buttonStyles.base, buttonStyles.primary)}
             href="/api/v1/auth/google/start?returnTo=%2Fsettings%2Fconnections&link=true"
           >
             Connect Google
           </Link>
-        ) : (
-          <Button disabled>Connect Google</Button>
-        )}
+        ) : null}
       </div>
     </Card>
   );

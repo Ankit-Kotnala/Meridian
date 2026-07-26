@@ -97,7 +97,7 @@ export function NotificationSettings() {
     }
   }
 
-  if (!preferences && !failure) return <LoadingSkeleton />;
+  if (!preferences && !failure) return <LoadingSkeleton variant="form" />;
   if (!preferences || !capabilities)
     return (
       <ErrorState

@@ -93,7 +93,7 @@ export function ConsentSettings() {
     }
   }
 
-  if (!consents && !failure) return <LoadingSkeleton />;
+  if (!consents && !failure) return <LoadingSkeleton variant="form" />;
   if (!consents)
     return (
       <ErrorState
