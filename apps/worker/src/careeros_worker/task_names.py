@@ -5,6 +5,10 @@ modules from depending on Celery while still giving routing and publishing one
 allowlist to share.
 """
 
+PROCESS_ACCOUNT_PRIVACY_OPERATIONS_TASK = (
+    "careeros.worker.identity.process_account_privacy_operations"
+)
+CLEANUP_ACCOUNT_EXPORTS_TASK = "careeros.worker.identity.cleanup_account_exports"
 PROCESS_ORGANIZATION_INVITATIONS_TASK = "careeros.worker.organizations.deliver_invitations"
 PROCESS_CAREER_ANALYTICS_REFRESH_TASK = "careeros.worker.career_analytics.process_refresh"
 DISPATCH_CAREER_ANALYTICS_OUTBOX_TASK = "careeros.worker.career_analytics.dispatch_outbox"

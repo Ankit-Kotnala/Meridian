@@ -179,6 +179,39 @@ class WorkerSettings(BaseSettings):
         ),
     )
 
+    account_export_provider: Literal["local", "disabled"] = Field(
+        default="local",
+        validation_alias=AliasChoices(
+            "CAREEROS_ACCOUNT_EXPORT_PROVIDER",
+            "ACCOUNT_EXPORT_PROVIDER",
+        ),
+    )
+    account_deletion_provider: Literal["local", "disabled"] = Field(
+        default="local",
+        validation_alias=AliasChoices(
+            "CAREEROS_ACCOUNT_DELETION_PROVIDER",
+            "ACCOUNT_DELETION_PROVIDER",
+        ),
+    )
+    account_operation_max_attempts: int = Field(default=5, ge=1, le=10)
+    account_operation_lease_seconds: int = Field(default=900, ge=30, le=3_600)
+    account_operation_retry_seconds: int = Field(default=30, ge=1, le=3_600)
+    account_operation_interval_seconds: int = Field(default=5, ge=1, le=300)
+    account_operation_batch_size: int = Field(default=5, ge=1, le=100)
+    account_export_cleanup_interval_seconds: int = Field(default=300, ge=60, le=86_400)
+    account_export_cleanup_batch_size: int = Field(default=20, ge=1, le=100)
+    account_export_retention_hours: int = Field(default=24, ge=1, le=720)
+    account_export_max_archive_bytes: int = Field(
+        default=134_217_728,
+        ge=1_048_576,
+        le=536_870_912,
+    )
+    account_export_max_object_bytes: int = Field(
+        default=26_214_400,
+        ge=1_048_576,
+        le=52_428_800,
+    )
+
     s3_endpoint_url: str = Field(
         default="http://localhost:9000",
         validation_alias=AliasChoices("CAREEROS_S3_ENDPOINT_URL", "S3_ENDPOINT_URL"),
@@ -651,6 +684,10 @@ class WorkerSettings(BaseSettings):
             raise ValueError("analytics lease must exceed the worker hard time limit")
         if self.resume_export_lease_seconds <= self.task_time_limit_seconds:
             raise ValueError("resume export lease must exceed the worker hard time limit")
+        if self.account_operation_lease_seconds <= self.task_time_limit_seconds:
+            raise ValueError("account operation lease must exceed the worker hard time limit")
+        if self.account_deletion_provider != self.account_export_provider:
+            raise ValueError("account export and deletion providers must be enabled together")
         invitation_delivery_budget = (
             self.organization_invitation_batch_size * self.smtp_timeout_seconds + 5
         )
@@ -684,6 +721,10 @@ class WorkerSettings(BaseSettings):
                 violations.append("an explicit non-local ClamAV host is required")
             if self.organization_invitation_secret.get_secret_value() == _LOCAL_INVITATION_SECRET:
                 violations.append("the local organization invitation secret must be replaced")
+            if self.account_export_provider != "local":
+                violations.append("local account export processing must be enabled")
+            if self.account_deletion_provider != "local":
+                violations.append("local account deletion processing must be enabled")
             if self.email_provider != "smtp":
                 violations.append("SMTP invitation delivery must be enabled")
             if not self.smtp_start_tls:

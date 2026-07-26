@@ -37,10 +37,9 @@ class OrganizationModel(Base):
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
     name: Mapped[str] = mapped_column(String(160), nullable=False)
-    created_by_user_id: Mapped[UUID] = mapped_column(
+    created_by_user_id: Mapped[UUID | None] = mapped_column(
         Uuid,
-        ForeignKey("users.id", ondelete="RESTRICT"),
-        nullable=False,
+        ForeignKey("users.id", ondelete="SET NULL"),
     )
     status: Mapped[str] = mapped_column(
         String(16),
@@ -191,10 +190,9 @@ class OrganizationInvitationModel(Base):
     role: Mapped[str] = mapped_column(String(16), nullable=False)
     token_hash: Mapped[bytes | None] = mapped_column(LargeBinary(32))
     status: Mapped[str] = mapped_column(String(32), nullable=False)
-    invited_by_user_id: Mapped[UUID] = mapped_column(
+    invited_by_user_id: Mapped[UUID | None] = mapped_column(
         Uuid,
-        ForeignKey("users.id", ondelete="RESTRICT"),
-        nullable=False,
+        ForeignKey("users.id", ondelete="SET NULL"),
     )
     accepted_by_user_id: Mapped[UUID | None] = mapped_column(
         Uuid,

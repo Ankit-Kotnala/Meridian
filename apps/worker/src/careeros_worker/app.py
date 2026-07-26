@@ -18,8 +18,10 @@ from careeros_worker.base import SafeTask
 from careeros_worker.config import WorkerSettings, get_settings
 from careeros_worker.logging import configure_worker_logging
 from careeros_worker.task_names import (
+    CLEANUP_ACCOUNT_EXPORTS_TASK,
     DISPATCH_CAREER_ANALYTICS_OUTBOX_TASK,
     DISPATCH_RESUME_EXPORT_OUTBOX_TASK,
+    PROCESS_ACCOUNT_PRIVACY_OPERATIONS_TASK,
     PROCESS_CAREER_ANALYTICS_REFRESH_TASK,
     PROCESS_NETWORKING_LOCAL_REMINDERS_TASK,
     PROCESS_ORGANIZATION_INVITATIONS_TASK,
@@ -50,6 +52,14 @@ def create_celery_app(settings: WorkerSettings | None = None) -> Celery:
         resolved.task_soft_time_limit_seconds,
         networking_time_limit - 1,
     )
+    privacy_time_limit = min(
+        resolved.task_time_limit_seconds,
+        resolved.account_operation_lease_seconds - 5,
+    )
+    privacy_soft_time_limit = min(
+        resolved.task_soft_time_limit_seconds,
+        privacy_time_limit - 1,
+    )
     invitation_time_limit = min(
         resolved.task_time_limit_seconds,
         resolved.organization_invitation_lease_seconds - 5,
@@ -70,6 +80,10 @@ def create_celery_app(settings: WorkerSettings | None = None) -> Celery:
         task_acks_late=True,
         task_acks_on_failure_or_timeout=True,
         task_annotations={
+            PROCESS_ACCOUNT_PRIVACY_OPERATIONS_TASK: {
+                "soft_time_limit": privacy_soft_time_limit,
+                "time_limit": privacy_time_limit,
+            },
             PROCESS_NETWORKING_LOCAL_REMINDERS_TASK: {
                 "soft_time_limit": networking_soft_time_limit,
                 "time_limit": networking_time_limit,
@@ -95,6 +109,8 @@ def create_celery_app(settings: WorkerSettings | None = None) -> Celery:
         task_time_limit=resolved.task_time_limit_seconds,
         task_track_started=True,
         task_routes={
+            PROCESS_ACCOUNT_PRIVACY_OPERATIONS_TASK: {"queue": "maintenance"},
+            CLEANUP_ACCOUNT_EXPORTS_TASK: {"queue": "maintenance"},
             PROCESS_CAREER_ANALYTICS_REFRESH_TASK: {"queue": "default"},
             DISPATCH_CAREER_ANALYTICS_OUTBOX_TASK: {"queue": "maintenance"},
             RECONCILE_CAREER_ANALYTICS_TASK: {"queue": "maintenance"},
@@ -120,6 +136,14 @@ def create_celery_app(settings: WorkerSettings | None = None) -> Celery:
         worker_send_task_events=True,
         worker_cancel_long_running_tasks_on_connection_loss=True,
         beat_schedule={
+            "process-account-privacy-operations": {
+                "task": PROCESS_ACCOUNT_PRIVACY_OPERATIONS_TASK,
+                "schedule": float(resolved.account_operation_interval_seconds),
+            },
+            "cleanup-expired-account-exports": {
+                "task": CLEANUP_ACCOUNT_EXPORTS_TASK,
+                "schedule": float(resolved.account_export_cleanup_interval_seconds),
+            },
             "deliver-organization-invitations": {
                 "task": PROCESS_ORGANIZATION_INVITATIONS_TASK,
                 "schedule": float(resolved.organization_invitation_interval_seconds),

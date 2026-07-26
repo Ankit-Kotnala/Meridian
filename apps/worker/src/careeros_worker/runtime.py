@@ -16,6 +16,7 @@ import structlog
 from careeros.foundation.config import DatabaseOptions
 from careeros.foundation.database import Database
 from careeros.integrations.email import DisabledEmailSender, SmtpEmailSender, SmtpOptions
+from careeros.integrations.privacy import PostgresS3AccountPrivacyStore
 from careeros.modules.application_workspace.application import (
     ApplicationWorkspaceService,
 )
@@ -108,8 +109,20 @@ from careeros.modules.career_record.infrastructure import (
 
 # The worker is a composition root: register identity mappings so the shared
 # SQLAlchemy metadata can resolve resume-health foreign keys to ``users``.
+from careeros.modules.identity.application import (
+    AccountExportCleanupResult,
+    AccountOperationBatchResult,
+    AccountOperationProcessor,
+    AccountOperationsPolicy,
+)
 from careeros.modules.identity.application.ports import EmailSender
 from careeros.modules.identity.infrastructure import models as identity_models  # noqa: F401
+from careeros.modules.identity.infrastructure.account_operation_repository import (
+    SqlAlchemyAccountOperationsUnitOfWorkFactory,
+)
+from careeros.modules.identity.infrastructure.account_operation_security import (
+    UuidAccountOperationIdentifierFactory,
+)
 from careeros.modules.networking.application import NetworkingService
 from careeros.modules.networking.application.models import NetworkingApplicationReference
 from careeros.modules.networking.domain import (
@@ -434,6 +447,61 @@ async def _attachment_runtime_resources(
             extractor=BoundedAttachmentExtractor(),
             limits=_attachment_limits(settings),
         )
+
+
+@asynccontextmanager
+async def _account_operation_processor(
+    settings: WorkerSettings,
+) -> AsyncIterator[AccountOperationProcessor]:
+    if settings.account_export_provider != "local" or settings.account_deletion_provider != "local":
+        raise RuntimeError("account privacy processing is disabled")
+    database = _database(settings)
+    storage: ResumeExportS3Storage | None = None
+    try:
+        storage = _resume_export_storage(settings)
+        yield AccountOperationProcessor(
+            unit_of_work=SqlAlchemyAccountOperationsUnitOfWorkFactory(database),
+            clock=SystemClock(),
+            identifiers=UuidAccountOperationIdentifierFactory(),
+            privacy_store=PostgresS3AccountPrivacyStore(
+                database=database,
+                storage=storage,
+                max_archive_bytes=settings.account_export_max_archive_bytes,
+                max_object_bytes=settings.account_export_max_object_bytes,
+            ),
+            policy=AccountOperationsPolicy(
+                max_attempts=settings.account_operation_max_attempts,
+                lease_seconds=settings.account_operation_lease_seconds,
+                retry_base_seconds=settings.account_operation_retry_seconds,
+                export_retention_seconds=(settings.account_export_retention_hours * 3_600),
+            ),
+        )
+    finally:
+        try:
+            if storage is not None:
+                await storage.dispose()
+        finally:
+            await database.dispose()
+
+
+async def process_account_operations(
+    settings: WorkerSettings,
+    limit: int,
+) -> AccountOperationBatchResult:
+    """Execute one bounded batch from durable privacy-operation state."""
+
+    async with _account_operation_processor(settings) as processor:
+        return await processor.process_due(limit)
+
+
+async def cleanup_account_exports(
+    settings: WorkerSettings,
+    limit: int,
+) -> AccountExportCleanupResult:
+    """Delete expired export objects before redacting retained metadata."""
+
+    async with _account_operation_processor(settings) as processor:
+        return await processor.cleanup_expired_exports(limit)
 
 
 async def process_organization_invitations(

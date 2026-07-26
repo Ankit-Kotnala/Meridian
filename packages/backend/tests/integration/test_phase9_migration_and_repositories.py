@@ -329,7 +329,7 @@ def test_current_migration_head_matches_registered_metadata(
     monkeypatch.setenv("CAREEROS_ENVIRONMENT", "test")
     config = _alembic_config()
 
-    assert ScriptDirectory.from_config(config).get_heads() == ["20260727_0017"]
+    assert ScriptDirectory.from_config(config).get_heads() == ["20260727_0018"]
     command.check(config)
 
 

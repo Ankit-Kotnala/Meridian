@@ -789,6 +789,27 @@ counts, never mailbox or token material. Other existing background paths retain
 their phase-owned durable state machines instead of introducing a competing
 generic workflow authority. See ADRs 0020 and 0021.
 
+### Phase 10 account privacy boundary
+
+Migration `20260727_0018` adds durable export/deletion operations with
+idempotency, request/trace IDs, attempt budgets, UUID fencing leases, retained
+capability digests, safe blocker/error codes, and expiring artifact integrity
+metadata. Authenticated CSRF-protected requests create work; recent-auth deletion
+also disables the account, revokes sessions, and clears browser cookies.
+Capability-scoped no-store reads remain available after the user foreign key is
+nulled by deletion.
+
+`PostgresS3AccountPrivacyStore` reflects direct user foreign keys and refuses an
+export when any table is not explicitly classified, owner scoped, or internal.
+It creates a bounded ZIP containing tenant-scoped structured JSON, eligible
+private files, and a SHA-256 manifest while excluding authentication secrets,
+internal queues/idempotency, object keys, and other tenants. Erasure inventories
+all known object-reference columns, deletes objects idempotently, redacts prior
+export metadata, and deletes the disabled user last. Sole active organization
+owners and accounts with billing-customer records block safely. Worker I/O runs
+outside the database row-lock transaction and only the terminal transition is
+lease fenced, allowing crash recovery without lock inversion. See ADR 0022.
+
 ## Architecture verification
 
 Every phase retains the repository gates plus architecture-boundary,

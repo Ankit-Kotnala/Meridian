@@ -13,7 +13,7 @@ LogFormat = Literal["json", "console"]
 EmailProvider = Literal["smtp", "disabled"]
 MalwareScannerProvider = Literal["clamav", "disabled"]
 AiProvider = Literal["deterministic", "http_json", "disabled"]
-AccountOperationsProvider = Literal["disabled"]
+AccountOperationsProvider = Literal["local", "disabled"]
 BillingProvider = Literal["disabled"]
 
 _DEVELOPMENT_DATABASE_URL = "postgresql+asyncpg://careeros:careeros@localhost:5432/careeros"
@@ -71,6 +71,7 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("CAREEROS_REDIS_URL", "REDIS_URL"),
     )
     auth_token_pepper: SecretStr = SecretStr("change-me-local-only-auth-token-pepper")
+    account_operation_pepper: SecretStr = SecretStr("change-me-local-only-account-operation-pepper")
     cookie_secure: bool = False
     session_ttl_seconds: int = Field(default=900, ge=300, le=3600)
     refresh_ttl_seconds: int = Field(default=2_592_000, ge=86_400, le=7_776_000)
@@ -96,18 +97,32 @@ class Settings(BaseSettings):
     google_client_secret: SecretStr | None = None
     google_redirect_uri: str = "http://localhost:3000/api/v1/auth/google/callback"
     account_export_provider: AccountOperationsProvider = Field(
-        default="disabled",
+        default="local",
         validation_alias=AliasChoices(
             "CAREEROS_ACCOUNT_EXPORT_PROVIDER",
             "ACCOUNT_EXPORT_PROVIDER",
         ),
     )
     account_deletion_provider: AccountOperationsProvider = Field(
-        default="disabled",
+        default="local",
         validation_alias=AliasChoices(
             "CAREEROS_ACCOUNT_DELETION_PROVIDER",
             "ACCOUNT_DELETION_PROVIDER",
         ),
+    )
+    account_operation_max_attempts: int = Field(default=5, ge=1, le=10)
+    account_operation_lease_seconds: int = Field(default=900, ge=30, le=3_600)
+    account_operation_retry_seconds: int = Field(default=30, ge=1, le=3_600)
+    account_export_retention_hours: int = Field(default=24, ge=1, le=720)
+    account_export_max_archive_bytes: int = Field(
+        default=134_217_728,
+        ge=1_048_576,
+        le=536_870_912,
+    )
+    account_export_max_object_bytes: int = Field(
+        default=26_214_400,
+        ge=1_048_576,
+        le=52_428_800,
     )
     billing_provider: BillingProvider = Field(
         default="disabled",
@@ -290,11 +305,11 @@ class Settings(BaseSettings):
         parse_async_postgresql_url(value.get_secret_value())
         return value
 
-    @field_validator("auth_token_pepper")
+    @field_validator("auth_token_pepper", "account_operation_pepper")
     @classmethod
     def require_strong_token_pepper(cls, value: SecretStr) -> SecretStr:
         if len(value.get_secret_value().encode("utf-8")) < 32:
-            raise ValueError("auth_token_pepper must be at least 32 UTF-8 bytes")
+            raise ValueError("token peppers must be at least 32 UTF-8 bytes")
         return value
 
     @field_validator("redis_url")
@@ -344,6 +359,8 @@ class Settings(BaseSettings):
                 raise ValueError("AI HTTP provider endpoint must not contain credentials")
             if parsed_ai.fragment:
                 raise ValueError("AI HTTP provider endpoint must not contain a fragment")
+        if self.account_deletion_provider != self.account_export_provider:
+            raise ValueError("account export and deletion providers must be enabled together")
         if self.environment != "production":
             return self
 
@@ -359,12 +376,21 @@ class Settings(BaseSettings):
             violations.append("allowed_origins must use HTTPS")
         if not self.public_app_url.startswith("https://"):
             violations.append("public_app_url must use HTTPS")
+        if self.account_export_provider != "local":
+            violations.append("local account export must be enabled")
+        if self.account_deletion_provider != "local":
+            violations.append("local account deletion must be enabled")
         if self.email_provider != "smtp":
             violations.append("email_provider must be smtp")
         if self.smtp_start_tls is False:
             violations.append("smtp_start_tls must be enabled")
         if self.auth_token_pepper.get_secret_value() == "change-me-local-only-auth-token-pepper":
             violations.append("the development auth token pepper must be replaced")
+        if (
+            self.account_operation_pepper.get_secret_value()
+            == "change-me-local-only-account-operation-pepper"
+        ):
+            violations.append("the development account-operation pepper must be replaced")
         if self.google_oauth_enabled and not self.google_redirect_uri.startswith("https://"):
             violations.append("google_redirect_uri must use HTTPS")
         if not self.s3_endpoint_url.startswith("https://"):

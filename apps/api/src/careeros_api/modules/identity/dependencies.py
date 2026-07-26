@@ -3,7 +3,7 @@
 import re
 from typing import Annotated, cast
 
-from careeros.modules.identity.application import IdentityService
+from careeros.modules.identity.application import AccountOperationsService, IdentityService
 from careeros.modules.identity.application.models import RequestContext
 from careeros.modules.identity.domain import AuthenticatedPrincipal
 from careeros.modules.identity.domain.errors import (
@@ -22,6 +22,13 @@ CSRF_COOKIE = "careeros_csrf"
 CSRF_HEADER = "X-CSRF-Token"
 
 _SAFE_CONTEXT = re.compile(r"[^A-Za-z0-9 ._/-]")
+
+
+def account_operations_service(request: Request) -> AccountOperationsService:
+    service = getattr(request.app.state, "account_operations_service", None)
+    if service is None:
+        raise IdentityUnavailable
+    return cast(AccountOperationsService, service)
 
 
 def identity_service(request: Request) -> IdentityService:

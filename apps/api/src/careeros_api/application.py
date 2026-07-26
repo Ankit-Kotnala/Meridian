@@ -10,6 +10,7 @@ from careeros.foundation.database import Database, ReadinessProbe
 from careeros.foundation.observability import configure_logging
 from careeros.integrations.email import DisabledEmailSender, SmtpEmailSender, SmtpOptions
 from careeros.integrations.oauth import GoogleOAuthOptions, GoogleOAuthProvider
+from careeros.integrations.privacy import PostgresS3AccountPrivacyStore
 from careeros.modules.application_workspace.application import (
     ApplicationWorkspaceService,
     ApplicationWorkspaceUnitOfWorkFactory,
@@ -95,11 +96,22 @@ from careeros.modules.commercial.infrastructure import SystemClock as Commercial
 from careeros.modules.commercial.infrastructure import (
     UuidIdentifierFactory as CommercialUuidFactory,
 )
-from careeros.modules.identity.application import IdentityService
+from careeros.modules.identity.application import (
+    AccountOperationsPolicy,
+    AccountOperationsService,
+    IdentityService,
+)
 from careeros.modules.identity.application.ports import (
     GoogleOAuthProvider as GoogleOAuthProviderPort,
 )
 from careeros.modules.identity.application.service import IdentityPolicy
+from careeros.modules.identity.infrastructure.account_operation_repository import (
+    SqlAlchemyAccountOperationsUnitOfWorkFactory,
+)
+from careeros.modules.identity.infrastructure.account_operation_security import (
+    HmacAccountOperationTokenManager,
+    UuidAccountOperationIdentifierFactory,
+)
 from careeros.modules.identity.infrastructure.fakes import DisabledGoogleOAuthProvider
 from careeros.modules.identity.infrastructure.organization_directory import (
     IdentityOrganizationAccountDirectory,
@@ -237,11 +249,26 @@ def _change_studio_provider(settings: Settings) -> SuggestionProvider:
     )
 
 
+def _private_export_storage(settings: Settings) -> ResumeExportS3Storage:
+    return ResumeExportS3Storage(
+        ResumeExportS3Options(
+            internal_endpoint_url=settings.s3_endpoint_url,
+            public_endpoint_url=settings.s3_public_endpoint_url,
+            region=settings.s3_region,
+            bucket=settings.s3_bucket,
+            access_key_id=settings.s3_access_key_id,
+            secret_access_key=settings.s3_secret_access_key.get_secret_value(),
+            use_ssl=settings.s3_use_ssl,
+        )
+    )
+
+
 def create_app(
     settings: Settings | None = None,
     *,
     database: ReadinessProbe | None = None,
     identity: IdentityService | None = None,
+    account_operations: AccountOperationsService | None = None,
     security_store: RedisSecurityStore | None = None,
     email_sender: SmtpEmailSender | DisabledEmailSender | None = None,
     resume_health: ResumeHealthService | None = None,
@@ -280,6 +307,7 @@ def create_app(
         resolved_security_store = security_store
         resolved_email_sender = email_sender
         resolved_identity = identity
+        resolved_account_operations = account_operations
         resolved_resume_health = resume_health
         resolved_resume_dispatcher = resume_dispatcher
         resolved_resume_storage = resume_storage
@@ -298,6 +326,7 @@ def create_app(
         resolved_commercial = commercial
         resolved_organizations = organizations
         resolved_resume_builder_storage: ResumeExportS3Storage | None = None
+        resolved_privacy_storage: ResumeExportS3Storage | None = None
 
         if resolved_identity is None and isinstance(resolved_database, Database):
             pepper = resolved_settings.auth_token_pepper.get_secret_value()
@@ -509,19 +538,7 @@ def create_app(
             if resolved_resume_builder is None:
                 if resolved_career_record is None:
                     raise RuntimeError("Resume Builder requires Career Record boundary")
-                resolved_resume_builder_storage = ResumeExportS3Storage(
-                    ResumeExportS3Options(
-                        internal_endpoint_url=resolved_settings.s3_endpoint_url,
-                        public_endpoint_url=resolved_settings.s3_public_endpoint_url,
-                        region=resolved_settings.s3_region,
-                        bucket=resolved_settings.s3_bucket,
-                        access_key_id=resolved_settings.s3_access_key_id,
-                        secret_access_key=(
-                            resolved_settings.s3_secret_access_key.get_secret_value()
-                        ),
-                        use_ssl=resolved_settings.s3_use_ssl,
-                    )
-                )
+                resolved_resume_builder_storage = _private_export_storage(resolved_settings)
                 resolved_resume_builder = ResumeBuilderService(
                     unit_of_work=SqlAlchemyResumeBuilderUnitOfWorkFactory(resolved_database),
                     clock=ResumeBuilderClock(),
@@ -639,8 +656,42 @@ def create_app(
                     ),
                 )
 
+        if (
+            resolved_account_operations is None
+            and isinstance(resolved_database, Database)
+            and resolved_settings.account_export_provider == "local"
+        ):
+            privacy_storage = resolved_resume_builder_storage
+            if privacy_storage is None:
+                privacy_storage = _private_export_storage(resolved_settings)
+                resolved_privacy_storage = privacy_storage
+            resolved_account_operations = AccountOperationsService(
+                unit_of_work=SqlAlchemyAccountOperationsUnitOfWorkFactory(resolved_database),
+                clock=SystemClock(),
+                identifiers=UuidAccountOperationIdentifierFactory(),
+                tokens=HmacAccountOperationTokenManager(
+                    resolved_settings.account_operation_pepper.get_secret_value()
+                ),
+                privacy_store=PostgresS3AccountPrivacyStore(
+                    database=resolved_database,
+                    storage=privacy_storage,
+                    max_archive_bytes=(resolved_settings.account_export_max_archive_bytes),
+                    max_object_bytes=resolved_settings.account_export_max_object_bytes,
+                ),
+                policy=AccountOperationsPolicy(
+                    max_attempts=resolved_settings.account_operation_max_attempts,
+                    lease_seconds=resolved_settings.account_operation_lease_seconds,
+                    retry_base_seconds=(resolved_settings.account_operation_retry_seconds),
+                    recent_auth_seconds=resolved_settings.recent_auth_ttl_seconds,
+                    export_retention_seconds=(
+                        resolved_settings.account_export_retention_hours * 3_600
+                    ),
+                ),
+            )
+
         application.state.database = resolved_database
         application.state.identity_service = resolved_identity
+        application.state.account_operations_service = resolved_account_operations
         application.state.security_store = resolved_security_store
         application.state.resume_health_service = resolved_resume_health
         application.state.career_record_service = resolved_career_record
@@ -683,6 +734,8 @@ def create_app(
                 await resolved_attachment_storage.dispose()
             if resolved_resume_builder_storage is not None:
                 await resolved_resume_builder_storage.dispose()
+            if resolved_privacy_storage is not None:
+                await resolved_privacy_storage.dispose()
             await resolved_database.dispose()
             logger.info("api_stopped", service=resolved_settings.service_name)
 
@@ -715,6 +768,7 @@ def create_app(
             "If-Match",
             "Traceparent",
             "X-CSRF-Token",
+            "X-Account-Operation-Token",
             "X-Guest-CSRF",
             "X-Request-ID",
         ],

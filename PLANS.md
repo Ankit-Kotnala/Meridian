@@ -9,9 +9,9 @@ locally/security verified with hosted evidence pending. Phase 9 remains complete
 and hosted verified in PR #22; Phase 8 remains complete and hosted verified in
 PR #21. Phase 7 durable verified-export closure and Phase 10A's guarded fictional
 local seed are merged. The product-wide UX redesign is locally implemented and
-visually verified without changing backend phase completion. Commercial,
-tenancy, privacy, administration, security/cost, infrastructure, and final
-release-hardening work remains open**
+visually verified without changing backend phase completion. Commercial, tenancy, durable workflows, and primary-store privacy closure are
+implemented and focused-verified. Protected administration, security/cost,
+infrastructure/recovery, and final release-hardening work remains open**
 
 ## Status legend
 
@@ -1693,12 +1693,12 @@ verification remains pending**.
 
 ### Focused verification evidence
 
-| Check                 | Status | Evidence |
-| --------------------- | ------ | -------- |
+| Check                 | Status | Evidence                                                                                                                                                                                                                         |
+| --------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Domain/application    | Pass   | Focused Ruff and strict backend mypy pass across 242 source files; 6 organization unit tests cover replay-safe token derivation, fencing, delivery, retry/dead-letter, role/grant behavior, and secret-redacted representations. |
-| Worker                | Pass   | Worker Ruff and strict mypy pass; all 92 worker tests pass, including SMTP escaping, safe failure mapping, bounded result counts, production configuration, routing, schedule, and lease-aware limits. |
-| PostgreSQL repository | Pass   | The real organization repository test now uses the actual durable processor, verifies claim/delivery/lease clearing/redacted audit, and accepts the exact captured credential. |
-| Migration             | Pass   | Local PostgreSQL upgraded `0016 -> 0017`, downgraded to `0016`, re-upgraded to the single `0017` head, and passed Alembic drift detection. Migration graph and 21 guarded local-seed tests pass. |
+| Worker                | Pass   | Worker Ruff and strict mypy pass; all 92 worker tests pass, including SMTP escaping, safe failure mapping, bounded result counts, production configuration, routing, schedule, and lease-aware limits.                           |
+| PostgreSQL repository | Pass   | The real organization repository test now uses the actual durable processor, verifies claim/delivery/lease clearing/redacted audit, and accepts the exact captured credential.                                                   |
+| Migration             | Pass   | Local PostgreSQL upgraded `0016 -> 0017`, downgraded to `0016`, re-upgraded to the single `0017` head, and passed Alembic drift detection. Migration graph and 21 guarded local-seed tests pass.                                 |
 
 ### Residual work
 
@@ -1708,6 +1708,59 @@ credentials, rotation, alert destinations, and authorized dead-letter replay are
 production/operator decisions. Invitation address retention and erasure continue
 in Phase 10E; aggregate protected dead-letter visibility and recovery continue in
 Phase 10F.
+
+## Phase 10E scope and status
+
+Current status: **implemented and focused-verified; cumulative release and
+backup/provider policy verification remain pending**.
+
+### Included
+
+- [x] Migration `20260727_0018` adds durable export/deletion operations with
+      request/trace IDs, idempotency, attempt budgets, due time, UUID leases,
+      safe blocker/error codes, retained capability digests, expiring artifact
+      integrity metadata, and nullable post-erasure user provenance.
+- [x] Export/deletion requests require authentication, CSRF, and idempotency;
+      deletion also requires recent authentication, disables the account,
+      increments auth authority, revokes sessions/refresh tokens, and expires
+      browser cookies immediately.
+- [x] Capability-scoped no-store status and short-lived download grants remain
+      usable after the user row is gone. UUIDs, sessions, and object keys are not
+      bearer authority.
+- [x] Schema-reflected export fails on unclassified direct user-linked tables,
+      scopes every row to the user, excludes authentication secrets, internal
+      queues/idempotency, object keys, and other tenants, and emits a bounded ZIP
+      with structured JSON, eligible files, and SHA-256 manifest metadata.
+- [x] Cross-store erasure deletes every inventoried primary object idempotently,
+      redacts prior account-export artifacts, deletes the disabled user last, and
+      retains only terminal operation state. External I/O runs outside the row
+      lock; completion is lease-fenced and recovers if the user was already
+      deleted before a crash.
+- [x] Sole active organization ownership and billing-customer retention block
+      safely. Blocked accounts are restored; active older exports defer deletion
+      for durable retry instead of racing.
+- [x] Worker processing/cleanup use bounded batches, leases, retries/dead-letter,
+      schedules, aggregate-only telemetry, and production fail-closed provider,
+      storage, and capability-secret configuration. ADR 0022 records the model.
+
+### Focused verification evidence
+
+| Check              | Status | Evidence                                                                                                                                                                                                                                             |
+| ------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Domain/application | Pass   | Focused Ruff and strict mypy pass; 5 unit tests cover capability replay, recent-auth deletion, blocker restoration, export lifecycle, delete-before-redact cleanup, and fail-closed object-key classification.                                       |
+| API/contracts      | Pass   | All 154 API tests, 3 contract tests, TypeScript contract typecheck, and OpenAPI/generated-client drift pass. Privacy routes verify CSRF, idempotency, cookie expiry, capability-only no-store status/download, and safe payloads.                    |
+| Worker             | Pass   | All 95 worker tests pass with bounded aggregate results, safe failure mapping, production validation, lease-aware time limits, maintenance routing, processing schedule, and artifact-cleanup schedule.                                              |
+| PostgreSQL/S3      | Pass   | Two real PostgreSQL/MinIO tests verify tenant-isolated ZIP content, password-secret exclusion, primary file inclusion/integrity, user/object/prior-export erasure, retained post-delete status, sole-owner blocking, and billing-retention blocking. |
+| Migration/config   | Pass   | Local PostgreSQL upgraded `0017 -> 0018`, downgraded empty state to `0017`, re-upgraded to the single `0018` head, passed Alembic drift, and Compose configuration validates.                                                                        |
+
+### Residual work
+
+Primary PostgreSQL/S3 erasure is not a claim of immediate backup, SMTP, billing
+provider, or legally retained record removal. Phase 10H must approve and test
+backup expiry/restore, provider erasure, alert ownership, RPO/RTO, and user-facing
+deletion windows. Live billing-provider retention remains blocked on owner/legal
+selection. Phase 10F owns protected operator visibility and recovery; Phase 10G
+owns centralized abuse/quota/cost controls.
 
 ## Full-specification completion audit
 
@@ -1722,9 +1775,9 @@ reviewable changes:
 
 1. Review and merge the existing stacked closure PRs separately without
    weakening their recorded blockers or expanding their scope.
-2. Implement commercial/billing, Coach/Organization tenancy, durable workflows,
-   privacy/export/retention/deletion, protected administration, security/cost
-   hardening, and production infrastructure/release work as separate phases.
+2. Preserve the implemented Phase 10B-E boundaries while completing protected
+   administration, security/cost hardening, production infrastructure/recovery,
+   and the final release-candidate audit.
 
 External pricing, provider accounts, legal text, support contacts, deployment
 region, retention policy, RPO/RTO, administrative policy, and production approval

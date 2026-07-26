@@ -136,7 +136,7 @@ class OrganizationAuditAction(StrEnum):
 class Organization:
     id: UUID
     name: str
-    created_by_user_id: UUID
+    created_by_user_id: UUID | None
     status: OrganizationStatus
     version: int
     created_at: datetime
@@ -220,7 +220,7 @@ class OrganizationInvitation:
     role: OrganizationRole
     token_hash: str | None
     status: InvitationStatus
-    invited_by_user_id: UUID
+    invited_by_user_id: UUID | None
     expires_at: datetime
     version: int
     created_at: datetime

@@ -208,6 +208,38 @@ class SettingsCapabilitiesResponse(IdentitySchema):
     account_resume_retention: Literal["untilDeleted"] = "untilDeleted"
 
 
+class AccountOperationResponse(IdentitySchema):
+    id: UUID
+    kind: Literal["export", "deletion"]
+    status: Literal[
+        "queued",
+        "running",
+        "retryWait",
+        "succeeded",
+        "blocked",
+        "deadLettered",
+        "expired",
+    ]
+    attempts: int = Field(ge=0, le=10)
+    max_attempts: int = Field(ge=1, le=10)
+    requested_at: datetime
+    updated_at: datetime
+    completed_at: datetime | None
+    blocked_reason: str | None = Field(default=None, max_length=80)
+    artifact_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+    artifact_size_bytes: int | None = Field(default=None, gt=0)
+    artifact_expires_at: datetime | None = None
+
+
+class AccountOperationCreatedResponse(AccountOperationResponse):
+    operation_token: str = Field(min_length=80, max_length=128, repr=False)
+
+
+class AccountExportDownloadResponse(IdentitySchema):
+    download_url: str = Field(min_length=1, max_length=4096, repr=False)
+    expires_in_seconds: int = Field(ge=30, le=300)
+
+
 WireOnboardingStatus = Literal["inProgress", "completed"]
 WireOnboardingStep = Literal["profile", "resume", "parsedReview", "preferences", "complete"]
 WireHandoffStatus = Literal[

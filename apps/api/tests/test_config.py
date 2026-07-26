@@ -37,6 +37,9 @@ def test_production_accepts_explicit_safe_configuration() -> None:
             "cookie_secure": True,
             "smtp_start_tls": True,
             "auth_token_pepper": "production-test-pepper-is-at-least-32-bytes",
+            "account_operation_pepper": (
+                "production-account-operation-pepper-is-at-least-32-bytes"
+            ),
             "resume_capability_pepper": "production-resume-pepper-is-at-least-32-bytes",
             "bff_client_signal_secret": "production-bff-signal-secret-is-at-least-32-bytes",
             "database_url": "postgresql+asyncpg://app:unique-secret@db:5432/careeros",

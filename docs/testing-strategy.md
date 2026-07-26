@@ -929,6 +929,7 @@ assertions. Generated OpenAPI and TypeScript artifacts
 must pass drift, test, and build gates in the same change.
 
 Phase test commands and results are recorded in `PLANS.md` before completion.
+
 ## Phase 10D durable workflow verification
 
 Phase 10D retains existing module-owned workflow state for resume analysis,
@@ -946,3 +947,23 @@ exact captured credential. Migration `20260727_0017` must pass upgrade,
 downgrade on empty cancellation state, re-upgrade, single-head graph, guarded
 local seed, and Alembic drift detection. No test may assert provider exception
 text, raw recipient/token logging, or exactly-once SMTP semantics.
+
+## Phase 10E account privacy verification
+
+Phase 10E tests the durable operation domain, capability replay and redaction,
+recent-auth deletion, account/session disabling, blocker restoration, fenced
+retry/dead-letter behavior, and delete-before-redact artifact expiry. API tests
+cover CSRF, idempotency keys, immediate cookie expiry, capability-only status and
+download, no-store responses, safe problems, CORS, and generated OpenAPI.
+Worker tests cover aggregate-only results, bounded batches, lease-aware limits,
+routing, schedules, cleanup, and production provider configuration.
+
+The required integration gate uses real PostgreSQL and MinIO. It must prove that
+an export includes only the requesting tenant's structured rows and primary
+files, excludes password hashes and internal object/staging metadata, carries
+manifest/file SHA-256 values, and remains capability scoped. Deletion must remove
+the user and every inventoried primary object, destroy earlier export archives,
+redact retained download metadata, and leave both operation records accessible
+without a user foreign key. Separate real-database assertions cover sole-owner
+and billing-retention blockers. Migration `20260727_0018` must pass upgrade,
+empty-state downgrade, re-upgrade, graph/seed regression, and Alembic drift.

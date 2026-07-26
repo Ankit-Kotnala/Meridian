@@ -25,7 +25,7 @@ dead-letter policies.
    business operation. Celery is delivery infrastructure, never the source of
    job truth.
 2. Organization invitation delivery claims due rows with `FOR UPDATE SKIP
-   LOCKED`, a UUID lease token, and a bounded lease. Completion, cancellation,
+LOCKED`, a UUID lease token, and a bounded lease. Completion, cancellation,
    retry, and dead-letter transitions require that exact unexpired lease.
 3. Invitation delivery is at-least-once. The credential is deterministically
    derived with a context-separated HMAC from the invitation identifier and the

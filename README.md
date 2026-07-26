@@ -257,6 +257,18 @@ Resume Health and clean-attachment status queries when re-evaluating evidence.
 Raw resume, evidence, contact, note, offer, rejection, and generated-document
 prose are excluded.
 
+Account export and deletion are durable privacy operations. Authenticated,
+CSRF-protected, idempotent requests create leased worker jobs; deletion requires
+recent authentication, disables the account, revokes sessions immediately, and
+returns an operation capability that remains usable after the user row is gone.
+Exports are bounded tenant-scoped ZIP archives with structured records, eligible
+private files, and integrity metadata; authentication secrets, internal queues,
+object keys, and other tenants are excluded. Export archives expire after 24
+hours by default. Deletion removes inventoried PostgreSQL/S3 primary data and
+prior export archives, but blocks sole organization owners and billing customers
+until ownership or retention obligations are resolved. Backup/provider deletion
+windows remain deployment-policy work.
+
 Authenticated Resume Health starts at `/resume-health/account`. The intentionally
 limited guest flow starts at `/resume-health/guest`, uses one opaque short-lived
 browser capability, permits one active intake, and defaults to 24-hour retention.

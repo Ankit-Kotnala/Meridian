@@ -969,6 +969,35 @@ an ambiguous acknowledgement can resend the same credential, but cannot mint a
 second credential or bypass exact-email/status/expiry/digest acceptance. A live
 provider and its credential-rotation/runbook review remain deployment decisions.
 
+## Phase 10 account privacy boundary
+
+- [x] Export/deletion requests are authenticated, CSRF protected, idempotent,
+      and traceable. Deletion requires recent authentication, disables the
+      account, increments auth authority, revokes sessions/refresh tokens, and
+      expires browser cookies before asynchronous erasure.
+- [x] Operation status and download use a context-separated high-entropy
+      capability whose digest is stored. UUID knowledge is not authority; raw
+      capabilities and signed URLs are excluded from logs and persistence.
+- [x] Export fails closed on any unclassified direct user-linked table, excludes
+      auth secrets/internal queue and object-key metadata/other tenants, and
+      packages bounded structured records and files with SHA-256 manifest data.
+- [x] Erasure inventories known PostgreSQL/S3 references, deletes objects before
+      the user row, redacts prior export download metadata, retries idempotently,
+      and retains only capability-scoped terminal operational state.
+- [x] Sole active organization owners and accounts with billing-customer records
+      block rather than bypass ownership or retention obligations. Blocked
+      accounts are restored and receive a stable safe reason.
+- [x] Export artifacts default to 24-hour retention and cleanup deletes the
+      object before redacting metadata. Production fails closed on disabled
+      privacy providers, local capability secrets, or insecure storage.
+
+Residual risk: primary-store deletion does not imply immediate removal from
+backups, provider systems, mail delivery infrastructure, or legally retained
+billing records. Phase 10H must set and verify backup expiry/restore behavior,
+provider erasure runbooks, alert ownership, and accurate user-facing deletion
+windows. Billing deletion remains blocked until a live provider/legal policy is
+approved.
+
 ## Incident and recovery expectations
 
 Phase 10 must document owners and playbooks for credential/session compromise,
@@ -1018,9 +1047,9 @@ integrity, ownership, migrations, object references, and documented RPO/RTO.
   integration point. Live Google credentials and production SMTP delivery were
   not part of the local gate, so provider enablement requires a separate
   configuration and contract review.
-- Account export/deletion orchestration and final retention periods remain later
-  phase work; Phase 1 consent/audit, Phase 2 document deletion, and Phase 3
-  evidence/attachment deletion do not substitute for account-wide erasure.
+- Account export and primary PostgreSQL/S3 erasure are now durable and verified.
+  Backup expiry, provider erasure, legally retained billing records, and exact
+  user-facing deletion windows remain production policy and operations work.
 - OCR is an explicit optional port but no Phase 2/3 OCR adapter is enabled.
   Image-only resumes therefore return parser warning/insufficient data, and image
   content in evidence attachments is not promoted into claim text.
