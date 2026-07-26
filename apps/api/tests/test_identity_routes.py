@@ -9,12 +9,21 @@ from uuid import uuid4
 
 from careeros.modules.identity.application import IdentityService
 from careeros.modules.identity.application.models import (
+    AccountSecurityView,
     CurrentUser,
     IssuedSession,
     OAuthCompletion,
     OAuthStart,
+    OnboardingView,
+    SecurityActivityView,
 )
-from careeros.modules.identity.domain import AuthenticatedPrincipal, AuthMethod
+from careeros.modules.identity.domain import (
+    AuthenticatedPrincipal,
+    AuthMethod,
+    ObservedResumeStatus,
+    OnboardingStatus,
+    OnboardingStep,
+)
 from careeros.modules.identity.domain.errors import AuthenticationRequired
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
@@ -240,6 +249,157 @@ def test_authenticated_profile_update_passes_owner_principal_and_version(
     assert call.args[0] == principal
     assert call.kwargs["expected_version"] == 1
     assert call.kwargs["updates"] == {"target_role": "Product Manager"}
+
+
+def test_password_settings_and_security_activity_use_authenticated_account_state(
+    settings: Settings, fake_database: FakeDatabase
+) -> None:
+    service = _service()
+    principal = _principal()
+    activity_id = uuid4()
+    service.authenticate.return_value = principal
+    service.get_account_security.return_value = AccountSecurityView(
+        has_password=True,
+        google_connected=False,
+    )
+    service.list_security_activity.return_value = [
+        SecurityActivityView(
+            id=activity_id,
+            event_type="auth.login",
+            outcome="success",
+            occurred_at=datetime(2026, 7, 15, 12, 0, tzinfo=UTC),
+            current_session=True,
+        )
+    ]
+
+    with TestClient(create_app(settings, database=fake_database, identity=service)) as client:
+        client.cookies.set("careeros_session", "opaque-access")
+        client.cookies.set("careeros_csrf", "opaque-csrf")
+        capabilities = client.get("/api/v1/settings")
+        activity = client.get("/api/v1/security-activity?limit=25")
+        changed = client.post(
+            "/api/v1/auth/change-password",
+            json={
+                "currentPassword": _PASSWORD,
+                "newPassword": "a different long test password",
+            },
+            headers={
+                "Origin": _ORIGIN,
+                "X-CSRF-Token": "opaque-csrf",
+            },
+        )
+
+    assert capabilities.status_code == 200
+    assert capabilities.headers["cache-control"] == "no-store"
+    assert capabilities.json() == {
+        "hasPassword": True,
+        "googleConnected": False,
+        "googleOauthAvailable": False,
+        "reminderPreferencesAvailable": True,
+        "scheduledNotificationDeliveryAvailable": False,
+        "accountExportAvailable": False,
+        "accountDeletionAvailable": False,
+        "billingAvailable": False,
+        "guestResumeRetentionHours": 24,
+        "accountResumeRetention": "untilDeleted",
+    }
+    assert activity.status_code == 200
+    assert activity.json()["data"][0]["id"] == str(activity_id)
+    assert changed.status_code == 204
+    service.change_password.assert_awaited_once()
+    assert any(
+        item.startswith("careeros_session=") and "Max-Age=0" in item
+        for item in changed.headers.get_list("set-cookie")
+    )
+
+
+def test_google_disconnect_requires_authenticated_csrf_and_calls_owner_service(
+    settings: Settings, fake_database: FakeDatabase
+) -> None:
+    service = _service()
+    principal = _principal()
+    service.authenticate.return_value = principal
+
+    with TestClient(create_app(settings, database=fake_database, identity=service)) as client:
+        client.cookies.set("careeros_session", "opaque-access")
+        client.cookies.set("careeros_csrf", "opaque-csrf")
+        response = client.delete(
+            "/api/v1/auth/connections/google",
+            headers={
+                "Origin": _ORIGIN,
+                "X-CSRF-Token": "opaque-csrf",
+            },
+        )
+
+    assert response.status_code == 204
+    service.disconnect_google.assert_awaited_once()
+    assert service.disconnect_google.await_args.args[0] == principal
+
+
+def test_onboarding_pipeline_state_is_read_only_and_server_observed(
+    settings: Settings, fake_database: FakeDatabase
+) -> None:
+    service = _service()
+    principal = _principal()
+    document_id = uuid4()
+    observed = OnboardingView(
+        status=OnboardingStatus.IN_PROGRESS,
+        current_step=OnboardingStep.PARSED_REVIEW,
+        resume_handoff=ObservedResumeStatus.REVIEW_REQUIRED,
+        parsed_review_handoff=ObservedResumeStatus.REVIEW_REQUIRED,
+        latest_resume_document_id=document_id,
+        resume_safe_error_code=None,
+        skipped_steps=(),
+        version=3,
+        display_name="Alex Example",
+        target_role=None,
+        preferred_location=None,
+        work_model=None,
+        seniority=None,
+        industry=None,
+        language="en",
+        writing_style="balanced",
+    )
+    service.authenticate.return_value = principal
+    service.get_onboarding.return_value = observed
+    service.update_onboarding.return_value = observed
+
+    with TestClient(create_app(settings, database=fake_database, identity=service)) as client:
+        client.cookies.set("careeros_session", "opaque-access")
+        client.cookies.set("careeros_csrf", "opaque-csrf")
+        fetched = client.get("/api/v1/onboarding")
+        forged = client.patch(
+            "/api/v1/onboarding",
+            json={
+                "currentStep": "parsedReview",
+                "resumeHandoff": "analysisReady",
+                "skippedSteps": [],
+            },
+            headers={
+                "Origin": _ORIGIN,
+                "X-CSRF-Token": "opaque-csrf",
+                "If-Match": '"3"',
+            },
+        )
+        updated = client.patch(
+            "/api/v1/onboarding",
+            json={"currentStep": "parsedReview", "skippedSteps": []},
+            headers={
+                "Origin": _ORIGIN,
+                "X-CSRF-Token": "opaque-csrf",
+                "If-Match": '"3"',
+            },
+        )
+
+    assert fetched.status_code == 200
+    assert fetched.json()["resumeHandoff"] == "reviewRequired"
+    assert fetched.json()["latestResumeDocumentId"] == str(document_id)
+    assert forged.status_code == 422
+    assert updated.status_code == 200
+    call = service.update_onboarding.await_args
+    assert call.kwargs["current_step"] is OnboardingStep.PARSED_REVIEW
+    assert "resume_handoff" not in call.kwargs
+    assert "status" not in call.kwargs
 
 
 def test_profile_update_rejects_if_match_above_signed_int32_before_service(

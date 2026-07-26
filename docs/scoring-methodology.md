@@ -1,6 +1,6 @@
 # CareerOS scoring methodology
 
-Status: Resume Health v1, Role Readiness v1, Job Match v1, Phase 6 Change Studio controls, and Career Health v1 implemented
+Status: Resume Health v2, Role Readiness v1, Job Match v1, Phase 6 Change Studio controls, and Career Health v1 implemented
 Last reviewed: 2026-07-25
 
 ## Required interpretation
@@ -86,9 +86,9 @@ Each persisted analysis contains at least:
 ```json
 {
   "scoreType": "resume_health",
-  "engineVersion": "resume-health/1.0.0",
-  "configurationVersion": "resume-health-default/1",
-  "featureSchemaVersion": "resume-health-features/1",
+  "engineVersion": "resume-health/2.0.0",
+  "configurationVersion": "resume-health-default/2",
+  "featureSchemaVersion": "resume-health-features/2",
   "inputSnapshotId": "uuid",
   "rawScoreBasisPoints": 7812,
   "displayScore": 78,
@@ -137,9 +137,9 @@ initial top-level formula it is part of Consistency and Truth; the UI must not
 double-count it. The configuration may later split components only under a new
 version whose weights still total 100.
 
-### Resume Health v1 deterministic features
+### Historical Resume Health v1 deterministic features
 
-Phase 2 implements engine `resume-health/1.0.0` with immutable configuration
+Historical analyses may reference engine `resume-health/1.0.0` with immutable configuration
 `resume-health-default/1` and feature schema `resume-health-features/1`. Features
 and all intermediate values use integer basis points in `[0, 10000]`.
 
@@ -238,6 +238,50 @@ outcome-bearing bullet, five chronology signals, no duplicates or warnings, and
 9000 parser confidence. Its component values are 8536, 10000, 8000, 7000, 10000,
 and 9650; contributions are 2134, 2000, 1600, 1050, 1000, and 965. The exact raw
 score is 8749 basis points and the display score is 87.
+
+### Resume Health v2 semantic review features
+
+Current Phase 2 analyses use engine `resume-health/2.0.0`, configuration
+`resume-health-default/2`, and feature schema `resume-health-features/2`. v2
+retains every v1 measured input and adds:
+
+| Feature                  | v2 definition                                                          |
+| ------------------------ | ---------------------------------------------------------------------- |
+| Semantic records/fields  | Active typed entities and fields, excluding explicitly removed values  |
+| Parser-derived fields    | Active typed fields whose state is not `user_added`                    |
+| Source-anchored fields   | Parser-derived fields carrying at least one exact source anchor        |
+| Reviewed fields          | Active fields in confirmed, corrected, or user-added state             |
+| Date fields              | Active fields with date precision metadata                             |
+| Precise date fields      | Date fields whose precision is day, month, or year rather than unknown |
+| Source-anchor coverage   | anchored parser fields / parser-derived fields                         |
+| Semantic review coverage | reviewed active fields / active semantic fields                        |
+| Date-precision coverage  | precise date fields / date fields                                      |
+| Semantic breadth         | `min(10000, active_entities * 2000 + active_fields * 300)`             |
+
+An empty denominator gives the three semantic coverage ratios the neutral value
+7000; absence of semantic fields gives semantic breadth 7000. Missing semantic
+data therefore is neither perfect evidence nor an automatic zero. User-added
+facts do not lower source-anchor coverage because they explicitly make no parser
+or source claim.
+
+v2 keeps the same six top-level weights. Exact sub-feature weights are:
+
+| Component             | Exact v2 sub-feature weights                                                                                                                                |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Machine Readability   | searchable 25%; parser confidence 25%; reading order 15%; recognized sections 15%; source anchors 20%                                                       |
+| Recruiter Clarity     | recognized sections 25%; concise blocks 25%; section breadth 15%; chronology 15%; semantic breadth 20%                                                      |
+| Content Impact        | action ratio 35%; outcome ratio 30%; duplicate integrity 20%; concise ratio 15%                                                                             |
+| Achievement Strength  | outcome ratio 45%; action ratio 35%; duplicate integrity 20%                                                                                                |
+| Structure             | section breadth 25%; recognized sections 20%; page fit 15%; concise ratio 15%; semantic breadth 25%                                                         |
+| Consistency and Truth | parser confidence 20%; warning integrity 20%; duplicate integrity 15%; chronology 10%; source anchors 15%; review coverage 10%; date-precision coverage 10% |
+
+The v2 golden case retains a perfect score of 100. The nontrivial v1-compatible
+case with complete semantic coverage has component values 8780, 10000, 8000,
+7000, 10000, and 9800; contributions are 2195, 2000, 1600, 1050, 1000, and 980. Its exact raw score is 8825 basis points and display score is 88.
+
+v2 findings additionally flag incomplete semantic review, missing anchors on
+parser-derived fields, and unknown date precision. These remain document-quality
+measurements, not verification of a career claim.
 
 No feature rewards invented keywords or penalizes a career gap, name, age,
 protected characteristic, nontraditional history, or absence of an optional
@@ -559,14 +603,15 @@ privacy review, not proof of success probability.
 
 ## Implemented phase boundary
 
-Phase 2 implements and persists job-independent Resume Health v1. Phase 4
+Phase 2 implements and persists job-independent Resume Health v2 while retaining
+strict read compatibility for historical v1 analyses. Phase 4
 implements and persists general Role Readiness v1. Phase 5 implements and
 persists exact-job Application Readiness v1 and Opportunity Priority v1. Phase 6
 implements Change Studio's grounded-change review controls and bounded local
 expected-score-effect display; it does not create a new scoring engine. Phase 9
 implements and persists longitudinal Career Health v1 with strict
 insufficient-data handling. The fictional dashboard at `/demo/dashboard` remains
-isolated from product data. Resume Health v1, Role Readiness v1, Application
+isolated from product data. Resume Health v2, Role Readiness v1, Application
 Readiness v1, Opportunity Priority v1, and Career Health v1 must not be reused as
 employer, ATS, hiring-probability, or guarantee scores.
 

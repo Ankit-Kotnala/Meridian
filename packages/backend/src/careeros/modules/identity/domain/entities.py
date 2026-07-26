@@ -57,6 +57,18 @@ class HandoffStatus(StrEnum):
     SKIPPED = "skipped"
 
 
+class ObservedResumeStatus(StrEnum):
+    """Read-only onboarding state derived from owner-scoped Resume Health data."""
+
+    NOT_STARTED = "not_started"
+    SKIPPED = "skipped"
+    PROCESSING = "processing"
+    REVIEW_REQUIRED = "review_required"
+    REVIEWED = "reviewed"
+    ANALYSIS_READY = "analysis_ready"
+    FAILED = "failed"
+
+
 @dataclass(slots=True)
 class User:
     id: UUID

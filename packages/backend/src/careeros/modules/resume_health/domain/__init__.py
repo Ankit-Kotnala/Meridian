@@ -48,6 +48,18 @@ from .errors import (
     UploadExpired,
     UploadRejected,
 )
+from .semantic import (
+    CanonicalSemantics,
+    DatePrecision,
+    SemanticEntity,
+    SemanticEntityKind,
+    SemanticField,
+    SemanticFieldType,
+    SemanticReviewState,
+    SemanticSourceAnchor,
+    allowed_semantic_field_names,
+    allowed_semantic_field_types,
+)
 
 __all__ = [
     "AnalysisStatus",
@@ -56,7 +68,9 @@ __all__ = [
     "CanonicalBlock",
     "CanonicalResume",
     "CanonicalSection",
+    "CanonicalSemantics",
     "CanonicalSnapshot",
+    "DatePrecision",
     "DocumentArtifact",
     "DocumentStatus",
     "FeatureContribution",
@@ -86,6 +100,12 @@ __all__ = [
     "RetryableProcessingFailure",
     "ScoreComponent",
     "SectionKind",
+    "SemanticEntity",
+    "SemanticEntityKind",
+    "SemanticField",
+    "SemanticFieldType",
+    "SemanticReviewState",
+    "SemanticSourceAnchor",
     "SourceDocument",
     "SourceSpan",
     "StorageObjectCleanup",
@@ -94,4 +114,6 @@ __all__ = [
     "UploadIntent",
     "UploadRejected",
     "UploadStatus",
+    "allowed_semantic_field_names",
+    "allowed_semantic_field_types",
 ]

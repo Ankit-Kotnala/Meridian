@@ -16,11 +16,15 @@ const initial = {
   displayName: "Alex Morgan",
   industry: null,
   language: "en",
+  latestResumeDocumentId: null,
   parsedReviewHandoff: "notStarted",
   preferredLocation: null,
   resumeHandoff: "notStarted",
+  resumeSafeErrorCode: null,
   seniority: null,
-  skippedSteps: [],
+  skippedSteps: [] as Array<
+    "profile" | "resume" | "parsedReview" | "preferences" | "complete"
+  >,
   status: "inProgress",
   targetRole: null,
   version: 1,
@@ -57,9 +61,18 @@ describe("onboarding", () => {
           return json(state);
         }
         if (url.endsWith("/api/v1/onboarding") && init?.method === "PATCH") {
+          const body = JSON.parse(String(init.body)) as typeof state;
           state = {
             ...state,
-            ...(JSON.parse(String(init.body)) as typeof state),
+            ...body,
+            parsedReviewHandoff: body.skippedSteps.includes("parsedReview")
+              ? "skipped"
+              : state.parsedReviewHandoff,
+            resumeHandoff: body.skippedSteps.includes("resume")
+              ? "skipped"
+              : state.resumeHandoff,
+            status:
+              body.currentStep === "complete" ? "completed" : "inProgress",
             version: state.version + 1,
           };
           return json(state);

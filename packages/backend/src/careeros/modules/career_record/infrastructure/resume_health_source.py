@@ -11,10 +11,21 @@ from careeros.modules.resume_health.application import (
     DocumentView,
     OwnerScope,
     ResumeHealthError,
+    SemanticReviewState,
 )
 
-from ..application.models import ResumeSourceLocator, ValidatedResumeSource
-from ..domain import exact_claim_sha256
+from ..application.models import (
+    ResumeSourceLocator,
+    ValidatedResumeSource,
+)
+from ..domain import (
+    SemanticCandidateKind,
+    SemanticImportAnchor,
+    SemanticImportField,
+    SemanticImportFieldState,
+    ValidatedSemanticCandidate,
+    exact_claim_sha256,
+)
 
 
 class ResumeHealthSourceReader(Protocol):
@@ -158,3 +169,121 @@ class ResumeHealthSourceQuery:
                 for span in original_block.spans
             )
         )
+
+    async def reviewed_semantic_candidates(
+        self,
+        owner_user_id: UUID,
+        document_id: UUID,
+        snapshot_id: UUID,
+    ) -> tuple[ValidatedSemanticCandidate, ...]:
+        scope = OwnerScope(user_id=owner_user_id)
+        try:
+            document = await self._reader.get_document(scope, document_id)
+            snapshot = await self._reader.get_canonical_resume(scope, document_id)
+        except ResumeHealthError:
+            return ()
+        semantics = snapshot.resume.semantics
+        if (
+            document.status is not DocumentStatus.READY
+            or snapshot.id != snapshot_id
+            or snapshot.document_id != document_id
+            or semantics is None
+            or semantics.review_state
+            not in {SemanticReviewState.CONFIRMED, SemanticReviewState.CORRECTED}
+        ):
+            return ()
+
+        candidates: list[ValidatedSemanticCandidate] = []
+        for entity in semantics.entities:
+            if entity.review_state is SemanticReviewState.REMOVED:
+                continue
+            fields: list[SemanticImportField] = []
+            for field in entity.fields:
+                if field.review_state not in {
+                    SemanticReviewState.CONFIRMED,
+                    SemanticReviewState.CORRECTED,
+                    SemanticReviewState.USER_ADDED,
+                }:
+                    continue
+                try:
+                    anchors = tuple(
+                        SemanticImportAnchor(
+                            block_id=anchor.block_id,
+                            page=anchor.page,
+                            start_offset=anchor.start,
+                            end_offset=anchor.end,
+                            source_sha256=bytes.fromhex(anchor.source_sha256),
+                            source_excerpt=_semantic_source_excerpt(
+                                snapshot, anchor.block_id, anchor.page, anchor.start, anchor.end
+                            ),
+                        )
+                        for anchor in field.anchors
+                    )
+                except (ValueError, TypeError):
+                    # A reviewed semantic value is not importable when its exact
+                    # original source can no longer be revalidated. Fail the
+                    # snapshot closed instead of returning a partially grounded
+                    # candidate or surfacing an internal parsing error.
+                    return ()
+                fields.append(
+                    SemanticImportField(
+                        semantic_field_id=field.id,
+                        name=field.name,
+                        field_type=field.field_type.value,
+                        value=field.value,
+                        review_state=SemanticImportFieldState(field.review_state.value),
+                        confidence_basis_points=field.confidence_basis_points,
+                        date_precision=(
+                            field.date_precision.value if field.date_precision is not None else None
+                        ),
+                        anchors=anchors,
+                    )
+                )
+            if fields:
+                candidates.append(
+                    ValidatedSemanticCandidate(
+                        document_id=document_id,
+                        snapshot_id=snapshot.id,
+                        snapshot_revision=snapshot.revision,
+                        schema_version=semantics.schema_version,
+                        parser_version=semantics.parser_version,
+                        semantic_entity_id=entity.id,
+                        kind=SemanticCandidateKind(entity.kind.value),
+                        fields=tuple(fields),
+                    )
+                )
+        return tuple(candidates)
+
+
+def _semantic_source_excerpt(
+    snapshot: CanonicalSnapshotView,
+    block_id: UUID,
+    page: int,
+    start: int,
+    end: int,
+) -> str:
+    block = next(
+        (
+            candidate
+            for section in snapshot.original_resume.sections
+            for candidate in section.blocks
+            if candidate.id == block_id
+        ),
+        None,
+    )
+    if block is None:
+        raise ValueError("semantic source block is unavailable")
+    span = next(
+        (
+            candidate
+            for candidate in block.spans
+            if candidate.page == page and candidate.start <= start and candidate.end >= end
+        ),
+        None,
+    )
+    if span is None:
+        raise ValueError("semantic source span is unavailable")
+    excerpt = block.text[start - span.start : end - span.start].strip()
+    if not excerpt:
+        raise ValueError("semantic source excerpt is unavailable")
+    return excerpt[:1_000]

@@ -390,9 +390,10 @@ read configured upload policy
   -> promote to randomized quarantine key
   -> commit document + job + outbox in one database transaction
   -> fail-closed ClamAV scan
-  -> isolated PDF/DOCX expansion/extraction + authoritative PDF page checks
-  -> immutable canonical snapshot + source spans + confidence + parser warnings
-  -> explicit user correction creates a new snapshot
+  -> killable child-process PDF/DOCX extraction + authoritative PDF page checks
+  -> independent layout analysis and deterministic semantic parser provider
+  -> immutable source blocks + typed source-anchored semantic snapshot
+  -> explicit typed review/no-change confirmation creates a successor
   -> deterministic fixed-point analysis bound to that snapshot
 ```
 
@@ -414,12 +415,20 @@ the local `python-docx` extractor; it is bounded by bytes, archive entries,
 expanded size/ratio, extracted characters/blocks, and artifact size until a
 rendering provider supplies layout-aware page enforcement.
 
-The local Resume Health and evidence-attachment extractors call blocking
-libraries through `asyncio.to_thread`.
-Application timeout cancels the await but is not a killable per-parser process
-boundary. Celery task limits and the non-root, read-only, CPU/memory/PID-bounded,
-no-edge-network worker constrain the residual thread; production parser sandbox
-selection remains a later hardening decision.
+Resume Health runs blocking parser libraries in a dedicated child process below
+the configured private temporary root. The parent supplies an allowlisted bounded
+JSON request, disables standard input/output, rejects oversized or malformed
+results, force-kills and awaits a timed-out child, then removes its workspace.
+POSIX children also receive CPU, address-space, and output limits; Celery and the
+non-root, read-only, CPU/memory/PID-bounded, no-edge-network worker remain the
+outer controls. The reusable renderer extractor used by trusted CareerOS-created
+exports still uses the local adapter in-process.
+
+Text extraction, layout analysis, semantic classification, malware scanning, and
+optional OCR are separate inward-facing ports. The deterministic local adapters
+require no third-party credentials. Layout analysis flags multi-column,
+table-heavy, repeated header/footer, reading-order, and bidirectional-control
+risks rather than claiming perfect rendered geometry.
 
 ### Private evidence attachments (Phase 3 implementation)
 
@@ -449,14 +458,33 @@ create durable records with purpose, owner, next attempt, and terminal status;
 explicit document deletion remains a fenced durable job and schedules a staging
 cleanup backstop.
 
-The canonical source is append-only: the parser creates revision 1, and a user
-correction creates a successor with `based_on_snapshot_id` while retaining the
-original values and source spans. All-no-op correction is rejected; the domain
-caps each document at 50 canonical revisions and 100 analysis jobs, while the API
+The canonical source is append-only: the parser creates revision 1 with immutable
+source blocks and a typed semantic sidecar. A typed user review creates a
+successor with `based_on_snapshot_id`; corrected facts retain their original
+anchor, and user-added facts carry no source anchor. Empty implicit review is
+rejected; an explicit no-change confirmation is recorded. The domain caps each
+document at 50 canonical revisions and 100 analysis jobs, while the API
 applies separate owner-scoped correction and analysis rate classes. A score
 analysis references exactly one snapshot. Source resumes remain provenance
 inputs; they do not replace the career-profile/evidence source of truth
 introduced in Phase 3.
+
+Onboarding observes that pipeline through a narrow application query rather than
+through shared tables or browser-authored state. Identity stores user intent,
+explicit skips, preferences, and completion; Resume Health supplies the latest
+owner-scoped upload/processing/review/analysis observation. Step advancement is
+validated against those observations.
+
+Career Record imports the reviewed typed sidecar through a separate owner-scoped
+application port. It stages typed personal-fact, skill, experience, education,
+project, and certification proposals and never writes canonical facts merely
+because parsing completed. Acceptance records exact semantic field identities,
+anchors, review state, and canonical value digests in per-field provenance.
+Corrections made during acceptance are owner edits, not parser claims. Canonical
+facts/entities/skills must be explicitly confirmed before downstream factual
+snapshots expose them. Experience-to-project relationships are explicit owned
+edges; existing achievement/entity and evidence/entity/skill links keep their
+own canonical structures.
 
 ## API and contract strategy
 
@@ -547,14 +575,15 @@ score or override hard-gap display. Stored score output includes engine version,
 weight configuration, inputs, component contributions, missing-data treatment,
 and timestamp.
 
-Resume Health v1 is implemented without a model provider. It uses integer
+Resume Health v2 is implemented without a model provider. It uses integer
 fixed-point feature/component arithmetic and persists engine/configuration/
 feature-schema version, the complete typed feature record, each weighted feature
 contribution, and feature-set hash. It returns no number for image-only or sparse
 input and emits the canonical internal-score disclaimer. The report's semantic,
 keyboard-operable disclosures expose measured values and the raw/display
 score-weight-contribution trace without requiring color or chart interpretation.
-Exact features and weights are normative in `docs/scoring-methodology.md`.
+Historical v1 records remain strictly readable. Exact features and weights are
+normative in `docs/scoring-methodology.md`.
 
 AI output is untrusted until strict schema validation and deterministic claim-
 evidence verification pass. Phase 6 implements this for Change Studio: grounded
@@ -648,6 +677,15 @@ work or reviving redacted content. Analytics dead-letter and expired-lease
 recovery terminalize the associated job atomically so queue reconciliation cannot
 leave an orphaned `queued` job.
 
+Cross-phase closure migration `20260726_0011` extends the existing Identity and
+Career Record contexts without adding a competing module. It adds confirmation,
+personal-fact, typed semantic proposal, experience-project relationship, and
+field-provenance tables with owner-aware composite constraints. The Identity
+application composes the Resume Health onboarding observation adapter; the
+Career Record application composes the reviewed semantic source adapter. Identity
+also owns password rotation, redacted security activity, Google connection
+removal, and a read-only fail-closed capability query used by Settings.
+
 Transaction-scoped owner, idempotency, and parent locks serialize Phase 9
 collection quotas and concurrent child/generation mutations. Database constraints
 and validation functions enforce Growth target ownership, exact evidence
@@ -705,6 +743,12 @@ contracts, durable worker processing, and registered/guest Playwright journeys.
 The complete local gate and hosted CI run `29378312134` pass against the Phase 2
 implementation and are recorded in `PLANS.md`.
 
+Phase 1 closure additionally proves that onboarding cannot submit pipeline state,
+that password changes revoke every session, and that Settings renders persisted
+state plus server capabilities without inventing unavailable workflows. The
+Phase 1 wrapper now explicitly selects Phase 1 rather than inheriting the Phase 2
+default.
+
 Phase 3 adds `scripts/verify-phase3.ps1` (or `make verify-phase3`) for migration
 `20260715_0004`, Career Record and real attachment-provider integration, durable
 attachment processing/reconciliation, and the desktop Career Profile/Evidence/
@@ -712,6 +756,12 @@ Achievement primary journey. Shared responsive workspace behavior remains in the
 existing mobile suites; the Phase 3 primary journey itself is not run as a mobile
 project. The consolidated final-tree local result and hosted Phase 3 run pass as
 recorded in `PLANS.md`.
+
+The resume-ready Phase 3 closure adds isolated upgrade from
+`20260724_0010` to `20260726_0011`, metadata-drift, downgrade, and forward-repair
+coverage plus PostgreSQL owner/constraint/repository tests for confirmation,
+personal facts, relationships, typed proposals, and per-field provenance. Exact
+current-tree results remain in `PLANS.md`.
 
 Phase 4 adds `scripts/verify-phase4.ps1` (or `make verify-phase4`) for migration
 `20260719_0005`, Role Explorer repository integration, and the authenticated

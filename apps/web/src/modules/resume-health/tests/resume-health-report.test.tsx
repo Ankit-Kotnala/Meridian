@@ -139,6 +139,12 @@ describe("Resume Health report", () => {
     expect(inputSummary.closest("details")).toHaveAttribute("open");
     expect(screen.getByText("Extractable characters")).toBeVisible();
     expect(screen.getByText("612")).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Review import proposals" }),
+    ).toHaveAttribute(
+      "href",
+      `/career-profile/imports?documentId=${report.documentId}&snapshotId=${report.canonicalResumeId}`,
+    );
 
     fireEvent.click(screen.getByRole("tab", { name: "All findings" }));
     expect(screen.getByText("Clarify summary")).toBeVisible();

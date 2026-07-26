@@ -25,8 +25,13 @@ export const careerVaultPaths = {
   achievementReminders: path("/api/v1/achievements/reminder-preferences"),
   achievements: path("/api/v1/achievements"),
   careerItem: (id: string) => resource("/api/v1/career-items", id),
+  careerItemConfirm: (id: string) =>
+    path(`${resource("/api/v1/career-items", id)}/confirm`),
   careerItems: path("/api/v1/career-items"),
   careerProfile: path("/api/v1/career-profile"),
+  careerRelationship: (id: string) =>
+    resource("/api/v1/career-relationships", id),
+  careerRelationships: path("/api/v1/career-relationships"),
   evidence: path("/api/v1/evidence"),
   evidenceArchive: (id: string) =>
     path(`${resource("/api/v1/evidence", id)}/archive`),
@@ -58,16 +63,31 @@ export const careerVaultPaths = {
   evidenceUsage: (id: string) =>
     path(`${resource("/api/v1/evidence", id)}/usage`),
   experience: (id: string) => resource("/api/v1/experiences", id),
+  experienceConfirm: (id: string) =>
+    path(`${resource("/api/v1/experiences", id)}/confirm`),
   experienceReorder: path("/api/v1/experiences/reorder"),
   experiences: path("/api/v1/experiences"),
   skill: (id: string) => resource("/api/v1/skills", id),
+  skillConfirm: (id: string) =>
+    path(`${resource("/api/v1/skills", id)}/confirm`),
   skills: path("/api/v1/skills"),
   profileImportProposal: (id: string) =>
-    resource("/api/v1/career-profile/import-proposals", id),
+    resource("/api/v1/career-profile/semantic-import-proposals", id),
   profileImportProposalAccept: (id: string) =>
-    path(`${resource("/api/v1/career-profile/import-proposals", id)}/accept`),
+    path(
+      `${resource("/api/v1/career-profile/semantic-import-proposals", id)}/accept`,
+    ),
   profileImportProposalReject: (id: string) =>
-    path(`${resource("/api/v1/career-profile/import-proposals", id)}/reject`),
+    path(
+      `${resource("/api/v1/career-profile/semantic-import-proposals", id)}/reject`,
+    ),
+  profileImportProposals: path(
+    "/api/v1/career-profile/semantic-import-proposals",
+  ),
+  personalFact: (id: string) => resource("/api/v1/personal-facts", id),
+  personalFactConfirm: (id: string) =>
+    path(`${resource("/api/v1/personal-facts", id)}/confirm`),
+  personalFacts: path("/api/v1/personal-facts"),
 } as const;
 
 export function withQuery(

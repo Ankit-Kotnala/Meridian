@@ -116,8 +116,9 @@ earlier baseline evidence remains historical.
 ## Phase 1 — Authentication, Application Shell, and Onboarding
 
 Dependencies: Phase 0 green. Current status: authentication, sessions, and the
-application shell are complete and hosted verified; full onboarding and Settings
-closure is reopened. The historical consolidated gate and hosted CI run
+application shell are hosted verified. Server-observed onboarding and Settings
+closure are locally verified in the current tree; hosted closure evidence is
+pending authorization. The historical consolidated gate and hosted CI run
 `29367040183` passed all eight checks against Phase 1 evidence commit `baab8f7`.
 
 - [x] Add users/profiles, hashed session/refresh material, OAuth accounts,
@@ -137,13 +138,16 @@ closure is reopened. The historical consolidated gate and hosted CI run
       TopBar, active state, command search/notifications placeholders only when honest.
 - [x] Convert dashboard from public fictional preview to protected real skeleton;
       retain a separate explicit demo path only if product approves.
-- [~] Complete resumable/skippable onboarding through account/guest choice,
-  upload, processing, typed parse review, role/preferences, and dashboard.
-  Honest handoff links exist, but onboarding does not yet observe and persist
-  the complete Phase 2 pipeline state.
-- [~] Complete Settings for profile, preferences, sessions, consent, notifications,
-  privacy/export/deletion, and account security. The current skeleton exposes
-  only part of that real state.
+- [x] Complete resumable/skippable onboarding through account/guest choice,
+      upload, processing, typed parse review, role/preferences, and dashboard.
+      Pipeline progress is an owner-scoped server observation; the browser may
+      persist intent and explicit skips but cannot submit observed completion.
+- [x] Complete Phase 1 Settings for profile, writing/search/locale/timezone
+      preferences, sessions, consent, persisted achievement reminders, password
+      management, redacted security activity, Google connection state/removal,
+      privacy/retention disclosure, and fail-closed billing/export/deletion
+      capability presentation. Actual account export/deletion, billing, and
+      scheduled delivery remain their later owning workflows.
 - [x] Pass anonymous, cross-user, session rotation/replay/fixation, CSRF, OAuth
       collision, rate-limit, audit, keyboard, responsive, and e2e auth journey tests.
 
@@ -160,9 +164,10 @@ local gate. Exact closeout evidence and residual limitations live in `PLANS.md`.
 ## Phase 2 — Resume Upload, Parsing, and General Health
 
 Dependencies: Phase 1 identity/ownership; Phase 0 object/queue health. Current
-status: secure intake/extraction and generic canonical-block Resume Health v1 are
-complete and hosted verified; typed semantic parsing/review closure is reopened.
-Historical local gates and hosted run `29378312134` pass for that slice.
+status: secure intake/extraction, typed semantic parsing/review, and Resume
+Health v2 are implemented and locally/security verified; hosted CI for the
+closure remains pending explicit authorization to publish. Historical run
+`29378312134` remains evidence for the original generic-block v1 slice.
 
 - [x] Migration `20260715_0003` adds exactly-one-owner guest sessions, upload
       intents, source documents, derived artifacts, processing jobs/outbox/object
@@ -184,19 +189,19 @@ Historical local gates and hosted run `29378312134` pass for that slice.
       rendered page counts; layout-aware enforcement remains provider work.
 - [x] The worker runs non-root with a read-only filesystem, dropped capabilities,
       no edge network, bounded CPU/memory/PIDs/time, a private randomized `noexec`
-      tmpfs path, and cleanup on normal/error exits. The current parser timeout
-      cannot kill its `asyncio.to_thread` thread; Celery/container limits mitigate
-      it, and per-parser subprocess isolation remains a documented hardening gap.
+      tmpfs path, and cleanup on normal/error exits. Hostile parsing runs in a
+      dedicated child process with bounded input/output, timeout termination and
+      reaping, POSIX resource limits, and temporary-workspace cleanup.
 - [x] Guarded local PDF/DOCX extraction produces plain text, ordered blocks,
       source spans, confidence, parser warnings, authoritative PDF page count, and
       image-only detection behind extractor/OCR/scanner/storage ports. DOCX has only
       a nominal local page value because no renderer is present. OCR is a disabled
       optional port, so image-only input returns insufficient data.
-- [~] Retain immutable source sections/blocks while adding typed semantic contact,
-  experience, education, project, skill, and certification values with exact
-  source anchors, explicit review state, date precision, stable IDs, immutable
-  successor snapshots, and typed correction/add/remove/reclassification
-  operations. The current optimistic correction edits generic block text only.
+- [x] Retain immutable source sections/blocks and add typed semantic contact,
+      experience, education, project, skill, and certification values with exact
+      source anchors, explicit review state, date precision, stable IDs, immutable
+      successor snapshots, and typed confirm/correct/add/remove/reclassification
+      operations.
 - [x] Parse, analyze, and delete jobs use owner-scoped state, request hashes,
       idempotency, progress, cancellation, bounded retries, dead letter, safe
       errors, trace IDs, allowlisted Celery payloads, per-invocation fencing, and a
@@ -206,31 +211,31 @@ Historical local gates and hosted run `29378312134` pass for that slice.
       fences and requeues or dead-letters stale work within separate processing and
       recovery budgets. Parse/analyze cancellation is cooperative; accepted deletion
       is deliberately noncancellable.
-- [x] Resume Health `resume-health/1.0.0` / `resume-health-default/1` uses the
-      published fixed-point feature/component table, immutable snapshot binding,
-      persisted `resume-health-features/1` values and weighted contributions, feature
-      hash, exact golden expectations, findings, and no numeric value for image-only/
-      sparse input.
-- [~] Account and one-document/24-hour guest web flows implement direct upload,
-  real progress/cancel, processing polling, empty/loading/success/error,
-  plain-text/reading-order review, source-preserving correction, analysis,
-  report, explicit consented account claim, and durable deletion. A typed
-  semantic review UI, explicit no-change confirmation, and legacy-upgrade
-  workflow remain open. Same-page
-  ambiguous transfer/finalize retry reuses in-memory intent/idempotency state;
-  reload recovery and resumable file transfer are not implemented.
+- [x] Resume Health `resume-health/2.0.0` / `resume-health-default/2` uses the
+      documented fixed-point feature/component table, immutable snapshot binding,
+      persisted `resume-health-features/2` semantic coverage/review/date/breadth
+      values and weighted contributions, feature hash, exact golden expectations,
+      findings, and no numeric value for image-only/sparse input. Historical v1
+      records remain readable under their exact schema.
+- [x] Account and one-document/24-hour guest web flows implement direct upload,
+      real progress/cancel, processing polling, empty/loading/success/error,
+      plain-text/reading-order and typed semantic review, source-preserving
+      corrections, explicit no-change confirmation, legacy upgrade, analysis,
+      report, explicit consented account claim, and durable deletion. Same-page
+      ambiguous transfer/finalize retry reuses in-memory intent/idempotency state;
+      reload recovery and resumable file transfer are not implemented.
 - [x] Reports show the canonical score disclaimer, components, findings, parser
       warnings, stored measured values, and exact feature score/weight/contribution
       details in keyboard-operable, color-independent disclosures; they never claim
       an employer ATS score, hiring probability, or guarantee.
-- [~] Focused unit/component/API/worker/integration/E2E coverage exists for the
-  implemented fixture and threat matrix. Add two-column, header/footer,
-  table-heavy, date-precision/locale, concurrent-role, unusual-font,
-  bidirectional-Unicode, and long-document golden/adversarial fixtures. The
-  historical full format/lint/type/build,
-  migration round-trip, real PostgreSQL/Redis/MinIO/ClamAV, desktop/mobile
-  Playwright, container-policy, and separate security-scan gates pass; hosted CI
-  run `29378312134` passes all corresponding jobs.
+- [x] Focused unit/component/API/worker/integration/E2E coverage includes the
+      one/two-column, PDF/DOCX, image-only, header/footer, table-heavy,
+      date-precision/locale, concurrent-role, unusual-font,
+      bidirectional-Unicode, long-document, malformed/encrypted/polyglot, macro,
+      traversal, expansion, scanner, and killable-timeout matrix. The exact
+      implementation-tree and separate security gates pass as recorded in
+      `PLANS.md`; hosted closure evidence remains pending authorization and a
+      successful PR run.
 
 Exit: supported fixtures parse and can be corrected; scores reproduce/explain;
 malformed/hostile input fails safely; guest retention and user ownership hold.
@@ -240,18 +245,22 @@ Closeout evidence and residual limitations are recorded in `PLANS.md`.
 ## Phase 3 — Career Profile, Evidence Vault, and Achievement Inbox
 
 Dependencies: Phase 1 ownership; Phase 2 canonical/source-span model. Current
-status: the evidence graph and core Career Record CRUD are locally complete and
-hosted verified; resume-ready semantic closure is reopened. The historical
+status: the evidence graph and core Career Record CRUD are hosted verified.
+Resume-ready semantic closure is locally verified in the current tree; hosted
+closure evidence is pending authorization. The historical
 `scripts/verify-phase3.ps1` gate passed on 2026-07-19.
 
-- [~] Complete resume-ready personal/contact facts and career entities with
-  ownership, constraints, explicit field/entity confirmation and provenance,
-  concurrency, and experience-project-achievement relationships. Core typed
-  entity CRUD exists, but this semantic closure is incomplete.
+- [x] Complete resume-ready personal/contact facts and career entities with
+      ownership, constraints, explicit fact/entity/skill confirmation,
+      canonical per-field provenance, concurrency, and explicit
+      experience-project relationships alongside the existing achievement and
+      evidence graph links.
 - [x] Implement profile CRUD, timeline/list, accessible reorder, promotion and
       concurrent-role grouping, conflict detection, and neutral gap display.
-- [~] Import/correction proposes profile changes rather than overwriting truth;
-  consume the Phase 2 typed semantic sidecar instead of generic blocks.
+- [x] Import/correction proposes profile changes rather than overwriting truth;
+      consume the owner-scoped reviewed Phase 2 typed semantic sidecar instead of
+      browser-authored generic blocks. Keep legacy generic proposals readable and
+      mark their creation route deprecated for v1 compatibility.
 - [x] Add evidence item/source/attachment/skill/metric/link models and audited
       Verified/Confirmed/Supported/Inferred/Unsupported transition rules.
 - [x] Bind legacy whole-block `Supported` evidence to the immutable original
@@ -279,6 +288,11 @@ isolated Playwright workflows pass. Two Phase 3 isolated mobile browser projects
 are intentionally skipped because the primary Career Record journey is desktop;
 shared responsive shell behavior remains covered by inherited auth flows. Exact
 closeout evidence and residual limitations live in `PLANS.md`.
+
+The 2026-07-26 closure gate adds 398 backend, 145 API, 84 worker, 163 web,
+41 real-dependency integration, and latest-head migration coverage; the exact
+`scripts/verify-phase3.ps1` command passed in 336.3 seconds. Hosted closure
+evidence remains pending explicit authorization to publish.
 
 ## Phase 4 — Role Explorer and Role Readiness
 

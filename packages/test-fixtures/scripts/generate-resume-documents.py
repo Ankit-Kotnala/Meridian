@@ -7,9 +7,12 @@ source here makes the corpus reviewable and reproducible across platforms.
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import zipfile
 from pathlib import Path
+
+from docx import Document
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "generated"
@@ -44,7 +47,37 @@ def pdf_bytes(lines: tuple[str, ...], *, include_text: bool = True) -> bytes:
                 commands.append("T*")
             commands.append(f"({_pdf_escape(line)}) Tj")
     commands.append("ET")
-    stream = "\n".join(commands).encode("ascii")
+    return _pdf_document("\n".join(commands).encode("ascii"))
+
+
+def two_column_pdf_bytes() -> bytes:
+    left = (
+        "ALEX RIVERA",
+        "EXPERIENCE",
+        "Engineer | Fictional Alpha | 2021 - Present",
+        "Built accessible fictional workflows.",
+    )
+    right = (
+        "SKILLS",
+        "Python, product strategy, accessibility",
+        "EDUCATION",
+        "Example State University | 2020",
+    )
+    commands = ["BT", "/F1 10 Tf", "40 760 Td", "14 TL"]
+    for index, line in enumerate(left):
+        if index:
+            commands.append("T*")
+        commands.append(f"({_pdf_escape(line)}) Tj")
+    commands.extend(["ET", "BT", "/F1 10 Tf", "320 760 Td", "14 TL"])
+    for index, line in enumerate(right):
+        if index:
+            commands.append("T*")
+        commands.append(f"({_pdf_escape(line)}) Tj")
+    commands.append("ET")
+    return _pdf_document("\n".join(commands).encode("ascii"))
+
+
+def _pdf_document(stream: bytes) -> bytes:
     objects = [
         b"<< /Type /Catalog /Pages 2 0 R >>",
         b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
@@ -53,7 +86,11 @@ def pdf_bytes(lines: tuple[str, ...], *, include_text: bool = True) -> bytes:
             b"/Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>"
         ),
         b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-        b"<< /Length " + str(len(stream)).encode("ascii") + b" >>\nstream\n" + stream + b"\nendstream",
+        b"<< /Length "
+        + str(len(stream)).encode("ascii")
+        + b" >>\nstream\n"
+        + stream
+        + b"\nendstream",
     ]
     output = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
     offsets = [0]
@@ -76,6 +113,51 @@ def pdf_bytes(lines: tuple[str, ...], *, include_text: bool = True) -> bytes:
     return bytes(output)
 
 
+def _save_normalized_docx(document: Document, path: Path) -> None:
+    source = io.BytesIO()
+    document.save(source)
+    source.seek(0)
+    with (
+        zipfile.ZipFile(source) as original,
+        zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as normalized,
+    ):
+        for name in sorted(original.namelist()):
+            info = zipfile.ZipInfo(name, date_time=(2026, 7, 15, 0, 0, 0))
+            info.compress_type = zipfile.ZIP_DEFLATED
+            info.external_attr = 0o600 << 16
+            normalized.writestr(info, original.read(name))
+
+
+def write_adversarial_layout_docx(path: Path) -> None:
+    document = Document()
+    document.sections[0].header.paragraphs[0].text = "FICTIONAL REPEATED HEADER"
+    document.sections[0].footer.paragraphs[0].text = "FICTIONAL REPEATED FOOTER"
+    document.add_heading("EXPERIENCE", level=1)
+    unusual = document.add_paragraph("Engineer | Fictional Alpha | 03/2021 - 2024")
+    unusual.runs[0].font.name = "Papyrus"
+    document.add_paragraph("Advisor | Fictional Beta | 2022-06 - Present")
+    document.add_paragraph(
+        "Visible text with a hidden \u202ebidirectional control.",
+        style="List Bullet",
+    )
+    for index in range(3):
+        table = document.add_table(rows=1, cols=2)
+        table.cell(0, 0).text = f"Fictional project {index}"
+        table.cell(0, 1).text = f"20{22 + index}"
+    _save_normalized_docx(document, path)
+
+
+def write_long_docx(path: Path) -> None:
+    document = Document()
+    document.add_heading("EXPERIENCE", level=1)
+    for index in range(600):
+        document.add_paragraph(
+            f"Fictional bounded achievement {index}: " + "x" * 120,
+            style="List Bullet",
+        )
+    _save_normalized_docx(document, path)
+
+
 def _paragraph(text: str, *, heading: bool = False, bullet: bool = False) -> str:
     properties = []
     if heading:
@@ -83,9 +165,7 @@ def _paragraph(text: str, *, heading: bool = False, bullet: bool = False) -> str
     if bullet:
         properties.append('<w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr>')
     props = f"<w:pPr>{''.join(properties)}</w:pPr>" if properties else ""
-    escaped = (
-        text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    )
+    escaped = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     return f'<w:p>{props}<w:r><w:t xml:space="preserve">{escaped}</w:t></w:r></w:p>'
 
 
@@ -104,7 +184,8 @@ def write_docx(path: Path) -> None:
     content_types = (
         '<?xml version="1.0" encoding="UTF-8"?>'
         '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
-        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+        '<Default Extension="rels" '
+        'ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
         '<Default Extension="xml" ContentType="application/xml"/>'
         '<Override PartName="/word/document.xml" '
         'ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
@@ -142,7 +223,10 @@ def main() -> None:
     OUTPUT.mkdir(parents=True, exist_ok=True)
     (OUTPUT / "fictional-resume.pdf").write_bytes(pdf_bytes(LINES))
     (OUTPUT / "image-only.pdf").write_bytes(pdf_bytes((), include_text=False))
+    (OUTPUT / "two-column.pdf").write_bytes(two_column_pdf_bytes())
     write_docx(OUTPUT / "fictional-resume.docx")
+    write_adversarial_layout_docx(OUTPUT / "adversarial-layout.docx")
+    write_long_docx(OUTPUT / "long-resume.docx")
     manifest = {
         path.name: {
             "bytes": path.stat().st_size,

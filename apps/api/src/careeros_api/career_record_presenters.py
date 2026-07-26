@@ -13,6 +13,8 @@ from careeros.modules.career_record.domain import (
     AchievementStatus,
     AttachmentStatus,
     CareerEntity,
+    CareerEntityRelationship,
+    CareerFieldProvenance,
     CareerProfile,
     EvidenceAttachment,
     EvidenceConflict,
@@ -23,7 +25,10 @@ from careeros.modules.career_record.domain import (
     EvidenceStrength,
     ImportProposal,
     PartialDate,
+    PersonalFact,
     ReminderPreferences,
+    SemanticFieldOrigin,
+    SemanticImportProposal,
     Skill,
     SkillProficiency,
     TimelineFinding,
@@ -39,6 +44,7 @@ from careeros_api.career_record_schemas import (
     AchievementResponse,
     CareerItemResponse,
     CareerProfileResponse,
+    CareerRelationshipResponse,
     EvidenceAttachmentResponse,
     EvidenceConflictResponse,
     EvidenceHistoryResponse,
@@ -48,9 +54,13 @@ from careeros_api.career_record_schemas import (
     ExperienceResponse,
     ImportProposalChangeResponse,
     ImportProposalResponse,
+    PersonalFactResponse,
     ProfileConflictResponse,
     ProvenanceResponse,
     ReminderPreferencesResponse,
+    SemanticImportAnchorResponse,
+    SemanticImportFieldResponse,
+    SemanticImportProposalResponse,
     SkillResponse,
     SourceSpanResponse,
 )
@@ -86,9 +96,86 @@ def profile_response(profile: CareerProfile, account: CurrentUser) -> CareerProf
     )
 
 
+def personal_fact_response(
+    fact: PersonalFact,
+    *,
+    provenance: list[ProvenanceResponse] | None = None,
+) -> PersonalFactResponse:
+    return PersonalFactResponse(
+        id=fact.id,
+        kind=fact.kind.value,
+        value=fact.value,
+        label=fact.label,
+        is_primary=fact.is_primary,
+        confirmation=fact.confirmation.value,
+        version=fact.version,
+        created_at=fact.created_at,
+        updated_at=fact.updated_at,
+        confirmed_at=fact.confirmed_at,
+        provenance=provenance or [],
+    )
+
+
+def career_relationship_response(
+    relationship: CareerEntityRelationship,
+) -> CareerRelationshipResponse:
+    return CareerRelationshipResponse(
+        id=relationship.id,
+        experience_id=relationship.source_entity_id,
+        project_id=relationship.target_entity_id,
+        kind=relationship.kind.value,
+        created_at=relationship.created_at,
+    )
+
+
+def field_provenance_response(
+    value: CareerFieldProvenance,
+    *,
+    available: bool,
+) -> ProvenanceResponse:
+    labels = {
+        SemanticFieldOrigin.RESUME_PARSER: "Confirmed typed resume field",
+        SemanticFieldOrigin.RESUME_USER_ADDED: "Added during typed resume review",
+        SemanticFieldOrigin.OWNER_EDIT: "Edited during typed resume import review",
+        SemanticFieldOrigin.OWNER_ATTESTATION: "Owner-confirmed current field",
+    }
+    return ProvenanceResponse(
+        id=value.id,
+        source_type=(
+            "manual" if value.origin is SemanticFieldOrigin.OWNER_ATTESTATION else "resume"
+        ),
+        source_label=f"{labels[value.origin]}: {value.field_name.replace('_', ' ')}",
+        source_document_id=value.document_id,
+        source_snapshot_id=value.snapshot_id,
+        source_revision=value.snapshot_revision,
+        parser_version=value.parser_version,
+        confidence=None,
+        user_confirmed=True,
+        available=available,
+        spans=[
+            SourceSpanResponse(
+                id=uuid5(
+                    NAMESPACE_URL,
+                    (
+                        f"careeros:field-provenance:{value.id}:"
+                        f"{anchor.block_id}:{anchor.start_offset}"
+                    ),
+                ),
+                page=anchor.page,
+                start=anchor.start_offset,
+                end=anchor.end_offset,
+                excerpt=anchor.source_excerpt,
+                digest=f"sha256:{anchor.source_sha256.hex()}",
+            )
+            for anchor in value.anchors
+        ],
+    )
+
+
 def experience_response(
     entity: CareerEntity,
     *,
+    user_confirmed: bool = False,
     findings: tuple[TimelineFinding, ...] = (),
     skill_ids: tuple[UUID, ...] = (),
     provenance: list[ProvenanceResponse] | None = None,
@@ -120,7 +207,7 @@ def experience_response(
         skill_ids=list(skill_ids),
         version=entity.version,
         order=entity.sort_order,
-        user_confirmed=True,
+        user_confirmed=user_confirmed,
         promotion_group_id=promotion_group,
         concurrent_group_id=concurrent_group,
         conflicts=[timeline_finding_response(item) for item in related],
@@ -133,6 +220,7 @@ def experience_response(
 def career_item_response(
     entity: CareerEntity,
     *,
+    user_confirmed: bool = False,
     provenance: list[ProvenanceResponse] | None = None,
 ) -> CareerItemResponse:
     return CareerItemResponse(
@@ -146,13 +234,19 @@ def career_item_response(
         url=entity.external_url,  # type: ignore[arg-type]
         version=entity.version,
         order=entity.sort_order,
+        user_confirmed=user_confirmed,
         provenance=provenance or [],
         created_at=entity.created_at,
         updated_at=entity.updated_at,
     )
 
 
-def skill_response(skill: Skill) -> SkillResponse:
+def skill_response(
+    skill: Skill,
+    *,
+    user_confirmed: bool = False,
+    provenance: list[ProvenanceResponse] | None = None,
+) -> SkillResponse:
     proficiency = (
         None
         if skill.proficiency is None
@@ -170,6 +264,8 @@ def skill_response(skill: Skill) -> SkillResponse:
         proficiency=proficiency,  # type: ignore[arg-type]
         version=skill.version,
         order=skill.sort_order,
+        user_confirmed=user_confirmed,
+        provenance=provenance or [],
         created_at=skill.created_at,
         updated_at=skill.updated_at,
     )
@@ -297,6 +393,69 @@ def provenance_from_proposal(proposal: ImportProposal, *, available: bool) -> Pr
                 digest=f"sha256:{value.source_sha256.hex()}",
             )
         ],
+    )
+
+
+def semantic_import_proposal_response(
+    proposal: SemanticImportProposal,
+    *,
+    source_available: bool,
+) -> SemanticImportProposalResponse:
+    accepted = proposal.accepted_values or {}
+    return SemanticImportProposalResponse(
+        id=proposal.id,
+        target=cast(
+            Literal["personalFacts", "entity", "skill"],
+            {
+                "personal_facts": "personalFacts",
+                "entity": "entity",
+                "skill": "skill",
+            }[proposal.target.value],
+        ),
+        target_record_id=proposal.target_record_id,
+        document_id=proposal.document_id,
+        snapshot_id=proposal.snapshot_id,
+        snapshot_revision=proposal.snapshot_revision,
+        schema_version=proposal.schema_version,
+        parser_version=proposal.parser_version,
+        semantic_entity_id=proposal.semantic_entity_id,
+        semantic_kind=proposal.semantic_kind.value,
+        status=proposal.status.value,
+        conflict_code=proposal.conflict_code,
+        source_available=source_available,
+        version=proposal.version,
+        fields=[
+            SemanticImportFieldResponse(
+                id=field.semantic_field_id,
+                name=field.name,
+                field_type=cast(
+                    Literal["text", "email", "phone", "url", "date", "bullet"],
+                    field.field_type,
+                ),
+                proposed_value=field.value,
+                accepted_value=accepted.get(str(field.semantic_field_id)),
+                review_state=field.review_state.value,
+                confidence=field.confidence_basis_points / 10_000,
+                date_precision=cast(
+                    Literal["day", "month", "year", "unknown"] | None,
+                    field.date_precision,
+                ),
+                anchors=[
+                    SemanticImportAnchorResponse(
+                        block_id=anchor.block_id,
+                        page=anchor.page,
+                        start=anchor.start_offset,
+                        end=anchor.end_offset,
+                        digest=f"sha256:{anchor.source_sha256.hex()}",
+                        excerpt=anchor.source_excerpt,
+                    )
+                    for anchor in field.anchors
+                ],
+            )
+            for field in proposal.fields
+        ],
+        created_at=proposal.created_at,
+        reviewed_at=proposal.reviewed_at,
     )
 
 

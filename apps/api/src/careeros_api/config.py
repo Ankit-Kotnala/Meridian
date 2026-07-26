@@ -13,6 +13,8 @@ LogFormat = Literal["json", "console"]
 EmailProvider = Literal["smtp", "disabled"]
 MalwareScannerProvider = Literal["clamav", "disabled"]
 AiProvider = Literal["deterministic", "http_json", "disabled"]
+AccountOperationsProvider = Literal["disabled"]
+BillingProvider = Literal["disabled"]
 
 _DEVELOPMENT_DATABASE_URL = "postgresql+asyncpg://careeros:careeros@localhost:5432/careeros"
 
@@ -93,6 +95,27 @@ class Settings(BaseSettings):
     google_client_id: str | None = Field(default=None, max_length=512)
     google_client_secret: SecretStr | None = None
     google_redirect_uri: str = "http://localhost:3000/api/v1/auth/google/callback"
+    account_export_provider: AccountOperationsProvider = Field(
+        default="disabled",
+        validation_alias=AliasChoices(
+            "CAREEROS_ACCOUNT_EXPORT_PROVIDER",
+            "ACCOUNT_EXPORT_PROVIDER",
+        ),
+    )
+    account_deletion_provider: AccountOperationsProvider = Field(
+        default="disabled",
+        validation_alias=AliasChoices(
+            "CAREEROS_ACCOUNT_DELETION_PROVIDER",
+            "ACCOUNT_DELETION_PROVIDER",
+        ),
+    )
+    billing_provider: BillingProvider = Field(
+        default="disabled",
+        validation_alias=AliasChoices(
+            "CAREEROS_BILLING_PROVIDER",
+            "BILLING_PROVIDER",
+        ),
+    )
 
     s3_endpoint_url: str = Field(
         default="http://localhost:9000",

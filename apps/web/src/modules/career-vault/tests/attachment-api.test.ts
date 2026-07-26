@@ -113,15 +113,24 @@ describe("private evidence attachment API", () => {
     } as ProfileImportProposal;
 
     await expect(
-      acceptProfileImportProposal(proposal, {
-        [proposal.changes[0]!.id]: "Reviewed title",
-      }),
+      acceptProfileImportProposal(
+        proposal,
+        {
+          [proposal.changes[0]!.id]: "Reviewed title",
+        },
+        "semantic-accept-test",
+      ),
     ).rejects.toThrow("stop after request capture");
 
     const init = request.mutation.mock.calls[0]?.[1] as RequestInit;
     expect(JSON.parse(String(init.body))).toEqual({
-      edits: { title: "Reviewed title" },
+      values: {
+        [proposal.changes[0]!.id]: "Reviewed title",
+      },
     });
+    expect(new Headers(init.headers).get("Idempotency-Key")).toBe(
+      "semantic-accept-test",
+    );
   });
 
   it("uploads only to the configured origin without cookies and reports progress", async () => {

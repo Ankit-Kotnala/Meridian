@@ -1,11 +1,14 @@
 # CareerOS implementation plan
 
-Last updated: 2026-07-25
+Last updated: 2026-07-26
 Plan owner: engineering  
-Current status: **Phase 9 is complete and hosted verified in PR #22. Phase 8
-remains complete and hosted verified in PR #21. A full-specification audit has
-reopened semantic closure work in Phases 1-3 and full Resume Builder/export
-closure in Phase 7**
+Current status: **Phase 1/3 observed-onboarding, Settings, and resume-ready Career
+Record closure is locally verified; hosted evidence is pending explicit
+authorization to publish. Phase 2 semantic parsing/review closure is also
+locally/security verified with hosted evidence pending. Phase 9 remains complete
+and hosted verified in PR #22; Phase 8 remains complete and hosted verified in
+PR #21. The full-specification audit still has open Phase 7 and
+release-hardening work**
 
 ## Status legend
 
@@ -187,11 +190,12 @@ revision.
 ## Phase 1 scope and status
 
 Current status: **the authentication, session, and application-shell slice is
-complete and hosted verified; full onboarding and Settings closure is reopened**.
-The historical gate remains valid for the shipped slice, but it did not prove a
-pipeline-aware onboarding state machine or the complete profile, preference,
-privacy, export, deletion, notification, and account-management experience
-required by the authoritative brief.
+complete and hosted verified; server-observed onboarding and Settings closure is
+locally verified with hosted closure evidence pending authorization**. The
+historical gate remains valid for the shipped slice. The current closure adds the
+pipeline-aware onboarding state machine and complete Phase 1 account/profile/
+preference/security Settings surface while leaving actual account export,
+deletion, billing, and scheduled delivery to their owning release workflows.
 
 ### Included
 
@@ -201,10 +205,17 @@ required by the authoritative brief.
       logout/logout-all, recovery, session revocation, and Google OAuth adapter
 - [x] Argon2id password hashing, opaque hashed tokens, replay-family revocation,
       CSRF/origin enforcement, abuse controls, audit events, and owner scoping
-- [~] Protected responsive workspace and real empty dashboard are complete.
-  Profile/session/consent settings and honest Phase 2 handoff links exist;
-  pipeline-aware onboarding progression and the complete Settings product
-  remain open.
+- [x] Protected responsive workspace and real empty dashboard plus profile,
+      session, consent, security, notification-preference, privacy, connection,
+      and billing-capability Settings use real server state and honest
+      unavailable states.
+- [x] Onboarding stores intent and explicit skips while upload, processing,
+      typed-review, and analysis progress come from an owner-scoped Resume Health
+      application query. The browser cannot submit those observations.
+- [x] Recent-auth password change verifies the current credential when present,
+      invalidates reset tokens, and revokes every session. OAuth-only accounts
+      may set a first password; Google removal is blocked when no other login
+      method remains; security activity is owner-scoped and redacted.
 - [x] Same-origin web API proxy, generated contract bindings, accessible form and
       feedback primitives, and loading/empty/success/error states
 - [x] Unit, API, real PostgreSQL/Redis integration, migration round-trip, and
@@ -214,6 +225,9 @@ ADR 0008 records the API-owned opaque-session model, same-origin web proxy,
 cookie/CSRF policy, refresh rotation, provider boundaries, abuse controls, and
 ownership rules. No working Phase 0 behavior was replaced with mock data; the
 fictional preview moved to the explicitly labeled demo route.
+ADR 0017 records the additive observed-onboarding query and fail-closed Settings
+capability boundary. Export, account deletion, billing, and scheduled
+notification delivery report unavailable until complete workflows exist.
 
 ### Phase 1 local evidence
 
@@ -242,6 +256,17 @@ external secret scanner. The final tree makes consumer typechecks depend on
 dependency builds/typechecks, generates the E2E password per run, removes the
 literal from reachable PR history, and passes both gates.
 
+### Phase 1 closure evidence — 2026-07-26
+
+| Command / gate                         | Result           | Evidence                                                                                                                                                                                                                                                                                                                                                                               |
+| -------------------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Focused identity and API suites        | Pass             | 22 backend/API tests cover observed onboarding, password rotation, session invalidation, Settings capabilities, security activity, and Google disconnect behavior.                                                                                                                                                                                                                     |
+| Real PostgreSQL identity repository    | Pass             | Password rotation revokes the session and owner-scoped audit activity excludes another user's records.                                                                                                                                                                                                                                                                                 |
+| Settings component suite               | Pass             | 3 web tests cover the session surface plus account-security and unavailable-capability states.                                                                                                                                                                                                                                                                                         |
+| Generated contracts                    | Pass             | OpenAPI was regenerated after the new routes and deprecated legacy import marker; contract build and 3 contract tests pass.                                                                                                                                                                                                                                                            |
+| Documented `make format-check`         | Tool unavailable | PowerShell could not resolve `make`. The underlying pinned Prettier/Ruff commands are run directly; this host-tool failure is not reported as a pass.                                                                                                                                                                                                                                  |
+| Cumulative `scripts/verify-phase3.ps1` | Pass             | The current-tree cumulative gate passed in 336.3 seconds. It includes all Phase 1 format/lint/type/unit/API/build/Compose checks plus desktop/mobile authentication, honest onboarding, Settings/session control, and latest-head migration coverage. The narrower Phase 1 wrapper also now explicitly selects Phase 1 and preserves the historical `20260714_0001` rollback boundary. |
+
 ### Explicitly deferred
 
 - Resume upload, malware admission, parsing, canonical resume state, corrections,
@@ -256,13 +281,11 @@ literal from reachable PR history, and passes both gates.
 
 ## Phase 2 scope and status
 
-Current status: **the secure intake, extraction, generic canonical-block, and
-Resume Health v1 slice is complete and hosted verified; typed semantic parsing
-and review closure is reopened**. Implementation commit `3b8d639` passed its
-historical local gate and hosted CI run `29378312134`. That evidence does not
-claim a typed contact/experience/education/project/skill/certification model,
-killable per-parser subprocess isolation, layout analysis, or the complete
-adversarial fixture corpus required by the authoritative brief.
+Current status: **the secure intake, extraction, typed semantic parsing/review,
+and Resume Health v2 implementation is complete and locally/security verified.
+Hosted closure evidence remains pending explicit authorization to publish**.
+Historical implementation commit `3b8d639` and hosted CI run `29378312134`
+remain evidence for the original generic-block v1 slice only.
 
 ### Implemented vertical slice
 
@@ -302,18 +325,27 @@ adversarial fixture corpus required by the authoritative brief.
       changing the extracted source. Correction and analysis have separate
       ownership-scoped rate classes; correction rejects an all-no-op request and the
       domain caps canonical revisions and analysis history per document.
-- [x] Resume Health engine `resume-health/1.0.0` with configuration
-      `resume-health-default/1` uses the exact published fixed-point feature and
-      component formula. Each immutable analysis persists feature schema
-      `resume-health-features/1`, the complete typed feature values, each component's
-      weighted feature contributions, and a feature hash; it exposes deterministic
-      findings/explanations and returns insufficient data rather than a deceptive
-      zero.
+- [x] A typed semantic sidecar models contact, experience, education, project,
+      skill, and certification entities; closed field types; stable IDs; exact
+      source anchors; date precision; confidence; and explicit field/entity review
+      state. Typed confirm/correct/add/remove/reclassify operations require
+      ownership and optimistic concurrency and create immutable successor
+      snapshots. Corrections retain source provenance, while user-added facts are
+      explicitly unanchored rather than falsely attributed.
+- [x] Resume Health engine `resume-health/2.0.0` with configuration
+      `resume-health-default/2` uses the documented fixed-point semantic coverage,
+      review, date-precision, breadth, and existing layout/content feature formula.
+      Each immutable analysis persists `resume-health-features/2`, typed feature
+      values, weighted contributions, and a feature hash; historical v1 analysis
+      records remain strictly readable. Sparse/image-only input still returns
+      insufficient data rather than a deceptive zero.
 - [x] The account and short-retention guest web workflows implement direct upload
       progress/abort, processing polling/cancel, document list/empty state,
-      plain-text and reading-order review, source-preserving correction, analysis,
-      report, explicit consented claim, and durable deletion with loading, empty,
-      success, and safe error states.
+      plain-text, reading-order, and typed semantic review; per-fact
+      confirm/correct/remove; entity reclassification/removal; user-supported
+      additions; explicit no-change confirmation; legacy snapshot upgrade;
+      analysis; report; explicit consented claim; and durable deletion with
+      loading, empty, success, and safe error states.
 - [x] Reports carry the canonical internal-measure disclaimer, real component and
       finding data, and keyboard/mobile/color-independent accessible summaries.
       Keyboard-operable disclosure panels expose the stored feature values and exact
@@ -327,6 +359,12 @@ adversarial fixture corpus required by the authoritative brief.
 - `packages/backend/src/careeros/modules/resume_health` owns framework-free domain
   rules and application ports/use cases. SQLAlchemy, S3, ClamAV, and Celery
   adapters point inward; the worker does not import the API.
+- Document text extraction, layout analysis, semantic parsing, OCR, and malware
+  scanning are independent inward-facing ports with deterministic local adapters.
+  Hostile document parsing executes in a dedicated child process with bounded
+  input/output, resource limits, no inherited standard streams, timeout
+  termination followed by child reaping, and guaranteed temporary-workspace
+  cleanup.
 - Direct object transfer is split into staging and quarantine. A signed URL grants
   one key/method/header/TTL-scoped upload operation, never resource ownership;
   finalize and every worker action recheck durable scope/state.
@@ -398,19 +436,34 @@ rejected it under `--wait`. The scheduler now has a PID/process-specific
 health probe, both E2E runners assert it explicitly, failure paths retain bounded
 diagnostics before cleanup, and the repaired local and hosted gates pass.
 
+### Typed semantic closure verification — 2026-07-25
+
+| Command / gate                                             | Status  | Evidence                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ---------------------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Focused semantic, persistence, API, worker, and web suites | Pass    | Typed semantic parsing/review, Resume Health v2 golden values, killable subprocess timeout/cleanup, generated-contract parsing, accessible review operations, and historical/v2 persistence compatibility pass locally.                                                                                                                                                                                        |
+| Live PostgreSQL regression                                 | Pass    | `test_resume_repository.py` passes against the real migrated PostgreSQL service with a v2 analysis payload and owner-scoped retrieval.                                                                                                                                                                                                                                                                         |
+| `scripts/verify-phase2.ps1`                                | Pass    | The exact implementation-tree gate exited 0 on 2026-07-26 in about 8m25s. Contract drift, formatting, lint, strict types, builds, 388 backend, 137 API, 84 worker, 155 web, 12 UI, 3 contract, 4 ESLint-boundary, and 2 edge tests passed; core runtime/recovery, fresh and rollback/forward migrations, 39 live integrations, and 3 Playwright journeys with 1 intentional mobile duplicate skip also passed. |
+| `scripts/security-scan.ps1`                                | Pass    | The separate gate exited 0 on 2026-07-26 in about 146 seconds. Gitleaks, pnpm audit, and pip-audit found no secret or known application-dependency vulnerability; all four application images passed the fixable-high Grype gate. API and worker retain only the three documented nonblocking medium CPython findings whose listed fixes require Python 3.15 prereleases.                                      |
+| Hosted CI                                                  | Pending | No branch was pushed and no PR was opened. Publishing the locally verified closure for hosted CI requires explicit user authorization.                                                                                                                                                                                                                                                                         |
+
 ### Known limitations and deferred work
 
 - OCR is an explicit port but no provider is enabled; image-only PDFs produce a
   parser warning and insufficient-data report rather than invented text.
-- The committed benign corpus covers deterministic one-column PDF, DOCX, and
-  image-only PDF. Additional two-column, header/footer, table-heavy, locale,
-  unusual-font, bidirectional-Unicode, and long-document fixtures remain ongoing
-  parser-compatibility work, not claimed Phase 2 coverage.
+- The deterministic fictional corpus now covers one- and two-column PDF, DOCX,
+  image-only PDF, header/footer exclusion, table-heavy content, locale/date
+  precision, concurrent roles, unusual fonts, bidirectional controls, and long
+  resumes. Malformed, encrypted, polyglot, macro, traversal, archive-expansion,
+  forced-timeout, and scanner cases are generated safely in isolated tests.
 - PDF has an authoritative extractor page-count cap. The local `python-docx`
   path cannot reliably infer rendered DOCX pages, so DOCX is instead bounded by
   upload bytes, archive entries, expanded bytes/ratio, extracted characters/
   blocks, and artifact size. Layout-aware DOCX page enforcement requires a later
   rendering provider.
+- The local semantic parser is deliberately conservative and deterministic. It
+  marks uncertainty for human review instead of inventing facts; richer
+  provider-backed inference remains behind the parser port and must satisfy the
+  same schema and grounding rules.
 - Resume Health is job-independent document analysis. It does not create the
   career-profile/evidence source of truth, verify a claim, measure role/job fit,
   call an AI provider, or predict hiring outcomes.
@@ -420,11 +473,10 @@ diagnostics before cleanup, and the repaired local and hosted gates pass.
   remain Phase 10 release work.
 - Local Compose hardening and ClamAV prove the development contract, not an
   internet-facing production sandbox or zero-day immunity.
-- The local extractor runs blocking parser code through `asyncio.to_thread`.
-  Its application timeout cancels the await but cannot forcibly stop that Python
-  thread. Celery task limits plus the non-root, read-only, CPU/memory/PID-bounded,
-  no-edge-network worker reduce impact; a killable per-parser subprocess remains
-  security hardening work before production exposure.
+- The isolated child process provides killable parser timeout and cleanup. The
+  worker/container limits remain defense in depth; Windows cannot enforce the
+  POSIX child `rlimit` controls, so the Linux production/runtime path remains the
+  authoritative resource-limit environment.
 - Upload retry state is intentionally held only in the mounted browser component.
   An ambiguous transfer/finalize failure can reuse the same intent and finalize
   key while that page remains mounted, but a lost upload-intent response or page
@@ -440,12 +492,14 @@ diagnostics before cleanup, and the repaired local and hosted gates pass.
 
 Current status: **the evidence graph, eligibility policy, and core career CRUD
 slice is complete and hosted verified; resume-ready Career Record closure is
-reopened**. Implementation commit `0df8bcf` records the historical Phase 3
+locally verified with hosted closure evidence pending authorization**.
+Implementation commit `0df8bcf` records the historical Phase 3
 local-verification tree. No-change trigger commit `f752b55` has the identical
 tree and passed hosted CI run `29657932938` on PR #13 against the Phase 2 hosted
-baseline branch `codex/phase-2-resume-health`. The full-specification exit gate
-still requires explicit field/entity confirmation and provenance, complete
-personal/contact facts, and experience-project-achievement relationships.
+baseline branch `codex/phase-2-resume-health`. The current tree adds explicit
+fact/entity/skill confirmation, canonical per-field provenance, personal/contact
+facts, and explicit experience-project relationships alongside the existing
+achievement/evidence graph.
 
 ### Implemented vertical slice
 
@@ -465,10 +519,26 @@ personal/contact facts, and experience-project-achievement relationships.
       partial year/year-month dates, complete-set accessible reorder, explicit
       promotion/concurrent-role grouping, neutral gap findings, optimistic
       concurrency, and owner-scoped CRUD without requiring a resume.
+- [x] Personal/contact facts, career entities, and skills have explicit
+      confirmation. Material edits revoke confirmation; downstream readiness
+      exposes only current confirmed records and makes confirmed personal facts
+      available to appropriate document consumers.
+- [x] Per-field provenance records the exact reviewed semantic field identity,
+      anchors, snapshot revision/schema/parser, origin, canonical value digest,
+      and accept-time owner edits. Current provenance is revalidated against the
+      immutable source rather than trusted by row presence alone.
+- [x] Experience-to-project relationships are explicit owner-scoped edges.
+      Achievement-to-entity and evidence-to-entity/skill relationships remain in
+      their existing authoritative structures.
 - [x] Resume-derived changes are copied into versioned pending proposals through
       an explicit ownership-checked Resume Health source query. Accept, edited
       accept, and reject are explicit actions; source deletion never rewrites
       accepted career truth and makes source-only Supported evidence ineligible.
+- [x] The new typed semantic proposal flow reads the owned reviewed Phase 2
+      sidecar server-side, excludes unreviewed/removed fields, retains missing
+      facts as questions, and maps accepted candidates to canonical facts,
+      skills, experiences, education, projects, or certifications. Legacy generic
+      proposals remain readable; their v1 creation route is deprecated.
 - [x] Evidence Vault separates active/archive/delete lifecycle from Verified,
       Confirmed, Supported, Inferred, and Unsupported strength. State transitions,
       immutable revisions, source availability, numeric dimensions, conflicts,
@@ -529,6 +599,19 @@ locally. The downgrade deletes Phase 3 relational data in dependency order;
 production rollback after real career/evidence content therefore requires export,
 retention, and forward-repair review rather than an automatic downgrade.
 
+Additive closure migration `20260726_0011` depends on the Phase 9 head
+`20260724_0010` and adds confirmation, personal-fact, typed-proposal,
+relationship, and per-field-provenance tables without rewriting historical
+Career Record rows. It also conditionally repairs canonical Phase 9 objects for
+long-lived pre-release databases stamped by earlier development copies of
+revision `0010`; missing metadata is backfilled deterministically, conflicting
+data aborts the transaction, and no Phase 9 record is deleted. The isolated test
+upgrades a deliberately degraded `0010` database, checks metadata parity,
+rejects cross-owner confirmation and duplicate primary facts, downgrades to
+`0010`, and repairs forward to a single matching head. Downgrade deletes closure
+records but deliberately preserves objects owned by Phase 9; it is not a
+production rollback recommendation after users create closure data.
+
 ### Verification evidence and remaining gate
 
 The preceding Phase 2 acceptance criteria were rechecked before Phase 3 edits:
@@ -547,6 +630,31 @@ evidence are listed below.
 | Primary Phase 3 E2E                                | Pass   | The isolated Playwright run passed 4 workflows in 55.1 seconds with 2 intentional mobile skips: desktop auth/onboarding, desktop Career Record, guest Resume Health, and mobile auth passed. The Career Record workflow registers and verifies a user, creates profile/skill/project/experience data, confirms evidence, and explicitly converts an achievement. |
 | `scripts/verify-phase3.ps1` / `make verify-phase3` | Pass   | `scripts/verify-phase3.ps1` passed locally on 2026-07-19 against the documentation-aligned tree. It ran the full repository gate followed by the isolated Phase 3 migration, integration, runtime, and browser workflow.                                                                                                                                         |
 | Hosted CI                                          | Pass   | Run `29657932938` passed supply-chain, API, web/contracts, worker, browser-smoke, Resume Health E2E, Career Record E2E, and container/image jobs on no-change trigger commit `f752b55`, whose tree is identical to implementation commit `0df8bcf`; GitGuardian also passed on PR #13.                                                                           |
+
+### Resume-ready closure evidence — 2026-07-26
+
+| Command / gate                           | Status | Evidence                                                                                                                                                                                                                                                                                                                                                                                                |
+| ---------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Focused backend/API closure portfolio    | Pass   | 48 semantic import, confirmation, provenance, relationship, readiness, and route tests pass; the broader identity plus Career Record selection passes 70 tests.                                                                                                                                                                                                                                         |
+| Isolated migration integration           | Pass   | A deliberately degraded `20260724_0010` schema upgrades to `20260726_0011`; canonical Phase 9 objects are repaired without deleting rows, `alembic check` reports no drift, historical records remain unconfirmed, ownership/primary-fact constraints fail closed, downgrade preserves Phase 9 repairs, and forward repair returns one matching head.                                                   |
+| Real PostgreSQL Career Record repository | Pass   | 5 tests pass, including confirmation, facts, provenance, relationships, cross-owner filtering, and relationship cascade behavior. The full fresh-database dependency portfolio passes 41 tests with 9 inherited cyclic-FK ordering warnings.                                                                                                                                                            |
+| Full host quality and build portfolio    | Pass   | Prettier, contract/lock drift, repository boundaries, Ruff, mypy, strict TypeScript, production builds, 398 backend, 145 API, 84 worker, 163 web, 12 UI, 3 contract, 4 frontend-boundary, and 2 web-edge tests pass. The FastAPI portfolio retains one non-blocking Starlette/httpx2 deprecation warning.                                                                                               |
+| `scripts/verify-phase3.ps1`              | Pass   | The exact cumulative gate passed in 336.3 seconds on 2026-07-26. It freshly recreated the primary containers while retaining named volumes, verified migration head `20260726_0011`, health and Celery, then used an isolated project for rollback to `20260715_0003`, forward repair, all 41 integrations, runtime failure/recovery probes, and 4 Playwright journeys with 2 intentional mobile skips. |
+
+Earlier exact attempts are retained as failure evidence rather than relabeled:
+
+- Docker Desktop returned `unexpected EOF` while `docker wait` observed the
+  isolated MinIO initializer; the project cleanup succeeded. A direct isolated
+  retry then passed in 179.4 seconds.
+- A later primary probe saw a stale Mailpit host-port attachment even though the
+  container reported healthy. Recreating that container restored HTTP 200.
+- The verifier now recreates primary containers without deleting named volumes,
+  retries bounded HTTP probes, and retries only Docker CLI transport failures
+  while waiting for the initializer. Persistent non-200 responses, nonzero
+  initializer exits, and exhausted retries still fail.
+- GNU Make is unavailable in this PowerShell environment, so the attempted
+  `make format-check` remains recorded as unavailable; the exact PowerShell gate
+  runs the pinned underlying command portfolio and passed.
 
 ### Known limitations and deferred work
 
@@ -1223,24 +1331,19 @@ owner-authorizing application interfaces.
 
 Historical phase gates remain evidence for the vertical slices they actually
 tested; they do not waive requirements that the 2026-07-25 audit found absent or
-partial. Work proceeds as separate stacked PRs in dependency order:
+partial. Phase 2 semantic closure is implemented and locally/security verified;
+Phase 1/3 closure is locally verified; hosted closure evidence is pending
+authorization. Remaining work proceeds in dependency-ordered reviewable
+changes:
 
-1. Phase 2 semantic closure: retain the immutable source-block projection, add a
-   typed semantic sidecar and review operations, independent parser/layout
-   provider boundaries, killable subprocess isolation, Resume Health v2, and a
-   representative adversarial PDF/DOCX fixture corpus.
-2. Phase 1/3 closure: make onboarding observe real upload/parse/review/role state;
-   complete Settings; and make the Career Record resume-ready with explicit
-   confirmation/provenance, personal/contact facts, and complete entity
-   relationships.
-3. Phase 7A/B/C closure: complete field/entity editing, autosave, comparison and
+1. Phase 7A/B/C closure: complete field/entity editing, autosave, comparison and
    restore; implement five genuinely distinct constrained templates with Unicode
    and page-layout fidelity; then move export/verification/cleanup to durable
    workers with an independent blocking semantic fidelity manifest.
-4. Add an idempotent, production-guarded fictional database/object seed; then
+2. Add an idempotent, production-guarded fictional database/object seed; then
    complete plans/entitlements/billing and remaining durable AI, notification,
    email, and asynchronous workflows.
-5. Complete Coach/Organization collaboration, Settings/privacy/deletion/export,
+3. Complete Coach/Organization collaboration, Settings/privacy/deletion/export,
    protected least-privilege administration, observability/performance/security/
    recovery evidence, and release engineering. Production deployment remains a
    final, explicitly approved collaboration with the product owner.
@@ -1351,11 +1454,10 @@ At the end of every phase:
 
 ## Next phase
 
-With Phase 9 local, security, and hosted closeout evidence green, the next
-stacked PR is **Phase 2 typed semantic parsing and review closure**, followed by
-Phase 1/3 onboarding and resume-ready Career Record closure, Phase 7A/B/C
-editor/template/export closure, the guarded real seed, commercial and remaining
-durable workflows, Coach/Organization and privacy/admin surfaces, and finally
-observability, performance, recovery, and protected release engineering. Each PR
-must pass its own full local/security/hosted gates. Production deployment remains
-deferred until the user and engineering complete the final approval together.
+The next implementation change is Phase 7A/B/C editor/template/export closure,
+followed by the guarded real seed, commercial and remaining durable workflows,
+Coach/Organization and privacy/admin surfaces, and finally observability,
+performance, recovery, and protected release engineering. Publishing any
+closure or review branch requires explicit user authorization; production
+deployment remains deferred until the user and engineering complete the final
+approval together.

@@ -16,6 +16,8 @@ from careeros.modules.resume_health.application.models import (
     StorageUploadTarget,
 )
 from careeros.modules.resume_health.domain import (
+    CanonicalResume,
+    CanonicalSemantics,
     CanonicalSnapshot,
     DocumentArtifact,
     FeatureContribution,
@@ -84,6 +86,31 @@ class DocumentExtractor(Protocol):
     async def extract(
         self, path: Path, media_type: str, limits: DocumentLimits
     ) -> ExtractionResult: ...
+
+
+class DocumentTextExtractor(Protocol):
+    async def extract_text(
+        self, path: Path, media_type: str, limits: DocumentLimits
+    ) -> ExtractionResult: ...
+
+
+class LayoutAnalyzer(Protocol):
+    async def analyze(
+        self,
+        path: Path,
+        media_type: str,
+        extraction: ExtractionResult,
+        limits: DocumentLimits,
+    ) -> ExtractionResult: ...
+
+
+class ResumeParserProvider(Protocol):
+    async def parse(
+        self,
+        document_id: UUID,
+        resume: CanonicalResume,
+        source_sha256: str,
+    ) -> CanonicalSemantics: ...
 
 
 class OcrProvider(Protocol):

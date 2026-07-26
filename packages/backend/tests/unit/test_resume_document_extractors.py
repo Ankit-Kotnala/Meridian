@@ -1,5 +1,7 @@
 """Hostile PDF/DOCX admission and local extraction tests."""
 
+import hashlib
+import json
 import time
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -11,9 +13,33 @@ from pypdf import PdfWriter
 from careeros.modules.resume_health.application.models import DocumentLimits
 from careeros.modules.resume_health.domain import ResumeMediaType
 from careeros.modules.resume_health.domain.errors import UnsafeDocument
-from careeros.modules.resume_health.infrastructure.extractors import LocalDocumentExtractor
+from careeros.modules.resume_health.infrastructure.extractors import (
+    LocalDocumentExtractor,
+    LocalDocumentTextExtractor,
+)
+from careeros.modules.resume_health.infrastructure.isolated_extractor import (
+    IsolatedDocumentExtractor,
+)
+from careeros.modules.resume_health.infrastructure.layout import LocalLayoutAnalyzer
 
 FIXTURES = Path(__file__).resolve().parents[3] / "test-fixtures" / "generated"
+
+
+def test_committed_fixture_manifest_matches_bounded_fictional_corpus() -> None:
+    manifest = json.loads((FIXTURES / "manifest.json").read_text(encoding="utf-8"))
+
+    assert set(manifest) == {
+        "adversarial-layout.docx",
+        "fictional-resume.docx",
+        "fictional-resume.pdf",
+        "image-only.pdf",
+        "long-resume.docx",
+        "two-column.pdf",
+    }
+    for filename, expected in manifest.items():
+        value = (FIXTURES / filename).read_bytes()
+        assert len(value) == expected["bytes"]
+        assert hashlib.sha256(value).hexdigest() == expected["sha256"]
 
 
 @pytest.mark.asyncio
@@ -77,6 +103,83 @@ async def test_clean_docx_extracts_text_blocks_and_spans(tmp_path: Path) -> None
 
 
 @pytest.mark.asyncio
+async def test_table_heavy_docx_is_preserved_and_flagged_for_layout_review(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "table-heavy.docx"
+    document = Document()
+    for index in range(3):
+        table = document.add_table(rows=1, cols=2)
+        table.cell(0, 0).text = f"Fictional role {index}"
+        table.cell(0, 1).text = "2024"
+    document.save(path)
+
+    result = await LocalDocumentExtractor().extract(
+        path,
+        ResumeMediaType.DOCX.value,
+        DocumentLimits(),
+    )
+
+    assert [block.kind for block in result.reading_order] == ["table", "table", "table"]
+    assert "table_heavy_layout" in result.warnings
+
+    text_only = await LocalDocumentTextExtractor().extract_text(
+        path,
+        ResumeMediaType.DOCX.value,
+        DocumentLimits(),
+    )
+    analyzed = await LocalLayoutAnalyzer().analyze(
+        path,
+        ResumeMediaType.DOCX.value,
+        text_only,
+        DocumentLimits(),
+    )
+    assert "table_heavy_layout" not in text_only.warnings
+    assert "table_heavy_layout" in analyzed.warnings
+
+
+@pytest.mark.asyncio
+async def test_header_footer_unusual_font_and_bidi_controls_are_handled_safely(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "hostile-layout.docx"
+    document = Document()
+    document.sections[0].header.paragraphs[0].text = "FICTIONAL HEADER"
+    document.sections[0].footer.paragraphs[0].text = "FICTIONAL FOOTER"
+    paragraph = document.add_paragraph("Experience")
+    paragraph.runs[0].font.name = "Papyrus"
+    document.add_paragraph("Principal\u202e Engineer | Fictional Labs | 2024")
+    document.save(path)
+
+    result = await LocalDocumentExtractor().extract(
+        path,
+        ResumeMediaType.DOCX.value,
+        DocumentLimits(),
+    )
+
+    assert "\u202e" not in result.plain_text
+    assert "FICTIONAL HEADER" not in result.plain_text
+    assert "FICTIONAL FOOTER" not in result.plain_text
+    assert {"header_footer_excluded", "bidirectional_controls_removed"} <= set(result.warnings)
+
+
+@pytest.mark.asyncio
+async def test_long_document_fails_at_character_boundary(tmp_path: Path) -> None:
+    path = tmp_path / "long.docx"
+    document = Document()
+    for index in range(60):
+        document.add_paragraph(f"Fictional achievement {index} " + "x" * 80)
+    document.save(path)
+
+    with pytest.raises(UnsafeDocument, match="extracted_text_limit_exceeded"):
+        await LocalDocumentExtractor().extract(
+            path,
+            ResumeMediaType.DOCX.value,
+            DocumentLimits(max_extracted_characters=1_000),
+        )
+
+
+@pytest.mark.asyncio
 async def test_committed_clean_pdf_and_image_only_pdf_are_classified() -> None:
     extractor = LocalDocumentExtractor()
     clean = await extractor.extract(
@@ -91,6 +194,38 @@ async def test_committed_clean_pdf_and_image_only_pdf_are_classified() -> None:
     assert not clean.image_only
     assert image_only.image_only
     assert image_only.warnings == ("image_only_pdf",)
+
+
+@pytest.mark.asyncio
+async def test_committed_adversarial_layout_corpus_has_expected_safe_signals() -> None:
+    extractor = LocalDocumentExtractor()
+    two_column = await extractor.extract(
+        FIXTURES / "two-column.pdf",
+        ResumeMediaType.PDF.value,
+        DocumentLimits(),
+    )
+    adversarial = await extractor.extract(
+        FIXTURES / "adversarial-layout.docx",
+        ResumeMediaType.DOCX.value,
+        DocumentLimits(),
+    )
+
+    assert {"multi_column_layout", "reading_order_uncertain"} <= set(two_column.warnings)
+    assert {
+        "bidirectional_controls_removed",
+        "header_footer_excluded",
+        "table_heavy_layout",
+    } <= set(adversarial.warnings)
+    assert "\u202e" not in adversarial.plain_text
+    assert "FICTIONAL REPEATED HEADER" not in adversarial.plain_text
+
+    long_resume = await extractor.extract(
+        FIXTURES / "long-resume.docx",
+        ResumeMediaType.DOCX.value,
+        DocumentLimits(),
+    )
+    assert len(long_resume.reading_order) == 601
+    assert len(long_resume.plain_text) < DocumentLimits().max_extracted_characters
 
 
 @pytest.mark.asyncio
@@ -156,3 +291,39 @@ async def test_extraction_timeout_returns_safe_failure(tmp_path: Path) -> None:
             ResumeMediaType.PDF.value,
             DocumentLimits(processing_timeout_seconds=0.001),
         )
+
+
+@pytest.mark.asyncio
+async def test_isolated_extractor_returns_validated_child_result(tmp_path: Path) -> None:
+    source = tmp_path / "fictional-resume.pdf"
+    source.write_bytes((FIXTURES / "fictional-resume.pdf").read_bytes())
+
+    result = await IsolatedDocumentExtractor().extract(
+        source,
+        ResumeMediaType.PDF.value,
+        DocumentLimits(temp_root=tmp_path),
+    )
+
+    assert "ALEX RIVERA" in result.plain_text
+    assert result.parser_version == ("careeros-local-parser/1.0.0+careeros-layout-analyzer/1.0.0")
+    assert not list(tmp_path.glob("parser-*"))
+
+
+@pytest.mark.asyncio
+async def test_isolated_extractor_kills_timed_out_child_and_cleans_workspace(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "fictional-resume.pdf"
+    source.write_bytes((FIXTURES / "fictional-resume.pdf").read_bytes())
+
+    with pytest.raises(UnsafeDocument, match="document_processing_timeout"):
+        await IsolatedDocumentExtractor().extract(
+            source,
+            ResumeMediaType.PDF.value,
+            DocumentLimits(
+                processing_timeout_seconds=0.000_001,
+                temp_root=tmp_path,
+            ),
+        )
+
+    assert not list(tmp_path.glob("parser-*"))

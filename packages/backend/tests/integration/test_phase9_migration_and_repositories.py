@@ -321,7 +321,7 @@ def _alembic_config() -> Config:
     return config
 
 
-def test_phase9_migration_head_matches_registered_metadata(
+def test_current_migration_head_matches_registered_metadata(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     database_url = _database_url()
@@ -329,7 +329,7 @@ def test_phase9_migration_head_matches_registered_metadata(
     monkeypatch.setenv("CAREEROS_ENVIRONMENT", "test")
     config = _alembic_config()
 
-    assert ScriptDirectory.from_config(config).get_heads() == ["20260724_0010"]
+    assert ScriptDirectory.from_config(config).get_heads() == ["20260726_0011"]
     command.check(config)
 
 

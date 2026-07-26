@@ -2,7 +2,7 @@
 
 import { Check, FileDiff, RefreshCcw, ShieldAlert, X } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   Alert,
@@ -38,6 +38,8 @@ export function ProfileImportReviewView({
   const [failure, setFailure] = useState<string>();
   const [loading, setLoading] = useState(false);
   const [pendingAction, setPendingAction] = useState<"accept" | "reject">();
+  const acceptIdempotencyKey = useRef(crypto.randomUUID());
+  const rejectIdempotencyKey = useRef(crypto.randomUUID());
 
   const load = useCallback(async () => {
     setFailure(undefined);
@@ -67,8 +69,15 @@ export function ProfileImportReviewView({
     try {
       const next =
         pendingAction === "accept"
-          ? await acceptProfileImportProposal(proposal, values)
-          : await rejectProfileImportProposal(proposal);
+          ? await acceptProfileImportProposal(
+              proposal,
+              values,
+              acceptIdempotencyKey.current,
+            )
+          : await rejectProfileImportProposal(
+              proposal,
+              rejectIdempotencyKey.current,
+            );
       setProposal(next);
       setPendingAction(undefined);
     } catch (error) {
@@ -112,7 +121,7 @@ export function ProfileImportReviewView({
           </span>
           <div>
             <h1 className="text-2xl font-black tracking-[-0.035em] sm:text-3xl">
-              Review proposed profile changes
+              Review proposed Career Record facts
             </h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
               CareerOS extracted these suggestions from{" "}
@@ -149,6 +158,16 @@ export function ProfileImportReviewView({
           remain available for audit.
         </Alert>
       )}
+      {!proposal.sourceAvailable && proposal.status === "pending" && (
+        <Alert
+          className="mb-5"
+          title="Reviewed source is no longer available"
+          tone="warning"
+        >
+          This proposal remains in the audit history, but it cannot be accepted
+          because the reviewed resume snapshot is unavailable.
+        </Alert>
+      )}
 
       <div className="space-y-5">
         {proposal.changes.map((change) => (
@@ -157,7 +176,7 @@ export function ProfileImportReviewView({
               <div>
                 <h2 className="font-extrabold">{change.label}</h2>
                 <p className="mt-1 text-xs text-muted">
-                  Profile field: {change.field}
+                  Typed field: {change.field}
                 </p>
               </div>
               {change.conflict && (
@@ -166,7 +185,7 @@ export function ProfileImportReviewView({
             </header>
             <div className="grid gap-5 p-5 lg:grid-cols-2">
               <div>
-                <p className="text-sm font-extrabold">Current profile value</p>
+                <p className="text-sm font-extrabold">Current record value</p>
                 <blockquote className="mt-3 min-h-28 whitespace-pre-wrap rounded-xl border border-line bg-white p-4 text-sm leading-6 text-muted">
                   {change.currentValue || "No current value"}
                 </blockquote>
@@ -212,8 +231,8 @@ export function ProfileImportReviewView({
       {proposal.status === "pending" && (
         <Card className="sticky bottom-3 mt-5 flex flex-col gap-4 p-4 shadow-xl sm:flex-row sm:items-center sm:justify-between">
           <p className="max-w-2xl text-sm leading-6 text-muted">
-            Accepting applies only the values shown above as a new profile
-            version. Rejecting leaves the current profile unchanged.
+            Accepting creates or updates only the reviewed values shown above.
+            Rejecting leaves the current Career Record unchanged.
           </p>
           <div className="flex flex-col-reverse gap-2 sm:flex-row">
             <Button
@@ -222,7 +241,10 @@ export function ProfileImportReviewView({
             >
               <X aria-hidden="true" className="size-4" /> Reject proposal
             </Button>
-            <Button onClick={() => setPendingAction("accept")}>
+            <Button
+              disabled={!proposal.sourceAvailable}
+              onClick={() => setPendingAction("accept")}
+            >
               <Check aria-hidden="true" className="size-4" /> Accept reviewed
               changes
             </Button>
@@ -244,7 +266,7 @@ export function ProfileImportReviewView({
         description={
           pendingAction === "reject"
             ? "The current Career Profile remains unchanged. The proposal and source are retained for audit."
-            : "Only the reviewed values shown on this page will create a new Career Profile version."
+            : "Only the reviewed values shown on this page will update the confirmed Career Record."
         }
         loading={loading}
         onConfirm={() => void resolve()}

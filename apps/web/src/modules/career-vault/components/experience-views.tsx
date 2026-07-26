@@ -45,6 +45,7 @@ function ExperienceCard({
   length,
   onDelete,
   onEdit,
+  onConfirm,
   onMove,
 }: {
   experience: Experience;
@@ -52,6 +53,7 @@ function ExperienceCard({
   length: number;
   onDelete: (value: Experience) => void;
   onEdit: (value: Experience) => void;
+  onConfirm: (value: Experience) => void;
   onMove: (index: number, direction: -1 | 1) => void;
 }) {
   const title = experience.displayTitle || experience.officialTitle;
@@ -129,6 +131,11 @@ function ExperienceCard({
         </details>
       )}
       <div className="mt-5 flex flex-wrap gap-2 border-t border-line pt-4">
+        {!experience.userConfirmed && (
+          <Button onClick={() => onConfirm(experience)}>
+            Confirm current facts
+          </Button>
+        )}
         <Button
           aria-label={`Move ${title} up`}
           disabled={index === 0}
@@ -164,6 +171,7 @@ export function ExperienceList(props: {
   experiences: Experience[];
   onDelete: (value: Experience) => void;
   onEdit: (value: Experience) => void;
+  onConfirm: (value: Experience) => void;
   onMove: (index: number, direction: -1 | 1) => void;
 }) {
   if (props.experiences.length === 0) {
@@ -184,6 +192,7 @@ export function ExperienceList(props: {
             length={props.experiences.length}
             onDelete={props.onDelete}
             onEdit={props.onEdit}
+            onConfirm={props.onConfirm}
             onMove={props.onMove}
           />
         </li>

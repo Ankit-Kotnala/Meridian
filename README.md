@@ -13,12 +13,14 @@ claim under the user's control.
 
 ## Repository status
 
-**Phase 8 Application Workspace and grounded application packs are complete and
-hosted verified in PR #21. Phase 9 is complete and hosted verified in PR #22.**
-Phases 0 through 7 are hosted verified; PR #20 merged Phases 5 through 7 after
-hosted CI run `30119088488` passed every required job. Phase 8 implementation
-revision `964cd9c` passed the consolidated local gate and separate security scan
-on 2026-07-24; PR #21 runs `30126993025` and `30128304892` passed every required
+**Phase 2 typed semantic parsing/review and Resume Health v2 closure is
+implemented and locally verified, including its separate security gate; hosted
+closure evidence remains pending authorization to publish. Phase 8 is hosted
+verified in PR #21 and Phase 9 in PR #22.** Phases 0 through 7 retain their
+historical hosted evidence; PR #20 merged Phases 5 through 7 after hosted CI run
+`30119088488` passed every required job. Phase 8 implementation revision
+`964cd9c` passed the consolidated local gate and separate security scan on
+2026-07-24; PR #21 runs `30126993025` and `30128304892` passed every required
 hosted job. The repository uses a
 shared Python modular monolith, one root uv workspace, generated API contracts,
 thin deployable applications, and executable dependency boundaries.
@@ -126,14 +128,21 @@ credentials are not exposed on other host interfaces by default.
 Create an account at `/register`, follow the verification link captured by
 Mailpit, and sign in at `/login`. Other public flow routes are `/verify-email`,
 `/forgot-password`, `/reset-password`, and `/get-started`. `/dashboard`,
-`/onboarding`, `/settings`, `/settings/sessions`, `/settings/consent`,
-`/career-profile`, `/evidence`, and `/achievement-inbox` require an authenticated
-session. The labeled fictional preview remains available at
-`/demo/dashboard`; it is isolated from real account state.
+`/onboarding`, `/settings`, `/settings/profile`, `/settings/security`,
+`/settings/sessions`, `/settings/consent`, `/settings/notifications`,
+`/settings/privacy`, `/settings/connections`, `/settings/billing`,
+`/career-profile`, `/career-profile/imports`, `/evidence`, and
+`/achievement-inbox` require an authenticated session. The labeled fictional
+preview remains available at `/demo/dashboard`; it is isolated from real account
+state.
 
 Career Profile is independent of resume upload. It stores user-owned experience,
 typed career items, and skills with year/month precision, explicit grouping,
-optimistic concurrency, source provenance, and reviewable import proposals.
+optimistic concurrency, explicit confirmation, per-field provenance, personal
+facts, experience-to-project relationships, and reviewable typed import
+proposals. Resume import reads the owner-scoped reviewed semantic snapshot; it
+does not let the browser author resume-derived facts or silently overwrite the
+Career Record.
 Evidence Vault keeps evidence strength separate from lifecycle and downstream
 eligibility. Owner confirmation can produce `Confirmed`; no independent verifier
 is configured, so the production API cannot produce `Verified`. Achievement
@@ -370,6 +379,9 @@ Phase 8 run passed on 2026-07-24; PR #21 runs `30126993025` and `30128304892`
 passed every required hosted job. Use `.\scripts\verify-phase9.ps1` for migration
 `20260724_0010`, its four product contexts, durable analytics/local-reminder
 workers, and the Phase 9 desktop/mobile career workspace journey.
+The cross-phase resume-ready closure adds migration `20260726_0011`; the Phase 1
+and Phase 3 verifiers now exercise that head while rolling back to their
+respective predecessor checkpoints.
 
 The Phase 0 migration enables the pgvector extension. Phase 1 migration
 `20260715_0002` adds the identity, session, OAuth, organization, consent, audit,
@@ -428,6 +440,13 @@ Phase 8 development database missing its canonical provenance tuple/check or
 resume-change event/audit enum values without changing migration
 `20260724_0009`. Downgrading to `20260724_0009` deletes Phase 9 data but
 preserves those canonical Phase 8 objects.
+Resume-ready closure migration `20260726_0011` adds owner-scoped entity and skill
+confirmations, personal/contact facts, typed semantic import proposals,
+experience-to-project relationships, and per-field provenance. Its constraints
+prevent cross-owner links and more than one primary fact of a given kind.
+Historical career entities are not silently marked confirmed. Downgrading to
+`20260724_0010` removes only the closure tables; it is a test/forward-repair path,
+not a production rollback after users create those records.
 The seed command still prints only a fictional demo fixture and performs no
 database write. A command that prints a fixture or says a feature is deferred is
 not evidence that the product feature exists.
@@ -478,13 +497,19 @@ Read [AGENTS.md](AGENTS.md) before contributing. The principal references are:
 - [Implementation checklist](docs/implementation-checklist.md)
 - [Architecture decisions](docs/adr/README.md)
 
-## Verification status through Phase 9 local closeout
+## Verification status through Phase 2 semantic closure and Phase 9
 
 Phases 0 through 8 have recorded local and hosted evidence. Phase 8's complete
 closeout evidence, including PR #21 workflow runs `30126993025` and
 `30128304892`, is recorded in `PLANS.md`.
 Phase 9's final-tree consolidated local gate, separate security scan, and hosted
 PR #22 workflow run `30161489265` pass as recorded in `PLANS.md`.
+The current Phase 2 closure adds typed semantic entities/fields and provenance,
+typed immutable review operations, killable parser subprocess isolation,
+independent extraction/layout/parser ports, Resume Health v2, and the expanded
+adversarial fixture corpus. Its final local and security evidence is recorded in
+`PLANS.md`; hosted evidence is not claimed before an authorized closure PR
+passes.
 Exact current and historical results are recorded separately in `PLANS.md`; never
 infer a pass from the command list below:
 
@@ -525,9 +550,12 @@ Invoke-WebRequest -UseBasicParsing http://localhost:8000/api/v1/meta
 The Phase 1 baseline at `baab8f7` remains verified by hosted run `29367040183`.
 The Phase 2 runner adds migration `20260715_0003`, real private object/scanner
 contracts, restricted async processing, deterministic score golden cases, and
-registered/guest desktop/mobile workflows. Its local counts and security/build
-results pass and are recorded in `PLANS.md`. Hosted run `29378312134` passed the
-complete Phase 2 workflow on implementation commit `3b8d639`.
+registered/guest desktop/mobile workflows. Historical hosted run `29378312134`
+passed the original generic-block v1 slice on implementation commit `3b8d639`.
+The current semantic/v2 closeout uses the same exact runner plus a separate
+security scan. Both local gates pass on the 2026-07-26 implementation tree; exact
+results and the pending hosted-authorization boundary are recorded in
+`PLANS.md`.
 Phase 3 local closeout passed with `scripts/verify-phase3.ps1` on 2026-07-19:
 format, lint, type, unit, build, container, migration, integration, runtime, and
 isolated browser gates all passed. Hosted run `29657932938` then passed

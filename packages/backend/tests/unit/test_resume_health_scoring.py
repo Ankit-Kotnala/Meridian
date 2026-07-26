@@ -1,4 +1,4 @@
-"""Golden and boundary tests for fixed-point Resume Health v1."""
+"""Golden and boundary tests for fixed-point Resume Health v2."""
 
 from careeros.modules.resume_health.domain.scoring import (
     CONFIGURATION_VERSION,
@@ -26,6 +26,13 @@ def _features(**overrides: object) -> ResumeHealthFeatures:
         "warning_count": 0,
         "reading_order_violation_count": 0,
         "average_confidence_basis_points": 10_000,
+        "semantic_entity_count": 4,
+        "semantic_field_count": 12,
+        "parsed_semantic_field_count": 12,
+        "source_anchored_field_count": 12,
+        "reviewed_semantic_field_count": 12,
+        "date_field_count": 4,
+        "precise_date_field_count": 4,
     }
     values.update(overrides)
     return ResumeHealthFeatures(**values)  # type: ignore[arg-type]
@@ -53,6 +60,13 @@ def test_perfect_golden_score_is_exact_and_explainable() -> None:
         "warning_count": 0,
         "reading_order_violation_count": 0,
         "average_confidence_basis_points": 10_000,
+        "semantic_entity_count": 4,
+        "semantic_field_count": 12,
+        "parsed_semantic_field_count": 12,
+        "source_anchored_field_count": 12,
+        "reviewed_semantic_field_count": 12,
+        "date_field_count": 4,
+        "precise_date_field_count": 4,
     }
     assert result.raw_score_basis_points == 10_000
     assert result.display_score == 100
@@ -94,23 +108,23 @@ def test_nontrivial_golden_score_is_exact() -> None:
     )
 
     assert [component.score_basis_points for component in result.components] == [
-        8_536,
+        8_780,
         10_000,
         8_000,
         7_000,
         10_000,
-        9_650,
+        9_800,
     ]
     assert [component.contribution_basis_points for component in result.components] == [
-        2_134,
+        2_195,
         2_000,
         1_600,
         1_050,
         1_000,
-        965,
+        980,
     ]
-    assert result.raw_score_basis_points == 8_749
-    assert result.display_score == 87
+    assert result.raw_score_basis_points == 8_825
+    assert result.display_score == 88
     assert [finding.code for finding in result.findings] == ["outcome_context_limited"]
     assert [
         (
@@ -122,10 +136,10 @@ def test_nontrivial_golden_score_is_exact() -> None:
         )
         for item in result.feature_contributions[:4]
     ] == [
-        ("machine_readability", "searchable_text", 6_120, 3_000, 1_836),
-        ("machine_readability", "parser_confidence", 9_000, 3_000, 2_700),
-        ("machine_readability", "reading_order_integrity", 10_000, 2_000, 2_000),
-        ("machine_readability", "recognized_section_ratio", 10_000, 2_000, 2_000),
+        ("machine_readability", "searchable_text", 6_120, 2_500, 1_530),
+        ("machine_readability", "parser_confidence", 9_000, 2_500, 2_250),
+        ("machine_readability", "reading_order_integrity", 10_000, 1_500, 1_500),
+        ("machine_readability", "recognized_section_ratio", 10_000, 1_500, 1_500),
     ]
 
 
@@ -158,7 +172,14 @@ def test_image_only_and_sparse_documents_return_no_deceptive_zero() -> None:
     for features in (
         _features(image_only=True),
         _features(text_characters=100),
-        _features(block_count=2),
+        _features(
+            block_count=2,
+            concise_block_count=2,
+            bullet_count=0,
+            action_bullet_count=0,
+            outcome_bullet_count=0,
+            chronology_signal_count=2,
+        ),
     ):
         result = score_resume_health(features)
         assert result.raw_score_basis_points is None
@@ -185,7 +206,9 @@ def test_all_scoring_outputs_remain_bounded_at_feature_extremes() -> None:
             recognized_section_count=0,
             concise_block_count=0,
             bullet_count=0,
-            duplicate_block_count=100,
+            action_bullet_count=0,
+            outcome_bullet_count=0,
+            duplicate_block_count=10,
             chronology_signal_count=0,
             warning_count=100,
             reading_order_violation_count=100,
@@ -195,12 +218,12 @@ def test_all_scoring_outputs_remain_bounded_at_feature_extremes() -> None:
             text_characters=10_000_000,
             page_count=10_000,
             section_count=1,
-            recognized_section_count=100,
-            concise_block_count=100,
-            bullet_count=1,
-            action_bullet_count=100,
-            outcome_bullet_count=100,
-            chronology_signal_count=100,
+            recognized_section_count=1,
+            concise_block_count=10,
+            bullet_count=10,
+            action_bullet_count=10,
+            outcome_bullet_count=10,
+            chronology_signal_count=10,
         ),
     ):
         result = score_resume_health(features)

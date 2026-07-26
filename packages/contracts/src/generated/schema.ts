@@ -338,6 +338,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/change-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Change Password */
+        post: operations["authChangePassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/connections/google": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Google Disconnect */
+        delete: operations["authGoogleDisconnect"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/csrf": {
         parameters: {
             query?: never;
@@ -844,6 +878,23 @@ export interface paths {
         patch: operations["careerItemUpdate"];
         trace?: never;
     };
+    "/api/v1/career-items/{entity_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Career Item */
+        post: operations["careerItemConfirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/career-profile": {
         parameters: {
             query?: never;
@@ -872,7 +923,10 @@ export interface paths {
         /** List Import Proposals */
         get: operations["careerImportProposalsList"];
         put?: never;
-        /** Create Import Proposal */
+        /**
+         * Create Import Proposal
+         * @deprecated
+         */
         post: operations["careerImportProposalCreate"];
         delete?: never;
         options?: never;
@@ -926,6 +980,110 @@ export interface paths {
         /** Reject Import Proposal */
         post: operations["careerImportProposalReject"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/career-profile/semantic-import-proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Semantic Import Proposals */
+        get: operations["careerSemanticImportProposalsList"];
+        put?: never;
+        /** Create Semantic Import Proposals */
+        post: operations["careerSemanticImportProposalsCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/career-profile/semantic-import-proposals/{proposal_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Semantic Import Proposal */
+        get: operations["careerSemanticImportProposalGet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/career-profile/semantic-import-proposals/{proposal_id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept Semantic Import Proposal */
+        post: operations["careerSemanticImportProposalAccept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/career-profile/semantic-import-proposals/{proposal_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject Semantic Import Proposal */
+        post: operations["careerSemanticImportProposalReject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/career-relationships": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Career Relationships */
+        get: operations["careerRelationshipsList"];
+        put?: never;
+        /** Create Career Relationship */
+        post: operations["careerRelationshipCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/career-relationships/{relationship_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Career Relationship */
+        delete: operations["careerRelationshipDelete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1514,6 +1672,23 @@ export interface paths {
         head?: never;
         /** Update Experience */
         patch: operations["careerExperienceUpdate"];
+        trace?: never;
+    };
+    "/api/v1/experiences/{entity_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Experience */
+        post: operations["careerExperienceConfirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/experiences/reorder": {
@@ -2566,6 +2741,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/personal-facts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Personal Facts */
+        get: operations["careerPersonalFactsList"];
+        put?: never;
+        /** Create Personal Fact */
+        post: operations["careerPersonalFactCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/personal-facts/{fact_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Personal Fact */
+        delete: operations["careerPersonalFactDelete"];
+        options?: never;
+        head?: never;
+        /** Update Personal Fact */
+        patch: operations["careerPersonalFactUpdate"];
+        trace?: never;
+    };
+    "/api/v1/personal-facts/{fact_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Personal Fact */
+        post: operations["careerPersonalFactConfirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/processing-jobs/{job_id}": {
         parameters: {
             query?: never;
@@ -2878,6 +3106,40 @@ export interface paths {
         patch: operations["savedRoleUpdate"];
         trace?: never;
     };
+    "/api/v1/security-activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Security Activity */
+        get: operations["securityActivityList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Settings Capabilities */
+        get: operations["settingsCapabilitiesGet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/skills": {
         parameters: {
             query?: never;
@@ -2912,6 +3174,23 @@ export interface paths {
         head?: never;
         /** Update Skill */
         patch: operations["careerSkillUpdate"];
+        trace?: never;
+    };
+    "/api/v1/skills/{skill_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Skill */
+        post: operations["careerSkillConfirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/uploads/{upload_id}/finalize": {
@@ -3100,6 +3379,45 @@ export interface components {
             updatedAt: string;
             /** Version */
             version: number;
+        };
+        /** AddSemanticEntityRequest */
+        AddSemanticEntityRequest: {
+            /** Fields */
+            fields: components["schemas"]["SemanticValueInput"][];
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "contact" | "experience" | "education" | "project" | "skill" | "certification";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            operation: "addEntity";
+        };
+        /** AddSemanticFieldRequest */
+        AddSemanticFieldRequest: {
+            /** Dateprecision */
+            datePrecision?: ("day" | "month" | "year" | "unknown") | null;
+            /**
+             * Entityid
+             * Format: uuid
+             */
+            entityId: string;
+            /**
+             * Fieldtype
+             * @enum {string}
+             */
+            fieldType: "text" | "email" | "phone" | "url" | "date" | "bullet";
+            /** Name */
+            name: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            operation: "addField";
+            /** Value */
+            value: string;
         };
         /** AnalyticsBreakdownResponse */
         AnalyticsBreakdownResponse: {
@@ -4145,7 +4463,10 @@ export interface components {
         };
         /** CanonicalFieldUpdate */
         CanonicalFieldUpdate: {
-            /** Id */
+            /**
+             * Id
+             * Format: uuid
+             */
             id: string;
             /** Value */
             value: string;
@@ -4169,10 +4490,22 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Legacyupgraderequired */
+            legacyUpgradeRequired: boolean;
             /** Schemaversion */
             schemaVersion: string;
             /** Sections */
             sections: components["schemas"]["CanonicalSectionResponse"][];
+            /** Semanticentities */
+            semanticEntities: components["schemas"]["SemanticEntityResponse"][];
+            /** Semanticparserversion */
+            semanticParserVersion: string | null;
+            /** Semanticreviewstate */
+            semanticReviewState: ("unreviewed" | "confirmed" | "corrected" | "user_added" | "removed") | null;
+            /** Semanticschemaversion */
+            semanticSchemaVersion: string | null;
+            /** Semanticwarnings */
+            semanticWarnings: components["schemas"]["ParserWarningResponse"][];
             /** Version */
             version: number;
             /** Warnings */
@@ -4180,8 +4513,15 @@ export interface components {
         };
         /** CanonicalResumeUpdateRequest */
         CanonicalResumeUpdateRequest: {
+            /**
+             * Confirmnochanges
+             * @default false
+             */
+            confirmNoChanges: boolean;
             /** Fields */
-            fields: components["schemas"]["CanonicalFieldUpdate"][];
+            fields?: components["schemas"]["CanonicalFieldUpdate"][];
+            /** Semanticoperations */
+            semanticOperations?: (components["schemas"]["ConfirmSemanticFieldRequest"] | components["schemas"]["CorrectSemanticFieldRequest"] | components["schemas"]["AddSemanticFieldRequest"] | components["schemas"]["RemoveSemanticFieldRequest"] | components["schemas"]["ReclassifySemanticEntityRequest"] | components["schemas"]["AddSemanticEntityRequest"] | components["schemas"]["RemoveSemanticEntityRequest"])[];
         };
         /** CanonicalSectionResponse */
         CanonicalSectionResponse: {
@@ -4426,6 +4766,8 @@ export interface components {
             updatedAt: string;
             /** Url */
             url?: string | null;
+            /** Userconfirmed */
+            userConfirmed: boolean;
             /** Version */
             version: number;
         };
@@ -4556,6 +4898,59 @@ export interface components {
             professionalSummary?: string | null;
             /** Workauthorization */
             workAuthorization?: string | null;
+        };
+        /** CareerRelationshipInput */
+        CareerRelationshipInput: {
+            /**
+             * Experienceid
+             * Format: uuid
+             */
+            experienceId: string;
+            /**
+             * Kind
+             * @default experience_project
+             * @constant
+             */
+            kind: "experience_project";
+            /**
+             * Projectid
+             * Format: uuid
+             */
+            projectId: string;
+        };
+        /** CareerRelationshipListResponse */
+        CareerRelationshipListResponse: {
+            /** Data */
+            data: components["schemas"]["CareerRelationshipResponse"][];
+        };
+        /** CareerRelationshipResponse */
+        CareerRelationshipResponse: {
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /**
+             * Experienceid
+             * Format: uuid
+             */
+            experienceId: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @default experience_project
+             * @constant
+             */
+            kind: "experience_project";
+            /**
+             * Projectid
+             * Format: uuid
+             */
+            projectId: string;
         };
         /** CareerReviewCreateRequest */
         CareerReviewCreateRequest: {
@@ -4816,6 +5211,13 @@ export interface components {
             updatedAt: string;
             /** Version */
             version: number;
+        };
+        /** ChangePasswordRequest */
+        ChangePasswordRequest: {
+            /** Currentpassword */
+            currentPassword?: string | null;
+            /** Newpassword */
+            newPassword: string;
         };
         /** ChangeSetCreateRequest */
         ChangeSetCreateRequest: {
@@ -5086,6 +5488,19 @@ export interface components {
             scoreBasisPoints: number;
             /** Weightbasispoints */
             weightBasisPoints: number;
+        };
+        /** ConfirmSemanticFieldRequest */
+        ConfirmSemanticFieldRequest: {
+            /**
+             * Fieldid
+             * Format: uuid
+             */
+            fieldId: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            operation: "confirmField";
         };
         /** ConsentAttestationRequest */
         ConsentAttestationRequest: {
@@ -5363,6 +5778,23 @@ export interface components {
             role?: string | null;
             /** Tags */
             tags?: string[] | null;
+        };
+        /** CorrectSemanticFieldRequest */
+        CorrectSemanticFieldRequest: {
+            /** Dateprecision */
+            datePrecision?: ("day" | "month" | "year" | "unknown") | null;
+            /**
+             * Fieldid
+             * Format: uuid
+             */
+            fieldId: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            operation: "correctField";
+            /** Value */
+            value: string;
         };
         /** CsrfResponse */
         CsrfResponse: {
@@ -7195,18 +7627,22 @@ export interface components {
             industry: string | null;
             /** Language */
             language: string;
+            /** Latestresumedocumentid */
+            latestResumeDocumentId: string | null;
             /**
              * Parsedreviewhandoff
              * @enum {string}
              */
-            parsedReviewHandoff: "notStarted" | "skipped";
+            parsedReviewHandoff: "notStarted" | "skipped" | "processing" | "reviewRequired" | "reviewed" | "analysisReady" | "failed";
             /** Preferredlocation */
             preferredLocation: string | null;
             /**
              * Resumehandoff
              * @enum {string}
              */
-            resumeHandoff: "notStarted" | "skipped";
+            resumeHandoff: "notStarted" | "skipped" | "processing" | "reviewRequired" | "reviewed" | "analysisReady" | "failed";
+            /** Resumesafeerrorcode */
+            resumeSafeErrorCode: string | null;
             /** Seniority */
             seniority: ("entry" | "mid" | "senior" | "lead" | "executive") | null;
             /** Skippedsteps */
@@ -7241,27 +7677,12 @@ export interface components {
             industry?: string | null;
             /** Language */
             language?: string | null;
-            /**
-             * Parsedreviewhandoff
-             * @enum {string}
-             */
-            parsedReviewHandoff: "notStarted" | "skipped";
             /** Preferredlocation */
             preferredLocation?: string | null;
-            /**
-             * Resumehandoff
-             * @enum {string}
-             */
-            resumeHandoff: "notStarted" | "skipped";
             /** Seniority */
             seniority?: ("entry" | "mid" | "senior" | "lead" | "executive") | null;
             /** Skippedsteps */
             skippedSteps?: ("profile" | "resume" | "parsedReview" | "preferences" | "complete")[];
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "inProgress" | "completed";
             /** Targetrole */
             targetRole?: string | null;
             /** Workmodel */
@@ -7447,6 +7868,83 @@ export interface components {
             fieldId?: string | null;
             /** Message */
             message: string;
+        };
+        /** PersonalFactInput */
+        PersonalFactInput: {
+            /**
+             * Isprimary
+             * @default false
+             */
+            isPrimary: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "name" | "email" | "phone" | "location" | "link";
+            /** Label */
+            label?: string | null;
+            /** Value */
+            value: string;
+        };
+        /** PersonalFactListResponse */
+        PersonalFactListResponse: {
+            /** Data */
+            data: components["schemas"]["PersonalFactResponse"][];
+        };
+        /** PersonalFactResponse */
+        PersonalFactResponse: {
+            /**
+             * Confirmation
+             * @enum {string}
+             */
+            confirmation: "needs_review" | "confirmed";
+            /** Confirmedat */
+            confirmedAt?: string | null;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Isprimary
+             * @default false
+             */
+            isPrimary: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "name" | "email" | "phone" | "location" | "link";
+            /** Label */
+            label?: string | null;
+            /** Provenance */
+            provenance?: components["schemas"]["ProvenanceResponse"][];
+            /**
+             * Updatedat
+             * Format: date-time
+             */
+            updatedAt: string;
+            /** Value */
+            value: string;
+            /** Version */
+            version: number;
+        };
+        /** PersonalFactUpdateRequest */
+        PersonalFactUpdateRequest: {
+            /**
+             * Isprimary
+             * @default false
+             */
+            isPrimary: boolean;
+            /** Label */
+            label?: string | null;
+            /** Value */
+            value: string;
         };
         /** PlainTextResponse */
         PlainTextResponse: {
@@ -7734,6 +8232,26 @@ export interface components {
              */
             documentId: string;
         };
+        /** ReclassifySemanticEntityRequest */
+        ReclassifySemanticEntityRequest: {
+            /**
+             * Entityid
+             * Format: uuid
+             */
+            entityId: string;
+            /** Fields */
+            fields: components["schemas"]["SemanticFieldReclassificationRequest"][];
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "contact" | "experience" | "education" | "project" | "skill" | "certification";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            operation: "reclassifyEntity";
+        };
         /** ReferralCreateRequest */
         ReferralCreateRequest: {
             /**
@@ -7971,6 +8489,32 @@ export interface components {
             status?: ("active" | "completed" | "cancelled") | null;
             /** Title */
             title?: string | null;
+        };
+        /** RemoveSemanticEntityRequest */
+        RemoveSemanticEntityRequest: {
+            /**
+             * Entityid
+             * Format: uuid
+             */
+            entityId: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            operation: "removeEntity";
+        };
+        /** RemoveSemanticFieldRequest */
+        RemoveSemanticFieldRequest: {
+            /**
+             * Fieldid
+             * Format: uuid
+             */
+            fieldId: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            operation: "removeField";
         };
         /** ReorderItem */
         ReorderItem: {
@@ -8304,7 +8848,7 @@ export interface components {
              * Key
              * @enum {string}
              */
-            key: "searchable_text" | "parser_confidence" | "reading_order_integrity" | "recognized_section_ratio" | "concise_block_ratio" | "section_breadth" | "chronology_coverage" | "action_bullet_ratio" | "outcome_bullet_ratio" | "duplicate_content_integrity" | "page_fit" | "parser_warning_integrity";
+            key: "searchable_text" | "parser_confidence" | "reading_order_integrity" | "recognized_section_ratio" | "concise_block_ratio" | "section_breadth" | "chronology_coverage" | "action_bullet_ratio" | "outcome_bullet_ratio" | "duplicate_content_integrity" | "page_fit" | "parser_warning_integrity" | "source_anchor_coverage" | "semantic_breadth" | "semantic_review_coverage" | "date_precision_coverage";
             /** Label */
             label: string;
             /** Rawcontributionbasispoints */
@@ -8326,7 +8870,7 @@ export interface components {
              * Key
              * @enum {string}
              */
-            key: "text_characters" | "page_count" | "image_only" | "section_count" | "recognized_section_count" | "block_count" | "concise_block_count" | "bullet_count" | "action_bullet_count" | "outcome_bullet_count" | "duplicate_block_count" | "chronology_signal_count" | "warning_count" | "reading_order_violation_count" | "average_confidence_basis_points";
+            key: "text_characters" | "page_count" | "image_only" | "section_count" | "recognized_section_count" | "block_count" | "concise_block_count" | "bullet_count" | "action_bullet_count" | "outcome_bullet_count" | "duplicate_block_count" | "chronology_signal_count" | "warning_count" | "reading_order_violation_count" | "average_confidence_basis_points" | "semantic_entity_count" | "semantic_field_count" | "parsed_semantic_field_count" | "source_anchored_field_count" | "reviewed_semantic_field_count" | "date_field_count" | "precise_date_field_count";
             /**
              * Kind
              * @enum {string}
@@ -8910,6 +9454,283 @@ export interface components {
             /** Notes */
             notes: string | null;
         };
+        /** SecurityActivityListResponse */
+        SecurityActivityListResponse: {
+            /** Data */
+            data: components["schemas"]["SecurityActivityResponse"][];
+        };
+        /** SecurityActivityResponse */
+        SecurityActivityResponse: {
+            /** Currentsession */
+            currentSession: boolean;
+            /** Eventtype */
+            eventType: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Occurredat
+             * Format: date-time
+             */
+            occurredAt: string;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "success" | "accepted" | "denied" | "failed";
+        };
+        /** SemanticEntityResponse */
+        SemanticEntityResponse: {
+            /** Fields */
+            fields: components["schemas"]["SemanticFieldResponse"][];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "contact" | "experience" | "education" | "project" | "skill" | "certification";
+            /**
+             * Reviewstate
+             * @enum {string}
+             */
+            reviewState: "unreviewed" | "confirmed" | "corrected" | "user_added" | "removed";
+            /** Sourcesectionid */
+            sourceSectionId: string | null;
+        };
+        /** SemanticFieldReclassificationRequest */
+        SemanticFieldReclassificationRequest: {
+            /**
+             * Fieldid
+             * Format: uuid
+             */
+            fieldId: string;
+            /** Name */
+            name: string;
+        };
+        /** SemanticFieldResponse */
+        SemanticFieldResponse: {
+            /** Anchors */
+            anchors: components["schemas"]["SemanticSourceAnchorResponse"][];
+            /** Confidence */
+            confidence: number;
+            /** Dateprecision */
+            datePrecision?: ("day" | "month" | "year" | "unknown") | null;
+            /**
+             * Fieldtype
+             * @enum {string}
+             */
+            fieldType: "text" | "email" | "phone" | "url" | "date" | "bullet";
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Reviewstate
+             * @enum {string}
+             */
+            reviewState: "unreviewed" | "confirmed" | "corrected" | "user_added" | "removed";
+            /** Value */
+            value: string;
+        };
+        /** SemanticImportAcceptRequest */
+        SemanticImportAcceptRequest: {
+            /** Targetrecordid */
+            targetRecordId?: string | null;
+            /** Values */
+            values: {
+                [key: string]: string;
+            };
+        };
+        /** SemanticImportAnchorResponse */
+        SemanticImportAnchorResponse: {
+            /**
+             * Blockid
+             * Format: uuid
+             */
+            blockId: string;
+            /** Digest */
+            digest: string;
+            /** End */
+            end: number;
+            /** Excerpt */
+            excerpt: string;
+            /** Page */
+            page: number;
+            /** Start */
+            start: number;
+        };
+        /** SemanticImportBatchResponse */
+        SemanticImportBatchResponse: {
+            /** Proposals */
+            proposals: components["schemas"]["SemanticImportProposalResponse"][];
+            /** Questions */
+            questions: components["schemas"]["SemanticImportQuestionResponse"][];
+        };
+        /** SemanticImportCreateRequest */
+        SemanticImportCreateRequest: {
+            /**
+             * Documentid
+             * Format: uuid
+             */
+            documentId: string;
+            /**
+             * Snapshotid
+             * Format: uuid
+             */
+            snapshotId: string;
+        };
+        /** SemanticImportFieldResponse */
+        SemanticImportFieldResponse: {
+            /** Acceptedvalue */
+            acceptedValue: string | null;
+            /** Anchors */
+            anchors: components["schemas"]["SemanticImportAnchorResponse"][];
+            /** Confidence */
+            confidence: number;
+            /** Dateprecision */
+            datePrecision: ("day" | "month" | "year" | "unknown") | null;
+            /**
+             * Fieldtype
+             * @enum {string}
+             */
+            fieldType: "text" | "email" | "phone" | "url" | "date" | "bullet";
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Proposedvalue */
+            proposedValue: string;
+            /**
+             * Reviewstate
+             * @enum {string}
+             */
+            reviewState: "confirmed" | "corrected" | "user_added";
+        };
+        /** SemanticImportProposalListResponse */
+        SemanticImportProposalListResponse: {
+            /** Data */
+            data: components["schemas"]["SemanticImportProposalResponse"][];
+        };
+        /** SemanticImportProposalResponse */
+        SemanticImportProposalResponse: {
+            /** Conflictcode */
+            conflictCode: string | null;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /**
+             * Documentid
+             * Format: uuid
+             */
+            documentId: string;
+            /** Fields */
+            fields: components["schemas"]["SemanticImportFieldResponse"][];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Parserversion */
+            parserVersion: string;
+            /** Reviewedat */
+            reviewedAt: string | null;
+            /** Schemaversion */
+            schemaVersion: string;
+            /**
+             * Semanticentityid
+             * Format: uuid
+             */
+            semanticEntityId: string;
+            /**
+             * Semantickind
+             * @enum {string}
+             */
+            semanticKind: "contact" | "experience" | "education" | "project" | "skill" | "certification";
+            /**
+             * Snapshotid
+             * Format: uuid
+             */
+            snapshotId: string;
+            /** Snapshotrevision */
+            snapshotRevision: number;
+            /** Sourceavailable */
+            sourceAvailable: boolean;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "accepted" | "rejected";
+            /**
+             * Target
+             * @enum {string}
+             */
+            target: "personalFacts" | "entity" | "skill";
+            /** Targetrecordid */
+            targetRecordId: string | null;
+            /** Version */
+            version: number;
+        };
+        /** SemanticImportQuestionResponse */
+        SemanticImportQuestionResponse: {
+            /**
+             * Code
+             * @constant
+             */
+            code: "semantic_candidate_requires_review";
+            /** Missingfields */
+            missingFields: string[];
+            /**
+             * Semanticentityid
+             * Format: uuid
+             */
+            semanticEntityId: string;
+        };
+        /** SemanticSourceAnchorResponse */
+        SemanticSourceAnchorResponse: {
+            /**
+             * Blockid
+             * Format: uuid
+             */
+            blockId: string;
+            /** End */
+            end: number;
+            /** Excerpt */
+            excerpt: string;
+            /** Page */
+            page: number;
+            /** Sourcesha256 */
+            sourceSha256: string;
+            /** Start */
+            start: number;
+        };
+        /** SemanticValueInput */
+        SemanticValueInput: {
+            /** Dateprecision */
+            datePrecision?: ("day" | "month" | "year" | "unknown") | null;
+            /**
+             * Fieldtype
+             * @enum {string}
+             */
+            fieldType: "text" | "email" | "phone" | "url" | "date" | "bullet";
+            /** Name */
+            name: string;
+            /** Value */
+            value: string;
+        };
         /** SessionContextClaimResponse */
         SessionContextClaimResponse: {
             /** Evidencepins */
@@ -9032,6 +9853,41 @@ export interface components {
              */
             lastSeenAt: string;
         };
+        /** SettingsCapabilitiesResponse */
+        SettingsCapabilitiesResponse: {
+            /** Accountdeletionavailable */
+            accountDeletionAvailable: boolean;
+            /** Accountexportavailable */
+            accountExportAvailable: boolean;
+            /**
+             * Accountresumeretention
+             * @default untilDeleted
+             * @constant
+             */
+            accountResumeRetention: "untilDeleted";
+            /** Billingavailable */
+            billingAvailable: boolean;
+            /** Googleconnected */
+            googleConnected: boolean;
+            /** Googleoauthavailable */
+            googleOauthAvailable: boolean;
+            /** Guestresumeretentionhours */
+            guestResumeRetentionHours: number;
+            /** Haspassword */
+            hasPassword: boolean;
+            /**
+             * Reminderpreferencesavailable
+             * @default true
+             * @constant
+             */
+            reminderPreferencesAvailable: true;
+            /**
+             * Schedulednotificationdeliveryavailable
+             * @default false
+             * @constant
+             */
+            scheduledNotificationDeliveryAvailable: false;
+        };
         /** SkillInput */
         SkillInput: {
             /** Category */
@@ -9066,11 +9922,15 @@ export interface components {
             order: number;
             /** Proficiency */
             proficiency?: ("learning" | "working" | "advanced" | "expert") | null;
+            /** Provenance */
+            provenance?: components["schemas"]["ProvenanceResponse"][];
             /**
              * Updatedat
              * Format: date-time
              */
             updatedAt: string;
+            /** Userconfirmed */
+            userConfirmed: boolean;
             /** Version */
             version: number;
         };
@@ -12226,6 +13086,200 @@ export interface operations {
             };
             /** @description Unprocessable Content */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
+    authChangePassword: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-CSRF-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                careeros_csrf?: string | null;
+                careeros_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
+    authGoogleDisconnect: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-CSRF-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                careeros_csrf?: string | null;
+                careeros_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -16563,6 +17617,97 @@ export interface operations {
             };
         };
     };
+    careerItemConfirm: {
+        parameters: {
+            query?: never;
+            header: {
+                "If-Match": string;
+                "X-CSRF-Token"?: string | null;
+            };
+            path: {
+                entity_id: string;
+            };
+            cookie?: {
+                careeros_csrf?: string | null;
+                careeros_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CareerItemResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
     careerProfileGet: {
         parameters: {
             query?: never;
@@ -17129,6 +18274,723 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ImportProposalResponse"];
                 };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
+    careerSemanticImportProposalsList: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                careeros_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SemanticImportProposalListResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
+    careerSemanticImportProposalsCreate: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-CSRF-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                careeros_csrf?: string | null;
+                careeros_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SemanticImportCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SemanticImportBatchResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
+    careerSemanticImportProposalGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                proposal_id: string;
+            };
+            cookie?: {
+                careeros_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SemanticImportProposalResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
+    careerSemanticImportProposalAccept: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+                "If-Match": string;
+                "X-CSRF-Token"?: string | null;
+            };
+            path: {
+                proposal_id: string;
+            };
+            cookie?: {
+                careeros_csrf?: string | null;
+                careeros_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SemanticImportAcceptRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SemanticImportProposalResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
+    careerSemanticImportProposalReject: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+                "If-Match": string;
+                "X-CSRF-Token"?: string | null;
+            };
+            path: {
+                proposal_id: string;
+            };
+            cookie?: {
+                careeros_csrf?: string | null;
+                careeros_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SemanticImportProposalResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
+    careerRelationshipsList: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                careeros_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CareerRelationshipListResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
+    careerRelationshipCreate: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-CSRF-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                careeros_csrf?: string | null;
+                careeros_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CareerRelationshipInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CareerRelationshipResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
+    careerRelationshipDelete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-CSRF-Token"?: string | null;
+            };
+            path: {
+                relationship_id: string;
+            };
+            cookie?: {
+                careeros_csrf?: string | null;
+                careeros_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Bad Request */
             400: {
@@ -20781,6 +22643,97 @@ export interface operations {
                 "application/json": components["schemas"]["ExperienceInput"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExperienceResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
+    careerExperienceConfirm: {
+        parameters: {
+            query?: never;
+            header: {
+                "If-Match": string;
+                "X-CSRF-Token"?: string | null;
+            };
+            path: {
+                entity_id: string;
+            };
+            cookie?: {
+                careeros_csrf?: string | null;
+                careeros_session?: string | null;
+            };
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -29431,6 +31384,458 @@ export interface operations {
             };
         };
     };
+    careerPersonalFactsList: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                careeros_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonalFactListResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
+    careerPersonalFactCreate: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-CSRF-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                careeros_csrf?: string | null;
+                careeros_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonalFactInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonalFactResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
+    careerPersonalFactDelete: {
+        parameters: {
+            query?: never;
+            header: {
+                "If-Match": string;
+                "X-CSRF-Token"?: string | null;
+            };
+            path: {
+                fact_id: string;
+            };
+            cookie?: {
+                careeros_csrf?: string | null;
+                careeros_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
+    careerPersonalFactUpdate: {
+        parameters: {
+            query?: never;
+            header: {
+                "If-Match": string;
+                "X-CSRF-Token"?: string | null;
+            };
+            path: {
+                fact_id: string;
+            };
+            cookie?: {
+                careeros_csrf?: string | null;
+                careeros_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonalFactUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonalFactResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
+    careerPersonalFactConfirm: {
+        parameters: {
+            query?: never;
+            header: {
+                "If-Match": string;
+                "X-CSRF-Token"?: string | null;
+            };
+            path: {
+                fact_id: string;
+            };
+            cookie?: {
+                careeros_csrf?: string | null;
+                careeros_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonalFactResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
     getProcessingJob: {
         parameters: {
             query?: never;
@@ -31469,6 +33874,196 @@ export interface operations {
             };
         };
     };
+    securityActivityList: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                careeros_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecurityActivityListResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
+    settingsCapabilitiesGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                careeros_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsCapabilitiesResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
     careerSkillsList: {
         parameters: {
             query?: never;
@@ -31755,6 +34350,97 @@ export interface operations {
                 "application/json": components["schemas"]["SkillInput"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkillResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
+    careerSkillConfirm: {
+        parameters: {
+            query?: never;
+            header: {
+                "If-Match": string;
+                "X-CSRF-Token"?: string | null;
+            };
+            path: {
+                skill_id: string;
+            };
+            cookie?: {
+                careeros_csrf?: string | null;
+                careeros_session?: string | null;
+            };
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {

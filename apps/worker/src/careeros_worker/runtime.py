@@ -139,7 +139,8 @@ from careeros.modules.resume_health.application import (
 from careeros.modules.resume_health.infrastructure import (
     ClamAvOptions,
     ClamAvScanner,
-    LocalDocumentExtractor,
+    IsolatedDocumentExtractor,
+    LocalResumeParserProvider,
     S3ObjectStorage,
     S3Options,
     SqlAlchemyResumeUnitOfWorkFactory,
@@ -221,7 +222,7 @@ class _RuntimeResources:
     unit_of_work: SqlAlchemyResumeUnitOfWorkFactory
     clock: SystemClock
     scanner: ClamAvScanner
-    extractor: LocalDocumentExtractor
+    extractor: IsolatedDocumentExtractor
     limits: DocumentLimits
 
 
@@ -317,7 +318,7 @@ async def _runtime_resources(settings: WorkerSettings) -> AsyncIterator[_Runtime
                     timeout_seconds=settings.clamav_timeout_seconds,
                 )
             ),
-            extractor=LocalDocumentExtractor(),
+            extractor=IsolatedDocumentExtractor(),
             limits=DocumentLimits(
                 max_upload_bytes=settings.document_max_bytes,
                 max_pdf_pages=settings.document_max_pages,
@@ -904,6 +905,7 @@ def _processor(resources: _RuntimeResources, settings: WorkerSettings) -> Resume
         storage=resources.storage,
         scanner=resources.scanner,
         extractor=resources.extractor,
+        semantic_parser=LocalResumeParserProvider(),
         limits=resources.limits,
         execution_lease_seconds=(settings.task_time_limit_seconds + _EXECUTION_LEASE_GRACE_SECONDS),
     )

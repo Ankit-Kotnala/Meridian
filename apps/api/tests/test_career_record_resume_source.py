@@ -20,10 +20,17 @@ from careeros.modules.resume_health.domain import (
     CanonicalBlock,
     CanonicalResume,
     CanonicalSection,
+    CanonicalSemantics,
     DocumentStatus,
     MalwareStatus,
     ResumeMediaType,
     SectionKind,
+    SemanticEntity,
+    SemanticEntityKind,
+    SemanticField,
+    SemanticFieldType,
+    SemanticReviewState,
+    SemanticSourceAnchor,
     SourceSpan,
 )
 from careeros.modules.resume_health.domain.errors import ResumeResourceNotFound
@@ -37,8 +44,12 @@ def _snapshot(
     block: CanonicalBlock,
     *,
     original_block: CanonicalBlock | None = None,
+    semantics: CanonicalSemantics | None = None,
 ) -> CanonicalSnapshotView:
-    def resume_with(selected: CanonicalBlock) -> CanonicalResume:
+    def resume_with(
+        selected: CanonicalBlock,
+        selected_semantics: CanonicalSemantics | None = None,
+    ) -> CanonicalResume:
         return CanonicalResume(
             schema_version="canonical-resume/1.0.0",
             sections=(
@@ -51,9 +62,10 @@ def _snapshot(
                 ),
             ),
             warnings=(),
+            semantics=selected_semantics,
         )
 
-    resume = resume_with(block)
+    resume = resume_with(block, semantics)
     now = datetime(2026, 7, 15, 12, 0, tzinfo=UTC)
     return CanonicalSnapshotView(
         id=snapshot_id,
@@ -65,6 +77,112 @@ def _snapshot(
         corrected_by_user=True,
         created_at=now,
         based_on_snapshot_id=uuid4(),
+    )
+
+
+def _reviewed_semantics(
+    block_id: UUID,
+    *,
+    anchor_start: int,
+    anchor_end: int,
+    value: str = "Software Engineer",
+) -> CanonicalSemantics:
+    field = SemanticField(
+        id=uuid4(),
+        name="title",
+        field_type=SemanticFieldType.TEXT,
+        value=value,
+        confidence_basis_points=9_000,
+        review_state=SemanticReviewState.CORRECTED,
+        anchors=(
+            SemanticSourceAnchor(
+                block_id=block_id,
+                page=1,
+                start=anchor_start,
+                end=anchor_end,
+                source_sha256="ab" * 32,
+            ),
+        ),
+    )
+    return CanonicalSemantics(
+        schema_version="canonical-semantics/1.0.0",
+        parser_version="local-semantic/1",
+        entities=(
+            SemanticEntity(
+                id=uuid4(),
+                kind=SemanticEntityKind.EXPERIENCE,
+                review_state=SemanticReviewState.CORRECTED,
+                fields=(field,),
+                source_section_id=uuid4(),
+            ),
+        ),
+        review_state=SemanticReviewState.CORRECTED,
+    )
+
+
+@pytest.mark.asyncio
+async def test_reviewed_semantic_candidate_copies_exact_original_excerpt() -> None:
+    owner_id, document_id, snapshot_id, block_id = (uuid4() for _ in range(4))
+    text = "Software Engineer | Example Corp"
+    block = CanonicalBlock(
+        id=block_id,
+        kind=BlockKind.PARAGRAPH,
+        text=text,
+        confidence_basis_points=9_000,
+        spans=(SourceSpan(page=1, start=100, end=100 + len(text)),),
+    )
+    service = _available_service(document_id, snapshot_id, block)
+    service.get_canonical_resume.return_value = _snapshot(
+        document_id,
+        snapshot_id,
+        block,
+        semantics=_reviewed_semantics(
+            block_id,
+            anchor_start=100,
+            anchor_end=117,
+        ),
+    )
+
+    candidates = await ResumeHealthSourceQuery(service).reviewed_semantic_candidates(
+        owner_id,
+        document_id,
+        snapshot_id,
+    )
+
+    assert candidates[0].fields[0].value == "Software Engineer"
+    assert candidates[0].fields[0].anchors[0].source_excerpt == "Software Engineer"
+
+
+@pytest.mark.asyncio
+async def test_reviewed_semantic_candidate_fails_closed_for_stale_anchor() -> None:
+    owner_id, document_id, snapshot_id, block_id = (uuid4() for _ in range(4))
+    text = "Software Engineer | Example Corp"
+    block = CanonicalBlock(
+        id=block_id,
+        kind=BlockKind.PARAGRAPH,
+        text=text,
+        confidence_basis_points=9_000,
+        spans=(SourceSpan(page=1, start=100, end=100 + len(text)),),
+    )
+    service = _available_service(document_id, snapshot_id, block)
+    service.get_canonical_resume.return_value = _snapshot(
+        document_id,
+        snapshot_id,
+        block,
+        semantics=_reviewed_semantics(
+            block_id,
+            anchor_start=10,
+            anchor_end=27,
+        ),
+    )
+
+    assert (
+        await ResumeHealthSourceQuery(service).reviewed_semantic_candidates(
+            owner_id,
+            document_id,
+            snapshot_id,
+        )
+        == ()
     )
 
 

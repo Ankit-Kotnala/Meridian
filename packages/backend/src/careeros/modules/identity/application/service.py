@@ -6,14 +6,17 @@ from html import escape
 from uuid import UUID, uuid4
 
 from careeros.modules.identity.application.models import (
+    AccountSecurityView,
     ConsentView,
     CurrentUser,
     EmailMessage,
     IssuedSession,
     OAuthCompletion,
     OAuthStart,
+    OnboardingResumeObservation,
     OnboardingView,
     RequestContext,
+    SecurityActivityView,
     SessionSummary,
 )
 from careeros.modules.identity.application.ports import (
@@ -23,6 +26,7 @@ from careeros.modules.identity.application.ports import (
     EmailSender,
     GoogleOAuthProvider,
     IdentityUnitOfWork,
+    OnboardingResumeSource,
     PasswordHasher,
     TokenManager,
     UnitOfWorkFactory,
@@ -35,6 +39,7 @@ from careeros.modules.identity.domain import (
     ConsentEvent,
     HandoffStatus,
     OAuthAccount,
+    ObservedResumeStatus,
     OnboardingProgress,
     OnboardingStatus,
     OnboardingStep,
@@ -48,6 +53,7 @@ from careeros.modules.identity.domain import (
 from careeros.modules.identity.domain.errors import (
     AuthenticationRequired,
     CsrfRejected,
+    CurrentPasswordRejected,
     EmailVerificationRequired,
     IdentityConflict,
     InvalidCredentials,
@@ -88,6 +94,7 @@ class IdentityService:
         limiter: AbuseLimiter,
         google: GoogleOAuthProvider,
         policy: IdentityPolicy,
+        onboarding_resume_source: OnboardingResumeSource | None = None,
     ) -> None:
         self._uow = unit_of_work
         self._clock = clock
@@ -98,6 +105,12 @@ class IdentityService:
         self._limiter = limiter
         self._google = google
         self._policy = policy
+        self._onboarding_resume_source = onboarding_resume_source
+
+    def set_onboarding_resume_source(self, source: OnboardingResumeSource) -> None:
+        """Complete application composition after Resume Health is available."""
+
+        self._onboarding_resume_source = source
 
     def issue_pre_auth_csrf(self) -> str:
         """Issue an unprivileged double-submit nonce for pre-authentication forms."""
@@ -477,6 +490,67 @@ class IdentityService:
             )
             await uow.commit()
 
+    async def change_password(
+        self,
+        principal: AuthenticatedPrincipal,
+        *,
+        current_password: str | None,
+        new_password: str,
+        context: RequestContext,
+    ) -> None:
+        """Replace a password after recent authentication and revoke every session."""
+
+        self.require_recent_authentication(principal)
+        await self._limit(
+            "change_password",
+            str(principal.user_id),
+            5,
+            context,
+        )
+        now = self._clock.now()
+        async with self._uow() as uow:
+            user = await uow.get_user(principal.user_id, for_update=True)
+            if user is None or user.status is not UserStatus.ACTIVE:
+                raise AuthenticationRequired
+            if user.password_hash is not None and (
+                current_password is None
+                or not await self._passwords.verify(
+                    user.password_hash,
+                    current_password,
+                )
+            ):
+                await self._audit(
+                    uow,
+                    "auth.password_change",
+                    "denied",
+                    context,
+                    actor_user_id=user.id,
+                    subject_user_id=user.id,
+                    session_id=principal.session_id,
+                )
+                await uow.commit()
+                raise CurrentPasswordRejected
+            user.password_hash = await self._passwords.hash(new_password)
+            user.auth_version += 1
+            user.updated_at = now
+            await uow.save_user(user)
+            await uow.invalidate_one_time_tokens(
+                user.id,
+                TokenPurpose.RESET_PASSWORD,
+                now,
+            )
+            await uow.revoke_user_sessions(user.id, now)
+            await self._audit(
+                uow,
+                "auth.password_change",
+                "success",
+                context,
+                actor_user_id=user.id,
+                subject_user_id=user.id,
+                session_id=principal.session_id,
+            )
+            await uow.commit()
+
     async def list_sessions(self, principal: AuthenticatedPrincipal) -> list[SessionSummary]:
         now = self._clock.now()
         async with self._uow() as uow:
@@ -577,7 +651,8 @@ class IdentityService:
             profile = await uow.get_profile(principal.user_id)
         if progress is None or profile is None:
             raise ResourceNotFound
-        return self._onboarding_view(progress, profile)
+        observation = await self._observe_resume(principal.user_id, progress)
+        return self._onboarding_view(progress, profile, observation)
 
     async def update_onboarding(
         self,
@@ -585,16 +660,13 @@ class IdentityService:
         *,
         expected_version: int,
         current_step: OnboardingStep,
-        status: OnboardingStatus,
-        resume_handoff: HandoffStatus,
-        parsed_review_handoff: HandoffStatus,
         skipped_steps: tuple[OnboardingStep, ...],
         profile_updates: dict[str, str | None],
         context: RequestContext,
     ) -> OnboardingView:
         now = self._clock.now()
-        if status is OnboardingStatus.COMPLETED and current_step is not OnboardingStep.COMPLETE:
-            raise ValueError("completed onboarding must use the complete step")
+        if len(set(skipped_steps)) != len(skipped_steps):
+            raise ValueError("skipped onboarding steps must be unique")
         async with self._uow() as uow:
             progress = await uow.get_onboarding(principal.user_id, for_update=True)
             profile = await uow.get_profile(principal.user_id, for_update=True)
@@ -602,10 +674,25 @@ class IdentityService:
                 raise ResourceNotFound
             if progress.version != expected_version:
                 raise VersionConflict
+            observation = await self._observe_resume(principal.user_id, progress)
+            self._validate_onboarding_advance(current_step, skipped_steps, observation)
+            status = (
+                OnboardingStatus.COMPLETED
+                if current_step is OnboardingStep.COMPLETE
+                else OnboardingStatus.IN_PROGRESS
+            )
             progress.current_step = current_step
             progress.status = status
-            progress.resume_handoff = resume_handoff
-            progress.parsed_review_handoff = parsed_review_handoff
+            progress.resume_handoff = (
+                HandoffStatus.SKIPPED
+                if OnboardingStep.RESUME in skipped_steps
+                else progress.resume_handoff
+            )
+            progress.parsed_review_handoff = (
+                HandoffStatus.SKIPPED
+                if OnboardingStep.PARSED_REVIEW in skipped_steps
+                else progress.parsed_review_handoff
+            )
             progress.skipped_steps = skipped_steps
             progress.version += 1
             progress.updated_at = now
@@ -626,7 +713,8 @@ class IdentityService:
                 subject_user_id=principal.user_id,
             )
             await uow.commit()
-            return self._onboarding_view(progress, profile)
+            observation = await self._observe_resume(principal.user_id, progress)
+            return self._onboarding_view(progress, profile, observation)
 
     async def list_consents(self, principal: AuthenticatedPrincipal) -> list[ConsentView]:
         async with self._uow() as uow:
@@ -637,6 +725,78 @@ class IdentityService:
                 decision=event.decision,
                 policy_version=event.policy_version,
                 recorded_at=event.recorded_at,
+            )
+            for event in events
+        ]
+
+    async def get_account_security(
+        self,
+        principal: AuthenticatedPrincipal,
+    ) -> AccountSecurityView:
+        async with self._uow() as uow:
+            user = await uow.get_user(principal.user_id)
+            google = await uow.get_user_oauth_account(
+                principal.user_id,
+                "google",
+            )
+        if user is None:
+            raise AuthenticationRequired
+        return AccountSecurityView(
+            has_password=user.password_hash is not None,
+            google_connected=google is not None,
+        )
+
+    async def disconnect_google(
+        self,
+        principal: AuthenticatedPrincipal,
+        context: RequestContext,
+    ) -> None:
+        self.require_recent_authentication(principal)
+        async with self._uow() as uow:
+            user = await uow.get_user(principal.user_id, for_update=True)
+            account = await uow.get_user_oauth_account(
+                principal.user_id,
+                "google",
+            )
+            if user is None:
+                raise AuthenticationRequired
+            if account is None:
+                raise ResourceNotFound
+            if user.password_hash is None:
+                raise IdentityConflict
+            await uow.delete_oauth_account(user.id, "google")
+            await self._audit(
+                uow,
+                "auth.google_disconnected",
+                "success",
+                context,
+                actor_user_id=user.id,
+                subject_user_id=user.id,
+                session_id=principal.session_id,
+                target_type="oauth_account",
+                target_id=account.id,
+            )
+            await uow.commit()
+
+    async def list_security_activity(
+        self,
+        principal: AuthenticatedPrincipal,
+        *,
+        limit: int = 50,
+    ) -> list[SecurityActivityView]:
+        bounded_limit = min(max(limit, 1), 100)
+        async with self._uow() as uow:
+            events = await uow.list_audit_events(
+                principal.user_id,
+                limit=bounded_limit,
+            )
+        return [
+            SecurityActivityView(
+                id=event.id,
+                event_type=event.event_type,
+                outcome=event.outcome,
+                occurred_at=event.occurred_at,
+                current_session=event.session_id == principal.session_id,
             )
             for event in events
         ]
@@ -982,13 +1142,90 @@ class IdentityService:
             version=profile.version,
         )
 
+    async def _observe_resume(
+        self, owner_user_id: UUID, progress: OnboardingProgress
+    ) -> OnboardingResumeObservation:
+        if self._onboarding_resume_source is None:
+            return OnboardingResumeObservation(
+                resume_status=ObservedResumeStatus(progress.resume_handoff.value),
+                parsed_review_status=ObservedResumeStatus(progress.parsed_review_handoff.value),
+            )
+        observed = await self._onboarding_resume_source.observe(owner_user_id)
+        return OnboardingResumeObservation(
+            resume_status=(
+                ObservedResumeStatus.SKIPPED
+                if observed.resume_status is ObservedResumeStatus.NOT_STARTED
+                and progress.resume_handoff is HandoffStatus.SKIPPED
+                else observed.resume_status
+            ),
+            parsed_review_status=(
+                ObservedResumeStatus.SKIPPED
+                if observed.parsed_review_status is ObservedResumeStatus.NOT_STARTED
+                and progress.parsed_review_handoff is HandoffStatus.SKIPPED
+                else observed.parsed_review_status
+            ),
+            document_id=observed.document_id,
+            safe_error_code=observed.safe_error_code,
+        )
+
     @staticmethod
-    def _onboarding_view(progress: OnboardingProgress, profile: Profile) -> OnboardingView:
+    def _validate_onboarding_advance(
+        current_step: OnboardingStep,
+        skipped_steps: tuple[OnboardingStep, ...],
+        observation: OnboardingResumeObservation,
+    ) -> None:
+        if current_step in {
+            OnboardingStep.PARSED_REVIEW,
+            OnboardingStep.PREFERENCES,
+            OnboardingStep.COMPLETE,
+        } and (
+            observation.resume_status
+            not in {
+                ObservedResumeStatus.REVIEW_REQUIRED,
+                ObservedResumeStatus.REVIEWED,
+                ObservedResumeStatus.ANALYSIS_READY,
+            }
+            and OnboardingStep.RESUME not in skipped_steps
+        ):
+            raise ValueError("resume must be observed or explicitly skipped")
+        if current_step in {OnboardingStep.PREFERENCES, OnboardingStep.COMPLETE} and (
+            observation.parsed_review_status
+            not in {
+                ObservedResumeStatus.REVIEWED,
+                ObservedResumeStatus.ANALYSIS_READY,
+            }
+            and OnboardingStep.PARSED_REVIEW not in skipped_steps
+        ):
+            raise ValueError("parsed review must be observed or explicitly skipped")
+
+    @staticmethod
+    def _onboarding_view(
+        progress: OnboardingProgress,
+        profile: Profile,
+        observation: OnboardingResumeObservation,
+    ) -> OnboardingView:
+        current_step = progress.current_step
+        if progress.status is not OnboardingStatus.COMPLETED:
+            if (
+                current_step is OnboardingStep.RESUME
+                and observation.resume_status is ObservedResumeStatus.REVIEW_REQUIRED
+            ):
+                current_step = OnboardingStep.PARSED_REVIEW
+            elif current_step in {
+                OnboardingStep.RESUME,
+                OnboardingStep.PARSED_REVIEW,
+            } and observation.parsed_review_status in {
+                ObservedResumeStatus.REVIEWED,
+                ObservedResumeStatus.ANALYSIS_READY,
+            }:
+                current_step = OnboardingStep.PREFERENCES
         return OnboardingView(
             status=progress.status,
-            current_step=progress.current_step,
-            resume_handoff=progress.resume_handoff,
-            parsed_review_handoff=progress.parsed_review_handoff,
+            current_step=current_step,
+            resume_handoff=observation.resume_status,
+            parsed_review_handoff=observation.parsed_review_status,
+            latest_resume_document_id=observation.document_id,
+            resume_safe_error_code=observation.safe_error_code,
             skipped_steps=progress.skipped_steps,
             version=progress.version,
             display_name=profile.display_name,

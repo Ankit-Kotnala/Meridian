@@ -15,7 +15,9 @@ from careeros.modules.career_record.domain import (
     AttachmentStatus,
     CareerEntity,
     CareerEntityKind,
+    CareerEntityRelationship,
     CareerProfile,
+    CareerRelationshipKind,
     ConflictStatus,
     EmploymentType,
     EvidenceAttachment,
@@ -32,9 +34,12 @@ from careeros.modules.career_record.domain import (
     EvidenceUsage,
     MetricPrecision,
     PartialDate,
+    PersonalFact,
+    PersonalFactKind,
     ProposalStatus,
     ReminderCadence,
     ResumeProvenance,
+    SemanticImportProposal,
     Skill,
     SkillProficiency,
     TimelineFinding,
@@ -64,6 +69,28 @@ class UpdateCareerProfile:
     professional_headline: str | None
     summary: str | None
     work_authorization: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class CreatePersonalFact:
+    kind: PersonalFactKind
+    value: str
+    label: str | None = None
+    is_primary: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class UpdatePersonalFact:
+    value: str
+    label: str | None = None
+    is_primary: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class LinkCareerEntityRelationship:
+    source_entity_id: UUID
+    target_entity_id: UUID
+    kind: CareerRelationshipKind
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,6 +171,40 @@ class CreateImportProposal:
     proposed_entity: CareerEntityData
     source: ResumeSourceLocator
     target_entity_id: UUID | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class CreateSemanticImportProposals:
+    document_id: UUID
+    snapshot_id: UUID
+
+
+@dataclass(frozen=True, slots=True)
+class AcceptSemanticImportProposal:
+    values: dict[UUID, str]
+    idempotency_key: str
+    target_record_id: UUID | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class SemanticImportQuestion:
+    semantic_entity_id: UUID
+    code: str
+    missing_fields: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class SemanticImportBatch:
+    proposals: tuple[SemanticImportProposal, ...]
+    questions: tuple[SemanticImportQuestion, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class SemanticImportAcceptance:
+    proposal: SemanticImportProposal
+    personal_facts: tuple[PersonalFact, ...] = ()
+    entity: CareerEntity | None = None
+    skill: Skill | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -292,6 +353,23 @@ class ReadinessSnapshotEntity:
 
 
 @dataclass(frozen=True, slots=True)
+class ReadinessSnapshotRelationship:
+    id: UUID
+    source_entity_id: UUID
+    target_entity_id: UUID
+    kind: str
+
+
+@dataclass(frozen=True, slots=True)
+class ReadinessSnapshotPersonalFact:
+    id: UUID
+    kind: str
+    value: str
+    label: str | None
+    is_primary: bool
+
+
+@dataclass(frozen=True, slots=True)
 class ReadinessSnapshotEvidence:
     id: UUID
     evidence_revision_id: UUID
@@ -313,6 +391,8 @@ class CareerRecordReadinessSnapshot:
     skills: tuple[ReadinessSnapshotSkill, ...]
     entities: tuple[ReadinessSnapshotEntity, ...]
     evidence: tuple[ReadinessSnapshotEvidence, ...]
+    relationships: tuple[ReadinessSnapshotRelationship, ...] = ()
+    personal_facts: tuple[ReadinessSnapshotPersonalFact, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -379,6 +459,8 @@ class CareerProfileView:
     entities: tuple[CareerEntity, ...]
     skills: tuple[Skill, ...]
     findings: tuple[TimelineFinding, ...]
+    personal_facts: tuple[PersonalFact, ...] = ()
+    relationships: tuple[CareerEntityRelationship, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

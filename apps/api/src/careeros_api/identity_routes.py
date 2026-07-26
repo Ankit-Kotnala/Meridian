@@ -14,7 +14,7 @@ from careeros.modules.identity.application.models import (
 from careeros.modules.identity.domain import (
     AuthenticatedPrincipal,
     ConsentDecision,
-    HandoffStatus,
+    ObservedResumeStatus,
     OnboardingStatus,
     OnboardingStep,
 )
@@ -44,6 +44,7 @@ from careeros_api.identity_dependencies import (
 )
 from careeros_api.identity_schemas import (
     AuthResponse,
+    ChangePasswordRequest,
     ConsentListResponse,
     ConsentRequest,
     ConsentResponse,
@@ -58,11 +59,15 @@ from careeros_api.identity_schemas import (
     ProblemResponse,
     RegisterRequest,
     ResetPasswordRequest,
+    SecurityActivityListResponse,
+    SecurityActivityResponse,
     SessionInfo,
     SessionListResponse,
     SessionSummaryResponse,
+    SettingsCapabilitiesResponse,
     VerificationResponse,
     VerifyEmailRequest,
+    WireHandoffStatus,
 )
 
 router = APIRouter(prefix="/api/v1", tags=["Identity"])
@@ -266,6 +271,32 @@ async def reset_password(
     clear_session_cookies(response, _settings(request))
 
 
+@router.post(
+    "/auth/change-password",
+    status_code=status.HTTP_204_NO_CONTENT,
+    operation_id="authChangePassword",
+    responses=_PROBLEMS,
+)
+async def change_password(
+    payload: ChangePasswordRequest,
+    response: Response,
+    request: Request,
+    principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(require_authenticated_csrf),
+    ],
+    service: Annotated[IdentityService, Depends(identity_service)],
+    context: Annotated[RequestContext, Depends(request_context)],
+) -> None:
+    await service.change_password(
+        principal,
+        current_password=payload.current_password,
+        new_password=payload.new_password,
+        context=context,
+    )
+    clear_session_cookies(response, _settings(request))
+
+
 @router.get(
     "/auth/sessions",
     response_model=SessionListResponse,
@@ -347,6 +378,23 @@ async def google_callback(
     clear_oauth_state_cookie(response, _settings(request))
     response.headers["Cache-Control"] = "no-store"
     return response
+
+
+@router.delete(
+    "/auth/connections/google",
+    status_code=status.HTTP_204_NO_CONTENT,
+    operation_id="authGoogleDisconnect",
+    responses=_PROBLEMS,
+)
+async def google_disconnect(
+    principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(require_authenticated_csrf),
+    ],
+    service: Annotated[IdentityService, Depends(identity_service)],
+    context: Annotated[RequestContext, Depends(request_context)],
+) -> None:
+    await service.disconnect_google(principal, context)
 
 
 @router.get(
@@ -441,9 +489,6 @@ async def update_onboarding(
         principal,
         expected_version=parse_if_match_version(if_match),
         current_step=OnboardingStep(_from_wire_step(payload.current_step)),
-        status=OnboardingStatus(_from_wire_status(payload.status)),
-        resume_handoff=HandoffStatus(_from_wire_handoff(payload.resume_handoff)),
-        parsed_review_handoff=HandoffStatus(_from_wire_handoff(payload.parsed_review_handoff)),
         skipped_steps=tuple(
             OnboardingStep(_from_wire_step(step)) for step in payload.skipped_steps
         ),
@@ -489,6 +534,62 @@ async def record_consent(
     return _consent(item)
 
 
+@router.get(
+    "/settings",
+    response_model=SettingsCapabilitiesResponse,
+    operation_id="settingsCapabilitiesGet",
+    responses=_PROBLEMS,
+)
+async def get_settings_capabilities(
+    request: Request,
+    response: Response,
+    principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(current_principal),
+    ],
+    service: Annotated[IdentityService, Depends(identity_service)],
+) -> SettingsCapabilitiesResponse:
+    account = await service.get_account_security(principal)
+    configured = _settings(request)
+    response.headers["Cache-Control"] = "no-store"
+    return SettingsCapabilitiesResponse(
+        has_password=account.has_password,
+        google_connected=account.google_connected,
+        google_oauth_available=configured.google_oauth_enabled,
+        account_export_available=configured.account_export_provider != "disabled",
+        account_deletion_available=configured.account_deletion_provider != "disabled",
+        billing_available=configured.billing_provider != "disabled",
+        guest_resume_retention_hours=configured.resume_guest_retention_hours,
+    )
+
+
+@router.get(
+    "/security-activity",
+    response_model=SecurityActivityListResponse,
+    operation_id="securityActivityList",
+    responses=_PROBLEMS,
+)
+async def list_security_activity(
+    response: Response,
+    principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(current_principal),
+    ],
+    service: Annotated[IdentityService, Depends(identity_service)],
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+) -> SecurityActivityListResponse:
+    response.headers["Cache-Control"] = "no-store"
+    return SecurityActivityListResponse(
+        data=[
+            SecurityActivityResponse.model_validate(item, from_attributes=True)
+            for item in await service.list_security_activity(
+                principal,
+                limit=limit,
+            )
+        ]
+    )
+
+
 def _settings(request: Request) -> Settings:
     return cast(Settings, request.app.state.settings)
 
@@ -507,6 +608,8 @@ def _onboarding(view: OnboardingView) -> OnboardingResponse:
         current_step=_to_wire_step(view.current_step),
         resume_handoff=_to_wire_handoff(view.resume_handoff),
         parsed_review_handoff=_to_wire_handoff(view.parsed_review_handoff),
+        latest_resume_document_id=view.latest_resume_document_id,
+        resume_safe_error_code=view.resume_safe_error_code,
         skipped_steps=[_to_wire_step(step) for step in view.skipped_steps],
         version=view.version,
         display_name=view.display_name,
@@ -547,10 +650,6 @@ def _from_wire_consent(value: str) -> str:
     }[value]
 
 
-def _from_wire_status(value: str) -> str:
-    return "in_progress" if value == "inProgress" else value
-
-
 def _to_wire_status(value: OnboardingStatus) -> Literal["inProgress", "completed"]:
     return "inProgress" if value is OnboardingStatus.IN_PROGRESS else "completed"
 
@@ -570,9 +669,16 @@ def _to_wire_step(
     )
 
 
-def _from_wire_handoff(value: str) -> str:
-    return "not_started" if value == "notStarted" else value
-
-
-def _to_wire_handoff(value: HandoffStatus) -> Literal["notStarted", "skipped"]:
-    return "notStarted" if value is HandoffStatus.NOT_STARTED else "skipped"
+def _to_wire_handoff(value: ObservedResumeStatus) -> WireHandoffStatus:
+    return cast(
+        WireHandoffStatus,
+        {
+            ObservedResumeStatus.NOT_STARTED: "notStarted",
+            ObservedResumeStatus.SKIPPED: "skipped",
+            ObservedResumeStatus.PROCESSING: "processing",
+            ObservedResumeStatus.REVIEW_REQUIRED: "reviewRequired",
+            ObservedResumeStatus.REVIEWED: "reviewed",
+            ObservedResumeStatus.ANALYSIS_READY: "analysisReady",
+            ObservedResumeStatus.FAILED: "failed",
+        }[value],
+    )

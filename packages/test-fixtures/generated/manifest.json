@@ -1,4 +1,8 @@
 {
+  "adversarial-layout.docx": {
+    "bytes": 38056,
+    "sha256": "54bfed41e353a0386ffbdcb5c075aa4525ddf0d86157fce7843fefd1f8c8d3e3"
+  },
   "fictional-resume.docx": {
     "bytes": 1662,
     "sha256": "cfe2fc60343ba159754d15f68a80002bf0d5c316848d2c226c0ae6ba1e0180c4"
@@ -10,5 +14,13 @@
   "image-only.pdf": {
     "bytes": 581,
     "sha256": "f75a2ed47597fd48087f5784e26ba6462babdbb26daac8c4d836552acd1a644d"
+  },
+  "long-resume.docx": {
+    "bytes": 38628,
+    "sha256": "9c2e8d6f7bcfa75a9b6a6884be020ecc9a72fe3c8e3de26d85e43fb61ce9b85b"
+  },
+  "two-column.pdf": {
+    "bytes": 867,
+    "sha256": "fabc4d8160c9df9f8ea7b3649ae2c3377edc2eee38d432f922b6df8ee1802e2b"
   }
 }

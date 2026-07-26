@@ -876,6 +876,7 @@ def test_phase9_repairs_pre_release_phase8_schema_drift(
 
         command.upgrade(config, "20260724_0009")
         command.upgrade(config, "20260724_0010")
+        command.upgrade(config, "head")
         command.check(config)
         command.downgrade(config, "20260724_0009")
 
@@ -884,12 +885,14 @@ def test_phase9_repairs_pre_release_phase8_schema_drift(
         command.upgrade(config, "20260724_0010")
         asyncio.run(_assert_phase8_provenance_present(target_url))
         asyncio.run(_assert_phase8_enums_current(target_url))
+        command.upgrade(config, "head")
         command.check(config)
 
         command.downgrade(config, "20260724_0009")
         asyncio.run(_assert_phase8_provenance_present(target_url))
         asyncio.run(_assert_phase8_enums_current(target_url))
         command.upgrade(config, "20260724_0010")
+        command.upgrade(config, "head")
         command.check(config)
     finally:
         asyncio.run(_drop_database(admin_url, database_name))
@@ -915,10 +918,12 @@ def test_phase9_growth_relationships_are_database_enforced(
         config = _alembic_config()
 
         command.upgrade(config, "20260724_0010")
+        command.upgrade(config, "head")
         command.check(config)
         asyncio.run(_assert_phase9_growth_relational_integrity(target_url))
         command.downgrade(config, "20260724_0009")
         command.upgrade(config, "20260724_0010")
+        command.upgrade(config, "head")
         command.check(config)
     finally:
         asyncio.run(_drop_database(admin_url, database_name))
@@ -944,6 +949,7 @@ def test_phase9_growth_target_delete_waits_for_uncommitted_evidence_link(
         config = _alembic_config()
 
         command.upgrade(config, "20260724_0010")
+        command.upgrade(config, "head")
         command.check(config)
         asyncio.run(_assert_growth_target_insert_delete_is_serialized(target_url))
     finally:

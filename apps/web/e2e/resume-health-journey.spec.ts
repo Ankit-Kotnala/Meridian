@@ -44,13 +44,18 @@ test("a guest reviews a short-lived report without silent account transfer", asy
       response.request().method() === "POST" &&
       /\/api\/v1\/guest\/resume-health(?:\?|$)/.test(response.url()),
   );
+  await page
+    .getByRole("checkbox", {
+      name: /confirm that no changes are needed/i,
+    })
+    .check();
   await page.getByRole("button", { name: "Save review and analyze" }).click();
   const accepted = await analysisResponse;
   expect(
     accepted.ok(),
     `guest analysis start returned HTTP ${accepted.status()}`,
   ).toBe(true);
-  expect(canonicalCorrections).toEqual([]);
+  expect(canonicalCorrections).toHaveLength(1);
   await expect(page).toHaveURL(/\/resume-health\/guest\/report\//, {
     timeout: 120_000,
   });

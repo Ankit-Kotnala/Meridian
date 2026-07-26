@@ -318,9 +318,10 @@ later removes any orphaned staging bytes. The Phase 2 protocol is a single signe
 
 ## Route inventory by phase
 
-The methods below are the implemented public surface through Phase 2 followed by
-the planned surface for later phases. Future names may be refined through OpenAPI
-review; once released, compatibility rules apply.
+The methods below are the implemented public surface through Phase 9 and the
+current cross-phase closure, followed by explicitly labeled planned surfaces.
+The generated OpenAPI artifact remains authoritative. Future planned names may be
+refined through OpenAPI review; released methods follow the compatibility rules.
 
 ### Phase 1 — Authentication, account, and onboarding
 
@@ -335,23 +336,35 @@ POST   /api/v1/auth/logout-all
 POST   /api/v1/auth/refresh
 POST   /api/v1/auth/forgot-password
 POST   /api/v1/auth/reset-password
+POST   /api/v1/auth/change-password
 GET    /api/v1/auth/sessions
 DELETE /api/v1/auth/sessions/{sessionId}
 GET    /api/v1/auth/google/start
 GET    /api/v1/auth/google/callback
+DELETE /api/v1/auth/connections/google
 GET    /api/v1/me
 PATCH  /api/v1/me
 GET    /api/v1/onboarding
 PATCH  /api/v1/onboarding
 GET    /api/v1/consents
 POST   /api/v1/consents
+GET    /api/v1/settings
+GET    /api/v1/security-activity
 ```
 
 Registration/login/reset responses resist account enumeration. OAuth callback
 errors return through a safe fixed application route without leaking provider
 tokens. `GET` responses for `/me` and `/onboarding` return versions/ETags; their
-`PATCH` operations require CSRF plus `If-Match`. Account deletion is not a Phase 1
-endpoint; it remains Phase 10 work and will require recent authentication.
+`PATCH` operations require CSRF plus `If-Match`. Onboarding upload, processing,
+typed-review, and analysis statuses are server-observed through an owner-scoped
+Resume Health application query; the mutation cannot submit them. Password
+changes and Google disconnection require CSRF and recent authentication. A
+successful password change revokes all sessions, including the current one.
+Security activity returns a bounded owner-scoped redacted view. `GET /settings`
+returns persisted account-security state plus fail-closed capability flags; it
+does not imply that export, account deletion, billing, or scheduled notification
+delivery exists. Account deletion remains Phase 10 work and will require recent
+authentication.
 
 ### Phase 2 — Upload, documents, parsing, and Resume Health
 
@@ -407,13 +420,22 @@ job, transfers retained content/job history atomically, removes guest retention,
 and revokes the guest capability. Prior guest audit records retain their original
 scope while the claim adds a new account-scoped audit event.
 
-Parser corrections create a new immutable canonical snapshot based on the prior
-snapshot. The response keeps original extracted values and source spans visible;
-the source document is never overwritten. Analysis binds to one snapshot and
-returns fixed-point score/components, engine/configuration/feature-schema
-versions, all persisted feature values, each component's feature score/weight/
-contribution in raw basis points and display units, feature hash, findings,
-warnings, and the canonical disclaimer. The web exposes that trace in semantic,
+Canonical responses retain immutable source sections/blocks and expose a
+versioned semantic sidecar for contact, experience, education, project, skill,
+and certification records. Parser-derived fields carry confidence, review state,
+date precision where applicable, and exact block/page/character/SHA-256 anchors.
+The patch contract accepts discriminated confirm, correct, add, remove, and
+reclassify operations, or an explicit no-change confirmation. User-added facts
+make no source-anchor claim. Every accepted review creates an optimistic,
+immutable successor snapshot; legacy block-only snapshots upgrade through that
+same explicit path and the source document is never overwritten.
+
+Analysis binds to one snapshot and returns fixed-point score/components,
+engine/configuration/feature-schema versions, all persisted feature values, each
+component's feature score/weight/contribution in raw basis points and display
+units, feature hash, findings, warnings, and the canonical disclaimer. Current
+Resume Health v2 includes semantic breadth, source-anchor coverage, explicit
+review coverage, and date-precision coverage. The web exposes that trace in
 keyboard-operable disclosure lists. Insufficient extracted data returns no
 numeric score rather than zero.
 
@@ -428,24 +450,43 @@ durable delete path before revoking an expired guest capability.
 GET    /api/v1/career-profile
 PATCH  /api/v1/career-profile
 
+GET    /api/v1/personal-facts
+POST   /api/v1/personal-facts
+PATCH  /api/v1/personal-facts/{factId}
+POST   /api/v1/personal-facts/{factId}/confirm
+DELETE /api/v1/personal-facts/{factId}
+
 GET    /api/v1/experiences
 POST   /api/v1/experiences
 PATCH  /api/v1/experiences/{experienceId}
+POST   /api/v1/experiences/{experienceId}/confirm
 DELETE /api/v1/experiences/{experienceId}
 POST   /api/v1/experiences/reorder
 
 GET    /api/v1/career-items
 POST   /api/v1/career-items
 PATCH  /api/v1/career-items/{careerItemId}
+POST   /api/v1/career-items/{careerItemId}/confirm
 DELETE /api/v1/career-items/{careerItemId}
 
 GET    /api/v1/skills
 POST   /api/v1/skills
 PATCH  /api/v1/skills/{skillId}
+POST   /api/v1/skills/{skillId}/confirm
 DELETE /api/v1/skills/{skillId}
 
+GET    /api/v1/career-relationships
+POST   /api/v1/career-relationships
+DELETE /api/v1/career-relationships/{relationshipId}
+
+POST   /api/v1/career-profile/semantic-import-proposals
+GET    /api/v1/career-profile/semantic-import-proposals
+GET    /api/v1/career-profile/semantic-import-proposals/{proposalId}
+POST   /api/v1/career-profile/semantic-import-proposals/{proposalId}/accept
+POST   /api/v1/career-profile/semantic-import-proposals/{proposalId}/reject
+
 GET    /api/v1/career-profile/import-proposals
-POST   /api/v1/career-profile/import-proposals
+POST   /api/v1/career-profile/import-proposals  (deprecated creation path)
 GET    /api/v1/career-profile/import-proposals/{proposalId}
 POST   /api/v1/career-profile/import-proposals/{proposalId}/accept
 POST   /api/v1/career-profile/import-proposals/{proposalId}/reject
@@ -476,6 +517,22 @@ PATCH  /api/v1/achievements/{achievementId}
 DELETE /api/v1/achievements/{achievementId}
 POST   /api/v1/achievements/{achievementId}/confirm
 ```
+
+Typed semantic proposal creation takes an owned Resume Health document ID and
+loads its reviewed immutable semantic snapshot server-side. Only confirmed,
+corrected, or explicit user-added fields are candidates. Accepting a proposal
+creates or updates canonical personal facts, skills, experiences, education,
+projects, or certifications and records canonical per-field provenance; an
+accept-time edit is labeled as an owner edit rather than parser text. Manual and
+edited records require explicit confirmation, and material edits revoke prior
+confirmation. Downstream readiness snapshots exclude unconfirmed records and
+include confirmed personal facts for document-generation consumers.
+
+Career relationships currently allow an explicit owned experience-to-project
+edge. Achievement-to-entity and evidence-to-entity/skill links remain in their
+existing canonical structures. The legacy generic proposal creation method is
+retained and marked deprecated for v1 compatibility and historical audit; new UI
+uses the typed route.
 
 All Phase 3 routes require the Phase 1 authenticated account session. Mutations
 also require the session-bound CSRF/origin contract; versioned writes require a
@@ -876,22 +933,20 @@ problem and a typed `429` quota problem. Domain collection limits raise the
 family-specific quota code; they are not reported as a generic validation or
 conflict failure.
 
-### Phase 10 planned API — Settings, privacy, and connected services
+### Phase 10 planned API — Privacy operations and connected services
 
 The endpoints in this subsection are design targets only. They are not
-implemented or present in the current OpenAPI contract.
+implemented or present in the current OpenAPI contract. Profile, locale,
+timezone, writing/search preferences, sessions, consent, password changes,
+redacted security activity, Google connection state/removal, and Career Record
+reminder preferences already use the implemented Phase 1/3 APIs above.
 
 ```text
-GET    /api/v1/settings
-PATCH  /api/v1/settings
-GET    /api/v1/consents
-POST   /api/v1/consents
 POST   /api/v1/data-exports
 GET    /api/v1/data-exports/{exportId}
 POST   /api/v1/account-deletion
 GET    /api/v1/account-deletion/{requestId}
 POST   /api/v1/account-deletion/{requestId}/cancel
-GET    /api/v1/security-activity
 GET    /api/v1/connected-services
 DELETE /api/v1/connected-services/{connectionId}
 ```

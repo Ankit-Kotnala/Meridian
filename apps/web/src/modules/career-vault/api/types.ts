@@ -59,6 +59,25 @@ export type CareerProfileUpdate = {
   workAuthorization: string;
 };
 
+export type PersonalFactKind = "name" | "email" | "phone" | "location" | "link";
+
+export type PersonalFactInput = {
+  isPrimary: boolean;
+  kind: PersonalFactKind;
+  label: string | null;
+  value: string;
+};
+
+export type PersonalFact = PersonalFactInput & {
+  confirmation: "confirmed" | "needs_review";
+  confirmedAt: string | null;
+  createdAt: string;
+  id: string;
+  provenance: Provenance[];
+  updatedAt: string;
+  version: number;
+};
+
 export type Experience = {
   concurrentGroupId: string | null;
   conflicts: ProfileConflict[];
@@ -122,7 +141,16 @@ export type CareerItem = CareerItemInput & {
   order: number;
   provenance: Provenance[];
   updatedAt: string;
+  userConfirmed: boolean;
   version: number;
+};
+
+export type CareerRelationship = {
+  createdAt: string;
+  experienceId: string;
+  id: string;
+  kind: "experience_project";
+  projectId: string;
 };
 
 export type SkillInput = {
@@ -135,7 +163,9 @@ export type Skill = SkillInput & {
   createdAt: string;
   id: string;
   order: number;
+  provenance: Provenance[];
   updatedAt: string;
+  userConfirmed: boolean;
   version: number;
 };
 
@@ -154,8 +184,20 @@ export type ProfileImportProposal = {
   createdAt: string;
   id: string;
   sourceDocumentName: string;
+  sourceAvailable: boolean;
   status: "pending" | "accepted" | "rejected";
   version: number;
+};
+
+export type ProfileImportQuestion = {
+  code: "semantic_candidate_requires_review";
+  missingFields: string[];
+  semanticEntityId: string;
+};
+
+export type ProfileImportBatch = {
+  proposals: ProfileImportProposal[];
+  questions: ProfileImportQuestion[];
 };
 
 export type PageInfo = {

@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: help setup dev stop format format-check lint typecheck test contracts-check test-integration test-e2e test-e2e-stack test-e2e-stack-phase3 test-e2e-stack-phase4 test-e2e-stack-phase5 test-e2e-stack-phase6 test-e2e-stack-phase7 test-e2e-stack-phase8 test-e2e-stack-phase9 build security-scan seed migrate reset-db compose-config verify verify-phase1 verify-phase2 verify-phase3 verify-phase4 verify-phase5 verify-phase6 verify-phase7 verify-phase8 verify-phase9
+.PHONY: help setup dev stop format format-check lint typecheck test contracts-check test-integration test-e2e test-e2e-stack-phase1 test-e2e-stack test-e2e-stack-phase3 test-e2e-stack-phase4 test-e2e-stack-phase5 test-e2e-stack-phase6 test-e2e-stack-phase7 test-e2e-stack-phase8 test-e2e-stack-phase9 build security-scan seed migrate reset-db compose-config verify verify-phase1 verify-phase2 verify-phase3 verify-phase4 verify-phase5 verify-phase6 verify-phase7 verify-phase8 verify-phase9
 
 help:
 	@echo "CareerOS development targets"
@@ -14,6 +14,7 @@ help:
 	@echo "  test             Run unit tests"
 	@echo "  test-integration Start the stack and verify service health"
 	@echo "  test-e2e         Run browser end-to-end tests"
+	@echo "  test-e2e-stack-phase1 Run the isolated Phase 1 authentication/onboarding journey"
 	@echo "  test-e2e-stack   Run the isolated Phase 2 authentication and Resume Health journeys"
 	@echo "  test-e2e-stack-phase3 Run the isolated Phase 3 Career Record journey suite"
 	@echo "  test-e2e-stack-phase4 Run the isolated Phase 4 Role Explorer journey suite"
@@ -101,6 +102,9 @@ test-integration:
 test-e2e:
 	pnpm test:e2e
 
+test-e2e-stack-phase1:
+	CAREEROS_E2E_PHASE=1 sh tests/e2e/run-compose.sh
+
 test-e2e-stack:
 	CAREEROS_E2E_PHASE=2 sh tests/e2e/run-compose.sh
 
@@ -155,7 +159,7 @@ compose-config:
 
 verify: contracts-check format-check lint typecheck test build compose-config test-integration
 
-verify-phase1: verify test-e2e-stack
+verify-phase1: verify test-e2e-stack-phase1
 
 verify-phase2: verify test-e2e-stack
 

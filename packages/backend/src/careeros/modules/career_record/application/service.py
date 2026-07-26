@@ -19,7 +19,11 @@ from careeros.modules.career_record.domain import (
     AuditAction,
     CareerAuditEvent,
     CareerEntity,
+    CareerEntityConfirmation,
     CareerEntityKind,
+    CareerEntityRelationship,
+    CareerFieldProvenance,
+    CareerFieldTarget,
     CareerProfile,
     CareerRecordConflict,
     CareerRecordIdempotencyConflict,
@@ -28,9 +32,13 @@ from careeros.modules.career_record.domain import (
     CareerRecordTransitionRejected,
     CareerRecordValidationError,
     CareerRecordVersionConflict,
+    CareerRelationshipKind,
+    CareerSkillConfirmation,
+    ConfirmationState,
     ConflictResolution,
     ConflictStatus,
     EligibilityDecision,
+    EmploymentType,
     EntitySkillLink,
     EvidenceAttachment,
     EvidenceAuthority,
@@ -49,9 +57,19 @@ from careeros.modules.career_record.domain import (
     EvidenceStrength,
     EvidenceType,
     ImportProposal,
+    PartialDate,
+    PersonalFact,
+    PersonalFactKind,
     ProposalStatus,
     ReminderPreferences,
     ResumeProvenance,
+    SemanticCandidateKind,
+    SemanticFieldOrigin,
+    SemanticImportField,
+    SemanticImportFieldState,
+    SemanticImportProposal,
+    SemanticImportStatus,
+    SemanticImportTarget,
     Skill,
     VerificationDecision,
     evidence_eligibility,
@@ -64,6 +82,7 @@ from careeros.modules.career_record.domain import (
 )
 
 from .models import (
+    AcceptSemanticImportProposal,
     CareerEntityData,
     CareerProfileView,
     CareerRecordAnalyticsGrowthPoint,
@@ -73,21 +92,30 @@ from .models import (
     CreateCareerProfile,
     CreateEvidence,
     CreateImportProposal,
+    CreatePersonalFact,
+    CreateSemanticImportProposals,
     CreateSkill,
     EvidenceFilter,
     EvidenceRecord,
+    LinkCareerEntityRelationship,
     MetricInput,
     Page,
     PageCursor,
     ProposalFilter,
     ReadinessSnapshotEntity,
     ReadinessSnapshotEvidence,
+    ReadinessSnapshotPersonalFact,
+    ReadinessSnapshotRelationship,
     ReadinessSnapshotSkill,
     RequestContext,
     ResumeSourceLocator,
     ReviseEvidence,
+    SemanticImportAcceptance,
+    SemanticImportBatch,
+    SemanticImportQuestion,
     UpdateAchievement,
     UpdateCareerProfile,
+    UpdatePersonalFact,
     UpdateReminderPreferences,
     UpdateSkill,
     ValidatedResumeSource,
@@ -95,6 +123,7 @@ from .models import (
 )
 from .ports import (
     AttachmentAdmission,
+    CareerRecordUnitOfWork,
     CareerRecordUnitOfWorkFactory,
     Clock,
     EvidenceVerificationAuthority,
@@ -107,6 +136,390 @@ _IDEMPOTENCY_KEY = re.compile(r"^[A-Za-z0-9._:-]{8,128}$")
 # one UTC day so every IANA timezone boundary is represented. This internal
 # source-only limit is therefore intentionally two days wider.
 _ANALYTICS_SOURCE_MAX_WINDOW_DAYS = 3_652
+_MONTHS = {
+    "jan": 1,
+    "january": 1,
+    "feb": 2,
+    "february": 2,
+    "mar": 3,
+    "march": 3,
+    "apr": 4,
+    "april": 4,
+    "may": 5,
+    "jun": 6,
+    "june": 6,
+    "jul": 7,
+    "july": 7,
+    "aug": 8,
+    "august": 8,
+    "sep": 9,
+    "sept": 9,
+    "september": 9,
+    "oct": 10,
+    "october": 10,
+    "nov": 11,
+    "november": 11,
+    "dec": 12,
+    "december": 12,
+}
+
+
+def _semantic_values_by_name(
+    fields: tuple[SemanticImportField, ...],
+    values: dict[UUID, str],
+) -> dict[str, list[str]]:
+    grouped: dict[str, list[str]] = {}
+    for field in fields:
+        value = values.get(field.semantic_field_id)
+        if value is None:
+            continue
+        grouped.setdefault(field.name, []).append(value.strip())
+    return grouped
+
+
+def _semantic_mapping_issues(
+    kind: SemanticCandidateKind,
+    fields: tuple[SemanticImportField, ...],
+    values: dict[UUID, str],
+) -> tuple[str, ...]:
+    if set(values) != {field.semantic_field_id for field in fields}:
+        return ("reviewed_fields",)
+    grouped = _semantic_values_by_name(fields, values)
+    required: tuple[str, ...]
+    if kind is SemanticCandidateKind.CONTACT:
+        required = ()
+    elif kind is SemanticCandidateKind.SKILL:
+        required = ("name",)
+    elif kind is SemanticCandidateKind.EXPERIENCE:
+        required = ("title", "employer", "start_date")
+    elif kind is SemanticCandidateKind.EDUCATION:
+        required = ("institution",)
+    elif kind is SemanticCandidateKind.PROJECT:
+        required = ("name",)
+    else:
+        required = ("name",)
+    issues = [name for name in required if not grouped.get(name) or not grouped[name][0]]
+    if kind is SemanticCandidateKind.EDUCATION and not (
+        grouped.get("degree") or grouped.get("field")
+    ):
+        issues.append("degree_or_field")
+    for field in fields:
+        value = values[field.semantic_field_id].strip()
+        if not value:
+            issues.append(field.name)
+        if field.field_type == "date" and value.casefold() not in {
+            "present",
+            "current",
+        }:
+            try:
+                _partial_date_from_semantic(value, field.date_precision)
+            except CareerRecordValidationError:
+                issues.append(field.name)
+        if field.name == "employment_type":
+            try:
+                _employment_type(value)
+            except CareerRecordValidationError:
+                issues.append(field.name)
+    return tuple(dict.fromkeys(issues))
+
+
+def _partial_date_from_semantic(value: str, precision: str | None) -> PartialDate:
+    normalized = value.strip().casefold().replace(",", " ")
+    if precision == "unknown":
+        raise CareerRecordValidationError("unknown date precision requires review")
+    year_match = re.search(r"\b(19\d{2}|20\d{2}|21\d{2}|2200)\b", normalized)
+    if year_match is None:
+        raise CareerRecordValidationError("semantic date requires a supported year")
+    year = int(year_match.group(1))
+    if precision == "year":
+        return PartialDate(year)
+    month: int | None = None
+    for name, number in _MONTHS.items():
+        if re.search(rf"\b{re.escape(name)}\b", normalized):
+            month = number
+            break
+    if month is None:
+        numeric = re.fullmatch(
+            r"\s*(?:(\d{4})[-/](\d{1,2})(?:[-/]\d{1,2})?|"
+            r"\d{1,2}[-/](\d{1,2})[-/](\d{4})|"
+            r"(\d{1,2})[-/](\d{4}))\s*",
+            normalized,
+        )
+        if numeric is not None:
+            if numeric.group(1) is not None:
+                month = int(numeric.group(2))
+            elif numeric.group(4) is not None:
+                month = int(numeric.group(3))
+            else:
+                month = int(numeric.group(5))
+    if month is None:
+        raise CareerRecordValidationError("semantic month requires review")
+    return PartialDate(year, month)
+
+
+def _employment_type(value: str) -> EmploymentType:
+    normalized = re.sub(r"[\s-]+", "_", value.strip().casefold())
+    aliases = {
+        "fulltime": "full_time",
+        "parttime": "part_time",
+        "freelance": "contract",
+        "temp": "temporary",
+    }
+    return EmploymentType(aliases.get(normalized, normalized))
+
+
+def _semantic_entity_data(
+    kind: SemanticCandidateKind,
+    fields: tuple[SemanticImportField, ...],
+    values: dict[UUID, str],
+) -> CareerEntityData:
+    grouped = _semantic_values_by_name(fields, values)
+
+    def first(name: str) -> str | None:
+        candidates = grouped.get(name)
+        return candidates[0] if candidates else None
+
+    def date_value(name: str) -> PartialDate | None:
+        candidate = next((field for field in fields if field.name == name), None)
+        if candidate is None:
+            return None
+        value = values[candidate.semantic_field_id].strip()
+        if value.casefold() in {"present", "current"}:
+            return None
+        return _partial_date_from_semantic(value, candidate.date_precision)
+
+    description_parts = [
+        *grouped.get("description", ()),
+        *grouped.get("achievement", ()),
+    ]
+    description = "\n".join(value for value in description_parts if value) or None
+    start_name = "issued_date" if kind is SemanticCandidateKind.CERTIFICATION else "start_date"
+    end_name = "expires_date" if kind is SemanticCandidateKind.CERTIFICATION else "end_date"
+    end_text = first(end_name)
+    is_current = bool(end_text and end_text.casefold() in {"present", "current"})
+    if kind is SemanticCandidateKind.EXPERIENCE:
+        return CareerEntityData(
+            kind=CareerEntityKind.EXPERIENCE,
+            title=first("title") or "",
+            organization=first("employer"),
+            description=description,
+            official_title=first("title"),
+            display_title=first("title"),
+            employment_type=(
+                _employment_type(first("employment_type") or "")
+                if first("employment_type")
+                else None
+            ),
+            location=first("location"),
+            start_date=date_value(start_name),
+            end_date=date_value(end_name),
+            is_current=is_current,
+        )
+    if kind is SemanticCandidateKind.EDUCATION:
+        degree = first("degree") or first("field") or ""
+        return CareerEntityData(
+            kind=CareerEntityKind.EDUCATION,
+            title=degree,
+            organization=first("institution"),
+            description=first("field") if first("field") != degree else None,
+            location=first("location"),
+            start_date=date_value(start_name),
+            end_date=date_value(end_name),
+            is_current=is_current,
+        )
+    if kind is SemanticCandidateKind.PROJECT:
+        return CareerEntityData(
+            kind=CareerEntityKind.PROJECT,
+            title=first("name") or "",
+            description=description,
+            external_url=first("link"),
+            start_date=date_value(start_name),
+            end_date=date_value(end_name),
+            is_current=is_current,
+        )
+    if kind is SemanticCandidateKind.CERTIFICATION:
+        return CareerEntityData(
+            kind=CareerEntityKind.CREDENTIAL,
+            title=first("name") or "",
+            organization=first("issuer"),
+            description=first("credential_id"),
+            external_url=first("link"),
+            start_date=date_value(start_name),
+            end_date=date_value(end_name),
+        )
+    raise CareerRecordValidationError("semantic candidate is not a career entity")
+
+
+def _semantic_target_match(
+    kind: SemanticCandidateKind,
+    fields: tuple[SemanticImportField, ...],
+    *,
+    entities: list[CareerEntity],
+    skills: list[Skill],
+    facts: list[PersonalFact],
+) -> tuple[SemanticImportTarget, UUID | None, str | None]:
+    values = {field.semantic_field_id: field.value for field in fields}
+    grouped = _semantic_values_by_name(fields, values)
+    if kind is SemanticCandidateKind.CONTACT:
+        duplicate = any(
+            any(fact.kind.value == field.name and fact.value == field.value for fact in facts)
+            for field in fields
+        )
+        return (
+            SemanticImportTarget.PERSONAL_FACTS,
+            None,
+            "existing_personal_fact" if duplicate else None,
+        )
+    if kind is SemanticCandidateKind.SKILL:
+        name = grouped["name"][0]
+        skill_target = next(
+            (skill for skill in skills if skill.name.casefold() == name.casefold()),
+            None,
+        )
+        return (
+            SemanticImportTarget.SKILL,
+            skill_target.id if skill_target is not None else None,
+            "existing_skill" if skill_target is not None else None,
+        )
+    proposed = _semantic_entity_data(kind, fields, values)
+    entity_target = next(
+        (
+            entity
+            for entity in entities
+            if entity.kind is proposed.kind
+            and entity.title.casefold() == proposed.title.casefold()
+            and (entity.organization or "").casefold() == (proposed.organization or "").casefold()
+        ),
+        None,
+    )
+    return (
+        SemanticImportTarget.ENTITY,
+        entity_target.id if entity_target is not None else None,
+        "existing_entity" if entity_target is not None else None,
+    )
+
+
+def _partial_date_text(value: PartialDate | None) -> str | None:
+    if value is None:
+        return None
+    return f"{value.year:04d}" + (f"-{value.month:02d}" if value.month is not None else "")
+
+
+def _semantic_entity_provenance_targets(
+    kind: SemanticCandidateKind,
+    field: SemanticImportField,
+    data: CareerEntityData,
+) -> tuple[tuple[str, str], ...]:
+    """Map one reviewed semantic field to the canonical fields it produced."""
+
+    values = {
+        "title": data.title,
+        "organization": data.organization,
+        "description": data.description,
+        "official_title": data.official_title,
+        "display_title": data.display_title,
+        "employment_type": (
+            data.employment_type.value if data.employment_type is not None else None
+        ),
+        "location": data.location,
+        "external_url": data.external_url,
+        "start_date": _partial_date_text(data.start_date),
+        "end_date": _partial_date_text(data.end_date),
+        "is_current": "true" if data.is_current else "false",
+    }
+    semantic_name = field.name
+    targets: tuple[str, ...]
+    if kind is SemanticCandidateKind.EXPERIENCE:
+        targets = {
+            "title": ("title", "official_title", "display_title"),
+            "employer": ("organization",),
+            "description": ("description",),
+            "achievement": ("description",),
+            "employment_type": ("employment_type",),
+            "location": ("location",),
+            "start_date": ("start_date",),
+            "end_date": ("is_current",) if data.is_current else ("end_date",),
+        }.get(semantic_name, ())
+    elif kind is SemanticCandidateKind.EDUCATION:
+        targets = {
+            "degree": ("title",),
+            "field": ("description",) if data.description is not None else ("title",),
+            "institution": ("organization",),
+            "location": ("location",),
+            "start_date": ("start_date",),
+            "end_date": ("is_current",) if data.is_current else ("end_date",),
+        }.get(semantic_name, ())
+    elif kind is SemanticCandidateKind.PROJECT:
+        targets = {
+            "name": ("title",),
+            "description": ("description",),
+            "achievement": ("description",),
+            "link": ("external_url",),
+            "start_date": ("start_date",),
+            "end_date": ("is_current",) if data.is_current else ("end_date",),
+        }.get(semantic_name, ())
+    elif kind is SemanticCandidateKind.CERTIFICATION:
+        targets = {
+            "name": ("title",),
+            "issuer": ("organization",),
+            "credential_id": ("description",),
+            "link": ("external_url",),
+            "issued_date": ("start_date",),
+            "expires_date": ("end_date",),
+        }.get(semantic_name, ())
+    else:
+        targets = ()
+    return tuple(
+        (field_name, value)
+        for field_name in targets
+        if (value := values.get(field_name)) is not None and value != ""
+    )
+
+
+def _entity_factual_values(entity: CareerEntity) -> tuple[tuple[str, str], ...]:
+    """Serialize only current factual fields for owner-attestation digests."""
+
+    values: tuple[tuple[str, object | None], ...] = (
+        ("title", entity.title),
+        ("organization", entity.organization),
+        ("description", entity.description),
+        ("official_title", entity.official_title),
+        ("display_title", entity.display_title),
+        (
+            "employment_type",
+            entity.employment_type.value if entity.employment_type is not None else None,
+        ),
+        ("location", entity.location),
+        ("external_url", entity.external_url),
+        (
+            "start_date",
+            _partial_date_text(entity.start_date),
+        ),
+        (
+            "end_date",
+            _partial_date_text(entity.end_date),
+        ),
+        ("is_current", "true" if entity.is_current else "false"),
+    )
+    return tuple(
+        (field_name, str(value))
+        for field_name, value in values
+        if value is not None and str(value) != ""
+    )
+
+
+def _skill_factual_values(skill: Skill) -> tuple[tuple[str, str], ...]:
+    values = (
+        ("name", skill.name),
+        ("category", skill.category),
+        (
+            "proficiency",
+            skill.proficiency.value if skill.proficiency is not None else None,
+        ),
+    )
+    return tuple(
+        (field_name, value) for field_name, value in values if value is not None and value != ""
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -117,6 +530,8 @@ class CareerRecordPolicy:
     max_skills: int = 500
     max_evidence: int = 2_000
     max_achievements: int = 1_000
+    max_personal_facts: int = 100
+    max_semantic_import_proposals: int = 500
 
     def __post_init__(self) -> None:
         if not 1 <= self.default_page_size <= self.max_page_size <= 200:
@@ -127,6 +542,8 @@ class CareerRecordPolicy:
                 self.max_skills,
                 self.max_evidence,
                 self.max_achievements,
+                self.max_personal_facts,
+                self.max_semantic_import_proposals,
             )
             < 1
         ):
@@ -256,12 +673,464 @@ class CareerRecordService:
             entities = await uow.list_entities(owner_user_id, profile.id)
         return tuple(sorted(entities, key=lambda item: (item.sort_order, str(item.id))))
 
+    async def list_personal_facts(self, owner_user_id: UUID) -> tuple[PersonalFact, ...]:
+        async with self._uow() as uow:
+            profile = await uow.get_profile(owner_user_id)
+            if profile is None:
+                raise CareerRecordNotFound
+            facts = await uow.list_personal_facts(owner_user_id, profile.id)
+        return tuple(facts)
+
+    async def list_entity_relationships(
+        self, owner_user_id: UUID
+    ) -> tuple[CareerEntityRelationship, ...]:
+        async with self._uow() as uow:
+            profile = await uow.get_profile(owner_user_id)
+            if profile is None:
+                raise CareerRecordNotFound
+            relationships = await uow.list_entity_relationships(owner_user_id, profile.id)
+        return tuple(relationships)
+
+    async def link_entity_relationship(
+        self,
+        owner_user_id: UUID,
+        command: LinkCareerEntityRelationship,
+        context: RequestContext,
+    ) -> CareerEntityRelationship:
+        self._authorize(owner_user_id, context)
+        if command.kind is not CareerRelationshipKind.EXPERIENCE_PROJECT:
+            raise CareerRecordValidationError("unsupported career relationship kind")
+        now = self._clock.now()
+        async with self._uow() as uow:
+            source = await uow.get_entity(owner_user_id, command.source_entity_id)
+            target = await uow.get_entity(owner_user_id, command.target_entity_id)
+            if (
+                source is None
+                or target is None
+                or source.profile_id != target.profile_id
+                or source.kind is not CareerEntityKind.EXPERIENCE
+                or target.kind is not CareerEntityKind.PROJECT
+            ):
+                raise CareerRecordNotFound
+            existing = await uow.list_entity_relationships(owner_user_id, source.profile_id)
+            if any(
+                item.source_entity_id == source.id
+                and item.target_entity_id == target.id
+                and item.kind is command.kind
+                for item in existing
+            ):
+                raise CareerRecordConflict("career relationship already exists")
+            relationship = CareerEntityRelationship(
+                id=self._ids.new(),
+                owner_user_id=owner_user_id,
+                profile_id=source.profile_id,
+                source_entity_id=source.id,
+                target_entity_id=target.id,
+                kind=command.kind,
+                created_at=now,
+            )
+            await uow.add_entity_relationship(relationship)
+            await uow.add_audit(
+                self._audit(
+                    owner_user_id,
+                    AuditAction.ENTITY_RELATIONSHIP_LINKED,
+                    "career_entity_relationship",
+                    relationship.id,
+                    context,
+                    now,
+                )
+            )
+            await uow.commit()
+        return relationship
+
+    async def unlink_entity_relationship(
+        self,
+        owner_user_id: UUID,
+        relationship_id: UUID,
+        context: RequestContext,
+    ) -> None:
+        self._authorize(owner_user_id, context)
+        now = self._clock.now()
+        async with self._uow() as uow:
+            relationship = await uow.get_entity_relationship(owner_user_id, relationship_id)
+            if relationship is None:
+                raise CareerRecordNotFound
+            await uow.delete_entity_relationship(owner_user_id, relationship_id)
+            await uow.add_audit(
+                self._audit(
+                    owner_user_id,
+                    AuditAction.ENTITY_RELATIONSHIP_UNLINKED,
+                    "career_entity_relationship",
+                    relationship.id,
+                    context,
+                    now,
+                )
+            )
+            await uow.commit()
+
+    async def create_personal_fact(
+        self,
+        owner_user_id: UUID,
+        command: CreatePersonalFact,
+        context: RequestContext,
+    ) -> PersonalFact:
+        self._authorize(owner_user_id, context)
+        now = self._clock.now()
+        async with self._uow() as uow:
+            profile = await uow.get_profile(owner_user_id, for_update=True)
+            if profile is None:
+                raise CareerRecordNotFound
+            facts = await uow.list_personal_facts(owner_user_id, profile.id)
+            if len(facts) >= self._policy.max_personal_facts:
+                raise CareerRecordConflict("personal fact limit reached")
+            normalized_value = command.value.strip()
+            if any(
+                item.kind is command.kind and item.value.casefold() == normalized_value.casefold()
+                for item in facts
+            ):
+                raise CareerRecordConflict("personal fact already exists")
+            same_kind = [item for item in facts if item.kind is command.kind]
+            is_primary = command.is_primary or not same_kind
+            if is_primary:
+                for item in same_kind:
+                    if item.is_primary:
+                        item.is_primary = False
+                        item.version += 1
+                        item.updated_at = now
+                        await uow.save_personal_fact(item)
+            fact = PersonalFact(
+                id=self._ids.new(),
+                owner_user_id=owner_user_id,
+                profile_id=profile.id,
+                kind=command.kind,
+                value=normalized_value,
+                label=command.label,
+                is_primary=is_primary,
+                confirmation=ConfirmationState.NEEDS_REVIEW,
+                version=1,
+                created_at=now,
+                updated_at=now,
+            )
+            await uow.add_personal_fact(fact)
+            await uow.add_audit(
+                self._audit(
+                    owner_user_id,
+                    AuditAction.PERSONAL_FACT_CREATED,
+                    "personal_fact",
+                    fact.id,
+                    context,
+                    now,
+                )
+            )
+            await uow.commit()
+        return fact
+
+    async def update_personal_fact(
+        self,
+        owner_user_id: UUID,
+        fact_id: UUID,
+        expected_version: int,
+        command: UpdatePersonalFact,
+        context: RequestContext,
+    ) -> PersonalFact:
+        self._authorize(owner_user_id, context)
+        now = self._clock.now()
+        async with self._uow() as uow:
+            fact = await uow.get_personal_fact(owner_user_id, fact_id, for_update=True)
+            if fact is None:
+                raise CareerRecordNotFound
+            self._version(fact.version, expected_version)
+            facts = await uow.list_personal_facts(owner_user_id, fact.profile_id)
+            normalized_value = command.value.strip()
+            if any(
+                item.id != fact.id
+                and item.kind is fact.kind
+                and item.value.casefold() == normalized_value.casefold()
+                for item in facts
+            ):
+                raise CareerRecordConflict("personal fact already exists")
+            if command.is_primary:
+                for item in facts:
+                    if item.id != fact.id and item.kind is fact.kind and item.is_primary:
+                        item.is_primary = False
+                        item.version += 1
+                        item.updated_at = now
+                        await uow.save_personal_fact(item)
+            fact.edit(
+                value=normalized_value,
+                label=command.label,
+                is_primary=command.is_primary,
+                now=now,
+            )
+            await uow.save_personal_fact(fact)
+            await uow.add_audit(
+                self._audit(
+                    owner_user_id,
+                    AuditAction.PERSONAL_FACT_UPDATED,
+                    "personal_fact",
+                    fact.id,
+                    context,
+                    now,
+                )
+            )
+            await uow.commit()
+        return fact
+
+    async def confirm_personal_fact(
+        self,
+        owner_user_id: UUID,
+        fact_id: UUID,
+        expected_version: int,
+        context: RequestContext,
+    ) -> PersonalFact:
+        self._authorize(owner_user_id, context)
+        now = self._clock.now()
+        async with self._uow() as uow:
+            fact = await uow.get_personal_fact(owner_user_id, fact_id, for_update=True)
+            if fact is None:
+                raise CareerRecordNotFound
+            self._version(fact.version, expected_version)
+            if fact.confirmation is ConfirmationState.CONFIRMED:
+                return fact
+            fact.confirm(now)
+            await uow.save_personal_fact(fact)
+            await uow.add_field_provenance(
+                CareerFieldProvenance(
+                    id=self._ids.new(),
+                    owner_user_id=owner_user_id,
+                    profile_id=fact.profile_id,
+                    target=CareerFieldTarget.PERSONAL_FACT,
+                    target_id=fact.id,
+                    field_name=fact.kind.value,
+                    value_sha256=CareerFieldProvenance.digest_value(fact.value),
+                    origin=SemanticFieldOrigin.OWNER_ATTESTATION,
+                    created_at=now,
+                )
+            )
+            await uow.add_audit(
+                self._audit(
+                    owner_user_id,
+                    AuditAction.PERSONAL_FACT_CONFIRMED,
+                    "personal_fact",
+                    fact.id,
+                    context,
+                    now,
+                )
+            )
+            await uow.commit()
+        return fact
+
+    async def delete_personal_fact(
+        self,
+        owner_user_id: UUID,
+        fact_id: UUID,
+        expected_version: int,
+        context: RequestContext,
+    ) -> None:
+        self._authorize(owner_user_id, context)
+        now = self._clock.now()
+        async with self._uow() as uow:
+            fact = await uow.get_personal_fact(owner_user_id, fact_id, for_update=True)
+            if fact is None:
+                raise CareerRecordNotFound
+            self._version(fact.version, expected_version)
+            await uow.delete_personal_fact(owner_user_id, fact.id)
+            await uow.add_audit(
+                self._audit(
+                    owner_user_id,
+                    AuditAction.PERSONAL_FACT_DELETED,
+                    "personal_fact",
+                    fact.id,
+                    context,
+                    now,
+                )
+            )
+            await uow.commit()
+
     async def get_entity(self, owner_user_id: UUID, entity_id: UUID) -> CareerEntity:
         async with self._uow() as uow:
             entity = await uow.get_entity(owner_user_id, entity_id)
         if entity is None:
             raise CareerRecordNotFound
         return entity
+
+    async def current_field_provenance(
+        self, owner_user_id: UUID, target_id: UUID
+    ) -> tuple[CareerFieldProvenance, ...]:
+        """Return every provenance record whose digest matches a current field."""
+
+        async with self._uow() as uow:
+            entity = await uow.get_entity(owner_user_id, target_id)
+            skill = None if entity is not None else await uow.get_skill(owner_user_id, target_id)
+            fact = (
+                None
+                if entity is not None or skill is not None
+                else await uow.get_personal_fact(owner_user_id, target_id)
+            )
+            if entity is None and skill is None and fact is None:
+                raise CareerRecordNotFound
+            if entity is not None:
+                values = _entity_factual_values(entity)
+            elif skill is not None:
+                values = _skill_factual_values(skill)
+            elif fact is not None:
+                values = ((fact.kind.value, fact.value),)
+            else:
+                raise CareerRecordNotFound
+            provenance = await uow.list_field_provenance(owner_user_id, target_id)
+        expected = {
+            field_name: CareerFieldProvenance.digest_value(value) for field_name, value in values
+        }
+        return tuple(
+            item for item in provenance if expected.get(item.field_name) == item.value_sha256
+        )
+
+    async def field_provenance_source_available(
+        self,
+        owner_user_id: UUID,
+        provenance: CareerFieldProvenance,
+    ) -> bool:
+        if provenance.owner_user_id != owner_user_id:
+            raise CareerRecordNotFound
+        if provenance.origin is SemanticFieldOrigin.OWNER_ATTESTATION:
+            return True
+        if (
+            provenance.document_id is None
+            or provenance.snapshot_id is None
+            or provenance.semantic_entity_id is None
+            or provenance.semantic_field_id is None
+        ):
+            return False
+        candidates = await self._resume_sources.reviewed_semantic_candidates(
+            owner_user_id,
+            provenance.document_id,
+            provenance.snapshot_id,
+        )
+        candidate = next(
+            (
+                item
+                for item in candidates
+                if item.semantic_entity_id == provenance.semantic_entity_id
+                and item.snapshot_revision == provenance.snapshot_revision
+                and item.schema_version == provenance.schema_version
+                and item.parser_version == provenance.parser_version
+            ),
+            None,
+        )
+        if candidate is None:
+            return False
+        field = next(
+            (
+                item
+                for item in candidate.fields
+                if item.semantic_field_id == provenance.semantic_field_id
+            ),
+            None,
+        )
+        if field is None or (provenance.anchors and field.anchors != provenance.anchors):
+            return False
+        if provenance.origin is SemanticFieldOrigin.OWNER_EDIT:
+            return True
+        if provenance.origin is SemanticFieldOrigin.RESUME_USER_ADDED:
+            if field.review_state is not SemanticImportFieldState.USER_ADDED:
+                return False
+        elif field.review_state is not SemanticImportFieldState.CONFIRMED:
+            return False
+        if provenance.target is CareerFieldTarget.ENTITY:
+            values = {item.semantic_field_id: item.value for item in candidate.fields}
+            if _semantic_mapping_issues(candidate.kind, candidate.fields, values):
+                return False
+            try:
+                data = _semantic_entity_data(candidate.kind, candidate.fields, values)
+            except CareerRecordValidationError:
+                return False
+            targets = _semantic_entity_provenance_targets(
+                candidate.kind,
+                field,
+                data,
+            )
+        else:
+            targets = ((field.name, field.value.strip()),)
+        return any(
+            field_name == provenance.field_name
+            and CareerFieldProvenance.digest_value(value) == provenance.value_sha256
+            for field_name, value in targets
+        )
+
+    async def list_entity_confirmations(
+        self, owner_user_id: UUID
+    ) -> dict[UUID, CareerEntityConfirmation]:
+        async with self._uow() as uow:
+            profile = await uow.get_profile(owner_user_id)
+            if profile is None:
+                raise CareerRecordNotFound
+            confirmations = await uow.list_entity_confirmations(owner_user_id, profile.id)
+        return {item.entity_id: item for item in confirmations}
+
+    async def confirm_entity(
+        self,
+        owner_user_id: UUID,
+        entity_id: UUID,
+        expected_version: int,
+        context: RequestContext,
+    ) -> tuple[CareerEntity, CareerEntityConfirmation]:
+        """Attest to every current field without claiming a resume source."""
+
+        self._authorize(owner_user_id, context)
+        now = self._clock.now()
+        async with self._uow() as uow:
+            entity = await uow.get_entity(owner_user_id, entity_id, for_update=True)
+            if entity is None:
+                raise CareerRecordNotFound
+            self._version(entity.version, expected_version)
+            confirmation = await uow.get_entity_confirmation(
+                owner_user_id, entity_id, for_update=True
+            )
+            if confirmation is not None and confirmation.state is ConfirmationState.CONFIRMED:
+                return entity, confirmation
+            if confirmation is None:
+                confirmation = CareerEntityConfirmation(
+                    entity_id=entity.id,
+                    owner_user_id=owner_user_id,
+                    state=ConfirmationState.CONFIRMED,
+                    version=1,
+                    updated_at=now,
+                    confirmed_at=now,
+                )
+                await uow.add_entity_confirmation(confirmation)
+            else:
+                confirmation.confirm(now)
+                await uow.save_entity_confirmation(confirmation)
+            for field_name, value in _entity_factual_values(entity):
+                await uow.add_field_provenance(
+                    CareerFieldProvenance(
+                        id=self._ids.new(),
+                        owner_user_id=owner_user_id,
+                        profile_id=entity.profile_id,
+                        target=CareerFieldTarget.ENTITY,
+                        target_id=entity.id,
+                        field_name=field_name,
+                        value_sha256=CareerFieldProvenance.digest_value(value),
+                        origin=SemanticFieldOrigin.OWNER_ATTESTATION,
+                        created_at=now,
+                    )
+                )
+            entity.version += 1
+            entity.updated_at = now
+            await uow.save_entity(entity)
+            await uow.add_audit(
+                self._audit(
+                    owner_user_id,
+                    AuditAction.ENTITY_CONFIRMED,
+                    "career_entity",
+                    entity.id,
+                    context,
+                    now,
+                    (("entity_kind", entity.kind.value),),
+                )
+            )
+            await uow.commit()
+        return entity, confirmation
 
     async def list_entity_skill_ids(self, owner_user_id: UUID, entity_id: UUID) -> tuple[UUID, ...]:
         """Return only links whose entity is visible in the owner's scope."""
@@ -337,6 +1206,15 @@ class CareerRecordService:
                     EntitySkillLink(self._ids.new(), owner_user_id, entity.id, skill_id, now)
                 )
             await uow.add_entity(entity)
+            await uow.add_entity_confirmation(
+                CareerEntityConfirmation(
+                    entity_id=entity.id,
+                    owner_user_id=owner_user_id,
+                    state=ConfirmationState.NEEDS_REVIEW,
+                    version=1,
+                    updated_at=now,
+                )
+            )
             await uow.replace_entity_skill_links(owner_user_id, entity.id, links)
             await uow.add_audit(
                 self._audit(
@@ -409,6 +1287,9 @@ class CareerRecordService:
                     )
             elif replace_group:
                 command = replace(command, group_id=None)
+            confirmation = await uow.get_entity_confirmation(
+                owner_user_id, entity_id, for_update=True
+            )
             entity.edit(
                 title=command.title,
                 organization=command.organization,
@@ -435,6 +1316,19 @@ class CareerRecordService:
                         EntitySkillLink(self._ids.new(), owner_user_id, entity.id, skill_id, now)
                     )
             await uow.save_entity(entity)
+            if confirmation is None:
+                await uow.add_entity_confirmation(
+                    CareerEntityConfirmation(
+                        entity_id=entity.id,
+                        owner_user_id=owner_user_id,
+                        state=ConfirmationState.NEEDS_REVIEW,
+                        version=1,
+                        updated_at=now,
+                    )
+                )
+            elif confirmation.state is ConfirmationState.CONFIRMED:
+                confirmation.require_review(now)
+                await uow.save_entity_confirmation(confirmation)
             if links is not None:
                 await uow.replace_entity_skill_links(owner_user_id, entity.id, links)
             await uow.add_audit(
@@ -537,6 +1431,78 @@ class CareerRecordService:
             raise CareerRecordNotFound
         return skill
 
+    async def list_skill_confirmations(
+        self, owner_user_id: UUID
+    ) -> dict[UUID, CareerSkillConfirmation]:
+        async with self._uow() as uow:
+            profile = await uow.get_profile(owner_user_id)
+            if profile is None:
+                raise CareerRecordNotFound
+            confirmations = await uow.list_skill_confirmations(owner_user_id, profile.id)
+        return {item.skill_id: item for item in confirmations}
+
+    async def confirm_skill(
+        self,
+        owner_user_id: UUID,
+        skill_id: UUID,
+        expected_version: int,
+        context: RequestContext,
+    ) -> tuple[Skill, CareerSkillConfirmation]:
+        self._authorize(owner_user_id, context)
+        now = self._clock.now()
+        async with self._uow() as uow:
+            skill = await uow.get_skill(owner_user_id, skill_id, for_update=True)
+            if skill is None:
+                raise CareerRecordNotFound
+            self._version(skill.version, expected_version)
+            confirmation = await uow.get_skill_confirmation(
+                owner_user_id, skill_id, for_update=True
+            )
+            if confirmation is not None and confirmation.state is ConfirmationState.CONFIRMED:
+                return skill, confirmation
+            if confirmation is None:
+                confirmation = CareerSkillConfirmation(
+                    skill_id=skill.id,
+                    owner_user_id=owner_user_id,
+                    state=ConfirmationState.CONFIRMED,
+                    version=1,
+                    updated_at=now,
+                    confirmed_at=now,
+                )
+                await uow.add_skill_confirmation(confirmation)
+            else:
+                confirmation.confirm(now)
+                await uow.save_skill_confirmation(confirmation)
+            for field_name, value in _skill_factual_values(skill):
+                await uow.add_field_provenance(
+                    CareerFieldProvenance(
+                        id=self._ids.new(),
+                        owner_user_id=owner_user_id,
+                        profile_id=skill.profile_id,
+                        target=CareerFieldTarget.SKILL,
+                        target_id=skill.id,
+                        field_name=field_name,
+                        value_sha256=CareerFieldProvenance.digest_value(value),
+                        origin=SemanticFieldOrigin.OWNER_ATTESTATION,
+                        created_at=now,
+                    )
+                )
+            skill.version += 1
+            skill.updated_at = now
+            await uow.save_skill(skill)
+            await uow.add_audit(
+                self._audit(
+                    owner_user_id,
+                    AuditAction.SKILL_CONFIRMED,
+                    "skill",
+                    skill.id,
+                    context,
+                    now,
+                )
+            )
+            await uow.commit()
+        return skill, confirmation
+
     async def create_skill(
         self, owner_user_id: UUID, command: CreateSkill, context: RequestContext
     ) -> Skill:
@@ -564,6 +1530,15 @@ class CareerRecordService:
                 updated_at=now,
             )
             await uow.add_skill(skill)
+            await uow.add_skill_confirmation(
+                CareerSkillConfirmation(
+                    skill_id=skill.id,
+                    owner_user_id=owner_user_id,
+                    state=ConfirmationState.NEEDS_REVIEW,
+                    version=1,
+                    updated_at=now,
+                )
+            )
             await uow.add_audit(
                 self._audit(
                     owner_user_id,
@@ -592,6 +1567,9 @@ class CareerRecordService:
             if skill is None:
                 raise CareerRecordNotFound
             self._version(skill.version, expected_version)
+            confirmation = await uow.get_skill_confirmation(
+                owner_user_id, skill_id, for_update=True
+            )
             skill.edit(
                 name=command.name,
                 category=command.category,
@@ -599,6 +1577,19 @@ class CareerRecordService:
                 now=now,
             )
             await uow.save_skill(skill)
+            if confirmation is None:
+                await uow.add_skill_confirmation(
+                    CareerSkillConfirmation(
+                        skill_id=skill.id,
+                        owner_user_id=owner_user_id,
+                        state=ConfirmationState.NEEDS_REVIEW,
+                        version=1,
+                        updated_at=now,
+                    )
+                )
+            elif confirmation.state is ConfirmationState.CONFIRMED:
+                confirmation.require_review(now)
+                await uow.save_skill_confirmation(confirmation)
             await uow.add_audit(
                 self._audit(
                     owner_user_id,
@@ -851,6 +1842,616 @@ class CareerRecordService:
             )
             await uow.commit()
         return proposal
+
+    async def create_semantic_import_proposals(
+        self,
+        owner_user_id: UUID,
+        command: CreateSemanticImportProposals,
+        context: RequestContext,
+    ) -> SemanticImportBatch:
+        """Create idempotent proposals from reviewed typed semantics only."""
+
+        self._authorize(owner_user_id, context)
+        candidates = await self._resume_sources.reviewed_semantic_candidates(
+            owner_user_id,
+            command.document_id,
+            command.snapshot_id,
+        )
+        if not candidates:
+            raise CareerRecordSourceUnavailable("a reviewed owned semantic snapshot is required")
+        now = self._clock.now()
+        created: list[SemanticImportProposal] = []
+        questions: list[SemanticImportQuestion] = []
+        async with self._uow() as uow:
+            profile = await uow.get_profile(owner_user_id)
+            if profile is None:
+                raise CareerRecordNotFound
+            existing_proposals = await uow.list_semantic_proposals(owner_user_id)
+            existing_by_source = {
+                (proposal.snapshot_id, proposal.semantic_entity_id): proposal
+                for proposal in existing_proposals
+            }
+            new_candidate_count = sum(
+                1
+                for candidate in candidates
+                if (
+                    candidate.snapshot_id,
+                    candidate.semantic_entity_id,
+                )
+                not in existing_by_source
+                and not _semantic_mapping_issues(
+                    candidate.kind,
+                    candidate.fields,
+                    {field.semantic_field_id: field.value for field in candidate.fields},
+                )
+            )
+            if len(existing_proposals) + new_candidate_count > (
+                self._policy.max_semantic_import_proposals
+            ):
+                raise CareerRecordConflict("semantic import proposal limit reached")
+            entities = await uow.list_entities(owner_user_id, profile.id)
+            skills = await uow.list_skills(owner_user_id, profile.id)
+            facts = await uow.list_personal_facts(owner_user_id, profile.id)
+            for candidate in candidates:
+                missing = _semantic_mapping_issues(
+                    candidate.kind,
+                    candidate.fields,
+                    {field.semantic_field_id: field.value for field in candidate.fields},
+                )
+                if missing:
+                    questions.append(
+                        SemanticImportQuestion(
+                            semantic_entity_id=candidate.semantic_entity_id,
+                            code="semantic_candidate_requires_review",
+                            missing_fields=missing,
+                        )
+                    )
+                    continue
+                existing = existing_by_source.get(
+                    (candidate.snapshot_id, candidate.semantic_entity_id)
+                )
+                if existing is not None:
+                    created.append(existing)
+                    continue
+                target, target_record_id, conflict_code = _semantic_target_match(
+                    candidate.kind,
+                    candidate.fields,
+                    entities=entities,
+                    skills=skills,
+                    facts=facts,
+                )
+                proposal = SemanticImportProposal(
+                    id=self._ids.new(),
+                    owner_user_id=owner_user_id,
+                    profile_id=profile.id,
+                    target=target,
+                    target_record_id=target_record_id,
+                    document_id=candidate.document_id,
+                    snapshot_id=candidate.snapshot_id,
+                    snapshot_revision=candidate.snapshot_revision,
+                    schema_version=candidate.schema_version,
+                    parser_version=candidate.parser_version,
+                    semantic_entity_id=candidate.semantic_entity_id,
+                    semantic_kind=candidate.kind,
+                    fields=candidate.fields,
+                    status=SemanticImportStatus.PENDING,
+                    conflict_code=conflict_code,
+                    version=1,
+                    created_at=now,
+                    updated_at=now,
+                )
+                await uow.add_semantic_proposal(proposal)
+                await uow.add_audit(
+                    self._audit(
+                        owner_user_id,
+                        AuditAction.SEMANTIC_PROPOSAL_CREATED,
+                        "semantic_import_proposal",
+                        proposal.id,
+                        context,
+                        now,
+                        (("proposal_status", proposal.status.value),),
+                    )
+                )
+                created.append(proposal)
+            await uow.commit()
+        return SemanticImportBatch(tuple(created), tuple(questions))
+
+    async def get_semantic_import_proposal(
+        self, owner_user_id: UUID, proposal_id: UUID
+    ) -> SemanticImportProposal:
+        async with self._uow() as uow:
+            proposal = await uow.get_semantic_proposal(owner_user_id, proposal_id)
+        if proposal is None:
+            raise CareerRecordNotFound
+        return proposal
+
+    async def list_semantic_import_proposals(
+        self, owner_user_id: UUID
+    ) -> tuple[SemanticImportProposal, ...]:
+        async with self._uow() as uow:
+            proposals = await uow.list_semantic_proposals(owner_user_id)
+        return tuple(proposals)
+
+    async def semantic_import_proposal_source_available(
+        self, owner_user_id: UUID, proposal_id: UUID
+    ) -> bool:
+        proposal = await self.get_semantic_import_proposal(owner_user_id, proposal_id)
+        candidates = await self._resume_sources.reviewed_semantic_candidates(
+            owner_user_id,
+            proposal.document_id,
+            proposal.snapshot_id,
+        )
+        return any(
+            candidate.semantic_entity_id == proposal.semantic_entity_id
+            and candidate.fields == proposal.fields
+            for candidate in candidates
+        )
+
+    async def accept_semantic_import_proposal(
+        self,
+        owner_user_id: UUID,
+        proposal_id: UUID,
+        expected_version: int,
+        command: AcceptSemanticImportProposal,
+        context: RequestContext,
+    ) -> SemanticImportAcceptance:
+        self._authorize(owner_user_id, context)
+        if not _IDEMPOTENCY_KEY.fullmatch(command.idempotency_key):
+            raise CareerRecordValidationError("idempotency key is invalid")
+        saved = await self.get_semantic_import_proposal(owner_user_id, proposal_id)
+        requested_values = {
+            str(field_id): value.strip() for field_id, value in command.values.items()
+        }
+        if saved.status is SemanticImportStatus.ACCEPTED:
+            if (
+                saved.decision_idempotency_key != command.idempotency_key
+                or saved.accepted_values != requested_values
+            ):
+                raise CareerRecordIdempotencyConflict
+            return await self._semantic_acceptance_view(owner_user_id, saved)
+        if saved.status is not SemanticImportStatus.PENDING:
+            raise CareerRecordTransitionRejected("a rejected semantic proposal cannot be accepted")
+        candidates = await self._resume_sources.reviewed_semantic_candidates(
+            owner_user_id,
+            saved.document_id,
+            saved.snapshot_id,
+        )
+        current = next(
+            (
+                candidate
+                for candidate in candidates
+                if candidate.semantic_entity_id == saved.semantic_entity_id
+            ),
+            None,
+        )
+        if current is None or current.fields != saved.fields:
+            raise CareerRecordSourceUnavailable("semantic proposal source is no longer available")
+        issues = _semantic_mapping_issues(
+            saved.semantic_kind,
+            saved.fields,
+            command.values,
+        )
+        if issues:
+            raise CareerRecordValidationError(
+                "semantic proposal requires reviewed values for: " + ", ".join(issues)
+            )
+        now = self._clock.now()
+        accepted_facts: tuple[PersonalFact, ...] = ()
+        accepted_entity: CareerEntity | None = None
+        accepted_skill: Skill | None = None
+        async with self._uow() as uow:
+            proposal = await uow.get_semantic_proposal(owner_user_id, proposal_id, for_update=True)
+            if proposal is None:
+                raise CareerRecordNotFound
+            self._version(proposal.version, expected_version)
+            if proposal.fields != saved.fields:
+                raise CareerRecordVersionConflict
+            values = {str(field_id): value for field_id, value in command.values.items()}
+            target_record_id = command.target_record_id or proposal.target_record_id
+            if proposal.target is SemanticImportTarget.PERSONAL_FACTS:
+                if target_record_id is not None:
+                    raise CareerRecordValidationError(
+                        "contact proposal target is selected per fact"
+                    )
+                accepted_facts = await self._accept_personal_fact_proposal(
+                    uow, proposal, command.values, now
+                )
+            elif proposal.target is SemanticImportTarget.SKILL:
+                accepted_skill = await self._accept_skill_proposal(
+                    uow,
+                    proposal,
+                    command.values,
+                    target_record_id,
+                    now,
+                )
+                target_record_id = accepted_skill.id
+            else:
+                accepted_entity = await self._accept_entity_proposal(
+                    uow,
+                    proposal,
+                    command.values,
+                    target_record_id,
+                    now,
+                )
+                target_record_id = accepted_entity.id
+            proposal.target_record_id = target_record_id
+            proposal.accept(values, command.idempotency_key, now)
+            await uow.save_semantic_proposal(proposal)
+            await uow.add_audit(
+                self._audit(
+                    owner_user_id,
+                    AuditAction.SEMANTIC_PROPOSAL_ACCEPTED,
+                    "semantic_import_proposal",
+                    proposal.id,
+                    context,
+                    now,
+                    (("proposal_status", proposal.status.value),),
+                )
+            )
+            await uow.commit()
+        return SemanticImportAcceptance(
+            proposal=proposal,
+            personal_facts=accepted_facts,
+            entity=accepted_entity,
+            skill=accepted_skill,
+        )
+
+    async def _semantic_acceptance_view(
+        self,
+        owner_user_id: UUID,
+        proposal: SemanticImportProposal,
+    ) -> SemanticImportAcceptance:
+        facts: tuple[PersonalFact, ...] = ()
+        entity: CareerEntity | None = None
+        skill: Skill | None = None
+        async with self._uow() as uow:
+            if proposal.target is SemanticImportTarget.PERSONAL_FACTS:
+                available = await uow.list_personal_facts(owner_user_id, proposal.profile_id)
+                accepted_values = proposal.accepted_values or {}
+                selected: list[PersonalFact] = []
+                for field in proposal.fields:
+                    expected = accepted_values.get(str(field.semantic_field_id))
+                    match = next(
+                        (
+                            fact
+                            for fact in available
+                            if fact.kind.value == field.name and fact.value == expected
+                        ),
+                        None,
+                    )
+                    if match is None:
+                        raise CareerRecordConflict("accepted semantic fact is unavailable")
+                    selected.append(match)
+                facts = tuple(selected)
+            elif proposal.target is SemanticImportTarget.ENTITY:
+                if proposal.target_record_id is None:
+                    raise CareerRecordConflict("accepted semantic entity target is unavailable")
+                entity = await uow.get_entity(owner_user_id, proposal.target_record_id)
+                if entity is None:
+                    raise CareerRecordConflict("accepted semantic entity is unavailable")
+            else:
+                if proposal.target_record_id is None:
+                    raise CareerRecordConflict("accepted semantic skill target is unavailable")
+                skill = await uow.get_skill(owner_user_id, proposal.target_record_id)
+                if skill is None:
+                    raise CareerRecordConflict("accepted semantic skill is unavailable")
+        return SemanticImportAcceptance(
+            proposal=proposal,
+            personal_facts=facts,
+            entity=entity,
+            skill=skill,
+        )
+
+    async def reject_semantic_import_proposal(
+        self,
+        owner_user_id: UUID,
+        proposal_id: UUID,
+        expected_version: int,
+        idempotency_key: str,
+        context: RequestContext,
+    ) -> SemanticImportProposal:
+        self._authorize(owner_user_id, context)
+        if not _IDEMPOTENCY_KEY.fullmatch(idempotency_key):
+            raise CareerRecordValidationError("idempotency key is invalid")
+        saved = await self.get_semantic_import_proposal(owner_user_id, proposal_id)
+        if saved.status is SemanticImportStatus.REJECTED:
+            if saved.decision_idempotency_key != idempotency_key:
+                raise CareerRecordIdempotencyConflict
+            return saved
+        if saved.status is not SemanticImportStatus.PENDING:
+            raise CareerRecordTransitionRejected("an accepted semantic proposal cannot be rejected")
+        now = self._clock.now()
+        async with self._uow() as uow:
+            proposal = await uow.get_semantic_proposal(owner_user_id, proposal_id, for_update=True)
+            if proposal is None:
+                raise CareerRecordNotFound
+            self._version(proposal.version, expected_version)
+            proposal.reject(idempotency_key, now)
+            await uow.save_semantic_proposal(proposal)
+            await uow.add_audit(
+                self._audit(
+                    owner_user_id,
+                    AuditAction.SEMANTIC_PROPOSAL_REJECTED,
+                    "semantic_import_proposal",
+                    proposal.id,
+                    context,
+                    now,
+                    (("proposal_status", proposal.status.value),),
+                )
+            )
+            await uow.commit()
+        return proposal
+
+    async def _accept_personal_fact_proposal(
+        self,
+        uow: CareerRecordUnitOfWork,
+        proposal: SemanticImportProposal,
+        values: dict[UUID, str],
+        now: datetime,
+    ) -> tuple[PersonalFact, ...]:
+        existing = await uow.list_personal_facts(proposal.owner_user_id, proposal.profile_id)
+        accepted: list[PersonalFact] = []
+        for field in proposal.fields:
+            kind = PersonalFactKind(field.name)
+            value = values[field.semantic_field_id].strip()
+            fact = next(
+                (item for item in existing if item.kind is kind and item.value == value),
+                None,
+            )
+            if fact is None:
+                fact = PersonalFact(
+                    id=self._ids.new(),
+                    owner_user_id=proposal.owner_user_id,
+                    profile_id=proposal.profile_id,
+                    kind=kind,
+                    value=value,
+                    label=None,
+                    is_primary=not any(item.kind is kind for item in existing),
+                    confirmation=ConfirmationState.CONFIRMED,
+                    version=1,
+                    created_at=now,
+                    updated_at=now,
+                    confirmed_at=now,
+                )
+                await uow.add_personal_fact(fact)
+                existing.append(fact)
+            elif fact.confirmation is not ConfirmationState.CONFIRMED:
+                fact.confirmation = ConfirmationState.CONFIRMED
+                fact.confirmed_at = now
+                fact.updated_at = now
+                fact.version += 1
+                await uow.save_personal_fact(fact)
+            await uow.add_field_provenance(
+                self._semantic_provenance(
+                    proposal,
+                    field,
+                    value,
+                    CareerFieldTarget.PERSONAL_FACT,
+                    fact.id,
+                    now,
+                )
+            )
+            accepted.append(fact)
+        return tuple(accepted)
+
+    async def _accept_skill_proposal(
+        self,
+        uow: CareerRecordUnitOfWork,
+        proposal: SemanticImportProposal,
+        values: dict[UUID, str],
+        target_record_id: UUID | None,
+        now: datetime,
+    ) -> Skill:
+        by_name = _semantic_values_by_name(proposal.fields, values)
+        name = by_name["name"][0]
+        category = by_name.get("category", [None])[0]
+        skill = (
+            await uow.get_skill(proposal.owner_user_id, target_record_id, for_update=True)
+            if target_record_id is not None
+            else None
+        )
+        if target_record_id is not None and (
+            skill is None or skill.profile_id != proposal.profile_id
+        ):
+            raise CareerRecordNotFound
+        if skill is None:
+            skills = await uow.list_skills(proposal.owner_user_id, proposal.profile_id)
+            skill = next(
+                (item for item in skills if item.name.casefold() == name.casefold()),
+                None,
+            )
+        if skill is None:
+            skills = await uow.list_skills(proposal.owner_user_id, proposal.profile_id)
+            skill = Skill(
+                id=self._ids.new(),
+                owner_user_id=proposal.owner_user_id,
+                profile_id=proposal.profile_id,
+                name=name,
+                category=category,
+                proficiency=None,
+                sort_order=len(skills),
+                version=1,
+                created_at=now,
+                updated_at=now,
+            )
+            await uow.add_skill(skill)
+            await uow.add_skill_confirmation(
+                CareerSkillConfirmation(
+                    skill_id=skill.id,
+                    owner_user_id=proposal.owner_user_id,
+                    state=ConfirmationState.CONFIRMED,
+                    version=1,
+                    updated_at=now,
+                    confirmed_at=now,
+                )
+            )
+        else:
+            confirmation = await uow.get_skill_confirmation(
+                proposal.owner_user_id, skill.id, for_update=True
+            )
+            skill.edit(
+                name=name,
+                category=category,
+                proficiency=skill.proficiency,
+                now=now,
+            )
+            await uow.save_skill(skill)
+            if confirmation is None:
+                await uow.add_skill_confirmation(
+                    CareerSkillConfirmation(
+                        skill_id=skill.id,
+                        owner_user_id=proposal.owner_user_id,
+                        state=ConfirmationState.CONFIRMED,
+                        version=1,
+                        updated_at=now,
+                        confirmed_at=now,
+                    )
+                )
+            elif confirmation.state is not ConfirmationState.CONFIRMED:
+                confirmation.confirm(now)
+                await uow.save_skill_confirmation(confirmation)
+        for field in proposal.fields:
+            await uow.add_field_provenance(
+                self._semantic_provenance(
+                    proposal,
+                    field,
+                    values[field.semantic_field_id],
+                    CareerFieldTarget.SKILL,
+                    skill.id,
+                    now,
+                )
+            )
+        return skill
+
+    async def _accept_entity_proposal(
+        self,
+        uow: CareerRecordUnitOfWork,
+        proposal: SemanticImportProposal,
+        values: dict[UUID, str],
+        target_record_id: UUID | None,
+        now: datetime,
+    ) -> CareerEntity:
+        data = _semantic_entity_data(proposal.semantic_kind, proposal.fields, values)
+        entity = (
+            await uow.get_entity(proposal.owner_user_id, target_record_id, for_update=True)
+            if target_record_id is not None
+            else None
+        )
+        if target_record_id is not None and (
+            entity is None
+            or entity.profile_id != proposal.profile_id
+            or entity.kind is not data.kind
+        ):
+            raise CareerRecordNotFound
+        if entity is None:
+            entities = await uow.list_entities(proposal.owner_user_id, proposal.profile_id)
+            entity = self._entity(
+                proposal.owner_user_id,
+                proposal.profile_id,
+                data,
+                sort_order=len(entities),
+                now=now,
+            )
+            await uow.add_entity(entity)
+        else:
+            entity.edit(
+                title=data.title,
+                organization=data.organization,
+                description=data.description,
+                official_title=data.official_title,
+                display_title=data.display_title,
+                employment_type=data.employment_type,
+                location=data.location,
+                external_url=data.external_url,
+                start_date=data.start_date,
+                end_date=data.end_date,
+                is_current=data.is_current,
+                group_id=data.group_id,
+                now=now,
+            )
+            await uow.save_entity(entity)
+        confirmation = await uow.get_entity_confirmation(
+            proposal.owner_user_id, entity.id, for_update=True
+        )
+        if confirmation is None:
+            confirmation = CareerEntityConfirmation(
+                entity_id=entity.id,
+                owner_user_id=proposal.owner_user_id,
+                state=ConfirmationState.CONFIRMED,
+                version=1,
+                updated_at=now,
+                confirmed_at=now,
+            )
+            await uow.add_entity_confirmation(confirmation)
+        elif confirmation.state is not ConfirmationState.CONFIRMED:
+            confirmation.state = ConfirmationState.CONFIRMED
+            confirmation.version += 1
+            confirmation.updated_at = now
+            confirmation.confirmed_at = now
+            await uow.save_entity_confirmation(confirmation)
+        for field in proposal.fields:
+            for field_name, canonical_value in _semantic_entity_provenance_targets(
+                proposal.semantic_kind,
+                field,
+                data,
+            ):
+                await uow.add_field_provenance(
+                    self._semantic_provenance(
+                        proposal,
+                        field,
+                        values[field.semantic_field_id],
+                        CareerFieldTarget.ENTITY,
+                        entity.id,
+                        now,
+                        field_name=field_name,
+                        canonical_value=canonical_value,
+                    )
+                )
+        return entity
+
+    def _semantic_provenance(
+        self,
+        proposal: SemanticImportProposal,
+        field: SemanticImportField,
+        accepted_value: str,
+        target: CareerFieldTarget,
+        target_id: UUID,
+        now: datetime,
+        *,
+        field_name: str | None = None,
+        canonical_value: str | None = None,
+    ) -> CareerFieldProvenance:
+        original = accepted_value.strip() == field.value
+        origin = (
+            SemanticFieldOrigin.RESUME_USER_ADDED
+            if original and field.review_state is SemanticImportFieldState.USER_ADDED
+            else (
+                SemanticFieldOrigin.RESUME_PARSER
+                if original and field.review_state is SemanticImportFieldState.CONFIRMED
+                else SemanticFieldOrigin.OWNER_EDIT
+            )
+        )
+        return CareerFieldProvenance(
+            id=self._ids.new(),
+            owner_user_id=proposal.owner_user_id,
+            profile_id=proposal.profile_id,
+            target=target,
+            target_id=target_id,
+            field_name=field_name or field.name,
+            value_sha256=CareerFieldProvenance.digest_value(
+                canonical_value if canonical_value is not None else accepted_value.strip()
+            ),
+            origin=origin,
+            document_id=proposal.document_id,
+            snapshot_id=proposal.snapshot_id,
+            snapshot_revision=proposal.snapshot_revision,
+            schema_version=proposal.schema_version,
+            parser_version=proposal.parser_version,
+            semantic_entity_id=proposal.semantic_entity_id,
+            semantic_field_id=field.semantic_field_id,
+            anchors=field.anchors,
+            created_at=now,
+        )
 
     async def create_evidence(
         self, owner_user_id: UUID, command: CreateEvidence, context: RequestContext
@@ -1564,7 +3165,14 @@ class CareerRecordService:
             if profile is None:
                 return CareerRecordReadinessSnapshot(skills=(), entities=(), evidence=())
             entities = await uow.list_entities(owner_user_id, profile.id)
+            confirmations = await uow.list_entity_confirmations(owner_user_id, profile.id)
             skills = await uow.list_skills(owner_user_id, profile.id)
+            skill_confirmations = await uow.list_skill_confirmations(owner_user_id, profile.id)
+            personal_facts = await uow.list_personal_facts(
+                owner_user_id,
+                profile.id,
+            )
+            relationships = await uow.list_entity_relationships(owner_user_id, profile.id)
             records = await uow.list_evidence(
                 owner_user_id,
                 EvidenceFilter(lifecycle=EvidenceLifecycle.ACTIVE),
@@ -1592,6 +3200,14 @@ class CareerRecordService:
                         has_numeric_claim=bool(refreshed.metrics),
                     )
                 )
+        confirmed_entity_ids = {
+            item.entity_id for item in confirmations if item.state is ConfirmationState.CONFIRMED
+        }
+        confirmed_skill_ids = {
+            item.skill_id
+            for item in skill_confirmations
+            if item.state is ConfirmationState.CONFIRMED
+        }
         return CareerRecordReadinessSnapshot(
             skills=tuple(
                 ReadinessSnapshotSkill(
@@ -1601,6 +3217,7 @@ class CareerRecordService:
                     proficiency=skill.proficiency.value if skill.proficiency is not None else None,
                 )
                 for skill in sorted(skills, key=lambda item: (item.sort_order, str(item.id)))
+                if skill.id in confirmed_skill_ids
             ),
             entities=tuple(
                 ReadinessSnapshotEntity(
@@ -1611,8 +3228,31 @@ class CareerRecordService:
                     description=entity.description,
                 )
                 for entity in sorted(entities, key=lambda item: (item.sort_order, str(item.id)))
+                if entity.id in confirmed_entity_ids
             ),
             evidence=tuple(eligible),
+            personal_facts=tuple(
+                ReadinessSnapshotPersonalFact(
+                    id=fact.id,
+                    kind=fact.kind.value,
+                    value=fact.value,
+                    label=fact.label,
+                    is_primary=fact.is_primary,
+                )
+                for fact in personal_facts
+                if fact.confirmation is ConfirmationState.CONFIRMED
+            ),
+            relationships=tuple(
+                ReadinessSnapshotRelationship(
+                    id=relationship.id,
+                    source_entity_id=relationship.source_entity_id,
+                    target_entity_id=relationship.target_entity_id,
+                    kind=relationship.kind.value,
+                )
+                for relationship in relationships
+                if relationship.source_entity_id in confirmed_entity_ids
+                and relationship.target_entity_id in confirmed_entity_ids
+            ),
         )
 
     async def evaluate_evidence(

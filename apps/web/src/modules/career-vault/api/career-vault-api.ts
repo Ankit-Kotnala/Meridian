@@ -14,11 +14,16 @@ import {
   parseCareerItem,
   parseCareerItems,
   parseCareerProfile,
+  parseCareerRelationship,
+  parseCareerRelationships,
   parseEvidence,
   parseEvidencePage,
   parseExperience,
   parseExperiences,
+  parseProfileImportBatch,
   parseProfileImportProposal,
+  parsePersonalFact,
+  parsePersonalFacts,
   parseReminderPreferences,
   parseSkill,
   parseSkills,
@@ -32,6 +37,7 @@ import type {
   CareerItemInput,
   CareerProfile,
   CareerProfileUpdate,
+  CareerRelationship,
   EvidenceFilters,
   EvidenceInput,
   EvidenceItem,
@@ -39,6 +45,9 @@ import type {
   Experience,
   ExperienceInput,
   Page,
+  PersonalFact,
+  PersonalFactInput,
+  ProfileImportBatch,
   ProfileImportProposal,
   ReminderPreferences,
   Skill,
@@ -81,6 +90,83 @@ export async function updateCareerProfile(
   return parseCareerProfile(await response.json());
 }
 
+export async function getPersonalFacts(): Promise<PersonalFact[]> {
+  return parsePersonalFacts(
+    await (await query(careerVaultPaths.personalFacts)).json(),
+  );
+}
+
+export async function createPersonalFact(
+  input: PersonalFactInput,
+): Promise<PersonalFact> {
+  const response = await mutate(careerVaultPaths.personalFacts, {
+    body: JSON.stringify(input),
+    headers: headers(undefined, true),
+    method: "POST",
+  });
+  return parsePersonalFact(await response.json());
+}
+
+export async function updatePersonalFact(
+  fact: PersonalFact,
+  input: Omit<PersonalFactInput, "kind">,
+): Promise<PersonalFact> {
+  const response = await mutate(careerVaultPaths.personalFact(fact.id), {
+    body: JSON.stringify(input),
+    headers: headers(fact.version),
+    method: "PATCH",
+  });
+  return parsePersonalFact(await response.json());
+}
+
+export async function confirmPersonalFact(
+  fact: PersonalFact,
+): Promise<PersonalFact> {
+  const response = await mutate(careerVaultPaths.personalFactConfirm(fact.id), {
+    headers: headers(fact.version),
+    method: "POST",
+  });
+  return parsePersonalFact(await response.json());
+}
+
+export async function deletePersonalFact(fact: PersonalFact): Promise<void> {
+  await mutate(careerVaultPaths.personalFact(fact.id), {
+    headers: headers(fact.version, true),
+    method: "DELETE",
+  });
+}
+
+export async function getCareerRelationships(): Promise<CareerRelationship[]> {
+  return parseCareerRelationships(
+    await (await query(careerVaultPaths.careerRelationships)).json(),
+  );
+}
+
+export async function createCareerRelationship(
+  experienceId: string,
+  projectId: string,
+): Promise<CareerRelationship> {
+  const response = await mutate(careerVaultPaths.careerRelationships, {
+    body: JSON.stringify({
+      experienceId,
+      kind: "experience_project",
+      projectId,
+    }),
+    headers: headers(undefined, true),
+    method: "POST",
+  });
+  return parseCareerRelationship(await response.json());
+}
+
+export async function deleteCareerRelationship(
+  relationship: CareerRelationship,
+): Promise<void> {
+  await mutate(careerVaultPaths.careerRelationship(relationship.id), {
+    headers: headers(undefined, true),
+    method: "DELETE",
+  });
+}
+
 export async function getExperiences(): Promise<Experience[]> {
   return parseExperiences(
     await (await query(careerVaultPaths.experiences)).json(),
@@ -107,6 +193,19 @@ export async function updateExperience(
     headers: headers(experience.version),
     method: "PATCH",
   });
+  return parseExperience(await response.json());
+}
+
+export async function confirmExperience(
+  experience: Experience,
+): Promise<Experience> {
+  const response = await mutate(
+    careerVaultPaths.experienceConfirm(experience.id),
+    {
+      headers: headers(experience.version),
+      method: "POST",
+    },
+  );
   return parseExperience(await response.json());
 }
 
@@ -163,6 +262,14 @@ export async function updateCareerItem(
   return parseCareerItem(await response.json());
 }
 
+export async function confirmCareerItem(item: CareerItem): Promise<CareerItem> {
+  const response = await mutate(careerVaultPaths.careerItemConfirm(item.id), {
+    headers: headers(item.version),
+    method: "POST",
+  });
+  return parseCareerItem(await response.json());
+}
+
 export async function deleteCareerItem(item: CareerItem): Promise<void> {
   await mutate(careerVaultPaths.careerItem(item.id), {
     headers: headers(item.version, true),
@@ -195,6 +302,14 @@ export async function updateSkill(
   return parseSkill(await response.json());
 }
 
+export async function confirmSkill(skill: Skill): Promise<Skill> {
+  const response = await mutate(careerVaultPaths.skillConfirm(skill.id), {
+    headers: headers(skill.version),
+    method: "POST",
+  });
+  return parseSkill(await response.json());
+}
+
 export async function deleteSkill(skill: Skill): Promise<void> {
   await mutate(careerVaultPaths.skill(skill.id), {
     headers: headers(skill.version, true),
@@ -210,21 +325,36 @@ export async function getProfileImportProposal(
   );
 }
 
+export async function createProfileImportProposals(
+  documentId: string,
+  snapshotId: string,
+): Promise<ProfileImportBatch> {
+  const response = await mutate(careerVaultPaths.profileImportProposals, {
+    body: JSON.stringify({ documentId, snapshotId }),
+    method: "POST",
+  });
+  return parseProfileImportBatch(await response.json());
+}
+
 export async function acceptProfileImportProposal(
   proposal: ProfileImportProposal,
   reviewedValues: Record<string, string>,
+  idempotencyKey: string,
 ): Promise<ProfileImportProposal> {
-  const edits = Object.fromEntries(
+  const values = Object.fromEntries(
     proposal.changes.map((change) => [
-      change.field,
+      change.id,
       reviewedValues[change.id] ?? change.proposedValue,
     ]),
   );
   const response = await mutate(
     careerVaultPaths.profileImportProposalAccept(proposal.id),
     {
-      body: JSON.stringify({ edits }),
-      headers: headers(proposal.version, true),
+      body: JSON.stringify({ values }),
+      headers: {
+        ...headers(proposal.version),
+        "Idempotency-Key": idempotencyKey,
+      },
       method: "POST",
     },
   );
@@ -233,11 +363,15 @@ export async function acceptProfileImportProposal(
 
 export async function rejectProfileImportProposal(
   proposal: ProfileImportProposal,
+  idempotencyKey: string,
 ): Promise<ProfileImportProposal> {
   const response = await mutate(
     careerVaultPaths.profileImportProposalReject(proposal.id),
     {
-      headers: headers(proposal.version, true),
+      headers: {
+        ...headers(proposal.version),
+        "Idempotency-Key": idempotencyKey,
+      },
       method: "POST",
     },
   );

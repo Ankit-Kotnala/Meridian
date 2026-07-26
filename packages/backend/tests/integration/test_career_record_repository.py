@@ -25,10 +25,17 @@ from careeros.modules.career_record.domain import (
     AuditAction,
     CareerAuditEvent,
     CareerEntity,
+    CareerEntityConfirmation,
     CareerEntityKind,
+    CareerEntityRelationship,
+    CareerFieldProvenance,
+    CareerFieldTarget,
     CareerProfile,
     CareerRecordConflict,
     CareerRecordIdempotencyConflict,
+    CareerRelationshipKind,
+    CareerSkillConfirmation,
+    ConfirmationState,
     ConflictStatus,
     EmploymentType,
     EntitySkillLink,
@@ -52,10 +59,13 @@ from careeros.modules.career_record.domain import (
     ImportProposal,
     MetricPrecision,
     PartialDate,
+    PersonalFact,
+    PersonalFactKind,
     ProposalStatus,
     ReminderCadence,
     ReminderPreferences,
     ResumeProvenance,
+    SemanticFieldOrigin,
     Skill,
     SkillProficiency,
 )
@@ -557,6 +567,144 @@ async def test_repository_round_trips_owned_profile_proposal_and_evidence_graph(
             )
             assert audit is not None
             assert audit.details == {"next_strength": "supported"}
+    finally:
+        async with database.session() as session:
+            await session.execute(
+                delete(UserModel).where(UserModel.id.in_((owner_user_id, other_user_id)))
+            )
+            await session.commit()
+        await database.dispose()
+
+
+@pytest.mark.asyncio
+async def test_resume_ready_repository_round_trips_confirmation_provenance_and_relationships() -> (
+    None
+):
+    database_url = os.environ.get("CAREEROS_TEST_DATABASE_URL")
+    if database_url is None:
+        pytest.skip("CAREEROS_TEST_DATABASE_URL is required for PostgreSQL integration tests")
+
+    database = Database(DatabaseOptions(url=database_url, pool_size=2, max_overflow=0))
+    factory = SqlAlchemyCareerRecordUnitOfWorkFactory(database)
+    owner_user_id, other_user_id = uuid4(), uuid4()
+    now = datetime.now(UTC).replace(microsecond=0)
+    profile = _profile(owner_user_id, now)
+    experience = _experience(owner_user_id, profile.id, now)
+    project = CareerEntity(
+        id=uuid4(),
+        owner_user_id=owner_user_id,
+        profile_id=profile.id,
+        kind=CareerEntityKind.PROJECT,
+        title="Evidence pipeline",
+        organization=None,
+        description="Built the reviewed evidence pipeline.",
+        official_title=None,
+        display_title=None,
+        employment_type=None,
+        location=None,
+        external_url=None,
+        start_date=PartialDate(2024, 2),
+        end_date=None,
+        is_current=True,
+        sort_order=1,
+        group_id=None,
+        version=1,
+        created_at=now,
+        updated_at=now,
+    )
+    skill = _skill(owner_user_id, profile.id, "Python", 0, now)
+    fact = PersonalFact(
+        id=uuid4(),
+        owner_user_id=owner_user_id,
+        profile_id=profile.id,
+        kind=PersonalFactKind.EMAIL,
+        value="owner@example.test",
+        label="Preferred",
+        is_primary=True,
+        confirmation=ConfirmationState.CONFIRMED,
+        version=1,
+        created_at=now,
+        updated_at=now,
+        confirmed_at=now,
+    )
+    relationship = CareerEntityRelationship(
+        id=uuid4(),
+        owner_user_id=owner_user_id,
+        profile_id=profile.id,
+        source_entity_id=experience.id,
+        target_entity_id=project.id,
+        kind=CareerRelationshipKind.EXPERIENCE_PROJECT,
+        created_at=now,
+    )
+    provenance = CareerFieldProvenance(
+        id=uuid4(),
+        owner_user_id=owner_user_id,
+        profile_id=profile.id,
+        target=CareerFieldTarget.ENTITY,
+        target_id=experience.id,
+        field_name="title",
+        value_sha256=CareerFieldProvenance.digest_value(experience.title),
+        origin=SemanticFieldOrigin.OWNER_ATTESTATION,
+        created_at=now,
+    )
+
+    try:
+        await _add_users(database, (owner_user_id, other_user_id), now)
+        async with factory() as uow:
+            await uow.add_profile(profile)
+            await uow.add_entity(experience)
+            await uow.add_entity(project)
+            await uow.add_skill(skill)
+            await uow.add_personal_fact(fact)
+            await uow.add_entity_confirmation(
+                CareerEntityConfirmation(
+                    entity_id=experience.id,
+                    owner_user_id=owner_user_id,
+                    state=ConfirmationState.CONFIRMED,
+                    version=1,
+                    updated_at=now,
+                    confirmed_at=now,
+                )
+            )
+            await uow.add_skill_confirmation(
+                CareerSkillConfirmation(
+                    skill_id=skill.id,
+                    owner_user_id=owner_user_id,
+                    state=ConfirmationState.CONFIRMED,
+                    version=1,
+                    updated_at=now,
+                    confirmed_at=now,
+                )
+            )
+            await uow.add_entity_relationship(relationship)
+            await uow.add_field_provenance(provenance)
+            await uow.commit()
+
+        async with factory() as uow:
+            assert await uow.get_personal_fact(owner_user_id, fact.id) == fact
+            assert await uow.get_personal_fact(other_user_id, fact.id) is None
+            assert (await uow.get_entity_confirmation(owner_user_id, experience.id)) is not None
+            assert (await uow.get_entity_confirmation(other_user_id, experience.id)) is None
+            assert (await uow.get_skill_confirmation(owner_user_id, skill.id)) is not None
+            assert await uow.get_skill_confirmation(other_user_id, skill.id) is None
+            assert (
+                await uow.get_entity_relationship(
+                    owner_user_id,
+                    relationship.id,
+                )
+                == relationship
+            )
+            assert await uow.get_entity_relationship(other_user_id, relationship.id) is None
+            assert await uow.list_field_provenance(
+                owner_user_id,
+                experience.id,
+            ) == [provenance]
+            assert await uow.list_field_provenance(other_user_id, experience.id) == []
+            await uow.delete_entity(owner_user_id, project.id)
+            await uow.commit()
+
+        async with factory() as uow:
+            assert await uow.get_entity_relationship(owner_user_id, relationship.id) is None
     finally:
         async with database.session() as session:
             await session.execute(

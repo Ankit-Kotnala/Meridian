@@ -12,6 +12,7 @@ import pytest
 from careeros.modules.resume_health.application import (
     ClaimGuestDocument,
     CorrectionOperation,
+    CorrectSemanticField,
     CreateUploadIntent,
     DocumentLimits,
     ResumeRequestContext,
@@ -64,6 +65,9 @@ from careeros.modules.resume_health.infrastructure.fakes import (
     InMemoryResumeUnitOfWorkFactory,
 )
 from careeros.modules.resume_health.infrastructure.security import HmacGuestCapabilityManager
+from careeros.modules.resume_health.infrastructure.semantic_parser import (
+    LocalResumeParserProvider,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -119,6 +123,7 @@ def _runtime(
     extractor: FakeDocumentExtractor | None = None,
     policy: ResumeHealthPolicy | None = None,
     limits: DocumentLimits | None = None,
+    semantic_parser: bool = True,
 ) -> tuple[
     InMemoryResumeUnitOfWorkFactory,
     InMemoryObjectStorage,
@@ -130,6 +135,7 @@ def _runtime(
     object_storage = storage or InMemoryObjectStorage()
     clock = FixedClock()
     resolved_limits = limits or DocumentLimits()
+    resolved_semantic_parser = LocalResumeParserProvider() if semantic_parser else None
     service = ResumeHealthService(
         unit_of_work=factory,
         clock=clock,
@@ -137,6 +143,7 @@ def _runtime(
         storage=object_storage,
         limits=resolved_limits,
         policy=policy,
+        semantic_parser=resolved_semantic_parser,
     )
     processor = ResumeHealthProcessor(
         unit_of_work=factory,
@@ -145,6 +152,7 @@ def _runtime(
         scanner=scanner or FakeMalwareScanner(),
         extractor=extractor or FakeDocumentExtractor(_extraction()),
         limits=resolved_limits,
+        semantic_parser=resolved_semantic_parser,
     )
     return factory, object_storage, clock, service, processor
 
@@ -1276,12 +1284,13 @@ async def test_analysis_pins_snapshot_exposes_audit_features_and_allows_cancelle
     analysis_job = await service.start_analysis(
         owner, finalized.document_id, "pinned-analysis-0001", context
     )
-    first_block = original.resume.sections[0].blocks[0]
-    corrected = await service.correct_canonical_resume(
+    assert original.resume.semantics is not None
+    semantic_field = original.resume.semantics.entities[0].fields[0]
+    corrected = await service.review_canonical_semantics(
         owner,
         finalized.document_id,
         original.revision,
-        (CorrectionOperation(first_block.id, first_block.text + " reviewed"),),
+        (CorrectSemanticField(semantic_field.id, semantic_field.value + " reviewed"),),
         context,
     )
 
@@ -1293,7 +1302,7 @@ async def test_analysis_pins_snapshot_exposes_audit_features_and_allows_cancelle
     report = await service.get_analysis(owner, analysis_id)
     assert report.snapshot_id == original.id
     assert report.snapshot_id != corrected.id
-    assert report.feature_schema_version == "resume-health-features/1"
+    assert report.feature_schema_version == "resume-health-features/2"
     assert report.feature_values["block_count"] >= 3
     for component in report.components:
         allocated = sum(
@@ -1378,7 +1387,10 @@ async def test_canonical_correction_accepts_more_than_fifty_bounded_operations()
         warnings=(),
         parser_version="fake/large",
     )
-    factory, storage, _, service, processor = _runtime(extractor=FakeDocumentExtractor(extraction))
+    factory, storage, _, service, processor = _runtime(
+        extractor=FakeDocumentExtractor(extraction),
+        semantic_parser=False,
+    )
     owner = OwnerScope(user_id=uuid4())
     finalized = await _ready_pdf(factory, storage, service, processor, owner)
     canonical = await service.get_canonical_resume(owner, finalized.document_id)
@@ -1414,7 +1426,10 @@ async def test_revision_and_analysis_history_caps_hold_for_account_and_guest(
         max_canonical_revisions=2,
         max_analysis_jobs_per_document=2,
     )
-    factory, storage, _, service, processor = _runtime(policy=policy)
+    factory, storage, _, service, processor = _runtime(
+        policy=policy,
+        semantic_parser=False,
+    )
     if guest_owner:
         session = await service.begin_guest_session()
         owner = await service.authenticate_guest(session.capability_token)
@@ -1719,7 +1734,9 @@ async def test_processor_rejects_unreviewable_extraction_graphs_before_commit(
 ) -> None:
     limits = DocumentLimits(**limit_kwargs)
     factory, storage, _, service, processor = _runtime(
-        extractor=FakeDocumentExtractor(extraction), limits=limits
+        extractor=FakeDocumentExtractor(extraction),
+        limits=limits,
+        semantic_parser=False,
     )
     owner = OwnerScope(user_id=uuid4())
     finalized = await _finalize_pdf(factory, storage, service, owner)
@@ -1933,3 +1950,65 @@ async def test_reconciler_does_not_redeliver_expired_final_processing_attempt() 
         message.job_id == job.id and message.generation > 0
         for message in factory.state.outbox.values()
     )
+
+
+@pytest.mark.asyncio
+async def test_semantic_review_creates_owned_immutable_successor_snapshot() -> None:
+    factory, storage, _, service, processor = _runtime()
+    owner = OwnerScope(user_id=uuid4())
+    other = OwnerScope(user_id=uuid4())
+    finalized = await _ready_pdf(factory, storage, service, processor, owner)
+    current = await service.get_canonical_resume(owner, finalized.document_id)
+    assert current.resume.semantics is not None
+    assert current.resume.source_sections == current.resume.sections
+    source_sections = current.resume.source_sections
+    field = next(
+        field
+        for entity in current.resume.semantics.entities
+        for field in entity.fields
+        if field.name == "achievement"
+    )
+
+    reviewed = await service.review_canonical_semantics(
+        owner,
+        finalized.document_id,
+        current.revision,
+        (CorrectSemanticField(field.id, "Verified fictional achievement."),),
+        ResumeRequestContext("request", "trace"),
+    )
+
+    assert reviewed.revision == current.revision + 1
+    assert reviewed.based_on_snapshot_id == current.id
+    assert reviewed.resume.source_sections == source_sections
+    assert reviewed.resume.semantics is not None
+    assert current.resume.semantics.entities != reviewed.resume.semantics.entities
+    revised = next(
+        candidate
+        for entity in reviewed.resume.semantics.entities
+        for candidate in entity.fields
+        if candidate.id == field.id
+    )
+    assert revised.value == "Verified fictional achievement."
+    assert revised.anchors == field.anchors
+    with pytest.raises(ResumeStateConflict):
+        await service.correct_canonical_resume(
+            owner,
+            finalized.document_id,
+            reviewed.revision,
+            (
+                CorrectionOperation(
+                    reviewed.resume.sections[0].blocks[0].id,
+                    "Legacy whole-block edits cannot modify typed snapshots.",
+                ),
+            ),
+            ResumeRequestContext("request", "trace"),
+        )
+    with pytest.raises(ResumeResourceNotFound):
+        await service.review_canonical_semantics(
+            other,
+            finalized.document_id,
+            reviewed.revision,
+            (),
+            ResumeRequestContext("request", "trace"),
+            confirm_no_changes=True,
+        )

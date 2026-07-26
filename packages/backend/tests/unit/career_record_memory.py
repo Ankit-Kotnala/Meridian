@@ -20,7 +20,11 @@ from careeros.modules.career_record.domain import (
     AchievementDraft,
     CareerAuditEvent,
     CareerEntity,
+    CareerEntityConfirmation,
+    CareerEntityRelationship,
+    CareerFieldProvenance,
     CareerProfile,
+    CareerSkillConfirmation,
     EntitySkillLink,
     EvidenceAttachment,
     EvidenceConflict,
@@ -32,8 +36,11 @@ from careeros.modules.career_record.domain import (
     EvidenceSource,
     EvidenceStateTransition,
     ImportProposal,
+    PersonalFact,
     ReminderPreferences,
+    SemanticImportProposal,
     Skill,
+    ValidatedSemanticCandidate,
     exact_claim_sha256,
 )
 
@@ -55,6 +62,9 @@ class FakeResumeSourceQuery:
     def __init__(self) -> None:
         self.sources: dict[tuple[UUID, UUID], ValidatedResumeSource] = {}
         self.available: set[UUID] = set()
+        self.semantic_candidates: dict[
+            tuple[UUID, UUID, UUID], tuple[ValidatedSemanticCandidate, ...]
+        ] = {}
 
     def add(self, owner_user_id: UUID, source: ValidatedResumeSource) -> None:
         self.sources[(owner_user_id, source.snapshot_id)] = source
@@ -84,6 +94,23 @@ class FakeResumeSourceQuery:
             source.snapshot_id,
         ) in self.sources and source.snapshot_id in self.available
 
+    def add_semantic(
+        self,
+        owner_user_id: UUID,
+        document_id: UUID,
+        snapshot_id: UUID,
+        candidates: tuple[ValidatedSemanticCandidate, ...],
+    ) -> None:
+        self.semantic_candidates[(owner_user_id, document_id, snapshot_id)] = candidates
+
+    async def reviewed_semantic_candidates(
+        self,
+        owner_user_id: UUID,
+        document_id: UUID,
+        snapshot_id: UUID,
+    ) -> tuple[ValidatedSemanticCandidate, ...]:
+        return self.semantic_candidates.get((owner_user_id, document_id, snapshot_id), ())
+
 
 class AllowingVerificationAuthority:
     async def authorize(self, owner_user_id: UUID, evidence_id: UUID, decision: object) -> bool:
@@ -95,9 +122,15 @@ class MemoryCareerRecord:
     def __init__(self) -> None:
         self.profiles: dict[UUID, CareerProfile] = {}
         self.entities: dict[UUID, CareerEntity] = {}
+        self.entity_confirmations: dict[UUID, CareerEntityConfirmation] = {}
+        self.personal_facts: dict[UUID, PersonalFact] = {}
+        self.field_provenance: list[CareerFieldProvenance] = []
+        self.entity_relationships: list[CareerEntityRelationship] = []
         self.skills: dict[UUID, Skill] = {}
+        self.skill_confirmations: dict[UUID, CareerSkillConfirmation] = {}
         self.entity_skill_links: list[EntitySkillLink] = []
         self.proposals: dict[UUID, ImportProposal] = {}
+        self.semantic_proposals: dict[UUID, SemanticImportProposal] = {}
         self.evidence: dict[UUID, EvidenceRecord] = {}
         self.conflicts: dict[UUID, EvidenceConflict] = {}
         self.attachments: dict[UUID, EvidenceAttachment] = {}
@@ -167,6 +200,103 @@ class MemoryCareerRecord:
                 link for link in self.entity_skill_links if link.entity_id != entity_id
             ]
 
+    async def get_entity_confirmation(
+        self, owner_user_id: UUID, entity_id: UUID, *, for_update: bool = False
+    ) -> CareerEntityConfirmation | None:
+        del for_update
+        item = self.entity_confirmations.get(entity_id)
+        return item if item is not None and item.owner_user_id == owner_user_id else None
+
+    async def list_entity_confirmations(
+        self, owner_user_id: UUID, profile_id: UUID
+    ) -> list[CareerEntityConfirmation]:
+        return [
+            confirmation
+            for entity_id, confirmation in self.entity_confirmations.items()
+            if confirmation.owner_user_id == owner_user_id
+            and (entity := self.entities.get(entity_id)) is not None
+            and entity.profile_id == profile_id
+        ]
+
+    async def add_entity_confirmation(self, confirmation: CareerEntityConfirmation) -> None:
+        self.entity_confirmations[confirmation.entity_id] = confirmation
+
+    async def save_entity_confirmation(self, confirmation: CareerEntityConfirmation) -> None:
+        self.entity_confirmations[confirmation.entity_id] = confirmation
+
+    async def list_personal_facts(
+        self, owner_user_id: UUID, profile_id: UUID
+    ) -> list[PersonalFact]:
+        return [
+            fact
+            for fact in self.personal_facts.values()
+            if fact.owner_user_id == owner_user_id and fact.profile_id == profile_id
+        ]
+
+    async def get_personal_fact(
+        self, owner_user_id: UUID, fact_id: UUID, *, for_update: bool = False
+    ) -> PersonalFact | None:
+        del for_update
+        fact = self.personal_facts.get(fact_id)
+        return fact if fact is not None and fact.owner_user_id == owner_user_id else None
+
+    async def add_personal_fact(self, fact: PersonalFact) -> None:
+        self.personal_facts[fact.id] = fact
+
+    async def save_personal_fact(self, fact: PersonalFact) -> None:
+        self.personal_facts[fact.id] = fact
+
+    async def delete_personal_fact(self, owner_user_id: UUID, fact_id: UUID) -> None:
+        fact = await self.get_personal_fact(owner_user_id, fact_id)
+        if fact is not None:
+            del self.personal_facts[fact.id]
+
+    async def add_field_provenance(self, provenance: CareerFieldProvenance) -> None:
+        self.field_provenance.append(provenance)
+
+    async def list_field_provenance(
+        self, owner_user_id: UUID, target_id: UUID
+    ) -> list[CareerFieldProvenance]:
+        return [
+            item
+            for item in self.field_provenance
+            if item.owner_user_id == owner_user_id and item.target_id == target_id
+        ]
+
+    async def add_entity_relationship(self, relationship: CareerEntityRelationship) -> None:
+        self.entity_relationships.append(relationship)
+
+    async def get_entity_relationship(
+        self, owner_user_id: UUID, relationship_id: UUID
+    ) -> CareerEntityRelationship | None:
+        return next(
+            (
+                relationship
+                for relationship in self.entity_relationships
+                if relationship.owner_user_id == owner_user_id
+                and relationship.id == relationship_id
+            ),
+            None,
+        )
+
+    async def list_entity_relationships(
+        self, owner_user_id: UUID, profile_id: UUID
+    ) -> list[CareerEntityRelationship]:
+        return [
+            item
+            for item in self.entity_relationships
+            if item.owner_user_id == owner_user_id and item.profile_id == profile_id
+        ]
+
+    async def delete_entity_relationship(self, owner_user_id: UUID, relationship_id: UUID) -> None:
+        self.entity_relationships = [
+            relationship
+            for relationship in self.entity_relationships
+            if not (
+                relationship.owner_user_id == owner_user_id and relationship.id == relationship_id
+            )
+        ]
+
     async def list_skills(self, owner_user_id: UUID, profile_id: UUID) -> list[Skill]:
         return sorted(
             [
@@ -194,9 +324,34 @@ class MemoryCareerRecord:
         item = await self.get_skill(owner_user_id, skill_id)
         if item is not None:
             del self.skills[item.id]
+            self.skill_confirmations.pop(item.id, None)
             self.entity_skill_links = [
                 link for link in self.entity_skill_links if link.skill_id != skill_id
             ]
+
+    async def get_skill_confirmation(
+        self, owner_user_id: UUID, skill_id: UUID, *, for_update: bool = False
+    ) -> CareerSkillConfirmation | None:
+        del for_update
+        item = self.skill_confirmations.get(skill_id)
+        return item if item is not None and item.owner_user_id == owner_user_id else None
+
+    async def list_skill_confirmations(
+        self, owner_user_id: UUID, profile_id: UUID
+    ) -> list[CareerSkillConfirmation]:
+        return [
+            confirmation
+            for skill_id, confirmation in self.skill_confirmations.items()
+            if confirmation.owner_user_id == owner_user_id
+            and (skill := self.skills.get(skill_id)) is not None
+            and skill.profile_id == profile_id
+        ]
+
+    async def add_skill_confirmation(self, confirmation: CareerSkillConfirmation) -> None:
+        self.skill_confirmations[confirmation.skill_id] = confirmation
+
+    async def save_skill_confirmation(self, confirmation: CareerSkillConfirmation) -> None:
+        self.skill_confirmations[confirmation.skill_id] = confirmation
 
     async def add_entity_skill_link(self, link: EntitySkillLink) -> None:
         self.entity_skill_links.append(link)
@@ -247,6 +402,45 @@ class MemoryCareerRecord:
 
     async def save_proposal(self, proposal: ImportProposal) -> None:
         self.proposals[proposal.id] = proposal
+
+    async def find_semantic_proposal(
+        self,
+        owner_user_id: UUID,
+        snapshot_id: UUID,
+        semantic_entity_id: UUID,
+    ) -> SemanticImportProposal | None:
+        return next(
+            (
+                proposal
+                for proposal in self.semantic_proposals.values()
+                if proposal.owner_user_id == owner_user_id
+                and proposal.snapshot_id == snapshot_id
+                and proposal.semantic_entity_id == semantic_entity_id
+            ),
+            None,
+        )
+
+    async def get_semantic_proposal(
+        self, owner_user_id: UUID, proposal_id: UUID, *, for_update: bool = False
+    ) -> SemanticImportProposal | None:
+        del for_update
+        proposal = self.semantic_proposals.get(proposal_id)
+        return (
+            proposal if proposal is not None and proposal.owner_user_id == owner_user_id else None
+        )
+
+    async def list_semantic_proposals(self, owner_user_id: UUID) -> list[SemanticImportProposal]:
+        return [
+            proposal
+            for proposal in self.semantic_proposals.values()
+            if proposal.owner_user_id == owner_user_id
+        ]
+
+    async def add_semantic_proposal(self, proposal: SemanticImportProposal) -> None:
+        self.semantic_proposals[proposal.id] = proposal
+
+    async def save_semantic_proposal(self, proposal: SemanticImportProposal) -> None:
+        self.semantic_proposals[proposal.id] = proposal
 
     async def get_evidence(
         self, owner_user_id: UUID, evidence_id: UUID, *, for_update: bool = False

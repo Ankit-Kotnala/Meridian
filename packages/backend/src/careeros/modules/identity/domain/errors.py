@@ -19,6 +19,10 @@ class InvalidCredentials(IdentityError):
     code = "invalid_credentials"
 
 
+class CurrentPasswordRejected(IdentityError):
+    code = "current_password_rejected"
+
+
 class EmailVerificationRequired(IdentityError):
     code = "email_verification_required"
 

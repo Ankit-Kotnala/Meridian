@@ -4,7 +4,7 @@ from datetime import datetime
 from types import TracebackType
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -340,6 +340,14 @@ class SqlAlchemyIdentityUnitOfWork:
             )
         )
 
+    async def delete_oauth_account(self, user_id: UUID, provider: str) -> None:
+        await self.session.execute(
+            delete(OAuthAccountModel).where(
+                OAuthAccountModel.user_id == user_id,
+                OAuthAccountModel.provider == provider,
+            )
+        )
+
     async def add_consent_event(self, event: ConsentEvent) -> None:
         self.session.add(
             ConsentEventModel(
@@ -384,6 +392,25 @@ class SqlAlchemyIdentityUnitOfWork:
                 occurred_at=event.occurred_at,
             )
         )
+
+    async def list_audit_events(self, user_id: UUID, *, limit: int) -> list[AuditEvent]:
+        models = (
+            await self.session.scalars(
+                select(AuditEventModel)
+                .where(
+                    or_(
+                        AuditEventModel.actor_user_id == user_id,
+                        AuditEventModel.subject_user_id == user_id,
+                    )
+                )
+                .order_by(
+                    AuditEventModel.occurred_at.desc(),
+                    AuditEventModel.id.desc(),
+                )
+                .limit(limit)
+            )
+        ).all()
+        return [_audit_event(model) for model in models]
 
     async def get_onboarding(
         self, user_id: UUID, *, for_update: bool = False
@@ -559,6 +586,23 @@ def _consent(model: ConsentEventModel) -> ConsentEvent:
         request_id=model.request_id,
         trace_id=model.trace_id,
         recorded_at=model.recorded_at,
+    )
+
+
+def _audit_event(model: AuditEventModel) -> AuditEvent:
+    return AuditEvent(
+        id=model.id,
+        actor_user_id=model.actor_user_id,
+        subject_user_id=model.subject_user_id,
+        session_id=model.session_id,
+        event_type=model.event_type,
+        outcome=model.outcome,
+        target_type=model.target_type,
+        target_id=model.target_id,
+        request_id=model.request_id,
+        trace_id=model.trace_id,
+        metadata=model.metadata_json,
+        occurred_at=model.occurred_at,
     )
 
 

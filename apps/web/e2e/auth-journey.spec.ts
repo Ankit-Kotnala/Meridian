@@ -122,7 +122,9 @@ async function completeResumeHealth(page: Page): Promise<void> {
   ).toBeVisible();
   await page.getByLabel("Resume file").setInputFiles(resumeFixture);
   await page.getByRole("button", { name: "Upload and review" }).click();
-  await expect(page).toHaveURL(/\/resume-health\/account\/processing\//);
+  await expect(page).toHaveURL(
+    /\/resume-health\/account\/(?:processing|review)\//,
+  );
   await expect(page).toHaveURL(/\/resume-health\/account\/review\//, {
     timeout: 120_000,
   });
@@ -151,7 +153,9 @@ async function completeResumeHealth(page: Page): Promise<void> {
   expect(correctedCanonical).toEqual(
     expect.objectContaining({ correctedByUser: true }),
   );
-  await expect(page).toHaveURL(/\/resume-health\/account\/processing\//);
+  await expect(page).toHaveURL(
+    /\/resume-health\/account\/(?:processing|report)\//,
+  );
   await expect(page).toHaveURL(/\/resume-health\/account\/report\//, {
     timeout: 120_000,
   });
@@ -168,6 +172,10 @@ async function completeResumeHealth(page: Page): Promise<void> {
       .getByRole("img", { name: /Resume Health Score:/ })
       .or(page.getByText("Score unavailable")),
   ).toBeVisible();
+
+  await page.goto("/onboarding");
+  await expect(page.getByText("Status: Analysis ready")).toHaveCount(2);
+  await page.goto("/dashboard");
 
   await page.goto("/dashboard");
   await expect(
@@ -280,6 +288,20 @@ test("a verified user completes honest onboarding and controls sessions", async 
     });
     await secondaryContext.close();
     secondaryContext = undefined;
+
+    await page.goto("/settings/security");
+    await expect(
+      page.getByRole("heading", { name: "Change password" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Security activity" }),
+    ).toBeVisible();
+    await page.goto("/settings/notifications");
+    await expect(
+      page.getByText("Scheduled delivery is not configured"),
+    ).toBeVisible();
+    await page.goto("/settings/privacy");
+    await expect(page.getByText("Export is unavailable")).toBeVisible();
 
     await page.locator("summary").filter({ hasText: "Account menu" }).click();
     await page.getByRole("button", { name: "Sign out", exact: true }).click();

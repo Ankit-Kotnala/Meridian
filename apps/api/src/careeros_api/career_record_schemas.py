@@ -1,11 +1,20 @@
 """Strict Phase 3 career-record, evidence, and achievement wire schemas."""
 
+import re
 from datetime import datetime
 from decimal import Decimal
 from typing import Annotated, Literal, Self
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    HttpUrl,
+    TypeAdapter,
+    field_validator,
+    model_validator,
+)
 
 
 def _camel(name: str) -> str:
@@ -94,6 +103,69 @@ class CareerProfileResponse(CareerRecordSchema):
     updated_at: datetime
 
 
+class PersonalFactInput(CareerRecordSchema):
+    kind: Literal["name", "email", "phone", "location", "link"]
+    value: str = Field(min_length=1, max_length=2_048)
+    label: str | None = Field(default=None, max_length=80)
+    is_primary: bool = False
+
+    @field_validator("value")
+    @classmethod
+    def validate_value(cls, value: str) -> str:
+        return _safe_text(value, required=True)
+
+    @field_validator("label")
+    @classmethod
+    def validate_label(cls, value: str | None) -> str | None:
+        return None if value is None else (_safe_text(value) or None)
+
+    @model_validator(mode="after")
+    def validate_kind_value(self) -> Self:
+        if self.kind == "email":
+            if re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", self.value) is None:
+                raise ValueError("enter a valid email address")
+        elif self.kind == "link":
+            self.value = str(TypeAdapter(HttpUrl).validate_python(self.value))
+        return self
+
+
+class PersonalFactUpdateRequest(CareerRecordSchema):
+    value: str = Field(min_length=1, max_length=2_048)
+    label: str | None = Field(default=None, max_length=80)
+    is_primary: bool = False
+
+    @field_validator("value")
+    @classmethod
+    def validate_value(cls, value: str) -> str:
+        return _safe_text(value, required=True)
+
+    @field_validator("label")
+    @classmethod
+    def validate_label(cls, value: str | None) -> str | None:
+        return None if value is None else (_safe_text(value) or None)
+
+
+class CareerRelationshipInput(CareerRecordSchema):
+    experience_id: UUID
+    project_id: UUID
+    kind: Literal["experience_project"] = "experience_project"
+
+    @model_validator(mode="after")
+    def validate_distinct_entities(self) -> Self:
+        if self.experience_id == self.project_id:
+            raise ValueError("a career relationship requires two records")
+        return self
+
+
+class CareerRelationshipResponse(CareerRelationshipInput):
+    id: UUID
+    created_at: datetime
+
+
+class CareerRelationshipListResponse(CareerRecordSchema):
+    data: list[CareerRelationshipResponse] = Field(max_length=500)
+
+
 class SourceSpanResponse(CareerRecordSchema):
     id: UUID
     page: int | None = Field(default=None, ge=1, le=100_000)
@@ -115,6 +187,20 @@ class ProvenanceResponse(CareerRecordSchema):
     user_confirmed: bool
     available: bool
     spans: list[SourceSpanResponse] = Field(max_length=100)
+
+
+class PersonalFactResponse(PersonalFactInput):
+    id: UUID
+    confirmation: Literal["needs_review", "confirmed"]
+    version: PositiveVersion
+    created_at: datetime
+    updated_at: datetime
+    confirmed_at: datetime | None = None
+    provenance: list[ProvenanceResponse] = Field(default_factory=list, max_length=20)
+
+
+class PersonalFactListResponse(CareerRecordSchema):
+    data: list[PersonalFactResponse] = Field(max_length=100)
 
 
 class ProfileConflictResponse(CareerRecordSchema):
@@ -255,6 +341,7 @@ class CareerItemResponse(CareerItemInput):
     id: UUID
     version: PositiveVersion
     order: int = Field(ge=0)
+    user_confirmed: bool
     provenance: list[ProvenanceResponse] = Field(max_length=100)
     created_at: datetime
     updated_at: datetime
@@ -279,6 +366,8 @@ class SkillResponse(SkillInput):
     id: UUID
     version: PositiveVersion
     order: int = Field(ge=0)
+    user_confirmed: bool
+    provenance: list[ProvenanceResponse] = Field(default_factory=list, max_length=20)
     created_at: datetime
     updated_at: datetime
 
@@ -398,6 +487,79 @@ class ImportProposalDecisionRequest(CareerRecordSchema):
         if not set(self.edited_values).issubset(set(self.accepted_change_ids)):
             raise ValueError("edited changes must also be explicitly accepted")
         return self
+
+
+class SemanticImportCreateRequest(CareerRecordSchema):
+    document_id: UUID
+    snapshot_id: UUID
+
+
+class SemanticImportAcceptRequest(CareerRecordSchema):
+    values: dict[UUID, str] = Field(min_length=1, max_length=500)
+    target_record_id: UUID | None = None
+
+    @field_validator("values")
+    @classmethod
+    def validate_values(cls, value: dict[UUID, str]) -> dict[UUID, str]:
+        return {field_id: _safe_text(item, required=True) for field_id, item in value.items()}
+
+
+class SemanticImportAnchorResponse(CareerRecordSchema):
+    block_id: UUID
+    page: int = Field(ge=1)
+    start: int = Field(ge=0)
+    end: int = Field(ge=1)
+    digest: str
+    excerpt: str
+
+
+class SemanticImportFieldResponse(CareerRecordSchema):
+    id: UUID
+    name: str
+    field_type: Literal["text", "email", "phone", "url", "date", "bullet"]
+    proposed_value: str
+    accepted_value: str | None
+    review_state: Literal["confirmed", "corrected", "user_added"]
+    confidence: float = Field(ge=0, le=1)
+    date_precision: Literal["day", "month", "year", "unknown"] | None
+    anchors: list[SemanticImportAnchorResponse] = Field(max_length=100)
+
+
+class SemanticImportProposalResponse(CareerRecordSchema):
+    id: UUID
+    target: Literal["personalFacts", "entity", "skill"]
+    target_record_id: UUID | None
+    document_id: UUID
+    snapshot_id: UUID
+    snapshot_revision: int = Field(ge=1)
+    schema_version: str
+    parser_version: str
+    semantic_entity_id: UUID
+    semantic_kind: Literal[
+        "contact", "experience", "education", "project", "skill", "certification"
+    ]
+    status: Literal["pending", "accepted", "rejected"]
+    conflict_code: str | None
+    source_available: bool
+    version: PositiveVersion
+    fields: list[SemanticImportFieldResponse] = Field(min_length=1, max_length=500)
+    created_at: datetime
+    reviewed_at: datetime | None
+
+
+class SemanticImportQuestionResponse(CareerRecordSchema):
+    semantic_entity_id: UUID
+    code: Literal["semantic_candidate_requires_review"]
+    missing_fields: list[str] = Field(min_length=1, max_length=20)
+
+
+class SemanticImportBatchResponse(CareerRecordSchema):
+    proposals: list[SemanticImportProposalResponse] = Field(max_length=500)
+    questions: list[SemanticImportQuestionResponse] = Field(max_length=500)
+
+
+class SemanticImportProposalListResponse(CareerRecordSchema):
+    data: list[SemanticImportProposalResponse] = Field(max_length=500)
 
 
 class EvidenceSourceInput(CareerRecordSchema):
