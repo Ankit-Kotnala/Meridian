@@ -529,9 +529,10 @@ Dependencies: all product phases and production/legal decisions.
       render/verify/cleanup workers with fast `202` acceptance and reload-safe
       polling, distinct constrained layouts, a canonical cross-format fidelity
       manifest, and release-blocking fidelity/grounding checks.
-- [ ] Replace the preview-only `make seed` behavior with an idempotent,
-      explicitly fictional, local-only database/object-store seed spanning every
-      implemented phase, guarded so it cannot run against production.
+- [x] Replace the preview-only `make seed` behavior with an idempotent,
+      explicitly fictional, local-only database/object-store seed spanning
+      Phases 1 through 9, guarded before I/O against non-development,
+      nonlocal database/object targets, unexpected buckets, and schema drift.
 - [ ] Store Free/Sprint/Pro/Coach plan entitlements/quotas centrally; no scattered
       prices. Implement billing adapter, checkout/portal, signed raw webhook validation,
       event idempotency/order/state, reconciliation, and test provider.

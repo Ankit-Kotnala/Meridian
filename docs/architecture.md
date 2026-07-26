@@ -726,9 +726,14 @@ capability. OCR providers, browser extension, Terraform, production AI/provider
 decisions, external CRM/calendar connections, and production deployment
 workflows remain absent until their owning phases.
 Resume Builder's formerly synchronous release gap is closed by the Phase 7
-additive migrations and worker path above. A real production-guarded fictional
-local database/object-store seed remains Phase 10 work; the presentation-only
-fixture is not a persistence or release substitute.
+additive migrations and worker path above. Phase 10A adds a separate local
+tooling composition root for an explicitly fictional database/object-store
+seed. It is not an API/task route and normal Compose startup excludes it behind
+the `tools` profile. Stable UUIDs, immutable-row and existing-object preflight,
+exact migration-head pinning, and development/database/MinIO guards make replays
+fail closed and non-destructive. The transaction defers only the circular
+Resume Health upload-to-source finalization until both immutable rows exist.
+The presentation-only fixture remains separate. See ADR 0018.
 
 ## Architecture verification
 
