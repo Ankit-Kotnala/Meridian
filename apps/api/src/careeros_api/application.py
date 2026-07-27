@@ -86,6 +86,15 @@ from careeros.modules.change_studio.infrastructure import (
 from careeros.modules.change_studio.infrastructure import (
     UuidIdentifierFactory as ChangeStudioUuidFactory,
 )
+from careeros.modules.commercial.application import CommercialService
+from careeros.modules.commercial.infrastructure import (
+    DisabledBillingProvider,
+    SqlAlchemyCommercialUnitOfWorkFactory,
+)
+from careeros.modules.commercial.infrastructure import SystemClock as CommercialClock
+from careeros.modules.commercial.infrastructure import (
+    UuidIdentifierFactory as CommercialUuidFactory,
+)
 from careeros.modules.identity.application import IdentityService
 from careeros.modules.identity.application.ports import (
     GoogleOAuthProvider as GoogleOAuthProviderPort,
@@ -139,7 +148,6 @@ from careeros.modules.networking.infrastructure import (
 from careeros.modules.resume_builder.application import ResumeBuilderPolicy, ResumeBuilderService
 from careeros.modules.resume_builder.infrastructure import (
     CareerRecordResumeSourceProvider,
-    DeterministicResumeRenderer,
     ResumeExportS3Options,
     ResumeExportS3Storage,
     SqlAlchemyResumeBuilderUnitOfWorkFactory,
@@ -186,7 +194,6 @@ from careeros_api.middleware import RequestBodyLimitMiddleware, install_request_
 from careeros_api.modules.career_growth import install_career_growth_problem_handler
 from careeros_api.modules.interview_prep import install_interview_prep_problem_handler
 from careeros_api.problems import install_problem_handlers
-from careeros_api.resume_builder_extractors import ResumeBuilderDocumentExtractor
 from careeros_api.routes import router
 
 logger = structlog.get_logger(__name__)
@@ -238,6 +245,7 @@ def create_app(
     networking: NetworkingService | None = None,
     career_growth: CareerGrowthService | None = None,
     career_analytics: CareerAnalyticsService | None = None,
+    commercial: CommercialService | None = None,
 ) -> FastAPI:
     """Build an application; injectable dependencies keep tests infrastructure-free."""
     resolved_settings = settings or get_settings()
@@ -272,6 +280,7 @@ def create_app(
         resolved_networking = networking
         resolved_career_growth = career_growth
         resolved_career_analytics = career_analytics
+        resolved_commercial = commercial
         resolved_resume_builder_storage: ResumeExportS3Storage | None = None
 
         if resolved_identity is None and isinstance(resolved_database, Database):
@@ -505,21 +514,6 @@ def create_app(
                         resolved_career_record,
                         change_studio=resolved_change_studio,
                     ),
-                    renderer=DeterministicResumeRenderer(),
-                    extractor=ResumeBuilderDocumentExtractor(
-                        DocumentLimits(
-                            max_upload_bytes=resolved_settings.resume_max_upload_bytes,
-                            max_pdf_pages=resolved_settings.resume_max_pages,
-                            max_archive_entries=resolved_settings.resume_max_archive_entries,
-                            max_archive_uncompressed_bytes=(
-                                resolved_settings.resume_max_expanded_bytes
-                            ),
-                            max_archive_ratio=resolved_settings.resume_max_compression_ratio,
-                            processing_timeout_seconds=(
-                                resolved_settings.resume_processing_timeout_seconds
-                            ),
-                        )
-                    ),
                     storage=resolved_resume_builder_storage,
                     policy=ResumeBuilderPolicy(),
                 )
@@ -608,6 +602,18 @@ def create_app(
                         max_attempts=resolved_settings.analytics_max_attempts,
                     ),
                 )
+            if resolved_commercial is None:
+                resolved_commercial = CommercialService(
+                    unit_of_work=SqlAlchemyCommercialUnitOfWorkFactory(
+                        resolved_database
+                    ),
+                    clock=CommercialClock(),
+                    identifiers=CommercialUuidFactory(),
+                    billing=DisabledBillingProvider(),
+                    allowed_return_origins=frozenset(
+                        resolved_settings.allowed_origins
+                    ),
+                )
 
         application.state.database = resolved_database
         application.state.identity_service = resolved_identity
@@ -623,6 +629,7 @@ def create_app(
         application.state.networking_service = resolved_networking
         application.state.career_growth_service = resolved_career_growth
         application.state.career_analytics_service = resolved_career_analytics
+        application.state.commercial_service = resolved_commercial
         application.state.attachment_workflow_service = resolved_attachment_workflow
         application.state.resume_outbox_dispatcher = resolved_resume_dispatcher
         application.state.readiness_dependencies = {"database": resolved_database}

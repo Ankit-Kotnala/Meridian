@@ -315,6 +315,87 @@ class WorkerSettings(BaseSettings):
             "ATTACHMENT_JOB_RECONCILIATION_STALE_SECONDS",
         ),
     )
+    resume_export_lease_seconds: int = Field(
+        default=330,
+        ge=30,
+        le=3_600,
+        validation_alias=AliasChoices(
+            "CAREEROS_RESUME_EXPORT_LEASE_SECONDS",
+            "RESUME_EXPORT_LEASE_SECONDS",
+        ),
+    )
+    resume_export_max_bytes: int = Field(
+        default=8_388_608,
+        ge=65_536,
+        le=26_214_400,
+        validation_alias=AliasChoices(
+            "CAREEROS_RESUME_EXPORT_MAX_BYTES",
+            "RESUME_EXPORT_MAX_BYTES",
+        ),
+    )
+    resume_export_retry_seconds: int = Field(
+        default=30,
+        ge=1,
+        le=3_600,
+        validation_alias=AliasChoices(
+            "CAREEROS_RESUME_EXPORT_RETRY_SECONDS",
+            "RESUME_EXPORT_RETRY_SECONDS",
+        ),
+    )
+    resume_export_outbox_interval_seconds: int = Field(
+        default=5,
+        ge=1,
+        le=300,
+        validation_alias=AliasChoices(
+            "CAREEROS_RESUME_EXPORT_OUTBOX_INTERVAL_SECONDS",
+            "RESUME_EXPORT_OUTBOX_INTERVAL_SECONDS",
+        ),
+    )
+    resume_export_outbox_lease_seconds: int = Field(
+        default=30,
+        ge=5,
+        le=300,
+        validation_alias=AliasChoices(
+            "CAREEROS_RESUME_EXPORT_OUTBOX_LEASE_SECONDS",
+            "RESUME_EXPORT_OUTBOX_LEASE_SECONDS",
+        ),
+    )
+    resume_export_outbox_max_attempts: int = Field(
+        default=5,
+        ge=1,
+        le=10,
+        validation_alias=AliasChoices(
+            "CAREEROS_RESUME_EXPORT_OUTBOX_MAX_ATTEMPTS",
+            "RESUME_EXPORT_OUTBOX_MAX_ATTEMPTS",
+        ),
+    )
+    resume_export_reconciliation_interval_seconds: int = Field(
+        default=60,
+        ge=10,
+        le=3_600,
+        validation_alias=AliasChoices(
+            "CAREEROS_RESUME_EXPORT_RECONCILIATION_INTERVAL_SECONDS",
+            "RESUME_EXPORT_RECONCILIATION_INTERVAL_SECONDS",
+        ),
+    )
+    resume_export_reconciliation_stale_seconds: int = Field(
+        default=300,
+        ge=60,
+        le=86_400,
+        validation_alias=AliasChoices(
+            "CAREEROS_RESUME_EXPORT_RECONCILIATION_STALE_SECONDS",
+            "RESUME_EXPORT_RECONCILIATION_STALE_SECONDS",
+        ),
+    )
+    resume_export_orphan_cleanup_grace_seconds: int = Field(
+        default=300,
+        ge=30,
+        le=86_400,
+        validation_alias=AliasChoices(
+            "CAREEROS_RESUME_EXPORT_ORPHAN_CLEANUP_GRACE_SECONDS",
+            "RESUME_EXPORT_ORPHAN_CLEANUP_GRACE_SECONDS",
+        ),
+    )
     analytics_max_attempts: int = Field(
         default=3,
         ge=1,
@@ -458,6 +539,8 @@ class WorkerSettings(BaseSettings):
             raise ValueError("document processing timeout must be lower than the task soft limit")
         if self.analytics_job_lease_seconds <= self.task_time_limit_seconds:
             raise ValueError("analytics lease must exceed the worker hard time limit")
+        if self.resume_export_lease_seconds <= self.task_time_limit_seconds:
+            raise ValueError("resume export lease must exceed the worker hard time limit")
         validate_database_url_for_environment(
             self.database_url.get_secret_value(),
             self.environment,

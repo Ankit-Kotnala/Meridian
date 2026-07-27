@@ -2966,6 +2966,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/resumes/{resume_id}/source-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Source Options */
+        get: operations["resumeSourceOptionsGet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/resumes/{resume_id}/versions": {
         parameters: {
             query?: never;
@@ -8634,6 +8651,8 @@ export interface components {
         };
         /** ResumeBulletRequest */
         ResumeBulletRequest: {
+            /** Entityid */
+            entityId?: string | null;
             /** Evidenceids */
             evidenceIds: string[];
             /**
@@ -8648,6 +8667,8 @@ export interface components {
         };
         /** ResumeBulletResponse */
         ResumeBulletResponse: {
+            /** Entityid */
+            entityId: string | null;
             /** Evidenceids */
             evidenceIds: string[];
             /** Evidencereferences */
@@ -8668,6 +8689,7 @@ export interface components {
             changeSetId?: string | null;
             /** Changesetversionid */
             changeSetVersionId?: string | null;
+            layout?: components["schemas"]["ResumeLayoutSchema"];
             /** Targetrole */
             targetRole?: string | null;
             /**
@@ -8698,6 +8720,32 @@ export interface components {
             method: "GET";
             /** Url */
             url: string;
+        };
+        /** ResumeEntityResponse */
+        ResumeEntityResponse: {
+            /** Displaytitle */
+            displayTitle: string | null;
+            endDate: components["schemas"]["ResumePartialDateResponse"] | null;
+            /** Evidenceids */
+            evidenceIds: string[];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Iscurrent */
+            isCurrent: boolean;
+            /** Kind */
+            kind: string;
+            /** Location */
+            location: string | null;
+            /** Officialtitle */
+            officialTitle: string | null;
+            /** Organization */
+            organization: string | null;
+            startDate: components["schemas"]["ResumePartialDateResponse"] | null;
+            /** Title */
+            title: string;
         };
         /** ResumeEvidenceReferenceResponse */
         ResumeEvidenceReferenceResponse: {
@@ -8740,12 +8788,22 @@ export interface components {
         };
         /** ResumeExportResponse */
         ResumeExportResponse: {
+            /** Attempts */
+            attempts: number;
+            /** Cleanupattempts */
+            cleanupAttempts: number;
+            /** Cleanupmaxattempts */
+            cleanupMaxAttempts: number;
             /** Completedat */
             completedAt: string | null;
             /** Criticalfailures */
             criticalFailures: string[];
+            /** Deadletteredat */
+            deadLetteredAt: string | null;
             /** Deletedat */
             deletedAt: string | null;
+            /** Fidelitymanifestsha256 */
+            fidelityManifestSha256: string;
             /**
              * Format
              * @enum {string}
@@ -8756,6 +8814,10 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Lasterror */
+            lastError: string | null;
+            /** Maxattempts */
+            maxAttempts: number;
             /** Mediatype */
             mediaType: string;
             /** Parserversion */
@@ -8772,6 +8834,8 @@ export interface components {
              * Format: uuid
              */
             resumeId: string;
+            /** Retryat */
+            retryAt: string | null;
             /** Sha256Digest */
             sha256Digest: string | null;
             /** Sizebytes */
@@ -8780,11 +8844,13 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "pending" | "rendering" | "verified" | "blocked" | "failed" | "deleted";
+            status: "pending" | "rendering" | "retry_wait" | "verified" | "blocked" | "failed" | "dead_lettered" | "deletion_pending" | "deleting" | "deletion_retry_wait" | "deletion_dead_lettered" | "deleted";
             /** Verificationcodes */
             verificationCodes: string[];
             /** Verificationstatus */
             verificationStatus: ("passed" | "warning" | "failed") | null;
+            /** Versioncontentsha256 */
+            versionContentSha256: string;
             /**
              * Versionid
              * Format: uuid
@@ -9007,10 +9073,71 @@ export interface components {
             /** Url */
             url?: string | null;
         };
+        /** ResumeLayoutSchema */
+        ResumeLayoutSchema: {
+            /**
+             * Fontfamily
+             * @default sans
+             * @enum {string}
+             */
+            fontFamily: "sans" | "serif";
+            /**
+             * Fontsizept
+             * @default 10
+             */
+            fontSizePt: number;
+            /**
+             * Linespacing
+             * @default standard
+             * @enum {string}
+             */
+            lineSpacing: "compact" | "standard" | "relaxed";
+            /**
+             * Margins
+             * @default standard
+             * @enum {string}
+             */
+            margins: "narrow" | "standard" | "wide";
+            /**
+             * Pagelimit
+             * @default 1
+             * @enum {integer}
+             */
+            pageLimit: 1 | 2;
+            /**
+             * Pagesize
+             * @default letter
+             * @enum {string}
+             */
+            pageSize: "letter" | "a4";
+        };
         /** ResumeListResponse */
         ResumeListResponse: {
             /** Items */
             items: components["schemas"]["ResumeResponse"][];
+        };
+        /** ResumePartialDateResponse */
+        ResumePartialDateResponse: {
+            /** Month */
+            month?: number | null;
+            /** Year */
+            year: number;
+        };
+        /** ResumePersonalFactResponse */
+        ResumePersonalFactResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Isprimary */
+            isPrimary: boolean;
+            /** Kind */
+            kind: string;
+            /** Label */
+            label: string | null;
+            /** Value */
+            value: string;
         };
         /** ResumeResponse */
         ResumeResponse: {
@@ -9030,6 +9157,7 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            layout: components["schemas"]["ResumeLayoutSchema"];
             /** Targetrole */
             targetRole: string | null;
             /**
@@ -9075,8 +9203,43 @@ export interface components {
             /** Title */
             title: string;
         };
+        /** ResumeSourceBulletResponse */
+        ResumeSourceBulletResponse: {
+            /** Entityid */
+            entityId: string | null;
+            /** Evidenceids */
+            evidenceIds: string[];
+            /** Evidencereferences */
+            evidenceReferences: components["schemas"]["ResumeEvidenceReferenceResponse"][];
+            /** Sectionkind */
+            sectionKind: string;
+            /** Source */
+            source: string;
+            /** Text */
+            text: string;
+        };
+        /** ResumeSourceOptionsResponse */
+        ResumeSourceOptionsResponse: {
+            /** Bullets */
+            bullets: components["schemas"]["ResumeSourceBulletResponse"][];
+            /** Entities */
+            entities: components["schemas"]["ResumeEntityResponse"][];
+            /** Headline */
+            headline: string | null;
+            /** Personalfacts */
+            personalFacts: components["schemas"]["ResumePersonalFactResponse"][];
+            /** Skills */
+            skills: string[];
+            /** Sourceevidenceids */
+            sourceEvidenceIds: string[];
+            /** Summary */
+            summary: string | null;
+        };
         /** ResumeUpdateRequest */
         ResumeUpdateRequest: {
+            layout?: components["schemas"]["ResumeLayoutSchema"] | null;
+            /** Personalfactids */
+            personalFactIds?: string[] | null;
             /** Sections */
             sections?: components["schemas"]["ResumeSectionRequest"][] | null;
             /** Targetrole */
@@ -9113,17 +9276,27 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Manifestsha256 */
+            manifestSha256: string;
             /** Missinglines */
             missingLines: string[];
+            /** Occurrencemismatches */
+            occurrenceMismatches: string[];
+            /** Pagecount */
+            pageCount: number;
             /** Parserversion */
             parserVersion: string;
             /** Readingorder */
             readingOrder: string[];
+            /** Readingorderfailures */
+            readingOrderFailures: string[];
             /**
              * Status
              * @enum {string}
              */
             status: "passed" | "warning" | "failed";
+            /** Versioncontentsha256 */
+            versionContentSha256: string;
             /**
              * Versionid
              * Format: uuid
@@ -9159,13 +9332,18 @@ export interface components {
              * Format: date-time
              */
             createdAt: string;
+            /** Entities */
+            entities: components["schemas"]["ResumeEntityResponse"][];
             /**
              * Id
              * Format: uuid
              */
             id: string;
+            layout: components["schemas"]["ResumeLayoutSchema"];
             /** Parentversionid */
             parentVersionId: string | null;
+            /** Personalfacts */
+            personalFacts: components["schemas"]["ResumePersonalFactResponse"][];
             /** Plaintext */
             plainText: string;
             /**
@@ -23006,7 +23184,7 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            200: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -32729,6 +32907,93 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResumeResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
+    resumeSourceOptionsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                resume_id: string;
+            };
+            cookie?: {
+                careeros_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResumeSourceOptionsResponse"];
                 };
             };
             /** @description Bad Request */

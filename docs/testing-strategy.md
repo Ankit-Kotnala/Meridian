@@ -439,16 +439,27 @@ Phase 7 keeps every Phase 6 gate and adds blocking coverage for ADR 0013:
   bullet validation, autosave/version creation, immutable restore/history,
   export idempotency replay/conflict, blocked-export download denial, deletion,
   and redacted audit/status behavior.
-- Renderer tests generate real PDF and DOCX bytes from all five templates and
-  reparse them through the local document extractor to prove searchable critical
-  text survives round trip. Text and JSON outputs are verified through the same
-  structured policy and content hash checks.
+- Renderer/workflow tests generate real PDF and DOCX bytes from all five
+  distinct templates and reparse them through the independent local document
+  extractor. Exact Unicode occurrences, omissions, duplicates, order,
+  searchability, one/two-page overflow, unsupported/numeric grounding, and
+  version/manifest hash drift are blocking; failed objects are removed.
+- Durable workflow tests cover transactional outbox delivery, typed
+  render/delete operations, lease and acknowledgement fencing, duplicate
+  delivery, bounded retry, publish/processing/cleanup dead letters, redacted
+  audit, lost-message reconciliation, truthful object deletion, cancellation
+  immediately after a successful object write, attempt-key isolation, and
+  retry/dead-letter recovery of the precommitted orphan-object backstop.
 - Migration tests assert every Phase 7 table is owner-scoped where required,
-  composite foreign keys include `owner_user_id`, and migration
-  `20260719_0008` matches registered SQLAlchemy metadata.
+  composite foreign keys include `owner_user_id`, historical migration
+  `20260719_0008` remains immutable, and closure heads `20260726_0012`/
+  `20260726_0013` match registered SQLAlchemy metadata without drift. The latter
+  restores inconsistent historical deletion state to queued cleanup without
+  inventing timestamps.
 - Repository integration uses real PostgreSQL to persist resumes, versions,
-  exports, verification reports, idempotency records, download intents, and
-  cross-user denial.
+  exports, operation-typed outbox state, verification reports, idempotency
+  records, download intents, render/cleanup audit transitions, private S3
+  transfer/deletion, and cross-user denial.
 - API tests cover authenticated resume creation/update/export/download-intent
   workflow, CSRF requirements, idempotency headers, `If-Match` handling,
   verification-blocked exports, no-store/ETag behavior, and safe problem
@@ -458,20 +469,17 @@ Phase 7 keeps every Phase 6 gate and adds blocking coverage for ADR 0013:
   blocked download state, and generated-contract-backed API calls.
 - The Phase 7 Playwright journey registers and verifies a real account, creates
   confirmed fictional career evidence, opens Resume Builder, creates a resume,
-  verifies a PDF export, and obtains a short-lived download intent without mock
-  resume data.
+  exercises structured editing, undo/redo, autosave, all previews,
+  compare/restore, verifies a background PDF export, and obtains a short-lived
+  download intent without mock resume data. The same journey runs by keyboard on
+  desktop and through the mobile viewport.
 
 `scripts/verify-phase7.ps1` is the consolidated local gate for the final Phase 7
-tree. It verifies migration head `20260719_0008`, rollback to `20260719_0007`,
-forward repair, real integration tests, prior Playwright journeys, and the new
-Resume Builder primary workflow.
-
-That historical gate verifies the implemented synchronous vertical slice, not
-the later release-scale design. The five selectable template IDs currently share
-one renderer structure, and the verification suite does not yet make exact
-occurrence counts and reading-order comparison blocking. Durable worker
-dispatch/recovery, distinct layouts, and a canonical cross-format fidelity
-manifest remain Phase 10 prerequisites.
+tree. It verifies current migration head `20260726_0013`, rollback to
+`20260719_0007`, forward repair, real PostgreSQL/S3 integration, prior
+Playwright journeys, and the Resume Builder desktop/mobile primary workflow.
+The recorded 2026-07-19 gate remains the historical baseline; current closure
+results must be recorded separately in `PLANS.md`.
 
 ## Application Workspace and grounded-pack coverage (Phase 8)
 
@@ -670,10 +678,15 @@ The exact merged tree passed the separate security gate again. PR #22 workflow
 run `30161489265` passed every required hosted job at implementation/merge head
 `1454792`.
 
-Phase 10 verification must first cover durable asynchronous Resume Builder
-render/verify dispatch and recovery, distinct-template cross-format fidelity,
-and an idempotent production-guarded fictional local database/object seed; the
-synchronous renderer and preview-only `make seed` do not satisfy those gates.
+Phase 7A/B/C closure now covers durable asynchronous Resume Builder
+render/verify/cleanup dispatch and recovery plus distinct-template cross-format
+fidelity. Phase 10's seed implementation has pure coverage for deterministic
+Phase 1-9 graph construction, exact provenance/export hashes, migration-head
+pinning, and fail-closed environment/database/object guards. Its release gate
+must run `make seed` twice against the same empty local PostgreSQL/MinIO stack,
+prove the second run creates zero rows, verify all expected rows and both object
+digests, and prove production/staging/remote targets are refused before I/O.
+The presentation-only `pnpm fixtures:preview` is intentionally separate.
 
 ## Backend test portfolio
 

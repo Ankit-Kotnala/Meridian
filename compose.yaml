@@ -44,6 +44,15 @@ x-app-environment: &app-environment
   CAREEROS_RESUME_JOB_RECONCILIATION_STALE_SECONDS: ${RESUME_JOB_RECONCILIATION_STALE_SECONDS:-300}
   CAREEROS_ATTACHMENT_JOB_RECONCILIATION_INTERVAL_SECONDS: ${ATTACHMENT_JOB_RECONCILIATION_INTERVAL_SECONDS:-60}
   CAREEROS_ATTACHMENT_JOB_RECONCILIATION_STALE_SECONDS: ${ATTACHMENT_JOB_RECONCILIATION_STALE_SECONDS:-300}
+  CAREEROS_RESUME_EXPORT_LEASE_SECONDS: ${RESUME_EXPORT_LEASE_SECONDS:-330}
+  CAREEROS_RESUME_EXPORT_MAX_BYTES: ${RESUME_EXPORT_MAX_BYTES:-8388608}
+  CAREEROS_RESUME_EXPORT_RETRY_SECONDS: ${RESUME_EXPORT_RETRY_SECONDS:-30}
+  CAREEROS_RESUME_EXPORT_OUTBOX_INTERVAL_SECONDS: ${RESUME_EXPORT_OUTBOX_INTERVAL_SECONDS:-5}
+  CAREEROS_RESUME_EXPORT_OUTBOX_LEASE_SECONDS: ${RESUME_EXPORT_OUTBOX_LEASE_SECONDS:-30}
+  CAREEROS_RESUME_EXPORT_OUTBOX_MAX_ATTEMPTS: ${RESUME_EXPORT_OUTBOX_MAX_ATTEMPTS:-5}
+  CAREEROS_RESUME_EXPORT_RECONCILIATION_INTERVAL_SECONDS: ${RESUME_EXPORT_RECONCILIATION_INTERVAL_SECONDS:-60}
+  CAREEROS_RESUME_EXPORT_RECONCILIATION_STALE_SECONDS: ${RESUME_EXPORT_RECONCILIATION_STALE_SECONDS:-300}
+  CAREEROS_RESUME_EXPORT_ORPHAN_CLEANUP_GRACE_SECONDS: ${RESUME_EXPORT_ORPHAN_CLEANUP_GRACE_SECONDS:-300}
   CAREEROS_ANALYTICS_MAX_ATTEMPTS: ${ANALYTICS_MAX_ATTEMPTS:-3}
   CAREEROS_ANALYTICS_JOB_LEASE_SECONDS: ${ANALYTICS_JOB_LEASE_SECONDS:-360}
   CAREEROS_ANALYTICS_RETRY_SECONDS: ${ANALYTICS_RETRY_SECONDS:-30}
@@ -222,6 +231,28 @@ services:
     restart: unless-stopped
     networks: [backend, edge]
 
+  local-seed:
+    profiles: ["tools"]
+    image: careeros-api:latest
+    environment:
+      <<: *app-environment
+      CAREEROS_ALLOW_LOCAL_SEED: ${CAREEROS_ALLOW_LOCAL_SEED:-}
+    command: ["python", "-m", "careeros.development.local_seed"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    read_only: true
+    init: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 64
+    mem_limit: 512m
+    cpus: 0.5
+    restart: "no"
+    networks: [backend]
+
   worker:
     build:
       context: .
@@ -255,7 +286,7 @@ services:
         "worker",
         "--loglevel=INFO",
         "--concurrency=${WORKER_CONCURRENCY:-2}",
-        "--queues=default,resume-health,career-record,maintenance",
+        "--queues=default,resume-health,resume-builder,career-record,maintenance",
       ]
     healthcheck:
       test: ["CMD", "python", "-m", "careeros_worker.healthcheck"]

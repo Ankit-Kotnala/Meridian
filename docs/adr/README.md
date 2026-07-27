@@ -24,6 +24,8 @@ status; consult `PLANS.md` for current behavior.
 | [0014](0014-phase8-application-workspace-and-packs.md)                | Phase 8 exact job/resume/evidence pins, grounded workspace packs, and no send/submit | Accepted                               |
 | [0015](0015-phase9-interview-networking-growth-analytics.md)          | Phase 9 grounded interview, consent CRM, Career Health, and private analytics        | Accepted                               |
 | [0016](0016-phase2-semantic-resume-and-parser-isolation.md)           | Source-anchored semantic resumes, typed review, and killable parser isolation        | Accepted                               |
+| [0017](0017-observed-onboarding-and-semantic-career-imports.md)       | Server-observed onboarding and exact typed semantic Career Record imports            | Accepted                               |
+| [0018](0018-phase10-fictional-local-seed.md)                          | Production-guarded, idempotent fictional local database/object seed                  | Accepted                               |
 
 ## Lifecycle
 

@@ -9,6 +9,7 @@ import type {
   ResumeDownloadIntent,
   ResumeExportInput,
   ResumeExportRecord,
+  ResumeSourceOptions,
   ResumeUpdateInput,
   ResumeVersion,
 } from "./types";
@@ -64,6 +65,15 @@ export async function listVersions(resumeId: string): Promise<ResumeVersion[]> {
   return body.items;
 }
 
+export async function getResumeSourceOptions(
+  resumeId: string,
+): Promise<ResumeSourceOptions> {
+  const response = await query(
+    resumeBuilderPaths.resumeSourceOptions(resumeId),
+  );
+  return (await response.json()) as ResumeSourceOptions;
+}
+
 export async function createVersion(resume: Resume): Promise<ResumeVersion> {
   const response = await mutate(resumeBuilderPaths.resumeVersions(resume.id), {
     headers: headers(resume.version, crypto.randomUUID()),
@@ -101,6 +111,11 @@ export async function exportVersion(
   return (await response.json()) as ResumeExportRecord;
 }
 
+export async function getExport(exportId: string): Promise<ResumeExportRecord> {
+  const response = await query(resumeBuilderPaths.export(exportId));
+  return (await response.json()) as ResumeExportRecord;
+}
+
 export async function createDownloadIntent(
   exportId: string,
 ): Promise<ResumeDownloadIntent> {
@@ -109,4 +124,14 @@ export async function createDownloadIntent(
     method: "POST",
   });
   return (await response.json()) as ResumeDownloadIntent;
+}
+
+export async function deleteExport(
+  exportId: string,
+): Promise<ResumeExportRecord> {
+  const response = await mutate(resumeBuilderPaths.export(exportId), {
+    headers: headers(undefined, crypto.randomUUID()),
+    method: "DELETE",
+  });
+  return (await response.json()) as ResumeExportRecord;
 }

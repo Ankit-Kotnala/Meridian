@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [ValidateSet(1, 2, 3, 4, 5, 6, 7, 8, 9)]
-    [int]$Phase = 1
+    [int]$Phase = 1,
+    [string[]]$JourneySpec
 )
 
 $ErrorActionPreference = "Stop"
@@ -82,7 +83,7 @@ $ExpectedMigrationHead = if ($env:CAREEROS_EXPECTED_MIGRATION_HEAD) {
     $env:CAREEROS_EXPECTED_MIGRATION_HEAD
 }
 else {
-    "20260726_0011"
+    "20260726_0014"
 }
 
 if ($Phase -eq 9) {
@@ -176,6 +177,19 @@ else {
     )
 }
 
+if ($JourneySpec) {
+    $UnsupportedJourneySpecs = @(
+        $JourneySpec | Where-Object { $JourneySpecs -notcontains $_ }
+    )
+    if ($UnsupportedJourneySpecs.Count -gt 0) {
+        throw (
+            "Requested journey specs are not part of Phase ${Phase}: " +
+            ($UnsupportedJourneySpecs -join ", ")
+        )
+    }
+    $JourneySpecs = @($JourneySpec)
+}
+
 $RepositoryRoot = Split-Path -Parent $PSScriptRoot
 $ProjectName = if ($env:CAREEROS_E2E_PROJECT_NAME) {
     $env:CAREEROS_E2E_PROJECT_NAME
@@ -186,6 +200,7 @@ else {
 if ($ProjectName -notmatch '^careeros-e2e-[a-z0-9][a-z0-9_-]*$') {
     throw "CAREEROS_E2E_PROJECT_NAME must begin with careeros-e2e- and contain only lowercase letters, digits, underscores, or hyphens."
 }
+$KeepFailedStack = $env:CAREEROS_E2E_KEEP_FAILED_STACK -eq "1"
 $Overrides = [ordered]@{
     COMPOSE_PROJECT_NAME       = $ProjectName
     POSTGRES_PORT              = if ($env:POSTGRES_PORT) { $env:POSTGRES_PORT } else { "55433" }
@@ -228,6 +243,15 @@ $Overrides = [ordered]@{
     DOCUMENT_MAX_SERIALIZED_ARTIFACT_BYTES = "2097152"
     RESUME_JOB_RECONCILIATION_INTERVAL_SECONDS = "60"
     RESUME_JOB_RECONCILIATION_STALE_SECONDS = "300"
+    RESUME_EXPORT_MAX_BYTES     = "8388608"
+    RESUME_EXPORT_LEASE_SECONDS = "330"
+    RESUME_EXPORT_RETRY_SECONDS = "5"
+    RESUME_EXPORT_OUTBOX_INTERVAL_SECONDS = "1"
+    RESUME_EXPORT_OUTBOX_LEASE_SECONDS = "30"
+    RESUME_EXPORT_OUTBOX_MAX_ATTEMPTS = "5"
+    RESUME_EXPORT_RECONCILIATION_INTERVAL_SECONDS = "10"
+    RESUME_EXPORT_RECONCILIATION_STALE_SECONDS = "60"
+    RESUME_EXPORT_ORPHAN_CLEANUP_GRACE_SECONDS = "30"
     DOCUMENT_PROCESSING_TIMEOUT_SECONDS = "120"
     API_BASE_URL               = "http://api:8000"
     AUTH_TOKEN_PEPPER          = if ($env:CAREEROS_E2E_AUTH_TOKEN_PEPPER) { $env:CAREEROS_E2E_AUTH_TOKEN_PEPPER } else { "change-me-local-only-e2e-auth-token-pepper" }
@@ -413,8 +437,17 @@ finally {
         docker compose --project-name $ProjectName ps --all
         docker compose --project-name $ProjectName logs --no-color --tail 200
     }
-    docker compose --project-name $ProjectName down --volumes --remove-orphans --rmi local
-    $CleanupExitCode = $LASTEXITCODE
+    if (-not $MainSucceeded -and $KeepFailedStack) {
+        Write-Warning (
+            "Retaining failed isolated project '$ProjectName' because " +
+            "CAREEROS_E2E_KEEP_FAILED_STACK=1. Remove it explicitly after diagnosis."
+        )
+        $CleanupExitCode = 0
+    }
+    else {
+        docker compose --project-name $ProjectName down --volumes --remove-orphans --rmi local
+        $CleanupExitCode = $LASTEXITCODE
+    }
     Pop-Location
 
     foreach ($Entry in $PreviousValues.GetEnumerator()) {

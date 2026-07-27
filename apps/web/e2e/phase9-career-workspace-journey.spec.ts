@@ -303,7 +303,7 @@ async function createGroundedApplication(
 
   await page.goto("/resume-builder");
   await expect(
-    page.getByRole("heading", { name: "Verified resume exports" }),
+    page.getByRole("heading", { name: "Evidence-backed resume studio" }),
   ).toBeVisible();
   await fill(page.getByLabel("Resume title"), fictional.resumeTitle);
   await fill(page.getByLabel("Target role"), fictional.jobTitle);

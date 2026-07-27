@@ -11,3 +11,9 @@ export type ResumeExportRecord =
   components["schemas"]["ResumeExportRecordResponse"];
 export type ResumeDownloadIntent =
   components["schemas"]["ResumeDownloadIntentResponse"];
+export type ResumeSourceOptions =
+  components["schemas"]["ResumeSourceOptionsResponse"];
+export type ResumeLayout = components["schemas"]["ResumeLayoutSchema"];
+export type ResumeBulletRequest = components["schemas"]["ResumeBulletRequest"];
+export type ResumeSectionRequest =
+  components["schemas"]["ResumeSectionRequest"];

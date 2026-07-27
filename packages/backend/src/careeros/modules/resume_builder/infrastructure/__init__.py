@@ -1,5 +1,10 @@
 """Infrastructure adapters for Phase 7 resume builder."""
 
+from .extractors import (
+    ResumeBuilderDocumentExtractor,
+    ResumeExportExtractionError,
+    ResumeExportExtractionLimits,
+)
 from .identifiers import SystemClock, UuidIdentifierFactory
 from .renderers import DeterministicResumeRenderer
 from .repository import (
@@ -12,6 +17,9 @@ from .storage import ResumeExportS3Options, ResumeExportS3Storage
 __all__ = [
     "CareerRecordResumeSourceProvider",
     "DeterministicResumeRenderer",
+    "ResumeBuilderDocumentExtractor",
+    "ResumeExportExtractionError",
+    "ResumeExportExtractionLimits",
     "ResumeExportS3Options",
     "ResumeExportS3Storage",
     "SqlAlchemyResumeBuilderUnitOfWork",

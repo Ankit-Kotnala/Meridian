@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-import tempfile
 from dataclasses import replace
 from datetime import datetime, timedelta
-from pathlib import Path
 from uuid import UUID
 
 from careeros.modules.resume_builder.domain import (
@@ -23,16 +21,24 @@ from careeros.modules.resume_builder.domain import (
     ResumeBullet,
     ResumeDocument,
     ResumeDownloadIntent,
+    ResumeEntityFact,
     ResumeEvidenceReference,
     ResumeExport,
     ResumeExportBlocked,
+    ResumeExportOperation,
+    ResumeExportOutboxMessage,
     ResumeExportStatus,
     ResumeFormat,
+    ResumeLayout,
+    ResumePersonalFact,
     ResumeSection,
     ResumeTemplate,
     ResumeVerificationReport,
-    ResumeVerificationStatus,
     ResumeVersion,
+    build_fidelity_manifest,
+    entity_display_lines,
+    fidelity_manifest_payload,
+    fidelity_manifest_sha256,
     normalize_text,
     validate_optional_target_role,
     validate_sections,
@@ -56,9 +62,7 @@ from .ports import (
     Clock,
     IdentifierFactory,
     ResumeBuilderUnitOfWorkFactory,
-    ResumeDocumentExtractor,
     ResumeObjectStorage,
-    ResumeRenderer,
     ResumeSourceProvider,
 )
 
@@ -66,6 +70,9 @@ from .ports import (
 class ResumeBuilderPolicy:
     download_ttl_seconds: int = 120
     max_export_bytes: int = 8 * 1024 * 1024
+    export_max_attempts: int = 3
+    export_cleanup_max_attempts: int = 3
+    outbox_max_attempts: int = 5
 
 
 class ResumeBuilderService:
@@ -78,8 +85,6 @@ class ResumeBuilderService:
         clock: Clock,
         identifiers: IdentifierFactory,
         sources: ResumeSourceProvider,
-        renderer: ResumeRenderer,
-        extractor: ResumeDocumentExtractor,
         storage: ResumeObjectStorage,
         policy: ResumeBuilderPolicy | None = None,
     ) -> None:
@@ -87,8 +92,6 @@ class ResumeBuilderService:
         self._clock = clock
         self._ids = identifiers
         self._sources = sources
-        self._renderer = renderer
-        self._extractor = extractor
         self._storage = storage
         self._policy = policy or ResumeBuilderPolicy()
 
@@ -117,6 +120,7 @@ class ResumeBuilderService:
                 "template": command.template.value,
                 "changeSetId": _uuid(command.change_set_id),
                 "changeSetVersionId": _uuid(command.change_set_version_id),
+                "layout": _layout_payload(command.layout),
             },
         )
         replay = await self._resume_replay(owner_user_id, idempotency_key, fingerprint)
@@ -138,6 +142,7 @@ class ResumeBuilderService:
             title,
             target_role,
             command.template,
+            command.layout,
             source,
             command.change_set_id,
             command.change_set_version_id,
@@ -155,6 +160,7 @@ class ResumeBuilderService:
             version=1,
             created_at=now,
             updated_at=now,
+            layout=command.layout,
         )
         record = ResumeRecord(resume=resume, current_version=version)
         async with self._uow() as uow:
@@ -191,6 +197,20 @@ class ResumeBuilderService:
             raise ResumeBuilderNotFound
         return record
 
+    async def get_source_options(
+        self,
+        owner_user_id: UUID,
+        resume_id: UUID,
+    ) -> ResumeSourceSnapshot:
+        """Return the current eligible, owner-scoped facts available to the editor."""
+
+        record = await self.get_resume(owner_user_id, resume_id)
+        return await self._sources.snapshot(
+            owner_user_id,
+            change_set_id=record.resume.source_change_set_id,
+            change_set_version_id=record.resume.source_change_set_version_id,
+        )
+
     async def update_resume(
         self,
         owner_user_id: UUID,
@@ -210,10 +230,17 @@ class ResumeBuilderService:
                 "expectedVersion": expected_version,
                 "title": command.title,
                 "targetRole": command.target_role,
+                "targetRoleProvided": command.target_role_provided,
                 "template": command.template.value if command.template else None,
                 "sections": _sections_payload(command.sections)
                 if command.sections is not None
                 else None,
+                "personalFactIds": (
+                    [str(value) for value in command.personal_fact_ids]
+                    if command.personal_fact_ids is not None
+                    else None
+                ),
+                "layout": (_layout_payload(command.layout) if command.layout is not None else None),
             },
         )
         replay = await self._resume_replay(owner_user_id, idempotency_key, fingerprint)
@@ -243,10 +270,11 @@ class ResumeBuilderService:
             )
             target_role = (
                 validate_optional_target_role(command.target_role)
-                if command.target_role is not None
+                if command.target_role_provided or command.target_role is not None
                 else record.resume.target_role
             )
             template = command.template or record.resume.template
+            layout = command.layout or record.resume.layout
             sections = (
                 self._sections_with_authoritative_references(
                     command.sections,
@@ -255,6 +283,16 @@ class ResumeBuilderService:
                 )
                 if command.sections is not None
                 else self._validated_version_sections(record.current_version)
+            )
+            personal_facts = self._selected_personal_facts(
+                command.personal_fact_ids,
+                current=record.current_version.personal_facts,
+                source=source.personal_facts,
+            )
+            entities = self._entities_for_sections(
+                sections,
+                current=record.current_version.entities,
+                source=source.entities,
             )
             versions = await uow.list_versions(owner_user_id, resume_id)
             next_number = max((item.version_number for item in versions), default=0) + 1
@@ -268,8 +306,17 @@ class ResumeBuilderService:
                 target_role=target_role,
                 template=template,
                 sections=sections,
-                plain_text=_plain_text(title, target_role, sections),
+                plain_text=_plain_text(
+                    title,
+                    target_role,
+                    sections,
+                    personal_facts=personal_facts,
+                    entities=entities,
+                ),
                 source_evidence_ids=_section_evidence_ids(sections),
+                personal_facts=personal_facts,
+                entities=entities,
+                layout=layout,
                 created_at=now,
             )
             resume = replace(
@@ -277,6 +324,7 @@ class ResumeBuilderService:
                 title=title,
                 target_role=target_role,
                 template=template,
+                layout=layout,
                 current_version_id=version.id,
                 version=record.resume.version + 1,
                 updated_at=now,
@@ -479,6 +527,8 @@ class ResumeBuilderService:
             if version is None:
                 raise ResumeBuilderNotFound
             self._validated_version_sections(version)
+            manifest = build_fidelity_manifest(version)
+            manifest_payload = fidelity_manifest_payload(manifest)
             now = self._clock.now()
             export_id = self._ids.new()
             export = ResumeExport(
@@ -505,8 +555,32 @@ class ResumeBuilderService:
                 completed_at=None,
                 deleted_at=None,
                 last_error=None,
+                version_content_sha256=manifest.version_content_sha256,
+                fidelity_manifest=manifest_payload,
+                fidelity_manifest_sha256=fidelity_manifest_sha256(manifest),
+                trace_id=context.trace_id,
+                max_attempts=self._policy.export_max_attempts,
             )
             await uow.add_export(export)
+            await uow.add_export_outbox(
+                ResumeExportOutboxMessage(
+                    id=self._ids.new(),
+                    owner_user_id=owner_user_id,
+                    export_id=export_id,
+                    operation=ResumeExportOperation.RENDER,
+                    trace_id=context.trace_id,
+                    available_at=now,
+                    attempts=0,
+                    max_attempts=self._policy.outbox_max_attempts,
+                    lease_token=None,
+                    leased_at=None,
+                    lease_expires_at=None,
+                    published_at=None,
+                    dead_lettered_at=None,
+                    last_error=None,
+                    created_at=now,
+                )
+            )
             await uow.add_audit(
                 self._audit(
                     owner_user_id,
@@ -521,7 +595,7 @@ class ResumeBuilderService:
             )
             await uow.commit()
 
-        return await self._render_and_verify(owner_user_id, export_id, context)
+        return ResumeExportRecord(export=export, verification=None)
 
     async def get_export(self, owner_user_id: UUID, export_id: UUID) -> ResumeExportRecord:
         async with self._uow() as uow:
@@ -619,10 +693,48 @@ class ResumeBuilderService:
             if export.status == ResumeExportStatus.DELETED:
                 verification = await uow.get_verification(owner_user_id, export_id)
                 return ResumeExportRecord(export=export, verification=verification)
-            object_key = export.object_key
+            if export.status in {
+                ResumeExportStatus.DELETION_PENDING,
+                ResumeExportStatus.DELETING,
+                ResumeExportStatus.DELETION_RETRY_WAIT,
+                ResumeExportStatus.DELETION_DEAD_LETTERED,
+            }:
+                verification = await uow.get_verification(owner_user_id, export_id)
+                return ResumeExportRecord(export=export, verification=verification)
             now = self._clock.now()
-            deleted = replace(export, status=ResumeExportStatus.DELETED, deleted_at=now)
-            await uow.save_export(deleted)
+            pending = replace(
+                export,
+                status=ResumeExportStatus.DELETION_PENDING,
+                fence=export.fence + 1,
+                execution_token_hash=None,
+                lease_expires_at=None,
+                retry_at=None,
+                dead_lettered_at=None,
+                cleanup_attempts=0,
+                cleanup_max_attempts=self._policy.export_cleanup_max_attempts,
+                deleted_at=None,
+                last_error=None,
+            )
+            await uow.save_export(pending)
+            await uow.add_export_outbox(
+                ResumeExportOutboxMessage(
+                    id=self._ids.new(),
+                    owner_user_id=owner_user_id,
+                    export_id=export_id,
+                    operation=ResumeExportOperation.DELETE,
+                    trace_id=context.trace_id,
+                    available_at=now,
+                    attempts=0,
+                    max_attempts=self._policy.outbox_max_attempts,
+                    lease_token=None,
+                    leased_at=None,
+                    lease_expires_at=None,
+                    published_at=None,
+                    dead_lettered_at=None,
+                    last_error=None,
+                    created_at=now,
+                )
+            )
             await uow.add_idempotency(
                 self._idem(
                     owner_user_id,
@@ -638,7 +750,7 @@ class ResumeBuilderService:
             await uow.add_audit(
                 self._audit(
                     owner_user_id,
-                    ResumeAuditAction.EXPORT_DELETED,
+                    ResumeAuditAction.EXPORT_DELETION_REQUESTED,
                     "resume_export",
                     export_id,
                     context,
@@ -646,181 +758,7 @@ class ResumeBuilderService:
                 )
             )
             await uow.commit()
-        if object_key is not None:
-            await self._storage.delete(object_key)
         return await self.get_export(owner_user_id, export_id)
-
-    async def _render_and_verify(
-        self, owner_user_id: UUID, export_id: UUID, context: RequestContext
-    ) -> ResumeExportRecord:
-        async with self._uow() as uow:
-            export = await uow.get_export(owner_user_id, export_id)
-            if export is None:
-                raise ResumeBuilderNotFound
-            version = await uow.get_version(owner_user_id, export.version_id)
-            if version is None:
-                raise ResumeBuilderNotFound
-            self._validated_version_sections(version)
-            now = self._clock.now()
-            rendering = replace(
-                export,
-                status=ResumeExportStatus.RENDERING,
-                attempts=export.attempts + 1,
-                last_error=None,
-            )
-            await uow.save_export(rendering)
-            await uow.commit()
-
-        try:
-            rendered = self._renderer.render(version, fmt=export.format.value)
-            if len(rendered.content) > self._policy.max_export_bytes:
-                raise ResumeBuilderValidationError("rendered export exceeds maximum size")
-            digest = hashlib.sha256(rendered.content).hexdigest()
-            object_key = _object_key(owner_user_id, version.id, export_id, export.format)
-            await self._storage.put_bytes(object_key, rendered.content, rendered.media_type)
-            verification = await self._verify(
-                version,
-                export_id,
-                rendered.content,
-                rendered.media_type,
-                rendered.expected_lines,
-                digest,
-            )
-            status = (
-                ResumeExportStatus.BLOCKED
-                if verification.status == ResumeVerificationStatus.FAILED
-                else ResumeExportStatus.VERIFIED
-            )
-            now = self._clock.now()
-            completed = replace(
-                rendering,
-                status=status,
-                object_key=object_key,
-                media_type=rendered.media_type,
-                size_bytes=len(rendered.content),
-                sha256_digest=digest,
-                verification_status=verification.status,
-                verification_codes=verification.grounding_codes,
-                critical_failures=verification.critical_failures,
-                warnings=verification.warnings,
-                renderer_version=rendered.renderer_version,
-                parser_version=verification.parser_version,
-                completed_at=now,
-            )
-            async with self._uow() as uow:
-                await uow.save_export(completed, verification)
-                await uow.add_audit(
-                    self._audit(
-                        owner_user_id,
-                        (
-                            ResumeAuditAction.EXPORT_BLOCKED
-                            if status == ResumeExportStatus.BLOCKED
-                            else ResumeAuditAction.EXPORT_VERIFIED
-                        ),
-                        "resume_export",
-                        export_id,
-                        context,
-                        now,
-                        verificationStatus=verification.status.value,
-                    )
-                )
-                await uow.commit()
-            return ResumeExportRecord(export=completed, verification=verification)
-        except Exception as exc:
-            now = self._clock.now()
-            failed = replace(
-                rendering,
-                status=ResumeExportStatus.FAILED,
-                completed_at=now,
-                last_error=exc.__class__.__name__,
-            )
-            async with self._uow() as uow:
-                await uow.save_export(failed)
-                await uow.commit()
-            raise
-
-    async def _verify(
-        self,
-        version: ResumeVersion,
-        export_id: UUID,
-        content: bytes,
-        media_type: str,
-        expected_lines: tuple[str, ...],
-        digest: str,
-    ) -> ResumeVerificationReport:
-        parser_version = "direct-text-v1"
-        warnings: tuple[str, ...] = ()
-        if media_type in (
-            "application/pdf",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        ):
-            suffix = ".pdf" if media_type == "application/pdf" else ".docx"
-            with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as handle:
-                handle.write(content)
-                path = Path(handle.name)
-            try:
-                extracted = await self._extractor.extract(path, media_type)
-            finally:
-                path.unlink(missing_ok=True)
-            text = extracted.plain_text
-            reading_order = extracted.reading_order
-            parser_version = extracted.parser_version
-            warnings = extracted.warnings
-        else:
-            text = content.decode("utf-8", errors="replace")
-            reading_order = tuple(
-                line for line in (normalize_text(item) for item in text.splitlines()) if line
-            )
-        normalized_text = normalize_text(text).casefold()
-        expected = tuple(
-            dict.fromkeys(normalize_text(line) for line in expected_lines if line.strip())
-        )
-        missing = tuple(line for line in expected if line.casefold() not in normalized_text)
-        duplicate_lines = tuple(
-            line for line in expected if line and normalized_text.count(line.casefold()) > 1
-        )
-        detected = tuple(line for line in expected if line not in missing)
-        grounding_failures = _version_provenance_failures(version)
-        failures = (
-            *(f"missing:{line[:80]}" for line in missing),
-            *grounding_failures,
-        )
-        grounding_codes = (
-            (
-                "all_bullets_grounded",
-                *(() if missing else ("round_trip_searchable",)),
-            )
-            if not grounding_failures
-            else (
-                "grounding_validation_failed",
-                *(() if missing else ("round_trip_searchable",)),
-            )
-        )
-        status = (
-            ResumeVerificationStatus.FAILED
-            if failures
-            else ResumeVerificationStatus.WARNING
-            if warnings
-            else ResumeVerificationStatus.PASSED
-        )
-        now = self._clock.now()
-        return ResumeVerificationReport(
-            id=self._ids.new(),
-            owner_user_id=version.owner_user_id,
-            export_id=export_id,
-            version_id=version.id,
-            status=status,
-            critical_failures=failures,
-            warnings=warnings,
-            detected_lines=detected,
-            missing_lines=missing,
-            duplicate_lines=duplicate_lines,
-            reading_order=reading_order,
-            grounding_codes=grounding_codes,
-            file_sha256=digest,
-            parser_version=parser_version,
-            created_at=now,
-        )
 
     def _new_version(
         self,
@@ -831,6 +769,7 @@ class ResumeBuilderService:
         title: str,
         target_role: str | None,
         template: ResumeTemplate,
+        layout: ResumeLayout,
         source: ResumeSourceSnapshot,
         change_set_id: UUID | None,
         change_set_version_id: UUID | None,
@@ -839,6 +778,12 @@ class ResumeBuilderService:
         if not hasattr(now, "isoformat"):
             raise TypeError("clock returned invalid timestamp")
         sections = self._sections_from_source(source)
+        personal_facts = _initial_personal_facts(source.personal_facts)
+        entities = self._entities_for_sections(
+            sections,
+            current=(),
+            source=source.entities,
+        )
         return ResumeVersion(
             id=self._ids.new(),
             owner_user_id=owner_user_id,
@@ -849,11 +794,20 @@ class ResumeBuilderService:
             target_role=target_role,
             template=template,
             sections=sections,
-            plain_text=_plain_text(title, target_role, sections),
+            plain_text=_plain_text(
+                title,
+                target_role,
+                sections,
+                personal_facts=personal_facts,
+                entities=entities,
+            ),
             source_evidence_ids=_section_evidence_ids(sections),
             source_change_set_id=change_set_id,
             source_change_set_version_id=change_set_version_id,
             created_at=now,
+            personal_facts=personal_facts,
+            entities=entities,
+            layout=layout,
         )
 
     def _sections_from_source(self, source: ResumeSourceSnapshot) -> tuple[ResumeSection, ...]:
@@ -865,11 +819,31 @@ class ResumeBuilderService:
         grouped: dict[str, list[ResumeSourceBullet]] = {}
         for item in source.bullets:
             kind = normalize_text(item.section_kind).casefold()
-            if kind not in {"experience", "skills"}:
+            if kind not in {
+                "awards",
+                "credentials",
+                "education",
+                "experience",
+                "projects",
+                "publications",
+                "skills",
+                "summary",
+                "volunteering",
+            }:
                 raise ResumeBuilderValidationError("resume source section kind is invalid")
             grouped.setdefault(kind, []).append(item)
         sections: list[ResumeSection] = []
-        titles = {"experience": "Experience", "skills": "Skills"}
+        titles = {
+            "awards": "Awards",
+            "credentials": "Credentials",
+            "education": "Education",
+            "experience": "Experience",
+            "projects": "Projects",
+            "publications": "Publications",
+            "skills": "Skills",
+            "summary": "Professional Summary",
+            "volunteering": "Volunteering",
+        }
         for kind, source_items in grouped.items():
             for offset in range(0, len(source_items), MAX_ITEMS_PER_SECTION):
                 items = tuple(
@@ -879,6 +853,7 @@ class ResumeBuilderService:
                         evidence_ids=item.evidence_ids,
                         source=item.source,
                         evidence_references=item.evidence_references,
+                        entity_id=item.entity_id,
                     )
                     for item in source_items[offset : offset + MAX_ITEMS_PER_SECTION]
                 )
@@ -894,21 +869,17 @@ class ResumeBuilderService:
             raise ResumeBuilderValidationError(
                 "eligible career evidence is required before building a resume"
             )
-        return validate_sections(tuple(sections), eligible_evidence_ids=eligible)
+        return validate_sections(
+            tuple(sections),
+            eligible_evidence_ids=eligible,
+            eligible_entity_ids={entity.id for entity in source.entities},
+        )
 
     def _validated_version_sections(
         self,
         version: ResumeVersion,
     ) -> tuple[ResumeSection, ...]:
-        sections = validate_sections(
-            version.sections,
-            eligible_evidence_ids=set(version.source_evidence_ids),
-        )
-        if _section_evidence_ids(sections) != version.source_evidence_ids:
-            raise ResumeBuilderValidationError(
-                "resume version provenance ledger is incomplete or legacy"
-            )
-        return sections
+        return validate_resume_version(version)
 
     def _sections_with_authoritative_references(
         self,
@@ -924,7 +895,7 @@ class ResumeBuilderService:
             if _bullet_references_match(item)
         }
         source_by_key: dict[
-            tuple[str, tuple[UUID, ...], str],
+            tuple[str, tuple[UUID, ...], str, UUID | None],
             tuple[ResumeEvidenceReference, ...] | None,
         ] = {}
         for source_item in source.bullets:
@@ -932,6 +903,7 @@ class ResumeBuilderService:
                 source_item.text,
                 source_item.evidence_ids,
                 source_item.source,
+                source_item.entity_id,
             )
             source_references = source_item.evidence_references
             existing = source_by_key.get(key)
@@ -948,6 +920,7 @@ class ResumeBuilderService:
                     bullet.text,
                     bullet.evidence_ids,
                     bullet.source,
+                    bullet.entity_id,
                 )
                 current_item = current_by_id.get(bullet.id)
                 authoritative_references: tuple[ResumeEvidenceReference, ...] | None
@@ -957,6 +930,7 @@ class ResumeBuilderService:
                         current_item.text,
                         current_item.evidence_ids,
                         current_item.source,
+                        current_item.entity_id,
                     )
                     == key
                 ):
@@ -975,6 +949,7 @@ class ResumeBuilderService:
                         evidence_ids=bullet.evidence_ids,
                         source=bullet.source,
                         evidence_references=authoritative_references,
+                        entity_id=bullet.entity_id,
                     )
                 )
             attached.append(
@@ -988,7 +963,68 @@ class ResumeBuilderService:
         return validate_sections(
             tuple(attached),
             eligible_evidence_ids=set(source.source_evidence_ids),
+            eligible_entity_ids={
+                *(entity.id for entity in source.entities),
+                *(
+                    item.entity_id
+                    for section in current
+                    for item in section.items
+                    if item.entity_id is not None
+                ),
+            },
         )
+
+    def _selected_personal_facts(
+        self,
+        selected_ids: tuple[UUID, ...] | None,
+        *,
+        current: tuple[ResumePersonalFact, ...],
+        source: tuple[ResumePersonalFact, ...],
+    ) -> tuple[ResumePersonalFact, ...]:
+        if selected_ids is None:
+            return current
+        if len(set(selected_ids)) != len(selected_ids) or len(selected_ids) > 20:
+            raise ResumeBuilderValidationError("resume personal fact selection is invalid")
+        current_by_id = {fact.id: fact for fact in current}
+        source_by_id = {fact.id: fact for fact in source}
+        selected: list[ResumePersonalFact] = []
+        for fact_id in selected_ids:
+            fact = current_by_id.get(fact_id) or source_by_id.get(fact_id)
+            if fact is None:
+                raise ResumeBuilderValidationError(
+                    "resume personal facts must come from the confirmed Career Record"
+                )
+            selected.append(fact)
+        if len([fact for fact in selected if fact.kind == "name"]) > 1:
+            raise ResumeBuilderValidationError("a resume may include only one confirmed name")
+        return tuple(selected)
+
+    def _entities_for_sections(
+        self,
+        sections: tuple[ResumeSection, ...],
+        *,
+        current: tuple[ResumeEntityFact, ...],
+        source: tuple[ResumeEntityFact, ...],
+    ) -> tuple[ResumeEntityFact, ...]:
+        required = tuple(
+            dict.fromkeys(
+                item.entity_id
+                for section in sections
+                for item in section.items
+                if item.entity_id is not None
+            )
+        )
+        current_by_id = {entity.id: entity for entity in current}
+        source_by_id = {entity.id: entity for entity in source}
+        entities: list[ResumeEntityFact] = []
+        for entity_id in required:
+            entity = current_by_id.get(entity_id) or source_by_id.get(entity_id)
+            if entity is None or not entity.evidence_ids:
+                raise ResumeBuilderValidationError(
+                    "resume entities must come from evidence-linked confirmed Career Record facts"
+                )
+            entities.append(entity)
+        return tuple(entities)
 
     async def _resume_replay(
         self, owner_user_id: UUID, idempotency_key: str, fingerprint: str
@@ -1106,13 +1142,58 @@ class ResumeBuilderService:
         )
 
 
-def _plain_text(title: str, target_role: str | None, sections: tuple[ResumeSection, ...]) -> str:
-    lines = [title]
+def validate_resume_version(version: ResumeVersion) -> tuple[ResumeSection, ...]:
+    sections = validate_sections(
+        version.sections,
+        eligible_evidence_ids=set(version.source_evidence_ids),
+        eligible_entity_ids={entity.id for entity in version.entities},
+    )
+    if _section_evidence_ids(sections) != version.source_evidence_ids:
+        raise ResumeBuilderValidationError(
+            "resume version provenance ledger is incomplete or legacy"
+        )
+    entities = {entity.id: entity for entity in version.entities}
+    for section in sections:
+        for item in section.items:
+            if item.entity_id is None:
+                continue
+            entity = entities[item.entity_id]
+            if not set(item.evidence_ids).intersection(entity.evidence_ids):
+                raise ResumeBuilderValidationError(
+                    "resume entity display facts require linked bullet evidence"
+                )
+    if len({fact.id for fact in version.personal_facts}) != len(version.personal_facts):
+        raise ResumeBuilderValidationError("resume personal fact ids must be unique")
+    if len([fact for fact in version.personal_facts if fact.kind == "name"]) > 1:
+        raise ResumeBuilderValidationError("a resume may include only one confirmed name")
+    return sections
+
+
+def _plain_text(
+    _title: str,
+    target_role: str | None,
+    sections: tuple[ResumeSection, ...],
+    *,
+    personal_facts: tuple[ResumePersonalFact, ...],
+    entities: tuple[ResumeEntityFact, ...],
+) -> str:
+    names = [fact.value for fact in personal_facts if fact.kind == "name"]
+    contacts = [fact.value for fact in personal_facts if fact.kind != "name"]
+    lines = [*names]
+    if contacts:
+        lines.append(" | ".join(contacts))
     if target_role:
         lines.append(target_role)
+    entity_by_id = {entity.id: entity for entity in entities}
+    emitted_entities: set[UUID] = set()
     for section in sections:
         lines.append(section.title)
-        lines.extend(item.text for item in section.items)
+        for item in section.items:
+            entity = entity_by_id.get(item.entity_id) if item.entity_id is not None else None
+            if entity is not None and entity.id not in emitted_entities:
+                lines.extend(entity_display_lines(entity))
+                emitted_entities.add(entity.id)
+            lines.append(item.text)
     return "\n".join(lines)
 
 
@@ -1127,15 +1208,32 @@ def _section_evidence_ids(sections: tuple[ResumeSection, ...]) -> tuple[UUID, ..
     )
 
 
+def _initial_personal_facts(
+    facts: tuple[ResumePersonalFact, ...],
+) -> tuple[ResumePersonalFact, ...]:
+    by_kind: dict[str, list[ResumePersonalFact]] = {}
+    for fact in facts:
+        by_kind.setdefault(fact.kind, []).append(fact)
+    selected: list[ResumePersonalFact] = []
+    for kind in ("name", "email", "phone", "location", "link"):
+        candidates = by_kind.get(kind, [])
+        if not candidates:
+            continue
+        selected.append(next((fact for fact in candidates if fact.is_primary), candidates[0]))
+    return tuple(selected)
+
+
 def _bullet_key(
     text: str,
     evidence_ids: tuple[UUID, ...],
     source: str,
-) -> tuple[str, tuple[UUID, ...], str]:
+    entity_id: UUID | None,
+) -> tuple[str, tuple[UUID, ...], str, UUID | None]:
     return (
         normalize_text(text),
         tuple(dict.fromkeys(evidence_ids)),
         normalize_text(source) or "career_record",
+        entity_id,
     )
 
 
@@ -1152,7 +1250,7 @@ def _bullet_references_match(item: ResumeBullet) -> bool:
     )
 
 
-def _version_provenance_failures(version: ResumeVersion) -> tuple[str, ...]:
+def version_provenance_failures(version: ResumeVersion) -> tuple[str, ...]:
     failures: list[str] = []
     seen_item_ids: set[UUID] = set()
     revisions_by_evidence: dict[UUID, tuple[UUID, int, str]] = {}
@@ -1197,12 +1295,24 @@ def _sections_payload(sections: tuple[ResumeSection, ...] | None) -> object:
                     "text": item.text,
                     "evidenceIds": [str(value) for value in item.evidence_ids],
                     "source": item.source,
+                    "entityId": str(item.entity_id) if item.entity_id is not None else None,
                 }
                 for item in section.items
             ],
         }
         for section in sections
     ]
+
+
+def _layout_payload(layout: ResumeLayout) -> dict[str, object]:
+    return {
+        "fontFamily": layout.font_family.value,
+        "fontSizePt": layout.font_size_pt,
+        "lineSpacing": layout.line_spacing.value,
+        "margins": layout.margins.value,
+        "pageLimit": layout.page_limit,
+        "pageSize": layout.page_size.value,
+    }
 
 
 def _fingerprint(operation: str, payload: object) -> str:
@@ -1226,7 +1336,3 @@ def _media_type(fmt: ResumeFormat) -> str:
     if fmt == ResumeFormat.JSON:
         return "application/json"
     return "text/plain; charset=utf-8"
-
-
-def _object_key(owner_user_id: UUID, version_id: UUID, export_id: UUID, fmt: ResumeFormat) -> str:
-    return f"resume-exports/{owner_user_id.hex}/{version_id.hex}/{export_id.hex}/resume.{fmt.value}"

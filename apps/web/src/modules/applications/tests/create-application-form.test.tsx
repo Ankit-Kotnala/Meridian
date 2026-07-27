@@ -26,8 +26,18 @@ vi.mock("../api/applications-api", () => api);
 
 const resumeVersion: SavedResumeVersion = {
   createdAt: "2026-07-24T12:00:00Z",
+  entities: [],
   id: "00000000-0000-4000-8000-000000008204",
+  layout: {
+    fontFamily: "sans",
+    fontSizePt: 10,
+    lineSpacing: "standard",
+    margins: "standard",
+    pageLimit: 1,
+    pageSize: "letter",
+  },
   parentVersionId: null,
+  personalFacts: [],
   plainText: "Product Engineer",
   resumeId: "00000000-0000-4000-8000-000000008203",
   sections: [],
@@ -45,6 +55,7 @@ const resume: SavedResume = {
   currentVersion: resumeVersion,
   currentVersionId: resumeVersion.id,
   id: resumeVersion.resumeId,
+  layout: resumeVersion.layout,
   targetRole: "Product Engineer",
   template: "standard_professional",
   title: "Product resume",

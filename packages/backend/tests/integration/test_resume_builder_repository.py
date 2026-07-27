@@ -16,6 +16,8 @@ from careeros.modules.resume_builder.application import (
     RequestContext,
     ResumeBuilderPolicy,
     ResumeBuilderService,
+    ResumeExportCleanupProcessor,
+    ResumeExportProcessor,
 )
 from careeros.modules.resume_builder.domain import (
     ResumeBuilderNotFound,
@@ -25,6 +27,8 @@ from careeros.modules.resume_builder.domain import (
 from careeros.modules.resume_builder.infrastructure.models import (
     ResumeBuilderAuditEventModel,
     ResumeExportModel,
+    ResumeExportObjectCleanupModel,
+    ResumeExportOutboxModel,
     ResumeModel,
     ResumeVerificationReportModel,
 )
@@ -60,8 +64,6 @@ async def test_repository_persists_resume_export_and_denies_cross_user_access() 
         clock=FixedClock(),
         identifiers=UuidFactory(),
         sources=StaticResumeSourceProvider(),
-        renderer=TextOnlyRenderer(),
-        extractor=PlainTextExtractor(),
         storage=storage,
         policy=ResumeBuilderPolicy(),
     )
@@ -111,6 +113,16 @@ async def test_repository_persists_resume_export_and_denies_cross_user_access() 
             idempotency_key="integration-resume-export",
             context=_context(OWNER_ID),
         )
+        processor = ResumeExportProcessor(
+            unit_of_work=SqlAlchemyResumeBuilderUnitOfWorkFactory(database),
+            clock=FixedClock(),
+            identifiers=UuidFactory(),
+            renderer=TextOnlyRenderer(),
+            extractor=PlainTextExtractor(),
+            storage=storage,
+        )
+        outcome = await processor.process(exported.export.id, "integration-worker-token")
+        assert outcome.status.value == "verified"
         intent = await service.create_download_intent(
             OWNER_ID,
             exported.export.id,
@@ -120,6 +132,24 @@ async def test_repository_persists_resume_export_and_denies_cross_user_access() 
         assert "resume-exports" in intent.url
         with pytest.raises(ResumeBuilderNotFound):
             await service.get_export(OTHER_ID, exported.export.id)
+        deletion = await service.delete_export(
+            OWNER_ID,
+            exported.export.id,
+            idempotency_key="integration-resume-delete",
+            context=_context(OWNER_ID),
+        )
+        assert deletion.export.status.value == "deletion_pending"
+        cleanup = ResumeExportCleanupProcessor(
+            unit_of_work=SqlAlchemyResumeBuilderUnitOfWorkFactory(database),
+            clock=FixedClock(),
+            identifiers=UuidFactory(),
+            storage=storage,
+        )
+        cleanup_outcome = await cleanup.process(
+            exported.export.id,
+            "integration-cleanup-token",
+        )
+        assert cleanup_outcome.status.value == "deleted"
 
         async with database.session() as session:
             persisted = await session.scalar(
@@ -131,7 +161,27 @@ async def test_repository_persists_resume_export_and_denies_cross_user_access() 
                 select(ResumeExportModel).where(ResumeExportModel.id == exported.export.id)
             )
             assert export is not None
-            assert export.object_key is not None
+            assert export.object_key is None
+            assert export.deleted_at is not None
+            outboxes = tuple(
+                await session.scalars(
+                    select(ResumeExportOutboxModel).where(
+                        ResumeExportOutboxModel.export_id == exported.export.id
+                    )
+                )
+            )
+            assert {outbox.operation for outbox in outboxes} == {"delete", "render"}
+            assert all(outbox.trace_id == _context(OWNER_ID).trace_id for outbox in outboxes)
+            candidate_cleanups = tuple(
+                await session.scalars(
+                    select(ResumeExportObjectCleanupModel).where(
+                        ResumeExportObjectCleanupModel.export_id == exported.export.id
+                    )
+                )
+            )
+            assert len(candidate_cleanups) == 1
+            assert candidate_cleanups[0].cancelled_at is not None
+            assert candidate_cleanups[0].completed_at is None
             verification = await session.scalar(
                 select(ResumeVerificationReportModel).where(
                     ResumeVerificationReportModel.export_id == exported.export.id
@@ -139,14 +189,23 @@ async def test_repository_persists_resume_export_and_denies_cross_user_access() 
             )
             assert verification is not None
             assert verification.status == "passed"
-            audit = await session.scalar(
-                select(ResumeBuilderAuditEventModel).where(
-                    ResumeBuilderAuditEventModel.owner_user_id == OWNER_ID,
-                    ResumeBuilderAuditEventModel.target_id == exported.export.id,
+            audits = tuple(
+                await session.scalars(
+                    select(ResumeBuilderAuditEventModel).where(
+                        ResumeBuilderAuditEventModel.owner_user_id == OWNER_ID,
+                        ResumeBuilderAuditEventModel.target_id == exported.export.id,
+                    )
                 )
             )
-            assert audit is not None
-            assert "Confirmed product discovery" not in repr(audit.metadata_)
+            assert {audit.action for audit in audits} >= {
+                "export_deletion_requested",
+                "export_deleted",
+                "export_requested",
+                "export_verified",
+            }
+            assert all(
+                "Confirmed product discovery" not in repr(audit.metadata_) for audit in audits
+            )
     finally:
         async with database.session() as session:
             await session.execute(delete(UserModel).where(UserModel.id.in_([OWNER_ID, OTHER_ID])))

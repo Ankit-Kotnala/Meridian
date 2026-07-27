@@ -43,6 +43,7 @@ async def test_change_studio_claims_keep_exact_per_line_historical_revisions() -
     now = datetime(2026, 7, 25, 12, tzinfo=UTC)
 
     readiness = SimpleNamespace(
+        entities=(),
         evidence=(
             SimpleNamespace(
                 id=EVIDENCE_ONE,
@@ -50,6 +51,7 @@ async def test_change_studio_claims_keep_exact_per_line_historical_revisions() -
                 revision_number=2,
                 statement_sha256=_sha(current_statement),
                 statement=current_statement,
+                entity_ids=(),
                 skill_ids=(),
             ),
             SimpleNamespace(
@@ -58,9 +60,11 @@ async def test_change_studio_claims_keep_exact_per_line_historical_revisions() -
                 revision_number=1,
                 statement_sha256=_sha(second_statement),
                 statement=second_statement,
+                entity_ids=(),
                 skill_ids=(),
             ),
         ),
+        personal_facts=(),
         skills=(
             SimpleNamespace(
                 id=UNLINKED_SKILL,

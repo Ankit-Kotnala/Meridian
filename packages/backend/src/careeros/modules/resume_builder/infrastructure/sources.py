@@ -3,10 +3,15 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Mapping
 from dataclasses import dataclass
 from uuid import UUID
 
-from careeros.modules.career_record.application import CareerRecordService
+from careeros.modules.career_record.application import (
+    CareerRecordService,
+    ReadinessSnapshotEntity,
+    ReadinessSnapshotEvidence,
+)
 from careeros.modules.change_studio.application import ChangeStudioService, ValidationStatus
 from careeros.modules.resume_builder.application import (
     ResumeSourceBullet,
@@ -15,8 +20,11 @@ from careeros.modules.resume_builder.application import (
 from careeros.modules.resume_builder.application.ports import ResumeSourceProvider
 from careeros.modules.resume_builder.domain import (
     ResumeBuilderValidationError,
+    ResumeEntityFact,
     ResumeEvidenceLinkBasis,
     ResumeEvidenceReference,
+    ResumePartialDate,
+    ResumePersonalFact,
 )
 
 
@@ -89,12 +97,24 @@ class CareerRecordResumeSourceProvider(ResumeSourceProvider):
                     raise ResumeBuilderValidationError(
                         "change studio version cites multiple revisions of one evidence item"
                     )
+        readiness_evidence = {item.id: item for item in readiness.evidence}
+        readiness_entities = {item.id: item for item in readiness.entities}
         bullets: list[ResumeSourceBullet] = [
             ResumeSourceBullet(
                 text=item.statement,
                 evidence_ids=(item.id,),
                 source="career_record",
                 evidence_references=(current_references[item.id],),
+                section_kind=_source_section_kind(
+                    readiness_entities[item.entity_ids[0]].kind
+                    if len(item.entity_ids) == 1 and item.entity_ids[0] in readiness_entities
+                    else "experience"
+                ),
+                entity_id=(
+                    item.entity_ids[0]
+                    if len(item.entity_ids) == 1 and item.entity_ids[0] in readiness_entities
+                    else None
+                ),
             )
             for item in readiness.evidence
             if change_revisions.get(item.id, item.evidence_revision_id) == item.evidence_revision_id
@@ -134,7 +154,14 @@ class CareerRecordResumeSourceProvider(ResumeSourceProvider):
                         section_kind="skills",
                     )
                 )
-        bullets.extend(change_bullets)
+        bullets.extend(
+            _attach_source_entity(
+                bullet,
+                readiness_evidence=readiness_evidence,
+                readiness_entities=readiness_entities,
+            )
+            for bullet in change_bullets
+        )
         evidence_ids = tuple(
             dict.fromkeys(
                 reference.evidence_id
@@ -153,6 +180,51 @@ class CareerRecordResumeSourceProvider(ResumeSourceProvider):
             skills=(),
             bullets=tuple(dict.fromkeys(bullets)),
             source_evidence_ids=evidence_ids,
+            personal_facts=tuple(
+                ResumePersonalFact(
+                    id=fact.id,
+                    kind=fact.kind,
+                    value=fact.value,
+                    label=fact.label,
+                    is_primary=fact.is_primary,
+                )
+                for fact in readiness.personal_facts
+            ),
+            entities=tuple(
+                ResumeEntityFact(
+                    id=entity.id,
+                    kind=entity.kind,
+                    title=entity.title,
+                    organization=entity.organization,
+                    official_title=entity.official_title,
+                    display_title=entity.display_title,
+                    location=entity.location,
+                    start_date=(
+                        ResumePartialDate(
+                            year=entity.start_date.year,
+                            month=entity.start_date.month,
+                        )
+                        if entity.start_date is not None
+                        else None
+                    ),
+                    end_date=(
+                        ResumePartialDate(
+                            year=entity.end_date.year,
+                            month=entity.end_date.month,
+                        )
+                        if entity.end_date is not None
+                        else None
+                    ),
+                    is_current=entity.is_current,
+                    evidence_ids=tuple(
+                        evidence.id
+                        for evidence in readiness.evidence
+                        if entity.id in evidence.entity_ids
+                    ),
+                )
+                for entity in readiness.entities
+                if any(entity.id in evidence.entity_ids for evidence in readiness.evidence)
+            ),
         )
 
     async def _change_studio_bullets(
@@ -283,3 +355,45 @@ class CareerRecordResumeSourceProvider(ResumeSourceProvider):
             )
             for selected in selected_claims
         )
+
+
+def _attach_source_entity(
+    bullet: ResumeSourceBullet,
+    *,
+    readiness_evidence: Mapping[UUID, ReadinessSnapshotEvidence],
+    readiness_entities: Mapping[UUID, ReadinessSnapshotEntity],
+) -> ResumeSourceBullet:
+    entity_ids: set[UUID] = set()
+    for evidence_id in bullet.evidence_ids:
+        evidence = readiness_evidence.get(evidence_id)
+        entity_ids.update(
+            candidate
+            for candidate in (evidence.entity_ids if evidence is not None else ())
+            if candidate in readiness_entities
+        )
+    if len(entity_ids) != 1:
+        return bullet
+    entity_id = next(iter(entity_ids))
+    entity = readiness_entities[entity_id]
+    return ResumeSourceBullet(
+        text=bullet.text,
+        evidence_ids=bullet.evidence_ids,
+        source=bullet.source,
+        evidence_references=bullet.evidence_references,
+        section_kind=_source_section_kind(entity.kind),
+        entity_id=entity_id,
+    )
+
+
+def _source_section_kind(entity_kind: str) -> str:
+    return {
+        "award": "awards",
+        "credential": "credentials",
+        "education": "education",
+        "experience": "experience",
+        "language": "skills",
+        "portfolio_link": "projects",
+        "project": "projects",
+        "publication": "publications",
+        "volunteering": "volunteering",
+    }.get(entity_kind, "experience")

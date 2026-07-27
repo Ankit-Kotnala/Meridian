@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 
 import boto3
@@ -19,6 +20,8 @@ class ResumeExportS3Options:
     access_key_id: str
     secret_access_key: str
     use_ssl: bool
+    connect_timeout_seconds: float = 3.0
+    read_timeout_seconds: float = 30.0
 
 
 class ResumeExportS3Storage(ResumeObjectStorage):
@@ -33,7 +36,13 @@ class ResumeExportS3Storage(ResumeObjectStorage):
             aws_access_key_id=options.access_key_id,
             aws_secret_access_key=options.secret_access_key,
             use_ssl=options.use_ssl,
-            config=Config(signature_version="s3v4"),
+            config=Config(
+                signature_version="s3v4",
+                s3={"addressing_style": "path"},
+                connect_timeout=options.connect_timeout_seconds,
+                read_timeout=options.read_timeout_seconds,
+                retries={"max_attempts": 2, "mode": "standard"},
+            ),
         )
         self._public_client = boto3.client(
             "s3",
@@ -42,11 +51,18 @@ class ResumeExportS3Storage(ResumeObjectStorage):
             aws_access_key_id=options.access_key_id,
             aws_secret_access_key=options.secret_access_key,
             use_ssl=options.use_ssl,
-            config=Config(signature_version="s3v4"),
+            config=Config(
+                signature_version="s3v4",
+                s3={"addressing_style": "path"},
+                connect_timeout=options.connect_timeout_seconds,
+                read_timeout=options.read_timeout_seconds,
+                retries={"max_attempts": 2, "mode": "standard"},
+            ),
         )
 
     async def put_bytes(self, object_key: str, value: bytes, media_type: str) -> None:
-        self._client.put_object(
+        await asyncio.to_thread(
+            self._client.put_object,
             Bucket=self._options.bucket,
             Key=object_key,
             Body=value,
@@ -55,24 +71,45 @@ class ResumeExportS3Storage(ResumeObjectStorage):
         )
 
     async def get_bytes(self, object_key: str, *, max_bytes: int) -> bytes:
-        response = self._client.get_object(Bucket=self._options.bucket, Key=object_key)
-        body = response["Body"].read(max_bytes + 1)
+        response = await asyncio.to_thread(
+            self._client.get_object,
+            Bucket=self._options.bucket,
+            Key=object_key,
+        )
+        stream = response["Body"]
+        try:
+            body = await asyncio.to_thread(stream.read, max_bytes + 1)
+        finally:
+            await asyncio.to_thread(stream.close)
         if len(body) > max_bytes:
             raise ValueError("object exceeds maximum read size")
         return bytes(body)
 
     async def delete(self, object_key: str) -> None:
-        self._client.delete_object(Bucket=self._options.bucket, Key=object_key)
+        await asyncio.to_thread(
+            self._client.delete_object,
+            Bucket=self._options.bucket,
+            Key=object_key,
+        )
 
     async def presign_get(self, object_key: str, *, expires_in_seconds: int) -> str:
+        filename = object_key.rsplit("/", 1)[-1]
         return str(
-            self._public_client.generate_presigned_url(
+            await asyncio.to_thread(
+                self._public_client.generate_presigned_url,
                 "get_object",
-                Params={"Bucket": self._options.bucket, "Key": object_key},
+                Params={
+                    "Bucket": self._options.bucket,
+                    "Key": object_key,
+                    "ResponseCacheControl": "private, no-store",
+                    "ResponseContentDisposition": f'attachment; filename="{filename}"',
+                },
                 ExpiresIn=expires_in_seconds,
             )
         )
 
     async def dispose(self) -> None:
-        self._client.close()
-        self._public_client.close()
+        await asyncio.gather(
+            asyncio.to_thread(self._client.close),
+            asyncio.to_thread(self._public_client.close),
+        )

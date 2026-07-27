@@ -14896,6 +14896,18 @@
       "ResumeBulletRequest": {
         "additionalProperties": false,
         "properties": {
+          "entityId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entityid"
+          },
           "evidenceIds": {
             "items": {
               "format": "uuid",
@@ -14936,6 +14948,18 @@
       "ResumeBulletResponse": {
         "additionalProperties": false,
         "properties": {
+          "entityId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entityid"
+          },
           "evidenceIds": {
             "items": {
               "format": "uuid",
@@ -14972,6 +14996,7 @@
           "text",
           "evidenceIds",
           "source",
+          "entityId",
           "evidenceReferences"
         ],
         "title": "ResumeBulletResponse",
@@ -15003,6 +15028,9 @@
               }
             ],
             "title": "Changesetversionid"
+          },
+          "layout": {
+            "$ref": "#/components/schemas/ResumeLayoutSchema"
           },
           "targetRole": {
             "anyOf": [
@@ -15071,6 +15099,116 @@
           "expiresAt"
         ],
         "title": "ResumeDownloadIntentResponse",
+        "type": "object"
+      },
+      "ResumeEntityResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "displayTitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Displaytitle"
+          },
+          "endDate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResumePartialDateResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidenceIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 200,
+            "title": "Evidenceids",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "isCurrent": {
+            "title": "Iscurrent",
+            "type": "boolean"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "officialTitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Officialtitle"
+          },
+          "organization": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization"
+          },
+          "startDate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResumePartialDateResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "organization",
+          "officialTitle",
+          "displayTitle",
+          "location",
+          "startDate",
+          "endDate",
+          "isCurrent",
+          "evidenceIds"
+        ],
+        "title": "ResumeEntityResponse",
         "type": "object"
       },
       "ResumeEvidenceReferenceResponse": {
@@ -15185,6 +15323,21 @@
       "ResumeExportResponse": {
         "additionalProperties": false,
         "properties": {
+          "attempts": {
+            "minimum": 0.0,
+            "title": "Attempts",
+            "type": "integer"
+          },
+          "cleanupAttempts": {
+            "minimum": 0.0,
+            "title": "Cleanupattempts",
+            "type": "integer"
+          },
+          "cleanupMaxAttempts": {
+            "minimum": 1.0,
+            "title": "Cleanupmaxattempts",
+            "type": "integer"
+          },
           "completedAt": {
             "anyOf": [
               {
@@ -15205,6 +15358,18 @@
             "title": "Criticalfailures",
             "type": "array"
           },
+          "deadLetteredAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadletteredat"
+          },
           "deletedAt": {
             "anyOf": [
               {
@@ -15216,6 +15381,12 @@
               }
             ],
             "title": "Deletedat"
+          },
+          "fidelityManifestSha256": {
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Fidelitymanifestsha256",
+            "type": "string"
           },
           "format": {
             "enum": [
@@ -15231,6 +15402,22 @@
             "format": "uuid",
             "title": "Id",
             "type": "string"
+          },
+          "lastError": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lasterror"
+          },
+          "maxAttempts": {
+            "minimum": 1.0,
+            "title": "Maxattempts",
+            "type": "integer"
           },
           "mediaType": {
             "title": "Mediatype",
@@ -15261,6 +15448,18 @@
             "title": "Resumeid",
             "type": "string"
           },
+          "retryAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retryat"
+          },
           "sha256Digest": {
             "anyOf": [
               {
@@ -15281,9 +15480,15 @@
             "enum": [
               "pending",
               "rendering",
+              "retry_wait",
               "verified",
               "blocked",
               "failed",
+              "dead_lettered",
+              "deletion_pending",
+              "deleting",
+              "deletion_retry_wait",
+              "deletion_dead_lettered",
               "deleted"
             ],
             "title": "Status",
@@ -15312,6 +15517,12 @@
               }
             ],
             "title": "Verificationstatus"
+          },
+          "versionContentSha256": {
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Versioncontentsha256",
+            "type": "string"
           },
           "versionId": {
             "format": "uuid",
@@ -15342,6 +15553,15 @@
           "warnings",
           "rendererVersion",
           "parserVersion",
+          "attempts",
+          "maxAttempts",
+          "cleanupAttempts",
+          "cleanupMaxAttempts",
+          "lastError",
+          "retryAt",
+          "deadLetteredAt",
+          "versionContentSha256",
+          "fidelityManifestSha256",
           "requestedAt",
           "completedAt",
           "deletedAt"
@@ -16046,6 +16266,67 @@
         "title": "ResumeImportProposalRequest",
         "type": "object"
       },
+      "ResumeLayoutSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "fontFamily": {
+            "default": "sans",
+            "enum": [
+              "sans",
+              "serif"
+            ],
+            "title": "Fontfamily",
+            "type": "string"
+          },
+          "fontSizePt": {
+            "default": 10,
+            "maximum": 12.0,
+            "minimum": 9.0,
+            "title": "Fontsizept",
+            "type": "integer"
+          },
+          "lineSpacing": {
+            "default": "standard",
+            "enum": [
+              "compact",
+              "standard",
+              "relaxed"
+            ],
+            "title": "Linespacing",
+            "type": "string"
+          },
+          "margins": {
+            "default": "standard",
+            "enum": [
+              "narrow",
+              "standard",
+              "wide"
+            ],
+            "title": "Margins",
+            "type": "string"
+          },
+          "pageLimit": {
+            "default": 1,
+            "enum": [
+              1,
+              2
+            ],
+            "title": "Pagelimit",
+            "type": "integer"
+          },
+          "pageSize": {
+            "default": "letter",
+            "enum": [
+              "letter",
+              "a4"
+            ],
+            "title": "Pagesize",
+            "type": "string"
+          }
+        },
+        "title": "ResumeLayoutSchema",
+        "type": "object"
+      },
       "ResumeListResponse": {
         "additionalProperties": false,
         "properties": {
@@ -16062,6 +16343,77 @@
           "items"
         ],
         "title": "ResumeListResponse",
+        "type": "object"
+      },
+      "ResumePartialDateResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "month": {
+            "anyOf": [
+              {
+                "maximum": 12.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Month"
+          },
+          "year": {
+            "maximum": 2200.0,
+            "minimum": 1900.0,
+            "title": "Year",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year"
+        ],
+        "title": "ResumePartialDateResponse",
+        "type": "object"
+      },
+      "ResumePersonalFactResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "isPrimary": {
+            "title": "Isprimary",
+            "type": "boolean"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "value",
+          "label",
+          "isPrimary"
+        ],
+        "title": "ResumePersonalFactResponse",
         "type": "object"
       },
       "ResumeResponse": {
@@ -16084,6 +16436,9 @@
             "format": "uuid",
             "title": "Id",
             "type": "string"
+          },
+          "layout": {
+            "$ref": "#/components/schemas/ResumeLayoutSchema"
           },
           "targetRole": {
             "anyOf": [
@@ -16128,6 +16483,7 @@
           "title",
           "targetRole",
           "template",
+          "layout",
           "currentVersionId",
           "currentVersion",
           "version",
@@ -16208,9 +16564,170 @@
         "title": "ResumeSectionResponse",
         "type": "object"
       },
+      "ResumeSourceBulletResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "entityId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entityid"
+          },
+          "evidenceIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Evidenceids",
+            "type": "array"
+          },
+          "evidenceReferences": {
+            "items": {
+              "$ref": "#/components/schemas/ResumeEvidenceReferenceResponse"
+            },
+            "maxItems": 20,
+            "title": "Evidencereferences",
+            "type": "array"
+          },
+          "sectionKind": {
+            "title": "Sectionkind",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "evidenceIds",
+          "source",
+          "sectionKind",
+          "entityId",
+          "evidenceReferences"
+        ],
+        "title": "ResumeSourceBulletResponse",
+        "type": "object"
+      },
+      "ResumeSourceOptionsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "bullets": {
+            "items": {
+              "$ref": "#/components/schemas/ResumeSourceBulletResponse"
+            },
+            "maxItems": 500,
+            "title": "Bullets",
+            "type": "array"
+          },
+          "entities": {
+            "items": {
+              "$ref": "#/components/schemas/ResumeEntityResponse"
+            },
+            "maxItems": 100,
+            "title": "Entities",
+            "type": "array"
+          },
+          "headline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Headline"
+          },
+          "personalFacts": {
+            "items": {
+              "$ref": "#/components/schemas/ResumePersonalFactResponse"
+            },
+            "maxItems": 20,
+            "title": "Personalfacts",
+            "type": "array"
+          },
+          "skills": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 200,
+            "title": "Skills",
+            "type": "array"
+          },
+          "sourceEvidenceIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 500,
+            "title": "Sourceevidenceids",
+            "type": "array"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          }
+        },
+        "required": [
+          "headline",
+          "summary",
+          "skills",
+          "bullets",
+          "sourceEvidenceIds",
+          "personalFacts",
+          "entities"
+        ],
+        "title": "ResumeSourceOptionsResponse",
+        "type": "object"
+      },
       "ResumeUpdateRequest": {
         "additionalProperties": false,
         "properties": {
+          "layout": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResumeLayoutSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "personalFactIds": {
+            "anyOf": [
+              {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "maxItems": 20,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Personalfactids"
+          },
           "sections": {
             "anyOf": [
               {
@@ -16328,6 +16845,12 @@
             "title": "Id",
             "type": "string"
           },
+          "manifestSha256": {
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Manifestsha256",
+            "type": "string"
+          },
           "missingLines": {
             "items": {
               "type": "string"
@@ -16335,6 +16858,19 @@
             "maxItems": 500,
             "title": "Missinglines",
             "type": "array"
+          },
+          "occurrenceMismatches": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 500,
+            "title": "Occurrencemismatches",
+            "type": "array"
+          },
+          "pageCount": {
+            "minimum": 0.0,
+            "title": "Pagecount",
+            "type": "integer"
           },
           "parserVersion": {
             "title": "Parserversion",
@@ -16348,6 +16884,14 @@
             "title": "Readingorder",
             "type": "array"
           },
+          "readingOrderFailures": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 500,
+            "title": "Readingorderfailures",
+            "type": "array"
+          },
           "status": {
             "enum": [
               "passed",
@@ -16355,6 +16899,12 @@
               "failed"
             ],
             "title": "Status",
+            "type": "string"
+          },
+          "versionContentSha256": {
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Versioncontentsha256",
             "type": "string"
           },
           "versionId": {
@@ -16383,7 +16933,12 @@
           "duplicateLines",
           "readingOrder",
           "groundingCodes",
+          "occurrenceMismatches",
+          "readingOrderFailures",
           "fileSha256",
+          "manifestSha256",
+          "versionContentSha256",
+          "pageCount",
           "parserVersion",
           "createdAt"
         ],
@@ -16455,10 +17010,21 @@
             "title": "Createdat",
             "type": "string"
           },
+          "entities": {
+            "items": {
+              "$ref": "#/components/schemas/ResumeEntityResponse"
+            },
+            "maxItems": 100,
+            "title": "Entities",
+            "type": "array"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
             "type": "string"
+          },
+          "layout": {
+            "$ref": "#/components/schemas/ResumeLayoutSchema"
           },
           "parentVersionId": {
             "anyOf": [
@@ -16471,6 +17037,14 @@
               }
             ],
             "title": "Parentversionid"
+          },
+          "personalFacts": {
+            "items": {
+              "$ref": "#/components/schemas/ResumePersonalFactResponse"
+            },
+            "maxItems": 20,
+            "title": "Personalfacts",
+            "type": "array"
           },
           "plainText": {
             "title": "Plaintext",
@@ -16563,6 +17137,9 @@
           "title",
           "targetRole",
           "template",
+          "layout",
+          "personalFacts",
+          "entities",
           "sections",
           "plainText",
           "sourceEvidenceIds",
@@ -40171,7 +40748,7 @@
           }
         ],
         "responses": {
-          "200": {
+          "202": {
             "content": {
               "application/json": {
                 "schema": {
@@ -55639,6 +56216,125 @@
           }
         },
         "summary": "Restore Version",
+        "tags": [
+          "Resume Builder"
+        ]
+      }
+    },
+    "/api/v1/resumes/{resume_id}/source-options": {
+      "get": {
+        "operationId": "resumeSourceOptionsGet",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "resume_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Resume Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "careeros_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Careeros Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumeSourceOptionsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Get Source Options",
         "tags": [
           "Resume Builder"
         ]

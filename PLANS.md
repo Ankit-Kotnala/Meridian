@@ -7,8 +7,12 @@ Record closure is locally verified; hosted evidence is pending explicit
 authorization to publish. Phase 2 semantic parsing/review closure is also
 locally/security verified with hosted evidence pending. Phase 9 remains complete
 and hosted verified in PR #22; Phase 8 remains complete and hosted verified in
-PR #21. The full-specification audit still has open Phase 7 and
-release-hardening work**
+PR #21. Phase 7 editor/template/durable verified-export closure is implemented
+and host verified; its final Docker-isolated gate is pending. The Phase 10
+fictional local seed is implemented and host/configuration verified, with its
+two-run PostgreSQL/MinIO replay gate pending the same Docker recovery.
+Commercial, administrative, operational, and release-hardening work remains
+open**
 
 ## Status legend
 
@@ -998,10 +1002,11 @@ the assertion now targets a stable visible occurrence.
 
 ## Phase 7 scope and status
 
-Current status: **scoped vertical slice complete and hosted verified; durable
-asynchronous execution and full fidelity closure remain Phase 10 prerequisites**.
-Phase 7 adds Resume Builder and initial verified export: an authenticated,
-owner-scoped workflow that turns eligible
+Current status: **the original vertical slice is hosted verified; structured
+editing, distinct-template, durable asynchronous export, fidelity, and private
+object cleanup closure is implemented and focused locally verified. The final
+isolated Phase 7 gate is pending**.
+Phase 7 provides an authenticated, owner-scoped workflow that turns eligible
 Career Record evidence and optional Change Studio output into structured resume
 drafts, immutable versions, ATS-readable PDF/DOCX/text/JSON exports, round-trip
 verification reports, and short-lived download intents. PR #20 merged at
@@ -1012,6 +1017,13 @@ verification reports, and short-lived download intents. PR #20 merged at
 - [x] Migration `20260719_0008` adds owner-scoped resumes, immutable resume
       versions, export records, verification reports, short-lived download
       intents, idempotency records, and redacted audit events.
+- [x] Additive migrations `20260726_0012` and `20260726_0013` pin structured
+      layout/fact data and complete version hashes, add canonical fidelity
+      results, operation-typed transactional outbox records, fenced render and
+      cleanup leases, pre-write attempt-object cleanup backstops, independent
+      cleanup budgets, retry/dead-letter state, and truthful deletion
+      timestamps. Inconsistent historical deletion state is returned to queued
+      cleanup without discarding an object key or inventing a timestamp.
 - [x] `careeros.modules.resume_builder` provides framework-independent domain
       entities, validation, application services, renderer/extractor/storage
       ports, SQLAlchemy persistence, deterministic local rendering, round-trip
@@ -1025,12 +1037,26 @@ verification reports, and short-lived download intents. PR #20 merged at
       problem details, and generated OpenAPI contracts.
 - [x] The authenticated `/resume-builder` workflow covers loading, empty,
       success, and error states; structured sections and bullets; accessible
-      non-drag reorder controls; evidence-backed bullet additions; version
-      history and restore; recruiter/plain-text preview; verification report;
-      blocked download state; and short-lived download intent creation.
+      non-drag reorder controls; field/entity and evidence-backed bullet edits;
+      undo/redo and autosave; page/recruiter/plain-text previews; immutable
+      version comparison and restore; durable export status; verification
+      reports; blocked download state; explicit export deletion; and short-lived
+      download intent creation.
+- [x] Five genuinely distinct constrained templates render searchable Unicode
+      PDF/DOCX/text/JSON. One canonical `career-resume-fidelity-v1` manifest pins
+      version and expected content hashes and independently blocks omissions,
+      duplication, order changes, unsearchable output, page overflow, grounding
+      failures, unsupported facts/numbers, or hash drift before download.
+- [x] Export rendering, independent parsing, verification, failed-object cleanup,
+      and user-requested deletion run in the isolated worker. Transactional
+      outbox dispatch, allowlisted job operations, fenced leases, bounded
+      retries/dead letters, precommitted attempt-scoped cleanup records, and
+      scheduled reconciliation make requests reload-safe and recover lost or
+      duplicate delivery and crashes after object writes.
 - [x] Backend service, renderer, migration, API, repository integration, web
       component, and full-stack Playwright coverage exercise the primary
-      create/version/export/verify/download-intent workflow.
+      create/edit/version/compare/restore/export/verify/download/delete workflow
+      on desktop and mobile.
 - [x] ADR 0013 and API, architecture, security, testing, checklist, README,
       Make/CI/verification scripts, generated contracts, and this plan are
       updated for Phase 7.
@@ -1067,28 +1093,29 @@ Reviewed before editing:
 
 ### Blocking technical debt assessment
 
-No unresolved technical debt blocked the scoped Phase 7 vertical slice. It did
-not, however, close the project-wide release requirements for durable
-asynchronous execution, distinct template layouts, or a complete blocking
-cross-format fidelity manifest. The important
-implementation risk was preserving evidence authority while allowing resume
-editing. The service addresses that by rebuilding source snapshots from
-owner-scoped application contracts and requiring every bullet to retain eligible
-evidence IDs before it can be saved, versioned, or rendered. Rendering and
-verification currently execute synchronously inside the application service, but
-the persisted export state includes status, attempts, timeout/retry/dead-letter
-metadata, hashes, object keys, and verification rows so the same policy can move
-behind a Celery worker without changing the public contract.
+The 2026-07-25 full-specification audit identified three release-blocking Phase 7
+gaps: incomplete structured authoring/history ergonomics, five template IDs
+sharing one renderer structure, and synchronous export/verification without an
+exact blocking fidelity manifest. This closure implements all three. Evidence
+authority is preserved by rebuilding source snapshots through owner-scoped
+application contracts and requiring every factual bullet to retain eligible
+evidence references before save, version, or render. CPU/parser-heavy work and
+private-object deletion now run behind durable, fenced worker state; the API
+only accepts, authorizes, presents, and polls those operations.
 
 ### Verification evidence
 
-| Check                               | Status | Evidence                                                                                                                                                                                                                                                                                                                                                                                                           |
-| ----------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Pre-edit Phase 6 baseline           | Pass   | `scripts/verify-phase6.ps1` passed on 2026-07-19 after documentation and contract drift were aligned. Phase 6 migration head `20260719_0007`, rollback to `20260719_0006`, forward repair, backend integration tests, worker hardening probes, grounding/provider tests, and the authenticated Change Studio Playwright journey remain the accepted predecessor baseline.                                          |
-| Focused Resume Builder tests        | Pass   | Backend service, renderer round-trip, migration-shape, migration-graph, API route, repository integration, web component, backend architecture, Ruff, mypy, and focused TypeScript checks passed while iterating. The renderer tests exercise PDF/DOCX generation and reparse through the local extractor.                                                                                                         |
-| Generated contracts                 | Pass   | `pnpm contracts:generate` regenerated `packages/contracts/openapi/careeros.openapi.json` and `packages/contracts/src/generated/schema.ts`; `pnpm --filter '@careeros/contracts' build` passed, and the final contract drift check passed inside `scripts/verify-phase7.ps1`.                                                                                                                                       |
-| Final repository and Phase 7 gates  | Pass   | `scripts/verify-phase7.ps1` passed on 2026-07-19. It runs the native PowerShell equivalent of the Make gate plus the isolated Phase 7 stack: format, uv lock, contract drift, lint, typecheck, JS tests, JS build, Ruff, mypy, backend/API/worker tests, Compose config/build/startup, migrations, runtime probes, integration tests, worker hardening probes, renderer/round-trip tests, and Playwright journeys. |
-| Phase 7 E2E and integration details | Pass   | Isolated stack migration head was `20260719_0008`; rollback to `20260719_0007` and forward repair passed. Backend integration tests passed. Playwright ran auth, Resume Health, Career Record, Role Explorer, Job Match, Change Studio, and Resume Builder journeys with product-specific desktop workflows and inherited mobile shell coverage.                                                                   |
+| Check                               | Status  | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ----------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pre-edit Phase 6 baseline           | Pass    | `scripts/verify-phase6.ps1` passed on 2026-07-19 after documentation and contract drift were aligned. Phase 6 migration head `20260719_0007`, rollback to `20260719_0006`, forward repair, backend integration tests, worker hardening probes, grounding/provider tests, and the authenticated Change Studio Playwright journey remain the accepted predecessor baseline.                                                                                                         |
+| Historical Phase 7 hosted baseline  | Pass    | PR #20 merged at `f9807dc` after hosted CI run `30119088488`. The historical 2026-07-19 local gate covered migration head `20260719_0008`, rollback/forward repair, backend integrations, worker probes, renderer round trips, and the authenticated Resume Builder workflow.                                                                                                                                                                                                     |
+| Closure backend and renderer tests  | Pass    | 41 focused backend unit/migration tests pass on the current tree, covering service policy, canonical manifests, real PDF/DOCX Unicode extraction, exact omission/duplicate/order/searchability/hash/grounding failures, page overflow, render/deletion leases, attempt-key fencing, cancellation immediately after an object write, durable orphan cleanup, retry/dead-letter/reconciliation, storage response controls, legacy deletion recovery shape, and the migration graph. |
+| Closure worker and API suites       | Pass    | All 89 worker tests and 145 API tests pass on the current tree. Worker coverage includes typed dispatch, runtime composition/resource disposal, bounded orphan-object reconciliation counts, retry/dead-letter reporting, and scheduler routing.                                                                                                                                                                                                                                  |
+| Closure real integrations           | Pending | Three focused PostgreSQL/MinIO integrations and the earlier 42-test integration portfolio passed before the final attempt-object backstop and legacy-deletion migration changes. Those results are stale for the current `20260726_0013` tree; fresh migration, repository, private-storage, and consumer-boundary integration coverage remains part of the blocked final isolated gate.                                                                                          |
+| Closure web focused checks          | Pass    | Web TypeScript and ESLint/boundary checks passed; all 9 Resume Builder component tests pass, including serialized autosave, late restore/export selection fencing, and current persisted-base advancement. Playwright discovery includes desktop Chromium and mobile Chromium for the expanded create/edit/undo/redo/autosave/compare/restore/export/download/delete journey.                                                                                                     |
+| Generated contracts                 | Pass    | `pnpm contracts:generate` regenerated `packages/contracts/openapi/careeros.openapi.json` and `packages/contracts/src/generated/schema.ts`; `pnpm contracts:check` and the contracts build passed on the current tree without generated drift.                                                                                                                                                                                                                                     |
+| Post-fix host repository gate       | Pass    | The host-only commands from `scripts/verify.ps1` pass on the current attempt-cleanup tree: Prettier, uv lock and generated-contract drift, JavaScript lint/boundaries/types/tests/build, Python Ruff/mypy/tests, and exporter checks. Results are 427 backend architecture/unit, 145 API, 89 worker, 169 web, 12 UI, 3 contracts, 4 ESLint-boundary, and 2 edge tests; Next.js built all 49 pages. `docker compose config --quiet` and `git diff --check` also pass.              |
+| Final closure repository/stack gate | Pending | `scripts/verify-phase7.ps1` must pass against the closure tree before Phase 7 closure is marked complete. It includes repository quality/build checks plus a fresh isolated stack, `0012`/`0013` migration and rollback/forward repair, real integrations, worker hardening, and desktop/mobile Playwright journeys.                                                                                                                                                              |
 
 Earlier verification attempts found and fixed several issues during Phase 7
 closeout: migration constraint names were aligned with the SQLAlchemy naming
@@ -1096,27 +1123,63 @@ convention; local API tests required `CAREEROS_AI_PROVIDER=deterministic`
 because the developer `.env` still used the older fake provider name; generated
 contract artifacts had to be rebuilt before web typecheck; and one web component
 assertion was narrowed because the live region and visible alert intentionally
-announce the same export status.
+announce the same export status. The first full `scripts/verify-phase7.ps1`
+closure attempt passed the repository quality/build suites, all 421 backend
+tests, all 87 worker tests, the API suite, fresh migration/rollback/forward
+repair, and 42 real integrations before three stale Playwright expectations
+failed. Fixing those expectations exposed a real rapid-edit autosave race:
+overlapping PATCH requests could advance server state while a newer request
+retained the old version. Autosaves are now serialized, every response advances
+the persisted base, newer local edits are retained and queued, and the focused
+nine-test component suite passes.
+
+A final local correctness review then closed a separate object-store crash
+window. Every render attempt now receives a distinct fenced key and commits a
+durable cleanup backstop before writing bytes. The verified winner cancels that
+record in the same transaction as its export state; cancellation after the
+write, uncertain storage results, failed verification cleanup, lease loss, and
+cleanup retry/dead-letter behavior are executable tests. The same review added
+a database deletion-state constraint and makes migration `20260726_0013`
+recover inconsistent historical `deleted` rows to durable cleanup rather than
+erasing their key or fabricating `deleted_at`. The current host gate above was
+rerun after these changes; Docker-dependent evidence was not.
+
+The required post-fix isolated rerun remains unavailable rather than passed.
+`scripts/test-e2e-stack.ps1 -Phase 7 -JourneySpec
+resume-builder-journey.spec.ts` exited 1 while starting its isolated dependency
+stack, before migrations or application tests ran. Docker Desktop reported
+containerd/BuildKit metadata and content-store `input/output error` failures
+against its local data disk; `docker desktop restart` and
+`docker desktop diagnose` each timed out after 304 seconds, and the engine still
+does not answer `docker version`. Recoverable `uv` and npm caches were cleared,
+raising free space on the Docker host volume from about 737 MB to about 6.2 GB,
+but no destructive reset or deletion of the user-owned 64.44 GB Docker data
+disk was authorized. The primary Compose stack is therefore down, and neither
+the final Phase 7 isolated/browser gate nor Phase 7 closure is claimed.
+A second exact Docker-owned process and `docker-desktop` distro restart also
+failed to start the engine. A read-only
+`wsl -d docker-desktop -- sh -lc "df -h; ps -ef; dmesg"` diagnostic confirmed
+`/dev/sdd` write I/O errors, an ext4 remount to read-only, and a failed WSL block
+device flush/detach. Further recovery now requires a Windows restart or an
+explicitly authorized Docker data-disk repair/reset with a separate preservation
+decision for unrelated images, containers, and volumes.
 
 ### Known limitations and deferred work
 
-- The local renderer prioritizes searchable, predictable single-column output.
-  Rich graphics-heavy or multi-column templates are deferred until they can pass
-  the same round-trip verification corpus without losing reading order.
-- Export rendering and verification execute immediately in the service for this
-  vertical slice. Job-shaped state and retry/dead-letter fields are present, but
-  durable outbox-backed worker dispatch/recovery is not. It is a Phase 10 release
-  prerequisite rather than optional scale work.
-- The five selectable template IDs currently share one renderer structure, and
-  reparse verification does not yet make exact occurrence counts and reading
-  order blocking. Distinct constrained layouts and a canonical PDF/DOCX/text/JSON
-  fidelity manifest remain Phase 10 release prerequisites.
+- The five templates are deliberately constrained and searchable rather than
+  graphics-heavy. Multi-column or highly decorative designs remain out of scope
+  until they pass the same exact occurrence, reading-order, searchability, and
+  page-limit corpus.
 - Evidence-backed addition in the initial web editor reuses available grounded
   evidence-bearing content. A richer evidence picker and field-level compare UI
   can improve authoring ergonomics without weakening server validation.
-- The renderer/round-trip suite covers the deterministic Phase 7 templates and
-  primary one-page workflow. Broader unusual-font, locale, and complex-layout
-  fixture coverage remains future corpus expansion.
+- Local MinIO, Redis/Celery, and deterministic render/extractor adapters prove
+  the product contract, not a production storage/broker topology or vendor SLA.
+  Managed provider choice, alert routing, recovery ownership, and deployment
+  approval remain Phase 10 owner/release work.
+- Broader locale and complex-layout corpus expansion remains useful defense in
+  depth; current blocking tests cover exact Unicode PDF/DOCX content and real PDF
+  page overflow.
 
 ## Phase 8 scope and status
 
@@ -1323,9 +1386,46 @@ owner-authorizing application interfaces.
 - Account-wide export/deletion and retention, central rate/cost limiting,
   load/soak evidence, backup/restore, production providers, protected release,
   and deployment remain Phase 10.
-- `make seed` still prints the isolated fictional Phase 0 fixture instead of
-  seeding the database. Phase 10 must close this inherited project-wide gap
-  before the original specification can be declared complete.
+
+## Phase 10 scope and status
+
+Current status: **the guarded fictional local seed is implemented and
+host/configuration verified; its required two-run database/object-store replay
+remains blocked on local Docker Desktop recovery. Remaining commercial,
+administrative, operational, and release work has not been claimed complete.**
+
+### Fictional local seed implementation
+
+- `make seed` now starts only the local PostgreSQL and MinIO dependencies, builds
+  the API tooling image, upgrades the local database to the exact migration head,
+  and invokes a separate hardened `tools`-profile seed container. Native
+  PowerShell has the equivalent `scripts/seed-local.ps1` path.
+- The deterministic graph contains 79 rows and two private objects across every
+  implemented product phase from identity/onboarding through non-causal career
+  analytics. It uses reserved UUIDv5 identifiers, `.invalid` identity data,
+  conspicuous fictional labels, real domain constructors/scorers/renderers, and
+  exact evidence, source-span, immutable-version, application, and analytics
+  provenance.
+- The runner refuses any environment other than the exact explicit
+  `development` value and a reviewed confirmation token. It also restricts the
+  database identity/host/name, MinIO endpoint and bucket, migration head, and
+  authored role-taxonomy dependency before reading or writing either store.
+- Replays preserve the reserved local account credentials, compare immutable
+  rows instead of overwriting them, insert mutable rows only when absent, verify
+  both object bytes and metadata after writes, and verify the complete graph
+  after the transaction. A collision or drift fails closed.
+- The old fixture command remains available as `pnpm fixtures:preview`; it is
+  explicitly presentation-only and performs no database or object-store I/O.
+
+### Fictional local seed verification evidence — 2026-07-26
+
+| Check                                                             | Status  | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Guard, determinism, provenance, and repository-loader unit checks | Pass    | `uv run --package careeros-backend pytest tests/unit/test_local_seed.py -q` passed 18 tests. The suite rejects non-local configurations, validates deterministic PDFs and object hashes, checks unique keys/object links and grounded export fidelity, deserializes the Phase 2/7/8/9 immutable payloads through their production repositories, and pins the executable migration head.                                                                                                                                                                |
+| Backend architecture and unit portfolio                           | Pass    | The canonical Makefile-equivalent command `uv run --package careeros-backend pytest tests/architecture tests/unit -q` passed 445 tests. Ruff passed for the new tooling/tests and mypy passed all 214 backend source files.                                                                                                                                                                                                                                                                                                                            |
+| Affected full host repository gate                                | Pass    | Repository Prettier, JavaScript lint/boundaries/types/tests/build, Python Ruff/mypy, API and worker suites, uv lock drift, generated-contract drift, and diff hygiene all pass. Results include 169 web, 12 UI, 3 contracts, 4 ESLint-boundary, 2 edge, 145 API, and 89 worker tests; Next.js built all 49 routes. The Prettier file walker now safely ignores tracked paths deleted by a rename, closing the only failure found in this run.                                                                                                          |
+| Compose/tool and preview configuration                            | Pass    | `docker compose config --quiet`, `docker compose --profile tools config --quiet`, and rendering the `local-seed` service passed. The test-fixture package lint/typecheck and `pnpm fixtures:preview` also passed without store I/O.                                                                                                                                                                                                                                                                                                                    |
+| Required PostgreSQL/MinIO replay                                  | Blocked | The acceptance gate is `make seed` twice against the same local stores, followed by row/object/hash verification. A bounded post-implementation `docker version` attempt on 2026-07-26 produced no response and timed out after 24 seconds, so no migration or seed write was attempted. Prior read-only diagnostics show Docker Desktop's data VHD reporting write I/O errors and its ext4 filesystem becoming read-only. A Windows reboot or explicitly authorized Docker data-disk repair/reset is required; no destructive recovery was attempted. |
 
 ## Full-specification completion audit
 
@@ -1333,17 +1433,17 @@ Historical phase gates remain evidence for the vertical slices they actually
 tested; they do not waive requirements that the 2026-07-25 audit found absent or
 partial. Phase 2 semantic closure is implemented and locally/security verified;
 Phase 1/3 closure is locally verified; hosted closure evidence is pending
-authorization. Remaining work proceeds in dependency-ordered reviewable
-changes:
+authorization. Phase 7A/B/C closure is implemented and focused locally verified;
+its final isolated gate remains pending. The Phase 10 seed is implemented and
+host/configuration verified; only its Docker-backed replay evidence remains.
+Remaining work proceeds in
+dependency-ordered reviewable changes:
 
-1. Phase 7A/B/C closure: complete field/entity editing, autosave, comparison and
-   restore; implement five genuinely distinct constrained templates with Unicode
-   and page-layout fidelity; then move export/verification/cleanup to durable
-   workers with an independent blocking semantic fidelity manifest.
-2. Add an idempotent, production-guarded fictional database/object seed; then
-   complete plans/entitlements/billing and remaining durable AI, notification,
-   email, and asynchronous workflows.
-3. Complete Coach/Organization collaboration, Settings/privacy/deletion/export,
+1. Recover the local Docker engine and complete the idempotent seed's exact
+   two-run PostgreSQL/MinIO replay gate together with the pending Phase 7
+   isolated verification; then complete plans/entitlements/billing and remaining
+   durable AI, notification, email, and asynchronous workflows.
+2. Complete Coach/Organization collaboration, Settings/privacy/deletion/export,
    protected least-privilege administration, observability/performance/security/
    recovery evidence, and release engineering. Production deployment remains a
    final, explicitly approved collaboration with the product owner.
@@ -1454,10 +1554,12 @@ At the end of every phase:
 
 ## Next phase
 
-The next implementation change is Phase 7A/B/C editor/template/export closure,
-followed by the guarded real seed, commercial and remaining durable workflows,
-Coach/Organization and privacy/admin surfaces, and finally observability,
-performance, recovery, and protected release engineering. Publishing any
-closure or review branch requires explicit user authorization; production
-deployment remains deferred until the user and engineering complete the final
-approval together.
+After Docker recovery, the immediate verification change is the guarded
+fictional seed's two-run PostgreSQL/MinIO replay together with the final isolated
+Phase 7 closure gate. Safe implementation work can continue meanwhile with
+commercial and remaining durable workflows, Coach/Organization and
+privacy/admin surfaces, and finally observability, performance, recovery, and
+protected release engineering.
+Publishing any closure or review branch requires explicit user authorization;
+production deployment remains deferred until the user and engineering complete
+the final approval together.

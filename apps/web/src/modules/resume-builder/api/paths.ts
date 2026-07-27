@@ -19,6 +19,8 @@ export const resumeBuilderPaths = {
   exportVerification: (exportId: string) =>
     path(`/api/v1/exports/${encodeURIComponent(exportId)}/verification`),
   resume: (resumeId: string) => resource("/api/v1/resumes", resumeId),
+  resumeSourceOptions: (resumeId: string) =>
+    path(`/api/v1/resumes/${encodeURIComponent(resumeId)}/source-options`),
   resumeRestore: (resumeId: string, versionId: string) =>
     path(
       `/api/v1/resumes/${encodeURIComponent(resumeId)}/restore/` +

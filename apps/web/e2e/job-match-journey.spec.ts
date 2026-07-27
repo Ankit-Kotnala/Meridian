@@ -190,7 +190,9 @@ test("a user saves a job, analyzes exact requirements, and prioritizes it", asyn
     await page.getByLabel("Location fit").selectOption("strong");
     await page.getByLabel("Work model fit").selectOption("strong");
     await page.getByRole("button", { name: "Calculate priority" }).click();
-    await expect(page.getByText(/Prepare a tailored resume/i)).toBeVisible();
+    await expect(
+      page.getByText(/Address mandatory gaps before tailoring/i),
+    ).toBeVisible();
   } finally {
     await request
       .delete(`${requireMailpitUrl()}/api/v1/search`, {

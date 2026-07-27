@@ -14,6 +14,10 @@ from careeros.modules.career_record.application import (
     CleanupBatchResult,
     SafeAttachmentError,
 )
+from careeros.modules.resume_builder.application import (
+    ExportObjectCleanupResult,
+    ExportReconciliationResult,
+)
 from careeros.modules.resume_health.application import (
     JobReconciliationResult,
     OutboxDispatchResult,
@@ -38,6 +42,7 @@ def test_runtime_registers_cross_module_database_metadata() -> None:
     assert "networking_reminders" in Base.metadata.tables
     assert "networking_reminder_occurrences" in Base.metadata.tables
     assert "networking_reminder_outbox" in Base.metadata.tables
+    assert "resume_export_object_cleanups" in Base.metadata.tables
 
 
 def test_runtime_translates_validated_settings_and_disposes_resources(
@@ -291,6 +296,102 @@ def test_outbox_dispatch_uses_database_only_and_disposes_it(
     result = asyncio.run(runtime.dispatch_resume_outbox(settings, object(), 25))
 
     assert result == runtime.OutboxTaskResult(published=3, failed=1, dead_lettered=0)
+    assert events == ["database"]
+
+
+def test_resume_export_reconciliation_cleans_orphan_objects_and_disposes_resources(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+    captured: dict[str, object] = {}
+
+    class FakeDatabase:
+        def __init__(self, _options: object) -> None:
+            pass
+
+        async def dispose(self) -> None:
+            events.append("database")
+
+    class FakeStorage:
+        def __init__(self, options: object) -> None:
+            captured["storage_options"] = options
+
+        async def dispose(self) -> None:
+            events.append("storage")
+
+    class FakeReconciler:
+        def __init__(self, **options: object) -> None:
+            captured["reconciler_policy"] = options["policy"]
+
+        async def reconcile(self, limit: int) -> ExportReconciliationResult:
+            assert limit == 25
+            return ExportReconciliationResult(requeued=2, dead_lettered=1)
+
+    class FakeCleaner:
+        def __init__(self, **options: object) -> None:
+            captured["cleaner_policy"] = options["policy"]
+            assert isinstance(options["storage"], FakeStorage)
+
+        async def cleanup_due(self, limit: int) -> ExportObjectCleanupResult:
+            assert limit == 25
+            return ExportObjectCleanupResult(completed=3, failed=1, dead_lettered=1)
+
+    monkeypatch.setattr(runtime, "Database", FakeDatabase)
+    monkeypatch.setattr(runtime, "ResumeExportS3Storage", FakeStorage)
+    monkeypatch.setattr(runtime, "ResumeExportReconciler", FakeReconciler)
+    monkeypatch.setattr(runtime, "ResumeExportObjectCleanupProcessor", FakeCleaner)
+    settings = WorkerSettings.model_validate(
+        {
+            "environment": "test",
+            "database_connect_timeout_seconds": 4,
+            "database_command_timeout_seconds": 20,
+            "resume_export_orphan_cleanup_grace_seconds": 45,
+        }
+    )
+
+    result = asyncio.run(runtime.reconcile_resume_exports(settings, 25))
+
+    assert result == ExportReconciliationResult(
+        requeued=2,
+        dead_lettered=1,
+        object_cleanups_completed=3,
+        object_cleanup_failures=1,
+        object_cleanup_dead_letters=1,
+    )
+    assert captured["reconciler_policy"].orphan_cleanup_grace_seconds == 45
+    assert captured["cleaner_policy"].orphan_cleanup_grace_seconds == 45
+    assert captured["storage_options"].connect_timeout_seconds == 4
+    assert captured["storage_options"].read_timeout_seconds == 20
+    assert events == ["storage", "database"]
+
+
+def test_resume_export_reconciliation_disposes_database_when_storage_assembly_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+
+    class FakeDatabase:
+        def __init__(self, _options: object) -> None:
+            pass
+
+        async def dispose(self) -> None:
+            events.append("database")
+
+    class FailingStorage:
+        def __init__(self, _options: object) -> None:
+            raise RuntimeError("safe storage assembly failure")
+
+    monkeypatch.setattr(runtime, "Database", FakeDatabase)
+    monkeypatch.setattr(runtime, "ResumeExportS3Storage", FailingStorage)
+
+    with pytest.raises(RuntimeError, match="safe storage assembly failure"):
+        asyncio.run(
+            runtime.reconcile_resume_exports(
+                WorkerSettings.model_validate({"environment": "test"}),
+                25,
+            )
+        )
+
     assert events == ["database"]
 
 

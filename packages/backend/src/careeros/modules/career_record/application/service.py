@@ -3226,6 +3226,12 @@ class CareerRecordService:
                     title=entity.title,
                     organization=entity.organization,
                     description=entity.description,
+                    official_title=entity.official_title,
+                    display_title=entity.display_title,
+                    location=entity.location,
+                    start_date=entity.start_date,
+                    end_date=entity.end_date,
+                    is_current=entity.is_current,
                 )
                 for entity in sorted(entities, key=lambda item: (item.sort_order, str(item.id)))
                 if entity.id in confirmed_entity_ids

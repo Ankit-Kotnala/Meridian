@@ -10,6 +10,7 @@ from careeros_api.application_workspace_routes import router as application_work
 from careeros_api.career_analytics_routes import router as career_analytics_router
 from careeros_api.career_record_routes import router as career_record_router
 from careeros_api.change_studio_routes import router as change_studio_router
+from careeros_api.commercial_routes import router as commercial_router
 from careeros_api.config import Settings
 from careeros_api.constants import SCORING_DISCLAIMER
 from careeros_api.identity_routes import router as identity_router
@@ -41,6 +42,7 @@ router.include_router(interview_prep_router)
 router.include_router(networking_router)
 router.include_router(career_growth_router)
 router.include_router(career_analytics_router)
+router.include_router(commercial_router)
 
 
 def _settings(request: Request) -> Settings:

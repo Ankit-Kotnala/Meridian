@@ -186,8 +186,18 @@ const pack: ApplicationPack = {
 
 const alternateVersion: SavedResumeVersion = {
   createdAt: "2026-07-25T12:00:00Z",
+  entities: [],
   id: "00000000-0000-4000-8000-000000008204",
+  layout: {
+    fontFamily: "sans",
+    fontSizePt: 10,
+    lineSpacing: "standard",
+    margins: "standard",
+    pageLimit: 1,
+    pageSize: "letter",
+  },
   parentVersionId: application.resumeVersionId,
+  personalFacts: [],
   plainText: "Product leadership resume",
   resumeId: application.resumeId,
   sections: [],
@@ -205,6 +215,7 @@ const savedResume: SavedResume = {
   currentVersion: alternateVersion,
   currentVersionId: alternateVersion.id,
   id: application.resumeId,
+  layout: alternateVersion.layout,
   targetRole: "Product Lead",
   template: "standard_professional",
   title: application.resumeTitle,

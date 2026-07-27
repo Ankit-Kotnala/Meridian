@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "seed": "tsx src/seed.ts",
+    "preview": "tsx src/preview.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "tsc -p tsconfig.json --noEmit"
   },

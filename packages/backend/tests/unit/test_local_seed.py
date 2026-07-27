@@ -1,0 +1,259 @@
+"""Pure checks for the production-guarded fictional local seed."""
+
+from __future__ import annotations
+
+import hashlib
+from collections.abc import Mapping
+from io import BytesIO
+from pathlib import Path
+from uuid import UUID
+
+import pytest
+from alembic.config import Config
+from alembic.script import ScriptDirectory
+from pypdf import PdfReader
+
+from careeros.development.fictional_seed import (
+    EXPECTED_MIGRATION_HEAD,
+    FIXTURE_EMAIL,
+    FictionalSeedManifest,
+    build_fictional_seed_manifest,
+)
+from careeros.development.local_seed import (
+    LOCAL_SEED_CONFIRMATION,
+    LocalSeedRefused,
+    load_local_seed_settings,
+)
+from careeros.modules.application_workspace.infrastructure.models import (
+    ApplicationRecordModel,
+)
+from careeros.modules.application_workspace.infrastructure.repository import (
+    _application as load_application,
+)
+from careeros.modules.career_analytics.infrastructure.models import (
+    AnalyticsSnapshotModel,
+)
+from careeros.modules.career_analytics.infrastructure.repository import (
+    _snapshot as load_analytics_snapshot,
+)
+from careeros.modules.interview_prep.infrastructure.models import StarStoryModel
+from careeros.modules.interview_prep.infrastructure.repository import (
+    _story as load_star_story,
+)
+from careeros.modules.resume_builder.application import (
+    validate_resume_version,
+    version_provenance_failures,
+)
+from careeros.modules.resume_builder.domain import (
+    build_fidelity_manifest,
+    manifest_grounding_failures,
+)
+from careeros.modules.resume_builder.infrastructure.models import ResumeVersionModel
+from careeros.modules.resume_builder.infrastructure.repository import (
+    _version as load_resume_version,
+)
+from careeros.modules.resume_health.infrastructure.models import (
+    CanonicalResumeSnapshotModel,
+)
+from careeros.modules.resume_health.infrastructure.repository import (
+    _snapshot as load_canonical_snapshot,
+)
+
+
+def _safe_environment() -> dict[str, str]:
+    return {
+        "CAREEROS_ENVIRONMENT": "development",
+        "CAREEROS_ALLOW_LOCAL_SEED": LOCAL_SEED_CONFIRMATION,
+        "CAREEROS_DATABASE_URL": (
+            "postgresql+asyncpg://careeros:local-only@postgres:5432/careeros"
+        ),
+        "CAREEROS_S3_ENDPOINT_URL": "http://minio:9000",
+        "CAREEROS_S3_REGION": "us-east-1",
+        "CAREEROS_S3_BUCKET": "careeros-documents",
+        "CAREEROS_S3_ACCESS_KEY_ID": "careeros-app",
+        "CAREEROS_S3_SECRET_ACCESS_KEY": "local-only-object-store-key",
+        "CAREEROS_S3_USE_SSL": "false",
+    }
+
+
+@pytest.mark.parametrize(
+    ("updates", "message"),
+    (
+        ({"CAREEROS_ENVIRONMENT": "production"}, "development"),
+        ({"CAREEROS_ENVIRONMENT": "staging"}, "development"),
+        ({"CAREEROS_ENVIRONMENT": "test"}, "development"),
+        ({"CAREEROS_ALLOW_LOCAL_SEED": ""}, "confirmation"),
+        (
+            {
+                "CAREEROS_DATABASE_URL": (
+                    "postgresql+asyncpg://careeros:local-only@db.example.com/careeros"
+                )
+            },
+            "database",
+        ),
+        (
+            {
+                "CAREEROS_DATABASE_URL": (
+                    "postgresql+asyncpg://other:local-only@postgres:5432/careeros"
+                )
+            },
+            "database",
+        ),
+        (
+            {
+                "CAREEROS_DATABASE_URL": (
+                    "postgresql+asyncpg://careeros:local-only@postgres:5432/production"
+                )
+            },
+            "database",
+        ),
+        ({"CAREEROS_S3_ENDPOINT_URL": "https://objects.example.com"}, "MinIO"),
+        ({"CAREEROS_S3_BUCKET": "production-documents"}, "bucket"),
+        ({"CAREEROS_S3_USE_SSL": "yes"}, "true or false"),
+        ({"CAREEROS_S3_USE_SSL": "true"}, "must agree"),
+    ),
+)
+def test_local_seed_guard_rejects_nonlocal_or_unconfirmed_settings(
+    updates: Mapping[str, str],
+    message: str,
+) -> None:
+    values = _safe_environment()
+    values.update(updates)
+
+    with pytest.raises(LocalSeedRefused, match=message):
+        load_local_seed_settings(values)
+
+
+def test_local_seed_guard_requires_explicit_environment_before_other_settings() -> None:
+    with pytest.raises(LocalSeedRefused, match="development"):
+        load_local_seed_settings(
+            {
+                "CAREEROS_ENVIRONMENT": "production",
+                "CAREEROS_ALLOW_LOCAL_SEED": LOCAL_SEED_CONFIRMATION,
+            }
+        )
+
+
+def test_local_seed_guard_accepts_only_reviewed_compose_local_settings() -> None:
+    settings = load_local_seed_settings(_safe_environment())
+
+    assert settings.environment == "development"
+    assert settings.s3_endpoint_url == "http://minio:9000"
+    assert settings.s3_bucket == "careeros-documents"
+    assert settings.s3_use_ssl is False
+    assert "database_url" not in repr(settings)
+    assert "secret_access_key" not in repr(settings)
+    assert "confirmation" not in repr(settings)
+
+
+def test_fictional_manifest_is_deterministic_and_spans_phases_one_through_nine() -> None:
+    first = build_fictional_seed_manifest("public-fixture-password-hash")
+    second = build_fictional_seed_manifest("public-fixture-password-hash")
+
+    assert first.phases == tuple(range(1, 10))
+    assert first.expected_row_count >= 40
+    assert first == second
+    assert first.email == FIXTURE_EMAIL
+    assert first.email.endswith(".invalid")
+    assert all(
+        item.content == repeated.content
+        for item, repeated in zip(first.objects, second.objects, strict=True)
+    )
+    assert all(
+        item.sha256_digest == hashlib.sha256(item.content).hexdigest() for item in first.objects
+    )
+    assert all("fictional" in item.key for item in first.objects[:1])
+    source_text = PdfReader(BytesIO(first.objects[0].content), strict=True).pages[0].extract_text()
+    assert "FICTIONAL LOCAL FIXTURE" in source_text
+    assert b"fictional local fixture" in first.objects[1].content
+
+
+def test_fictional_manifest_has_unique_primary_keys_and_expected_object_links() -> None:
+    manifest = build_fictional_seed_manifest("public-fixture-password-hash")
+
+    for batch in manifest.batches:
+        primary_key_names = tuple(column.name for column in batch.table.primary_key.columns)
+        keys = [tuple(_hashable(row[name]) for name in primary_key_names) for row in batch.rows]
+        assert len(keys) == len(set(keys)), batch.table.name
+
+    source_document = _row(manifest, "source_documents")
+    resume_export = _row(manifest, "resume_exports")
+    source_object, export_object = manifest.objects
+    assert source_document["quarantine_object_key"] == source_object.key
+    assert source_document["content_sha256"] == bytes.fromhex(source_object.sha256_digest)
+    assert source_document["size_bytes"] == len(source_object.content)
+    assert resume_export["object_key"] == export_object.key
+    assert resume_export["sha256_digest"] == export_object.sha256_digest
+    assert resume_export["size_bytes"] == len(export_object.content)
+    assert resume_export["status"] == "verified"
+    assert resume_export["verification_status"] == "passed"
+
+
+def test_fictional_resume_and_export_manifest_are_grounded_and_hash_consistent() -> None:
+    manifest = build_fictional_seed_manifest("public-fixture-password-hash")
+    version = manifest.resume_version
+    fidelity = build_fidelity_manifest(version)
+    resume_export = _row(manifest, "resume_exports")
+    verification = _row(manifest, "resume_export_verification_reports")
+
+    assert validate_resume_version(version) == version.sections
+    assert version_provenance_failures(version) == ()
+    assert manifest_grounding_failures(fidelity) == ()
+    assert resume_export["version_content_sha256"] == fidelity.version_content_sha256
+    assert verification["version_content_sha256"] == resume_export["version_content_sha256"]
+    assert verification["manifest_sha256"] == resume_export["fidelity_manifest_sha256"]
+    assert verification["file_sha256"] == resume_export["sha256_digest"]
+    assert verification["critical_failures"] == []
+
+
+def test_immutable_cross_phase_rows_are_accepted_by_product_repository_loaders() -> None:
+    manifest = build_fictional_seed_manifest("public-fixture-password-hash")
+
+    canonical = load_canonical_snapshot(
+        CanonicalResumeSnapshotModel(**_row(manifest, "canonical_resume_snapshots"))
+    )
+    loaded_resume = load_resume_version(ResumeVersionModel(**_row(manifest, "resume_versions")))
+    application = load_application(ApplicationRecordModel(**_row(manifest, "application_records")))
+    story = load_star_story(
+        StarStoryModel(**_row(manifest, "interview_star_stories")),
+        (),
+    )
+    analytics = load_analytics_snapshot(
+        AnalyticsSnapshotModel(**_row(manifest, "career_analytics_snapshots"))
+    )
+
+    assert canonical.resume.semantics is not None
+    assert canonical.resume.semantics.review_state.value == "confirmed"
+    assert loaded_resume == manifest.resume_version
+    assert application.resume_version_id == manifest.resume_version.id
+    assert application.resume_claims[0].evidence_links[0].evidence_id in (
+        application.resume_evidence_ids
+    )
+    assert story.status.value == "draft"
+    assert story.claim_pins == ()
+    assert analytics.verify_payload_hash()
+
+
+def test_seed_migration_pin_matches_the_executable_graph_gate() -> None:
+    package_root = Path(__file__).resolve().parents[2]
+    scripts = ScriptDirectory.from_config(Config(package_root / "alembic.ini"))
+
+    assert scripts.get_heads() == [EXPECTED_MIGRATION_HEAD]
+
+
+def _row(manifest: FictionalSeedManifest, table_name: str) -> dict[str, object]:
+    matches = [
+        row for batch in manifest.batches if batch.table.name == table_name for row in batch.rows
+    ]
+    assert len(matches) == 1
+    return matches[0]
+
+
+def _hashable(value: object) -> object:
+    if isinstance(value, list):
+        return tuple(_hashable(item) for item in value)
+    if isinstance(value, dict):
+        return tuple(sorted((key, _hashable(item)) for key, item in value.items()))
+    if isinstance(value, UUID):
+        return value.hex
+    return value

@@ -4,11 +4,15 @@ import asyncio
 from uuid import UUID
 
 from careeros.modules.career_record.application import PROCESS_EVIDENCE_ATTACHMENT_TASK
+from careeros.modules.resume_builder.domain import ResumeExportOperation
 from careeros.modules.resume_health.application import PROCESS_RESUME_TASK
 from celery import Celery  # type: ignore[import-untyped,unused-ignore]
 
 from careeros_worker.payloads import parse_identifier_payload, parse_job_payload
-from careeros_worker.task_names import PROCESS_CAREER_ANALYTICS_REFRESH_TASK
+from careeros_worker.task_names import (
+    PROCESS_CAREER_ANALYTICS_REFRESH_TASK,
+    PROCESS_RESUME_EXPORT_TASK,
+)
 
 
 class CeleryJobPublisher:
@@ -51,5 +55,31 @@ class CeleryAnalyticsPublisher:
             PROCESS_CAREER_ANALYTICS_REFRESH_TASK,
             kwargs={"job_id": str(canonical_job_id)},
             queue="default",
+            serializer="json",
+        )
+
+
+class CeleryResumeExportPublisher:
+    """Publish one durable export identifier and its redacted trace identifier."""
+
+    def __init__(self, application: Celery) -> None:
+        self._application = application
+
+    async def publish(
+        self,
+        export_id: UUID,
+        trace_id: str,
+        operation: ResumeExportOperation,
+    ) -> None:
+        canonical_export_id, canonical_trace_id = parse_job_payload(str(export_id), trace_id)
+        await asyncio.to_thread(
+            self._application.send_task,
+            PROCESS_RESUME_EXPORT_TASK,
+            kwargs={
+                "export_id": str(canonical_export_id),
+                "operation": operation.value,
+                "trace_id": canonical_trace_id,
+            },
+            queue="resume-builder",
             serializer="json",
         )

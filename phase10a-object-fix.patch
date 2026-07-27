@@ -1,0 +1,136 @@
+diff --git a/packages/backend/src/careeros/development/fictional_seed.py b/packages/backend/src/careeros/development/fictional_seed.py
+--- a/packages/backend/src/careeros/development/fictional_seed.py
++++ b/packages/backend/src/careeros/development/fictional_seed.py
+@@
+-EXPECTED_MIGRATION_HEAD = "20260726_0014"
++EXPECTED_MIGRATION_HEAD = "20260726_0013"
+diff --git a/packages/backend/src/careeros/development/local_seed.py b/packages/backend/src/careeros/development/local_seed.py
+--- a/packages/backend/src/careeros/development/local_seed.py
++++ b/packages/backend/src/careeros/development/local_seed.py
+@@
+ from careeros.foundation.database import Database
+ from careeros.modules.identity.infrastructure.models import UserModel
+ from careeros.modules.identity.infrastructure.security import Argon2PasswordHasher
++from careeros.modules.resume_health.domain.errors import UploadRejected
+ from careeros.modules.resume_health.infrastructure.storage import (
+@@
+         async with database.session() as session:
+             await _verify_batches(session, manifest, allow_missing=True)
+         for item in manifest.objects:
+-            await _write_and_verify_object(storage, item)
++            await _ensure_object(storage, item)
+@@
+ async def _write_and_verify_object(
+     storage: S3ObjectStorage,
+     item: SeedObject,
+ ) -> None:
+     await storage.put_bytes(item.key, item.content, item.media_type)
+     await _verify_object(storage, item)
+ 
+ 
++async def _ensure_object(
++    storage: S3ObjectStorage,
++    item: SeedObject,
++) -> None:
++    """Preserve an existing exact object and fail closed on any drift."""
++
++    try:
++        await _verify_object(storage, item)
++    except UploadRejected as exc:
++        if exc.code != "upload_object_missing":
++            raise
++        await _write_and_verify_object(storage, item)
++
++
+ async def _verify_object(
+diff --git a/packages/backend/tests/unit/test_local_seed.py b/packages/backend/tests/unit/test_local_seed.py
+--- a/packages/backend/tests/unit/test_local_seed.py
++++ b/packages/backend/tests/unit/test_local_seed.py
+@@
+ from io import BytesIO
+ from pathlib import Path
++from typing import cast
+ from uuid import UUID
+@@
+ from careeros.development.local_seed import (
+     LOCAL_SEED_CONFIRMATION,
++    LocalSeedError,
+     LocalSeedRefused,
++    _ensure_object,
+     load_local_seed_settings,
+ )
++from careeros.modules.resume_health.application.models import ObjectMetadata
++from careeros.modules.resume_health.domain.errors import UploadRejected
++from careeros.modules.resume_health.infrastructure.storage import S3ObjectStorage
+@@
+ def test_seed_migration_pin_matches_the_executable_graph_gate() -> None:
+@@
+     assert scripts.get_heads() == [EXPECTED_MIGRATION_HEAD]
++
++
++class _ObjectStorageDouble:
++    def __init__(
++        self,
++        *,
++        content: bytes | None = None,
++        media_type: str | None = None,
++    ) -> None:
++        self.content = content
++        self.media_type = media_type
++        self.put_calls = 0
++
++    async def head(self, object_key: str) -> ObjectMetadata:
++        del object_key
++        if self.content is None:
++            raise UploadRejected("upload_object_missing")
++        return ObjectMetadata(
++            size_bytes=len(self.content),
++            media_type=self.media_type,
++        )
++
++    async def get_bytes(self, object_key: str, max_bytes: int) -> bytes:
++        del object_key
++        if self.content is None:
++            raise UploadRejected("upload_object_missing")
++        return self.content[: max_bytes + 1]
++
++    async def put_bytes(
++        self,
++        object_key: str,
++        value: bytes,
++        media_type: str,
++    ) -> None:
++        del object_key
++        self.put_calls += 1
++        self.content = value
++        self.media_type = media_type
++
++
++@pytest.mark.asyncio
++async def test_seed_object_is_created_once_then_verified_without_rewrite() -> None:
++    item = build_fictional_seed_manifest("public-fixture-password-hash").objects[0]
++    double = _ObjectStorageDouble()
++    storage = cast(S3ObjectStorage, double)
++
++    await _ensure_object(storage, item)
++    await _ensure_object(storage, item)
++
++    assert double.put_calls == 1
++    assert double.content == item.content
++    assert double.media_type == item.media_type
++
++
++@pytest.mark.asyncio
++async def test_seed_object_drift_fails_without_overwrite() -> None:
++    item = build_fictional_seed_manifest("public-fixture-password-hash").objects[0]
++    double = _ObjectStorageDouble(
++        content=b"existing drifted object",
++        media_type=item.media_type,
++    )
++    storage = cast(S3ObjectStorage, double)
++
++    with pytest.raises(LocalSeedError, match="metadata verification failed"):
++        await _ensure_object(storage, item)
++
++    assert double.put_calls == 0
++    assert double.content == b"existing drifted object"

@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
 
-import { expect, test, type APIRequestContext } from "@playwright/test";
+import {
+  expect,
+  test,
+  type APIRequestContext,
+  type Locator,
+} from "@playwright/test";
 
 type MailpitSearchResponse = { messages?: Array<{ ID?: string }> };
 
@@ -53,20 +58,29 @@ async function verificationLink(
   return link!;
 }
 
+async function activate(locator: Locator, keyboard: boolean): Promise<void> {
+  await expect(locator).toBeVisible();
+  await expect(locator).toBeEnabled();
+  if (keyboard) {
+    await locator.focus();
+    await expect(locator).toBeFocused();
+    await locator.press("Enter");
+    return;
+  }
+  await locator.click();
+}
+
 test("a user builds a grounded resume and verifies a PDF export", async ({
   page,
   request,
 }, testInfo) => {
-  test.skip(
-    testInfo.project.name.includes("mobile"),
-    "The resume-builder primary workflow is covered once on desktop; shared navigation has separate mobile coverage.",
-  );
-  test.setTimeout(180_000);
+  test.setTimeout(240_000);
+  const keyboard = !testInfo.project.name.includes("mobile");
   const email = `resume-builder-${randomUUID()}@e2e.invalid.example.com`;
 
   try {
     await page.goto("/register");
-    await page.getByLabel("Name").fill("Resume Builder E2E");
+    await page.getByLabel("Name").fill("Résumé Builder E2E");
     await page.getByLabel("Email address").fill(email);
     await page.getByLabel("Password", { exact: true }).fill(password);
     await page.getByRole("button", { name: "Create account" }).click();
@@ -128,10 +142,7 @@ test("a user builds a grounded resume and verifies a PDF export", async ({
       page.getByText("Evidence saved.", { exact: false }),
     ).toBeVisible();
 
-    await page
-      .getByRole("row", { name: /Discovery resume source/ })
-      .getByRole("link", { name: "Review" })
-      .click();
+    await page.getByRole("link", { name: /^Review(?: details)?$/ }).click();
     await expect(
       page.getByRole("heading", {
         name: "Discovery resume source",
@@ -145,7 +156,7 @@ test("a user builds a grounded resume and verifies a PDF export", async ({
 
     await page.goto("/resume-builder");
     await expect(
-      page.getByRole("heading", { name: "Verified resume exports" }),
+      page.getByRole("heading", { name: "Evidence-backed resume studio" }),
     ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "No resumes yet" }),
@@ -153,23 +164,105 @@ test("a user builds a grounded resume and verifies a PDF export", async ({
     await page.getByLabel("Resume title").fill("Discovery Resume");
     await page.getByLabel("Target role").fill("Senior Product Manager");
     await page.getByLabel("Template").selectOption("standard_professional");
-    await page.getByRole("button", { name: "Create" }).click();
+    await activate(page.getByRole("button", { name: "Create" }), keyboard);
     await expect(
       page
         .getByRole("status")
         .getByText("Resume created from eligible Career Record evidence."),
     ).toBeVisible();
+    const sections = page.getByLabel("Resume sections");
     await expect(
-      page.getByRole("listitem").filter({
+      sections.getByRole("listitem").filter({
         hasText: "User states they completed customer discovery interviews.",
       }),
     ).toBeVisible();
 
+    const fields = page.getByLabel("Resume fields and layout");
+    const editorTitle = fields.getByLabel("Resume title");
+    await editorTitle.fill("Discovery Résumé");
+    await activate(page.getByRole("button", { name: "Undo edit" }), keyboard);
+    await expect(editorTitle).toHaveValue("Discovery Resume");
+    await activate(page.getByRole("button", { name: "Redo edit" }), keyboard);
+    await expect(editorTitle).toHaveValue("Discovery Résumé");
+    await fields.getByLabel("Page limit").selectOption("2");
+    await fields
+      .getByRole("combobox", { name: "Font", exact: true })
+      .selectOption("serif");
+
+    await activate(sections.getByRole("button", { name: "Section" }), keyboard);
+    const newSection = sections.locator("article").last();
+    await newSection.getByLabel(/Section \d+ title/).fill("Projects");
+    await newSection.getByLabel("Projects kind").fill("projects");
+    await activate(
+      newSection.getByRole("button", { name: "Grounded bullet" }),
+      keyboard,
+    );
+    await expect(newSection.getByRole("listitem")).toHaveCount(1);
+    await activate(
+      newSection.getByRole("button", { name: "Move Projects up" }),
+      keyboard,
+    );
+
+    await activate(
+      page.getByRole("button", { name: "Plain text preview" }),
+      keyboard,
+    );
+    await expect(
+      page.getByLabel("Resume preview").locator("pre"),
+    ).toContainText("Projects");
+    await activate(
+      page.getByRole("button", { name: "Recruiter preview" }),
+      keyboard,
+    );
+    await expect(page.getByText("Recruiter scan")).toBeVisible();
+    await activate(
+      page.getByRole("button", { name: "Page preview" }),
+      keyboard,
+    );
+    await expect(page.getByText("All changes saved").first()).toBeVisible({
+      timeout: 15_000,
+    });
+
+    await activate(page.getByRole("button", { name: "Version" }), keyboard);
+    await expect(page.getByText(/Version \d+ saved\./).first()).toBeVisible();
+    await page.getByLabel("Compare current with").selectOption({ index: 1 });
+    await expect(page.getByText("Only in current")).toBeVisible();
+    await activate(
+      page.getByRole("button", { name: "Restore version 1" }),
+      keyboard,
+    );
+    await expect(
+      page.getByText("Version restored without changing immutable history."),
+    ).toBeVisible();
+
     await page.getByLabel("Export format").selectOption("pdf");
-    await page.getByRole("button", { name: "Verify" }).click();
-    await expect(page.getByText("Round-trip verified")).toBeVisible();
-    await page.getByRole("button", { name: "Download" }).click();
+    await activate(page.getByRole("button", { name: "Verify" }), keyboard);
+    await expect(page.getByText("Fidelity verified")).toBeVisible({
+      timeout: 90_000,
+    });
+    await activate(page.getByRole("button", { name: "Download" }), keyboard);
     await expect(page.getByText(/https?:\/\/.+resume\.pdf/)).toBeVisible();
+    await activate(
+      page.getByRole("button", { name: "Delete export" }),
+      keyboard,
+    );
+    await expect(page.getByText("Confirm export deletion")).toBeVisible();
+    await activate(
+      page.getByRole("button", { name: "Confirm delete export" }),
+      keyboard,
+    );
+    await expect(
+      page.getByRole("status").filter({
+        hasText: "Export file deleted. Immutable resume history is unchanged.",
+      }),
+    ).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText("Deleted", { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Immutable history" }),
+    ).toBeVisible();
+    await expect(
+      page.locator("p").filter({ hasText: /^Version 1$/ }),
+    ).toBeVisible();
   } finally {
     await request
       .delete(`${requireMailpitUrl()}/api/v1/search`, {
