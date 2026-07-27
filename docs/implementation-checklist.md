@@ -539,10 +539,9 @@ Dependencies: current merged application baseline and the accepted monorepo ADRs
       status, logs, safe shutdown, smoke, and surface-specific test commands.
 - [x] Document where frontend, API, worker, backend, contract, and infrastructure
       changes belong and when Docker images require rebuilding.
-- [~] Pass format, lint, type, unit, contract, build, Compose, integration, and
-  applicable isolated browser gates on the final tree; all applicable local
-  gates and exact evidence are green in `PLANS.md`, while hosted CI remains
-  pending publication of the draft PR.
+- [x] Pass format, lint, type, unit, contract, build, Compose, integration, and
+      applicable isolated browser gates on the final tree; all applicable local gates
+      are green, and PR #37 code commit `bf8076e` passed hosted CI run `30235591776`.
 
 Exit: delivery adapters have one predictable bounded-context address and local
 frontend/backend iteration no longer requires hand-composed service commands.

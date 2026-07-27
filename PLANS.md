@@ -1608,8 +1608,9 @@ Detailed checkboxes live in `docs/implementation-checklist.md`.
 ## Repository structure normalization — 2026-07-27
 
 Status: implementation and all applicable local verification are complete in an
-isolated `origin/main` worktree. Hosted CI is pending publication of the draft PR,
-so hosted closure is not claimed yet.
+isolated `origin/main` worktree. Draft PR #37 publishes code commit `bf8076e`, and
+hosted CI run `30235591776` passed all 14 GitHub Actions jobs plus GitGuardian.
+The normalization gate is closed; the PR remains draft and unmerged.
 
 Scope boundary:
 
@@ -1668,14 +1669,18 @@ Verification evidence:
   and mobile journeys with six intentional mobile skips; all isolated state is
   removed afterward.
 - Local `bash -n tests/e2e/run-compose.sh` remains unavailable because this host
-  has the WSL launcher but no Linux `/bin/bash`. The one-line revision change is
-  covered by hosted Linux CI after publication; it is not represented as a local
-  shell-syntax pass.
+  has the WSL launcher but no Linux `/bin/bash`; it is not represented as a local
+  shell-syntax pass. Hosted Linux CI executed the POSIX runner successfully in
+  every isolated E2E job in run `30235591776`.
+- Hosted CI: PR #37 code commit `bf8076e` passed API, worker, web/contracts,
+  supply-chain, browser smoke, containers, Resume Health, Career Record, Role
+  Explorer, Job Match, Change Studio, Resume Builder, application workspace, and
+  Phase 9 career-workspace jobs; GitGuardian also passed.
 
 Residual risks and next step:
 
-- Hosted CI must pass on the exact pushed commit before this normalization is
-  marked fully closed or merged.
+- PR #37 remains a draft. Review, merge, and any deployment are separate explicit
+  actions; no production environment changed in this phase.
 - Normal local commands never delete volumes. The explicitly destructive
   `make reset-db` remains separate and unchanged.
 - Host API/worker modes use loopback endpoints derived from `.env`; full-stack
