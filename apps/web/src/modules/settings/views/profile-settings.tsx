@@ -88,7 +88,7 @@ export function ProfileSettings() {
     }
   }
 
-  if (!profile && !failure) return <LoadingSkeleton />;
+  if (!profile && !failure) return <LoadingSkeleton variant="form" />;
   if (!profile)
     return (
       <ErrorState

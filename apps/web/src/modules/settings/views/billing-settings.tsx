@@ -3,14 +3,7 @@
 import { CreditCard } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
-import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  ErrorState,
-  LoadingSkeleton,
-} from "@careeros/ui";
+import { Alert, Badge, Card, ErrorState, LoadingSkeleton } from "@careeros/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 
@@ -38,7 +31,7 @@ export function BillingSettings() {
     queueMicrotask(() => void load());
   }, [load]);
 
-  if (!capabilities && !failure) return <LoadingSkeleton />;
+  if (!capabilities && !failure) return <LoadingSkeleton variant="form" />;
   if (!capabilities)
     return (
       <ErrorState
@@ -71,14 +64,17 @@ export function BillingSettings() {
             </p>
           </div>
         </div>
-        <Button disabled={!capabilities.billingAvailable}>
-          Manage subscription
-        </Button>
       </div>
       {!capabilities.billingAvailable && (
         <Alert className="mt-5" title="Billing is unavailable" tone="warning">
           The server reports no configured billing provider. Checkout, portal,
           subscription, and payment controls stay disabled.
+        </Alert>
+      )}
+      {capabilities.billingAvailable && (
+        <Alert className="mt-5" title="Billing capability reported" tone="info">
+          The server reports a billing provider, but no verified checkout or
+          portal action is exposed in this preview settings view.
         </Alert>
       )}
     </Card>

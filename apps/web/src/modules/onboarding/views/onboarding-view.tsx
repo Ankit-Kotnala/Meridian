@@ -9,10 +9,12 @@ import {
   Alert,
   Button,
   Card,
+  DefinitionList,
   EmptyState,
   ErrorState,
   FieldLabel,
   LoadingSkeleton,
+  PageHeader,
   Select,
   TextField,
   buttonStyles,
@@ -104,14 +106,14 @@ export function OnboardingView() {
 
   if (!state && !failure) {
     return (
-      <main className="mx-auto max-w-5xl p-4 sm:p-6 lg:p-8" id="main-content">
+      <main className="workspace-page workspace-page-narrow" id="main-content">
         <LoadingSkeleton />
       </main>
     );
   }
   if (!state) {
     return (
-      <main className="mx-auto max-w-5xl p-4 sm:p-6 lg:p-8" id="main-content">
+      <main className="workspace-page workspace-page-narrow" id="main-content">
         <ErrorState
           description={
             failure ?? "We couldn’t load your saved onboarding progress."
@@ -124,17 +126,17 @@ export function OnboardingView() {
   }
 
   return (
-    <main className="mx-auto max-w-5xl p-4 sm:p-6 lg:p-8" id="main-content">
-      <header className="mb-6">
-        <p className="eyebrow">Account onboarding</p>
-        <h1 className="mt-2 text-2xl font-black tracking-[-0.035em] text-foreground sm:text-3xl">
-          Set up your CareerOS workspace
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-          Progress is saved after each step. Optional steps can be skipped and
-          revisited without creating placeholder career data.
-        </p>
-      </header>
+    <main className="workspace-page workspace-page-narrow" id="main-content">
+      <PageHeader
+        description={
+          <>
+            Progress is saved after each step. Optional steps can be skipped and
+            revisited without creating placeholder career data.
+          </>
+        }
+        eyebrow="Account setup"
+        title="Set up your CareerOS workspace"
+      />
       <OnboardingProgress current={state.currentStep} />
       {failure && (
         <Alert
@@ -150,7 +152,11 @@ export function OnboardingView() {
         </Alert>
       )}
 
-      <Card className="mt-5 p-5 sm:p-7">
+      <Card
+        aria-label="Current onboarding step"
+        as="section"
+        className="mt-5 p-5 sm:p-7"
+      >
         {state.currentStep === "profile" && (
           <form
             className="space-y-5"
@@ -167,7 +173,7 @@ export function OnboardingView() {
             }}
           >
             <div>
-              <h2 className="text-lg font-extrabold text-foreground">
+              <h2 className="text-lg font-semibold text-foreground">
                 Confirm your profile name
               </h2>
               <p className="mt-2 text-sm leading-6 text-muted">
@@ -208,7 +214,7 @@ export function OnboardingView() {
                 </Link>
                 <Button
                   loading={saving}
-                  loadingLabel="Saving handoff…"
+                  loadingLabel="Saving choice…"
                   onClick={() =>
                     void save({
                       currentStep: "parsedReview",
@@ -221,7 +227,7 @@ export function OnboardingView() {
                 </Button>
               </div>
             }
-            description="Secure PDF and DOCX admission, parsed-field review, and deterministic Resume Health are available in your protected workspace. This optional onboarding handoff remains skippable."
+            description="Secure PDF and DOCX admission, parsed-field review, and deterministic Resume Health are available in your protected workspace. Adding a resume is optional and remains skippable."
             title="Add a resume for review"
           />
         )}
@@ -238,7 +244,7 @@ export function OnboardingView() {
                 </Link>
                 <Button
                   loading={saving}
-                  loadingLabel="Saving handoff…"
+                  loadingLabel="Saving choice…"
                   onClick={() =>
                     void save({
                       currentStep: "preferences",
@@ -251,7 +257,7 @@ export function OnboardingView() {
                 </Button>
               </div>
             }
-            description="Resume Health owns the real parsed document and correction workflow. Onboarding does not infer completion or create placeholder facts; you may review there or explicitly skip this optional handoff."
+            description="Resume Health owns the real parsed document and correction workflow. Setup does not infer completion or create placeholder facts; you may review there or explicitly continue."
             title="Review uncertain parsed information"
           />
         )}
@@ -283,7 +289,7 @@ export function OnboardingView() {
             }}
           >
             <div>
-              <h2 className="text-lg font-extrabold text-foreground">
+              <h2 className="text-lg font-semibold text-foreground">
                 Choose working preferences
               </h2>
               <p className="mt-2 text-sm leading-6 text-muted">
@@ -413,36 +419,35 @@ export function OnboardingView() {
         )}
       </Card>
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-2">
-        <div className="flex items-start gap-3 rounded-xl border border-line bg-white p-4">
-          <FileSearch
-            aria-hidden="true"
-            className="mt-0.5 size-5 text-primary"
-          />
-          <div>
-            <p className="text-sm font-extrabold text-foreground">
-              Resume handoff
-            </p>
-            <p className="mt-1 text-xs leading-5 text-muted">
-              Status: {handoffLabel(state.resumeHandoff)}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-start gap-3 rounded-xl border border-line bg-white p-4">
-          <SearchCheck
-            aria-hidden="true"
-            className="mt-0.5 size-5 text-primary"
-          />
-          <div>
-            <p className="text-sm font-extrabold text-foreground">
-              Parsed review handoff
-            </p>
-            <p className="mt-1 text-xs leading-5 text-muted">
-              Status: {handoffLabel(state.parsedReviewHandoff)}
-            </p>
-          </div>
-        </div>
-      </div>
+      <DefinitionList
+        className="mt-5"
+        items={[
+          {
+            label: (
+              <span className="inline-flex items-center gap-2">
+                <FileSearch
+                  aria-hidden="true"
+                  className="size-4 text-primary"
+                />
+                Resume document
+              </span>
+            ),
+            value: `Status: ${handoffLabel(state.resumeHandoff)}`,
+          },
+          {
+            label: (
+              <span className="inline-flex items-center gap-2">
+                <SearchCheck
+                  aria-hidden="true"
+                  className="size-4 text-primary"
+                />
+                Parsed details
+              </span>
+            ),
+            value: `Status: ${handoffLabel(state.parsedReviewHandoff)}`,
+          },
+        ]}
+      />
     </main>
   );
 }

@@ -1,10 +1,16 @@
 "use client";
 
-import { FileHeart, RefreshCcw } from "lucide-react";
+import { RefreshCcw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { Alert, Button, LoadingSkeleton } from "@careeros/ui";
+import {
+  Alert,
+  Button,
+  LoadingSkeleton,
+  PageHeader,
+  SectionHeader,
+} from "@careeros/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 
@@ -36,29 +42,14 @@ export function AccountResumeHealthView() {
 
   return (
     <main className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8" id="main-content">
-      <header className="mb-6">
-        <p className="eyebrow">General document check</p>
-        <div className="mt-2 flex items-start gap-3">
-          <span className="mt-1 grid size-11 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">
-            <FileHeart aria-hidden="true" className="size-5" />
-          </span>
-          <div>
-            <h1 className="text-2xl font-black tracking-[-0.035em] text-foreground sm:text-3xl">
-              Resume Health
-            </h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-              Upload a real resume, review uncertain parsing, then calculate an
-              explainable internal readiness measurement. No job description is
-              required.
-            </p>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        description="Upload a real resume, review uncertain parsing, then calculate an explainable internal readiness measurement. No job description is required."
+        eyebrow="General document check"
+        title="Resume Health"
+      />
 
       <section aria-labelledby="upload-heading">
-        <h2 className="mb-3 text-lg font-extrabold" id="upload-heading">
-          Upload another resume
-        </h2>
+        <SectionHeader id="upload-heading" title="Upload another resume" />
         <UploadWorkflow
           access="account"
           onComplete={(result) =>
@@ -70,21 +61,22 @@ export function AccountResumeHealthView() {
       </section>
 
       <section aria-labelledby="documents-heading" className="mt-8">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 className="text-lg font-extrabold" id="documents-heading">
-            Your resumes
-          </h2>
-          <Button onClick={() => void load()} variant="ghost">
-            <RefreshCcw aria-hidden="true" className="size-4" /> Refresh
-          </Button>
-        </div>
+        <SectionHeader
+          actions={
+            <Button onClick={() => void load()} variant="ghost">
+              <RefreshCcw aria-hidden="true" className="size-4" /> Refresh
+            </Button>
+          }
+          id="documents-heading"
+          title="Your resumes"
+        />
         {failure && (
           <Alert className="mb-4" title="Resumes unavailable" tone="danger">
             {failure}
           </Alert>
         )}
         {!documents && !failure ? (
-          <LoadingSkeleton />
+          <LoadingSkeleton variant="list" />
         ) : (
           <DocumentList documents={documents ?? []} />
         )}

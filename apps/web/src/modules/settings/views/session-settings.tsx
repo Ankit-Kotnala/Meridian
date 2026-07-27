@@ -96,7 +96,7 @@ export function SessionSettings() {
     }
   }
 
-  if (!sessions && !failure) return <LoadingSkeleton />;
+  if (!sessions && !failure) return <LoadingSkeleton variant="list" />;
   if (!sessions)
     return (
       <ErrorState

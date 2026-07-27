@@ -1,7 +1,7 @@
 import { ArrowRight, FileSearch, UserRoundPlus } from "lucide-react";
 import Link from "next/link";
 
-import { Alert, buttonStyles, Card, cn } from "@careeros/ui";
+import { Alert, buttonStyles, cn } from "@careeros/ui";
 
 import { AuthPageShell } from "../components/auth-page-shell";
 
@@ -12,12 +12,12 @@ export function GetStartedView() {
       eyebrow="Get started"
       title="Choose how to begin"
     >
-      <div className="space-y-4">
-        <Card className="p-5">
-          <span className="grid size-10 place-items-center rounded-xl bg-primary-soft text-primary">
+      <div className="space-y-5">
+        <div className="border-b border-line pb-5">
+          <span className="grid size-10 place-items-center rounded-[var(--radius-control)] bg-primary-soft text-primary">
             <UserRoundPlus aria-hidden="true" className="size-5" />
           </span>
-          <h2 className="mt-4 font-extrabold text-foreground">
+          <h2 className="mt-4 font-semibold text-foreground">
             Create a private account
           </h2>
           <p className="mt-2 text-sm leading-6 text-muted">
@@ -34,13 +34,13 @@ export function GetStartedView() {
           >
             Create account <ArrowRight aria-hidden="true" className="size-4" />
           </Link>
-        </Card>
+        </div>
 
-        <Card className="p-5">
-          <span className="grid size-10 place-items-center rounded-xl bg-slate-100 text-muted">
+        <div className="border-b border-line pb-5">
+          <span className="grid size-10 place-items-center rounded-[var(--radius-control)] bg-surface-subtle text-muted">
             <FileSearch aria-hidden="true" className="size-5" />
           </span>
-          <h2 className="mt-4 font-extrabold text-foreground">
+          <h2 className="mt-4 font-semibold text-foreground">
             Guest resume health
           </h2>
           <p className="mt-2 text-sm leading-6 text-muted">
@@ -57,7 +57,7 @@ export function GetStartedView() {
           >
             Check a resume as a guest
           </Link>
-        </Card>
+        </div>
 
         <Alert title="Real document state only" tone="info">
           CareerOS displays a report only after a real document passes

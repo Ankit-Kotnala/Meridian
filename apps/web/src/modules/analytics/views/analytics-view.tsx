@@ -28,6 +28,7 @@ import {
   ErrorState,
   Input,
   LoadingSkeleton,
+  PageHeader,
   Select,
 } from "@careeros/ui";
 
@@ -266,7 +267,7 @@ function CountsTable({ counts }: { counts: Record<string, number> }) {
     );
   }
   return (
-    <div className="mt-3 overflow-x-auto rounded-xl border border-line">
+    <div className="data-region table-scroll mt-3">
       <table className="min-w-full divide-y divide-line text-left text-sm">
         <caption className="sr-only">
           Observed counts in the selected analytics window
@@ -306,7 +307,7 @@ function RatesTable({ rates }: { rates: Record<string, AnalyticsRate> }) {
     );
   }
   return (
-    <div className="mt-3 overflow-x-auto rounded-xl border border-line">
+    <div className="data-region table-scroll mt-3">
       <table className="min-w-full divide-y divide-line text-left text-sm">
         <caption className="sr-only">
           Observed rates; small cohorts are suppressed for privacy
@@ -362,7 +363,7 @@ function CoverageTrendTable({
 }) {
   if (values.length === 0) return null;
   return (
-    <div className="mt-3 overflow-x-auto rounded-xl border border-line">
+    <div className="data-region table-scroll mt-3">
       <table className="min-w-full divide-y divide-line text-left text-sm">
         <caption className="sr-only">
           Requirement coverage trend; small samples are suppressed
@@ -412,7 +413,7 @@ function ResumeVersionOutcomeTable({
 }) {
   if (values.length === 0) return null;
   return (
-    <div className="mt-3 overflow-x-auto rounded-xl border border-line">
+    <div className="data-region table-scroll mt-3">
       <table className="min-w-full divide-y divide-line text-left text-sm">
         <caption className="sr-only">
           Observed outcomes segmented by exact immutable resume version
@@ -477,12 +478,9 @@ function BreakdownTables({
   return (
     <div className="mt-3 grid gap-4 lg:grid-cols-2">
       {entries.map(([dimension, values]) => (
-        <div
-          className="overflow-x-auto rounded-xl border border-line"
-          key={dimension}
-        >
+        <div className="data-region table-scroll" key={dimension}>
           <table className="min-w-full divide-y divide-line text-left text-sm">
-            <caption className="bg-slate-50 px-4 py-3 text-left font-black text-foreground">
+            <caption className="bg-surface-subtle px-4 py-3 text-left font-semibold text-foreground">
               {humanize(dimension)}
             </caption>
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-muted">
@@ -607,7 +605,7 @@ function ReportContent({ report }: { report: AnalyticsReport }) {
             No time-bucket activity in this window.
           </p>
         ) : (
-          <div className="mt-3 overflow-x-auto rounded-xl border border-line">
+          <div className="data-region table-scroll mt-3">
             <table className="min-w-full divide-y divide-line text-left text-sm">
               <caption className="sr-only">
                 Applications, interviews, offers, and achievements by time
@@ -675,7 +673,7 @@ function ReportContent({ report }: { report: AnalyticsReport }) {
             No readiness analyses in this window.
           </p>
         ) : (
-          <div className="mt-3 overflow-x-auto rounded-xl border border-line">
+          <div className="data-region table-scroll mt-3">
             <table className="min-w-full divide-y divide-line text-left text-sm">
               <caption className="sr-only">
                 Internal role-readiness measurements over time
@@ -746,7 +744,7 @@ function Watermarks({ report }: { report: AnalyticsReport }) {
           No source watermarks are available.
         </p>
       ) : (
-        <div className="mt-3 overflow-x-auto">
+        <div className="data-region table-scroll mt-3">
           <table className="min-w-full divide-y divide-line text-left text-sm">
             <caption className="sr-only">
               Source record counts and completeness watermark times
@@ -815,7 +813,7 @@ function MetricSemantics({ report }: { report: AnalyticsReport }) {
         {report.suppressionPolicy.reason}
       </p>
       {definitions.length > 0 && (
-        <div className="mt-3 overflow-x-auto">
+        <div className="data-region table-scroll mt-3">
           <table className="min-w-full divide-y divide-line text-left text-sm">
             <caption className="sr-only">
               Versioned Career Analytics metric definitions
@@ -1157,21 +1155,11 @@ export function AnalyticsView() {
       className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8"
       id="main-content"
     >
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-primary">
-            Career Analytics
-          </p>
-          <h1 className="mt-1 text-3xl font-black tracking-tight sm:text-4xl">
-            Inspect observed career patterns
-          </h1>
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
-            Purpose-limited snapshots summarize your own workspace. Complete
-            source watermarks and visible small-cohort suppression keep every
-            report auditable.
-          </p>
-        </div>
-      </header>
+      <PageHeader
+        description="Purpose-limited snapshots summarize your own workspace. Complete source watermarks and visible small-cohort suppression keep every report auditable."
+        eyebrow="Long-term growth"
+        title="Career Analytics"
+      />
 
       <Alert title="Interpretation boundary" tone="info">
         <div className="flex items-start gap-3">

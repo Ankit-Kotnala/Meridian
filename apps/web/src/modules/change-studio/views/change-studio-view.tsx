@@ -10,11 +10,10 @@ import {
   Redo2,
   RotateCcw,
   ShieldCheck,
-  Sparkles,
   Undo2,
   Unlock,
-  WandSparkles,
   X,
+  FileDiff,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState, type FormEvent } from "react";
@@ -25,8 +24,10 @@ import {
   Button,
   EmptyState,
   ErrorState,
+  FieldLabel,
   Input,
   LoadingSkeleton,
+  PageHeader,
   cn,
 } from "@careeros/ui";
 
@@ -178,64 +179,75 @@ export function ChangeStudioView() {
         {success || failure || ""}
       </div>
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-primary">
-            Change Studio
-          </p>
-          <h1 className="mt-1 text-2xl font-black text-foreground">
-            Grounded resume changes
-          </h1>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <form
-            aria-label="Generate suggestions from an analysis"
-            className="flex min-w-0 gap-2"
-            onSubmit={(event) => void generate(event)}
+      <PageHeader
+        description="Compare each proposed resume edit with its original language, requirement, reason, and eligible evidence before you decide."
+        eyebrow="Change Studio"
+        title="Grounded resume changes"
+      />
+
+      <section
+        aria-labelledby="open-review-heading"
+        className="data-region grid gap-5 p-4 sm:p-5 lg:grid-cols-2"
+      >
+        <div className="lg:col-span-2">
+          <h2
+            className="font-semibold text-foreground"
+            id="open-review-heading"
           >
-            <label className="sr-only" htmlFor="analysis-id">
-              Job match analysis ID
-            </label>
+            Start or reopen a review
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-muted">
+            Use an ID from a real Job Match analysis or a previously saved
+            change set. CareerOS does not create placeholder opportunities.
+          </p>
+        </div>
+        <form
+          aria-label="Generate suggestions from an analysis"
+          className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
+          onSubmit={(event) => void generate(event)}
+        >
+          <div className="space-y-2">
+            <FieldLabel htmlFor="analysis-id">Job match analysis ID</FieldLabel>
             <Input
-              className="min-w-0 sm:w-80"
+              className="min-w-0"
               id="analysis-id"
               onChange={(event) => setAnalysisId(event.target.value)}
-              placeholder="Job match analysis ID"
+              placeholder="Paste analysis ID"
               required
               value={analysisId}
             />
-            <Button loading={busyKey === "generate"} type="submit">
-              <WandSparkles aria-hidden="true" className="size-4" />
-              Generate
-            </Button>
-          </form>
-          <form
-            aria-label="Open an existing change set"
-            className="flex min-w-0 gap-2"
-            onSubmit={(event) => void openExisting(event)}
-          >
-            <label className="sr-only" htmlFor="change-set-id">
-              Change set ID
-            </label>
+          </div>
+          <Button loading={busyKey === "generate"} type="submit">
+            <FileDiff aria-hidden="true" className="size-4" />
+            Generate
+          </Button>
+        </form>
+        <form
+          aria-label="Open an existing change set"
+          className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
+          onSubmit={(event) => void openExisting(event)}
+        >
+          <div className="space-y-2">
+            <FieldLabel htmlFor="change-set-id">Saved change set ID</FieldLabel>
             <Input
-              className="min-w-0 sm:w-72"
+              className="min-w-0"
               id="change-set-id"
               onChange={(event) => setExistingId(event.target.value)}
-              placeholder="Change set ID"
+              placeholder="Paste change set ID"
               value={existingId}
             />
-            <Button
-              disabled={!existingId.trim()}
-              loading={busyKey === "open"}
-              type="submit"
-              variant="secondary"
-            >
-              <History aria-hidden="true" className="size-4" />
-              Open
-            </Button>
-          </form>
-        </div>
-      </div>
+          </div>
+          <Button
+            disabled={!existingId.trim()}
+            loading={busyKey === "open"}
+            type="submit"
+            variant="secondary"
+          >
+            <History aria-hidden="true" className="size-4" />
+            Open
+          </Button>
+        </form>
+      </section>
 
       {failure && (
         <Alert title="Change Studio unavailable" tone="danger">
@@ -282,7 +294,7 @@ export function ChangeStudioView() {
                     variant="secondary"
                   >
                     <ShieldCheck aria-hidden="true" className="size-4" />
-                    Apply safe
+                    Approve eligible low-risk
                   </Button>
                   <Button
                     loading={busyKey === "undo"}
@@ -419,7 +431,7 @@ export function ChangeStudioView() {
                           }
                           variant="ghost"
                         >
-                          <Sparkles aria-hidden="true" className="size-4" />
+                          <RotateCcw aria-hidden="true" className="size-4" />
                           Alternative
                         </Button>
                         <Button

@@ -29,6 +29,7 @@ import {
   ErrorState,
   Input,
   LoadingSkeleton,
+  PageHeader,
   Select,
   Tabs,
   buttonStyles,
@@ -825,7 +826,7 @@ export function NetworkingView() {
   if (state.status === "loading") {
     return (
       <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8" id="main-content">
-        <LoadingSkeleton />
+        <LoadingSkeleton variant="page" />
       </main>
     );
   }
@@ -835,25 +836,17 @@ export function NetworkingView() {
       className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8"
       id="main-content"
     >
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-primary">
-            Networking
-          </p>
-          <h1 className="mt-1 text-2xl font-black text-foreground">
-            A private, consent-based relationship workspace
-          </h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-            Maintain contacts, relationship history, referrals, reviewed
-            templates, and local reminders. CareerOS never scrapes contacts,
-            imports them without consent, or sends outreach.
-          </p>
-        </div>
-        <Button onClick={() => void load()} variant="secondary">
-          <RefreshCcw aria-hidden="true" className="size-4" />
-          Refresh
-        </Button>
-      </header>
+      <PageHeader
+        actions={
+          <Button onClick={() => void load()} variant="secondary">
+            <RefreshCcw aria-hidden="true" className="size-4" />
+            Refresh
+          </Button>
+        }
+        description="Maintain contacts, relationship history, referrals, reviewed templates, and local reminders. CareerOS never scrapes contacts, imports them without consent, or sends outreach."
+        eyebrow="Relationships"
+        title="A private, consent-based relationship workspace"
+      />
 
       <Alert title="No external delivery or scraping" tone="warning">
         Interactions record what already happened. Templates are reviewable

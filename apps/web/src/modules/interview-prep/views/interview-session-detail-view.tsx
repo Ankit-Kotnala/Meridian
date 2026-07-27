@@ -2,10 +2,10 @@
 
 import {
   ArrowLeft,
+  ListChecks,
   RefreshCcw,
   Save,
   ShieldCheck,
-  Sparkles,
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
@@ -671,7 +671,7 @@ export function InterviewSessionDetailView({
         Interview Prep
       </Link>
 
-      <header className="rounded-xl border border-line bg-white p-4 shadow-sm sm:p-5">
+      <header className="rounded-card border border-border bg-surface-raised p-4 sm:p-5">
         <div className="flex flex-wrap gap-2">
           <Badge tone="primary">{humanize(session.kind)}</Badge>
           <Badge tone="neutral">{dateTime(session.scheduledAt)}</Badge>
@@ -959,7 +959,7 @@ function QuestionsPanel({
         onClick={onGenerate}
         variant="secondary"
       >
-        <Sparkles aria-hidden="true" className="size-4" />
+        <ListChecks aria-hidden="true" className="size-4" />
         {isBusy("generate-questions")
           ? "Generating…"
           : session.questionBankGenerated

@@ -3,10 +3,10 @@
 import {
   BriefcaseBusiness,
   ClipboardCheck,
+  FileDiff,
   Globe2,
   RefreshCcw,
   Search,
-  Sparkles,
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
@@ -26,6 +26,7 @@ import {
   ErrorState,
   Input,
   LoadingSkeleton,
+  PageHeader,
   ScoreBar,
   Select,
   buttonStyles,
@@ -328,20 +329,17 @@ export function JobMatchView() {
         {success || failure || ""}
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-primary">
-            Job Match
-          </p>
-          <h1 className="mt-1 text-2xl font-black text-foreground">
-            Application readiness
-          </h1>
-        </div>
-        <Button onClick={() => void load()} variant="secondary">
-          <RefreshCcw aria-hidden="true" className="size-4" />
-          Refresh
-        </Button>
-      </div>
+      <PageHeader
+        actions={
+          <Button onClick={() => void load()} variant="secondary">
+            <RefreshCcw aria-hidden="true" className="size-4" />
+            Refresh
+          </Button>
+        }
+        description="Map one saved job’s explicit requirements to eligible career evidence. This job-specific measure is separate from general Resume Health and role readiness."
+        eyebrow="Job Match"
+        title="Application readiness"
+      />
 
       {failure && (
         <Alert title="Job Match unavailable" tone="danger">
@@ -678,14 +676,14 @@ export function JobMatchView() {
                     )}
                     href={`/change-studio?analysisId=${activeAnalysis.id}`}
                   >
-                    <Sparkles aria-hidden="true" className="size-4" />
+                    <FileDiff aria-hidden="true" className="size-4" />
                     Open Change Studio
                   </Link>
                 </div>
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-lg border border-line bg-white shadow-sm">
+            <div className="data-region table-scroll">
               <table className="w-full min-w-[720px] border-collapse text-left text-sm">
                 <caption className="sr-only">
                   Requirement-by-requirement job match evidence matrix

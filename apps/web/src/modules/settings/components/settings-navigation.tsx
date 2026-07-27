@@ -28,8 +28,11 @@ const items = [
 export function SettingsNavigation() {
   const pathname = usePathname();
   return (
-    <nav aria-label="Settings navigation" className="overflow-x-auto">
-      <ul className="flex min-w-max gap-2 border-b border-line">
+    <nav
+      aria-label="Settings navigation"
+      className="overflow-x-auto border-b border-line lg:sticky lg:top-21 lg:overflow-visible lg:border-b-0"
+    >
+      <ul className="flex min-w-max gap-1 lg:block lg:min-w-0 lg:space-y-0.5">
         {items.map(({ href, icon: Icon, label }) => {
           const active = pathname === href;
           return (
@@ -37,10 +40,10 @@ export function SettingsNavigation() {
               <Link
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex min-h-11 items-center gap-2 border-b-2 px-3 text-sm font-bold",
+                  "flex min-h-11 items-center gap-2 border-b-2 px-3 text-sm font-semibold lg:border-b-0 lg:border-l-2",
                   active
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted hover:text-foreground",
+                    ? "border-primary bg-primary-soft/55 text-primary-strong"
+                    : "border-transparent text-muted hover:bg-surface-subtle hover:text-foreground",
                 )}
                 href={href}
               >

@@ -1,16 +1,17 @@
 # CareerOS implementation plan
 
-Last updated: 2026-07-26
+Last updated: 2026-07-27
 Plan owner: engineering  
 Current status: **Phase 1/3 observed-onboarding, Settings, and resume-ready Career
 Record closure is locally verified; hosted evidence is pending explicit
 authorization to publish. Phase 2 semantic parsing/review closure is also
 locally/security verified with hosted evidence pending. Phase 9 remains complete
 and hosted verified in PR #22; Phase 8 remains complete and hosted verified in
-PR #21. Phase 7 backend durable verified-export closure is implemented and host
-verified; its final Docker-isolated gate is pending. Frontend editor extensions
-are excluded from this non-frontend slice. Commercial, administrative,
-operational, seed, and release-hardening work remains open**
+PR #21. Phase 7 durable verified-export closure and Phase 10A's guarded fictional
+local seed are merged. The product-wide UX redesign is locally implemented and
+visually verified without changing backend phase completion. Commercial,
+tenancy, privacy, administration, security/cost, infrastructure, and final
+release-hardening work remains open**
 
 ## Status legend
 
@@ -20,6 +21,136 @@ operational, seed, and release-hardening work remains open**
 - `[!]` blocked; the blocker and evidence must be recorded
 
 No phase is complete until every exit gate passes. A skipped check is not a pass.
+
+## Product-wide UX redesign verification (2026-07-27)
+
+This cross-cutting redesign is isolated on `agent/enterprise-ui-redesign`. It changes the
+presentation and workflow clarity of existing product functionality; it does not
+claim a new implementation phase, publish a deployment, or change backend domain
+rules.
+
+### Implemented and verified
+
+- [x] Replaced the decorative dashboard direction with a warm-neutral,
+      forest-action, evidence-first token and component system.
+- [x] Added shared page, section, stepper, definition-list, approval, and state
+      patterns while keeping product behavior in feature modules.
+- [x] Reorganized authenticated navigation by user goal and implemented a
+      keyboard-operable mobile drawer and contextual account controls.
+- [x] Rebuilt public, identity, dashboard, onboarding, Career Record,
+      opportunity, resume, application, preparation, networking, growth,
+      analytics, and Settings top-level experiences without invented metrics,
+      claims, customer evidence, or capabilities.
+- [x] Rebuilt the public home page as the first page-level enterprise pass:
+      a credible fictional workspace preview, platform-layer architecture,
+      controlled operating workflow, explicit trust controls, and restrained
+      technical-preview messaging replaced the flat documentation-style
+      presentation. The focused rerun passed at all seven required widths with
+      zero CLS, no overflow, and no browser or console error.
+- [x] Added a bounded enterprise interaction layer: pinned Motion with
+      `LazyMotion`, central OS reduced-motion handling, route-scoped landing and
+      workspace providers, CSS-only public navigation motion, subtle ambient
+      depth, and measured bundle impact.
+- [x] Documented design foundations, component ownership, provenance and
+      approval patterns, responsive rules, accessibility expectations, and
+      current official product-pattern research in
+      `docs/product-design-system.md`.
+- [x] Added `apps/web/scripts/capture-visual-qa.mjs` and the complete route/state
+      record in `docs/visual-qa-matrix.md`.
+- [x] Captured four representative public workflows at all seven required
+      viewports. The 28 committed redesigned captures returned 200 with no page
+      overflow, console error, or page error; skip-link and reduced-motion checks
+      passed.
+- [x] Exercised 24 authenticated top-level routes at 320, 360, 393, 768, 1024,
+      1440, and 1920 px. One Applications filter overflow at 1440 px was fixed,
+      rebuilt, and rerun successfully at all seven widths.
+- [x] Verified the production Next.js image behind the local edge container with
+      all Compose services healthy. The authenticated desktop/mobile journey
+      passes 2/2 and the production-stack smoke suite passes 7 with 1 intentional
+      project skip.
+
+### Required gate evidence
+
+- `pnpm format:check`: pass.
+- `pnpm lint`: pass.
+- `pnpm typecheck`: pass.
+- `pnpm test`: pass — web 163, UI 12, contracts 3, boundary 4, and edge 2 tests.
+- Exact Makefile Python format/lint commands: pass.
+- Exact Makefile Python mypy commands: pass — 208 backend, 65 API, and 12 worker
+  source files.
+- Exact Makefile Python test commands: pass — 398 backend architecture/unit,
+  145 API, and 84 worker tests.
+- `pnpm build`: pass; 49 routes compiled. The final Docker image build also
+  compiled all 49 routes and the stack reached healthy status.
+- `uv lock --check` and `pnpm contracts:check`: pass.
+- `docker compose config --quiet`: pass.
+- GNU Make is unavailable on this Windows host, so `make format-check`,
+  `make lint`, `make typecheck`, and `make test` cannot be invoked by name. Their
+  underlying package-manager commands were run directly; this limitation is not
+  recorded as a Make pass.
+
+### Interaction-polish incremental gate (2026-07-26)
+
+- `pnpm format:check`: pass.
+- `pnpm lint`: pass, including web architecture and repository boundaries.
+- `pnpm typecheck`: pass across all JavaScript/TypeScript packages.
+- `pnpm test`: pass — web 163, UI 12, contracts 3, boundary 4, and edge 2 tests.
+- `pnpm build`: pass; all 49 Next.js routes compiled in the repository build.
+- Isolated development-server visual QA: 28/28 public captures passed across the
+  seven required widths with zero overflow, console error, or page error.
+- Optimized-build visual QA: 21/21 landing, fictional-demo, and login captures
+  passed across the seven widths. Maximum observed LCP was 1008 ms, CLS was 0,
+  maximum Event Timing duration was 40 ms, and maximum encoded JavaScript was
+  236,893 bytes.
+- Representative human review completed for the current landing desktop/mobile
+  and protected Applications mobile captures through a sandbox-safe encoded
+  preview path.
+
+### Completion and publication gate (2026-07-27)
+
+- `pnpm format:check`, `pnpm lint`, and `pnpm typecheck`: pass, including strict
+  frontend architecture and repository-boundary enforcement.
+- `pnpm test`: pass — web 163, UI 12, contracts 3, boundary 4, and edge 2 tests.
+- `pnpm build`: pass; the production Next.js build compiled all 49 routes.
+- Production-mode public visual QA: 28/28 captures passed across four routes and
+  all seven required widths with zero overflow, console error, page error,
+  reduced-motion failure, or lab-threshold regression. Maximum observed LCP was
+  512 ms, CLS was 0, maximum interaction duration was 88 ms, and maximum encoded
+  JavaScript was 246,612 bytes.
+- Production-mode protected visual QA: 168/168 captures passed across 24 routes
+  and all seven required widths with zero overflow, console error, page error,
+  reduced-motion failure, or lab-threshold regression. Maximum observed LCP was
+  472 ms, CLS was 0, maximum interaction duration was 40 ms, and maximum encoded
+  JavaScript was 446,839 bytes.
+- The stale pre-redesign landing and mobile-navigation smoke assertions were
+  corrected to the shipped product language. The serial desktop/mobile Chromium
+  rerun passed 7 tests with 1 intentional desktop skip. The initial six-worker
+  attempt is retained as host-resource failure evidence; Chromium workers exited
+  before assertions completed.
+- `docker compose ps`: the API, web, edge, PostgreSQL, Redis, MinIO, Mailpit,
+  ClamAV, worker, and scheduler services were healthy during protected QA.
+
+### Open verification and product risks
+
+- [!] The connected interactive browser and direct local-image tool remain
+  blocked by the Windows sandbox helper error `apply deny-read ACLs`.
+  Playwright completed the repeatable checks, and representative captures were
+  manually inspected through a sandbox-safe encoded preview; exhaustive human
+  review of every saved screenshot is not claimed.
+- [!] Dynamic detail routes require stable domain records. Their component and
+  journey coverage is recorded separately from the seven-viewport top-level
+  route pass.
+- [!] The corrected full-stack E2E suite still receives the existing API `409
+resume_builder_conflict` response when newly registered users create a
+  resume after evidence confirmation. Resume Builder and downstream
+  Application journeys therefore remain open outside this presentation-only
+  redesign.
+- [!] The Job Match full-stack assertion expects a tailoring action even when
+  the deterministic result contains a mandatory gap. The honest UI result is
+  retained and the stale expectation remains open.
+- [!] No field RUM was available. LCP, CLS, JavaScript bytes, and Event Timing in
+  the visual-QA record are local lab observations, not production Core Web
+  Vitals or a hiring-outcome claim.
 
 ## Repository assessment
 

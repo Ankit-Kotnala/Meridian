@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { DashboardOverview } from "@/modules/dashboard";
 
 describe("DashboardOverview", () => {
-  it("labels the preview data and score limitations", () => {
+  it("labels the fictional scenario and measurement limitations", () => {
     render(<DashboardOverview />);
 
     expect(
@@ -16,16 +16,20 @@ describe("DashboardOverview", () => {
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("img", { name: "Resume Health Score: 78/100" }),
+      screen.getByRole("heading", {
+        name: "Follow the evidence into an output.",
+      }),
     ).toBeInTheDocument();
   });
 
-  it("provides a text alternative for the pipeline chart", () => {
+  it("explains the review state without fake metrics or activity feeds", () => {
     render(<DashboardOverview />);
     expect(
-      screen.getByRole("img", {
-        name: /pipeline summary: 12 saved, 24 applied, 5 interview, 2 offer/i,
+      screen.getByRole("heading", {
+        name: "A material change waits for a person.",
       }),
     ).toBeInTheDocument();
+    expect(screen.getByText("Eligible source links")).toBeInTheDocument();
+    expect(screen.queryByText(/pipeline summary/i)).not.toBeInTheDocument();
   });
 });

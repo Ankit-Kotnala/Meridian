@@ -13,7 +13,7 @@ function StateShell({ children, className }: StateShellProps) {
   return (
     <div
       className={cn(
-        "grid min-h-64 place-items-center rounded-2xl border border-line bg-white p-8 text-center",
+        "grid min-h-56 place-items-center rounded-[var(--radius-card)] border border-dashed border-line-strong bg-surface-raised p-6 text-center sm:p-8",
         className,
       )}
     >
@@ -37,7 +37,7 @@ export function EmptyState({
     <StateShell className={className}>
       <span
         aria-hidden="true"
-        className="mx-auto mb-4 grid size-11 place-items-center rounded-xl bg-primary-soft text-primary"
+        className="mx-auto mb-4 grid size-10 place-items-center rounded-[var(--radius-control)] bg-primary-soft text-primary"
       >
         <Inbox className="size-5" />
       </span>
@@ -63,7 +63,7 @@ export function ErrorState({
     <StateShell className={className}>
       <span
         aria-hidden="true"
-        className="mx-auto mb-4 grid size-11 place-items-center rounded-xl bg-danger-soft text-danger"
+        className="mx-auto mb-4 grid size-10 place-items-center rounded-[var(--radius-control)] bg-danger-soft text-danger"
       >
         <AlertTriangle className="size-5" />
       </span>
@@ -79,7 +79,14 @@ export function ErrorState({
   );
 }
 
-export function LoadingSkeleton({ className }: { className?: string }) {
+export function LoadingSkeleton({
+  className,
+  variant = "page",
+}: {
+  className?: string;
+  variant?: "form" | "list" | "page" | "table";
+}) {
+  const rows = variant === "form" ? 3 : variant === "table" ? 5 : 4;
   return (
     <div
       aria-busy="true"
@@ -88,20 +95,27 @@ export function LoadingSkeleton({ className }: { className?: string }) {
       role="status"
     >
       <span className="sr-only">Loading content</span>
-      <div className="h-8 w-56 animate-pulse rounded-lg bg-slate-200" />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }, (_, index) => (
+      <div className="h-7 w-52 animate-pulse rounded-md bg-surface-inset" />
+      <div className={cn("grid gap-3", variant === "page" && "md:grid-cols-2")}>
+        {Array.from({ length: rows }, (_, index) => (
           <div
-            className="h-32 animate-pulse rounded-2xl border border-line bg-white p-5"
+            className={cn(
+              "animate-pulse rounded-[var(--radius-card)] border border-line bg-white p-5",
+              variant === "form" ? "h-20" : "h-24",
+            )}
             key={index}
           >
-            <div className="h-3 w-24 rounded bg-slate-200" />
-            <div className="mt-5 h-8 w-16 rounded bg-slate-200" />
-            <div className="mt-3 h-3 w-32 rounded bg-slate-100" />
+            <div className="h-3 w-28 rounded bg-surface-inset" />
+            <div className="mt-4 h-3 w-3/4 rounded bg-surface-subtle" />
+            {variant !== "form" && (
+              <div className="mt-3 h-3 w-1/2 rounded bg-surface-subtle" />
+            )}
           </div>
         ))}
       </div>
-      <div className="h-72 animate-pulse rounded-2xl border border-line bg-white" />
+      {variant === "page" && (
+        <div className="h-52 animate-pulse rounded-[var(--radius-card)] border border-line bg-white" />
+      )}
     </div>
   );
 }

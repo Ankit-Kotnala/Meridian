@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   Alert,
+  ApprovalPanel,
   Badge,
   Button,
   Card,
@@ -229,27 +230,31 @@ export function ProfileImportReviewView({
       </div>
 
       {proposal.status === "pending" && (
-        <Card className="sticky bottom-3 mt-5 flex flex-col gap-4 p-4 shadow-xl sm:flex-row sm:items-center sm:justify-between">
-          <p className="max-w-2xl text-sm leading-6 text-muted">
-            Accepting creates or updates only the reviewed values shown above.
-            Rejecting leaves the current Career Record unchanged.
-          </p>
-          <div className="flex flex-col-reverse gap-2 sm:flex-row">
-            <Button
-              onClick={() => setPendingAction("reject")}
-              variant="secondary"
-            >
-              <X aria-hidden="true" className="size-4" /> Reject proposal
-            </Button>
-            <Button
-              disabled={!proposal.sourceAvailable}
-              onClick={() => setPendingAction("accept")}
-            >
-              <Check aria-hidden="true" className="size-4" /> Accept reviewed
-              changes
-            </Button>
-          </div>
-        </Card>
+        <ApprovalPanel
+          actions={
+            <>
+              <Button
+                onClick={() => setPendingAction("reject")}
+                variant="secondary"
+              >
+                <X aria-hidden="true" className="size-4" /> Reject proposal
+              </Button>
+              <Button
+                disabled={!proposal.sourceAvailable}
+                onClick={() => setPendingAction("accept")}
+              >
+                <Check aria-hidden="true" className="size-4" /> Accept reviewed
+                changes
+              </Button>
+            </>
+          }
+          className="sticky bottom-3 z-20 mt-5 shadow-[var(--shadow-md)]"
+          evidence={`Source: ${proposal.sourceDocumentName}. The original proposal remains available for audit.`}
+          title="Decide what enters your career record"
+        >
+          Accepting creates or updates only the reviewed values shown above.
+          Rejecting leaves the current Career Record unchanged.
+        </ApprovalPanel>
       )}
 
       <Link

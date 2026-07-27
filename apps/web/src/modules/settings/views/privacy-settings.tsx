@@ -4,14 +4,7 @@ import { Database, FileArchive, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
-import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  ErrorState,
-  LoadingSkeleton,
-} from "@careeros/ui";
+import { Alert, Badge, Card, ErrorState, LoadingSkeleton } from "@careeros/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 
@@ -39,7 +32,7 @@ export function PrivacySettings() {
     queueMicrotask(() => void load());
   }, [load]);
 
-  if (!capabilities && !failure) return <LoadingSkeleton />;
+  if (!capabilities && !failure) return <LoadingSkeleton variant="form" />;
   if (!capabilities)
     return (
       <ErrorState
@@ -66,7 +59,7 @@ export function PrivacySettings() {
               documents remain owner-managed until you delete them.
             </p>
             <Link
-              className="mt-4 inline-flex min-h-11 items-center font-extrabold text-primary"
+              className="text-link mt-4 inline-flex text-sm"
               href="/resume-health/account"
             >
               Review or delete account resume documents
@@ -88,7 +81,7 @@ export function PrivacySettings() {
                 </h2>
                 <Badge tone="neutral">
                   {capabilities.accountExportAvailable
-                    ? "Available"
+                    ? "Backend available"
                     : "Not configured"}
                 </Badge>
               </div>
@@ -98,15 +91,19 @@ export function PrivacySettings() {
               </p>
             </div>
           </div>
-          <Button disabled={!capabilities.accountExportAvailable}>
-            Request export
-          </Button>
         </div>
         {!capabilities.accountExportAvailable && (
           <Alert className="mt-5" title="Export is unavailable" tone="warning">
             No account-export provider or complete inventory workflow is
             configured. CareerOS will not pretend that a partial download is a
             complete export.
+          </Alert>
+        )}
+        {capabilities.accountExportAvailable && (
+          <Alert className="mt-5" title="Export request path pending">
+            This environment reports account-export support, but this settings
+            page does not yet expose the complete, audited request workflow. No
+            partial download is presented as a complete export.
           </Alert>
         )}
       </Card>
@@ -135,12 +132,6 @@ export function PrivacySettings() {
               </p>
             </div>
           </div>
-          <Button
-            disabled={!capabilities.accountDeletionAvailable}
-            variant="danger"
-          >
-            Start deletion
-          </Button>
         </div>
         {!capabilities.accountDeletionAvailable && (
           <Alert
@@ -151,6 +142,17 @@ export function PrivacySettings() {
             The complete account-erasure workflow and retention policy are not
             configured. Individual resume documents can still be deleted from
             Resume Health.
+          </Alert>
+        )}
+        {capabilities.accountDeletionAvailable && (
+          <Alert
+            className="mt-5"
+            title="Deletion capability reported"
+            tone="info"
+          >
+            The server reports deletion support, but this settings view does not
+            expose an unverified action path. Use only a complete, audited
+            deletion workflow.
           </Alert>
         )}
       </Card>

@@ -219,7 +219,7 @@ export function StarStoryDetailView({ storyId }: { storyId: string }) {
         Interview Prep
       </Link>
 
-      <header className="rounded-xl border border-line bg-white p-4 shadow-sm sm:p-5">
+      <header className="rounded-card border border-border bg-surface-raised p-4 sm:p-5">
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone={storyTone(story.status)}>{humanize(story.status)}</Badge>
           <Badge tone="neutral">Confidence {story.confidence} of 5</Badge>

@@ -6,12 +6,12 @@ test("public landing page presents the core promise", async ({ page }) => {
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: /your career story, built on evidence/i,
+      name: /the system of record behind your career/i,
     }),
   ).toBeVisible();
-  await expect(page.getByText("No made-up achievements")).toBeVisible();
+  await expect(page.getByText("No unsupported claims")).toBeVisible();
   await expect(
-    page.getByRole("link", { name: /explore the fictional demo/i }),
+    page.getByRole("link", { name: /explore the fictional demo/i }).first(),
   ).toBeVisible();
 });
 
@@ -46,7 +46,7 @@ test("mobile navigation can be opened with a named control", async ({
   await expect(
     page.getByRole("navigation", { name: "Mobile navigation" }),
   ).toBeVisible();
-  await expect(page.getByRole("link", { name: "View demo" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Explore demo" })).toBeVisible();
 });
 
 test("health endpoint is live", async ({ request }) => {

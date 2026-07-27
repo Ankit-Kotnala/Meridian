@@ -1,10 +1,14 @@
-import { AppShell } from "@/modules/dashboard/components/app-shell";
-import { DashboardOverview } from "@/modules/dashboard/views/dashboard-overview";
+import { SiteFooter } from "@/shared/components/public-site-footer";
+import { SiteHeader } from "@/shared/components/public-site-header";
+
+import { DashboardOverview } from "./dashboard-overview";
 
 export function DashboardDemoPage() {
   return (
-    <AppShell>
+    <div className="min-h-screen bg-background">
+      <SiteHeader />
       <DashboardOverview />
-    </AppShell>
+      <SiteFooter />
+    </div>
   );
 }

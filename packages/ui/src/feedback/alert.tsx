@@ -12,19 +12,19 @@ import { cn } from "../internal/cn";
 const tones = {
   danger: {
     icon: AlertCircle,
-    style: "border-red-200 bg-danger-soft text-danger",
+    style: "border-danger/25 bg-danger-soft text-danger-strong",
   },
   info: {
     icon: Info,
-    style: "border-violet-200 bg-primary-soft text-primary-strong",
+    style: "border-info/25 bg-info-soft text-info-strong",
   },
   success: {
     icon: CheckCircle2,
-    style: "border-emerald-200 bg-success-soft text-success-strong",
+    style: "border-success/25 bg-success-soft text-success-strong",
   },
   warning: {
     icon: TriangleAlert,
-    style: "border-amber-200 bg-warning-soft text-warning-strong",
+    style: "border-warning/25 bg-warning-soft text-warning-strong",
   },
 } satisfies Record<string, { icon: LucideIcon; style: string }>;
 
@@ -46,7 +46,7 @@ export function Alert({
   return (
     <div
       className={cn(
-        "flex items-start gap-3 rounded-xl border p-3.5 text-sm",
+        "flex items-start gap-3 rounded-[var(--radius-control)] border p-3.5 text-sm",
         style,
         className,
       )}

@@ -1,45 +1,83 @@
 :root {
-  --background: #f7f8fc;
+  --background: #f5f7f3;
   --surface: #ffffff;
-  --surface-subtle: #f3f5fa;
-  --foreground: #0b1739;
-  --muted: #5d6883;
-  --border: #e3e7f0;
-  --primary: #5b46f5;
-  --primary-strong: #4833db;
-  --primary-soft: #eeebff;
-  --navy: #071a39;
-  --navy-hover: #102b57;
-  --success: #0b9f68;
-  --success-strong: #087950;
-  --success-soft: #e8f8f1;
-  --warning: #b87508;
-  --warning-strong: #8d5900;
-  --warning-visual: #e59a1f;
-  --warning-soft: #fff5dc;
-  --danger: #c73545;
-  --danger-soft: #fff0f1;
-  --focus: #7767ff;
-  --selection: #dcd7ff;
-  --score-track: #e9ecf3;
-  --radius-card: 1rem;
-  --radius-control: 0.75rem;
-  --shadow-sm: 0 1px 2px rgb(11 23 57 / 0.04), 0 8px 24px rgb(11 23 57 / 0.05);
-  --shadow-lg: 0 24px 80px rgb(22 29 77 / 0.13);
+  --surface-raised: #fbfdfb;
+  --surface-subtle: #edf2ee;
+  --surface-inset: #e5ebe6;
+  --foreground: #132019;
+  --muted: #5a685f;
+  --muted-strong: #405148;
+  --border: #d8e1da;
+  --border-strong: #aebdb2;
+  --primary: #246248;
+  --primary-strong: #174a35;
+  --primary-soft: #e5f1ea;
+  --accent: #167b79;
+  --accent-strong: #0e5e5c;
+  --accent-soft: #dff3f0;
+  --navy: #102d24;
+  --navy-hover: #194236;
+  --success: #167451;
+  --success-strong: #0d5b3e;
+  --success-soft: #e3f3ea;
+  --warning: #a66710;
+  --warning-strong: #754706;
+  --warning-visual: #c77c12;
+  --warning-soft: #fff3d6;
+  --danger: #b4233c;
+  --danger-strong: #8f172d;
+  --danger-soft: #fde9ec;
+  --info: #2f6685;
+  --info-strong: #214b65;
+  --info-soft: #e6f1f6;
+  --focus: #075cad;
+  --selection: #cfe5d8;
+  --score-track: #e1e7e2;
+  --radius-card: 0.875rem;
+  --radius-control: 0.625rem;
+  --radius-small: 0.45rem;
+  --shadow-sm: 0 1px 2px rgb(13 39 30 / 0.07);
+  --shadow-card:
+    0 1px 2px rgb(13 39 30 / 0.045), 0 8px 24px -18px rgb(13 39 30 / 0.2);
+  --shadow-card-hover:
+    0 2px 4px rgb(13 39 30 / 0.055), 0 18px 42px -22px rgb(13 39 30 / 0.28);
+  --shadow-md: 0 12px 32px -12px rgb(13 39 30 / 0.16);
+  --shadow-lg: 0 28px 72px -24px rgb(13 39 30 / 0.24);
+  --space-page-inline: clamp(1rem, 2.2vw, 2rem);
+  --space-page-block: clamp(1.25rem, 3vw, 2.5rem);
+  --content-wide: 78rem;
+  --content-reading: 45rem;
+  --sidebar-width: 16.5rem;
+  --motion-fast: 140ms;
+  --motion-standard: 240ms;
+  --motion-slow: 420ms;
+  --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
   --font-family-sans:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
+    "Segoe UI Variable Text", "Aptos", "Segoe UI", ui-sans-serif, system-ui,
+    -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family-display:
+    "Segoe UI Variable Display", "Aptos Display", "Segoe UI", ui-sans-serif,
+    system-ui, sans-serif;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-surface-inset: var(--surface-inset);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
+  --color-muted-strong: var(--muted-strong);
   --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
   --color-primary: var(--primary);
   --color-primary-strong: var(--primary-strong);
   --color-primary-soft: var(--primary-soft);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
   --color-navy: var(--navy);
   --color-navy-hover: var(--navy-hover);
   --color-success: var(--success);
@@ -50,6 +88,11 @@
   --color-warning-visual: var(--warning-visual);
   --color-warning-soft: var(--warning-soft);
   --color-danger: var(--danger);
+  --color-danger-strong: var(--danger-strong);
   --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-strong: var(--info-strong);
+  --color-info-soft: var(--info-soft);
   --font-sans: var(--font-family-sans);
+  --font-display: var(--font-family-display);
 }

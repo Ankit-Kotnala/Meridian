@@ -1,0 +1,102 @@
+[
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 393,
+      "documentWidth": 393,
+      "reducedMotion": true,
+      "viewportWidth": 393
+    },
+    "pageErrors": [],
+    "route": "/",
+    "routeName": "home",
+    "screenshot": "home-393.png",
+    "status": 200,
+    "url": "http://127.0.0.1:3100/",
+    "viewport": {
+      "width": 393,
+      "height": 852
+    },
+    "viewportName": "393"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": true,
+    "layout": {
+      "bodyWidth": 393,
+      "documentWidth": 701,
+      "reducedMotion": true,
+      "viewportWidth": 393
+    },
+    "pageErrors": [],
+    "route": "/demo/dashboard",
+    "routeName": "demo",
+    "screenshot": "demo-393.png",
+    "status": 200,
+    "url": "http://127.0.0.1:3100/demo/dashboard",
+    "viewport": {
+      "width": 393,
+      "height": 852
+    },
+    "viewportName": "393"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 1440,
+      "documentWidth": 1440,
+      "reducedMotion": true,
+      "viewportWidth": 1440
+    },
+    "pageErrors": [],
+    "route": "/",
+    "routeName": "home",
+    "screenshot": "home-1440.png",
+    "status": 200,
+    "url": "http://127.0.0.1:3100/",
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "viewportName": "1440"
+  },
+  {
+    "consoleErrors": [],
+    "focused": {
+      "name": "Skip to main content",
+      "tag": "A"
+    },
+    "horizontalOverflow": false,
+    "layout": {
+      "bodyWidth": 1440,
+      "documentWidth": 1440,
+      "reducedMotion": true,
+      "viewportWidth": 1440
+    },
+    "pageErrors": [],
+    "route": "/demo/dashboard",
+    "routeName": "demo",
+    "screenshot": "demo-1440.png",
+    "status": 200,
+    "url": "http://127.0.0.1:3100/demo/dashboard",
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "viewportName": "1440"
+  }
+]

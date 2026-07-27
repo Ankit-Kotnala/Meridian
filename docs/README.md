@@ -11,6 +11,8 @@ implemented merely because it is documented.
 - [Repository plan and current status](../PLANS.md)
 - [Architecture](architecture.md)
 - [Product requirements](product-requirements.md)
+- [Product design system](product-design-system.md)
+- [Visual QA matrix](visual-qa-matrix.md)
 - [API conventions and route plan](api.md)
 - [Implementation checklist](implementation-checklist.md)
 - [Testing strategy](testing-strategy.md)

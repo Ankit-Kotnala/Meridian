@@ -62,7 +62,7 @@ export function Tabs({
     <div className={className}>
       <div
         aria-label={label}
-        className="flex gap-1 overflow-x-auto border-b border-line"
+        className="flex gap-5 overflow-x-auto border-b border-line"
         onKeyDown={onKeyDown}
         role="tablist"
       >
@@ -73,7 +73,7 @@ export function Tabs({
               aria-controls={`${prefix}-panel-${tab.id}`}
               aria-selected={selected}
               className={cn(
-                "min-h-11 shrink-0 border-b-2 px-3 text-sm font-bold transition",
+                "min-h-11 shrink-0 border-b-2 px-0.5 text-sm font-bold transition-colors",
                 selected
                   ? "border-primary text-primary"
                   : "border-transparent text-muted hover:text-foreground",

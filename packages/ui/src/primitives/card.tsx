@@ -1,16 +1,23 @@
-import type { HTMLAttributes, ReactNode } from "react";
+import { createElement, type HTMLAttributes, type ReactNode } from "react";
 
 import { cn } from "../internal/cn";
 
 export function Card({
+  as = "div",
   children,
   className,
   ...props
-}: HTMLAttributes<HTMLElement> & { children: ReactNode }) {
-  return (
-    <section className={cn("surface-card rounded-2xl", className)} {...props}>
-      {children}
-    </section>
+}: HTMLAttributes<HTMLElement> & {
+  as?: "article" | "aside" | "div" | "section";
+  children: ReactNode;
+}) {
+  return createElement(
+    as,
+    {
+      className: cn("surface-card rounded-[var(--radius-card)]", className),
+      ...props,
+    },
+    children,
   );
 }
 
@@ -24,9 +31,9 @@ export function CardHeader({
   action?: ReactNode;
 }) {
   return (
-    <header className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
+    <header className="flex items-start justify-between gap-4 border-b border-line px-5 py-4 sm:px-6">
       <div>
-        <h2 className="text-sm font-extrabold tracking-[-0.01em] text-foreground">
+        <h2 className="text-sm font-bold tracking-[-0.01em] text-foreground">
           {title}
         </h2>
         {description && (
