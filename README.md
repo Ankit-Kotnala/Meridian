@@ -13,15 +13,15 @@ claim under the user's control.
 
 ## Repository status
 
-**Phase 10A-H implementation is present in the isolated collective release-
-closure branch, with focused local verification through the provider-neutral
-release, recovery, load, and CI/CD controls. The cumulative final audit, hosted
-CI, and owner/external production approvals remain pending.** Phase 8 is hosted
-verified in PR #21 and Phase 9 in PR #22. Earlier phases retain their recorded
-historical evidence; the Phase 1/3 and backend-only Phase 7 closure PRs remain
-separate and preserve their documented browser/approval blockers. The repository uses a
-shared Python modular monolith, one root uv workspace, generated API contracts,
-thin deployable applications, and executable dependency boundaries.
+**Phase 10A-H implementation and the cumulative local release-candidate audit are
+complete on the collective branch stacked on repository-normalization PR #37.
+Hosted PR CI and owner/external production approvals remain pending; no production
+deployment is claimed.** The enterprise UI, durable privacy controls, full
+backend/worker surface, generated contracts, verified production images, migration
+repair, full-stack desktop/mobile journeys, security scans, isolated restore, and
+bounded load/soak gates pass locally. The repository uses a shared Python modular
+monolith, one root uv workspace, generated API contracts, thin deployable
+applications, and executable dependency boundaries.
 
 Hosted CI run `29657932938` passed every Phase 3 job on no-change trigger commit
 `f752b55`, whose tree is identical to implementation commit `0df8bcf`; prior
@@ -501,7 +501,7 @@ The seed refuses dependency I/O unless the environment is explicitly
 `development`, an exact one-command confirmation is present, the database uses
 the local `careeros` identity/database on an allowlisted Compose/loopback host,
 the object endpoint is local MinIO, the bucket is `careeros-documents`, and the
-database is at reviewed migration head `20260726_0014`. The fresh fixture
+database is at reviewed migration head `20260727_0019`. The fresh fixture
 credential is printed only when the account is first created.
 `pnpm fixtures:preview` remains a no-I/O presentation fixture and is not
 evidence of persisted product state.
@@ -513,6 +513,13 @@ quota, provider reference, or live billing capability is inferred: every seeded
 plan remains `owner_decision_required`, and production API composition uses a
 disabled provider until reviewed owner configuration exists. The deterministic
 HMAC billing adapter and fictional plan values are test-only. See ADR 0019.
+Migrations `20260726_0014` through `20260727_0019` add the fail-closed commercial
+catalog and subscription ledger, organization tenant authority, invitation
+outbox repair and durable delivery state, capability-scoped account privacy
+operations, and protected administration audit/assignment state. The current
+single head is `20260727_0019`; local and hosted gates must prove empty-state
+downgrade to `20260727_0018` and forward repair. See the Phase 10 sections in
+`PLANS.md` and the owning ADRs for the deliberately external production choices.
 
 For host-only package work, use the pinned tools rather than global substitutes:
 
@@ -723,9 +730,10 @@ See ADR 0023.
 - Analytics depends on recorded workflow events, applies the selected IANA
   timezone, suppresses small cohorts, and reports observed patterns rather than
   causal effects.
-- Account-wide export/deletion retention, load/soak evidence, backup/restore,
-  production provider/region selection, and protected deployment remain Phase 10
-  work.
+- Durable primary-store account export/deletion, load/soak, and isolated restore
+  are implemented and tested. Owner-approved legal/provider retention, production
+  topology, protected environment configuration, and provider deployment remain
+  release gates.
 - Resume Builder now has durable render/cleanup workers, five distinct
   constrained layouts, and a canonical blocking cross-format fidelity manifest.
   Rich graphics-heavy/multi-column templates remain intentionally unsupported

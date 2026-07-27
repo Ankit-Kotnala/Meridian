@@ -601,11 +601,14 @@ Dependencies: all product phases and production/legal decisions.
   reviewers/secret and provider deployment adapter require owner configuration.
 - [ ] Finalize legal terms/privacy/security/scoring/AI/public pricing content and
       remove or label all demo placeholders; verify no fabricated testimonial.
-- [ ] Run full format/lint/type/unit/component/integration/e2e/accessibility/
+- [x] Run full format/lint/type/unit/component/integration/e2e/accessibility/
       responsive/security/migration/container/load/restore suite and production build.
+      The cumulative local release-candidate gate is recorded in `PLANS.md`.
 
 Exit: no open critical security issue; webhooks/deletion/restore are tested;
 production build and full CI pass; deployment is protected and manually approved.
+Hosted PR CI and the owner-approved production handoff remain required before
+Phase 10 can satisfy this exit.
 
 ## Phase-close record template
 

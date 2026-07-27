@@ -2,17 +2,15 @@
 
 Last updated: 2026-07-27
 Plan owner: engineering  
-Current status: **Phase 1/3 observed-onboarding, Settings, and resume-ready Career
-Record closure is locally verified; hosted evidence is pending explicit
-authorization to publish. Phase 2 semantic parsing/review closure is also
-locally/security verified with hosted evidence pending. Phase 9 remains complete
-and hosted verified in PR #22; Phase 8 remains complete and hosted verified in
-PR #21. Phase 7 durable verified-export closure and Phase 10A's guarded fictional
-local seed are merged. The product-wide UX redesign is locally implemented and
-visually verified without changing backend phase completion. Commercial, tenancy, durable workflows, and primary-store privacy closure are
-implemented and focused-verified. Protected administration is implemented and
-focused-verified. Security/cost, infrastructure/recovery, and final
-release-hardening work remains open**
+Current status: **Phase 10A-H implementation and the cumulative local
+release-candidate audit are complete on the collective branch stacked on
+repository-normalization PR #37. The enterprise UI, generated contracts, durable
+privacy controls, commercial/tenancy/workflow/admin boundaries, security and cost
+controls, production images, migration repair, full-stack browser journeys,
+security scans, restore proof, and bounded load/soak gates are locally verified.
+Hosted PR CI and the owner/external pricing, legal, provider, topology, MFA,
+operations, and penetration-review approvals remain required; production handoff
+continues to fail closed until those inputs exist**
 
 ## Status legend
 
@@ -1568,8 +1566,9 @@ than overwritten.
 
 ## Phase 10B scope and status
 
-Current status: **implemented and focused-verified; cumulative release verification
-continues on the collective Phase 10 branch**. The commercial boundary deliberately
+Current status: **implemented, focused-verified, and cumulative locally verified
+on the collective release candidate; live commercial configuration remains
+owner-blocked**. The commercial boundary deliberately
 implements no invented pricing, entitlement, quota, provider, tax, or legal value.
 
 ### Included
@@ -1613,8 +1612,9 @@ entitlement/quota/cost enforcement.
 
 ## Phase 10C scope and status
 
-Current status: **implemented and focused-verified; invitation delivery execution
-was closed in Phase 10D and cumulative release verification remains pending**.
+Current status: **implemented, focused-verified, and cumulative locally verified;
+invitation delivery execution is closed by Phase 10D, while live commercial seat
+and plan policy remains owner-blocked**.
 
 ### Included
 
@@ -1664,8 +1664,8 @@ owner decisions; Phase 10G owns centralized enforcement after review.
 
 ## Phase 10D scope and status
 
-Current status: **implemented and focused-verified; cumulative release
-verification remains pending**.
+Current status: **implemented, focused-verified, and cumulative locally verified;
+live SMTP/provider operations and alert ownership remain external gates**.
 
 ### Included
 
@@ -1712,8 +1712,9 @@ Phase 10F.
 
 ## Phase 10E scope and status
 
-Current status: **implemented and focused-verified; cumulative release and
-backup/provider policy verification remain pending**.
+Current status: **implemented, frontend-connected, and cumulative locally verified;
+backup expiry, provider erasure, and legal retention policy remain external
+gates**.
 
 ### Included
 
@@ -1728,6 +1729,10 @@ backup/provider policy verification remain pending**.
 - [x] Capability-scoped no-store status and short-lived download grants remain
       usable after the user row is gone. UUIDs, sessions, and object keys are not
       bearer authority.
+- [x] Settings exposes export/status/download/deletion with generated contracts,
+      stable idempotency, bounded cancellable polling, explicit blocker/terminal
+      states, and destructive confirmation. Operation capabilities remain only in
+      component memory and cross the same-origin BFF through one exact allowlist.
 - [x] Schema-reflected export fails on unclassified direct user-linked tables,
       scopes every row to the user, excludes authentication secrets, internal
       queues/idempotency, object keys, and other tenants, and emits a bounded ZIP
@@ -1765,8 +1770,9 @@ owns centralized abuse/quota/cost controls.
 
 ## Phase 10F protected administration scope and status
 
-Current status: **implemented and focused-verified; cumulative release and
-protected-environment policy verification remain pending**.
+Current status: **implemented, focused-verified, and cumulative locally verified;
+protected-environment, operator MFA/provisioning, and recertification policy
+remain owner/external gates**.
 
 ### Included
 
@@ -1847,7 +1853,7 @@ remain release-approval gates**.
 | API and contracts  | Pass   | All 179 API tests pass, including central read/mutation admission, safe 429, security headers, current/previous BFF signatures, and fail-closed staging fixtures. OpenAPI drift, generated TypeScript typecheck, and 3 contract tests pass.                 |
 | Worker and parsers | Pass   | Worker Ruff/mypy and all 98 tests pass with the evidence attachment parser and rolling invitation-key support composed in the runtime. The complete backend architecture/unit suite passes 480 tests.                                                       |
 | Live Redis         | Pass   | The isolated Redis integration test proves atomic reservation, concurrency rejection, monthly token/cost rejection, settlement, lease release, and pseudonymous keys against database 15.                                                                   |
-| Edge policy        | Pass   | Node syntax and 4 header-policy tests prove forwarded-header replacement, malformed peer rejection, unsafe upstream-policy overwrite, and explicit HSTS behavior.                                                                                           |
+| Edge policy        | Pass   | Node syntax and 6 header-policy tests prove forwarded-header replacement, malformed peer rejection, unsafe upstream-policy overwrite, explicit HSTS behavior, and exact HTTPS/local-HTTP upload-origin validation for CSP.                                  |
 
 ### Residual release gates
 
@@ -1863,9 +1869,9 @@ runbooks require drain/reconciliation or a retention-boundary decision.
 
 ## Phase 10H production infrastructure, recovery, load, and CI/CD scope and status
 
-Current status: **provider-neutral implementation and local operational proof are
-complete; final cumulative audit and hosted workflow execution remain pending,
-and production deployment is blocked on owner/external approvals**.
+Current status: **provider-neutral implementation, local operational proof, and
+the final cumulative local audit are complete; hosted workflow execution remains
+pending, and production deployment is blocked on owner/external approvals**.
 
 ### Included
 
@@ -1901,8 +1907,8 @@ and production deployment is blocked on owner/external approvals**.
 | Check             | Status | Evidence                                                                                                                                                                                                                                                                                                                        |
 | ----------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Release controls  | Pass   | Ruff format/check and all three offline self-tests pass. The deliberately unfilled deployment template exits `2`; both workflow YAML files parse/format through Prettier. Hosted release execution is intentionally deferred until the branch is published and the repository plan supports attestations.                       |
-| Isolated recovery | Pass   | Live Compose restored migration `20260727_0019`, all 147 application tables/2,497 rows, and 20 objects/25,669 bytes with an exact object-manifest digest in 85.748 seconds. Independent checks found no temporary restore database or bucket afterward.                                                                         |
-| Load and soak     | Pass   | API health: 1,000 requests, 461.095 req/s, 44.987 ms p95, zero errors. API metadata: 250 requests, 462.785 req/s, 30.109 ms p95, zero errors. Edge home: 300 requests, 105.025 req/s, 209.072 ms p95, zero errors. Controlled 30-second API soak: 3,008 requests at 99.975 req/s, 26.172 ms p95, zero errors.                   |
+| Isolated recovery | Pass   | The cumulative primary-stack proof restored migration `20260727_0019`, all 147 application tables/2,509 rows, and 20 objects/25,669 bytes with an exact object-manifest digest in 86.164 seconds; its randomized database, bucket, and workspace were removed.                                                                  |
+| Load and soak     | Pass   | API health: 1,000 requests, 502.258 req/s, 45.790 ms p95, zero errors. API metadata: 250 requests, 402.979 req/s, 36.895 ms p95, zero errors. Edge home: 300 requests, 139.027 req/s, 101.570 ms p95, zero errors. Controlled 30-second API soak: 3,020 requests at 100.017 req/s, 18.408 ms p95, zero errors.                  |
 | Failure evidence  | Pass   | The first unpaced soak retained a failed aggregate report after 14,400 successes exposed local client socket exhaustion; the production gate gained an explicit target-rate pacer instead of weakening error thresholds. The oversized edge shell similarly drove a still-bounded 1 MiB response cap rather than being ignored. |
 
 ### Residual production gates
@@ -1921,23 +1927,42 @@ for provider restore, failure-domain, capacity, or rollback evidence.
 
 Historical phase gates remain evidence for the vertical slices they actually
 tested; they do not waive requirements that the 2026-07-25 audit found absent or
-partial. Phase 2 semantic closure is implemented and locally/security verified;
-Phase 1/3 closure is locally verified and its hosted PR remains open. The
-backend-only Phase 7 closure is verified in draft PR #24 while its two excluded
-frontend browser dependencies remain honestly blocked. Phase 10A-H implementation
-is now present in the isolated release-closure branch, with cloud/legal/operator
-decisions fail-closed rather than invented. Remaining work is:
+partial. The Phase 1/3, Phase 7, Phase 10A, and enterprise-UI predecessor work is
+merged. Phase 10B-H and the residual privacy UI/BFF/edge/CI closure are integrated
+on the collective release-candidate branch stacked on repository-normalization PR
+#37. Cloud, legal, provider, and operator decisions continue to fail closed rather
+than being invented.
 
-1. Run and record the cumulative final-tree format, lint, type, unit, integration,
-   browser, security, migration, build, container, load, and restore audit.
-2. Publish one collective draft PR and require hosted CI before merge.
-3. Review and merge the existing stacked closure PRs without weakening their
-   recorded blockers, then obtain the owner/external production approvals listed
-   in Phase 10H before any production handoff.
+### Cumulative local release-candidate evidence (2026-07-27)
+
+- JavaScript/TypeScript contract, format, lint/boundary, strict type, unit,
+  component, edge, and production-build gates pass; the build compiles 49 routes.
+- Backend, API, and worker Ruff/mypy gates pass across 263, 91, and 23 source files;
+  480 backend architecture/unit, 179 API, and 98 worker tests pass.
+- The clean isolated Phase 9 stack proves the single `20260727_0019` head,
+  downgrade/forward repair, 50 live PostgreSQL/Redis/MinIO integrations, container
+  hardening, dependency readiness recovery, 12 desktop/mobile browser journeys,
+  and complete state cleanup. Six narrower mobile duplicates are intentionally
+  excluded by their project configuration.
+- Gitleaks, pnpm audit, pip-audit, non-root/OpenSSL runtime smoke, and Grype scans
+  of API, worker, web, and web-edge pass with no high-or-critical release finding.
+- The refreshed primary stack passes five service probes, isolated PostgreSQL/
+  MinIO restore integrity, three bounded request-count load gates, and a paced
+  30-second 100 req/s soak with zero errors.
+- Two earlier diagnostic browser executions are not counted as passes: one exposed
+  the missing BFF capability-header allowlist and one had loaded a stale heading
+  locator. Both causes were corrected and the clean final run above passed.
+
+Remaining work is:
+
+1. Publish the collective PR, require its hosted CI to pass, and merge
+   repository-normalization PR #37 first.
+2. Obtain the owner/external production approvals listed in Phase 10H before any
+   production handoff.
 
 External pricing, provider accounts, legal text, support contacts, deployment
 region, retention policy, RPO/RTO, administrative policy, and production approval
-are owner decisions. Adapters and fail-closed configuration can be implemented
+are owner decisions. Adapters and fail-closed configuration are implemented
 without inventing those values.
 
 ## Roadmap and phase gates

@@ -956,7 +956,14 @@ retry/dead-letter behavior, and delete-before-redact artifact expiry. API tests
 cover CSRF, idempotency keys, immediate cookie expiry, capability-only status and
 download, no-store responses, safe problems, CORS, and generated OpenAPI.
 Worker tests cover aggregate-only results, bounded batches, lease-aware limits,
-routing, schedules, cleanup, and production provider configuration.
+routing, schedules, cleanup, and production provider configuration. Settings API
+and component tests cover stable idempotency, malformed-response fail-closed
+behavior, polling cancellation, operation status, download-link creation, and
+explicit deletion confirmation. BFF security coverage proves that only the
+account-operation capability header is forwarded while arbitrary client headers
+remain stripped. The desktop and mobile authenticated full-stack journey creates
+an export, polls it to completion, creates and uses a short-lived download link,
+requests deletion, and confirms the deleted account can no longer authenticate.
 
 The required integration gate uses real PostgreSQL and MinIO. It must prove that
 an export includes only the requesting tenant's structured rows and primary

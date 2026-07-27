@@ -797,7 +797,13 @@ capability digests, safe blocker/error codes, and expiring artifact integrity
 metadata. Authenticated CSRF-protected requests create work; recent-auth deletion
 also disables the account, revokes sessions, and clears browser cookies.
 Capability-scoped no-store reads remain available after the user foreign key is
-nulled by deletion.
+nulled by deletion. The Settings client retains each opaque account-operation
+capability only in component memory, sends it through the same-origin BFF using
+the single explicitly allowlisted `X-Account-Operation-Token` header, and never
+persists it in browser storage. The BFF still strips arbitrary client headers;
+status and download-link responses remain `no-store`. Requests are CSRF- and
+idempotency-protected, polling is bounded and cancellable, and terminal or
+blocked states require an explicit user action instead of silently retrying.
 
 `PostgresS3AccountPrivacyStore` reflects direct user foreign keys and refuses an
 export when any table is not explicitly classified, owner scoped, or internal.
