@@ -9,7 +9,7 @@ from careeros.modules.interview_prep.application import InterviewPrepService, Re
 from careeros.modules.interview_prep.domain import InterviewPrepUnavailable
 from fastapi import Depends, Request
 
-from careeros_api.identity_dependencies import current_principal
+from careeros_api.modules.identity.dependencies import current_principal
 
 
 def interview_prep_service(request: Request) -> InterviewPrepService:

@@ -10,15 +10,21 @@ PostgreSQL.
 
 ## Local commands
 
+Run these from the repository root:
+
 ```bash
-uv sync --frozen --all-packages --all-groups
-cd apps/worker
-uv run celery --app careeros_worker.app:celery_app worker --loglevel=INFO --queues=default,resume-health,resume-builder,career-record,maintenance
-uv run ruff format --check .
-uv run ruff check .
-uv run mypy src tests
-uv run pytest
+pnpm dev:worker    # dependency containers plus a host Celery worker
+pnpm test:worker   # focused worker tests
+make format-check
+make lint
+make typecheck
 ```
+
+Registered task adapters live under
+`src/careeros_worker/tasks/<bounded_context>.py`; cross-context execution fencing
+and identifier-only result contracts have specifically named modules in the same
+package. Runtime/provider composition remains in `runtime.py`. See
+`docs/local-development.md` for the full repository map and Docker workflows.
 
 Broker configuration is resolved in this order:
 

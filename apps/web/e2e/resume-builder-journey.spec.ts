@@ -89,6 +89,22 @@ test("a user builds a grounded resume and verifies a PDF export", async ({
     await expect(
       page.getByRole("heading", { name: "Career Profile" }),
     ).toBeVisible();
+    await page.getByRole("button", { name: "Add contact fact" }).click();
+    await page
+      .getByRole("textbox", { name: "Value", exact: true })
+      .fill("Resume Builder E2E");
+    await page
+      .getByLabel("Use as the primary value for this fact type")
+      .check();
+    await page.getByRole("button", { name: "Save contact fact" }).click();
+    await expect(
+      page.getByText(
+        "Contact fact saved. Confirm it separately before downstream use.",
+      ),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Confirm current value" }).click();
+    await expect(page.getByText("Contact fact confirmed.")).toBeVisible();
+
     await page.getByRole("button", { name: "Add skill" }).click();
     await page.getByLabel("Skill name").fill("Product discovery");
     await page.getByLabel("Proficiency (optional)").selectOption("advanced");

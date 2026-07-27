@@ -9,7 +9,7 @@ from careeros.modules.career_growth.domain import CareerGrowthUnavailable
 from careeros.modules.identity.domain import AuthenticatedPrincipal
 from fastapi import Depends, Request
 
-from careeros_api.identity_dependencies import current_principal
+from careeros_api.modules.identity.dependencies import current_principal
 
 
 def career_growth_service(request: Request) -> CareerGrowthService:

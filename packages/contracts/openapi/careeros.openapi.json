@@ -200,7 +200,7 @@
             "type": "array"
           },
           "page": {
-            "$ref": "#/components/schemas/careeros_api__career_record_schemas__PageResponse"
+            "$ref": "#/components/schemas/careeros_api__modules__career_record__schemas__PageResponse"
           }
         },
         "required": [
@@ -1695,7 +1695,7 @@
             "type": "array"
           },
           "page": {
-            "$ref": "#/components/schemas/careeros_api__application_workspace_schemas__PageResponse"
+            "$ref": "#/components/schemas/careeros_api__modules__application_workspace__schemas__PageResponse"
           }
         },
         "required": [
@@ -1866,7 +1866,7 @@
             "type": "array"
           },
           "page": {
-            "$ref": "#/components/schemas/careeros_api__application_workspace_schemas__PageResponse"
+            "$ref": "#/components/schemas/careeros_api__modules__application_workspace__schemas__PageResponse"
           }
         },
         "required": [
@@ -1949,7 +1949,7 @@
             "type": "array"
           },
           "page": {
-            "$ref": "#/components/schemas/careeros_api__application_workspace_schemas__PageResponse"
+            "$ref": "#/components/schemas/careeros_api__modules__application_workspace__schemas__PageResponse"
           }
         },
         "required": [
@@ -2196,7 +2196,7 @@
             "type": "array"
           },
           "page": {
-            "$ref": "#/components/schemas/careeros_api__application_workspace_schemas__PageResponse"
+            "$ref": "#/components/schemas/careeros_api__modules__application_workspace__schemas__PageResponse"
           }
         },
         "required": [
@@ -2957,7 +2957,7 @@
             "type": "array"
           },
           "page": {
-            "$ref": "#/components/schemas/careeros_api__application_workspace_schemas__PageResponse"
+            "$ref": "#/components/schemas/careeros_api__modules__application_workspace__schemas__PageResponse"
           }
         },
         "required": [
@@ -3377,7 +3377,7 @@
           },
           "sourceSpans": {
             "items": {
-              "$ref": "#/components/schemas/careeros_api__resume_health_schemas__SourceSpanResponse"
+              "$ref": "#/components/schemas/careeros_api__modules__resume_health__schemas__SourceSpanResponse"
             },
             "title": "Sourcespans",
             "type": "array"
@@ -8132,7 +8132,7 @@
             "type": "array"
           },
           "page": {
-            "$ref": "#/components/schemas/careeros_api__career_record_schemas__PageResponse"
+            "$ref": "#/components/schemas/careeros_api__modules__career_record__schemas__PageResponse"
           }
         },
         "required": [
@@ -9876,7 +9876,7 @@
             "type": "array"
           },
           "page": {
-            "$ref": "#/components/schemas/careeros_api__career_record_schemas__PageResponse"
+            "$ref": "#/components/schemas/careeros_api__modules__career_record__schemas__PageResponse"
           }
         },
         "required": [
@@ -11240,7 +11240,7 @@
             "type": "array"
           },
           "page": {
-            "$ref": "#/components/schemas/careeros_api__job_match_schemas__PageResponse"
+            "$ref": "#/components/schemas/careeros_api__modules__job_match__schemas__PageResponse"
           }
         },
         "required": [
@@ -13552,7 +13552,7 @@
           },
           "spans": {
             "items": {
-              "$ref": "#/components/schemas/careeros_api__career_record_schemas__SourceSpanResponse"
+              "$ref": "#/components/schemas/careeros_api__modules__career_record__schemas__SourceSpanResponse"
             },
             "maxItems": 100,
             "title": "Spans",
@@ -17523,7 +17523,7 @@
             "type": "array"
           },
           "page": {
-            "$ref": "#/components/schemas/careeros_api__role_readiness_schemas__PageResponse"
+            "$ref": "#/components/schemas/careeros_api__modules__role_readiness__schemas__PageResponse"
           }
         },
         "required": [
@@ -17545,7 +17545,7 @@
             "type": "array"
           },
           "page": {
-            "$ref": "#/components/schemas/careeros_api__role_readiness_schemas__PageResponse"
+            "$ref": "#/components/schemas/careeros_api__modules__role_readiness__schemas__PageResponse"
           }
         },
         "required": [
@@ -17862,7 +17862,7 @@
             "type": "array"
           },
           "page": {
-            "$ref": "#/components/schemas/careeros_api__role_readiness_schemas__PageResponse"
+            "$ref": "#/components/schemas/careeros_api__modules__role_readiness__schemas__PageResponse"
           }
         },
         "required": [
@@ -20111,127 +20111,7 @@
         "title": "VerifyEmailRequest",
         "type": "object"
       },
-      "careeros_api__application_workspace_schemas__PageResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "hasMore": {
-            "title": "Hasmore",
-            "type": "boolean"
-          },
-          "limit": {
-            "maximum": 100.0,
-            "minimum": 1.0,
-            "title": "Limit",
-            "type": "integer"
-          },
-          "nextCursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Nextcursor"
-          }
-        },
-        "required": [
-          "limit",
-          "hasMore",
-          "nextCursor"
-        ],
-        "title": "PageResponse",
-        "type": "object"
-      },
-      "careeros_api__career_record_schemas__PageResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "hasMore": {
-            "title": "Hasmore",
-            "type": "boolean"
-          },
-          "limit": {
-            "maximum": 100.0,
-            "minimum": 1.0,
-            "title": "Limit",
-            "type": "integer"
-          },
-          "nextCursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Nextcursor"
-          }
-        },
-        "required": [
-          "limit",
-          "hasMore",
-          "nextCursor"
-        ],
-        "title": "PageResponse",
-        "type": "object"
-      },
-      "careeros_api__career_record_schemas__SourceSpanResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "digest": {
-            "pattern": "^sha256:[0-9a-f]{64}$",
-            "title": "Digest",
-            "type": "string"
-          },
-          "end": {
-            "maximum": 100000000.0,
-            "minimum": 1.0,
-            "title": "End",
-            "type": "integer"
-          },
-          "excerpt": {
-            "maxLength": 2000,
-            "title": "Excerpt",
-            "type": "string"
-          },
-          "id": {
-            "format": "uuid",
-            "title": "Id",
-            "type": "string"
-          },
-          "page": {
-            "anyOf": [
-              {
-                "maximum": 100000.0,
-                "minimum": 1.0,
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Page"
-          },
-          "start": {
-            "maximum": 100000000.0,
-            "minimum": 0.0,
-            "title": "Start",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "id",
-          "start",
-          "end",
-          "excerpt",
-          "digest"
-        ],
-        "title": "SourceSpanResponse",
-        "type": "object"
-      },
-      "careeros_api__job_match_schemas__PageResponse": {
+      "careeros_api__modules__application_workspace__schemas__PageResponse": {
         "additionalProperties": false,
         "properties": {
           "hasMore": {
@@ -20297,7 +20177,127 @@
         "title": "PageResponse",
         "type": "object"
       },
+      "careeros_api__modules__career_record__schemas__PageResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "hasMore": {
+            "title": "Hasmore",
+            "type": "boolean"
+          },
+          "limit": {
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "required": [
+          "limit",
+          "hasMore",
+          "nextCursor"
+        ],
+        "title": "PageResponse",
+        "type": "object"
+      },
+      "careeros_api__modules__career_record__schemas__SourceSpanResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "digest": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "title": "Digest",
+            "type": "string"
+          },
+          "end": {
+            "maximum": 100000000.0,
+            "minimum": 1.0,
+            "title": "End",
+            "type": "integer"
+          },
+          "excerpt": {
+            "maxLength": 2000,
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "start": {
+            "maximum": 100000000.0,
+            "minimum": 0.0,
+            "title": "Start",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "start",
+          "end",
+          "excerpt",
+          "digest"
+        ],
+        "title": "SourceSpanResponse",
+        "type": "object"
+      },
       "careeros_api__modules__interview_prep__schemas__PageResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "hasMore": {
+            "title": "Hasmore",
+            "type": "boolean"
+          },
+          "limit": {
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "required": [
+          "limit",
+          "hasMore",
+          "nextCursor"
+        ],
+        "title": "PageResponse",
+        "type": "object"
+      },
+      "careeros_api__modules__job_match__schemas__PageResponse": {
         "additionalProperties": false,
         "properties": {
           "hasMore": {
@@ -20363,7 +20363,7 @@
         "title": "PageResponse",
         "type": "object"
       },
-      "careeros_api__resume_health_schemas__SourceSpanResponse": {
+      "careeros_api__modules__resume_health__schemas__SourceSpanResponse": {
         "additionalProperties": false,
         "properties": {
           "end": {
@@ -20399,7 +20399,7 @@
         "title": "SourceSpanResponse",
         "type": "object"
       },
-      "careeros_api__role_readiness_schemas__PageResponse": {
+      "careeros_api__modules__role_readiness__schemas__PageResponse": {
         "additionalProperties": false,
         "properties": {
           "hasMore": {

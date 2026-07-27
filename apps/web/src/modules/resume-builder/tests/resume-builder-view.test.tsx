@@ -13,6 +13,7 @@ const api = vi.hoisted(() => ({
   listVersions: vi.fn(),
   restoreVersion: vi.fn(),
   updateResume: vi.fn(),
+  waitForExportCompletion: vi.fn(),
 }));
 
 vi.mock("../api/resume-builder-api", () => api);
@@ -118,6 +119,7 @@ describe("Resume Builder view", () => {
     api.updateResume.mockResolvedValue({ ...baseResume, version: 2 });
     api.createVersion.mockResolvedValue({ ...baseVersion, versionNumber: 2 });
     api.exportVersion.mockResolvedValue(verifiedExport);
+    api.waitForExportCompletion.mockImplementation(async (record) => record);
     api.createDownloadIntent.mockResolvedValue({
       exportId: verifiedExport.export.id,
       expiresAt: "2026-07-19T12:02:00Z",
@@ -197,5 +199,30 @@ describe("Resume Builder view", () => {
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "Download" })).toBeDisabled(),
     );
+  });
+
+  it("waits for a pending durable export before enabling download", async () => {
+    api.listResumes.mockResolvedValue([baseResume]);
+    api.exportVersion.mockResolvedValue({
+      export: {
+        ...verifiedExport.export,
+        completedAt: null,
+        parserVersion: null,
+        sha256Digest: null,
+        sizeBytes: 0,
+        status: "pending",
+        verificationCodes: [],
+        verificationStatus: null,
+      },
+      verification: null,
+    });
+    api.waitForExportCompletion.mockResolvedValue(verifiedExport);
+    render(<ResumeBuilderView />);
+
+    expect(await screen.findByText("Recruiter preview")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Verify" }));
+    expect(await screen.findByText("Round-trip verified")).toBeVisible();
+    expect(api.waitForExportCompletion).toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Download" })).toBeEnabled();
   });
 });

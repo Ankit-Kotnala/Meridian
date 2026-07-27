@@ -136,7 +136,7 @@ from fastapi.responses import JSONResponse
 
 from careeros_api.config import Settings
 from careeros_api.cookies import clear_session_cookies
-from careeros_api.resume_health_dependencies import clear_guest_cookies
+from careeros_api.modules.resume_health.dependencies import clear_guest_cookies
 
 logger = structlog.get_logger(__name__)
 

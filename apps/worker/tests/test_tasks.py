@@ -28,6 +28,9 @@ from careeros_worker import tasks
 from careeros_worker.base import RetryableTaskError
 from careeros_worker.config import WorkerSettings
 from careeros_worker.runtime import OutboxTaskResult
+from careeros_worker.tasks import career_record as career_record_tasks
+from careeros_worker.tasks import resume_builder as resume_builder_tasks
+from careeros_worker.tasks import resume_health as resume_health_tasks
 
 _DELIVERY_ID = "delivery-test-id"
 
@@ -66,8 +69,9 @@ def test_process_task_returns_only_durable_status_metadata(
         assert re.fullmatch(r"[0-9a-f]{64}", execution_token)
         return ProcessingOutcome(job_id, JobStatus.SUCCEEDED, False, None)
 
-    monkeypatch.setattr(tasks, "get_settings", _settings)
-    monkeypatch.setattr(tasks, "process_resume_job", fake_process)
+    for task_module in (career_record_tasks, resume_builder_tasks, resume_health_tasks):
+        monkeypatch.setattr(task_module, "get_settings", _settings)
+    monkeypatch.setattr(resume_health_tasks, "process_resume_job", fake_process)
 
     result = tasks.process_resume_health.run(job_id=str(job_id), trace_id="A" * 32)
 
@@ -98,8 +102,9 @@ def test_resume_export_task_returns_identifier_only_durable_status(
             None,
         )
 
-    monkeypatch.setattr(tasks, "get_settings", _settings)
-    monkeypatch.setattr(tasks, "process_resume_export", fake_process)
+    for task_module in (career_record_tasks, resume_builder_tasks, resume_health_tasks):
+        monkeypatch.setattr(task_module, "get_settings", _settings)
+    monkeypatch.setattr(resume_builder_tasks, "process_resume_export", fake_process)
 
     result = tasks.process_resume_builder_export.run(
         export_id=str(export_id),
@@ -133,8 +138,9 @@ def test_resume_export_task_routes_allowlisted_cleanup_operation(
             None,
         )
 
-    monkeypatch.setattr(tasks, "get_settings", _settings)
-    monkeypatch.setattr(tasks, "process_resume_export_cleanup", fake_cleanup)
+    for task_module in (career_record_tasks, resume_builder_tasks, resume_health_tasks):
+        monkeypatch.setattr(task_module, "get_settings", _settings)
+    monkeypatch.setattr(resume_builder_tasks, "process_resume_export_cleanup", fake_cleanup)
 
     result = tasks.process_resume_builder_export.run(
         export_id=str(export_id),
@@ -165,8 +171,9 @@ def test_attachment_task_returns_identifier_only_durable_status(
         assert re.fullmatch(r"[0-9a-f]{64}", execution_token)
         return AttachmentProcessingOutcome(job_id, AttachmentJobStatus.SUCCEEDED, None, False)
 
-    monkeypatch.setattr(tasks, "get_settings", _settings)
-    monkeypatch.setattr(tasks, "process_attachment_job", fake_process)
+    for task_module in (career_record_tasks, resume_builder_tasks, resume_health_tasks):
+        monkeypatch.setattr(task_module, "get_settings", _settings)
+    monkeypatch.setattr(career_record_tasks, "process_attachment_job", fake_process)
 
     result = tasks.process_evidence_attachment.run(job_id=str(job_id), trace_id="A" * 32)
 
@@ -191,8 +198,9 @@ def test_attachment_durable_retry_does_not_create_a_second_celery_retry(
             True,
         )
 
-    monkeypatch.setattr(tasks, "get_settings", _settings)
-    monkeypatch.setattr(tasks, "process_attachment_job", fake_process)
+    for task_module in (career_record_tasks, resume_builder_tasks, resume_health_tasks):
+        monkeypatch.setattr(task_module, "get_settings", _settings)
+    monkeypatch.setattr(career_record_tasks, "process_attachment_job", fake_process)
 
     result = tasks.process_evidence_attachment.run(job_id=str(job_id), trace_id="b" * 32)
 
@@ -231,9 +239,10 @@ def test_attachment_runtime_failure_is_durably_recorded_before_return(
             True,
         )
 
-    monkeypatch.setattr(tasks, "get_settings", _settings)
-    monkeypatch.setattr(tasks, "process_attachment_job", broken_runtime)
-    monkeypatch.setattr(tasks, "record_attachment_failure", fake_record)
+    for task_module in (career_record_tasks, resume_builder_tasks, resume_health_tasks):
+        monkeypatch.setattr(task_module, "get_settings", _settings)
+    monkeypatch.setattr(career_record_tasks, "process_attachment_job", broken_runtime)
+    monkeypatch.setattr(career_record_tasks, "record_attachment_failure", fake_record)
 
     result = tasks.process_evidence_attachment.run(job_id=str(job_id), trace_id="c" * 32)
 
@@ -257,8 +266,9 @@ def test_process_task_schedules_retry_for_durable_retryable_outcome(
             "malware_scanner_unavailable",
         )
 
-    monkeypatch.setattr(tasks, "get_settings", _settings)
-    monkeypatch.setattr(tasks, "process_resume_job", fake_process)
+    for task_module in (career_record_tasks, resume_builder_tasks, resume_health_tasks):
+        monkeypatch.setattr(task_module, "get_settings", _settings)
+    monkeypatch.setattr(resume_health_tasks, "process_resume_job", fake_process)
 
     with pytest.raises(RetryableTaskError, match="malware_scanner_unavailable"):
         tasks.process_resume_health.run(job_id=str(job_id), trace_id="b" * 32)
@@ -282,8 +292,9 @@ def test_process_task_defers_a_busy_execution_until_after_its_lease(
         retry_options.append(options)
         raise RetryableTaskError("execution_lease_active")
 
-    monkeypatch.setattr(tasks, "get_settings", _settings)
-    monkeypatch.setattr(tasks, "process_resume_job", fake_process)
+    for task_module in (career_record_tasks, resume_builder_tasks, resume_health_tasks):
+        monkeypatch.setattr(task_module, "get_settings", _settings)
+    monkeypatch.setattr(resume_health_tasks, "process_resume_job", fake_process)
     monkeypatch.setattr(tasks.process_resume_health, "retry", fake_retry)
 
     with pytest.raises(RetryableTaskError, match="execution_lease_active"):
@@ -322,9 +333,10 @@ def test_process_task_dead_letters_when_celery_retries_are_exhausted(
         )
         return ProcessingOutcome(job_id, JobStatus.DEAD_LETTERED, False, error_code)
 
-    monkeypatch.setattr(tasks, "get_settings", lambda: _settings(max_retries=0))
-    monkeypatch.setattr(tasks, "process_resume_job", fake_process)
-    monkeypatch.setattr(tasks, "record_resume_failure", fake_record)
+    for task_module in (career_record_tasks, resume_builder_tasks, resume_health_tasks):
+        monkeypatch.setattr(task_module, "get_settings", lambda: _settings(max_retries=0))
+    monkeypatch.setattr(resume_health_tasks, "process_resume_job", fake_process)
+    monkeypatch.setattr(resume_health_tasks, "record_resume_failure", fake_record)
 
     result = tasks.process_resume_health.run(job_id=str(job_id), trace_id="c" * 32)
 
@@ -364,9 +376,10 @@ def test_exhausted_preclaim_runtime_failure_is_durably_dead_lettered(
         )
         return ProcessingOutcome(job_id, JobStatus.DEAD_LETTERED, False, error_code)
 
-    monkeypatch.setattr(tasks, "get_settings", lambda: _settings(max_retries=0))
-    monkeypatch.setattr(tasks, "process_resume_job", broken_runtime)
-    monkeypatch.setattr(tasks, "record_resume_failure", fake_record)
+    for task_module in (career_record_tasks, resume_builder_tasks, resume_health_tasks):
+        monkeypatch.setattr(task_module, "get_settings", lambda: _settings(max_retries=0))
+    monkeypatch.setattr(resume_health_tasks, "process_resume_job", broken_runtime)
+    monkeypatch.setattr(resume_health_tasks, "record_resume_failure", fake_record)
 
     result = tasks.process_resume_health.run(job_id=str(job_id), trace_id="9" * 32)
 
@@ -392,7 +405,7 @@ def test_process_task_rejects_non_identifier_payload_before_runtime(
     async def unexpected_runtime(*_args: object) -> ProcessingOutcome:
         raise AssertionError("runtime must not receive an invalid payload")
 
-    monkeypatch.setattr(tasks, "process_resume_job", unexpected_runtime)
+    monkeypatch.setattr(resume_health_tasks, "process_resume_job", unexpected_runtime)
 
     with pytest.raises(ValueError, match="job_id"):
         tasks.process_resume_health.run(job_id="not-a-uuid", trace_id="d" * 32)
@@ -437,15 +450,18 @@ def test_maintenance_tasks_return_bounded_operational_counts(
             object_cleanup_dead_letters=1,
         )
 
-    monkeypatch.setattr(tasks, "get_settings", _settings)
-    monkeypatch.setattr(tasks, "dispatch_resume_outbox", fake_dispatch)
-    monkeypatch.setattr(tasks, "cleanup_expired_resume_data", fake_cleanup)
-    monkeypatch.setattr(tasks, "reconcile_stale_resume_jobs", fake_reconcile)
-    monkeypatch.setattr(tasks, "dispatch_attachment_outbox", fake_dispatch)
-    monkeypatch.setattr(tasks, "cleanup_attachment_objects", fake_attachment_cleanup)
-    monkeypatch.setattr(tasks, "reconcile_stale_attachment_jobs", fake_attachment_reconcile)
-    monkeypatch.setattr(tasks, "dispatch_resume_export_outbox", fake_export_dispatch)
-    monkeypatch.setattr(tasks, "reconcile_resume_exports", fake_export_reconcile)
+    for task_module in (career_record_tasks, resume_builder_tasks, resume_health_tasks):
+        monkeypatch.setattr(task_module, "get_settings", _settings)
+    monkeypatch.setattr(resume_health_tasks, "dispatch_resume_outbox", fake_dispatch)
+    monkeypatch.setattr(resume_health_tasks, "cleanup_expired_resume_data", fake_cleanup)
+    monkeypatch.setattr(resume_health_tasks, "reconcile_stale_resume_jobs", fake_reconcile)
+    monkeypatch.setattr(career_record_tasks, "dispatch_attachment_outbox", fake_dispatch)
+    monkeypatch.setattr(career_record_tasks, "cleanup_attachment_objects", fake_attachment_cleanup)
+    monkeypatch.setattr(
+        career_record_tasks, "reconcile_stale_attachment_jobs", fake_attachment_reconcile
+    )
+    monkeypatch.setattr(resume_builder_tasks, "dispatch_resume_export_outbox", fake_export_dispatch)
+    monkeypatch.setattr(resume_builder_tasks, "reconcile_resume_exports", fake_export_reconcile)
 
     assert tasks.dispatch_resume_health_outbox.run(limit=25) == {
         "published": 4,

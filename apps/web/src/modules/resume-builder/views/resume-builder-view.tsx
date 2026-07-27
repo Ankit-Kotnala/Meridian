@@ -15,6 +15,7 @@ import {
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type FormEvent,
   type ReactNode,
@@ -45,6 +46,7 @@ import {
   listVersions,
   restoreVersion,
   updateResume,
+  waitForExportCompletion,
 } from "../api/resume-builder-api";
 import type {
   Resume,
@@ -86,6 +88,7 @@ export function ResumeBuilderView() {
     "standard_professional",
   );
   const [format, setFormat] = useState<FormatValue>("pdf");
+  const exportController = useRef<AbortController | undefined>(undefined);
 
   const selected = useMemo(
     () => resumes.find((item) => item.id === selectedId),
@@ -123,6 +126,13 @@ export function ResumeBuilderView() {
       active = false;
     };
   }, []);
+
+  useEffect(
+    () => () => {
+      exportController.current?.abort();
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!selected) return;
@@ -238,18 +248,31 @@ export function ResumeBuilderView() {
 
   async function exportCurrent() {
     if (!selected) return;
+    exportController.current?.abort();
+    const controller = new AbortController();
+    exportController.current = controller;
     await run("export", async () => {
-      const record = await exportVersion(selected.currentVersion.id, {
+      const pendingRecord = await exportVersion(selected.currentVersion.id, {
         format,
       });
-      setExportRecord(record);
+      setExportRecord(pendingRecord);
       setDownloadUrl(undefined);
+      const record = await waitForExportCompletion(
+        pendingRecord,
+        controller.signal,
+      );
+      setExportRecord(record);
       if (record.export.status === "blocked") {
         setFailure("Round-trip verification blocked this export.");
+      } else if (record.export.status !== "verified") {
+        setFailure("The export could not be verified.");
       } else {
         setSuccess("Export verified.");
       }
     });
+    if (exportController.current === controller) {
+      exportController.current = undefined;
+    }
   }
 
   async function downloadExport() {
@@ -606,7 +629,14 @@ export function ResumeBuilderView() {
                       {exportRecord.export.sizeBytes} bytes
                     </span>
                   </div>
-                  {exportRecord.verification?.criticalFailures.length ? (
+                  {["pending", "rendering", "retry_wait"].includes(
+                    exportRecord.export.status,
+                  ) ? (
+                    <Alert title="Verification in progress" tone="info">
+                      The durable export worker is rendering and checking this
+                      file.
+                    </Alert>
+                  ) : exportRecord.verification?.criticalFailures.length ? (
                     <Alert title="Blocked" tone="danger">
                       {exportRecord.verification.criticalFailures.join(", ")}
                     </Alert>
@@ -614,9 +644,14 @@ export function ResumeBuilderView() {
                     <Alert title="Warnings" tone="warning">
                       {exportRecord.verification.warnings.join(", ")}
                     </Alert>
-                  ) : (
+                  ) : exportRecord.export.status === "verified" ? (
                     <Alert title="Round-trip verified" tone="success">
                       Searchable output matched the source version.
+                    </Alert>
+                  ) : (
+                    <Alert title="Export unavailable" tone="danger">
+                      This export did not pass durable verification. Try again
+                      or review the recorded failure.
                     </Alert>
                   )}
                   <Button

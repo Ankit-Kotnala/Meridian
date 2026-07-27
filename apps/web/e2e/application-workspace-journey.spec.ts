@@ -562,8 +562,9 @@ test("a user tracks a grounded application and generates a consistent applicatio
       const supportCounts = provenance.getByText(
         /1 evidence link.*1 supported requirement/,
       );
-      await expect(supportCounts).toHaveCount(2);
-      await expect(supportCounts.first()).toBeVisible();
+      await expect(provenance.getByRole("listitem")).toHaveCount(1);
+      await expect(supportCounts).toHaveCount(1);
+      await expect(supportCounts).toBeVisible();
       await clickWhenReady(
         page.getByRole("button", { name: "Refresh checks" }),
       );

@@ -9,7 +9,7 @@ from careeros.modules.networking.application import NetworkingService, RequestCo
 from careeros.modules.networking.domain import NetworkingUnavailable
 from fastapi import Depends, Request
 
-from careeros_api.identity_dependencies import current_principal
+from careeros_api.modules.identity.dependencies import current_principal
 
 
 def networking_service(request: Request) -> NetworkingService:

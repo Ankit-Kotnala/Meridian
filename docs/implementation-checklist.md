@@ -521,6 +521,36 @@ checks remain exact-current and evidence-backed; and analytics are bounded,
 privacy-safe, reproducible, timezone-specific, exact-cohort, and never causal or
 predictive.
 
+## Repository structure normalization
+
+Dependencies: current merged application baseline and the accepted monorepo ADRs.
+
+- [x] Preserve `apps/web`, `apps/api`, `apps/worker`, and `packages/backend`
+      runtime and dependency boundaries; do not flatten the backend.
+- [x] Co-locate every FastAPI bounded-context adapter below
+      `careeros_api/modules/<bounded_context>` while leaving only concrete
+      cross-cutting delivery files at the API root.
+- [x] Split Celery registration into bounded-context task modules while
+      preserving task names, queues, payloads, retry/fencing behavior, and public
+      task imports.
+- [x] Add executable structure checks that reject flat API feature adapters and
+      a returning monolithic worker task file.
+- [x] Add cross-platform full-stack, focused-container, hot-reload, rebuild,
+      status, logs, safe shutdown, smoke, and surface-specific test commands.
+- [x] Document where frontend, API, worker, backend, contract, and infrastructure
+      changes belong and when Docker images require rebuilding.
+- [~] Pass format, lint, type, unit, contract, build, Compose, integration, and
+  applicable isolated browser gates on the final tree; all applicable local
+  gates and exact evidence are green in `PLANS.md`, while hosted CI remains
+  pending publication of the draft PR.
+
+Exit: delivery adapters have one predictable bounded-context address and local
+frontend/backend iteration no longer requires hand-composed service commands.
+Normalization preserves API payloads, domain rules, tasks, migrations, queues,
+and production topology. Official generated component identifiers follow the
+relocated schema modules; the narrow browser-gate closure truthfully polls durable
+exports and aligns E2E fixtures/assertions without weakening grounding policy.
+
 ## Phase 10 — Billing, Admin, Security Hardening, and Production Release
 
 Dependencies: all product phases and production/legal decisions.

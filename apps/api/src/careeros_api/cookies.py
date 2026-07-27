@@ -4,7 +4,7 @@ from careeros.modules.identity.application.models import IssuedSession
 from fastapi import Response
 
 from careeros_api.config import Settings
-from careeros_api.identity_dependencies import CSRF_COOKIE, REFRESH_COOKIE, SESSION_COOKIE
+from careeros_api.modules.identity.dependencies import CSRF_COOKIE, REFRESH_COOKIE, SESSION_COOKIE
 
 OAUTH_STATE_COOKIE = "careeros_oauth_state"
 OAUTH_CALLBACK_PATH = "/api/v1/auth/google/callback"

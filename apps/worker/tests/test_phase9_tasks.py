@@ -8,6 +8,8 @@ from careeros.modules.career_analytics.domain import AnalyticsJobStatus
 
 from careeros_worker import runtime, tasks
 from careeros_worker.config import WorkerSettings
+from careeros_worker.tasks import career_analytics as analytics_tasks
+from careeros_worker.tasks import networking as networking_tasks
 
 
 def _settings() -> WorkerSettings:
@@ -36,8 +38,9 @@ def test_analytics_duplicate_redelivery_returns_the_same_durable_completion(
             safe_error_code=None,
         )
 
-    monkeypatch.setattr(tasks, "get_settings", _settings)
-    monkeypatch.setattr(tasks, "process_career_analytics_job", completed)
+    monkeypatch.setattr(analytics_tasks, "get_settings", _settings)
+    monkeypatch.setattr(networking_tasks, "get_settings", _settings)
+    monkeypatch.setattr(analytics_tasks, "process_career_analytics_job", completed)
 
     first = tasks.process_career_analytics_refresh.run(job_id=str(job_id))
     redelivery = tasks.process_career_analytics_refresh.run(job_id=str(job_id))
@@ -71,10 +74,11 @@ def test_analytics_retry_wait_returns_after_durable_outbox_requeue(
             safe_error_code="source_changed",
         )
 
-    monkeypatch.setattr(tasks, "get_settings", _settings)
-    monkeypatch.setattr(tasks, "process_career_analytics_job", retry_wait)
+    monkeypatch.setattr(analytics_tasks, "get_settings", _settings)
+    monkeypatch.setattr(networking_tasks, "get_settings", _settings)
+    monkeypatch.setattr(analytics_tasks, "process_career_analytics_job", retry_wait)
     monkeypatch.setattr(
-        tasks,
+        analytics_tasks,
         "bind_contextvars",
         lambda **values: bound_context.append(values),
     )
@@ -111,10 +115,11 @@ def test_analytics_durable_retry_exhaustion_returns_dead_letter_without_retry(
             safe_error_code="aggregation_failed",
         )
 
-    monkeypatch.setattr(tasks, "get_settings", _settings)
-    monkeypatch.setattr(tasks, "process_career_analytics_job", dead_letter)
+    monkeypatch.setattr(analytics_tasks, "get_settings", _settings)
+    monkeypatch.setattr(networking_tasks, "get_settings", _settings)
+    monkeypatch.setattr(analytics_tasks, "process_career_analytics_job", dead_letter)
     monkeypatch.setattr(
-        tasks.logger,
+        analytics_tasks.logger,
         "error",
         lambda event, **values: errors.append((event, values)),
     )
@@ -145,7 +150,7 @@ def test_analytics_task_rejects_content_or_noncanonical_identifiers_before_runti
     async def forbidden(*_args: object) -> runtime.AnalyticsProcessingResult:
         raise AssertionError("invalid payload reached analytics runtime")
 
-    monkeypatch.setattr(tasks, "process_career_analytics_job", forbidden)
+    monkeypatch.setattr(analytics_tasks, "process_career_analytics_job", forbidden)
 
     with pytest.raises(ValueError, match="job_id"):
         tasks.process_career_analytics_refresh.run(job_id="not-a-uuid")
@@ -180,11 +185,12 @@ def test_phase9_maintenance_tasks_return_counts_only(
     async def recover(*_args: object) -> runtime.NetworkingReminderRecoveryResult:
         return runtime.NetworkingReminderRecoveryResult(recovered=3, dead_lettered=1)
 
-    monkeypatch.setattr(tasks, "get_settings", _settings)
-    monkeypatch.setattr(tasks, "dispatch_career_analytics_outbox", dispatch)
-    monkeypatch.setattr(tasks, "reconcile_career_analytics", reconcile_analytics)
-    monkeypatch.setattr(tasks, "process_due_networking_reminders", reminders)
-    monkeypatch.setattr(tasks, "reconcile_networking_reminders", recover)
+    monkeypatch.setattr(analytics_tasks, "get_settings", _settings)
+    monkeypatch.setattr(networking_tasks, "get_settings", _settings)
+    monkeypatch.setattr(analytics_tasks, "dispatch_career_analytics_outbox", dispatch)
+    monkeypatch.setattr(analytics_tasks, "reconcile_career_analytics", reconcile_analytics)
+    monkeypatch.setattr(networking_tasks, "process_due_networking_reminders", reminders)
+    monkeypatch.setattr(networking_tasks, "reconcile_networking_reminders", recover)
 
     assert tasks.dispatch_career_analytics_refresh_outbox.run(limit=25) == {
         "published": 3,

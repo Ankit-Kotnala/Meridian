@@ -1605,6 +1605,86 @@ without inventing those values.
 
 Detailed checkboxes live in `docs/implementation-checklist.md`.
 
+## Repository structure normalization — 2026-07-27
+
+Status: implementation and all applicable local verification are complete in an
+isolated `origin/main` worktree. Hosted CI is pending publication of the draft PR,
+so hosted closure is not claimed yet.
+
+Scope boundary:
+
+- Preserved the accepted monorepo and modular-backend topology. No domain rule,
+  API endpoint or payload shape, migration, task name, broker payload, queue,
+  production topology, or deployment behavior changed.
+- Moved every flat FastAPI feature adapter into
+  `careeros_api/modules/<bounded_context>` and retained only concrete
+  cross-cutting HTTP delivery files at the package root.
+- Split the monolithic Celery registration file into Career Analytics, Career
+  Record, Networking, Resume Builder, Resume Health, and health task modules.
+  All 17 registered task names, result shapes, queues, identifier-only payloads,
+  retries, fencing, reconciliation, and cleanup semantics are preserved.
+- Added executable layout regression checks plus a cross-platform local command
+  layer for full/backend/dependency stacks, host hot reload, surface rebuilds,
+  status, logs, smoke probes, safe shutdown, and focused tests.
+- Corrected the POSIX isolated-E2E default migration head from stale
+  `20260726_0011` to the executable single head `20260726_0013`, matching the API
+  workflow, PowerShell runner, migration graph, and migration tests.
+- Regenerated the official OpenAPI and TypeScript artifacts because moving
+  Pydantic classes changes module-qualified component identifiers for otherwise
+  duplicate schema names. Endpoints, fields, formats, requiredness, and payload
+  shapes are unchanged; contract drift checks are green.
+- The newly unblocked browser gate exposed inherited UI-redesign drift and the
+  Phase 7 frontend dependency recorded above. The narrow closure aligns
+  accessible E2E assertions with current product labels and grounded outcomes,
+  confirms required name/skill facts in journey setup, and makes Resume Builder
+  poll the existing owner-scoped `GET /api/v1/exports/{export_id}` resource.
+  Pending/rendering/retry states are now displayed truthfully; download remains
+  disabled until the server returns `verified`; polling is cancellable and
+  bounded to 60 seconds. No safety or fidelity rule was weakened.
+
+Verification evidence:
+
+- Frozen setup: `pnpm install --frozen-lockfile` and
+  `uv sync --frozen --all-packages --all-groups` pass.
+- Structure/local commands: `node --check scripts/local.mjs`,
+  `node scripts/local.mjs --help`, `node --check scripts/check-repository.mjs`,
+  and `node scripts/check-repository.mjs` pass.
+- Python delivery/backend: API Ruff and mypy pass across 73 source files; worker
+  Ruff and mypy pass across 20 source files; API tests pass 145/145; worker tests
+  pass 89/89; backend architecture/unit tests pass 447/447.
+- Repository gates: `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, and
+  `pnpm test` pass. The final JavaScript test gate includes contracts 3/3,
+  frontend-boundary tests 4/4, UI 12/12, web 164/164, and edge 2/2. GNU Make is
+  unavailable on this Windows host, so these are the documented PowerShell
+  equivalents of the required Make targets.
+- Contracts/build: `pnpm contracts:check`, API/worker Python format checks,
+  `pnpm build`, and the final 49-route `pnpm --filter @careeros/web build` pass.
+- Local infrastructure: `docker compose config --quiet`, `pnpm local:status`,
+  and `pnpm local:smoke` pass against the restored primary stack.
+- Isolated Phase 9 verifier: exact head `20260726_0013`; downgrade to the Phase 8
+  boundary and forward repair pass; 42/42 PostgreSQL integration tests pass with
+  nine known SQLAlchemy cycle warnings; API/worker/scheduler/web/edge health and
+  PostgreSQL stop/start recovery pass; Playwright passes all 12 executed desktop
+  and mobile journeys with six intentional mobile skips; all isolated state is
+  removed afterward.
+- Local `bash -n tests/e2e/run-compose.sh` remains unavailable because this host
+  has the WSL launcher but no Linux `/bin/bash`. The one-line revision change is
+  covered by hosted Linux CI after publication; it is not represented as a local
+  shell-syntax pass.
+
+Residual risks and next step:
+
+- Hosted CI must pass on the exact pushed commit before this normalization is
+  marked fully closed or merged.
+- Normal local commands never delete volumes. The explicitly destructive
+  `make reset-db` remains separate and unchanged.
+- Host API/worker modes use loopback endpoints derived from `.env`; full-stack
+  parity remains the isolated container gate recorded above.
+- The initial isolated build hit a full system drive. No Docker data was deleted;
+  3.14 GB of installer/temp traces was moved recoverably to
+  `.data/recovery-trash/20260727-docker-recovery`, Docker was restarted, and the
+  primary stack was restored and re-probed healthy.
+
 ## Cross-phase dependency rules
 
 1. Identity and ownership (Phase 1) precede persisted user workflows.
@@ -1688,13 +1768,14 @@ At the end of every phase:
 
 ## Next phase
 
-After this Phase 10A branch is raised as a draft PR, the next separate
-implementation phase is Phase 10B commercial and billing. Coach/Organization
-tenancy, durable workflows, privacy/admin surfaces, and observability,
-performance, recovery, and protected release engineering follow in the
-documented PR order. This run stops after the Phase 10A draft PR. The separate
-PR #23 migration-head correction remains outside scope until it receives
-explicit approval.
+After this repository-structure normalization and its narrow browser-gate closure
+are raised as a draft PR, the next separate implementation phase is Phase 10B
+commercial and billing. Coach/Organization tenancy, durable workflows,
+privacy/admin surfaces, and observability, performance, recovery, and protected
+release engineering follow in the documented PR order. The POSIX migration-head
+correction and web journey repairs are included here because the newly unblocked
+full-stack gate proved they directly prevent hosted verification; the changes do
+not expand Phase 10 product scope.
 
 Publishing this review branch is part of the requested phase workflow; no PR is
 merged and no production deployment occurs without explicit later approval.
