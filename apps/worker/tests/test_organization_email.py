@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 from uuid import uuid4
 
-import pytest
 from careeros.modules.identity.application.models import EmailMessage
 from careeros.modules.organizations.application import InvitationDeliveryMessage
 
@@ -19,8 +19,7 @@ class CapturingSender:
         self.messages.append(message)
 
 
-@pytest.mark.asyncio
-async def test_invitation_email_escapes_content_and_encodes_secret_url() -> None:
+def test_invitation_email_escapes_content_and_encodes_secret_url() -> None:
     captured = CapturingSender()
     sender = OrganizationInvitationEmailSender(captured, "https://app.example.test/")
     message = InvitationDeliveryMessage(
@@ -30,7 +29,7 @@ async def test_invitation_email_escapes_content_and_encodes_secret_url() -> None
         token="fictional.token_-",  # noqa: S106 -- explicitly fictional credential
     )
 
-    await sender.send(message)
+    asyncio.run(sender.send(message))
 
     assert len(captured.messages) == 1
     email = captured.messages[0]
