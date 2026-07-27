@@ -229,17 +229,17 @@ from redis.asyncio import Redis
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from careeros_api.modules.administration.problems import (
-    install_administration_problem_handler,
-)
-from careeros_api.modules.commercial.problems import install_commercial_problem_handler
 from careeros_api.config import Settings, get_settings
 from careeros_api.middleware import (
     RequestBodyLimitMiddleware,
     ResponseSecurityHeadersMiddleware,
     install_request_context_middleware,
 )
+from careeros_api.modules.administration.problems import (
+    install_administration_problem_handler,
+)
 from careeros_api.modules.career_growth import install_career_growth_problem_handler
+from careeros_api.modules.commercial.problems import install_commercial_problem_handler
 from careeros_api.modules.interview_prep import install_interview_prep_problem_handler
 from careeros_api.modules.organizations.problems import install_organization_problem_handler
 from careeros_api.problems import install_problem_handlers

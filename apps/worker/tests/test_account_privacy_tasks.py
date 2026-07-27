@@ -8,9 +8,9 @@ from careeros.modules.identity.application import (
     AccountOperationBatchResult,
 )
 
-from careeros_worker.tasks import identity
 from careeros_worker.base import RetryableTaskError
 from careeros_worker.config import WorkerSettings
+from careeros_worker.tasks import identity
 
 
 def _settings() -> WorkerSettings:
@@ -40,8 +40,8 @@ def test_privacy_task_returns_only_bounded_operational_counts(
             dead_lettered=1,
         )
 
-    monkeypatch.setattr(tasks, "get_settings", _settings)
-    monkeypatch.setattr(tasks, "process_account_operations", fake_process)
+    monkeypatch.setattr(identity, "get_settings", _settings)
+    monkeypatch.setattr(identity, "process_account_operations", fake_process)
 
     assert identity.process_account_privacy_operations.run() == {
         "claimed": 5,
@@ -63,8 +63,8 @@ def test_export_cleanup_task_returns_safe_counts(
         assert limit == 11
         return AccountExportCleanupResult(completed=3, failed=1)
 
-    monkeypatch.setattr(tasks, "get_settings", _settings)
-    monkeypatch.setattr(tasks, "cleanup_account_exports", fake_cleanup)
+    monkeypatch.setattr(identity, "get_settings", _settings)
+    monkeypatch.setattr(identity, "cleanup_account_exports", fake_cleanup)
 
     assert identity.cleanup_expired_account_exports.run() == {
         "completed": 3,
@@ -81,8 +81,8 @@ def test_privacy_task_maps_internal_failure_to_safe_error(
     ) -> AccountOperationBatchResult:
         raise RuntimeError("s3://private-bucket/user-object")
 
-    monkeypatch.setattr(tasks, "get_settings", _settings)
-    monkeypatch.setattr(tasks, "process_account_operations", fail)
+    monkeypatch.setattr(identity, "get_settings", _settings)
+    monkeypatch.setattr(identity, "process_account_operations", fail)
 
     with pytest.raises(
         RetryableTaskError,

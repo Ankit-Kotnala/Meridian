@@ -36,7 +36,7 @@ from organization_memory import (
     SequentialIds,
 )
 
-_SECRET = "fictional-organization-invitation-secret-at-least-32-bytes"  # noqa: S105
+_SECRET = "fictional-organization-invitation-secret-at-least-32-bytes"  # noqa: S105  # gitleaks:allow
 
 
 def _context(user_id: UUID) -> RequestContext:

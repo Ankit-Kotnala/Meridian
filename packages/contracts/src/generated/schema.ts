@@ -3869,7 +3869,7 @@ export interface components {
         AchievementPageResponse: {
             /** Data */
             data: components["schemas"]["AchievementResponse"][];
-            page: components["schemas"]["careeros_api__career_record_schemas__PageResponse"];
+            page: components["schemas"]["careeros_api__modules__career_record__schemas__PageResponse"];
         };
         /** AchievementResponse */
         AchievementResponse: {
@@ -4555,7 +4555,7 @@ export interface components {
         ApplicationEventPageResponse: {
             /** Data */
             data: components["schemas"]["ApplicationEventResponse"][];
-            page: components["schemas"]["careeros_api__application_workspace_schemas__PageResponse"];
+            page: components["schemas"]["careeros_api__modules__application_workspace__schemas__PageResponse"];
         };
         /** ApplicationEventResponse */
         ApplicationEventResponse: {
@@ -4628,7 +4628,7 @@ export interface components {
         ApplicationNotePageResponse: {
             /** Data */
             data: components["schemas"]["ApplicationNoteResponse"][];
-            page: components["schemas"]["careeros_api__application_workspace_schemas__PageResponse"];
+            page: components["schemas"]["careeros_api__modules__application_workspace__schemas__PageResponse"];
         };
         /** ApplicationNoteResponse */
         ApplicationNoteResponse: {
@@ -4659,7 +4659,7 @@ export interface components {
         ApplicationPackPageResponse: {
             /** Data */
             data: components["schemas"]["ApplicationPackSummaryResponse"][];
-            page: components["schemas"]["careeros_api__application_workspace_schemas__PageResponse"];
+            page: components["schemas"]["careeros_api__modules__application_workspace__schemas__PageResponse"];
         };
         /** ApplicationPackResponse */
         ApplicationPackResponse: {
@@ -4767,7 +4767,7 @@ export interface components {
         ApplicationPageResponse: {
             /** Data */
             data: components["schemas"]["ApplicationSummaryResponse"][];
-            page: components["schemas"]["careeros_api__application_workspace_schemas__PageResponse"];
+            page: components["schemas"]["careeros_api__modules__application_workspace__schemas__PageResponse"];
         };
         /** ApplicationRequirementResponse */
         ApplicationRequirementResponse: {
@@ -5006,7 +5006,7 @@ export interface components {
         ApplicationTaskPageResponse: {
             /** Data */
             data: components["schemas"]["ApplicationTaskResponse"][];
-            page: components["schemas"]["careeros_api__application_workspace_schemas__PageResponse"];
+            page: components["schemas"]["careeros_api__modules__application_workspace__schemas__PageResponse"];
         };
         /** ApplicationTaskResponse */
         ApplicationTaskResponse: {
@@ -5170,7 +5170,7 @@ export interface components {
             /** Originalvalue */
             originalValue: string | null;
             /** Sourcespans */
-            sourceSpans: components["schemas"]["careeros_api__resume_health_schemas__SourceSpanResponse"][];
+            sourceSpans: components["schemas"]["careeros_api__modules__resume_health__schemas__SourceSpanResponse"][];
             /** Value */
             value: string;
         };
@@ -5485,43 +5485,7 @@ export interface components {
             version: number;
         };
         /** PageResponse */
-        careeros_api__application_workspace_schemas__PageResponse: {
-            /** Hasmore */
-            hasMore: boolean;
-            /** Limit */
-            limit: number;
-            /** Nextcursor */
-            nextCursor: string | null;
-        };
-        /** PageResponse */
-        careeros_api__career_record_schemas__PageResponse: {
-            /** Hasmore */
-            hasMore: boolean;
-            /** Limit */
-            limit: number;
-            /** Nextcursor */
-            nextCursor: string | null;
-        };
-        /** SourceSpanResponse */
-        careeros_api__career_record_schemas__SourceSpanResponse: {
-            /** Digest */
-            digest: string;
-            /** End */
-            end: number;
-            /** Excerpt */
-            excerpt: string;
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Page */
-            page?: number | null;
-            /** Start */
-            start: number;
-        };
-        /** PageResponse */
-        careeros_api__job_match_schemas__PageResponse: {
+        careeros_api__modules__application_workspace__schemas__PageResponse: {
             /** Hasmore */
             hasMore: boolean;
             /** Limit */
@@ -5539,7 +5503,43 @@ export interface components {
             nextCursor: string | null;
         };
         /** PageResponse */
+        careeros_api__modules__career_record__schemas__PageResponse: {
+            /** Hasmore */
+            hasMore: boolean;
+            /** Limit */
+            limit: number;
+            /** Nextcursor */
+            nextCursor: string | null;
+        };
+        /** SourceSpanResponse */
+        careeros_api__modules__career_record__schemas__SourceSpanResponse: {
+            /** Digest */
+            digest: string;
+            /** End */
+            end: number;
+            /** Excerpt */
+            excerpt: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Page */
+            page?: number | null;
+            /** Start */
+            start: number;
+        };
+        /** PageResponse */
         careeros_api__modules__interview_prep__schemas__PageResponse: {
+            /** Hasmore */
+            hasMore: boolean;
+            /** Limit */
+            limit: number;
+            /** Nextcursor */
+            nextCursor: string | null;
+        };
+        /** PageResponse */
+        careeros_api__modules__job_match__schemas__PageResponse: {
             /** Hasmore */
             hasMore: boolean;
             /** Limit */
@@ -5557,7 +5557,7 @@ export interface components {
             nextCursor: string | null;
         };
         /** SourceSpanResponse */
-        careeros_api__resume_health_schemas__SourceSpanResponse: {
+        careeros_api__modules__resume_health__schemas__SourceSpanResponse: {
             /** End */
             end: number;
             /** Excerpt */
@@ -5568,7 +5568,7 @@ export interface components {
             start: number;
         };
         /** PageResponse */
-        careeros_api__role_readiness_schemas__PageResponse: {
+        careeros_api__modules__role_readiness__schemas__PageResponse: {
             /** Hasmore */
             hasMore: boolean;
             /** Limit */
@@ -7055,7 +7055,7 @@ export interface components {
         EvidencePageResponse: {
             /** Data */
             data: components["schemas"]["EvidenceResponse"][];
-            page: components["schemas"]["careeros_api__career_record_schemas__PageResponse"];
+            page: components["schemas"]["careeros_api__modules__career_record__schemas__PageResponse"];
         };
         /** EvidenceResponse */
         EvidenceResponse: {
@@ -7697,7 +7697,7 @@ export interface components {
         ImportProposalPageResponse: {
             /** Data */
             data: components["schemas"]["ImportProposalResponse"][];
-            page: components["schemas"]["careeros_api__career_record_schemas__PageResponse"];
+            page: components["schemas"]["careeros_api__modules__career_record__schemas__PageResponse"];
         };
         /** ImportProposalResponse */
         ImportProposalResponse: {
@@ -8252,7 +8252,7 @@ export interface components {
         JobPageResponse: {
             /** Data */
             data: components["schemas"]["JobResponse"][];
-            page: components["schemas"]["careeros_api__job_match_schemas__PageResponse"];
+            page: components["schemas"]["careeros_api__modules__job_match__schemas__PageResponse"];
         };
         /** JobRequirementResponse */
         JobRequirementResponse: {
@@ -9111,7 +9111,7 @@ export interface components {
              */
             sourceType: "manual" | "resume" | "achievement" | "attachment" | "url";
             /** Spans */
-            spans: components["schemas"]["careeros_api__career_record_schemas__SourceSpanResponse"][];
+            spans: components["schemas"]["careeros_api__modules__career_record__schemas__SourceSpanResponse"][];
             /** Userconfirmed */
             userConfirmed: boolean;
         };
@@ -10469,13 +10469,13 @@ export interface components {
         RolePageResponse: {
             /** Data */
             data: components["schemas"]["RoleResponse"][];
-            page: components["schemas"]["careeros_api__role_readiness_schemas__PageResponse"];
+            page: components["schemas"]["careeros_api__modules__role_readiness__schemas__PageResponse"];
         };
         /** RoleReadinessPageResponse */
         RoleReadinessPageResponse: {
             /** Data */
             data: components["schemas"]["RoleReadinessResponse"][];
-            page: components["schemas"]["careeros_api__role_readiness_schemas__PageResponse"];
+            page: components["schemas"]["careeros_api__modules__role_readiness__schemas__PageResponse"];
         };
         /** RoleReadinessRequest */
         RoleReadinessRequest: {
@@ -10581,7 +10581,7 @@ export interface components {
         SavedRolePageResponse: {
             /** Data */
             data: components["schemas"]["SavedRoleResponse"][];
-            page: components["schemas"]["careeros_api__role_readiness_schemas__PageResponse"];
+            page: components["schemas"]["careeros_api__modules__role_readiness__schemas__PageResponse"];
         };
         /** SavedRoleResponse */
         SavedRoleResponse: {

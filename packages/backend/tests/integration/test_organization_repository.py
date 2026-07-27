@@ -43,7 +43,7 @@ from careeros.modules.organizations.infrastructure.models import (
 )
 
 _NOW = datetime(2026, 7, 26, 23, 30, tzinfo=UTC)
-_SECRET = "fictional-integration-organization-secret-at-least-32-bytes"  # noqa: S105
+_SECRET = "fictional-integration-organization-secret-at-least-32-bytes"  # noqa: S105  # gitleaks:allow
 
 
 class FixedClock:

@@ -5,9 +5,9 @@ from __future__ import annotations
 import pytest
 from careeros.modules.organizations.application import InvitationDeliveryBatchResult
 
-from careeros_worker.tasks import organizations
 from careeros_worker.base import RetryableTaskError
 from careeros_worker.config import WorkerSettings
+from careeros_worker.tasks import organizations
 
 
 def _settings() -> WorkerSettings:
@@ -36,8 +36,8 @@ def test_invitation_task_returns_only_bounded_operational_counts(
             dead_lettered=0,
         )
 
-    monkeypatch.setattr(tasks, "get_settings", _settings)
-    monkeypatch.setattr(tasks, "process_organization_invitations", fake_process)
+    monkeypatch.setattr(organizations, "get_settings", _settings)
+    monkeypatch.setattr(organizations, "process_organization_invitations", fake_process)
 
     assert organizations.deliver_organization_invitations.run() == {
         "claimed": 4,
@@ -54,8 +54,8 @@ def test_invitation_task_maps_internal_failure_to_safe_error(
     async def fail(_settings: WorkerSettings, _limit: int) -> InvitationDeliveryBatchResult:
         raise RuntimeError("smtp://private-credential@example.test")
 
-    monkeypatch.setattr(tasks, "get_settings", _settings)
-    monkeypatch.setattr(tasks, "process_organization_invitations", fail)
+    monkeypatch.setattr(organizations, "get_settings", _settings)
+    monkeypatch.setattr(organizations, "process_organization_invitations", fail)
 
     with pytest.raises(
         RetryableTaskError,

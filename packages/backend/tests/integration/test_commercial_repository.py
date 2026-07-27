@@ -35,7 +35,7 @@ from careeros.modules.identity.infrastructure.models import UserModel
 
 _NOW = datetime(2026, 7, 26, 23, tzinfo=UTC)
 _PRO_PLAN_ID = UUID("00000000-0000-4000-8000-000000001003")
-_SECRET = "fictional-integration-billing-secret-32-bytes"  # noqa: S105
+_SECRET = "fictional-integration-billing-secret-32-bytes"  # noqa: S105  # gitleaks:allow
 _ORIGIN = "http://localhost:3000"
 
 

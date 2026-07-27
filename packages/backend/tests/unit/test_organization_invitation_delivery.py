@@ -27,7 +27,7 @@ from organization_memory import (
     SequentialIds,
 )
 
-_SECRET = "fictional-durable-invitation-secret-at-least-32-bytes"  # noqa: S105
+_SECRET = "fictional-durable-invitation-secret-at-least-32-bytes"  # noqa: S105  # gitleaks:allow
 
 
 @dataclass(slots=True)
