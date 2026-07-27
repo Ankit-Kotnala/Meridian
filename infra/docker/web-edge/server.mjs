@@ -1,10 +1,17 @@
 import http from "node:http";
 
-import { downstreamHeaders, upstreamHeaders } from "./header-policy.mjs";
+import {
+  downstreamHeaders,
+  exactUploadOrigin,
+  upstreamHeaders,
+} from "./header-policy.mjs";
 
 const listenPort = boundedPort(process.env.PORT ?? "8080");
 const upstreamPort = boundedPort(process.env.UPSTREAM_PORT ?? "3000");
 const upstreamHost = safeHostname(process.env.UPSTREAM_HOST ?? "web");
+const uploadOrigin = exactUploadOrigin(
+  process.env.EDGE_UPLOAD_ORIGIN ?? "http://localhost:9000",
+);
 const hstsEnabled = strictBoolean(
   process.env.EDGE_ENABLE_HSTS ?? "false",
   "EDGE_ENABLE_HSTS",
@@ -23,7 +30,7 @@ const server = http.createServer((request, response) => {
       response.writeHead(
         upstreamResponse.statusCode ?? 502,
         upstreamResponse.statusMessage,
-        downstreamHeaders(upstreamResponse.headers, hstsEnabled),
+        downstreamHeaders(upstreamResponse.headers, hstsEnabled, uploadOrigin),
       );
       upstreamResponse.pipe(response);
     },
@@ -42,6 +49,7 @@ const server = http.createServer((request, response) => {
           "content-type": "application/problem+json",
         },
         hstsEnabled,
+        uploadOrigin,
       ),
     );
     response.end(

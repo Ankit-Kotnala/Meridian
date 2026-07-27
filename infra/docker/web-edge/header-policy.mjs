@@ -62,7 +62,35 @@ const CONTROLLED_RESPONSE_HEADERS = new Set([
   "x-powered-by",
 ]);
 
-export function downstreamHeaders(incoming, enableHsts = false) {
+export function exactUploadOrigin(configured) {
+  let value;
+  try {
+    value = new URL(configured);
+  } catch {
+    throw new Error("EDGE_UPLOAD_ORIGIN must be an exact URL origin.");
+  }
+  const normalized = configured.replace(/\/$/u, "");
+  const localHttp =
+    value.protocol === "http:" &&
+    new Set(["localhost", "127.0.0.1", "[::1]"]).has(value.hostname);
+  if (
+    value.origin !== normalized ||
+    (value.protocol !== "https:" && !localHttp) ||
+    value.username ||
+    value.password
+  ) {
+    throw new Error(
+      "EDGE_UPLOAD_ORIGIN must be one exact HTTPS origin or a local HTTP origin.",
+    );
+  }
+  return value.origin;
+}
+
+export function downstreamHeaders(
+  incoming,
+  enableHsts = false,
+  uploadOrigin = "http://localhost:9000",
+) {
   const headers = {};
   for (const [rawName, value] of Object.entries(incoming)) {
     const name = rawName.toLowerCase();
@@ -87,7 +115,7 @@ export function downstreamHeaders(incoming, enableHsts = false) {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
     "font-src 'self' data:",
-    "connect-src 'self'",
+    `connect-src 'self' ${exactUploadOrigin(uploadOrigin)}`,
     "worker-src 'self' blob:",
     "manifest-src 'self'",
     "media-src 'self'",

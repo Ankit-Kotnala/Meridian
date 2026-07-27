@@ -68,9 +68,10 @@ New-Item -ItemType Directory -Path $GrypeCachePath, $GrypeTempPath -Force | Out-
 Push-Location $RepositoryRoot
 
 try {
-    docker run --rm --volume "${RepositoryRoot}:/repo:ro" `
+    docker run --rm --network none --volume "${RepositoryRoot}:/repo:ro" `
         ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f `
-        dir /repo --config /repo/.gitleaks.toml --redact --exit-code 1
+        dir /repo --config /repo/.gitleaks.toml --redact --exit-code 1 `
+        --verbose --no-color
     Assert-LastExitCode "Gitleaks"
 
     pnpm audit --audit-level high

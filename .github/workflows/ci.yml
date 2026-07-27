@@ -393,9 +393,9 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Scan the working tree for committed secrets
         run: >-
-          docker run --rm --volume "$PWD:/repo:ro"
+          docker run --rm --network none --volume "$PWD:/repo:ro"
           ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
-          dir /repo --config /repo/.gitleaks.toml --redact --exit-code 1
+          dir /repo --config /repo/.gitleaks.toml --redact --exit-code 1 --verbose --no-color
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
         with:
           version: 11.13.0

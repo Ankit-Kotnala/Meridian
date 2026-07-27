@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { downstreamHeaders, upstreamHeaders } from "./header-policy.mjs";
+import {
+  downstreamHeaders,
+  exactUploadOrigin,
+  upstreamHeaders,
+} from "./header-policy.mjs";
 
 test("trusted edge overwrites every client-selected address header", () => {
   const result = upstreamHeaders(
@@ -46,6 +50,32 @@ test("public responses override unsafe upstream headers", () => {
   assert.equal(result["x-frame-options"], "DENY");
   assert.deepEqual(result["set-cookie"], ["session=opaque", "csrf=opaque"]);
   assert.equal(result["strict-transport-security"], undefined);
+});
+
+test("public CSP admits only the validated direct-upload origin", () => {
+  const result = downstreamHeaders({}, false, "https://uploads.example.test");
+
+  assert.match(
+    result["content-security-policy"],
+    /connect-src 'self' https:\/\/uploads\.example\.test(?:;|$)/u,
+  );
+  assert.doesNotMatch(result["content-security-policy"], /connect-src[^;]*\*/u);
+});
+
+test("upload origins fail closed when they are not exact and trustworthy", () => {
+  for (const value of [
+    "*",
+    "http://uploads.example.test",
+    "https://user:secret@uploads.example.test",
+    "https://uploads.example.test/path",
+    "https://uploads.example.test?scope=wide",
+  ]) {
+    assert.throws(() => exactUploadOrigin(value), /EDGE_UPLOAD_ORIGIN/u);
+  }
+  assert.equal(
+    exactUploadOrigin("http://127.0.0.1:19000"),
+    "http://127.0.0.1:19000",
+  );
 });
 
 test("TLS deployments opt into HSTS and insecure-request upgrading", () => {

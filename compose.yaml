@@ -422,6 +422,7 @@ services:
       UPSTREAM_HOST: web
       UPSTREAM_PORT: "3000"
       EDGE_ENABLE_HSTS: ${EDGE_ENABLE_HSTS:-false}
+      EDGE_UPLOAD_ORIGIN: ${S3_PUBLIC_ENDPOINT_URL:-http://localhost:9000}
     command: ["node", "/app/server.mjs"]
     user: node
     read_only: true
