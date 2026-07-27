@@ -1,12 +1,24 @@
 SHELL := /bin/sh
 
-.PHONY: help setup dev stop format format-check lint typecheck test contracts-check test-integration test-e2e test-e2e-stack-phase1 test-e2e-stack test-e2e-stack-phase3 test-e2e-stack-phase4 test-e2e-stack-phase5 test-e2e-stack-phase6 test-e2e-stack-phase7 test-e2e-stack-phase8 test-e2e-stack-phase9 build security-scan seed migrate reset-db compose-config verify verify-phase1 verify-phase2 verify-phase3 verify-phase4 verify-phase5 verify-phase6 verify-phase7 verify-phase8 verify-phase9
+.PHONY: help setup dev dev-web dev-api dev-worker local-up local-backend local-deps local-rebuild local-rebuild-web local-rebuild-backend local-status local-logs local-smoke local-down stop format format-check lint typecheck test test-web test-api test-worker test-backend contracts-check test-integration test-e2e test-e2e-stack-phase1 test-e2e-stack test-e2e-stack-phase3 test-e2e-stack-phase4 test-e2e-stack-phase5 test-e2e-stack-phase6 test-e2e-stack-phase7 test-e2e-stack-phase8 test-e2e-stack-phase9 build security-scan seed migrate reset-db compose-config verify verify-phase1 verify-phase2 verify-phase3 verify-phase4 verify-phase5 verify-phase6 verify-phase7 verify-phase8 verify-phase9
 
 help:
 	@echo "CareerOS development targets"
 	@echo "  setup            Install pinned JavaScript and Python dependencies"
-	@echo "  dev              Build and start the local Compose platform"
-	@echo "  stop             Stop local services and preserve volumes"
+	@echo "  dev              Build and start the attached local Compose platform"
+	@echo "  dev-web          Run the web with hot reload against backend containers"
+	@echo "  dev-api          Run the API with hot reload against dependency containers"
+	@echo "  dev-worker       Run a local worker against dependency containers"
+	@echo "  local-up         Build and start the full stack detached"
+	@echo "  local-backend    Build and start backend services detached"
+	@echo "  local-deps       Start PostgreSQL, Redis, MinIO, Mailpit, and ClamAV"
+	@echo "  local-rebuild-web Rebuild only web and web-edge"
+	@echo "  local-rebuild-backend Rebuild API, worker, and scheduler"
+	@echo "  local-status     Show local Compose service state"
+	@echo "  local-logs       Follow local Compose logs"
+	@echo "  local-smoke      Probe the full running local stack"
+	@echo "  local-down       Stop local services and preserve volumes"
+	@echo "  stop             Alias for local-down"
 	@echo "  format           Apply JavaScript and Python formatters"
 	@echo "  format-check     Check formatting without changes"
 	@echo "  lint             Run JavaScript and Python linters"
@@ -48,8 +60,46 @@ setup:
 dev:
 	docker compose up --build
 
-stop:
-	docker compose down --remove-orphans
+dev-web:
+	node scripts/local.mjs dev-web
+
+dev-api:
+	node scripts/local.mjs dev-api
+
+dev-worker:
+	node scripts/local.mjs dev-worker
+
+local-up:
+	node scripts/local.mjs up full
+
+local-backend:
+	node scripts/local.mjs up backend
+
+local-deps:
+	node scripts/local.mjs up dependencies
+
+local-rebuild:
+	node scripts/local.mjs rebuild all
+
+local-rebuild-web:
+	node scripts/local.mjs rebuild web
+
+local-rebuild-backend:
+	node scripts/local.mjs rebuild backend
+
+local-status:
+	node scripts/local.mjs status
+
+local-logs:
+	node scripts/local.mjs logs
+
+local-smoke:
+	node scripts/local.mjs smoke full
+
+local-down:
+	node scripts/local.mjs down
+
+stop: local-down
 
 format:
 	pnpm format
@@ -83,6 +133,18 @@ test:
 	cd packages/backend && uv run --package careeros-backend pytest tests/architecture tests/unit
 	cd apps/api && uv run pytest
 	cd apps/worker && uv run pytest
+
+test-web:
+	pnpm test:web
+
+test-api:
+	pnpm test:api
+
+test-worker:
+	pnpm test:worker
+
+test-backend:
+	pnpm test:backend
 
 contracts-check:
 	uv lock --check

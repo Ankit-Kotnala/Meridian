@@ -10,15 +10,21 @@ the OpenAPI source of truth; domain rules and repositories remain in
 
 ## Local commands
 
+Run these from the repository root:
+
 ```bash
-uv sync --frozen --all-packages --all-groups
-cd apps/api
-uv run uvicorn careeros_api.main:app --reload --port 8000
-uv run ruff format --check .
-uv run ruff check .
-uv run mypy src tests
-uv run pytest
+pnpm dev:api       # dependency containers plus FastAPI hot reload
+pnpm test:api      # focused API tests
+make format-check
+make lint
+make typecheck
 ```
+
+Feature delivery files live under
+`src/careeros_api/modules/<bounded_context>/{routes,schemas,presenters,dependencies}.py`.
+Only concrete cross-cutting HTTP composition, middleware, configuration, and
+problem handling remain at the package root. See `docs/local-development.md` for
+the full repository map and container workflows.
 
 Run the complete current integration and browser portfolio from the repository
 root with `.\scripts\verify-phase9.ps1` on PowerShell or
@@ -35,11 +41,11 @@ credential. Database URLs are represented as secrets and are never returned by
 the metadata endpoint.
 
 Alembic uses the same validated database setting as the API. The initial
-migration enables the `vector` PostgreSQL extension. The current Phase 9 head is
-`20260724_0010`; it adds the Interview Prep, Networking, Career Growth, and
-Career Analytics tables after Phase 8 head `20260724_0009`. Migration lifecycle,
-rollback/forward-repair, and pre-release Phase 8 compatibility tests run through
-the Phase 9 verifier. All four Phase 9 route families declare the shared safe
+migration enables the `vector` PostgreSQL extension. The current reviewed head is
+`20260726_0013`; it follows Phase 9 head `20260724_0010`, the resume-ready closure
+at `20260726_0011`, and the two durable export closure migrations. Migration
+lifecycle, rollback/forward-repair, and compatibility tests run through their
+owning phase verifiers. All four Phase 9 route families declare the shared safe
 `413` streamed-body response and a typed `429` collection-quota response. Their
 domain handlers keep quota exhaustion distinct from validation, version, and
 idempotency conflicts.

@@ -1,7 +1,7 @@
 # CareerOS architecture
 
 Status: accepted target architecture; Phases 8 and 9 complete and hosted verified
-Last reviewed: 2026-07-25
+Last reviewed: 2026-07-27
 
 ## Architectural objective
 
@@ -106,6 +106,19 @@ The root uv workspace contains `apps/api`, `apps/worker`, and
 backend. The backend imports neither application, and the worker never imports
 the API. Container build contexts must include the root workspace while runtime
 images remain independently deployable.
+
+HTTP delivery adapters are co-located by bounded context under
+`apps/api/src/careeros_api/modules/<bounded_context>`. Routes, schemas,
+presenters, feature dependencies, and feature-specific problem translation stay
+together. Only concrete cross-cutting composition, configuration, middleware,
+cookie/signal policy, shared problems, and the root router remain at the API
+package root. Celery registration follows the same ownership under
+`apps/worker/src/careeros_worker/tasks/<bounded_context>.py`; stable task names,
+identifier-only payloads, queues, retry policy, and runtime ports do not depend on
+source-file location. `tasks/contracts.py` owns result-only adapter shapes and
+`tasks/execution.py` owns bounded maintenance validation and delivery fencing.
+Executable repository checks reject a return to flat feature adapters or a
+monolithic task module.
 
 Within `packages/backend/src/careeros`, stable domain-independent primitives live
 under `foundation`. Each product capability is added under `modules/<feature>`

@@ -204,6 +204,18 @@ async function createGroundedApplication(
   await select(page.getByLabel("Proficiency (optional)"), "advanced");
   await activate(page.getByRole("button", { name: "Save skill" }), keyboard);
   await expect(page.getByText("Skill saved.")).toBeVisible();
+  const skillRecord = page
+    .getByRole("listitem")
+    .filter({ hasText: fictional.skill });
+  await activate(
+    skillRecord.getByRole("button", { name: "Confirm", exact: true }),
+    keyboard,
+  );
+  await expect(
+    page.getByText(
+      "Skill confirmed. Its current value is eligible for grounded downstream use.",
+    ),
+  ).toBeVisible();
 
   await activate(
     page.getByRole("button", { name: "Add experience" }),
@@ -371,7 +383,7 @@ async function exerciseInterviewPrep(page: Page, keyboard: boolean) {
   await page.goto("/interview-prep");
   await expect(
     page.getByRole("heading", {
-      name: "Defend every important resume claim",
+      name: "Interview Prep",
     }),
   ).toBeVisible();
   await select(page.getByLabel("Application context"), { index: 1 });
@@ -850,7 +862,7 @@ async function exerciseCareerGrowth(
   await page.goto("/career-growth");
   await expect(
     page.getByRole("heading", {
-      name: "Turn career maintenance into a steady practice",
+      name: "Career Growth",
     }),
   ).toBeVisible();
   await expect(
@@ -1098,7 +1110,7 @@ async function exerciseCareerGrowth(
 async function exerciseAnalytics(page: Page, keyboard: boolean) {
   await page.goto("/analytics");
   await expect(
-    page.getByRole("heading", { name: "Inspect observed career patterns" }),
+    page.getByRole("heading", { name: "Career Analytics" }),
   ).toBeVisible();
   await expect(page.getByTestId("non-causal-interpretation")).toHaveText(
     nonCausalInterpretation,

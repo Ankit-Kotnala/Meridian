@@ -20,8 +20,14 @@ function headers(version?: number, idempotencyKey?: string): HeadersInit {
   };
 }
 
-async function query(path: Parameters<typeof apiQuery>[0]) {
-  return apiQuery(path, { retryAfterRefresh: true });
+async function query(
+  path: Parameters<typeof apiQuery>[0],
+  signal?: AbortSignal,
+) {
+  return apiQuery(path, {
+    retryAfterRefresh: true,
+    ...(signal ? { signal } : {}),
+  });
 }
 
 async function mutate(
@@ -99,6 +105,56 @@ export async function exportVersion(
     },
   );
   return (await response.json()) as ResumeExportRecord;
+}
+
+export async function getExport(
+  exportId: string,
+  signal?: AbortSignal,
+): Promise<ResumeExportRecord> {
+  const response = await query(resumeBuilderPaths.export(exportId), signal);
+  return (await response.json()) as ResumeExportRecord;
+}
+
+const processingExportStatuses: ReadonlySet<
+  ResumeExportRecord["export"]["status"]
+> = new Set(["pending", "rendering", "retry_wait"]);
+
+function wait(delay: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(signal.reason);
+      return;
+    }
+    const onAbort = () => {
+      window.clearTimeout(timer);
+      reject(signal?.reason);
+    };
+    const timer = window.setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, delay);
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+export async function waitForExportCompletion(
+  initial: ResumeExportRecord,
+  signal?: AbortSignal,
+): Promise<ResumeExportRecord> {
+  let record = initial;
+  const deadline = Date.now() + 60_000;
+  let pollCount = 0;
+  while (processingExportStatuses.has(record.export.status)) {
+    if (Date.now() >= deadline) {
+      throw new Error("The export did not reach a terminal state in time.");
+    }
+    if (pollCount > 0) {
+      await wait(Math.min(2_000, 500 + pollCount * 250), signal);
+    }
+    record = await getExport(record.export.id, signal);
+    pollCount += 1;
+  }
+  return record;
 }
 
 export async function createDownloadIntent(

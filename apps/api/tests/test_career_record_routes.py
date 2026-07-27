@@ -33,9 +33,9 @@ from careeros.modules.identity.domain.errors import AuthenticationRequired
 from careeros.modules.resume_health.application import ResumeHealthService
 from fastapi.testclient import TestClient
 
-from careeros_api.career_record_routes import _matches_accepted_proposal
 from careeros_api.config import Settings
 from careeros_api.main import create_app
+from careeros_api.modules.career_record.routes import _matches_accepted_proposal
 from conftest import FakeDatabase
 
 # Reuse the backend's protocol-complete test adapter without shipping it in the

@@ -138,6 +138,52 @@ for (const sourceRoot of sourceRoots) {
   }
 }
 
+const apiRoot = "apps/api/src/careeros_api";
+for (const absolute of await filesBelow(apiRoot)) {
+  const path = portable(relative(root, absolute));
+  const relativeApiPath = path.slice(apiRoot.length + 1);
+  if (
+    !relativeApiPath.includes("/") &&
+    /_(dependencies|presenters|routes|schemas)\.py$/.test(relativeApiPath)
+  ) {
+    violations.push(
+      `${path}: feature delivery adapters belong in modules/<bounded_context>`,
+    );
+  }
+}
+
+const requiredWorkerTaskModules = [
+  "career_analytics.py",
+  "career_record.py",
+  "health.py",
+  "networking.py",
+  "resume_builder.py",
+  "resume_health.py",
+];
+for (const filename of requiredWorkerTaskModules) {
+  const path = resolve(root, "apps/worker/src/careeros_worker/tasks", filename);
+  try {
+    if (!(await stat(path)).isFile()) throw new Error("not a file");
+  } catch {
+    violations.push(
+      `apps/worker/src/careeros_worker/tasks/${filename}: required bounded task module is missing`,
+    );
+  }
+}
+try {
+  if (
+    (
+      await stat(resolve(root, "apps/worker/src/careeros_worker/tasks.py"))
+    ).isFile()
+  ) {
+    violations.push(
+      "apps/worker/src/careeros_worker/tasks.py: monolithic task module is forbidden",
+    );
+  }
+} catch {
+  // The expected normalized state has no flat task module.
+}
+
 if (violations.length > 0) {
   console.error(
     "Repository boundary violations:\n" +

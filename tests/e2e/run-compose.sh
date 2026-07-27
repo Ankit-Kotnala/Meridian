@@ -12,7 +12,7 @@ case "$project_name" in
 esac
 
 verification_phase=${CAREEROS_E2E_PHASE:-1}
-expected_migration_head=${CAREEROS_EXPECTED_MIGRATION_HEAD:-20260726_0011}
+expected_migration_head=${CAREEROS_EXPECTED_MIGRATION_HEAD:-20260726_0013}
 case "$verification_phase" in
   1)
     rollback_revision=20260714_0001

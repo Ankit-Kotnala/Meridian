@@ -32,8 +32,8 @@ from careeros.modules.interview_prep.domain import (
 from fastapi import APIRouter, Depends, Header, Query, Response, status
 
 from careeros_api.conditional_requests import parse_if_match_version
-from careeros_api.identity_dependencies import current_principal, require_authenticated_csrf
-from careeros_api.identity_schemas import ProblemResponse
+from careeros_api.modules.identity.dependencies import current_principal, require_authenticated_csrf
+from careeros_api.modules.identity.schemas import ProblemResponse
 
 from .dependencies import interview_prep_request_context, interview_prep_service
 from .presenters import (

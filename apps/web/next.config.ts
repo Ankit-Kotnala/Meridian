@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { resolve } from "node:path";
 
 const developmentScriptPolicy =
   process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : "";
@@ -54,8 +55,12 @@ const securityHeaders = [
   },
 ];
 
+const workspaceRoot = resolve(import.meta.dirname, "../..");
+
 const nextConfig: NextConfig = {
   output: "standalone",
+  outputFileTracingRoot: workspaceRoot,
+  turbopack: { root: workspaceRoot },
   poweredByHeader: false,
   reactStrictMode: true,
   transpilePackages: ["@careeros/ui"],

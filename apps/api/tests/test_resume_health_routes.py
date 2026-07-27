@@ -45,7 +45,7 @@ from pydantic import SecretStr
 from careeros_api.config import Settings
 from careeros_api.constants import SCORING_DISCLAIMER
 from careeros_api.main import create_app
-from careeros_api.resume_health_schemas import ResumeHealthComponentResponse
+from careeros_api.modules.resume_health.schemas import ResumeHealthComponentResponse
 from conftest import FakeDatabase
 
 _ORIGIN = "http://localhost:3000"

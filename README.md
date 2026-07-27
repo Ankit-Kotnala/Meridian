@@ -52,8 +52,8 @@ architecture documents.
 ```text
 apps/
   web/                 Next.js application
-  api/                 Thin FastAPI delivery application
-  worker/              Thin Celery delivery application
+  api/                 Thin FastAPI delivery; feature adapters under modules/
+  worker/              Thin Celery delivery; task adapters under tasks/
 packages/
   backend/             Shared Python foundation and phase-owned modules
   contracts/           OpenAPI artifact, generated schema, typed client wrapper
@@ -64,7 +64,7 @@ packages/
   test-fixtures/       Explicitly fictional fixtures
 docs/                  Product, architecture, security, API, and ADRs
 infra/                 Implemented local container infrastructure
-scripts/               Repository automation
+scripts/               Cross-platform local and repository automation
 ```
 
 ## Prerequisites
@@ -97,14 +97,15 @@ Native PowerShell setup and start:
 
 ```powershell
 .\scripts\setup.ps1
-docker compose up --build
+pnpm local:up
+pnpm local:smoke
 ```
 
 `make setup` installs or prepares pinned dependencies and initializes the local
-environment. `make dev` starts the Compose stack. It stays attached unless the
-Make target documents otherwise; `docker compose up --build` has the same attached
-runtime behavior on the PowerShell path. Use a second terminal for probes and
-checks. Both setup paths create `.env` from `.env.example` when it is absent.
+environment. `make dev` retains the attached Compose workflow. `pnpm local:up`
+provides the cross-platform detached workflow and waits for service health, so the
+same terminal can run probes and tests. Both setup paths create `.env` from
+`.env.example` when it is absent.
 Local values in `.env.example` are development-only and must never be reused in a
 shared or production environment.
 
@@ -296,10 +297,10 @@ Stop services without deleting volumes:
 make stop
 ```
 
-PowerShell equivalent:
+Cross-platform equivalent:
 
 ```powershell
-docker compose down --remove-orphans
+pnpm local:down
 ```
 
 `make reset-db` is destructive to local development data. Inspect the target and
@@ -307,8 +308,25 @@ make a backup before running it; never use it against shared or production data.
 
 ## Development commands
 
-Run `make help` for the authoritative target list. The intended stable interface
-is:
+The fastest cross-platform workflows are:
+
+```sh
+pnpm local:up              # full Docker stack, detached and health-checked
+pnpm dev:web               # backend containers plus Next.js hot reload
+pnpm dev:api               # dependency containers plus FastAPI hot reload
+pnpm dev:worker            # dependency containers plus a host Celery worker
+pnpm local:rebuild:web     # rebuild only the containerized UI
+pnpm local:rebuild:backend # rebuild only API/worker/scheduler images
+pnpm local:status          # inspect Compose state
+pnpm local:logs -- api     # follow one service
+pnpm local:smoke           # probe web, API, and Mailpit
+pnpm local:down            # stop without deleting volumes
+```
+
+See [Local development](docs/local-development.md) for the repository map,
+focused tests, simultaneous API/worker workflow, and Docker rebuild guidance.
+Run `make help` for the equivalent Make targets and the complete verification
+surface. The intended stable interface is:
 
 ```sh
 make setup            # prepare pinned dependencies and local configuration
@@ -516,6 +534,7 @@ Read [AGENTS.md](AGENTS.md) before contributing. The principal references are:
 
 - [Documentation index](docs/README.md)
 - [Architecture](docs/architecture.md)
+- [Local development](docs/local-development.md)
 - [Product requirements](docs/product-requirements.md)
 - [Product design system](docs/product-design-system.md)
 - [Visual QA matrix](docs/visual-qa-matrix.md)

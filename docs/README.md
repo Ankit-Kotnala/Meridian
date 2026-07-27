@@ -9,6 +9,7 @@ implemented merely because it is documented.
 ## Start here
 
 - [Repository plan and current status](../PLANS.md)
+- [Local development and repository map](local-development.md)
 - [Architecture](architecture.md)
 - [Product requirements](product-requirements.md)
 - [Product design system](product-design-system.md)

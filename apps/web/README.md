@@ -9,13 +9,18 @@ isolated fictional product preview.
 Run these from the repository root:
 
 ```bash
-pnpm --filter @careeros/web dev
+pnpm dev:web       # backend containers plus Next.js hot reload
+pnpm test:web      # focused web tests
 pnpm --filter @careeros/web lint
 pnpm --filter @careeros/web typecheck
-pnpm --filter @careeros/web test
 pnpm --filter @careeros/web build
 pnpm --filter @careeros/web test:e2e
 ```
+
+Product behavior lives under `src/modules/<feature>`; App Router files remain
+thin delivery shells. Reusable application-neutral components belong in
+`packages/ui`. See `docs/local-development.md` for the complete repository map,
+Docker rebuild rules, and full-stack workflows.
 
 The health endpoint is `GET /api/health`. Public auth routes include `/register`,
 `/verify-email`, `/login`, `/forgot-password`, `/reset-password`, and

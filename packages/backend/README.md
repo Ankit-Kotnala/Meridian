@@ -36,9 +36,10 @@ Database upgrades require `CAREEROS_DATABASE_URL` (or the compatibility alias
 uv run --package careeros-backend alembic -c packages/backend/alembic.ini upgrade head
 ```
 
-The current head, `20260724_0010`, adds Phase 9 Interview Prep, Networking,
-Career Growth, and Career Analytics persistence after Phase 8 head
-`20260724_0009`. It includes explicit ownership, composite parent constraints,
+Phase 9 migration `20260724_0010` adds Interview Prep, Networking, Career Growth,
+and Career Analytics persistence after Phase 8 head `20260724_0009`. The current
+reviewed head is `20260726_0013` after the resume-ready and durable export
+closure migrations. Phase 9 includes explicit ownership, composite parent constraints,
 exact evidence revision/hash provenance, immutable review/score snapshots,
 third-party contact-consent history, parent-and-child withdrawal tombstones,
 bounded CRM collections, trace-bound local reminder state, and durable
