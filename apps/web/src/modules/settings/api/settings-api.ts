@@ -15,6 +15,12 @@ export type SecurityActivity =
   components["schemas"]["SecurityActivityResponse"];
 export type SettingsCapabilities =
   components["schemas"]["SettingsCapabilitiesResponse"];
+export type AccountOperation =
+  components["schemas"]["AccountOperationResponse"];
+export type AccountOperationCreated =
+  components["schemas"]["AccountOperationCreatedResponse"];
+export type AccountExportDownload =
+  components["schemas"]["AccountExportDownloadResponse"];
 
 function record(value: unknown): Record<string, unknown> {
   if (typeof value !== "object" || value === null)
@@ -258,4 +264,161 @@ export async function updateReminderPreferences(
     { csrf: "session" },
   );
   return parseReminderPreferences(await response.json());
+}
+const activeAccountOperationStatuses = new Set<AccountOperation["status"]>([
+  "queued",
+  "running",
+  "retryWait",
+]);
+
+function parseAccountOperation(value: unknown): AccountOperation {
+  const candidate = record(value);
+  if (
+    typeof candidate.id !== "string" ||
+    !["export", "deletion"].includes(String(candidate.kind)) ||
+    ![
+      "queued",
+      "running",
+      "retryWait",
+      "succeeded",
+      "blocked",
+      "deadLettered",
+      "expired",
+    ].includes(String(candidate.status)) ||
+    typeof candidate.attempts !== "number" ||
+    typeof candidate.maxAttempts !== "number" ||
+    typeof candidate.requestedAt !== "string" ||
+    typeof candidate.updatedAt !== "string"
+  ) {
+    throw new Error("Invalid account operation response.");
+  }
+  return candidate as unknown as AccountOperation;
+}
+
+function parseAccountOperationCreated(value: unknown): AccountOperationCreated {
+  const operation = parseAccountOperation(value);
+  const candidate = record(value);
+  if (
+    typeof candidate.operationToken !== "string" ||
+    candidate.operationToken.length < 80
+  ) {
+    throw new Error("Invalid account operation capability.");
+  }
+  return { ...operation, operationToken: candidate.operationToken };
+}
+
+function operationHeaders(operationToken: string): HeadersInit {
+  return { "X-Account-Operation-Token": operationToken };
+}
+
+export async function requestAccountExport(
+  idempotencyKey: string,
+): Promise<AccountOperationCreated> {
+  const response = await apiMutation(
+    "/api/v1/account-exports",
+    {
+      method: "POST",
+      headers: { "Idempotency-Key": idempotencyKey },
+    },
+    { csrf: "session" },
+  );
+  return parseAccountOperationCreated(await response.json());
+}
+
+export async function requestAccountDeletion(
+  idempotencyKey: string,
+): Promise<AccountOperationCreated> {
+  const response = await apiMutation(
+    "/api/v1/account-deletions",
+    {
+      method: "POST",
+      headers: { "Idempotency-Key": idempotencyKey },
+    },
+    { csrf: "session" },
+  );
+  return parseAccountOperationCreated(await response.json());
+}
+
+export async function getAccountOperation(
+  operationId: string,
+  operationToken: string,
+  signal?: AbortSignal,
+): Promise<AccountOperation> {
+  const response = await apiQuery(
+    fillApiPath("/api/v1/account-operations/{operation_id}", {
+      operation_id: operationId,
+    }),
+    {
+      headers: operationHeaders(operationToken),
+      ...(signal ? { signal } : {}),
+    },
+  );
+  return parseAccountOperation(await response.json());
+}
+
+export async function createAccountExportDownload(
+  operationId: string,
+  operationToken: string,
+): Promise<AccountExportDownload> {
+  const response = await apiQuery(
+    fillApiPath("/api/v1/account-operations/{operation_id}/download", {
+      operation_id: operationId,
+    }),
+    { headers: operationHeaders(operationToken) },
+  );
+  const candidate = record(await response.json());
+  if (
+    typeof candidate.downloadUrl !== "string" ||
+    typeof candidate.expiresInSeconds !== "number"
+  ) {
+    throw new Error("Invalid account export download response.");
+  }
+  return candidate as unknown as AccountExportDownload;
+}
+
+type WaitForAccountOperationOptions = {
+  intervalMs?: number;
+  onUpdate?: (operation: AccountOperation) => void;
+  signal?: AbortSignal;
+  timeoutMs?: number;
+};
+
+function waitForDelay(milliseconds: number, signal?: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(signal.reason ?? new DOMException("Aborted", "AbortError"));
+      return;
+    }
+    const onAbort = () => {
+      window.clearTimeout(timeout);
+      reject(signal?.reason ?? new DOMException("Aborted", "AbortError"));
+    };
+    const timeout = window.setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, milliseconds);
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+export async function waitForAccountOperation(
+  initial: AccountOperationCreated,
+  options: WaitForAccountOperationOptions = {},
+): Promise<AccountOperation> {
+  const intervalMs = options.intervalMs ?? 1_000;
+  const deadline = Date.now() + (options.timeoutMs ?? 120_000);
+  let current: AccountOperation = initial;
+  options.onUpdate?.(current);
+
+  while (activeAccountOperationStatuses.has(current.status)) {
+    if (Date.now() >= deadline) return current;
+    await waitForDelay(intervalMs, options.signal);
+    current = await getAccountOperation(
+      current.id,
+      initial.operationToken,
+      options.signal,
+    );
+    options.onUpdate?.(current);
+  }
+  return current;
 }

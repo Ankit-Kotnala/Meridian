@@ -12,6 +12,7 @@ const REQUEST_HEADERS = new Set([
   "traceparent",
   "tracestate",
   "user-agent",
+  "x-account-operation-token",
   "x-csrf-token",
   "x-guest-csrf",
   "x-request-id",
