@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@careeros/design-tokens": "workspace:*",
-    "lucide-react": "1.24.0"
+    "lucide-react": "1.27.0"
   },
   "peerDependencies": {
     "react": "^19.2.7",
@@ -36,10 +36,10 @@
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "eslint": "9.39.1",
-    "eslint-config-next": "16.2.11",
+    "eslint-config-next": "16.2.12",
     "jsdom": "29.1.1",
-    "react": "19.2.7",
-    "react-dom": "19.2.7",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
     "typescript": "5.9.3",
     "vitest": "4.1.10"
   }
