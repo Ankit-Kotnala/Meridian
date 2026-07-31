@@ -455,6 +455,11 @@ class SqlAlchemyIdentityUnitOfWork:
             )
         )
 
+    async def delete_user(self, user_id: UUID) -> bool:
+        result = await self.session.execute(delete(UserModel).where(UserModel.id == user_id))
+        await self._flush()
+        return bool(getattr(result, "rowcount", 0) > 0)
+
     async def commit(self) -> None:
         try:
             await self.session.commit()

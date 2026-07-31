@@ -8,7 +8,9 @@ from fastapi import APIRouter, Request, Response, status
 
 from careeros_api.config import Settings
 from careeros_api.constants import SCORING_DISCLAIMER
+from careeros_api.modules.admin import router as admin_router
 from careeros_api.modules.application_workspace.routes import router as application_workspace_router
+from careeros_api.modules.billing.routes import router as billing_router
 from careeros_api.modules.career_analytics.routes import router as career_analytics_router
 from careeros_api.modules.career_growth import router as career_growth_router
 from careeros_api.modules.career_record.routes import router as career_record_router
@@ -41,6 +43,8 @@ router.include_router(interview_prep_router)
 router.include_router(networking_router)
 router.include_router(career_growth_router)
 router.include_router(career_analytics_router)
+router.include_router(billing_router)
+router.include_router(admin_router)
 
 
 def _settings(request: Request) -> Settings:
