@@ -1,6 +1,7 @@
 """SQLAlchemy repository implementation for plans & billing."""
 
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select
@@ -119,7 +120,9 @@ class SqlAlchemyBillingRepository(BillingRepositoryPort):
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none() is not None
 
-    async def record_webhook_event(self, event_id: str, event_type: str, payload: dict) -> None:
+    async def record_webhook_event(
+        self, event_id: str, event_type: str, payload: dict[str, Any]
+    ) -> None:
         model = BillingWebhookEventModel(
             event_id=event_id,
             event_type=event_type,
