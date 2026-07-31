@@ -24,9 +24,16 @@ def upgrade() -> None:
         "subscriptions",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, nullable=False),
         sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=False, unique=True),
-        sa.Column("tier", sa.String(length=32), nullable=False, server_default="free"),
-        sa.Column("status", sa.String(length=32), nullable=False, server_default="active"),
-        sa.Column("billing_cycle", sa.String(length=32), nullable=False, server_default="monthly"),
+        sa.Column("tier", sa.String(length=32), nullable=False, server_default=sa.text("'free'")),
+        sa.Column(
+            "status", sa.String(length=32), nullable=False, server_default=sa.text("'active'")
+        ),
+        sa.Column(
+            "billing_cycle",
+            sa.String(length=32),
+            nullable=False,
+            server_default=sa.text("'monthly'"),
+        ),
         sa.Column("stripe_customer_id", sa.String(length=255), nullable=True),
         sa.Column("stripe_subscription_id", sa.String(length=255), nullable=True),
         sa.Column("current_period_start", sa.DateTime(timezone=True), nullable=False),
@@ -56,9 +63,9 @@ def upgrade() -> None:
         "usage_quotas",
         sa.Column("user_id", postgresql.UUID(as_uuid=True), primary_key=True, nullable=False),
         sa.Column("period_start", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("resumes_count", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("change_sets_used", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("exports_used", sa.Integer(), nullable=False, server_default="0"),
+        sa.Column("resumes_count", sa.Integer(), nullable=False, server_default=sa.text("0")),
+        sa.Column("change_sets_used", sa.Integer(), nullable=False, server_default=sa.text("0")),
+        sa.Column("exports_used", sa.Integer(), nullable=False, server_default=sa.text("0")),
     )
 
     op.create_table(
