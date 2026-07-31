@@ -92,7 +92,7 @@ x-app-environment: &app-environment
 
 services:
   postgres:
-    image: pgvector/pgvector:pg17@sha256:d2ef61f42ef767baa5a1475393303cc235bcd92febd9d7014eddb48b41f3bad0
+    image: pgvector/pgvector:pg17@sha256:7ae6051efd0e60444282c27c7e141af07f322ce033300e727a49c3dd11075e38
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-careeros}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-local-only}
@@ -110,7 +110,7 @@ services:
     networks: [backend, host-services]
 
   redis:
-    image: redis:8.2-alpine@sha256:223b183cbc49f5ff48728e1fc52ccf101f05072decad2bd9867281a3c9bf75fd
+    image: redis:8.2-alpine
     command: ["redis-server", "--appendonly", "yes", "--save", "60", "1"]
     ports:
       - "127.0.0.1:${REDIS_PORT:-6379}:6379"
@@ -125,7 +125,7 @@ services:
     networks: [backend, host-services]
 
   minio:
-    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z@sha256:a1ea29fa28355559ef137d71fc570e508a214ec84ff8083e39bc5428980b015e
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-careeros-local}
@@ -145,7 +145,7 @@ services:
     networks: [backend, host-services]
 
   minio-init:
-    image: quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z@sha256:aead63c77f9db9107f1696fb08ecb0faeda23729cde94b0f663edf4fe09728e3
+    image: quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z
     depends_on:
       minio:
         condition: service_healthy
@@ -412,7 +412,7 @@ services:
     networks: [edge]
 
   mailpit:
-    image: axllent/mailpit:v1.30.0@sha256:0059ef81e492a7192af3816281eed6859eb078bd7bdc58b76757c13e10e53a7d
+    image: axllent/mailpit:v1.30.0
     user: "65532:65532"
     cap_drop: ["ALL"]
     security_opt: ["no-new-privileges:true"]
@@ -432,7 +432,8 @@ services:
     networks: [edge]
 
   clamav:
-    image: clamav/clamav:1.4_base@sha256:d54ef59d5d07ff243c669789f51e0c3d9dfa9945f62b515be84febe8e1db0dbf
+    platform: linux/amd64
+    image: clamav/clamav:1.4_base
     volumes:
       - clamav-data:/var/lib/clamav
     ports:
