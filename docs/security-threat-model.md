@@ -911,6 +911,142 @@ administrator sensitive actions, and deletion/retention failures.
 These checks are regression gates; a later failure reopens the affected phase in
 `PLANS.md`.
 
+## Phase 10 commercial boundary
+
+- [x] Plan rows cannot contain inferred pricing, entitlements, or quotas while
+      configuration is owner-decision-required; active pricing is complete or
+      rejected by domain and database constraints.
+- [x] Checkout and portal are owner scoped, CSRF protected, idempotent, and
+      restricted to allowlisted return origins. Provider session URLs must be
+      HTTPS, uncredentialed, unfragmented, and unexpired.
+- [x] Billing webhooks consume bounded raw bytes, require provider authentication,
+      persist an event ID plus SHA-256, reject identifier/content collisions,
+      replay exact events, and ignore older provider sequence values without
+      reverting subscription state.
+- [x] Provider customer references are mapped through durable owner state and are
+      never treated as bearer authority. Cross-user reads return not found.
+- [x] Commercial audit excludes raw payloads, provider customer/subscription
+      references, email, career content, credentials, and return URLs.
+- [x] Production composition is disabled until provider, merchant, tax, pricing,
+      entitlement, quota, regional, and legal decisions are reviewed. The
+      deterministic HMAC provider is test-only.
+
+Residual risk: a selected payment provider requires a provider-specific signature
+and event-semantics assessment, credential/key-rotation runbook, outage and
+reconciliation alerts, regional/privacy review, and contract tests before
+production enablement. ADR 0019 does not approve live billing.
+
+## Phase 10 organization tenancy boundary
+
+- [x] Organization authority is derived from active durable membership; a route
+      identifier, header, invitation identifier, grant identifier, or billing
+      reference is never bearer authority.
+- [x] Owner/admin/coach/member capabilities are server mapped and rechecked.
+      Coaches and members see only their own roster entry, suspended memberships
+      have no capabilities, and owner suspension is rejected.
+- [x] Invitation creation is CSRF protected and idempotent. API responses exclude
+      email and token material; the database stores the normalized delivery
+      address, keyed email digest, and only a keyed token digest after delivery.
+- [x] Acceptance requires the exact active account email, token digest, invitation
+      status, expiry, and organization. Rejection responses do not reveal whether
+      the mailbox, account, invitation, or membership exists.
+- [x] Delegated grants permit only named summary/collaboration scopes, expire,
+      revoke with optimistic concurrency, and recheck subject/grantee active
+      membership and coach/admin role for every authorization decision.
+- [x] Partial unique indexes close concurrent duplicate open-invitation and active
+      grant races. Audit contains identifiers and allowlisted role/scope labels,
+      never mailbox, raw token, resume/evidence content, or object references.
+
+- [x] Invitation delivery uses bounded `SKIP LOCKED` claims, unexpired UUID
+      fencing, deterministic context-separated credentials, bounded SMTP timeouts
+      and batches, exponential retry, terminal cancellation/dead-letter, and
+      redacted operational-only telemetry. Production rejects the local secret,
+      local/non-TLS SMTP, local sender, and local/non-HTTPS public origin.
+
+Residual risk: invitation email remains personal data required for delivery and
+must follow the retention/deletion inventory in Phase 10E. SMTP is at-least-once:
+an ambiguous acknowledgement can resend the same credential, but cannot mint a
+second credential or bypass exact-email/status/expiry/digest acceptance. A live
+provider and its credential-rotation/runbook review remain deployment decisions.
+
+## Phase 10 account privacy boundary
+
+- [x] Export/deletion requests are authenticated, CSRF protected, idempotent,
+      and traceable. Deletion requires recent authentication, disables the
+      account, increments auth authority, revokes sessions/refresh tokens, and
+      expires browser cookies before asynchronous erasure.
+- [x] Operation status and download use a context-separated high-entropy
+      capability whose digest is stored. UUID knowledge is not authority; raw
+      capabilities and signed URLs are excluded from logs and persistence.
+- [x] Export fails closed on any unclassified direct user-linked table, excludes
+      auth secrets/internal queue and object-key metadata/other tenants, and
+      packages bounded structured records and files with SHA-256 manifest data.
+- [x] Erasure inventories known PostgreSQL/S3 references, deletes objects before
+      the user row, redacts prior export download metadata, retries idempotently,
+      and retains only capability-scoped terminal operational state.
+- [x] Sole active organization owners and accounts with billing-customer records
+      block rather than bypass ownership or retention obligations. Blocked
+      accounts are restored and receive a stable safe reason.
+- [x] Export artifacts default to 24-hour retention and cleanup deletes the
+      object before redacting metadata. Production fails closed on disabled
+      privacy providers, local capability secrets, or insecure storage.
+
+Residual risk: primary-store deletion does not imply immediate removal from
+backups, provider systems, mail delivery infrastructure, or legally retained
+billing records. Phase 10H must set and verify backup expiry/restore behavior,
+provider erasure runbooks, alert ownership, and accurate user-facing deletion
+windows. Billing deletion remains blocked until a live provider/legal policy is
+approved.
+
+## Phase 10 protected administration boundary
+
+- [x] No account receives platform authority by default, email domain,
+      organization role, deployment environment, or frontend visibility.
+- [x] Persisted roles map to explicit capabilities and are checked for every
+      request. No HTTP endpoint can grant or revoke platform authority.
+- [x] Protected reads require a purpose reason and emit an audit event. Mutations
+      additionally require CSRF, recent authentication, and idempotency.
+- [x] Operational payloads exclude raw resumes, evidence, notes, job text, email,
+      tokens, provider responses, signed URLs, and object keys.
+- [x] Manual recovery is an allowlist with live-tested state transitions and one
+      successful retry budget per target. Unsupported job types fail closed.
+- [x] Audit events use serialized sequence allocation, previous/event hashes,
+      and a context-separated HMAC actor reference that survives user erasure.
+      A verification endpoint is limited to security auditors.
+- [x] The dedicated audit pepper rejects the local default in production and is
+      independent from session and account-operation secrets.
+
+Residual risk: database-superuser mutation cannot be prevented by application
+code, only detected by the chain. Phase 10H must export audit evidence to a
+protected retention destination, define operator provisioning/review/offboarding,
+and assign alert/on-call ownership. MFA remains an explicit owner decision;
+recent authentication is enforced for the current mutation surface.
+
+## Phase 10G request, AI-cost, edge, parser, and rotation controls
+
+- Every `/api/v1` request receives a coarse read/mutation admission check. The
+  source is a BFF-authenticated socket-peer pseudonym rather than a user-selected
+  forwarding header; staging and production fail closed without that authority
+  or Redis.
+- Live AI requires an owner, explicit per-call reservations, monthly token and
+  cost ceilings, request rate, concurrency, and a lease. Redis admits all values
+  atomically. Missing or invalid provider usage retains worst-case cost and fails
+  safely instead of undercounting.
+- API and web-edge responses overwrite upstream security policy. HSTS is enabled
+  only behind reviewed TLS termination. The current Next.js CSP still needs
+  framework-required inline script/style support; script attributes, third-party
+  origins, framing, objects, and unlisted connections remain blocked.
+- Resume and evidence-attachment parser children receive no application
+  credentials and cannot use standard-library sockets or spawn another process.
+  Timeouts terminate and reap the child, and temporary files are always bounded
+  and cleaned.
+- Bearer/signing rotation accepts one explicit previous secret while issuing only
+  under the current secret. The previous value is removed only after the owning
+  maximum lifetime. AI-usage and audit-pseudonym peppers require a drain or
+  retention-boundary runbook rather than blind dual-key rotation.
+- Automated adversarial and configuration tests are recorded in `PLANS.md`. They
+  do not substitute for an independent production-topology penetration review.
+
 ## Incident and recovery expectations
 
 Phase 10 must document owners and playbooks for credential/session compromise,
@@ -923,6 +1059,19 @@ audit preservation, affected-user assessment, and legally appropriate notice.
 Backup is not complete until a restore into an isolated environment verifies
 integrity, ownership, migrations, object references, and documented RPO/RTO.
 
+Phase 10H implements a provider-neutral, fail-closed production handoff. CI emits
+image SBOMs and the manually triggered release workflow binds candidate archives
+to checksums and GitHub artifact attestations. A protected environment supplies
+a strict deployment contract containing no credentials; placeholders, missing
+evidence, open critical/high findings, or mismatched artifacts are rejected.
+
+The local restore and load gates reduce implementation risk but do not satisfy
+production backup durability, data residency, trusted-hop policy, alert routing,
+operator MFA, WORM audit retention, independent penetration review, or provider
+erasure. Those remain explicit production blockers. Speculative provider
+infrastructure is prohibited until the owner approves the topology and data
+boundary.
+
 ## Open decisions and residual risks
 
 - Production region, data residency, account/backup retention durations, RPO/RTO,
@@ -931,14 +1080,14 @@ integrity, ownership, migrations, object references, and documented RPO/RTO.
   are Phase 2/3 local/initial adapters, not a production provider decision.
 - No application sandbox fully eliminates parser zero-day risk; isolation,
   patching, corpus testing, and kill switches remain necessary.
-- Resume Health parsing now uses a killable, reaped child process with bounded
-  request/result contracts, temporary-workspace cleanup, and POSIX resource
-  limits. Evidence-attachment and trusted CareerOS-created export extraction
-  still use the local `asyncio.to_thread` adapter; cancelling those awaits does
-  not forcibly terminate the underlying Python thread. Celery task limits and
-  the non-root, read-only, CPU/memory/PID-bounded, no-edge-network worker
-  constrain impact, but those remaining paths require a reviewed isolation
-  decision before production exposure to untrusted files.
+- Resume Health and evidence-attachment parsing use killable, reaped child
+  processes with bounded request/result contracts, credential-free environments,
+  temporary-workspace cleanup, descriptor closure, standard-library egress denial,
+  and POSIX resource limits where supported. Trusted CareerOS-created export
+  round-trip validation retains its local adapter because it consumes only bytes
+  emitted by the product renderer. Python audit hooks and container controls are
+  defense in depth rather than a kernel security boundary; production parser-host
+  isolation, patch ownership, monitoring, and a kill switch remain required.
 - Semantic grounding cannot perfectly detect meaning drift. High-risk claims,
   numbers, leadership, and ownership require stricter deterministic checks and
   user confirmation.
@@ -960,9 +1109,9 @@ integrity, ownership, migrations, object references, and documented RPO/RTO.
   integration point. Live Google credentials and production SMTP delivery were
   not part of the local gate, so provider enablement requires a separate
   configuration and contract review.
-- Account export/deletion orchestration and final retention periods remain later
-  phase work; Phase 1 consent/audit, Phase 2 document deletion, and Phase 3
-  evidence/attachment deletion do not substitute for account-wide erasure.
+- Account export and primary PostgreSQL/S3 erasure are now durable and verified.
+  Backup expiry, provider erasure, legally retained billing records, and exact
+  user-facing deletion windows remain production policy and operations work.
 - OCR is an explicit optional port but no Phase 2/3 OCR adapter is enabled.
   Image-only resumes therefore return parser warning/insufficient data, and image
   content in evidence attachments is not promoted into claim text.

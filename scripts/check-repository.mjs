@@ -156,7 +156,9 @@ const requiredWorkerTaskModules = [
   "career_analytics.py",
   "career_record.py",
   "health.py",
+  "identity.py",
   "networking.py",
+  "organizations.py",
   "resume_builder.py",
   "resume_health.py",
 ];

@@ -12,10 +12,15 @@ from .career_record import (
     reconcile_evidence_attachment_jobs,
 )
 from .health import PING_TASK_NAME, ping
+from .identity import (
+    cleanup_expired_account_exports,
+    process_account_privacy_operations,
+)
 from .networking import (
     process_networking_local_reminders,
     reconcile_networking_local_reminders,
 )
+from .organizations import deliver_organization_invitations
 from .resume_builder import (
     dispatch_resume_builder_export_outbox,
     process_resume_builder_export,
@@ -31,12 +36,15 @@ from .resume_health import (
 __all__ = [
     "PING_TASK_NAME",
     "cleanup_evidence_attachment_objects",
+    "cleanup_expired_account_exports",
     "cleanup_expired_resume_health_data",
+    "deliver_organization_invitations",
     "dispatch_career_analytics_refresh_outbox",
     "dispatch_evidence_attachment_outbox",
     "dispatch_resume_builder_export_outbox",
     "dispatch_resume_health_outbox",
     "ping",
+    "process_account_privacy_operations",
     "process_career_analytics_refresh",
     "process_evidence_attachment",
     "process_networking_local_reminders",

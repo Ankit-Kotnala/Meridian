@@ -3,7 +3,11 @@
 from typing import Annotated, Any, Literal, cast
 from uuid import UUID
 
-from careeros.modules.identity.application import IdentityService
+from careeros.modules.identity.application import (
+    AccountOperationsService,
+    AccountOperationView,
+    IdentityService,
+)
 from careeros.modules.identity.application.models import (
     ConsentView,
     CurrentUser,
@@ -12,13 +16,19 @@ from careeros.modules.identity.application.models import (
     SessionSummary,
 )
 from careeros.modules.identity.domain import (
+    AccountOperationKind,
+    AccountOperationStatus,
     AuthenticatedPrincipal,
     ConsentDecision,
     ObservedResumeStatus,
     OnboardingStatus,
     OnboardingStep,
 )
-from careeros.modules.identity.domain.errors import AuthenticationRequired, OAuthFlowRejected
+from careeros.modules.identity.domain.errors import (
+    AuthenticationRequired,
+    IdentityUnavailable,
+    OAuthFlowRejected,
+)
 from fastapi import APIRouter, Cookie, Depends, Header, Query, Request, Response, status
 from fastapi.responses import RedirectResponse
 
@@ -34,6 +44,7 @@ from careeros_api.cookies import (
 )
 from careeros_api.modules.identity.dependencies import (
     REFRESH_COOKIE,
+    account_operations_service,
     current_principal,
     identity_service,
     optional_principal,
@@ -43,6 +54,9 @@ from careeros_api.modules.identity.dependencies import (
     secrets_equal,
 )
 from careeros_api.modules.identity.schemas import (
+    AccountExportDownloadResponse,
+    AccountOperationCreatedResponse,
+    AccountOperationResponse,
     AuthResponse,
     ChangePasswordRequest,
     ConsentListResponse,
@@ -534,6 +548,108 @@ async def record_consent(
     return _consent(item)
 
 
+@router.post(
+    "/account-exports",
+    response_model=AccountOperationCreatedResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    operation_id="accountExportRequest",
+    responses=_PROBLEMS,
+)
+async def request_account_export(
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
+    service: Annotated[AccountOperationsService, Depends(account_operations_service)],
+    context: Annotated[RequestContext, Depends(request_context)],
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=8, max_length=128),
+    ],
+) -> AccountOperationCreatedResponse:
+    view = await service.request_export(
+        principal,
+        idempotency_key=idempotency_key,
+        context=context,
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return _created_account_operation(view)
+
+
+@router.post(
+    "/account-deletions",
+    response_model=AccountOperationCreatedResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    operation_id="accountDeletionRequest",
+    responses=_PROBLEMS,
+)
+async def request_account_deletion(
+    request: Request,
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
+    service: Annotated[AccountOperationsService, Depends(account_operations_service)],
+    context: Annotated[RequestContext, Depends(request_context)],
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=8, max_length=128),
+    ],
+) -> AccountOperationCreatedResponse:
+    view = await service.request_deletion(
+        principal,
+        idempotency_key=idempotency_key,
+        context=context,
+    )
+    clear_session_cookies(response, _settings(request))
+    response.headers["Cache-Control"] = "no-store"
+    return _created_account_operation(view)
+
+
+@router.get(
+    "/account-operations/{operation_id}",
+    response_model=AccountOperationResponse,
+    operation_id="accountOperationGet",
+    responses=_PROBLEMS,
+)
+async def get_account_operation(
+    operation_id: UUID,
+    response: Response,
+    service: Annotated[AccountOperationsService, Depends(account_operations_service)],
+    operation_token: Annotated[
+        str,
+        Header(alias="X-Account-Operation-Token", min_length=80, max_length=128),
+    ],
+) -> AccountOperationResponse:
+    view = await service.get_status(operation_id, operation_token)
+    response.headers["Cache-Control"] = "no-store"
+    return _account_operation(view)
+
+
+@router.get(
+    "/account-operations/{operation_id}/download",
+    response_model=AccountExportDownloadResponse,
+    operation_id="accountExportDownload",
+    responses=_PROBLEMS,
+)
+async def create_account_export_download(
+    operation_id: UUID,
+    response: Response,
+    service: Annotated[AccountOperationsService, Depends(account_operations_service)],
+    operation_token: Annotated[
+        str,
+        Header(alias="X-Account-Operation-Token", min_length=80, max_length=128),
+    ],
+) -> AccountExportDownloadResponse:
+    expires_in_seconds = 120
+    download_url = await service.create_download_url(
+        operation_id,
+        operation_token,
+        expires_in_seconds=expires_in_seconds,
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return AccountExportDownloadResponse(
+        download_url=download_url,
+        expires_in_seconds=expires_in_seconds,
+    )
+
+
 @router.get(
     "/settings",
     response_model=SettingsCapabilitiesResponse,
@@ -592,6 +708,64 @@ async def list_security_activity(
 
 def _settings(request: Request) -> Settings:
     return cast(Settings, request.app.state.settings)
+
+
+def _account_operation(view: AccountOperationView) -> AccountOperationResponse:
+    operation = view.operation
+    kind: Literal["export", "deletion"] = (
+        "export" if operation.kind is AccountOperationKind.EXPORT else "deletion"
+    )
+    return AccountOperationResponse(
+        id=operation.id,
+        kind=kind,
+        status=_to_wire_account_operation_status(operation.status),
+        attempts=operation.attempts,
+        max_attempts=operation.max_attempts,
+        requested_at=operation.requested_at,
+        updated_at=operation.updated_at,
+        completed_at=operation.completed_at,
+        blocked_reason=operation.blocked_reason,
+        artifact_sha256=operation.artifact_sha256,
+        artifact_size_bytes=operation.artifact_size_bytes,
+        artifact_expires_at=operation.artifact_expires_at,
+    )
+
+
+def _created_account_operation(
+    view: AccountOperationView,
+) -> AccountOperationCreatedResponse:
+    if view.operation_token is None:
+        raise IdentityUnavailable
+    return AccountOperationCreatedResponse(
+        **_account_operation(view).model_dump(),
+        operation_token=view.operation_token,
+    )
+
+
+def _to_wire_account_operation_status(
+    value: AccountOperationStatus,
+) -> Literal[
+    "queued",
+    "running",
+    "retryWait",
+    "succeeded",
+    "blocked",
+    "deadLettered",
+    "expired",
+]:
+    if value is AccountOperationStatus.RETRY_WAIT:
+        return "retryWait"
+    if value is AccountOperationStatus.DEAD_LETTERED:
+        return "deadLettered"
+    if value is AccountOperationStatus.QUEUED:
+        return "queued"
+    if value is AccountOperationStatus.RUNNING:
+        return "running"
+    if value is AccountOperationStatus.SUCCEEDED:
+        return "succeeded"
+    if value is AccountOperationStatus.BLOCKED:
+        return "blocked"
+    return "expired"
 
 
 def _me(user: CurrentUser) -> MeResponse:

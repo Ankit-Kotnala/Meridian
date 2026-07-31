@@ -50,6 +50,33 @@ describe("API proxy request forwarding", () => {
     );
   });
 
+  it("forwards only the explicit account-operation capability header", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+    const capability = `00000000-0000-4000-8000-000000000911.${"t".repeat(43)}`;
+
+    await proxyApiRequest(
+      new Request(
+        "http://localhost/api/v1/account-operations/00000000-0000-4000-8000-000000000911",
+        {
+          headers: {
+            "x-account-operation-token": capability,
+            "x-private-client-data": "must-not-leave-the-web-tier",
+          },
+        },
+      ),
+      {
+        params: Promise.resolve({
+          path: ["account-operations", "00000000-0000-4000-8000-000000000911"],
+        }),
+      },
+    );
+
+    const [, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    const headers = new Headers(init.headers);
+    expect(headers.get("x-account-operation-token")).toBe(capability);
+    expect(headers.has("x-private-client-data")).toBe(false);
+  });
   it("canonicalizes equivalent IPv6 edge values into one abuse-control key", async () => {
     const signals: string[] = [];
     const fetchMock = vi.fn().mockImplementation((_url, init: RequestInit) => {

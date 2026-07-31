@@ -965,17 +965,35 @@ idempotency. Data export/deletion will be tracked async operations covering
 relational, object, vector, cache, provider, and documented backup-lifecycle
 behavior.
 
-### Phase 10 planned API — Billing and administration
+### Phase 10 API — Billing
 
-The endpoints in this subsection are design targets only. They are not
-implemented or present in the current OpenAPI contract.
+The commercial catalog and subscription boundary is implemented:
 
 ```text
 GET    /api/v1/plans
 GET    /api/v1/subscription
 POST   /api/v1/subscription/checkout
 POST   /api/v1/subscription/portal
+POST   /api/v1/subscription/reconcile
 POST   /api/v1/webhooks/billing/{provider}
+```
+
+Plans are server-owned and remain `owner_decision_required` with no inferred
+prices, entitlements, or quotas until reviewed product-owner configuration is
+persisted. Checkout, portal, and reconciliation require an authenticated owner,
+CSRF, and bounded inputs; checkout and portal also require an idempotency key.
+Return URLs use an exact origin allowlist. Webhooks authenticate the raw bytes,
+persist the provider event identifier and payload hash, replay exactly once,
+retain stale events without reverting state, and never log provider payloads or
+customer references. Production composition remains disabled until a payment
+provider is selected; the deterministic signed provider is test-only. See ADR 0019.
+
+### Phase 10 planned API — Administration
+
+The following endpoints remain design targets and are not present in the current
+OpenAPI contract:
+
+```text
 GET    /api/v1/admin/system-health
 GET    /api/v1/admin/processing-jobs
 POST   /api/v1/admin/processing-jobs/{jobId}/retry
@@ -988,10 +1006,8 @@ GET    /api/v1/admin/templates
 PATCH  /api/v1/admin/templates/{templateId}
 ```
 
-When implemented, webhook endpoints will authenticate the raw provider payload
-and use provider event ID plus request hash for idempotency. Admin retry will be
-allowed only for classified safe states and will not bypass tenant ownership or
-duplicate side effects.
+Admin retry will be allowed only for classified safe states and will not bypass
+tenant ownership or duplicate side effects.
 
 ## Score response requirements
 
@@ -1203,3 +1219,19 @@ skips while the Phase 9 desktop/mobile journeys both passed. The separate
 security scan also passed. PR #22 workflow run `30161489265` passed every
 required hosted job at implementation/merge head `1454792`. Exact authoritative
 evidence and residual findings are recorded in `PLANS.md`.
+
+## Phase 10G platform admission and live-AI usage contract
+
+All `/api/v1` reads and mutations are admitted through separate coarse platform
+buckets before route handling. In staging and production, a missing/invalid
+BFF-signed source or unavailable limiter fails closed. Feature-specific limits
+continue to apply after platform admission. Rate rejection uses the standard
+problem schema, HTTP 429, a bounded `Retry-After`, and no owner, quota, token,
+cost, provider, or internal key metadata.
+
+The live Change Studio HTTP provider is unavailable unless explicit monthly token
+and cost ceilings plus per-call reservations are configured. Provider responses
+must include bounded `promptTokens`, `completionTokens`, and `costMicros` usage;
+missing or excessive usage fails without returning model output. API responses
+receive no-store and deny-by-default browser policy headers, while the public web
+edge owns the Next.js-compatible CSP and optional TLS-only HSTS policy.

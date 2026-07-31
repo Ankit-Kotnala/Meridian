@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from careeros.foundation.sandbox import install_parser_egress_guard
 from careeros.modules.resume_health.application.models import DocumentLimits, ExtractionResult
 from careeros.modules.resume_health.domain.errors import UnsafeDocument
 
@@ -25,6 +26,7 @@ def main() -> int:
             return 2
         limits = _limits_from_dict(request["limits"])
         _apply_resource_limits(limits)
+        install_parser_egress_guard()
         source_path = Path(str(request["sourcePath"])).resolve(strict=True)
         temp_root = limits.temp_root.resolve(strict=True)
         if source_path != temp_root and temp_root not in source_path.parents:

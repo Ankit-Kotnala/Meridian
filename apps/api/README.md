@@ -42,8 +42,10 @@ the metadata endpoint.
 
 Alembic uses the same validated database setting as the API. The initial
 migration enables the `vector` PostgreSQL extension. The current reviewed head is
-`20260726_0013`; it follows Phase 9 head `20260724_0010`, the resume-ready closure
-at `20260726_0011`, and the two durable export closure migrations. Migration
+`20260727_0019`; it follows Phase 9, resume-ready, durable export, commercial,
+organization, durable invitation, account-privacy, and protected-administration
+migrations. Release gates assert this exact head and prove downgrade/forward
+repair through `20260727_0018`. Migration
 lifecycle, rollback/forward-repair, and compatibility tests run through their
 owning phase verifiers. All four Phase 9 route families declare the shared safe
 `413` streamed-body response and a typed `429` collection-quota response. Their

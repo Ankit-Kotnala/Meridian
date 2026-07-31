@@ -11,6 +11,14 @@ class ChangeStudioUnavailable(ChangeStudioError):
     code = "change_studio_unavailable"
 
 
+class ChangeStudioRateLimited(ChangeStudioError):
+    code = "change_studio_rate_limited"
+
+    def __init__(self, retry_after_seconds: int) -> None:
+        super().__init__(self.code)
+        self.retry_after_seconds = max(1, retry_after_seconds)
+
+
 class ChangeStudioNotFound(ChangeStudioError):
     code = "change_studio_not_found"
 

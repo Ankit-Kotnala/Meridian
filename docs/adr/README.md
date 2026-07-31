@@ -25,6 +25,13 @@ status; consult `PLANS.md` for current behavior.
 | [0015](0015-phase9-interview-networking-growth-analytics.md)          | Phase 9 grounded interview, consent CRM, Career Health, and private analytics        | Accepted                               |
 | [0016](0016-phase2-semantic-resume-and-parser-isolation.md)           | Source-anchored semantic resumes, typed review, and killable parser isolation        | Accepted                               |
 | [0018](0018-phase10-fictional-local-seed.md)                          | Production-guarded, idempotent fictional local database/object seed                  | Accepted                               |
+| [0019](0019-phase10-commercial-billing-foundation.md)                 | Fail-closed plans, subscriptions, checkout, and ordered signed billing events        | Accepted                               |
+| [0020](0020-phase10-organization-tenancy-and-delegated-access.md)     | Durable tenant roles, safe invitations, and explicit revocable summary grants        | Accepted                               |
+| [0021](0021-phase10-durable-background-workflows.md)                  | Phase-owned durable workflows and fenced invitation delivery                         | Accepted                               |
+| [0022](0022-phase10-account-privacy-operations.md)                    | Durable classified account export, primary-store erasure, and retained capability    | Accepted                               |
+| [0023](0023-phase10-protected-administration.md)                      | Persisted least-privilege operators, redacted recovery, and hash-chained audit       | Accepted                               |
+| [0024](0024-phase10-security-and-ai-usage-hardening.md)               | Central request admission, atomic AI budgets, parser isolation, and key rotation     | Accepted                               |
+| [0025](0025-phase10-provider-neutral-release-handoff.md)              | Provider-neutral release evidence, recovery proof, and protected handoff             | Accepted                               |
 
 ## Lifecycle
 

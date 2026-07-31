@@ -9,6 +9,7 @@ from .attachment_storage import (
     AttachmentS3Options,
 )
 from .identifiers import UuidIdentifierFactory
+from .isolated_attachment_extractor import IsolatedAttachmentExtractor
 from .repository import SqlAlchemyCareerRecordUnitOfWorkFactory
 from .resume_health_source import ResumeHealthSourceQuery
 
@@ -20,6 +21,7 @@ __all__ = [
     "AttachmentS3ObjectStorage",
     "AttachmentS3Options",
     "BoundedAttachmentExtractor",
+    "IsolatedAttachmentExtractor",
     "ResumeHealthSourceQuery",
     "SqlAlchemyAttachmentUnitOfWorkFactory",
     "SqlAlchemyCareerRecordUnitOfWorkFactory",

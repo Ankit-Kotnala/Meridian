@@ -17,6 +17,7 @@ implemented merely because it is documented.
 - [API conventions and route plan](api.md)
 - [Implementation checklist](implementation-checklist.md)
 - [Testing strategy](testing-strategy.md)
+- [Production release and recovery operations](production-operations.md)
 
 ## Trust, safety, and product integrity
 

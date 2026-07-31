@@ -11,8 +11,15 @@ from .providers import (
     HttpJsonSuggestionProvider,
 )
 from .repository import SqlAlchemyChangeStudioUnitOfWorkFactory
+from .usage import (
+    AiUsagePolicy,
+    BudgetedSuggestionProvider,
+    RedisAiUsageStore,
+)
 
 __all__ = [
+    "AiUsagePolicy",
+    "BudgetedSuggestionProvider",
     "CareerRecordChangeStudioEvidenceProvider",
     "CircuitBreakingSuggestionProvider",
     "DeterministicSuggestionProvider",
@@ -20,6 +27,7 @@ __all__ = [
     "HttpJsonProviderOptions",
     "HttpJsonSuggestionProvider",
     "JobMatchChangeStudioAnalysisProvider",
+    "RedisAiUsageStore",
     "SqlAlchemyChangeStudioUnitOfWorkFactory",
     "SystemClock",
     "UuidIdentifierFactory",

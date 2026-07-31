@@ -76,3 +76,24 @@ class NetworkingReminderTaskResult(TypedDict):
 class NetworkingReminderRecoveryTaskResult(TypedDict):
     recovered: int
     dead_lettered: int
+
+
+class OrganizationInvitationTaskResult(TypedDict):
+    claimed: int
+    delivered: int
+    cancelled: int
+    deferred: int
+    dead_lettered: int
+
+
+class AccountPrivacyTaskResult(TypedDict):
+    claimed: int
+    succeeded: int
+    blocked: int
+    deferred: int
+    dead_lettered: int
+
+
+class AccountExportCleanupTaskResult(TypedDict):
+    completed: int
+    failed: int

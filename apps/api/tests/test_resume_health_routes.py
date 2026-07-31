@@ -228,6 +228,7 @@ def test_guest_upload_issues_http_only_capability_and_scoped_intent() -> None:
 def test_staging_guest_admission_requires_a_bff_authenticated_client_signal() -> None:
     identity = _identity()
     resume = _resume()
+    request_limiter = create_autospec(RedisSecurityStore, instance=True)
     now = datetime(2026, 7, 15, 12, 0, tzinfo=UTC)
     guest_id = uuid4()
     key_material = "staging-bff-signal-secret-that-is-at-least-32-bytes"
@@ -265,9 +266,14 @@ def test_staging_guest_admission_requires_a_bff_authenticated_client_signal() ->
             database=FakeDatabase(),
             identity=identity,
             resume_health=resume,
+            request_limiter=request_limiter,
         )
     ) as client:
-        csrf = client.get("/api/v1/auth/csrf").json()["csrfToken"]
+        signal = _bff_client_signal("203.0.113.42", key_material)
+        csrf = client.get(
+            "/api/v1/auth/csrf",
+            headers={"X-CareerOS-Client-Signal": signal},
+        ).json()["csrfToken"]
         headers = {"Origin": _ORIGIN, "X-CSRF-Token": csrf}
         missing = client.post("/api/v1/guest/uploads/presign", json=payload, headers=headers)
         forged = client.post(
@@ -285,7 +291,7 @@ def test_staging_guest_admission_requires_a_bff_authenticated_client_signal() ->
             json=payload,
             headers={
                 **headers,
-                "X-CareerOS-Client-Signal": _bff_client_signal("203.0.113.42", key_material),
+                "X-CareerOS-Client-Signal": signal,
             },
         )
 

@@ -10,6 +10,20 @@ from careeros.foundation.database import Database, ReadinessProbe
 from careeros.foundation.observability import configure_logging
 from careeros.integrations.email import DisabledEmailSender, SmtpEmailSender, SmtpOptions
 from careeros.integrations.oauth import GoogleOAuthOptions, GoogleOAuthProvider
+from careeros.integrations.privacy import PostgresS3AccountPrivacyStore
+from careeros.modules.administration.application import (
+    AdministrationPolicy,
+    AdministrationService,
+)
+from careeros.modules.administration.infrastructure import (
+    SqlAlchemyAdministrationUnitOfWorkFactory,
+)
+from careeros.modules.administration.infrastructure import (
+    SystemClock as AdministrationClock,
+)
+from careeros.modules.administration.infrastructure import (
+    UuidIdentifierFactory as AdministrationUuidFactory,
+)
 from careeros.modules.application_workspace.application import (
     ApplicationWorkspaceService,
     ApplicationWorkspaceUnitOfWorkFactory,
@@ -71,6 +85,8 @@ from careeros.modules.career_record.infrastructure import (
 )
 from careeros.modules.change_studio.application import ChangeStudioService, SuggestionProvider
 from careeros.modules.change_studio.infrastructure import (
+    AiUsagePolicy,
+    BudgetedSuggestionProvider,
     CareerRecordChangeStudioEvidenceProvider,
     CircuitBreakingSuggestionProvider,
     DeterministicSuggestionProvider,
@@ -78,6 +94,7 @@ from careeros.modules.change_studio.infrastructure import (
     HttpJsonProviderOptions,
     HttpJsonSuggestionProvider,
     JobMatchChangeStudioAnalysisProvider,
+    RedisAiUsageStore,
     SqlAlchemyChangeStudioUnitOfWorkFactory,
 )
 from careeros.modules.change_studio.infrastructure import (
@@ -86,12 +103,35 @@ from careeros.modules.change_studio.infrastructure import (
 from careeros.modules.change_studio.infrastructure import (
     UuidIdentifierFactory as ChangeStudioUuidFactory,
 )
-from careeros.modules.identity.application import IdentityService
+from careeros.modules.commercial.application import CommercialService
+from careeros.modules.commercial.infrastructure import (
+    DisabledBillingProvider,
+    SqlAlchemyCommercialUnitOfWorkFactory,
+)
+from careeros.modules.commercial.infrastructure import SystemClock as CommercialClock
+from careeros.modules.commercial.infrastructure import (
+    UuidIdentifierFactory as CommercialUuidFactory,
+)
+from careeros.modules.identity.application import (
+    AccountOperationsPolicy,
+    AccountOperationsService,
+    IdentityService,
+)
 from careeros.modules.identity.application.ports import (
     GoogleOAuthProvider as GoogleOAuthProviderPort,
 )
 from careeros.modules.identity.application.service import IdentityPolicy
+from careeros.modules.identity.infrastructure.account_operation_repository import (
+    SqlAlchemyAccountOperationsUnitOfWorkFactory,
+)
+from careeros.modules.identity.infrastructure.account_operation_security import (
+    HmacAccountOperationTokenManager,
+    UuidAccountOperationIdentifierFactory,
+)
 from careeros.modules.identity.infrastructure.fakes import DisabledGoogleOAuthProvider
+from careeros.modules.identity.infrastructure.organization_directory import (
+    IdentityOrganizationAccountDirectory,
+)
 from careeros.modules.identity.infrastructure.redis_security import RedisSecurityStore
 from careeros.modules.identity.infrastructure.repository import (
     SqlAlchemyIdentityUnitOfWorkFactory,
@@ -135,6 +175,15 @@ from careeros.modules.networking.infrastructure import (
 from careeros.modules.networking.infrastructure import SystemClock as NetworkingClock
 from careeros.modules.networking.infrastructure import (
     UuidIdentifierFactory as NetworkingUuidFactory,
+)
+from careeros.modules.organizations.application import OrganizationService
+from careeros.modules.organizations.infrastructure import (
+    HmacOrganizationInvitationManager,
+    SqlAlchemyOrganizationUnitOfWorkFactory,
+)
+from careeros.modules.organizations.infrastructure import SystemClock as OrganizationClock
+from careeros.modules.organizations.infrastructure import (
+    UuidIdentifierFactory as OrganizationUuidFactory,
 )
 from careeros.modules.resume_builder.application import ResumeBuilderPolicy, ResumeBuilderService
 from careeros.modules.resume_builder.infrastructure import (
@@ -181,25 +230,48 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from careeros_api.config import Settings, get_settings
-from careeros_api.middleware import RequestBodyLimitMiddleware, install_request_context_middleware
+from careeros_api.middleware import (
+    RequestBodyLimitMiddleware,
+    ResponseSecurityHeadersMiddleware,
+    install_request_context_middleware,
+)
+from careeros_api.modules.administration.problems import (
+    install_administration_problem_handler,
+)
 from careeros_api.modules.career_growth import install_career_growth_problem_handler
+from careeros_api.modules.commercial.problems import install_commercial_problem_handler
 from careeros_api.modules.interview_prep import install_interview_prep_problem_handler
+from careeros_api.modules.organizations.problems import install_organization_problem_handler
 from careeros_api.problems import install_problem_handlers
 from careeros_api.routes import router
 
 logger = structlog.get_logger(__name__)
 
 
-def _change_studio_provider(settings: Settings) -> SuggestionProvider:
+def _change_studio_provider(
+    settings: Settings, usage_store: RedisAiUsageStore | None
+) -> SuggestionProvider:
     if settings.ai_provider == "disabled":
         return DisabledSuggestionProvider()
     if settings.ai_provider == "deterministic":
         return DeterministicSuggestionProvider()
     endpoint = settings.ai_http_endpoint_url
     api_key = settings.ai_http_api_key
-    if endpoint is None or api_key is None:
+    token_limit = settings.ai_monthly_token_limit
+    cost_limit = settings.ai_monthly_cost_limit_micros
+    reservation_tokens = settings.ai_reservation_tokens
+    reservation_cost = settings.ai_reservation_cost_micros
+    if (
+        endpoint is None
+        or api_key is None
+        or usage_store is None
+        or token_limit is None
+        or cost_limit is None
+        or reservation_tokens is None
+        or reservation_cost is None
+    ):
         raise RuntimeError("validated AI HTTP provider configuration is unavailable")
-    return CircuitBreakingSuggestionProvider(
+    provider = CircuitBreakingSuggestionProvider(
         HttpJsonSuggestionProvider(
             HttpJsonProviderOptions(
                 endpoint_url=endpoint,
@@ -212,6 +284,34 @@ def _change_studio_provider(settings: Settings) -> SuggestionProvider:
         failure_threshold=settings.ai_circuit_failure_threshold,
         cooldown_seconds=settings.ai_circuit_cooldown_seconds,
     )
+    return BudgetedSuggestionProvider(
+        provider,
+        usage_store,
+        AiUsagePolicy(
+            requests_per_window=settings.ai_requests_per_window,
+            request_window_seconds=settings.ai_request_window_seconds,
+            maximum_concurrency=settings.ai_maximum_concurrency,
+            monthly_token_limit=token_limit,
+            monthly_cost_limit_micros=cost_limit,
+            reservation_tokens=reservation_tokens,
+            reservation_cost_micros=reservation_cost,
+            lease_seconds=settings.ai_usage_lease_seconds,
+        ),
+    )
+
+
+def _private_export_storage(settings: Settings) -> ResumeExportS3Storage:
+    return ResumeExportS3Storage(
+        ResumeExportS3Options(
+            internal_endpoint_url=settings.s3_endpoint_url,
+            public_endpoint_url=settings.s3_public_endpoint_url,
+            region=settings.s3_region,
+            bucket=settings.s3_bucket,
+            access_key_id=settings.s3_access_key_id,
+            secret_access_key=settings.s3_secret_access_key.get_secret_value(),
+            use_ssl=settings.s3_use_ssl,
+        )
+    )
 
 
 def create_app(
@@ -219,7 +319,10 @@ def create_app(
     *,
     database: ReadinessProbe | None = None,
     identity: IdentityService | None = None,
+    account_operations: AccountOperationsService | None = None,
     security_store: RedisSecurityStore | None = None,
+    request_limiter: RedisSecurityStore | None = None,
+    ai_usage_store: RedisAiUsageStore | None = None,
     email_sender: SmtpEmailSender | DisabledEmailSender | None = None,
     resume_health: ResumeHealthService | None = None,
     resume_dispatcher: OutboxDispatcher | None = None,
@@ -236,6 +339,9 @@ def create_app(
     networking: NetworkingService | None = None,
     career_growth: CareerGrowthService | None = None,
     career_analytics: CareerAnalyticsService | None = None,
+    commercial: CommercialService | None = None,
+    organizations: OrganizationService | None = None,
+    administration: AdministrationService | None = None,
 ) -> FastAPI:
     """Build an application; injectable dependencies keep tests infrastructure-free."""
     resolved_settings = settings or get_settings()
@@ -253,8 +359,11 @@ def create_app(
             )
         )
         resolved_security_store = security_store
+        resolved_request_limiter = request_limiter
+        resolved_ai_usage_store = ai_usage_store
         resolved_email_sender = email_sender
         resolved_identity = identity
+        resolved_account_operations = account_operations
         resolved_resume_health = resume_health
         resolved_resume_dispatcher = resume_dispatcher
         resolved_resume_storage = resume_storage
@@ -270,7 +379,22 @@ def create_app(
         resolved_networking = networking
         resolved_career_growth = career_growth
         resolved_career_analytics = career_analytics
+        resolved_commercial = commercial
+        resolved_organizations = organizations
+        resolved_administration = administration
         resolved_resume_builder_storage: ResumeExportS3Storage | None = None
+        resolved_privacy_storage: ResumeExportS3Storage | None = None
+
+        if resolved_request_limiter is None and isinstance(resolved_database, Database):
+            request_limit_redis = Redis.from_url(
+                resolved_settings.redis_url.get_secret_value(),
+                decode_responses=False,
+            )
+            resolved_request_limiter = RedisSecurityStore(
+                request_limit_redis,
+                "careeros:platform",
+                resolved_settings.auth_token_pepper.get_secret_value(),
+            )
 
         if resolved_identity is None and isinstance(resolved_database, Database):
             pepper = resolved_settings.auth_token_pepper.get_secret_value()
@@ -319,7 +443,14 @@ def create_app(
                 unit_of_work=SqlAlchemyIdentityUnitOfWorkFactory(resolved_database),
                 clock=SystemClock(),
                 passwords=Argon2PasswordHasher(),
-                tokens=HmacTokenManager(pepper),
+                tokens=HmacTokenManager(
+                    pepper,
+                    (
+                        resolved_settings.auth_token_previous_pepper.get_secret_value()
+                        if resolved_settings.auth_token_previous_pepper is not None
+                        else None
+                    ),
+                ),
                 emails=resolved_email_sender,
                 email_normalizer=NormalizedEmailValidator(),
                 limiter=resolved_security_store,
@@ -354,7 +485,12 @@ def create_app(
                 unit_of_work=resume_uow,
                 clock=resume_clock,
                 capabilities=HmacGuestCapabilityManager(
-                    resolved_settings.resume_capability_pepper.get_secret_value()
+                    resolved_settings.resume_capability_pepper.get_secret_value(),
+                    (
+                        resolved_settings.resume_capability_previous_pepper.get_secret_value()
+                        if resolved_settings.resume_capability_previous_pepper is not None
+                        else None
+                    ),
                 ),
                 storage=resolved_resume_storage,
                 limits=DocumentLimits(
@@ -471,30 +607,28 @@ def create_app(
                     raise RuntimeError(
                         "Change Studio requires Career Record and Job Match boundaries"
                     )
+                if resolved_settings.ai_provider == "http_json" and resolved_ai_usage_store is None:
+                    usage_redis = Redis.from_url(
+                        resolved_settings.redis_url.get_secret_value(),
+                        decode_responses=False,
+                    )
+                    resolved_ai_usage_store = RedisAiUsageStore(
+                        usage_redis,
+                        namespace="careeros:ai-usage",
+                        pepper=resolved_settings.ai_usage_pepper.get_secret_value(),
+                    )
                 resolved_change_studio = ChangeStudioService(
                     unit_of_work=SqlAlchemyChangeStudioUnitOfWorkFactory(resolved_database),
                     clock=ChangeStudioClock(),
                     identifiers=ChangeStudioUuidFactory(),
-                    provider=_change_studio_provider(resolved_settings),
+                    provider=_change_studio_provider(resolved_settings, resolved_ai_usage_store),
                     evidence=CareerRecordChangeStudioEvidenceProvider(resolved_career_record),
                     job_matches=JobMatchChangeStudioAnalysisProvider(resolved_job_match),
                 )
             if resolved_resume_builder is None:
                 if resolved_career_record is None:
                     raise RuntimeError("Resume Builder requires Career Record boundary")
-                resolved_resume_builder_storage = ResumeExportS3Storage(
-                    ResumeExportS3Options(
-                        internal_endpoint_url=resolved_settings.s3_endpoint_url,
-                        public_endpoint_url=resolved_settings.s3_public_endpoint_url,
-                        region=resolved_settings.s3_region,
-                        bucket=resolved_settings.s3_bucket,
-                        access_key_id=resolved_settings.s3_access_key_id,
-                        secret_access_key=(
-                            resolved_settings.s3_secret_access_key.get_secret_value()
-                        ),
-                        use_ssl=resolved_settings.s3_use_ssl,
-                    )
-                )
+                resolved_resume_builder_storage = _private_export_storage(resolved_settings)
                 resolved_resume_builder = ResumeBuilderService(
                     unit_of_work=SqlAlchemyResumeBuilderUnitOfWorkFactory(resolved_database),
                     clock=ResumeBuilderClock(),
@@ -591,10 +725,89 @@ def create_app(
                         max_attempts=resolved_settings.analytics_max_attempts,
                     ),
                 )
+            if resolved_commercial is None:
+                resolved_commercial = CommercialService(
+                    unit_of_work=SqlAlchemyCommercialUnitOfWorkFactory(resolved_database),
+                    clock=CommercialClock(),
+                    identifiers=CommercialUuidFactory(),
+                    billing=DisabledBillingProvider(),
+                    allowed_return_origins=frozenset(resolved_settings.allowed_origins),
+                )
+
+            if resolved_administration is None:
+                resolved_administration = AdministrationService(
+                    unit_of_work=SqlAlchemyAdministrationUnitOfWorkFactory(
+                        resolved_database,
+                        resolved_settings.admin_audit_pepper.get_secret_value(),
+                    ),
+                    clock=AdministrationClock(),
+                    identifiers=AdministrationUuidFactory(),
+                    policy=AdministrationPolicy(
+                        recent_auth_seconds=resolved_settings.recent_auth_ttl_seconds,
+                    ),
+                )
+
+            if resolved_organizations is None:
+                resolved_organizations = OrganizationService(
+                    unit_of_work=SqlAlchemyOrganizationUnitOfWorkFactory(resolved_database),
+                    clock=OrganizationClock(),
+                    identifiers=OrganizationUuidFactory(),
+                    accounts=IdentityOrganizationAccountDirectory(resolved_database),
+                    emails=NormalizedEmailValidator(),
+                    invitation_tokens=HmacOrganizationInvitationManager(
+                        resolved_settings.auth_token_pepper.get_secret_value(),
+                        (
+                            resolved_settings.auth_token_previous_pepper.get_secret_value()
+                            if resolved_settings.auth_token_previous_pepper is not None
+                            else None
+                        ),
+                    ),
+                )
+
+        if (
+            resolved_account_operations is None
+            and isinstance(resolved_database, Database)
+            and resolved_settings.account_export_provider == "local"
+        ):
+            privacy_storage = resolved_resume_builder_storage
+            if privacy_storage is None:
+                privacy_storage = _private_export_storage(resolved_settings)
+                resolved_privacy_storage = privacy_storage
+            resolved_account_operations = AccountOperationsService(
+                unit_of_work=SqlAlchemyAccountOperationsUnitOfWorkFactory(resolved_database),
+                clock=SystemClock(),
+                identifiers=UuidAccountOperationIdentifierFactory(),
+                tokens=HmacAccountOperationTokenManager(
+                    resolved_settings.account_operation_pepper.get_secret_value(),
+                    (
+                        resolved_settings.account_operation_previous_pepper.get_secret_value()
+                        if resolved_settings.account_operation_previous_pepper is not None
+                        else None
+                    ),
+                ),
+                privacy_store=PostgresS3AccountPrivacyStore(
+                    database=resolved_database,
+                    storage=privacy_storage,
+                    max_archive_bytes=(resolved_settings.account_export_max_archive_bytes),
+                    max_object_bytes=resolved_settings.account_export_max_object_bytes,
+                ),
+                policy=AccountOperationsPolicy(
+                    max_attempts=resolved_settings.account_operation_max_attempts,
+                    lease_seconds=resolved_settings.account_operation_lease_seconds,
+                    retry_base_seconds=(resolved_settings.account_operation_retry_seconds),
+                    recent_auth_seconds=resolved_settings.recent_auth_ttl_seconds,
+                    export_retention_seconds=(
+                        resolved_settings.account_export_retention_hours * 3_600
+                    ),
+                ),
+            )
 
         application.state.database = resolved_database
         application.state.identity_service = resolved_identity
+        application.state.account_operations_service = resolved_account_operations
         application.state.security_store = resolved_security_store
+        application.state.request_limiter = resolved_request_limiter
+        application.state.ai_usage_store = resolved_ai_usage_store
         application.state.resume_health_service = resolved_resume_health
         application.state.career_record_service = resolved_career_record
         application.state.role_readiness_service = resolved_role_readiness
@@ -606,11 +819,18 @@ def create_app(
         application.state.networking_service = resolved_networking
         application.state.career_growth_service = resolved_career_growth
         application.state.career_analytics_service = resolved_career_analytics
+        application.state.commercial_service = resolved_commercial
+        application.state.organization_service = resolved_organizations
+        application.state.administration_service = resolved_administration
         application.state.attachment_workflow_service = resolved_attachment_workflow
         application.state.resume_outbox_dispatcher = resolved_resume_dispatcher
         application.state.readiness_dependencies = {"database": resolved_database}
         if resolved_security_store is not None:
             application.state.readiness_dependencies["redis"] = resolved_security_store
+        if resolved_request_limiter is not None:
+            application.state.readiness_dependencies["requestLimit"] = resolved_request_limiter
+        if resolved_ai_usage_store is not None:
+            application.state.readiness_dependencies["aiUsage"] = resolved_ai_usage_store
         if resolved_email_sender is not None and resolved_settings.email_provider == "smtp":
             application.state.readiness_dependencies["email"] = resolved_email_sender
         if resolved_resume_storage is not None:
@@ -628,12 +848,18 @@ def create_app(
                 await resolved_email_sender.dispose()
             if resolved_security_store is not None:
                 await resolved_security_store.dispose()
+            if resolved_request_limiter is not None:
+                await resolved_request_limiter.dispose()
+            if resolved_ai_usage_store is not None:
+                await resolved_ai_usage_store.dispose()
             if resolved_resume_storage is not None:
                 await resolved_resume_storage.dispose()
             if resolved_attachment_storage is not None:
                 await resolved_attachment_storage.dispose()
             if resolved_resume_builder_storage is not None:
                 await resolved_resume_builder_storage.dispose()
+            if resolved_privacy_storage is not None:
+                await resolved_privacy_storage.dispose()
             await resolved_database.dispose()
             logger.info("api_stopped", service=resolved_settings.service_name)
 
@@ -666,6 +892,8 @@ def create_app(
             "If-Match",
             "Traceparent",
             "X-CSRF-Token",
+            "X-Account-Operation-Token",
+            "X-Admin-Reason",
             "X-Guest-CSRF",
             "X-Request-ID",
         ],
@@ -676,7 +904,11 @@ def create_app(
         max_body_bytes=resolved_settings.max_request_body_bytes,
     )
     install_request_context_middleware(application)
+    application.add_middleware(ResponseSecurityHeadersMiddleware)
     install_problem_handlers(application)
+    install_administration_problem_handler(application)
+    install_commercial_problem_handler(application)
+    install_organization_problem_handler(application)
     install_interview_prep_problem_handler(application)
     install_career_growth_problem_handler(application)
     application.include_router(router)

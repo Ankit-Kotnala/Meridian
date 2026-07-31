@@ -9,6 +9,9 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from careeros.foundation.config import database_url_from_environment
 from careeros.foundation.database import Base
+from careeros.modules.administration.infrastructure import (
+    models as administration_models,  # noqa: F401
+)
 from careeros.modules.application_workspace.infrastructure import (
     models as application_workspace_models,  # noqa: F401
 )
@@ -24,6 +27,7 @@ from careeros.modules.career_record.infrastructure import (
 from careeros.modules.change_studio.infrastructure import (
     models as change_studio_models,  # noqa: F401
 )
+from careeros.modules.commercial.infrastructure import models as commercial_models  # noqa: F401
 from careeros.modules.identity.infrastructure import models as identity_models  # noqa: F401
 from careeros.modules.interview_prep.infrastructure import (
     models as interview_prep_models,  # noqa: F401
@@ -31,6 +35,9 @@ from careeros.modules.interview_prep.infrastructure import (
 from careeros.modules.job_match.infrastructure import models as job_match_models  # noqa: F401
 from careeros.modules.networking.infrastructure import (
     models as networking_models,  # noqa: F401
+)
+from careeros.modules.organizations.infrastructure import (
+    models as organization_models,  # noqa: F401
 )
 from careeros.modules.resume_builder.infrastructure import (
     models as resume_builder_models,  # noqa: F401

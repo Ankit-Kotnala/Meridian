@@ -8,15 +8,18 @@ from fastapi import APIRouter, Request, Response, status
 
 from careeros_api.config import Settings
 from careeros_api.constants import SCORING_DISCLAIMER
+from careeros_api.modules.administration.routes import router as admin_router
 from careeros_api.modules.application_workspace.routes import router as application_workspace_router
 from careeros_api.modules.career_analytics.routes import router as career_analytics_router
 from careeros_api.modules.career_growth import router as career_growth_router
 from careeros_api.modules.career_record.routes import router as career_record_router
 from careeros_api.modules.change_studio.routes import router as change_studio_router
+from careeros_api.modules.commercial.routes import router as commercial_router
 from careeros_api.modules.identity.routes import router as identity_router
 from careeros_api.modules.interview_prep import router as interview_prep_router
 from careeros_api.modules.job_match.routes import router as job_match_router
 from careeros_api.modules.networking import router as networking_router
+from careeros_api.modules.organizations.routes import router as organization_router
 from careeros_api.modules.resume_builder.routes import router as resume_builder_router
 from careeros_api.modules.resume_health.routes import router as resume_health_router
 from careeros_api.modules.role_readiness.routes import router as role_readiness_router
@@ -29,6 +32,7 @@ from careeros_api.schemas import (
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
+router.include_router(admin_router)
 router.include_router(identity_router)
 router.include_router(resume_health_router)
 router.include_router(resume_builder_router)
@@ -41,6 +45,8 @@ router.include_router(interview_prep_router)
 router.include_router(networking_router)
 router.include_router(career_growth_router)
 router.include_router(career_analytics_router)
+router.include_router(commercial_router)
+router.include_router(organization_router)
 
 
 def _settings(request: Request) -> Settings:

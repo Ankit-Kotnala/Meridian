@@ -1,5 +1,10 @@
 """Framework-independent identity domain types."""
 
+from careeros.modules.identity.domain.account_operations import (
+    AccountOperation,
+    AccountOperationKind,
+    AccountOperationStatus,
+)
 from careeros.modules.identity.domain.entities import (
     AuditEvent,
     AuthenticatedPrincipal,
@@ -25,6 +30,9 @@ from careeros.modules.identity.domain.entities import (
 )
 
 __all__ = [
+    "AccountOperation",
+    "AccountOperationKind",
+    "AccountOperationStatus",
     "AuditEvent",
     "AuthMethod",
     "AuthenticatedPrincipal",

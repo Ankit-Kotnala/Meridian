@@ -562,29 +562,53 @@ Dependencies: all product phases and production/legal decisions.
       explicitly fictional, local-only database/object-store seed spanning
       Phases 1 through 9, guarded before I/O against non-development,
       nonlocal database/object targets, unexpected buckets, and schema drift.
-- [ ] Store Free/Sprint/Pro/Coach plan entitlements/quotas centrally; no scattered
+- [x] Store Free/Sprint/Pro/Coach plan entitlements/quotas centrally; no scattered
       prices. Implement billing adapter, checkout/portal, signed raw webhook validation,
       event idempotency/order/state, reconciliation, and test provider.
-- [ ] Build protected least-privilege admin system/job/dead-letter/safe retry,
+- [x] Extend the reserved organization layer with server-derived owner/admin/coach/
+      member capabilities, non-disclosing durable invitations, minimized rosters,
+      and explicit expiring/revocable summary grants; no implicit raw career-data
+      access and no synthetic organization for individual accounts.
+- [x] Close durable background workflows with phase-owned database state,
+      identifier-only task delivery, bounded leases/timeouts/retries/dead-letter,
+      reconciliation, redacted telemetry, and live PostgreSQL worker coverage;
+      organization invitations now use deterministic replay-safe credentials and
+      bounded SMTP composition.
+- [x] Build protected least-privilege admin system/job/dead-letter/safe retry,
       aggregate metrics, plans/flags, taxonomy/templates, redacted errors, and audit;
       no default unrestricted raw documents.
-- [ ] Complete data inventory, consent, user export, document/account deletion
-      across SQL/object/vector/cache/provider, backup expiry, status/retry, and tests.
-- [ ] Finalize rate/abuse/cost limits, security headers/CSP, session/MFA decision,
-      audit integrity, scanner/parser sandbox/egress, dependency/container/IaC/SBOM/
-      provenance, secret/key rotation, and penetration review.
-- [ ] Select production regions/services/queue/object/provider topology and add
-      approved ADRs, infrastructure, encrypted backup/PITR, tested restore, RPO/RTO,
-      monitoring/alerts/runbooks/on-call, capacity/load/soak/failure testing.
-- [ ] Add protected CI/CD environment, manual production approval, migration
-      preflight/rollback-forward repair, canary/rollback, and launch checklist.
+- [~] Complete data inventory, consent, user export, document/account deletion
+  across SQL/object/vector/cache/provider, backup expiry, status/retry, and tests.
+  Durable primary PostgreSQL/S3 export and erasure are verified. The Phase 10H
+  contract now requires backup-expiry, restore, and provider-erasure evidence;
+  the owner-approved retention policy and provider execution remain external gates.
+- [~] Finalize rate/abuse/cost limits, security headers/CSP, session/MFA decision,
+  audit integrity, scanner/parser sandbox/egress, dependency/container/IaC/SBOM/
+  provenance, secret/key rotation, and penetration review. Central API
+  admission, atomic live-AI reservations, API/edge headers, isolated resume/
+  attachment parsing, audit verification, and bounded dual-key bearer/signing
+  rotation, image SBOMs, provenance, and pinned CI supply-chain gates are
+  implemented and focused-verified. Provider IaC is intentionally absent until
+  topology approval; operator MFA and independent penetration review remain
+  explicit owner/external release gates.
+- [~] Select production regions/services/queue/object/provider topology and add
+  approved infrastructure, encrypted backup/PITR, RPO/RTO, monitoring/alerts,
+  and on-call. Provider-neutral contract/runbooks plus isolated local restore
+  and bounded load/soak proof are implemented; owner topology remains blocked.
+- [~] Add protected CI/CD environment, manual production approval, migration
+  preflight/rollback-forward repair, canary/rollback, and launch checklist.
+  The fail-closed workflow and contract are implemented; GitHub environment
+  reviewers/secret and provider deployment adapter require owner configuration.
 - [ ] Finalize legal terms/privacy/security/scoring/AI/public pricing content and
       remove or label all demo placeholders; verify no fabricated testimonial.
-- [ ] Run full format/lint/type/unit/component/integration/e2e/accessibility/
+- [x] Run full format/lint/type/unit/component/integration/e2e/accessibility/
       responsive/security/migration/container/load/restore suite and production build.
+      The cumulative local release-candidate gate is recorded in `PLANS.md`.
 
 Exit: no open critical security issue; webhooks/deletion/restore are tested;
 production build and full CI pass; deployment is protected and manually approved.
+Hosted PR CI and the owner-approved production handoff remain required before
+Phase 10 can satisfy this exit.
 
 ## Phase-close record template
 

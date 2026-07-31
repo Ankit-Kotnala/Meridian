@@ -40,6 +40,97 @@ class UserModel(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
+class AccountOperationModel(Base):
+    __tablename__ = "account_operations"
+    __table_args__ = (
+        CheckConstraint("kind IN ('export','deletion')", name="kind_valid"),
+        CheckConstraint(
+            "status IN ('queued','running','retry_wait','succeeded','blocked',"
+            "'dead_lettered','expired')",
+            name="status_valid",
+        ),
+        CheckConstraint(
+            "attempts BETWEEN 0 AND max_attempts AND max_attempts BETWEEN 1 AND 10",
+            name="attempts_valid",
+        ),
+        CheckConstraint(
+            "(lease_token IS NULL) = (lease_expires_at IS NULL)",
+            name="lease_pair_valid",
+        ),
+        CheckConstraint(
+            "(status = 'running') = (lease_token IS NOT NULL)",
+            name="running_lease_valid",
+        ),
+        CheckConstraint(
+            "num_nonnulls(artifact_object_key, artifact_sha256, artifact_size_bytes, "
+            "artifact_expires_at) IN (0, 4)",
+            name="artifact_metadata_valid",
+        ),
+        CheckConstraint(
+            "artifact_object_key IS NULL OR (kind = 'export' AND status = 'succeeded')",
+            name="artifact_state_valid",
+        ),
+        CheckConstraint(
+            "status <> 'expired' OR kind = 'export'",
+            name="expired_export_only",
+        ),
+        CheckConstraint(
+            "(blocked_reason IS NOT NULL) = (status = 'blocked')",
+            name="blocked_reason_state_valid",
+        ),
+        CheckConstraint(
+            "status NOT IN ('succeeded','blocked','dead_lettered','expired') "
+            "OR completed_at IS NOT NULL",
+            name="terminal_timestamp_valid",
+        ),
+        UniqueConstraint(
+            "user_id",
+            "kind",
+            "idempotency_key",
+            name="uq_account_operations_user_kind_idempotency",
+        ),
+        Index("ix_account_operations_user_requested", "user_id", "requested_at"),
+        Index(
+            "ix_account_operations_due",
+            "next_attempt_at",
+            "lease_expires_at",
+            postgresql_where=text("status IN ('queued','retry_wait','running')"),
+        ),
+        Index(
+            "ix_account_operations_expired_artifacts",
+            "artifact_expires_at",
+            postgresql_where=text("kind = 'export' AND status = 'succeeded'"),
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("users.id", ondelete="SET NULL"),
+    )
+    user_fingerprint: Mapped[bytes] = mapped_column(LargeBinary(32), nullable=False)
+    capability_hash: Mapped[bytes] = mapped_column(LargeBinary(32), nullable=False)
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    status: Mapped[str] = mapped_column(String(24), nullable=False)
+    idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    request_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    trace_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False)
+    max_attempts: Mapped[int] = mapped_column(Integer, nullable=False)
+    next_attempt_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    lease_token: Mapped[UUID | None] = mapped_column(Uuid)
+    lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    artifact_object_key: Mapped[str | None] = mapped_column(String(500))
+    artifact_sha256: Mapped[bytes | None] = mapped_column(LargeBinary(32))
+    artifact_size_bytes: Mapped[int | None] = mapped_column(Integer)
+    artifact_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    blocked_reason: Mapped[str | None] = mapped_column(String(80))
+    last_error_code: Mapped[str | None] = mapped_column(String(80))
+    requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
 class UserProfileModel(Base):
     __tablename__ = "user_profiles"
     __table_args__ = (
@@ -161,42 +252,6 @@ class OAuthAccountModel(Base):
     provider_email_normalized: Mapped[str] = mapped_column(String(254))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     last_login_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-
-
-class OrganizationModel(Base):
-    __tablename__ = "organizations"
-    __table_args__ = (CheckConstraint("version > 0", name="version_positive"),)
-
-    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
-    name: Mapped[str] = mapped_column(String(160))
-    created_by_user_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("users.id", ondelete="RESTRICT"), index=True
-    )
-    version: Mapped[int] = mapped_column(Integer, server_default=text("1"))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-
-
-class OrganizationMembershipModel(Base):
-    __tablename__ = "organization_memberships"
-    __table_args__ = (
-        CheckConstraint("role IN ('owner','member')", name="role_valid"),
-        CheckConstraint("status IN ('active','invited','suspended')", name="status_valid"),
-        UniqueConstraint("organization_id", "user_id"),
-        Index("ix_organization_memberships_user_status", "user_id", "status"),
-    )
-
-    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
-    organization_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("organizations.id", ondelete="CASCADE"), index=True
-    )
-    user_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
-    role: Mapped[str] = mapped_column(String(16))
-    status: Mapped[str] = mapped_column(String(16))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
 class ConsentEventModel(Base):

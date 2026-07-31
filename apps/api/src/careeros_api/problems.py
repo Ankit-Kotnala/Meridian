@@ -50,6 +50,7 @@ from careeros.modules.change_studio.domain.errors import (
     ChangeStudioError,
     ChangeStudioIdempotencyConflict,
     ChangeStudioNotFound,
+    ChangeStudioRateLimited,
     ChangeStudioUnavailable,
     ChangeStudioValidationError,
     ChangeStudioVersionConflict,
@@ -391,6 +392,16 @@ def install_problem_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(ChangeStudioError)
     async def change_studio_problem(request: Request, exc: ChangeStudioError) -> JSONResponse:
+        if isinstance(exc, ChangeStudioRateLimited):
+            response = problem_response(
+                request,
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                code=exc.code,
+                title="AI usage limit reached",
+                detail="Wait before requesting another AI-assisted change.",
+            )
+            response.headers["Retry-After"] = str(exc.retry_after_seconds)
+            return response
         status_code, code, title, detail = _change_studio_problem_details(exc)
         logger.info(
             "change_studio_request_rejected",

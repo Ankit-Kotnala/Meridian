@@ -37,9 +37,9 @@ uv run --package careeros-backend alembic -c packages/backend/alembic.ini upgrad
 ```
 
 Phase 9 migration `20260724_0010` adds Interview Prep, Networking, Career Growth,
-and Career Analytics persistence after Phase 8 head `20260724_0009`. The current
-reviewed head is `20260726_0013` after the resume-ready and durable export
-closure migrations. Phase 9 includes explicit ownership, composite parent constraints,
+and Career Analytics persistence after Phase 8 head `20260724_0009`. The current reviewed head is `20260727_0019` after the resume-ready, durable
+export, commercial, organization, durable invitation, account-privacy, and
+protected-administration migrations. Phase 9 includes explicit ownership, composite parent constraints,
 exact evidence revision/hash provenance, immutable review/score snapshots,
 third-party contact-consent history, parent-and-child withdrawal tombstones,
 bounded CRM collections, trace-bound local reminder state, and durable

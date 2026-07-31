@@ -748,6 +748,91 @@ fail closed and non-destructive. The transaction defers only the circular
 Resume Health upload-to-source finalization until both immutable rows exist.
 The presentation-only fixture remains separate. See ADR 0018.
 
+### Phase 10 commercial boundary
+
+Migration `20260726_0014` and `careeros.modules.commercial` add the centralized
+four-plan catalog, owner-scoped billing customers/subscriptions, operation-bound
+idempotency records, signed provider-event ledger, and redacted commercial audit.
+Plan rows fail closed with empty price, provider reference, entitlements, and
+quotas until complete owner-reviewed configuration exists. FastAPI exposes the
+provider-neutral catalog/subscription routes; production composition uses a
+disabled provider, while deterministic local tests exercise HTTPS checkout and
+portal sessions plus bounded timestamped HMAC webhooks. Provider sequence and
+raw-body hash prevent reordered or conflicting events from reverting durable
+subscription state. No commercial module reads another product module's tables.
+See ADR 0019.
+
+### Phase 10 organization tenancy boundary
+
+Migration `20260726_0015` extends the reserved Phase 1 organization tables and
+adds invitation, delivery-outbox, explicit access-grant, idempotency, and
+redacted-audit state under `careeros.modules.organizations`. Individual accounts
+still require no synthetic organization. Every tenant request resolves an active
+durable membership; route IDs and client headers carry no tenant authority.
+Server role capabilities govern roster and organization management, while
+coaches and members receive no implicit directory access.
+
+Delegation is subject-created, expiring, revocable, and limited to six named
+summary/collaboration scopes. Raw resumes, evidence, notes, contacts, objects,
+download intents, and exports are absent from the grant vocabulary. The explicit
+application authorization query rechecks both memberships, coach/admin role,
+organization, subject, grantee, scope, status, and expiry on each use. Invitation
+creation commits an outbox row atomically, stores no raw token, and exposes no
+mailbox in the API response.
+
+Phase 10D consumes that outbox with PostgreSQL `SKIP LOCKED`, UUID fencing leases,
+bounded SMTP timeouts and batches, exponential retry, explicit cancellation, and
+dead-letter state. A context-separated HMAC reconstructs the same high-entropy
+credential for every at-least-once attempt; only its digest is stored. Worker
+payloads and telemetry contain identifiers, safe error codes, and aggregate
+counts, never mailbox or token material. Other existing background paths retain
+their phase-owned durable state machines instead of introducing a competing
+generic workflow authority. See ADRs 0020 and 0021.
+
+### Phase 10 account privacy boundary
+
+Migration `20260727_0018` adds durable export/deletion operations with
+idempotency, request/trace IDs, attempt budgets, UUID fencing leases, retained
+capability digests, safe blocker/error codes, and expiring artifact integrity
+metadata. Authenticated CSRF-protected requests create work; recent-auth deletion
+also disables the account, revokes sessions, and clears browser cookies.
+Capability-scoped no-store reads remain available after the user foreign key is
+nulled by deletion. The Settings client retains each opaque account-operation
+capability only in component memory, sends it through the same-origin BFF using
+the single explicitly allowlisted `X-Account-Operation-Token` header, and never
+persists it in browser storage. The BFF still strips arbitrary client headers;
+status and download-link responses remain `no-store`. Requests are CSRF- and
+idempotency-protected, polling is bounded and cancellable, and terminal or
+blocked states require an explicit user action instead of silently retrying.
+
+`PostgresS3AccountPrivacyStore` reflects direct user foreign keys and refuses an
+export when any table is not explicitly classified, owner scoped, or internal.
+It creates a bounded ZIP containing tenant-scoped structured JSON, eligible
+private files, and a SHA-256 manifest while excluding authentication secrets,
+internal queues/idempotency, object keys, and other tenants. Erasure inventories
+all known object-reference columns, deletes objects idempotently, redacts prior
+export metadata, and deletes the disabled user last. Sole active organization
+owners and accounts with billing-customer records block safely. Worker I/O runs
+outside the database row-lock transaction and only the terminal transition is
+lease fenced, allowing crash recovery without lock inversion. See ADR 0022.
+
+### Phase 10 protected administration boundary
+
+Migration `20260727_0019` introduces persisted platform-operator assignments,
+feature-flag metadata, idempotency, and a dedicated administration audit chain.
+Every request resolves a database assignment to an explicit capability and
+requires a bounded purpose reason; mutations also require CSRF and recent
+authentication. The API has no privilege-grant route and starts with zero
+operators.
+
+The administration read model exposes only aggregate health, catalog counts,
+UUID state, bounded attempt data, and safe error codes. A fixed allowlist can
+re-arm account-privacy and organization-invitation dead letters once per target;
+all other dead letters remain visible but non-retryable. Audit writes serialize
+under a transaction advisory lock and hash a canonical event payload containing
+a context-separated HMAC actor reference. Account erasure may null the actor FK
+without invalidating the retained chain. See ADR 0023.
+
 ## Architecture verification
 
 Every phase retains the repository gates plus architecture-boundary,
@@ -829,3 +914,35 @@ at implementation/merge head `1454792`; exact closeout evidence remains in
 `PLANS.md`. Phase 10 adds load,
 account-wide deletion, backup, and restore gates. The complete strategy is in
 `docs/testing-strategy.md`.
+
+## Phase 10G platform admission and hostile-work isolation
+
+The API owns a coarse Redis-backed admission layer in front of `/api/v1`, while
+feature services retain their narrower identity, upload, and operation limits.
+Only a BFF-signed socket-peer source is eligible in staging and production. The
+AI provider adapter is wrapped by an atomic Redis reservation boundary that
+combines rate, concurrency, UTC-month token, and UTC-month cost admission before
+network I/O. No plan quota is inferred from the commercial catalog.
+
+Resume and evidence-attachment parsing share foundation-level environment and
+egress primitives but retain feature-owned parsers, limits, result schemas, and
+state machines. Both run in killable children; the worker never duplicates their
+domain decisions. Response policy remains split correctly: the API applies a
+deny-by-default policy to JSON operations, and the edge overwrites browser-facing
+security headers for Next.js responses. ADR 0024 records topology and rotation
+constraints.
+
+## Phase 10H release and recovery boundary
+
+CareerOS now produces checksum-bound API, worker, web, and web-edge candidate
+archives with SPDX SBOMs and GitHub artifact attestations from an exact commit.
+A strict deployment contract binds those artifacts to an approved topology,
+migration head, rollback digests, recovery/security/privacy/operations evidence,
+and four approval roles only after the protected production environment gate.
+
+The repository does not choose a cloud or execute a provider deployment. Local
+recovery restores PostgreSQL and MinIO into guarded randomized temporary targets
+and compares schema/data/object integrity before cleanup. The bounded HTTP load
+gate records threshold evidence and supports explicit sustained request pacing.
+Provider infrastructure requires an approved follow-up ADR. ADR 0025 and the
+production operations runbook define this boundary.

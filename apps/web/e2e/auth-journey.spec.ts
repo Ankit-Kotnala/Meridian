@@ -190,7 +190,7 @@ test("a verified user completes honest onboarding and controls sessions", async 
   page,
   request,
 }, testInfo) => {
-  test.setTimeout(240_000);
+  test.setTimeout(480_000);
   const suffix = `${testInfo.project.name.replace(/[^a-z0-9]/gi, "-")}-${randomUUID()}`;
   const email = `e2e-${suffix}@e2e.invalid.example.com`;
   const displayName = `E2E ${testInfo.project.name}`;
@@ -301,11 +301,44 @@ test("a verified user completes honest onboarding and controls sessions", async 
       page.getByText("Scheduled delivery is not configured"),
     ).toBeVisible();
     await page.goto("/settings/privacy");
-    await expect(page.getByText("Export is unavailable")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Account data export" }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Request export" }).click();
+    await expect(
+      page.getByText("Account export completed", { exact: true }),
+    ).toBeVisible({ timeout: 120_000 });
+    await page.getByRole("button", { name: "Create download link" }).click();
+    const exportLink = page.getByRole("link", {
+      name: "Download account export",
+    });
+    await expect(exportLink).toBeVisible();
+    const exportUrl = await exportLink.getAttribute("href");
+    expect(exportUrl).toBeTruthy();
+    const exportResponse = await page.context().request.get(exportUrl!);
+    expect(exportResponse.ok()).toBe(true);
+    expect((await exportResponse.body()).byteLength).toBeGreaterThan(0);
 
-    await page.locator("summary").filter({ hasText: "Account menu" }).click();
-    await page.getByRole("button", { name: "Sign out", exact: true }).click();
-    await expect(page).toHaveURL(/\/login$/);
+    await page.getByRole("button", { name: "Start deletion" }).click();
+    const deletionDialog = page.getByRole("dialog", {
+      name: "Delete your CareerOS account?",
+    });
+    await expect(deletionDialog).toBeVisible();
+    await deletionDialog
+      .getByRole("button", { name: "Delete account", exact: true })
+      .click();
+    await expect(
+      page.getByText("Primary account deletion completed", { exact: true }),
+    ).toBeVisible({ timeout: 120_000 });
+    await expect
+      .poll(
+        async () => (await page.context().request.get("/api/v1/me")).status(),
+        {
+          message: "the deleted account to remain signed out",
+          timeout: 10_000,
+        },
+      )
+      .toBe(401);
     await page.goto("/dashboard");
     await expect(page).toHaveURL(/\/login(?:\?|$)/);
   } finally {

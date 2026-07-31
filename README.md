@@ -13,17 +13,15 @@ claim under the user's control.
 
 ## Repository status
 
-**Phase 2 typed semantic parsing/review and Resume Health v2 closure is
-implemented and locally verified, including its separate security gate; hosted
-closure evidence remains pending authorization to publish. Phase 8 is hosted
-verified in PR #21 and Phase 9 in PR #22.** Phases 0 through 7 retain their
-historical hosted evidence; PR #20 merged Phases 5 through 7 after hosted CI run
-`30119088488` passed every required job. Phase 8 implementation revision
-`964cd9c` passed the consolidated local gate and separate security scan on
-2026-07-24; PR #21 runs `30126993025` and `30128304892` passed every required
-hosted job. The repository uses a
-shared Python modular monolith, one root uv workspace, generated API contracts,
-thin deployable applications, and executable dependency boundaries.
+**Phase 10A-H implementation and the cumulative local release-candidate audit are
+complete on the collective branch stacked on repository-normalization PR #37.
+Hosted PR CI and owner/external production approvals remain pending; no production
+deployment is claimed.** The enterprise UI, durable privacy controls, full
+backend/worker surface, generated contracts, verified production images, migration
+repair, full-stack desktop/mobile journeys, security scans, isolated restore, and
+bounded load/soak gates pass locally. The repository uses a shared Python modular
+monolith, one root uv workspace, generated API contracts, thin deployable
+applications, and executable dependency boundaries.
 
 Hosted CI run `29657932938` passed every Phase 3 job on no-change trigger commit
 `f752b55`, whose tree is identical to implementation commit `0df8bcf`; prior
@@ -63,8 +61,8 @@ packages/
   typescript-config/   Shared strict TypeScript configuration
   test-fixtures/       Explicitly fictional fixtures
 docs/                  Product, architecture, security, API, and ADRs
-infra/                 Implemented local container infrastructure
-scripts/               Cross-platform local and repository automation
+infra/                 Local containers and provider-neutral production handoff controls
+scripts/               Cross-platform local, repository, release, and recovery automation
 ```
 
 ## Prerequisites
@@ -256,6 +254,18 @@ for timezone-safe UTC selection. API and worker composition use the same owned
 Resume Health and clean-attachment status queries when re-evaluating evidence.
 Raw resume, evidence, contact, note, offer, rejection, and generated-document
 prose are excluded.
+
+Account export and deletion are durable privacy operations. Authenticated,
+CSRF-protected, idempotent requests create leased worker jobs; deletion requires
+recent authentication, disables the account, revokes sessions immediately, and
+returns an operation capability that remains usable after the user row is gone.
+Exports are bounded tenant-scoped ZIP archives with structured records, eligible
+private files, and integrity metadata; authentication secrets, internal queues,
+object keys, and other tenants are excluded. Export archives expire after 24
+hours by default. Deletion removes inventoried PostgreSQL/S3 primary data and
+prior export archives, but blocks sole organization owners and billing customers
+until ownership or retention obligations are resolved. Backup/provider deletion
+windows remain deployment-policy work.
 
 Authenticated Resume Health starts at `/resume-health/account`. The intentionally
 limited guest flow starts at `/resume-health/guest`, uses one opaque short-lived
@@ -491,10 +501,25 @@ The seed refuses dependency I/O unless the environment is explicitly
 `development`, an exact one-command confirmation is present, the database uses
 the local `careeros` identity/database on an allowlisted Compose/loopback host,
 the object endpoint is local MinIO, the bucket is `careeros-documents`, and the
-database is at reviewed migration head `20260726_0013`. The fresh fixture
+database is at reviewed migration head `20260727_0019`. The fresh fixture
 credential is printed only when the account is first created.
 `pnpm fixtures:preview` remains a no-I/O presentation fixture and is not
 evidence of persisted product state.
+
+Phase 10B adds a centralized server-owned catalog for Free, Job Hunt Sprint,
+Pro, and Coach/Organization plus owner-scoped subscription state, checkout,
+portal, reconciliation, and signed raw-webhook delivery. No price, entitlement,
+quota, provider reference, or live billing capability is inferred: every seeded
+plan remains `owner_decision_required`, and production API composition uses a
+disabled provider until reviewed owner configuration exists. The deterministic
+HMAC billing adapter and fictional plan values are test-only. See ADR 0019.
+Migrations `20260726_0014` through `20260727_0019` add the fail-closed commercial
+catalog and subscription ledger, organization tenant authority, invitation
+outbox repair and durable delivery state, capability-scoped account privacy
+operations, and protected administration audit/assignment state. The current
+single head is `20260727_0019`; local and hosted gates must prove empty-state
+downgrade to `20260727_0018` and forward repair. See the Phase 10 sections in
+`PLANS.md` and the owning ADRs for the deliberately external production choices.
 
 For host-only package work, use the pinned tools rather than global substitutes:
 
@@ -677,6 +702,17 @@ listed fixes are available only in Python 3.15 prereleases. PR #22 workflow run
 `30161489265` passed every required hosted job at implementation/merge head
 `1454792`.
 
+## Protected platform administration
+
+Phase 10F adds a fail-closed platform-operator boundary with no default operator
+and no self-service privilege endpoint. Persisted roles grant explicit system,
+job, catalog, or audit capabilities; every protected operation requires a
+purpose reason and writes a content-free, hash-chained audit event. Mutations
+also require CSRF and recent authentication. Aggregate job health is visible
+without raw career content, and only account-privacy and organization-invitation
+dead letters have a one-shot, idempotent, live-tested manual recovery adapter.
+See ADR 0023.
+
 ## Phase 9 limitations and boundaries
 
 - Networking consent records the account owner's explicit attestation; it is not
@@ -694,9 +730,10 @@ listed fixes are available only in Python 3.15 prereleases. PR #22 workflow run
 - Analytics depends on recorded workflow events, applies the selected IANA
   timezone, suppresses small cohorts, and reports observed patterns rather than
   causal effects.
-- Account-wide export/deletion retention, load/soak evidence, backup/restore,
-  production provider/region selection, and protected deployment remain Phase 10
-  work.
+- Durable primary-store account export/deletion, load/soak, and isolated restore
+  are implemented and tested. Owner-approved legal/provider retention, production
+  topology, protected environment configuration, and provider deployment remain
+  release gates.
 - Resume Builder now has durable render/cleanup workers, five distinct
   constrained layouts, and a canonical blocking cross-format fidelity manifest.
   Rich graphics-heavy/multi-column templates remain intentionally unsupported

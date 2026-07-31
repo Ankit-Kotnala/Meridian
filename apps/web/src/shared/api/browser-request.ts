@@ -131,12 +131,17 @@ export async function apiMutation(
 
 export async function apiQuery(
   path: keyof paths | GeneratedApiPath,
-  options: { retryAfterRefresh?: boolean; signal?: AbortSignal } = {},
+  options: {
+    headers?: HeadersInit;
+    retryAfterRefresh?: boolean;
+    signal?: AbortSignal;
+  } = {},
 ): Promise<Response> {
   const send = () =>
     fetch(path, {
       cache: "no-store",
       credentials: "same-origin",
+      ...(options.headers ? { headers: options.headers } : {}),
       ...(options.signal ? { signal: options.signal } : {}),
     });
   let response = await send();

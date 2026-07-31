@@ -47,6 +47,13 @@ class BoundedAttachmentExtractor:
         _unsafe()
 
 
+def extract_local_attachment(
+    path: Path, media_type: AttachmentMediaType, limits: AttachmentLimits
+) -> AttachmentExtractionSummary:
+    """Synchronous parser entrypoint used only inside the isolated child."""
+    return BoundedAttachmentExtractor()._extract(path, media_type, limits)
+
+
 def _pdf_summary(path: Path, limits: AttachmentLimits) -> AttachmentExtractionSummary:
     raw = path.read_bytes()
     if not raw.startswith(b"%PDF-") or b"PK\x03\x04" in raw:

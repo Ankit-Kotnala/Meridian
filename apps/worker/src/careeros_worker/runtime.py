@@ -15,6 +15,8 @@ from uuid import UUID
 import structlog
 from careeros.foundation.config import DatabaseOptions
 from careeros.foundation.database import Database
+from careeros.integrations.email import DisabledEmailSender, SmtpEmailSender, SmtpOptions
+from careeros.integrations.privacy import PostgresS3AccountPrivacyStore
 from careeros.modules.application_workspace.application import (
     ApplicationWorkspaceService,
 )
@@ -90,7 +92,7 @@ from careeros.modules.career_record.infrastructure import (
     AttachmentClamAvScanner,
     AttachmentS3ObjectStorage,
     AttachmentS3Options,
-    BoundedAttachmentExtractor,
+    IsolatedAttachmentExtractor,
     ResumeHealthSourceQuery,
     SqlAlchemyAttachmentUnitOfWorkFactory,
     SqlAlchemyCareerRecordUnitOfWorkFactory,
@@ -107,7 +109,20 @@ from careeros.modules.career_record.infrastructure import (
 
 # The worker is a composition root: register identity mappings so the shared
 # SQLAlchemy metadata can resolve resume-health foreign keys to ``users``.
+from careeros.modules.identity.application import (
+    AccountExportCleanupResult,
+    AccountOperationBatchResult,
+    AccountOperationProcessor,
+    AccountOperationsPolicy,
+)
+from careeros.modules.identity.application.ports import EmailSender
 from careeros.modules.identity.infrastructure import models as identity_models  # noqa: F401
+from careeros.modules.identity.infrastructure.account_operation_repository import (
+    SqlAlchemyAccountOperationsUnitOfWorkFactory,
+)
+from careeros.modules.identity.infrastructure.account_operation_security import (
+    UuidAccountOperationIdentifierFactory,
+)
 from careeros.modules.networking.application import NetworkingService
 from careeros.modules.networking.application.models import NetworkingApplicationReference
 from careeros.modules.networking.domain import (
@@ -124,6 +139,21 @@ from careeros.modules.networking.infrastructure import (
     UuidIdentifierFactory as NetworkingUuidFactory,
 )
 from careeros.modules.networking.infrastructure import models as networking_models  # noqa: F401
+from careeros.modules.organizations.application import (
+    InvitationDeliveryBatchResult,
+    OrganizationInvitationDeliveryProcessor,
+)
+from careeros.modules.organizations.infrastructure import (
+    HmacOrganizationInvitationManager,
+    SqlAlchemyOrganizationUnitOfWorkFactory,
+)
+from careeros.modules.organizations.infrastructure import SystemClock as OrganizationClock
+from careeros.modules.organizations.infrastructure import (
+    UuidIdentifierFactory as OrganizationUuidFactory,
+)
+from careeros.modules.organizations.infrastructure import (
+    models as organization_models,  # noqa: F401
+)
 from careeros.modules.resume_builder.application import (
     ExportOutboxDispatchResult,
     ExportProcessingOutcome,
@@ -192,6 +222,7 @@ from celery import Celery  # type: ignore[import-untyped,unused-ignore]
 from structlog.contextvars import bind_contextvars
 
 from careeros_worker.config import WorkerSettings
+from careeros_worker.organization_email import OrganizationInvitationEmailSender
 from careeros_worker.publisher import (
     CeleryAnalyticsPublisher,
     CeleryJobPublisher,
@@ -269,7 +300,7 @@ class _AttachmentStorageResources:
 @dataclass(slots=True)
 class _AttachmentRuntimeResources(_AttachmentStorageResources):
     scanner: AttachmentClamAvScanner
-    extractor: BoundedAttachmentExtractor
+    extractor: IsolatedAttachmentExtractor
     limits: AttachmentLimits
 
 
@@ -413,9 +444,113 @@ async def _attachment_runtime_resources(
                     timeout_seconds=settings.clamav_timeout_seconds,
                 )
             ),
-            extractor=BoundedAttachmentExtractor(),
+            extractor=IsolatedAttachmentExtractor(),
             limits=_attachment_limits(settings),
         )
+
+
+@asynccontextmanager
+async def _account_operation_processor(
+    settings: WorkerSettings,
+) -> AsyncIterator[AccountOperationProcessor]:
+    if settings.account_export_provider != "local" or settings.account_deletion_provider != "local":
+        raise RuntimeError("account privacy processing is disabled")
+    database = _database(settings)
+    storage: ResumeExportS3Storage | None = None
+    try:
+        storage = _resume_export_storage(settings)
+        yield AccountOperationProcessor(
+            unit_of_work=SqlAlchemyAccountOperationsUnitOfWorkFactory(database),
+            clock=SystemClock(),
+            identifiers=UuidAccountOperationIdentifierFactory(),
+            privacy_store=PostgresS3AccountPrivacyStore(
+                database=database,
+                storage=storage,
+                max_archive_bytes=settings.account_export_max_archive_bytes,
+                max_object_bytes=settings.account_export_max_object_bytes,
+            ),
+            policy=AccountOperationsPolicy(
+                max_attempts=settings.account_operation_max_attempts,
+                lease_seconds=settings.account_operation_lease_seconds,
+                retry_base_seconds=settings.account_operation_retry_seconds,
+                export_retention_seconds=(settings.account_export_retention_hours * 3_600),
+            ),
+        )
+    finally:
+        try:
+            if storage is not None:
+                await storage.dispose()
+        finally:
+            await database.dispose()
+
+
+async def process_account_operations(
+    settings: WorkerSettings,
+    limit: int,
+) -> AccountOperationBatchResult:
+    """Execute one bounded batch from durable privacy-operation state."""
+
+    async with _account_operation_processor(settings) as processor:
+        return await processor.process_due(limit)
+
+
+async def cleanup_account_exports(
+    settings: WorkerSettings,
+    limit: int,
+) -> AccountExportCleanupResult:
+    """Delete expired export objects before redacting retained metadata."""
+
+    async with _account_operation_processor(settings) as processor:
+        return await processor.cleanup_expired_exports(limit)
+
+
+async def process_organization_invitations(
+    settings: WorkerSettings,
+    limit: int,
+) -> InvitationDeliveryBatchResult:
+    """Deliver a bounded, leased batch without exposing recipient or token data."""
+
+    database = _database(settings)
+    sender: EmailSender
+    if settings.email_provider == "smtp":
+        sender = SmtpEmailSender(
+            SmtpOptions(
+                hostname=settings.smtp_host,
+                port=settings.smtp_port,
+                sender=settings.email_from_address,
+                username=settings.smtp_username,
+                password=(
+                    settings.smtp_password.get_secret_value()
+                    if settings.smtp_password is not None
+                    else None
+                ),
+                start_tls=settings.smtp_start_tls,
+                timeout_seconds=settings.smtp_timeout_seconds,
+            )
+        )
+    else:
+        sender = DisabledEmailSender()
+    try:
+        processor = OrganizationInvitationDeliveryProcessor(
+            unit_of_work=SqlAlchemyOrganizationUnitOfWorkFactory(database),
+            clock=OrganizationClock(),
+            identifiers=OrganizationUuidFactory(),
+            invitation_tokens=HmacOrganizationInvitationManager(
+                settings.organization_invitation_secret.get_secret_value(),
+                (
+                    settings.organization_invitation_previous_secret.get_secret_value()
+                    if settings.organization_invitation_previous_secret is not None
+                    else None
+                ),
+            ),
+            sender=OrganizationInvitationEmailSender(sender, settings.public_app_url),
+            lease_seconds=settings.organization_invitation_lease_seconds,
+            retry_base_seconds=settings.organization_invitation_retry_seconds,
+        )
+        return await processor.process_due(limit)
+    finally:
+        await sender.dispose()
+        await database.dispose()
 
 
 async def process_resume_job(

@@ -37,6 +37,11 @@ def test_production_accepts_explicit_safe_configuration() -> None:
             "cookie_secure": True,
             "smtp_start_tls": True,
             "auth_token_pepper": "production-test-pepper-is-at-least-32-bytes",
+            "account_operation_pepper": (
+                "production-account-operation-pepper-is-at-least-32-bytes"
+            ),
+            "admin_audit_pepper": "production-admin-audit-pepper-is-at-least-32-bytes",
+            "ai_usage_pepper": "production-ai-usage-pepper-is-at-least-32-bytes",
             "resume_capability_pepper": "production-resume-pepper-is-at-least-32-bytes",
             "bff_client_signal_secret": "production-bff-signal-secret-is-at-least-32-bytes",
             "database_url": "postgresql+asyncpg://app:unique-secret@db:5432/careeros",
@@ -49,6 +54,10 @@ def test_production_accepts_explicit_safe_configuration() -> None:
             "ai_provider": "http_json",
             "ai_http_endpoint_url": "https://ai-gateway.example.com",
             "ai_http_api_key": "production-test-ai-key",
+            "ai_monthly_token_limit": 1_000_000,
+            "ai_monthly_cost_limit_micros": 100_000_000,
+            "ai_reservation_tokens": 20_000,
+            "ai_reservation_cost_micros": 2_000_000,
         }
     )
 
@@ -144,6 +153,55 @@ def test_resume_mutation_rate_controls_have_safe_defaults() -> None:
 def test_storage_endpoints_must_be_credential_free_origins(endpoint: str) -> None:
     with pytest.raises(ValidationError, match="S3 endpoints"):
         Settings.model_validate({"s3_public_endpoint_url": endpoint})
+
+
+def test_live_ai_requires_explicit_budgets_and_bounded_reservations() -> None:
+    base = {
+        "ai_provider": "http_json",
+        "ai_http_endpoint_url": "https://ai.example.test",
+        "ai_http_api_key": "fictional-ai-key",
+    }
+    with pytest.raises(ValidationError, match="explicit usage budgets"):
+        Settings.model_validate(base)
+    with pytest.raises(ValidationError, match="must not exceed monthly budgets"):
+        Settings.model_validate(
+            {
+                **base,
+                "ai_monthly_token_limit": 99,
+                "ai_monthly_cost_limit_micros": 100,
+                "ai_reservation_tokens": 100,
+                "ai_reservation_cost_micros": 100,
+            }
+        )
+
+
+def test_blank_optional_ai_budgets_are_normalized() -> None:
+    settings = Settings.model_validate(
+        {
+            "ai_monthly_token_limit": "",
+            "ai_monthly_cost_limit_micros": "",
+            "ai_reservation_tokens": "",
+            "ai_reservation_cost_micros": "",
+        }
+    )
+
+    assert settings.ai_monthly_token_limit is None
+    assert settings.ai_monthly_cost_limit_micros is None
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("api_read_rate_limit", 9),
+        ("api_mutation_rate_limit", 4),
+        ("api_rate_limit_window_seconds", 59),
+        ("ai_maximum_concurrency", 21),
+        ("ai_usage_lease_seconds", 601),
+    ],
+)
+def test_platform_abuse_and_ai_controls_are_bounded(field: str, value: int) -> None:
+    with pytest.raises(ValidationError, match=field):
+        Settings.model_validate({field: value})
 
 
 def test_compose_environment_aliases_are_supported(monkeypatch: pytest.MonkeyPatch) -> None:

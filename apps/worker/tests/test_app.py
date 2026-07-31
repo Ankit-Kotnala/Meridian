@@ -16,10 +16,13 @@ from careeros.modules.resume_health.application import (
 from careeros_worker.app import create_celery_app
 from careeros_worker.config import WorkerSettings
 from careeros_worker.task_names import (
+    CLEANUP_ACCOUNT_EXPORTS_TASK,
     DISPATCH_CAREER_ANALYTICS_OUTBOX_TASK,
     DISPATCH_RESUME_EXPORT_OUTBOX_TASK,
+    PROCESS_ACCOUNT_PRIVACY_OPERATIONS_TASK,
     PROCESS_CAREER_ANALYTICS_REFRESH_TASK,
     PROCESS_NETWORKING_LOCAL_REMINDERS_TASK,
+    PROCESS_ORGANIZATION_INVITATIONS_TASK,
     PROCESS_RESUME_EXPORT_TASK,
     RECONCILE_CAREER_ANALYTICS_TASK,
     RECONCILE_NETWORKING_REMINDERS_TASK,
@@ -40,14 +43,25 @@ def test_celery_uses_json_and_safe_delivery_defaults() -> None:
     assert app.conf.task_soft_time_limit == 270
     assert app.conf.task_time_limit == 300
     assert app.conf.task_ignore_result is True
+    assert app.conf.task_annotations[PROCESS_ACCOUNT_PRIVACY_OPERATIONS_TASK] == {
+        "soft_time_limit": 270,
+        "time_limit": 300,
+    }
     assert app.conf.task_annotations[PROCESS_NETWORKING_LOCAL_REMINDERS_TASK] == {
         "soft_time_limit": 114,
         "time_limit": 115,
     }
+    assert app.conf.task_annotations[PROCESS_ORGANIZATION_INVITATIONS_TASK] == {
+        "soft_time_limit": 114,
+        "time_limit": 115,
+    }
+    assert app.conf.task_routes[PROCESS_ACCOUNT_PRIVACY_OPERATIONS_TASK] == {"queue": "maintenance"}
+    assert app.conf.task_routes[CLEANUP_ACCOUNT_EXPORTS_TASK] == {"queue": "maintenance"}
     assert app.conf.task_routes[PROCESS_CAREER_ANALYTICS_REFRESH_TASK] == {"queue": "default"}
     assert app.conf.task_routes[DISPATCH_CAREER_ANALYTICS_OUTBOX_TASK] == {"queue": "maintenance"}
     assert app.conf.task_routes[RECONCILE_CAREER_ANALYTICS_TASK] == {"queue": "maintenance"}
     assert app.conf.task_routes[PROCESS_NETWORKING_LOCAL_REMINDERS_TASK] == {"queue": "maintenance"}
+    assert app.conf.task_routes[PROCESS_ORGANIZATION_INVITATIONS_TASK] == {"queue": "maintenance"}
     assert app.conf.task_routes[RECONCILE_NETWORKING_REMINDERS_TASK] == {"queue": "maintenance"}
     assert app.conf.task_routes[PROCESS_EVIDENCE_ATTACHMENT_TASK] == {"queue": "career-record"}
     assert app.conf.task_routes[DISPATCH_EVIDENCE_ATTACHMENT_OUTBOX_TASK] == {
@@ -64,6 +78,18 @@ def test_celery_uses_json_and_safe_delivery_defaults() -> None:
     assert app.conf.task_routes[PROCESS_RESUME_EXPORT_TASK] == {"queue": "resume-builder"}
     assert app.conf.task_routes[DISPATCH_RESUME_EXPORT_OUTBOX_TASK] == {"queue": "maintenance"}
     assert app.conf.task_routes[RECONCILE_RESUME_EXPORTS_TASK] == {"queue": "maintenance"}
+    assert app.conf.beat_schedule["process-account-privacy-operations"] == {
+        "task": PROCESS_ACCOUNT_PRIVACY_OPERATIONS_TASK,
+        "schedule": 5.0,
+    }
+    assert app.conf.beat_schedule["cleanup-expired-account-exports"] == {
+        "task": CLEANUP_ACCOUNT_EXPORTS_TASK,
+        "schedule": 300.0,
+    }
+    assert app.conf.beat_schedule["deliver-organization-invitations"] == {
+        "task": PROCESS_ORGANIZATION_INVITATIONS_TASK,
+        "schedule": 5.0,
+    }
     assert app.conf.beat_schedule["dispatch-resume-health-outbox"]["task"] == (DISPATCH_OUTBOX_TASK)
     assert app.conf.beat_schedule["dispatch-career-record-attachment-outbox"] == {
         "task": DISPATCH_EVIDENCE_ATTACHMENT_OUTBOX_TASK,

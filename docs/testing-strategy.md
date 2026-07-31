@@ -676,13 +676,23 @@ run `30161489265` passed every required hosted job at implementation/merge head
 Phase 7 closure covers durable asynchronous Resume Builder render/verify/cleanup
 dispatch and recovery plus distinct-template cross-format fidelity. Phase 10A
 adds pure coverage for deterministic Phase 1-9 graph construction, exact
-provenance/export hashes, the `20260726_0013` migration pin, fail-closed
+provenance/export hashes, the `20260726_0014` migration pin, fail-closed
 environment/database/object guards, and existing-object drift refusal. The live
 acceptance gate ran the guarded command twice against the same PostgreSQL/MinIO
 state: pass one verified 79 newly created rows and two private objects; pass two
 verified the same 79 rows and objects while creating zero rows and preserving
 the account. The presentation-only `pnpm fixtures:preview` remains deliberately
 separate and performs no database or object-store I/O.
+
+Phase 10B adds domain, API, PostgreSQL, and migration coverage for fail-closed
+plan configuration, owner-scoped subscription reads, CSRF and return-origin
+checks, checkout/portal idempotency, signed raw-body verification, payload-hash
+collision, exact replay, stale event ordering, unmatched customer/plan state,
+reconciliation, redacted audit, and disabled production composition. The
+migration gate upgrades `20260726_0013` to `20260726_0014`, downgrades, repairs
+forward, and reopens the guarded seed pin. Generated contracts must contain the
+six commercial routes and stable problem schemas without duplicate operation
+identifiers.
 
 ## Backend test portfolio
 
@@ -902,4 +912,123 @@ fixture, failing assertion, sanitized request/trace ID, first-failure artifact,
 and whether it is deterministic. Fix root causes; never replace an assertion with
 a broad snapshot or sleep solely to make CI green.
 
+## Phase 10C organization tenancy verification
+
+Phase 10C adds domain/service tests for creation idempotency, optimistic updates,
+cross-user denial, exact-email invitation acceptance, coach roster minimization,
+role denial, explicit summary grants, revocation, and membership-suspension
+rechecks. FastAPI tests cover CSRF, idempotency and version headers, no-store/ETag
+responses, non-disclosing invitation payloads, safe problems, and complete unique
+OpenAPI operations. A real PostgreSQL test proves parent/child transaction order,
+owner scope, durable invitation outbox, acceptance, grants, redacted audit, and
+outsider denial. The migration gate upgrades `20260726_0014` to
+`20260726_0015`, then applies the forward-only `20260726_0016` Phase 7
+cleanup-schema repair. Downgrade and forward-repair tests preserve the
+Phase 7-owned table and rerun the guarded fictional seed and single-head graph
+assertions. Generated OpenAPI and TypeScript artifacts
+must pass drift, test, and build gates in the same change.
+
 Phase test commands and results are recorded in `PLANS.md` before completion.
+
+## Phase 10D durable workflow verification
+
+Phase 10D retains existing module-owned workflow state for resume analysis,
+evidence attachments, verified export/render/cleanup, analytics, and networking
+reminders. Organization invitation tests add deterministic context-separated
+token derivation, credential-redacted message models, lease claim/fencing,
+terminal cancellation, exponential retry and dead-letter behavior, bounded task
+results, message escaping, production SMTP/origin/secret validation, maintenance
+routing, beat schedule, and lease-aware task time limits.
+
+The PostgreSQL integration test creates an invitation and outbox atomically,
+claims it with `FOR UPDATE SKIP LOCKED`, delivers through the real processor,
+persists token digest/delivery/audit state, clears the lease, and accepts the
+exact captured credential. Migration `20260727_0017` must pass upgrade,
+downgrade on empty cancellation state, re-upgrade, single-head graph, guarded
+local seed, and Alembic drift detection. No test may assert provider exception
+text, raw recipient/token logging, or exactly-once SMTP semantics.
+
+## Phase 10E account privacy verification
+
+Phase 10E tests the durable operation domain, capability replay and redaction,
+recent-auth deletion, account/session disabling, blocker restoration, fenced
+retry/dead-letter behavior, and delete-before-redact artifact expiry. API tests
+cover CSRF, idempotency keys, immediate cookie expiry, capability-only status and
+download, no-store responses, safe problems, CORS, and generated OpenAPI.
+Worker tests cover aggregate-only results, bounded batches, lease-aware limits,
+routing, schedules, cleanup, and production provider configuration. Settings API
+and component tests cover stable idempotency, malformed-response fail-closed
+behavior, polling cancellation, operation status, download-link creation, and
+explicit deletion confirmation. BFF security coverage proves that only the
+account-operation capability header is forwarded while arbitrary client headers
+remain stripped. The desktop and mobile authenticated full-stack journey creates
+an export, polls it to completion, creates and uses a short-lived download link,
+requests deletion, and confirms the deleted account can no longer authenticate.
+
+The required integration gate uses real PostgreSQL and MinIO. It must prove that
+an export includes only the requesting tenant's structured rows and primary
+files, excludes password hashes and internal object/staging metadata, carries
+manifest/file SHA-256 values, and remains capability scoped. Deletion must remove
+the user and every inventoried primary object, destroy earlier export archives,
+redact retained download metadata, and leave both operation records accessible
+without a user foreign key. Separate real-database assertions cover sole-owner
+and billing-retention blockers. Migration `20260727_0018` must pass upgrade,
+empty-state downgrade, re-upgrade, graph/seed regression, and Alembic drift.
+
+## Phase 10F protected administration verification
+
+Phase 10F tests persisted role-to-capability authorization, denied-request audit,
+recent-auth mutation denial, idempotent replay, and the single successful manual
+retry budget. API contracts cover authentication, CSRF, purpose reasons,
+idempotency, no-store responses, stable problems, and generated OpenAPI.
+
+The required PostgreSQL gate proves hash-chain verification before and after the
+operator user is erased, with a retained HMAC actor reference and nulled user FK.
+Separate live tests re-arm exhausted account-privacy and organization-invitation
+state exactly once and confirm their feature workers can reclaim the resulting
+due state. Migration `20260727_0019` must pass single-head, drift, empty-state
+downgrade/re-upgrade, guarded seed, and account export/deletion regression. No
+administration test may use real operator identities or assert raw failure text. The
+worker production image must import both its Celery app and task runtime during the
+image build so an undeclared optional dependency cannot survive to startup.
+
+## Phase 10G security and AI-usage verification
+
+Phase 10G adds deterministic unit coverage for worst-case AI reservation/refund,
+invalid usage, UTC-month rollover, dual-key capability verification, parser
+credential stripping, audit-hook egress denial, timeout termination, and temporary
+cleanup. A real Redis test is required for the Lua admission transaction because
+mocked commands cannot prove atomic rate, concurrency, token, and cost behavior.
+
+API tests must cover coarse read/mutation buckets, safe 429 responses, staging
+fail-closed behavior, current/previous BFF signatures, and deny-by-default response
+headers. Edge tests must prove client forwarding headers and unsafe upstream
+policy headers are overwritten, and that HSTS is opt-in behind TLS. The complete
+backend architecture/unit, API, and worker portfolios remain blocking. These
+checks are internal engineering evidence and must not be represented as an
+independent penetration test.
+
+## Phase 10H release, load, and recovery verification
+
+Release-control self-tests validate one accepted production contract, reject
+placeholders and mismatched release inputs, exercise bounded load calculations,
+and prove recovery path/prefix guards without external services. CI supplies a
+live Redis service to the API suite and asserts the current migration head plus
+the immediate downgrade/forward-repair path.
+
+The local recovery gate uses the real Compose PostgreSQL and MinIO services. It
+must create randomized isolated restore targets, compare the exact migration head
+and every application-table row count, compare object paths/sizes/SHA-256 bytes,
+and remove temporary targets even after failure. A successful local drill is not
+production PITR/RPO/RTO evidence.
+
+The read-only load gate records completed requests, safe error classes, statuses,
+p50/p95/p99/maximum latency, throughput, thresholds, and pass/fail. Threshold
+failures must still emit machine-readable evidence. HTTPS is mandatory except for
+explicit loopback tests, redirects are denied, and sustained tests use a target
+rate to avoid measuring client socket exhaustion.
+
+The release workflow itself becomes verified only after hosted execution. Its
+package stage must build all images, generate SBOMs, checksums, attestations, and
+the bounded artifact. Production handoff additionally requires the protected
+environment and owner-completed contract; it cannot be replaced by a local pass.

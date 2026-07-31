@@ -57,9 +57,19 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 12
+      redis:
+        image: redis:8.2-alpine@sha256:223b183cbc49f5ff48728e1fc52ccf101f05072decad2bd9867281a3c9bf75fd
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     env:
       CAREEROS_DATABASE_URL: postgresql+asyncpg://careeros:ci-only-password@127.0.0.1:5432/careeros
       CAREEROS_TEST_DATABASE_URL: postgresql+asyncpg://careeros:ci-only-password@127.0.0.1:5432/careeros
+      CAREEROS_TEST_REDIS_URL: redis://127.0.0.1:6379/15
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
@@ -81,11 +91,11 @@ jobs:
       - run: cd apps/api && uv run pytest
       - run: uv run --package careeros-api ruff format --config apps/api/pyproject.toml --check packages/contracts/scripts/export_openapi.py
       - run: uv run --package careeros-api ruff check --config apps/api/pyproject.toml packages/contracts/scripts/export_openapi.py
-      - run: test "$(uv run --package careeros-backend alembic -c packages/backend/alembic.ini heads | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')" = "20260726_0013 (head)"
+      - run: test "$(uv run --package careeros-backend alembic -c packages/backend/alembic.ini heads | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')" = "20260727_0019 (head)"
       - run: uv run --package careeros-backend alembic -c packages/backend/alembic.ini upgrade head
-      - run: uv run --package careeros-backend alembic -c packages/backend/alembic.ini downgrade 20260724_0009
+      - run: uv run --package careeros-backend alembic -c packages/backend/alembic.ini downgrade 20260727_0018
       - run: uv run --package careeros-backend alembic -c packages/backend/alembic.ini upgrade head
-      - run: test "$(uv run --package careeros-backend alembic -c packages/backend/alembic.ini current | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')" = "20260726_0013 (head)"
+      - run: test "$(uv run --package careeros-backend alembic -c packages/backend/alembic.ini current | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')" = "20260727_0019 (head)"
       - run: cd packages/backend && uv run --package careeros-backend pytest tests/integration
       - run: uv run --package careeros-api python -c "from careeros_api.main import app; assert app.openapi()"
 
@@ -348,15 +358,44 @@ jobs:
       - name: Run the isolated Phase 9 career workspace journey suite
         run: CAREEROS_E2E_PHASE=9 sh tests/e2e/run-compose.sh
 
+  release-controls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        with:
+          version: "0.11.21"
+          enable-cache: true
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.13"
+      - run: uv sync --frozen --package careeros-api
+      - name: Check release and recovery controls
+        run: |
+          uv run ruff format --check scripts/release scripts/recovery
+          uv run ruff check scripts/release scripts/recovery
+          python scripts/release/validate_deployment_contract.py --self-test
+          python scripts/release/load_smoke.py --self-test
+          python scripts/recovery/verify_local_restore.py --self-test
+      - name: Prove the unfilled production template fails closed
+        run: |
+          set +e
+          python scripts/release/validate_deployment_contract.py \
+            --file infra/production/deployment-contract.template.json \
+            --expected-release-sha "$GITHUB_SHA" \
+            --expected-change-ticket "REL-CI-UNAPPROVED"
+          status=$?
+          set -e
+          test "$status" -eq 2
   supply-chain:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Scan the working tree for committed secrets
         run: >-
-          docker run --rm --volume "$PWD:/repo:ro"
+          docker run --rm --network none --volume "$PWD:/repo:ro"
           ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
-          dir /repo --config /repo/.gitleaks.toml --redact --exit-code 1
+          dir /repo --config /repo/.gitleaks.toml --redact --exit-code 1 --verbose --no-color
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
         with:
           version: 11.13.0
@@ -391,17 +430,17 @@ jobs:
             docker compose logs --no-color --tail 200
             exit 1
           fi
-      - name: Verify the packaged Phase 9 migration path
+      - name: Verify the packaged release migration path
         run: |
           heads=$(docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini heads | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')
           printf '%s\n' "$heads"
-          test "$heads" = "20260726_0013 (head)"
+          test "$heads" = "20260727_0019 (head)"
           docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
-          docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini downgrade 20260724_0009
+          docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini downgrade 20260727_0018
           docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
           current=$(docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini current | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')
           printf '%s\n' "$current"
-          test "$current" = "20260726_0013 (head)"
+          test "$current" = "20260727_0019 (head)"
       - name: Probe the running platform
         run: |
           curl --fail --silent --show-error http://127.0.0.1:3000/api/health
@@ -442,5 +481,46 @@ jobs:
           anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d
           careeros-web-edge:latest
           --config /etc/grype.yaml --fail-on high --only-fixed
+      - run: mkdir -p sbom
+      - name: Generate API image SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+        with:
+          image: careeros-api:latest
+          format: spdx-json
+          output-file: sbom/careeros-api.spdx.json
+          artifact-name: careeros-api-sbom
+          upload-artifact-retention: 14
+          upload-release-assets: false
+          dependency-snapshot: false
+      - name: Generate worker image SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+        with:
+          image: careeros-worker:latest
+          format: spdx-json
+          output-file: sbom/careeros-worker.spdx.json
+          artifact-name: careeros-worker-sbom
+          upload-artifact-retention: 14
+          upload-release-assets: false
+          dependency-snapshot: false
+      - name: Generate web image SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+        with:
+          image: careeros-web:latest
+          format: spdx-json
+          output-file: sbom/careeros-web.spdx.json
+          artifact-name: careeros-web-sbom
+          upload-artifact-retention: 14
+          upload-release-assets: false
+          dependency-snapshot: false
+      - name: Generate web-edge image SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+        with:
+          image: careeros-web-edge:latest
+          format: spdx-json
+          output-file: sbom/careeros-web-edge.spdx.json
+          artifact-name: careeros-web-edge-sbom
+          upload-artifact-retention: 14
+          upload-release-assets: false
+          dependency-snapshot: false
       - if: always()
         run: docker compose down --volumes --remove-orphans

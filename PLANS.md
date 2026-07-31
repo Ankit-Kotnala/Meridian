@@ -2,16 +2,15 @@
 
 Last updated: 2026-07-27
 Plan owner: engineering  
-Current status: **Phase 1/3 observed-onboarding, Settings, and resume-ready Career
-Record closure is locally verified; hosted evidence is pending explicit
-authorization to publish. Phase 2 semantic parsing/review closure is also
-locally/security verified with hosted evidence pending. Phase 9 remains complete
-and hosted verified in PR #22; Phase 8 remains complete and hosted verified in
-PR #21. Phase 7 durable verified-export closure and Phase 10A's guarded fictional
-local seed are merged. The product-wide UX redesign is locally implemented and
-visually verified without changing backend phase completion. Commercial,
-tenancy, privacy, administration, security/cost, infrastructure, and final
-release-hardening work remains open**
+Current status: **Phase 10A-H implementation and the cumulative local
+release-candidate audit are complete on the collective branch stacked on
+repository-normalization PR #37. The enterprise UI, generated contracts, durable
+privacy controls, commercial/tenancy/workflow/admin boundaries, security and cost
+controls, production images, migration repair, full-stack browser journeys,
+security scans, restore proof, and bounded load/soak gates are locally verified.
+Hosted PR CI and the owner/external pricing, legal, provider, topology, MFA,
+operations, and penetration-review approvals remain required; production handoff
+continues to fail closed until those inputs exist**
 
 ## Status legend
 
@@ -1565,26 +1564,405 @@ than overwritten.
 - No browser journey is added because Phase 10A exposes no user-facing route or
   UI behavior; the real acceptance surface is the guarded database/object replay.
 
+## Phase 10B scope and status
+
+Current status: **implemented, focused-verified, and cumulative locally verified
+on the collective release candidate; live commercial configuration remains
+owner-blocked**. The commercial boundary deliberately
+implements no invented pricing, entitlement, quota, provider, tax, or legal value.
+
+### Included
+
+- [x] Migration `20260726_0014` creates the exact four-plan catalog, owner-scoped
+      billing customers/subscriptions, operation-bound idempotency records,
+      provider event ledger, and redacted commercial audit with constraints,
+      indexes, composite ownership foreign keys, and one migration head.
+- [x] `owner_decision_required` plans are database- and domain-constrained to
+      empty pricing, provider references, entitlements, and quotas. Only a complete
+      reviewed price tuple can become purchasable.
+- [x] Provider-neutral checkout, portal, raw signed webhook, and reconciliation
+      ports use a disabled production adapter and deterministic HMAC test adapter.
+- [x] Checkout/portal enforce owner scope, CSRF at HTTP delivery, return-origin
+      allowlisting, HTTPS provider sessions, and request-fingerprint idempotency.
+- [x] Billing events persist provider event ID and raw-body SHA-256, replay exact
+      input, reject identifier/content collision, retain unmatched state, and
+      ignore stale provider sequence without reverting a subscription.
+- [x] Six FastAPI routes, stable payload-free problem responses, normalized
+      OpenAPI, generated TypeScript contracts, ADR 0019, and release/security/
+      testing documentation are included together.
+
+### Focused verification evidence
+
+| Check                 | Status | Evidence                                                                                                                                                                                                         |
+| --------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Domain/service        | Pass   | Ruff and strict commercial mypy passed; 6 service tests cover unconfigured plans, owner scope, URL policy, idempotency, signed webhook replay/collision/order, unmatched events, and portal requirements.        |
+| API contract          | Pass   | 3 FastAPI tests cover anonymous catalog, authenticated subscription, CSRF, safe disabled-provider problems, exact raw webhook bytes/headers, no-store responses, and complete unique OpenAPI operations.         |
+| PostgreSQL repository | Pass   | The local database upgraded to `20260726_0014`; the real repository test passed owner-scoped checkout/subscription, exact idempotent replay, signed applied/stale events, redacted audit, and cross-user denial. |
+| Migration             | Pass   | Local PostgreSQL upgraded `0013 -> 0014`, downgraded to `0013`, and repaired forward to the single `0014` head. Migration graph and guarded-seed regression tests pass.                                          |
+| Strict types          | Pass   | Canonical backend mypy passed 227 source files; API mypy passed 69 source files.                                                                                                                                 |
+| Generated contracts   | Pass   | OpenAPI and TypeScript artifacts regenerated from FastAPI with the six commercial operations; final drift/build gates remain part of the collective verifier.                                                    |
+
+### Owner decisions and residual risk
+
+Live payment provider/merchant account, pricing, taxes, entitlements, quotas,
+region, public/legal copy, and provider credential/key-rotation operations remain
+owner decisions. Billing therefore remains unavailable in runtime composition.
+Phase 10C owns Coach/Organization tenant authority, and Phase 10G owns centralized
+entitlement/quota/cost enforcement.
+
+## Phase 10C scope and status
+
+Current status: **implemented, focused-verified, and cumulative locally verified;
+invitation delivery execution is closed by Phase 10D, while live commercial seat
+and plan policy remains owner-blocked**.
+
+### Included
+
+- [x] Migration `20260726_0015` extends the dormant Phase 1 organization and
+      membership tables rather than creating a competing tenant authority. It adds
+      admin/coach roles, membership lifecycle/version state, non-disclosing
+      invitations, atomic delivery outbox, summary grants, idempotency, audit,
+      constraints, composite foreign keys, and concurrency-safe partial indexes.
+- [x] Forward-only migration 20260726_0016 repairs databases whose already-run
+      Phase 7 revision predates its cleanup-table definition, while validating and
+      preserving correct schemas. It does not rewrite merged migration history.
+- [x] Active durable membership is the only organization authority. Role
+      capabilities are server mapped; coaches/members receive a minimized self-only
+      roster, suspension removes capability immediately, and individual accounts
+      remain valid without synthetic membership.
+- [x] Invitations bind an expiring token digest to the exact normalized active
+      account email. Creation returns no mailbox/token and records delivery as
+      queued; rejection does not disclose whether an account or invitation exists.
+- [x] Subject-created grants cover six summary/collaboration scopes only. Raw
+      resumes, evidence, notes, contacts, objects, download intents, and exports
+      are not grantable. Authorization rechecks both active memberships, role,
+      tenant, subject, grantee, scope, status, and expiry on every decision.
+- [x] Eleven organization HTTP operations enforce authentication, CSRF on mutations,
+      idempotency or optimistic version headers, no-store responses, stable safe
+      problems, and generated FastAPI/OpenAPI/TypeScript contracts.
+- [x] ADR 0020 plus architecture, threat-model, testing, checklist, and plan
+      documentation record the boundary and residual work.
+
+### Focused verification evidence
+
+| Check                 | Status | Evidence                                                                                                                                                                                                                      |
+| --------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Domain/service        | Pass   | Focused Ruff and strict mypy pass; 3 service tests cover idempotent ownership, outsider denial, role capabilities, exact-email invitation acceptance, roster minimization, summary grants, revoke, and suspension recheck.    |
+| API contract          | Pass   | 4 FastAPI tests cover create/list, CSRF, safe role denial, ETag/no-store, invitation non-disclosure, and explicit OpenAPI operations. API mypy passes 74 source files.                                                        |
+| PostgreSQL repository | Pass   | The real repository test exposed and closed a parent/audit flush-order defect, then passed organization/membership creation, durable invitation outbox, acceptance, grant authorization, outsider denial, and redacted audit. |
+| Migration             | Pass   | Local PostgreSQL upgraded `0014 -> 0015`, downgraded to `0014`, repaired forward, then applied forward-only drift repair `0016`; the single head is `0016`. Migration graph and 20 guarded local-seed tests pass.             |
+| Generated contracts   | Pass   | Official OpenAPI export, generated TypeScript drift check, 3 contract tests, and contract build pass with the organization operations.                                                                                        |
+
+### Residual work
+
+Phase 10D now executes invitation delivery durably with fenced leases, bounded
+retries, deterministic replay-safe credentials, cancellation, dead-letter, and
+redacted worker telemetry. Phase 10E must apply approved retention/deletion policy
+to invitation mailbox data. Live Coach/Organization billing, seat policy, plan
+entitlements, and quotas remain unavailable because those commercial values are
+owner decisions; Phase 10G owns centralized enforcement after review.
+
+## Phase 10D scope and status
+
+Current status: **implemented, focused-verified, and cumulative locally verified;
+live SMTP/provider operations and alert ownership remain external gates**.
+
+### Included
+
+- [x] Audited every existing asynchronous path. Resume analysis, evidence
+      attachments, verified export/render/cleanup, analytics refresh, and
+      networking reminders already retain phase-owned durable state, leases,
+      bounded retry/dead-letter, and reconciliation; no competing generic
+      workflow authority was introduced.
+- [x] Migration `20260727_0017` adds explicit organization invitation outbox
+      cancellation, a three-way terminal-state constraint, a due-work partial
+      index, and the invitation-expired audit action.
+- [x] Organization invitation delivery claims bounded due rows with PostgreSQL
+      `FOR UPDATE SKIP LOCKED`, UUID fencing leases, status/expiry rechecks,
+      explicit completion/cancellation, exponential retry capped at one hour,
+      and terminal dead-letter state.
+- [x] The invitation credential is deterministically reconstructed with a
+      context-separated HMAC and never persisted raw. At-least-once resend uses
+      the same credential and acceptance still requires exact active account
+      email, status, expiry, and keyed digest.
+- [x] The worker composes bounded SMTP at the deployable boundary, escapes message
+      content, uses operational-only task results/logs, and schedules a
+      maintenance task with batch-budgeted lease and task time limits.
+- [x] Production configuration rejects the local invitation secret, disabled or
+      local SMTP, missing STARTTLS, local sender, and local/non-HTTPS public app
+      origin. ADR 0021 records the durable-workflow and SMTP semantics.
+
+### Focused verification evidence
+
+| Check                 | Status | Evidence                                                                                                                                                                                                                         |
+| --------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Domain/application    | Pass   | Focused Ruff and strict backend mypy pass across 242 source files; 6 organization unit tests cover replay-safe token derivation, fencing, delivery, retry/dead-letter, role/grant behavior, and secret-redacted representations. |
+| Worker                | Pass   | Worker Ruff and strict mypy pass; all 92 worker tests pass, including SMTP escaping, safe failure mapping, bounded result counts, production configuration, routing, schedule, and lease-aware limits.                           |
+| PostgreSQL repository | Pass   | The real organization repository test now uses the actual durable processor, verifies claim/delivery/lease clearing/redacted audit, and accepts the exact captured credential.                                                   |
+| Migration             | Pass   | Local PostgreSQL upgraded `0016 -> 0017`, downgraded to `0016`, re-upgraded to the single `0017` head, and passed Alembic drift detection. Migration graph and 21 guarded local-seed tests pass.                                 |
+
+### Residual work
+
+SMTP cannot prove exactly-once external side effects; an ambiguous provider
+acknowledgement may resend the same credential. Live provider selection,
+credentials, rotation, alert destinations, and authorized dead-letter replay are
+production/operator decisions. Invitation address retention and erasure continue
+in Phase 10E; aggregate protected dead-letter visibility and recovery continue in
+Phase 10F.
+
+## Phase 10E scope and status
+
+Current status: **implemented, frontend-connected, and cumulative locally verified;
+backup expiry, provider erasure, and legal retention policy remain external
+gates**.
+
+### Included
+
+- [x] Migration `20260727_0018` adds durable export/deletion operations with
+      request/trace IDs, idempotency, attempt budgets, due time, UUID leases,
+      safe blocker/error codes, retained capability digests, expiring artifact
+      integrity metadata, and nullable post-erasure user provenance.
+- [x] Export/deletion requests require authentication, CSRF, and idempotency;
+      deletion also requires recent authentication, disables the account,
+      increments auth authority, revokes sessions/refresh tokens, and expires
+      browser cookies immediately.
+- [x] Capability-scoped no-store status and short-lived download grants remain
+      usable after the user row is gone. UUIDs, sessions, and object keys are not
+      bearer authority.
+- [x] Settings exposes export/status/download/deletion with generated contracts,
+      stable idempotency, bounded cancellable polling, explicit blocker/terminal
+      states, and destructive confirmation. Operation capabilities remain only in
+      component memory and cross the same-origin BFF through one exact allowlist.
+- [x] Schema-reflected export fails on unclassified direct user-linked tables,
+      scopes every row to the user, excludes authentication secrets, internal
+      queues/idempotency, object keys, and other tenants, and emits a bounded ZIP
+      with structured JSON, eligible files, and SHA-256 manifest metadata.
+- [x] Cross-store erasure deletes every inventoried primary object idempotently,
+      redacts prior account-export artifacts, deletes the disabled user last, and
+      retains only terminal operation state. External I/O runs outside the row
+      lock; completion is lease-fenced and recovers if the user was already
+      deleted before a crash.
+- [x] Sole active organization ownership and billing-customer retention block
+      safely. Blocked accounts are restored; active older exports defer deletion
+      for durable retry instead of racing.
+- [x] Worker processing/cleanup use bounded batches, leases, retries/dead-letter,
+      schedules, aggregate-only telemetry, and production fail-closed provider,
+      storage, and capability-secret configuration. ADR 0022 records the model.
+
+### Focused verification evidence
+
+| Check              | Status | Evidence                                                                                                                                                                                                                                             |
+| ------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Domain/application | Pass   | Focused Ruff and strict mypy pass; 5 unit tests cover capability replay, recent-auth deletion, blocker restoration, export lifecycle, delete-before-redact cleanup, and fail-closed object-key classification.                                       |
+| API/contracts      | Pass   | All 154 API tests, 3 contract tests, TypeScript contract typecheck, and OpenAPI/generated-client drift pass. Privacy routes verify CSRF, idempotency, cookie expiry, capability-only no-store status/download, and safe payloads.                    |
+| Worker             | Pass   | All 95 worker tests pass with bounded aggregate results, safe failure mapping, production validation, lease-aware time limits, maintenance routing, processing schedule, and artifact-cleanup schedule.                                              |
+| PostgreSQL/S3      | Pass   | Two real PostgreSQL/MinIO tests verify tenant-isolated ZIP content, password-secret exclusion, primary file inclusion/integrity, user/object/prior-export erasure, retained post-delete status, sole-owner blocking, and billing-retention blocking. |
+| Migration/config   | Pass   | Local PostgreSQL upgraded `0017 -> 0018`, downgraded empty state to `0017`, re-upgraded to the single `0018` head, passed Alembic drift, and Compose configuration validates.                                                                        |
+
+### Residual work
+
+Primary PostgreSQL/S3 erasure is not a claim of immediate backup, SMTP, billing
+provider, or legally retained record removal. Phase 10H must approve and test
+backup expiry/restore, provider erasure, alert ownership, RPO/RTO, and user-facing
+deletion windows. Live billing-provider retention remains blocked on owner/legal
+selection. Phase 10F owns protected operator visibility and recovery; Phase 10G
+owns centralized abuse/quota/cost controls.
+
+## Phase 10F protected administration scope and status
+
+Current status: **implemented, focused-verified, and cumulative locally verified;
+protected-environment, operator MFA/provisioning, and recertification policy
+remain owner/external gates**.
+
+### Included
+
+- [x] Migration `20260727_0019` adds zero-default persisted operator assignments,
+      feature-flag metadata, idempotency, and a sequence-serialized hash-chained
+      administration audit with an erasure-safe HMAC actor reference.
+- [x] Explicit operations-viewer, job-operator, catalog-auditor, and
+      security-auditor capabilities are resolved from PostgreSQL on every request;
+      no email, tenant role, environment, UUID, or hidden control grants authority.
+- [x] Protected reads require an audited purpose reason. Mutations also require
+      CSRF and recent authentication; rejected authority and recent-auth attempts
+      are audited with safe outcomes.
+- [x] Aggregate system/catalog/dead-letter/audit endpoints are no-store and expose
+      no raw career content, PII, object keys, tokens, signed URLs, or provider
+      payloads. Generated OpenAPI/TypeScript contracts are current.
+- [x] Manual retry is a one-shot allowlist for account-privacy and organization-
+      invitation dead letters with idempotent replay. Other terminal states remain
+      visible and non-retryable until a feature-owned adapter is proven.
+- [x] Account export/erasure explicitly classifies the new admin tables; assignment
+      and idempotency state are removed while retained audit actor FKs are nulled
+      without invalidating the chain. ADR 0023 records the boundary.
+
+### Focused verification evidence
+
+| Check              | Status | Evidence                                                                                                                                                                                                |
+| ------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Domain/application | Pass   | Focused Ruff and strict mypy pass; 3 unit tests prove missing-role denial audit, recent-auth denial audit, idempotent replay, and a one-shot retry budget.                                              |
+| API/contracts      | Pass   | Admin route/config tests pass; contract typecheck, 3 contract tests, and OpenAPI/generated-client drift pass. Routes verify no-store reads plus CSRF/reason/idempotency mutation requirements.          |
+| PostgreSQL/privacy | Pass   | Three live PostgreSQL tests prove audit integrity through user erasure and re-arm account-privacy and invitation delivery dead letters; the combined PostgreSQL/MinIO privacy regression remains green. |
+| Migration/runtime  | Pass   | PostgreSQL passed `0019 -> 0018 -> 0019` with one head and no drift. Rebuilt API/worker images pass runtime imports; the worker and scheduler are healthy and Celery answers ping.                      |
+
+### Residual work
+
+Operator identities, provisioning review, access recertification, MFA policy,
+audit export/retention, alert destinations, and on-call ownership are production
+owner decisions. Phase 10H must encode their approved deployment controls and
+runbooks. Database-superuser tampering remains detectable rather than impossible.
+Additional retry kinds require their own feature-owned state-machine adapter and
+live failure/replay proof.
+
+## Phase 10G security, abuse, and AI-cost hardening scope and status
+
+Current status: **application and local edge controls are implemented and
+focused-verified; external penetration review and production topology validation
+remain release-approval gates**.
+
+### Included
+
+- [x] A coarse Redis-backed limiter admits every `/api/v1` read or mutation
+      before route execution. Staging and production fail closed without the
+      limiter or a valid BFF-signed source; client forwarding headers are ignored.
+- [x] Live HTTP AI composition requires explicit request, concurrency, monthly
+      token/cost, and worst-case per-call reservations. One Redis Lua transaction
+      atomically admits all limits by HMAC-pseudonymous owner and UTC month.
+- [x] Provider calls reserve worst-case usage before I/O and refund only bounded,
+      schema-valid reported usage. Missing, malformed, or over-reservation usage
+      fails closed and retains the full reservation; a typed 429 exposes only a
+      retry interval.
+- [x] API and edge response policy overwrites unsafe upstream security headers and
+      applies CSP, framing, MIME, permissions, referrer, cross-origin, no-store,
+      and explicit TLS-only HSTS controls.
+- [x] Resume and evidence-attachment parsers now run in credential-free killable
+      child processes with bounded JSON contracts, cleanup, descriptor closure,
+      timeouts, resource limits where supported, and standard-library egress/
+      child-process denial.
+- [x] Session, account-operation, guest-capability, organization-invitation, and
+      BFF signing secrets support one bounded previous value. Weak, blank, and
+      same-as-current rotation states are handled explicitly and regression-tested.
+- [x] ADR 0024 records the fail-closed behavior, rotation order, production
+      topology dependencies, CSP limitation, parser isolation limit, and external
+      review boundary.
+
+### Focused verification evidence
+
+| Check              | Status | Evidence                                                                                                                                                                                                                                                    |
+| ------------------ | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Backend policy     | Pass   | Backend Ruff and canonical mypy pass; 12 focused tests cover atomic AI budget/concurrency behavior, UTC month rollover, full-reservation failure, four dual-key capability families, credential stripping, egress denial, timeout termination, and cleanup. |
+| API and contracts  | Pass   | All 179 API tests pass, including central read/mutation admission, safe 429, security headers, current/previous BFF signatures, and fail-closed staging fixtures. OpenAPI drift, generated TypeScript typecheck, and 3 contract tests pass.                 |
+| Worker and parsers | Pass   | Worker Ruff/mypy and all 98 tests pass with the evidence attachment parser and rolling invitation-key support composed in the runtime. The complete backend architecture/unit suite passes 480 tests.                                                       |
+| Live Redis         | Pass   | The isolated Redis integration test proves atomic reservation, concurrency rejection, monthly token/cost rejection, settlement, lease release, and pseudonymous keys against database 15.                                                                   |
+| Edge policy        | Pass   | Node syntax and 6 header-policy tests prove forwarded-header replacement, malformed peer rejection, unsafe upstream-policy overwrite, explicit HSTS behavior, and exact HTTPS/local-HTTP upload-origin validation for CSP.                                  |
+
+### Residual release gates
+
+The code does not claim that an application audit is an independent penetration
+test. External review, production trusted-hop validation, Redis HA/persistence and
+alerting, live-provider usage-schema review, and parser-host isolation remain
+release-approval inputs. MFA is not implemented; no operator exists by default,
+operator authority cannot be granted over HTTP, and production operator enablement
+remains blocked on an owner-approved MFA/provisioning/recertification policy. The
+AI usage and administration-audit peppers must not be rotated like bearer-token
+keys because doing so can split active budget or actor-pseudonym history; their
+runbooks require drain/reconciliation or a retention-boundary decision.
+
+## Phase 10H production infrastructure, recovery, load, and CI/CD scope and status
+
+Current status: **provider-neutral implementation, local operational proof, and
+the final cumulative local audit are complete; hosted workflow execution remains
+pending, and production deployment is blocked on owner/external approvals**.
+
+### Included
+
+- [x] A strict deployment-contract validator binds an exact release SHA, change
+      ticket, migration head, four candidate archive checksums, deploy/rollback
+      image digests, canary window, provider topology, trusted proxies, recovery,
+      security/privacy/operations evidence, and four approval roles. Unknown
+      fields, secret-like fields, local/test/placeholders, missing evidence, or
+      open critical/high findings fail closed.
+- [x] The manually triggered release workflow builds the API, worker, web, and
+      web-edge images from pinned Dockerfiles, emits SHA-256 archive checksums and
+      SPDX JSON SBOMs, creates provenance/SBOM attestations, and uploads a bounded
+      14-day candidate bundle. `HANDOFF` is `main`-only and validates the protected
+      production-environment contract; it does not fabricate a provider deploy.
+- [x] CI now supplies live Redis to the API integration suite, asserts migration
+      `20260727_0019`, proves downgrade/forward repair through `0018`, statically
+      checks/self-tests the release controls, proves the unfilled contract is
+      rejected, and publishes SBOM artifacts after all four image scans.
+- [x] The local recovery verifier performs a binary PostgreSQL backup and MinIO
+      byte snapshot, restores both into randomized prefix-guarded isolated
+      targets, compares migration head/every table count/object path-size-SHA, and
+      cleans both targets in a finally path.
+- [x] The load gate is read-only, HTTPS-by-default, redirect-free, response/sample
+      bounded, target-rate paced for soak, and preserves machine-readable evidence
+      on success or threshold failure.
+- [x] ADR 0025 and the production operations runbook define protected approval,
+      preflight/canary/rollback-forward repair, recovery, monitoring, incident,
+      and secret-rotation responsibilities without claiming local Compose is
+      production.
+
+### Focused verification evidence
+
+| Check             | Status | Evidence                                                                                                                                                                                                                                                                                                                        |
+| ----------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Release controls  | Pass   | Ruff format/check and all three offline self-tests pass. The deliberately unfilled deployment template exits `2`; both workflow YAML files parse/format through Prettier. Hosted release execution is intentionally deferred until the branch is published and the repository plan supports attestations.                       |
+| Isolated recovery | Pass   | The cumulative primary-stack proof restored migration `20260727_0019`, all 147 application tables/2,509 rows, and 20 objects/25,669 bytes with an exact object-manifest digest in 86.164 seconds; its randomized database, bucket, and workspace were removed.                                                                  |
+| Load and soak     | Pass   | API health: 1,000 requests, 502.258 req/s, 45.790 ms p95, zero errors. API metadata: 250 requests, 402.979 req/s, 36.895 ms p95, zero errors. Edge home: 300 requests, 139.027 req/s, 101.570 ms p95, zero errors. Controlled 30-second API soak: 3,020 requests at 100.017 req/s, 18.408 ms p95, zero errors.                  |
+| Failure evidence  | Pass   | The first unpaced soak retained a failed aggregate report after 14,400 successes exposed local client socket exhaustion; the production gate gained an explicit target-rate pacer instead of weakening error thresholds. The oversized edge shell similarly drove a still-bounded 1 MiB response cap rather than being ignored. |
+
+### Residual production gates
+
+No cloud/provider topology, registry, region/data residency, production secret
+manager, encrypted PITR service, monitoring destination, on-call roster, RPO/RTO,
+operator MFA/provisioning, WORM audit export, legal retention/deletion policy, or
+external penetration reviewer has been owner-approved. The protected GitHub
+`production` environment and contract secret must be configured outside the
+repository. Artifact attestations for a private repository require an eligible
+GitHub plan. Provider-specific infrastructure and a deploy adapter require a
+follow-up ADR after those decisions; local recovery/load proof cannot substitute
+for provider restore, failure-domain, capacity, or rollback evidence.
+
 ## Full-specification completion audit
 
 Historical phase gates remain evidence for the vertical slices they actually
 tested; they do not waive requirements that the 2026-07-25 audit found absent or
-partial. Phase 2 semantic closure is implemented and locally/security verified;
-Phase 1/3 closure is locally verified and its hosted PR remains open. The
-backend-only Phase 7 closure is verified in draft PR #24 while its two excluded
-frontend browser dependencies remain honestly blocked. Phase 10A is locally
-verified in the current branch. Remaining work proceeds in dependency-ordered
-reviewable changes:
+partial. The Phase 1/3, Phase 7, Phase 10A, and enterprise-UI predecessor work is
+merged. Phase 10B-H and the residual privacy UI/BFF/edge/CI closure are integrated
+on the collective release-candidate branch stacked on repository-normalization PR
+#37. Cloud, legal, provider, and operator decisions continue to fail closed rather
+than being invented.
 
-1. Review and merge the existing stacked closure PRs separately without
-   weakening their recorded blockers or expanding their scope.
-2. Implement commercial/billing, Coach/Organization tenancy, durable workflows,
-   privacy/export/retention/deletion, protected administration, security/cost
-   hardening, and production infrastructure/release work as separate phases.
+### Cumulative local release-candidate evidence (2026-07-27)
+
+- JavaScript/TypeScript contract, format, lint/boundary, strict type, unit,
+  component, edge, and production-build gates pass; the build compiles 49 routes.
+- Backend, API, and worker Ruff/mypy gates pass across 263, 91, and 23 source files;
+  480 backend architecture/unit, 179 API, and 98 worker tests pass.
+- The clean isolated Phase 9 stack proves the single `20260727_0019` head,
+  downgrade/forward repair, 50 live PostgreSQL/Redis/MinIO integrations, container
+  hardening, dependency readiness recovery, 12 desktop/mobile browser journeys,
+  and complete state cleanup. Six narrower mobile duplicates are intentionally
+  excluded by their project configuration.
+- Gitleaks, pnpm audit, pip-audit, non-root/OpenSSL runtime smoke, and Grype scans
+  of API, worker, web, and web-edge pass with no high-or-critical release finding.
+- The refreshed primary stack passes five service probes, isolated PostgreSQL/
+  MinIO restore integrity, three bounded request-count load gates, and a paced
+  30-second 100 req/s soak with zero errors.
+- Two earlier diagnostic browser executions are not counted as passes: one exposed
+  the missing BFF capability-header allowlist and one had loaded a stale heading
+  locator. Both causes were corrected and the clean final run above passed.
+
+Remaining work is:
+
+1. Publish the collective PR, require its hosted CI to pass, and merge
+   repository-normalization PR #37 first.
+2. Obtain the owner/external production approvals listed in Phase 10H before any
+   production handoff.
 
 External pricing, provider accounts, legal text, support contacts, deployment
 region, retention policy, RPO/RTO, administrative policy, and production approval
-are owner decisions. Adapters and fail-closed configuration can be implemented
+are owner decisions. Adapters and fail-closed configuration are implemented
 without inventing those values.
 
 ## Roadmap and phase gates

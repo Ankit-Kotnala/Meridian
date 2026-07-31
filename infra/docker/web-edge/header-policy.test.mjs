@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { upstreamHeaders } from "./header-policy.mjs";
+import {
+  downstreamHeaders,
+  exactUploadOrigin,
+  upstreamHeaders,
+} from "./header-policy.mjs";
 
 test("trusted edge overwrites every client-selected address header", () => {
   const result = upstreamHeaders(
@@ -27,4 +31,59 @@ test("trusted edge never forwards malformed socket metadata", () => {
 
   assert.equal(result["x-forwarded-for"], "unavailable");
   assert.equal(result["x-real-ip"], "unavailable");
+});
+test("public responses override unsafe upstream headers", () => {
+  const result = downstreamHeaders({
+    connection: "close",
+    server: "framework-version",
+    "x-powered-by": "framework",
+    "content-security-policy": "default-src *",
+    "set-cookie": ["session=opaque", "csrf=opaque"],
+  });
+
+  assert.equal(result.connection, undefined);
+  assert.equal(result.server, undefined);
+  assert.equal(result["x-powered-by"], undefined);
+  assert.match(result["content-security-policy"], /frame-ancestors 'none'/u);
+  assert.match(result["content-security-policy"], /script-src-attr 'none'/u);
+  assert.equal(result["x-content-type-options"], "nosniff");
+  assert.equal(result["x-frame-options"], "DENY");
+  assert.deepEqual(result["set-cookie"], ["session=opaque", "csrf=opaque"]);
+  assert.equal(result["strict-transport-security"], undefined);
+});
+
+test("public CSP admits only the validated direct-upload origin", () => {
+  const result = downstreamHeaders({}, false, "https://uploads.example.test");
+
+  assert.match(
+    result["content-security-policy"],
+    /connect-src 'self' https:\/\/uploads\.example\.test(?:;|$)/u,
+  );
+  assert.doesNotMatch(result["content-security-policy"], /connect-src[^;]*\*/u);
+});
+
+test("upload origins fail closed when they are not exact and trustworthy", () => {
+  for (const value of [
+    "*",
+    "http://uploads.example.test",
+    "https://user:secret@uploads.example.test",
+    "https://uploads.example.test/path",
+    "https://uploads.example.test?scope=wide",
+  ]) {
+    assert.throws(() => exactUploadOrigin(value), /EDGE_UPLOAD_ORIGIN/u);
+  }
+  assert.equal(
+    exactUploadOrigin("http://127.0.0.1:19000"),
+    "http://127.0.0.1:19000",
+  );
+});
+
+test("TLS deployments opt into HSTS and insecure-request upgrading", () => {
+  const result = downstreamHeaders({}, true);
+
+  assert.equal(
+    result["strict-transport-security"],
+    "max-age=63072000; includeSubDomains; preload",
+  );
+  assert.match(result["content-security-policy"], /upgrade-insecure-requests/u);
 });

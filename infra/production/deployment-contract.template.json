@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "release": {
+    "releaseSha": "OWNER_DECISION_REQUIRED",
+    "changeTicket": "OWNER_DECISION_REQUIRED",
+    "migrationHead": "20260727_0019",
+    "productionUrl": "OWNER_DECISION_REQUIRED",
+    "candidateArchiveChecksums": {
+      "api": "OWNER_DECISION_REQUIRED",
+      "worker": "OWNER_DECISION_REQUIRED",
+      "web": "OWNER_DECISION_REQUIRED",
+      "web-edge": "OWNER_DECISION_REQUIRED"
+    },
+    "deploymentImageDigests": {
+      "api": "OWNER_DECISION_REQUIRED",
+      "worker": "OWNER_DECISION_REQUIRED",
+      "web": "OWNER_DECISION_REQUIRED",
+      "web-edge": "OWNER_DECISION_REQUIRED"
+    },
+    "rollbackImageDigests": {
+      "api": "OWNER_DECISION_REQUIRED",
+      "worker": "OWNER_DECISION_REQUIRED",
+      "web": "OWNER_DECISION_REQUIRED",
+      "web-edge": "OWNER_DECISION_REQUIRED"
+    },
+    "canaryPercent": 0,
+    "observationMinutes": 0
+  },
+  "topology": {
+    "provider": "OWNER_DECISION_REQUIRED",
+    "region": "OWNER_DECISION_REQUIRED",
+    "dataResidency": "OWNER_DECISION_REQUIRED",
+    "runtime": "OWNER_DECISION_REQUIRED",
+    "postgres": "OWNER_DECISION_REQUIRED",
+    "objectStorage": "OWNER_DECISION_REQUIRED",
+    "redis": "OWNER_DECISION_REQUIRED",
+    "queue": "OWNER_DECISION_REQUIRED",
+    "scanner": "OWNER_DECISION_REQUIRED",
+    "trustedProxyCidrs": []
+  },
+  "recovery": {
+    "rpoMinutes": 0,
+    "rtoMinutes": 0,
+    "backupRetentionDays": 0,
+    "pointInTimeRecoveryEnabled": false,
+    "lastRestoreEvidenceId": "OWNER_DECISION_REQUIRED",
+    "lastRestoreVerifiedAt": "OWNER_DECISION_REQUIRED"
+  },
+  "security": {
+    "operatorMfaEnforced": false,
+    "criticalFindingsOpen": 1,
+    "highFindingsOpen": 1,
+    "penetrationReviewEvidenceId": "OWNER_DECISION_REQUIRED",
+    "keyRotationEvidenceId": "OWNER_DECISION_REQUIRED",
+    "alertRoutingEvidenceId": "OWNER_DECISION_REQUIRED"
+  },
+  "privacy": {
+    "policyVersion": "OWNER_DECISION_REQUIRED",
+    "accountRetentionDays": 0,
+    "backupDeletionExpiryDays": 0,
+    "providerErasureEvidenceId": "OWNER_DECISION_REQUIRED"
+  },
+  "operations": {
+    "loadEvidenceId": "OWNER_DECISION_REQUIRED",
+    "monitoringEvidenceId": "OWNER_DECISION_REQUIRED",
+    "onCallSchedule": "OWNER_DECISION_REQUIRED",
+    "incidentRunbookVersion": "OWNER_DECISION_REQUIRED",
+    "rollbackTestEvidenceId": "OWNER_DECISION_REQUIRED"
+  },
+  "approvals": {
+    "releaseManager": "OWNER_DECISION_REQUIRED",
+    "securityOwner": "OWNER_DECISION_REQUIRED",
+    "privacyOwner": "OWNER_DECISION_REQUIRED",
+    "operationsOwner": "OWNER_DECISION_REQUIRED"
+  }
+}

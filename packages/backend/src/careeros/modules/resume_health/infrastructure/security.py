@@ -17,10 +17,19 @@ class SystemClock:
 class HmacGuestCapabilityManager:
     """Issue opaque id+secret capabilities and retain only HMAC digests."""
 
-    def __init__(self, pepper: str) -> None:
-        if len(pepper.encode("utf-8")) < 32:
+    def __init__(self, pepper: str, previous_pepper: str | None = None) -> None:
+        encoded = pepper.encode("utf-8")
+        if len(encoded) < 32:
             raise ValueError("guest capability pepper must contain at least 32 UTF-8 bytes")
-        self._pepper = pepper.encode("utf-8")
+        previous = previous_pepper.encode("utf-8") if previous_pepper is not None else None
+        if previous is not None and len(previous) < 32:
+            raise ValueError(
+                "previous guest capability pepper must contain at least 32 UTF-8 bytes"
+            )
+        self._pepper = encoded
+        self._verification_peppers = (encoded,) + (
+            (previous,) if previous is not None and previous != encoded else ()
+        )
 
     def issue(self) -> CapabilitySecret:
         capability_id = uuid4()
@@ -42,7 +51,15 @@ class HmacGuestCapabilityManager:
         return capability_id, secret
 
     def verify(self, expected: bytes, secret: str) -> bool:
-        return hmac.compare_digest(expected, self._digest(secret))
+        matches = tuple(
+            hmac.compare_digest(expected, self._digest_with(pepper, secret))
+            for pepper in self._verification_peppers
+        )
+        return any(matches)
 
     def _digest(self, secret: str) -> bytes:
-        return hmac.new(self._pepper, secret.encode("utf-8"), hashlib.sha256).digest()
+        return self._digest_with(self._pepper, secret)
+
+    @staticmethod
+    def _digest_with(pepper: bytes, secret: str) -> bytes:
+        return hmac.new(pepper, secret.encode("utf-8"), hashlib.sha256).digest()

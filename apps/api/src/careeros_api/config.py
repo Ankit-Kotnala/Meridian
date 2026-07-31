@@ -13,7 +13,7 @@ LogFormat = Literal["json", "console"]
 EmailProvider = Literal["smtp", "disabled"]
 MalwareScannerProvider = Literal["clamav", "disabled"]
 AiProvider = Literal["deterministic", "http_json", "disabled"]
-AccountOperationsProvider = Literal["disabled"]
+AccountOperationsProvider = Literal["local", "disabled"]
 BillingProvider = Literal["disabled"]
 
 _DEVELOPMENT_DATABASE_URL = "postgresql+asyncpg://careeros:careeros@localhost:5432/careeros"
@@ -65,12 +65,19 @@ class Settings(BaseSettings):
     database_connect_timeout_seconds: float = Field(default=3.0, gt=0, le=30)
     database_command_timeout_seconds: float = Field(default=30.0, gt=0, le=300)
     max_request_body_bytes: int = Field(default=1_048_576, ge=1_024, le=10_485_760)
+    api_read_rate_limit: int = Field(default=600, ge=10, le=10_000)
+    api_mutation_rate_limit: int = Field(default=120, ge=5, le=5_000)
+    api_rate_limit_window_seconds: int = Field(default=60, ge=60, le=3_600)
 
     redis_url: SecretStr = Field(
         default=SecretStr("redis://localhost:6379/0"),
         validation_alias=AliasChoices("CAREEROS_REDIS_URL", "REDIS_URL"),
     )
     auth_token_pepper: SecretStr = SecretStr("change-me-local-only-auth-token-pepper")
+    auth_token_previous_pepper: SecretStr | None = None
+    account_operation_pepper: SecretStr = SecretStr("change-me-local-only-account-operation-pepper")
+    account_operation_previous_pepper: SecretStr | None = None
+    admin_audit_pepper: SecretStr = SecretStr("change-me-local-only-admin-audit-pepper")
     cookie_secure: bool = False
     session_ttl_seconds: int = Field(default=900, ge=300, le=3600)
     refresh_ttl_seconds: int = Field(default=2_592_000, ge=86_400, le=7_776_000)
@@ -96,18 +103,32 @@ class Settings(BaseSettings):
     google_client_secret: SecretStr | None = None
     google_redirect_uri: str = "http://localhost:3000/api/v1/auth/google/callback"
     account_export_provider: AccountOperationsProvider = Field(
-        default="disabled",
+        default="local",
         validation_alias=AliasChoices(
             "CAREEROS_ACCOUNT_EXPORT_PROVIDER",
             "ACCOUNT_EXPORT_PROVIDER",
         ),
     )
     account_deletion_provider: AccountOperationsProvider = Field(
-        default="disabled",
+        default="local",
         validation_alias=AliasChoices(
             "CAREEROS_ACCOUNT_DELETION_PROVIDER",
             "ACCOUNT_DELETION_PROVIDER",
         ),
+    )
+    account_operation_max_attempts: int = Field(default=5, ge=1, le=10)
+    account_operation_lease_seconds: int = Field(default=900, ge=30, le=3_600)
+    account_operation_retry_seconds: int = Field(default=30, ge=1, le=3_600)
+    account_export_retention_hours: int = Field(default=24, ge=1, le=720)
+    account_export_max_archive_bytes: int = Field(
+        default=134_217_728,
+        ge=1_048_576,
+        le=536_870_912,
+    )
+    account_export_max_object_bytes: int = Field(
+        default=26_214_400,
+        ge=1_048_576,
+        le=52_428_800,
     )
     billing_provider: BillingProvider = Field(
         default="disabled",
@@ -173,7 +194,9 @@ class Settings(BaseSettings):
     clamav_port: int = Field(default=3310, ge=1, le=65_535)
     clamav_timeout_seconds: float = Field(default=20.0, gt=0, le=120)
     resume_capability_pepper: SecretStr = SecretStr("change-me-local-only-resume-capability-pepper")
+    resume_capability_previous_pepper: SecretStr | None = None
     bff_client_signal_secret: SecretStr = SecretStr("change-me-local-only-bff-client-signal-secret")
+    bff_client_signal_previous_secret: SecretStr | None = None
     resume_max_upload_bytes: int = Field(default=5_242_880, ge=65_536, le=20_971_520)
     resume_max_pages: int = Field(
         default=8,
@@ -215,6 +238,15 @@ class Settings(BaseSettings):
     ai_http_max_response_bytes: int = Field(default=262_144, ge=1_024, le=1_048_576)
     ai_circuit_failure_threshold: int = Field(default=3, ge=1, le=20)
     ai_circuit_cooldown_seconds: int = Field(default=60, ge=1, le=3_600)
+    ai_usage_pepper: SecretStr = SecretStr("change-me-local-only-ai-usage-pepper")
+    ai_requests_per_window: int = Field(default=10, ge=1, le=10_000)
+    ai_request_window_seconds: int = Field(default=60, ge=60, le=86_400)
+    ai_maximum_concurrency: int = Field(default=2, ge=1, le=20)
+    ai_monthly_token_limit: int | None = Field(default=None, ge=1)
+    ai_monthly_cost_limit_micros: int | None = Field(default=None, ge=1)
+    ai_reservation_tokens: int | None = Field(default=None, ge=1)
+    ai_reservation_cost_micros: int | None = Field(default=None, ge=1)
+    ai_usage_lease_seconds: int = Field(default=90, ge=10, le=600)
 
     @field_validator("allowed_origins", mode="before")
     @classmethod
@@ -276,11 +308,28 @@ class Settings(BaseSettings):
         "smtp_password",
         "google_client_secret",
         "ai_http_api_key",
+        "auth_token_previous_pepper",
+        "account_operation_previous_pepper",
+        "resume_capability_previous_pepper",
+        "bff_client_signal_previous_secret",
         mode="before",
     )
     @classmethod
     def normalize_blank_optional_secret(cls, value: Any) -> Any:
         if isinstance(value, str) and not value:
+            return None
+        return value
+
+    @field_validator(
+        "ai_monthly_token_limit",
+        "ai_monthly_cost_limit_micros",
+        "ai_reservation_tokens",
+        "ai_reservation_cost_micros",
+        mode="before",
+    )
+    @classmethod
+    def normalize_blank_optional_budget(cls, value: Any) -> Any:
+        if isinstance(value, str) and not value.strip():
             return None
         return value
 
@@ -290,11 +339,28 @@ class Settings(BaseSettings):
         parse_async_postgresql_url(value.get_secret_value())
         return value
 
-    @field_validator("auth_token_pepper")
+    @field_validator(
+        "auth_token_pepper",
+        "account_operation_pepper",
+        "admin_audit_pepper",
+        "ai_usage_pepper",
+    )
     @classmethod
     def require_strong_token_pepper(cls, value: SecretStr) -> SecretStr:
         if len(value.get_secret_value().encode("utf-8")) < 32:
-            raise ValueError("auth_token_pepper must be at least 32 UTF-8 bytes")
+            raise ValueError("token peppers must be at least 32 UTF-8 bytes")
+        return value
+
+    @field_validator(
+        "auth_token_previous_pepper",
+        "account_operation_previous_pepper",
+        "resume_capability_previous_pepper",
+        "bff_client_signal_previous_secret",
+    )
+    @classmethod
+    def require_strong_previous_secret(cls, value: SecretStr | None) -> SecretStr | None:
+        if value is not None and len(value.get_secret_value().encode("utf-8")) < 32:
+            raise ValueError("previous rotation secrets must be at least 32 UTF-8 bytes")
         return value
 
     @field_validator("redis_url")
@@ -344,6 +410,40 @@ class Settings(BaseSettings):
                 raise ValueError("AI HTTP provider endpoint must not contain credentials")
             if parsed_ai.fragment:
                 raise ValueError("AI HTTP provider endpoint must not contain a fragment")
+            if (
+                self.ai_monthly_token_limit is None
+                or self.ai_monthly_cost_limit_micros is None
+                or self.ai_reservation_tokens is None
+                or self.ai_reservation_cost_micros is None
+            ):
+                raise ValueError("AI HTTP provider requires explicit usage budgets")
+            if (
+                self.ai_reservation_tokens > self.ai_monthly_token_limit
+                or self.ai_reservation_cost_micros > self.ai_monthly_cost_limit_micros
+            ):
+                raise ValueError("AI usage reservations must not exceed monthly budgets")
+        rotation_pairs = (
+            (self.auth_token_pepper, self.auth_token_previous_pepper),
+            (
+                self.account_operation_pepper,
+                self.account_operation_previous_pepper,
+            ),
+            (
+                self.resume_capability_pepper,
+                self.resume_capability_previous_pepper,
+            ),
+            (
+                self.bff_client_signal_secret,
+                self.bff_client_signal_previous_secret,
+            ),
+        )
+        if any(
+            previous is not None and current.get_secret_value() == previous.get_secret_value()
+            for current, previous in rotation_pairs
+        ):
+            raise ValueError("previous rotation secrets must differ from current secrets")
+        if self.account_deletion_provider != self.account_export_provider:
+            raise ValueError("account export and deletion providers must be enabled together")
         if self.environment != "production":
             return self
 
@@ -359,12 +459,25 @@ class Settings(BaseSettings):
             violations.append("allowed_origins must use HTTPS")
         if not self.public_app_url.startswith("https://"):
             violations.append("public_app_url must use HTTPS")
+        if self.account_export_provider != "local":
+            violations.append("local account export must be enabled")
+        if self.account_deletion_provider != "local":
+            violations.append("local account deletion must be enabled")
         if self.email_provider != "smtp":
             violations.append("email_provider must be smtp")
         if self.smtp_start_tls is False:
             violations.append("smtp_start_tls must be enabled")
         if self.auth_token_pepper.get_secret_value() == "change-me-local-only-auth-token-pepper":
             violations.append("the development auth token pepper must be replaced")
+        if (
+            self.account_operation_pepper.get_secret_value()
+            == "change-me-local-only-account-operation-pepper"
+        ):
+            violations.append("the development account-operation pepper must be replaced")
+        if self.admin_audit_pepper.get_secret_value() == "change-me-local-only-admin-audit-pepper":
+            violations.append("the development admin-audit pepper must be replaced")
+        if self.ai_usage_pepper.get_secret_value() == "change-me-local-only-ai-usage-pepper":
+            violations.append("the development AI-usage pepper must be replaced")
         if self.google_oauth_enabled and not self.google_redirect_uri.startswith("https://"):
             violations.append("google_redirect_uri must use HTTPS")
         if not self.s3_endpoint_url.startswith("https://"):

@@ -2,7 +2,7 @@
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal, Self
+from typing import Any, Literal, Self
 from urllib.parse import urlsplit
 
 from careeros.foundation.config import validate_database_url_for_environment
@@ -12,6 +12,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 _LOCAL_REDIS_URL = "redis://localhost:6379/0"
 _LOCAL_DATABASE_URL = "postgresql+asyncpg://careeros:careeros@localhost:5432/careeros"
 _LOCAL_STORAGE_SECRET = "change-me-local-only-app-storage-secret"  # noqa: S105 -- local Compose credential
+_LOCAL_INVITATION_SECRET = "change-me-local-only-auth-token-pepper"  # noqa: S105 -- local only
 
 
 def _is_development_redis_url(value: SecretStr) -> bool:
@@ -87,6 +88,136 @@ class WorkerSettings(BaseSettings):
     database_max_overflow: int = Field(default=2, ge=0, le=20)
     database_connect_timeout_seconds: float = Field(default=3.0, gt=0, le=30)
     database_command_timeout_seconds: float = Field(default=30.0, gt=0, le=300)
+
+    organization_invitation_secret: SecretStr = Field(
+        default=SecretStr(_LOCAL_INVITATION_SECRET),
+        min_length=32,
+        validation_alias=AliasChoices("CAREEROS_AUTH_TOKEN_PEPPER", "AUTH_TOKEN_PEPPER"),
+    )
+    organization_invitation_previous_secret: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "CAREEROS_AUTH_TOKEN_PREVIOUS_PEPPER",
+            "AUTH_TOKEN_PREVIOUS_PEPPER",
+        ),
+    )
+    email_provider: Literal["smtp", "disabled"] = Field(
+        default="smtp",
+        validation_alias=AliasChoices("CAREEROS_EMAIL_PROVIDER", "EMAIL_PROVIDER"),
+    )
+    email_from_address: str = Field(
+        default="no-reply@careeros.local",
+        min_length=3,
+        max_length=254,
+        validation_alias=AliasChoices("CAREEROS_EMAIL_FROM_ADDRESS", "EMAIL_FROM_ADDRESS"),
+    )
+    smtp_host: str = Field(
+        default="localhost",
+        min_length=1,
+        max_length=253,
+        validation_alias=AliasChoices("CAREEROS_SMTP_HOST", "SMTP_HOST"),
+    )
+    smtp_port: int = Field(
+        default=1025,
+        ge=1,
+        le=65_535,
+        validation_alias=AliasChoices("CAREEROS_SMTP_PORT", "SMTP_PORT"),
+    )
+    smtp_username: str | None = Field(
+        default=None,
+        max_length=255,
+        validation_alias=AliasChoices("CAREEROS_SMTP_USERNAME", "SMTP_USERNAME"),
+    )
+    smtp_password: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices("CAREEROS_SMTP_PASSWORD", "SMTP_PASSWORD"),
+    )
+    smtp_start_tls: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("CAREEROS_SMTP_START_TLS", "SMTP_START_TLS"),
+    )
+    smtp_timeout_seconds: float = Field(
+        default=5.0,
+        gt=0,
+        le=30,
+        validation_alias=AliasChoices(
+            "CAREEROS_SMTP_TIMEOUT_SECONDS",
+            "SMTP_TIMEOUT_SECONDS",
+        ),
+    )
+    public_app_url: str = Field(
+        default="http://localhost:3000",
+        validation_alias=AliasChoices("CAREEROS_PUBLIC_APP_URL", "PUBLIC_APP_URL"),
+    )
+    organization_invitation_interval_seconds: int = Field(
+        default=5,
+        ge=1,
+        le=3_600,
+        validation_alias=AliasChoices(
+            "CAREEROS_ORGANIZATION_INVITATION_INTERVAL_SECONDS",
+            "ORGANIZATION_INVITATION_INTERVAL_SECONDS",
+        ),
+    )
+    organization_invitation_batch_size: int = Field(
+        default=20,
+        ge=1,
+        le=500,
+        validation_alias=AliasChoices(
+            "CAREEROS_ORGANIZATION_INVITATION_BATCH_SIZE",
+            "ORGANIZATION_INVITATION_BATCH_SIZE",
+        ),
+    )
+    organization_invitation_lease_seconds: int = Field(
+        default=120,
+        ge=5,
+        le=900,
+        validation_alias=AliasChoices(
+            "CAREEROS_ORGANIZATION_INVITATION_LEASE_SECONDS",
+            "ORGANIZATION_INVITATION_LEASE_SECONDS",
+        ),
+    )
+    organization_invitation_retry_seconds: int = Field(
+        default=30,
+        ge=1,
+        le=3_600,
+        validation_alias=AliasChoices(
+            "CAREEROS_ORGANIZATION_INVITATION_RETRY_SECONDS",
+            "ORGANIZATION_INVITATION_RETRY_SECONDS",
+        ),
+    )
+
+    account_export_provider: Literal["local", "disabled"] = Field(
+        default="local",
+        validation_alias=AliasChoices(
+            "CAREEROS_ACCOUNT_EXPORT_PROVIDER",
+            "ACCOUNT_EXPORT_PROVIDER",
+        ),
+    )
+    account_deletion_provider: Literal["local", "disabled"] = Field(
+        default="local",
+        validation_alias=AliasChoices(
+            "CAREEROS_ACCOUNT_DELETION_PROVIDER",
+            "ACCOUNT_DELETION_PROVIDER",
+        ),
+    )
+    account_operation_max_attempts: int = Field(default=5, ge=1, le=10)
+    account_operation_lease_seconds: int = Field(default=900, ge=30, le=3_600)
+    account_operation_retry_seconds: int = Field(default=30, ge=1, le=3_600)
+    account_operation_interval_seconds: int = Field(default=5, ge=1, le=300)
+    account_operation_batch_size: int = Field(default=5, ge=1, le=100)
+    account_export_cleanup_interval_seconds: int = Field(default=300, ge=60, le=86_400)
+    account_export_cleanup_batch_size: int = Field(default=20, ge=1, le=100)
+    account_export_retention_hours: int = Field(default=24, ge=1, le=720)
+    account_export_max_archive_bytes: int = Field(
+        default=134_217_728,
+        ge=1_048_576,
+        le=536_870_912,
+    )
+    account_export_max_object_bytes: int = Field(
+        default=26_214_400,
+        ge=1_048_576,
+        le=52_428_800,
+    )
 
     s3_endpoint_url: str = Field(
         default="http://localhost:9000",
@@ -505,6 +636,42 @@ class WorkerSettings(BaseSettings):
         ),
     )
 
+    @field_validator("organization_invitation_previous_secret", mode="before")
+    @classmethod
+    def normalize_blank_previous_invitation_secret(cls, value: Any) -> Any:
+        if isinstance(value, str) and not value:
+            return None
+        return value
+
+    @field_validator("organization_invitation_previous_secret")
+    @classmethod
+    def validate_previous_invitation_secret(
+        cls,
+        value: SecretStr | None,
+    ) -> SecretStr | None:
+        if value is not None and len(value.get_secret_value().encode("utf-8")) < 32:
+            raise ValueError("previous invitation secret must contain at least 32 bytes")
+        return value
+
+    @field_validator("public_app_url")
+    @classmethod
+    def validate_public_app_url(cls, value: str) -> str:
+        parsed = urlsplit(value)
+        if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+            raise ValueError("public_app_url must be an absolute HTTP(S) origin")
+        if parsed.username or parsed.password or parsed.path not in {"", "/"}:
+            raise ValueError("public_app_url must not contain credentials or a path")
+        if parsed.query or parsed.fragment:
+            raise ValueError("public_app_url must not contain query or fragment metadata")
+        return value.rstrip("/")
+
+    @field_validator("smtp_host")
+    @classmethod
+    def validate_smtp_host(cls, value: str) -> str:
+        if "://" in value or "/" in value or any(character.isspace() for character in value):
+            raise ValueError("smtp_host must be a hostname without a scheme or path")
+        return value
+
     @field_validator("s3_endpoint_url", "s3_public_endpoint_url")
     @classmethod
     def validate_storage_endpoint(cls, value: str) -> str:
@@ -541,6 +708,21 @@ class WorkerSettings(BaseSettings):
             raise ValueError("analytics lease must exceed the worker hard time limit")
         if self.resume_export_lease_seconds <= self.task_time_limit_seconds:
             raise ValueError("resume export lease must exceed the worker hard time limit")
+        if self.account_operation_lease_seconds <= self.task_time_limit_seconds:
+            raise ValueError("account operation lease must exceed the worker hard time limit")
+        if self.account_deletion_provider != self.account_export_provider:
+            raise ValueError("account export and deletion providers must be enabled together")
+        if (
+            self.organization_invitation_previous_secret is not None
+            and self.organization_invitation_previous_secret.get_secret_value()
+            == self.organization_invitation_secret.get_secret_value()
+        ):
+            raise ValueError("previous invitation secret must differ from current secret")
+        invitation_delivery_budget = (
+            self.organization_invitation_batch_size * self.smtp_timeout_seconds + 5
+        )
+        if self.organization_invitation_lease_seconds <= invitation_delivery_budget:
+            raise ValueError("organization invitation lease must exceed the bounded SMTP batch")
         validate_database_url_for_environment(
             self.database_url.get_secret_value(),
             self.environment,
@@ -567,6 +749,23 @@ class WorkerSettings(BaseSettings):
                 violations.append("ClamAV scanning must be enabled")
             if _is_local_hostname(self.clamav_host, "clamav"):
                 violations.append("an explicit non-local ClamAV host is required")
+            if self.organization_invitation_secret.get_secret_value() == _LOCAL_INVITATION_SECRET:
+                violations.append("the local organization invitation secret must be replaced")
+            if self.account_export_provider != "local":
+                violations.append("local account export processing must be enabled")
+            if self.account_deletion_provider != "local":
+                violations.append("local account deletion processing must be enabled")
+            if self.email_provider != "smtp":
+                violations.append("SMTP invitation delivery must be enabled")
+            if not self.smtp_start_tls:
+                violations.append("SMTP STARTTLS must be enabled")
+            if _is_local_hostname(self.smtp_host, "mailpit"):
+                violations.append("an explicit non-local SMTP host is required")
+            public_app = urlsplit(self.public_app_url)
+            if public_app.scheme != "https" or _is_local_hostname(public_app.hostname):
+                violations.append("the public application origin must use non-local HTTPS")
+            if self.email_from_address.casefold().endswith("@careeros.local"):
+                violations.append("the local sender address must be replaced")
             if violations:
                 raise ValueError("Unsafe production configuration: " + "; ".join(violations))
         return self
