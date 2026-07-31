@@ -37,7 +37,9 @@ def account_privacy_service(request: Request) -> AccountPrivacyService:
     if service is None:
         # Create on the fly using identity uow factory
         id_svc = identity_service(request)
-        uow_factory = getattr(id_svc, "_uow_factory")
+        uow_factory = getattr(id_svc, "_uow_factory", None)
+        if uow_factory is None:
+            raise IdentityUnavailable
         service = AccountPrivacyService(uow_factory)
     return cast(AccountPrivacyService, service)
 

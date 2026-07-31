@@ -1,6 +1,7 @@
 """Billing payment gateway providers (Mock & Stripe)."""
 
 import json
+from typing import Any, cast
 from uuid import uuid4
 
 from careeros.modules.billing.application.models import (
@@ -28,9 +29,9 @@ class MockBillingProvider(BillingProviderPort):
         portal_url = f"{request.return_url}?portal_session=active&customer_id={customer_id}"
         return PortalSessionResponse(portal_url=portal_url)
 
-    def verify_webhook_signature(self, payload: bytes, signature: str) -> dict:
+    def verify_webhook_signature(self, payload: bytes, signature: str) -> dict[str, Any]:
         try:
-            return json.loads(payload.decode("utf-8"))
+            return cast(dict[str, Any], json.loads(payload.decode("utf-8")))
         except Exception:
             return {
                 "id": f"evt_mock_{uuid4().hex[:8]}",

@@ -60,7 +60,6 @@ const workspaceRoot = resolve(import.meta.dirname, "../..");
 const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: workspaceRoot,
-  experimental: { useTypeScriptCli: true },
   turbopack: { root: workspaceRoot },
   poweredByHeader: false,
   reactStrictMode: true,

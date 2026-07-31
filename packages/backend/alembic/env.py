@@ -12,6 +12,9 @@ from careeros.foundation.database import Base
 from careeros.modules.application_workspace.infrastructure import (
     models as application_workspace_models,  # noqa: F401
 )
+from careeros.modules.billing.infrastructure import (
+    models as billing_models,  # noqa: F401
+)
 from careeros.modules.career_analytics.infrastructure import (
     models as career_analytics_models,  # noqa: F401
 )

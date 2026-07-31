@@ -1,11 +1,31 @@
 "use client";
 
-import { Activity, CheckCircle, Database, RefreshCw, Server, Shield, Users } from "lucide-react";
+import {
+  Activity,
+  CheckCircle,
+  Database,
+  RefreshCw,
+  Server,
+  Shield,
+  Users,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
-import { Alert, Badge, Button, Card, ErrorState, LoadingSkeleton } from "@careeros/ui";
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  ErrorState,
+  LoadingSkeleton,
+} from "@careeros/ui";
 
-import { apiMutation, apiQuery, requestErrorMessage } from "@/shared/api/browser-request";
+import {
+  apiMutation,
+  apiQuery,
+  requestErrorMessage,
+} from "@/shared/api/browser-request";
+import { fillApiPath } from "@/shared/api/api-path";
 
 export type AdminMetrics = {
   environment: string;
@@ -48,7 +68,9 @@ export function AdminDashboardView() {
       setDeadLetters(dlData.jobs);
       setFailure(undefined);
     } catch (error) {
-      setFailure(requestErrorMessage(error, "Failed to load admin overview metrics."));
+      setFailure(
+        requestErrorMessage(error, "Failed to load admin overview metrics."),
+      );
     } finally {
       setLoading(false);
     }
@@ -61,10 +83,18 @@ export function AdminDashboardView() {
   const handleRetryJob = async (jobId: string) => {
     setRetryBusy(jobId);
     try {
-      await apiMutation(`/api/v1/admin/dead-letters/${jobId}/retry` as any, { method: "POST" }, { csrf: "session" });
+      await apiMutation(
+        fillApiPath("/api/v1/admin/dead-letters/{job_id}/retry", {
+          job_id: jobId,
+        }),
+        { method: "POST" },
+        { csrf: "session" },
+      );
       await loadData();
     } catch (error) {
-      setFailure(requestErrorMessage(error, `Failed to re-enqueue job ${jobId}.`));
+      setFailure(
+        requestErrorMessage(error, `Failed to re-enqueue job ${jobId}.`),
+      );
     } finally {
       setRetryBusy(undefined);
     }
@@ -91,11 +121,16 @@ export function AdminDashboardView() {
             </span>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-black text-foreground">Admin Console & Platform Status</h1>
-                <Badge tone="success">{metrics?.environment.toUpperCase() ?? "DEV"}</Badge>
+                <h1 className="text-xl font-black text-foreground">
+                  Admin Console & Platform Status
+                </h1>
+                <Badge tone="success">
+                  {metrics?.environment.toUpperCase() ?? "DEV"}
+                </Badge>
               </div>
               <p className="text-sm text-muted">
-                System health, background queues, plan distributions, and dead-letter job control.
+                System health, background queues, plan distributions, and
+                dead-letter job control.
               </p>
             </div>
           </div>
@@ -109,44 +144,62 @@ export function AdminDashboardView() {
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-4">
         <Card className="p-5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted">Platform Users</span>
+            <span className="text-xs font-semibold text-muted">
+              Platform Users
+            </span>
             <Users className="size-4 text-muted" />
           </div>
-          <p className="mt-2 text-3xl font-black text-foreground">{metrics?.active_users_count}</p>
+          <p className="mt-2 text-3xl font-black text-foreground">
+            {metrics?.active_users_count}
+          </p>
           <p className="mt-1 text-xs text-success">Active accounts</p>
         </Card>
 
         <Card className="p-5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted">Total Resumes</span>
+            <span className="text-xs font-semibold text-muted">
+              Total Resumes
+            </span>
             <Database className="size-4 text-muted" />
           </div>
-          <p className="mt-2 text-3xl font-black text-foreground">{metrics?.total_resumes_count}</p>
+          <p className="mt-2 text-3xl font-black text-foreground">
+            {metrics?.total_resumes_count}
+          </p>
           <p className="mt-1 text-xs text-muted">Structured documents</p>
         </Card>
 
         <Card className="p-5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted">Tracked Applications</span>
+            <span className="text-xs font-semibold text-muted">
+              Tracked Applications
+            </span>
             <Activity className="size-4 text-muted" />
           </div>
-          <p className="mt-2 text-3xl font-black text-foreground">{metrics?.total_applications_count}</p>
+          <p className="mt-2 text-3xl font-black text-foreground">
+            {metrics?.total_applications_count}
+          </p>
           <p className="mt-1 text-xs text-muted">Application packs pinned</p>
         </Card>
 
         <Card className="p-5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted">API Service Version</span>
+            <span className="text-xs font-semibold text-muted">
+              API Service Version
+            </span>
             <Server className="size-4 text-muted" />
           </div>
-          <p className="mt-2 text-2xl font-black text-foreground">{metrics?.service_version}</p>
+          <p className="mt-2 text-2xl font-black text-foreground">
+            {metrics?.service_version}
+          </p>
           <p className="mt-1 text-xs text-success">Healthy & operational</p>
         </Card>
       </div>
 
       {/* System Component Health */}
       <Card className="p-6">
-        <h3 className="text-base font-bold text-foreground">Infrastructure Services Health</h3>
+        <h3 className="text-base font-bold text-foreground">
+          Infrastructure Services Health
+        </h3>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-4">
           {metrics &&
             Object.entries(metrics.system_health).map(([svc, status]) => (
@@ -154,7 +207,9 @@ export function AdminDashboardView() {
                 className="flex items-center justify-between rounded-xl border border-line bg-surface-subtle p-4"
                 key={svc}
               >
-                <span className="text-sm font-semibold capitalize text-muted-strong">{svc.replace("_", " ")}</span>
+                <span className="text-sm font-semibold capitalize text-muted-strong">
+                  {svc.replace("_", " ")}
+                </span>
                 <span className="flex items-center gap-1.5 text-xs font-bold text-success-strong">
                   <CheckCircle className="size-4 text-success" /> {status}
                 </span>
@@ -167,8 +222,12 @@ export function AdminDashboardView() {
       <Card className="p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-base font-bold text-foreground">Dead-Letter Job Queue</h3>
-            <p className="text-xs text-muted">Failed background worker tasks awaiting admin inspection or retry.</p>
+            <h3 className="text-base font-bold text-foreground">
+              Dead-Letter Job Queue
+            </h3>
+            <p className="text-xs text-muted">
+              Failed background worker tasks awaiting admin inspection or retry.
+            </p>
           </div>
           <Badge tone={deadLetters.length === 0 ? "success" : "danger"}>
             {deadLetters.length} Dead Letters
@@ -194,10 +253,18 @@ export function AdminDashboardView() {
               <tbody className="divide-y">
                 {deadLetters.map((job) => (
                   <tr key={job.id}>
-                    <td className="p-3 font-mono text-foreground">{job.id.slice(0, 8)}...</td>
-                    <td className="p-3 font-medium text-foreground">{job.job_type}</td>
-                    <td className="p-3">{job.attempts} / {job.max_attempts}</td>
-                    <td className="p-3 text-danger">{job.last_error ?? "Worker error"}</td>
+                    <td className="p-3 font-mono text-foreground">
+                      {job.id.slice(0, 8)}...
+                    </td>
+                    <td className="p-3 font-medium text-foreground">
+                      {job.job_type}
+                    </td>
+                    <td className="p-3">
+                      {job.attempts} / {job.max_attempts}
+                    </td>
+                    <td className="p-3 text-danger">
+                      {job.last_error ?? "Worker error"}
+                    </td>
                     <td className="p-3">
                       <Button
                         loading={retryBusy === job.id}

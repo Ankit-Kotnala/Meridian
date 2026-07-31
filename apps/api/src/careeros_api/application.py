@@ -91,6 +91,7 @@ from careeros.modules.identity.application import IdentityService
 from careeros.modules.identity.application.ports import (
     GoogleOAuthProvider as GoogleOAuthProviderPort,
 )
+from careeros.modules.identity.application.privacy_service import AccountPrivacyService
 from careeros.modules.identity.application.service import IdentityPolicy
 from careeros.modules.identity.infrastructure.fakes import DisabledGoogleOAuthProvider
 from careeros.modules.identity.infrastructure.redis_security import RedisSecurityStore
@@ -237,6 +238,7 @@ def create_app(
     networking: NetworkingService | None = None,
     career_growth: CareerGrowthService | None = None,
     career_analytics: CareerAnalyticsService | None = None,
+    billing: BillingService | None = None,
 ) -> FastAPI:
     """Build an application; injectable dependencies keep tests infrastructure-free."""
     resolved_settings = settings or get_settings()
@@ -271,6 +273,7 @@ def create_app(
         resolved_networking = networking
         resolved_career_growth = career_growth
         resolved_career_analytics = career_analytics
+        resolved_billing = billing
         resolved_resume_builder_storage: ResumeExportS3Storage | None = None
 
         if resolved_identity is None and isinstance(resolved_database, Database):
@@ -594,11 +597,14 @@ def create_app(
                 )
 
         if isinstance(resolved_database, Database):
-            resolved_billing = BillingService(
-                database=resolved_database,
-                provider=MockBillingProvider(),
-            )
-            application.state.billing_service = resolved_billing
+            if resolved_billing is None:
+                resolved_billing = BillingService(
+                    database=resolved_database,
+                    provider=MockBillingProvider(),
+                )
+            uow_factory = getattr(resolved_identity, "_uow_factory", None)
+            if uow_factory is not None:
+                application.state.account_privacy_service = AccountPrivacyService(uow_factory)
 
         application.state.database = resolved_database
         application.state.identity_service = resolved_identity
