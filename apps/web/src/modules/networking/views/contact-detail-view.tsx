@@ -1243,7 +1243,7 @@ function OverviewPanel({
   return (
     <div className="space-y-5 pt-5">
       <form
-        className="grid gap-4 rounded-xl border border-line bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-3 sm:p-5"
+        className="grid gap-4 rounded-xl border border-line bg-surface p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-3 sm:p-5"
         key={contact.version}
         onSubmit={onSubmit}
       >
@@ -1400,7 +1400,7 @@ function ConsentPanel({
           const granted = contact.consent[item];
           return (
             <div
-              className="rounded-xl border border-line bg-white p-4"
+              className="rounded-xl border border-line bg-surface p-4"
               key={item}
             >
               <p className="text-xs font-bold uppercase tracking-wide text-muted">
@@ -1435,7 +1435,7 @@ function ConsentPanel({
       <div className="grid gap-4 lg:grid-cols-2">
         {(["grant", "withdraw"] as const).map((change) => (
           <form
-            className="space-y-3 rounded-xl border border-line bg-white p-4"
+            className="space-y-3 rounded-xl border border-line bg-surface p-4"
             key={change}
             onSubmit={(event) => onChange(change, event)}
           >
@@ -1497,7 +1497,7 @@ function ConsentPanel({
         <ol className="space-y-3">
           {visible.map((event) => (
             <li
-              className="rounded-xl border border-line bg-white p-4"
+              className="rounded-xl border border-line bg-surface p-4"
               key={event.id}
             >
               <div className="flex flex-wrap gap-2">
@@ -1553,7 +1553,7 @@ function NotesPanel({
         outreach input.
       </Alert>
       <form
-        className="space-y-3 rounded-xl border border-line bg-white p-4"
+        className="space-y-3 rounded-xl border border-line bg-surface p-4"
         onSubmit={onSubmit}
       >
         <LabeledTextarea
@@ -1581,7 +1581,7 @@ function NotesPanel({
         <ul className="space-y-3">
           {visible.map((note) => (
             <li
-              className="rounded-xl border border-line bg-white p-4"
+              className="rounded-xl border border-line bg-surface p-4"
               key={note.id}
             >
               <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">
@@ -1654,7 +1654,7 @@ function InteractionsPanel({
         summary with delivery state “recorded only” and performs no delivery.
       </Alert>
       <form
-        className="grid gap-4 rounded-xl border border-line bg-white p-4 sm:grid-cols-2"
+        className="grid gap-4 rounded-xl border border-line bg-surface p-4 sm:grid-cols-2"
         onSubmit={onSubmit}
       >
         <label className="space-y-2 text-sm font-bold text-foreground">
@@ -1760,7 +1760,7 @@ function InteractionsPanel({
         <ul className="space-y-3">
           {visible.map((interaction) => (
             <li
-              className="rounded-xl border border-line bg-white p-4"
+              className="rounded-xl border border-line bg-surface p-4"
               key={interaction.id}
             >
               <div className="flex flex-wrap gap-2">
@@ -1849,7 +1849,7 @@ function ReferralsPanel({
         CareerOS never sends a referral request.
       </Alert>
       <form
-        className="grid gap-4 rounded-xl border border-line bg-white p-4 sm:grid-cols-2"
+        className="grid gap-4 rounded-xl border border-line bg-surface p-4 sm:grid-cols-2"
         onSubmit={onCreate}
       >
         <label className="space-y-2 text-sm font-bold text-foreground">
@@ -1929,7 +1929,7 @@ function ReferralsPanel({
         <div className="grid gap-3 lg:grid-cols-2">
           {visible.map((referral) => (
             <form
-              className="space-y-3 rounded-xl border border-line bg-white p-4"
+              className="space-y-3 rounded-xl border border-line bg-surface p-4"
               key={`${referral.id}-${referral.version}`}
               onSubmit={(event) => onSave(referral, event)}
             >
@@ -2031,7 +2031,7 @@ function RemindersPanel({
         or fetches contact URLs.
       </Alert>
       <form
-        className="grid gap-4 rounded-xl border border-line bg-white p-4 sm:grid-cols-2"
+        className="grid gap-4 rounded-xl border border-line bg-surface p-4 sm:grid-cols-2"
         onSubmit={onCreate}
       >
         <LabeledInput
@@ -2156,7 +2156,7 @@ function ReminderForm({
   const due = execution?.occurrenceStatus === "due";
   return (
     <form
-      className="space-y-3 rounded-xl border border-line bg-white p-4 shadow-sm"
+      className="space-y-3 rounded-xl border border-line bg-surface p-4 shadow-sm"
       onSubmit={onSubmit}
     >
       <LabeledInput
@@ -2268,7 +2268,7 @@ function ExecutionState({
 }) {
   if (execution === undefined) {
     return (
-      <div className="rounded-lg border border-line bg-slate-50 p-3 text-sm">
+      <div className="rounded-lg border border-line bg-surface-subtle p-3 text-sm">
         <p className="flex items-center gap-2 font-bold text-foreground">
           <Clock3 aria-hidden="true" className="size-4" />
           {loading
@@ -2283,7 +2283,7 @@ function ExecutionState({
   }
   if (execution === null) {
     return (
-      <div className="rounded-lg border border-line bg-slate-50 p-3 text-sm">
+      <div className="rounded-lg border border-line bg-surface-subtle p-3 text-sm">
         <p className="flex items-center gap-2 font-bold text-foreground">
           <Clock3 aria-hidden="true" className="size-4" />
           No local occurrence materialized yet
@@ -2301,7 +2301,7 @@ function ExecutionState({
   return (
     <div
       className={`rounded-lg border p-3 text-sm ${
-        failed ? "border-red-200 bg-red-50" : "border-line bg-slate-50"
+        failed ? "border-danger/30 bg-danger-soft" : "border-line bg-surface-subtle"
       }`}
     >
       <div className="flex flex-wrap gap-2">
@@ -2401,7 +2401,7 @@ function LabeledTextarea({
     <label className="space-y-2 text-sm font-bold text-foreground" htmlFor={id}>
       {label}
       <textarea
-        className="min-h-28 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm font-normal text-foreground outline-none transition focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/25 disabled:bg-slate-100 disabled:text-muted"
+        className="min-h-28 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm font-normal text-foreground outline-none transition focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/25 disabled:bg-surface-subtle disabled:text-muted"
         id={id}
         {...props}
       />

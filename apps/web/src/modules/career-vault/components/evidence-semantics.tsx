@@ -115,7 +115,7 @@ export function ProvenanceList({ values }: { values: Provenance[] }) {
     <ul className="space-y-3" aria-label="Source provenance">
       {values.map((value) => (
         <li
-          className="rounded-xl border border-line bg-slate-50 p-4"
+          className="rounded-xl border border-line bg-surface-subtle p-4"
           key={value.id}
         >
           <div className="flex flex-wrap items-center gap-2">

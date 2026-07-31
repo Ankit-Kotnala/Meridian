@@ -1,4 +1,5 @@
 :root {
+  color-scheme: light;
   --background: #f5f7f3;
   --surface: #ffffff;
   --surface-raised: #fbfdfb;
@@ -54,11 +55,63 @@
   --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
   --font-family-sans:
-    "Segoe UI Variable Text", "Aptos", "Segoe UI", ui-sans-serif, system-ui,
-    -apple-system, BlinkMacSystemFont, sans-serif;
+    var(--font-sans-loaded), "Segoe UI Variable Text", "Aptos", "Segoe UI",
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-family-display:
-    "Segoe UI Variable Display", "Aptos Display", "Segoe UI", ui-sans-serif,
-    system-ui, sans-serif;
+    var(--font-display-loaded), "Segoe UI Variable Display", "Aptos Display",
+    "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+}
+
+/*
+ * Dark theme. Every surface/text/brand token is redeclared here; because the
+ * `@theme inline` map points the Tailwind color utilities at these custom
+ * properties, toggling `.dark` on <html> re-themes the whole app with no
+ * per-component changes. Brand hues are lifted for legibility on dark
+ * backgrounds and shadows are deepened toward true black.
+ */
+.dark {
+  color-scheme: dark;
+  --background: #0a1310;
+  --surface: #101c16;
+  --surface-raised: #16241d;
+  --surface-subtle: #182a21;
+  --surface-inset: #0c1712;
+  --foreground: #e9f1ec;
+  --muted: #93a79c;
+  --muted-strong: #c4d2c9;
+  --border: #24382f;
+  --border-strong: #375044;
+  --primary: #4aa67f;
+  --primary-strong: #6fc79b;
+  --primary-soft: #163025;
+  --accent: #35b6b0;
+  --accent-strong: #67d3cc;
+  --accent-soft: #103430;
+  --navy: #0b1e18;
+  --navy-hover: #123026;
+  --success: #40b07e;
+  --success-strong: #6bd0a1;
+  --success-soft: #133528;
+  --warning: #d69b45;
+  --warning-strong: #e8bd73;
+  --warning-visual: #d69b45;
+  --warning-soft: #342811;
+  --danger: #e56b80;
+  --danger-strong: #f294a3;
+  --danger-soft: #38191f;
+  --info: #58a2c7;
+  --info-strong: #88c2df;
+  --info-soft: #122630;
+  --focus: #58a6ef;
+  --selection: #1d4635;
+  --score-track: #223129;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.45);
+  --shadow-card:
+    0 1px 2px rgb(0 0 0 / 0.32), 0 10px 26px -18px rgb(0 0 0 / 0.72);
+  --shadow-card-hover:
+    0 2px 4px rgb(0 0 0 / 0.4), 0 20px 46px -22px rgb(0 0 0 / 0.82);
+  --shadow-md: 0 14px 34px -12px rgb(0 0 0 / 0.6);
+  --shadow-lg: 0 30px 78px -24px rgb(0 0 0 / 0.72);
 }
 
 @theme inline {

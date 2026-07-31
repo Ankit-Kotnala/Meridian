@@ -255,7 +255,7 @@ export function CareerTimeline({ experiences }: { experiences: Experience[] }) {
             </Card>
             {gap && (
               <div
-                className="my-4 rounded-xl border border-line bg-slate-50 p-3 text-xs leading-5 text-muted"
+                className="my-4 rounded-xl border border-line bg-surface-subtle p-3 text-xs leading-5 text-muted"
                 role="note"
               >
                 {gap} {gap === 1 ? "month" : "months"} between recorded roles.

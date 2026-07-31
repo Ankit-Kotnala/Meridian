@@ -75,7 +75,7 @@ export function RegisterView() {
             link will arrive. This message is the same for existing and new
             accounts.
           </Alert>
-          <div className="rounded-xl bg-slate-50 p-4 text-sm leading-6 text-muted">
+          <div className="rounded-xl bg-surface-subtle p-4 text-sm leading-6 text-muted">
             <MailCheck
               aria-hidden="true"
               className="mb-2 size-5 text-primary"

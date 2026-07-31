@@ -328,7 +328,7 @@ export function ApplicationPacksPanel({
     <div className="space-y-6">
       <section
         aria-labelledby="generate-pack-heading"
-        className="rounded-xl border border-line bg-white p-4 shadow-sm sm:p-5"
+        className="rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-5"
       >
         <div className="flex items-center gap-2">
           <FilePlus2 aria-hidden="true" className="size-5 text-primary" />
@@ -417,7 +417,7 @@ export function ApplicationPacksPanel({
             return (
               <section
                 aria-labelledby={`pack-${pack.id}`}
-                className="rounded-xl border border-line bg-white p-4 shadow-sm sm:p-5"
+                className="rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-5"
                 key={pack.id}
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -576,7 +576,7 @@ export function ApplicationPacksPanel({
                                     </ul>
                                   </Alert>
                                 )}
-                                <div className="rounded-xl bg-slate-50 p-4">
+                                <div className="rounded-xl bg-surface-subtle p-4">
                                   <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">
                                     {document.body ||
                                       "This document was blocked before content could be displayed."}

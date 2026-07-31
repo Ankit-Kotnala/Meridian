@@ -842,7 +842,7 @@ export function CareerDetailsSections({
           <ul className="flex flex-wrap gap-3">
             {skills.map((skill) => (
               <li
-                className="flex items-center gap-2 rounded-xl border border-line bg-white px-3 py-2"
+                className="flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2"
                 key={skill.id}
               >
                 <span className="text-sm font-bold">{skill.name}</span>

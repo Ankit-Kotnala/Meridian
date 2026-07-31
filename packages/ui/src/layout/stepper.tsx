@@ -42,7 +42,7 @@ export function Stepper({
                 step.state === "complete" &&
                   "border-success bg-success text-white",
                 step.state === "upcoming" &&
-                  "border-line-strong bg-white text-muted",
+                  "border-line-strong bg-surface text-muted",
               )}
             >
               {step.state === "complete" ? (

@@ -26,7 +26,7 @@ export const CheckboxField = forwardRef<HTMLInputElement, CheckboxFieldProps>(
       <div>
         <div
           className={cn(
-            "flex min-h-11 items-start gap-3 rounded-xl border border-line bg-white p-3.5 text-sm text-foreground",
+            "flex min-h-11 items-start gap-3 rounded-xl border border-line bg-surface p-3.5 text-sm text-foreground",
             error && "border-danger",
             className,
           )}

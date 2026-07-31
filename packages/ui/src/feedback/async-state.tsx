@@ -100,7 +100,7 @@ export function LoadingSkeleton({
         {Array.from({ length: rows }, (_, index) => (
           <div
             className={cn(
-              "animate-pulse rounded-[var(--radius-card)] border border-line bg-white p-5",
+              "animate-pulse rounded-[var(--radius-card)] border border-line bg-surface p-5",
               variant === "form" ? "h-20" : "h-24",
             )}
             key={index}
@@ -114,7 +114,7 @@ export function LoadingSkeleton({
         ))}
       </div>
       {variant === "page" && (
-        <div className="h-52 animate-pulse rounded-[var(--radius-card)] border border-line bg-white" />
+        <div className="h-52 animate-pulse rounded-[var(--radius-card)] border border-line bg-surface" />
       )}
     </div>
   );

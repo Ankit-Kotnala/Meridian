@@ -64,7 +64,7 @@ function ApplicationCard({
   onMove: CollectionProps["onMove"];
 }) {
   return (
-    <article className="rounded-xl border border-line bg-white p-3 shadow-sm">
+    <article className="rounded-xl border border-line bg-surface p-3 shadow-sm">
       <Link
         className="block rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-primary-soft"
         href={`/applications/${application.id}`}
@@ -112,7 +112,7 @@ export function ApplicationBoard({
             return (
               <section
                 aria-labelledby={`stage-${stage}`}
-                className="rounded-xl bg-slate-100/80 p-3"
+                className="rounded-xl bg-surface-subtle/80 p-3"
                 key={stage}
               >
                 <div className="mb-3 flex items-center justify-between gap-3">
@@ -137,7 +137,7 @@ export function ApplicationBoard({
                     ))}
                   </ul>
                 ) : (
-                  <p className="rounded-lg border border-dashed border-line bg-white/70 p-3 text-xs text-muted">
+                  <p className="rounded-lg border border-dashed border-line bg-surface/70 p-3 text-xs text-muted">
                     No applications in this stage.
                   </p>
                 )}
@@ -161,7 +161,7 @@ export function ApplicationTable({
         <caption className="sr-only">
           Applications with stage, pinned resume version, dates, and actions
         </caption>
-        <thead className="bg-slate-50 text-xs uppercase tracking-wide text-muted">
+        <thead className="bg-surface-subtle text-xs uppercase tracking-wide text-muted">
           <tr>
             <th className="px-4 py-3" scope="col">
               Opportunity
@@ -279,7 +279,7 @@ export function ApplicationAgenda({
       {grouped.map(([date, items]) => (
         <section
           aria-labelledby={`agenda-${date}`}
-          className="rounded-xl border border-line bg-white shadow-sm"
+          className="rounded-xl border border-line bg-surface shadow-sm"
           key={date}
         >
           <h2

@@ -86,9 +86,17 @@ class AttachmentS3ObjectStorage:
             )
         except (BotoCoreError, ClientError) as exc:
             raise AttachmentStorageUnavailable from exc
+
+        # Replace internal endpoint with public endpoint in presigned URL
+        url_str = str(url)
+        internal_url = self._options.internal_endpoint_url.rstrip('/')
+        public_url = self._options.public_endpoint_url.rstrip('/')
+        if url_str.startswith(internal_url):
+            url_str = url_str.replace(internal_url, public_url, 1)
+
         return PresignedOperation(
             method="PUT",
-            url=str(url),
+            url=url_str,
             required_headers=(
                 ("content-type", media_type),
                 ("content-length", str(expected_size)),

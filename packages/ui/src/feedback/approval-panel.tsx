@@ -19,7 +19,7 @@ export function ApprovalPanel({
   return (
     <section
       className={cn(
-        "overflow-hidden rounded-[var(--radius-card)] border border-primary/30 bg-primary-soft/35",
+        "overflow-hidden rounded-[var(--radius-card)] border border-primary/30 bg-primary-soft",
         className,
       )}
     >
@@ -40,7 +40,7 @@ export function ApprovalPanel({
           )}
         </div>
       </div>
-      <div className="flex flex-wrap gap-2 border-t border-primary/20 bg-white/65 px-4 py-3 sm:px-5">
+      <div className="flex flex-wrap gap-2 border-t border-primary/20 bg-surface px-4 py-3 sm:px-5">
         {actions}
       </div>
     </section>

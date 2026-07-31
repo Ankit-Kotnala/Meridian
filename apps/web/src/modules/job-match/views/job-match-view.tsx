@@ -355,7 +355,7 @@ export function JobMatchView() {
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">
         <section
           aria-labelledby="job-input-heading"
-          className="rounded-lg border border-line bg-white p-4 shadow-sm"
+          className="rounded-lg border border-line bg-surface p-4 shadow-sm"
         >
           <div className="flex items-center gap-2">
             <ClipboardCheck
@@ -416,7 +416,7 @@ export function JobMatchView() {
             <label className="text-sm font-bold text-foreground md:col-span-2">
               Job description
               <textarea
-                className="mt-1 min-h-56 w-full resize-y rounded-xl border border-line bg-white px-3.5 py-3 text-sm text-foreground shadow-sm outline-none placeholder:text-slate-400 focus:border-primary focus:ring-3 focus:ring-primary-soft"
+                className="mt-1 min-h-56 w-full resize-y rounded-xl border border-line bg-surface px-3.5 py-3 text-sm text-foreground shadow-sm outline-none placeholder:text-muted focus:border-primary focus:ring-3 focus:ring-primary-soft"
                 maxLength={50000}
                 minLength={20}
                 name="sourceText"
@@ -461,7 +461,7 @@ export function JobMatchView() {
 
         <aside aria-labelledby="saved-jobs-heading" className="space-y-4">
           <form
-            className="rounded-lg border border-line bg-white p-4 shadow-sm"
+            className="rounded-lg border border-line bg-surface p-4 shadow-sm"
             onSubmit={(event) => void searchJobs(event)}
           >
             <h2
@@ -519,7 +519,7 @@ export function JobMatchView() {
                 return (
                   <li
                     className={cn(
-                      "rounded-lg border bg-white p-4 shadow-sm",
+                      "rounded-lg border bg-surface p-4 shadow-sm",
                       active ? "border-primary" : "border-line",
                     )}
                     key={job.id}
@@ -592,7 +592,7 @@ export function JobMatchView() {
             title="Choose a job"
           />
         ) : !activeAnalysis ? (
-          <div className="rounded-lg border border-line bg-white p-5 shadow-sm">
+          <div className="rounded-lg border border-line bg-surface p-5 shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h3 className="text-base font-black text-foreground">
@@ -616,7 +616,7 @@ export function JobMatchView() {
               <ul className="mt-4 grid gap-2 sm:grid-cols-2">
                 {activeJob.requirements.slice(0, 8).map((requirement) => (
                   <li
-                    className="rounded-lg border border-line bg-slate-50 p-3 text-sm"
+                    className="rounded-lg border border-line bg-surface-subtle p-3 text-sm"
                     key={requirement.id}
                   >
                     <span className="font-bold text-foreground">
@@ -632,7 +632,7 @@ export function JobMatchView() {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="rounded-lg border border-line bg-white p-5 shadow-sm">
+            <div className="rounded-lg border border-line bg-surface p-5 shadow-sm">
               <div className="grid gap-4 lg:grid-cols-[14rem_minmax(0,1fr)]">
                 <div>
                   <p className="text-sm font-bold text-muted">Readiness</p>
@@ -688,7 +688,7 @@ export function JobMatchView() {
                 <caption className="sr-only">
                   Requirement-by-requirement job match evidence matrix
                 </caption>
-                <thead className="bg-slate-50 text-xs uppercase text-muted">
+                <thead className="bg-surface-subtle text-xs uppercase text-muted">
                   <tr>
                     <th className="px-4 py-3" scope="col">
                       Requirement
@@ -760,7 +760,7 @@ export function JobMatchView() {
 
       <section
         aria-labelledby="priority-heading"
-        className="rounded-lg border border-line bg-white p-5 shadow-sm"
+        className="rounded-lg border border-line bg-surface p-5 shadow-sm"
       >
         <h2
           className="text-lg font-black text-foreground"
@@ -861,7 +861,7 @@ export function JobMatchView() {
             </form>
 
             {priority ? (
-              <div aria-live="polite" className="rounded-lg bg-slate-50 p-4">
+              <div aria-live="polite" className="rounded-lg bg-surface-subtle p-4">
                 <p className="text-sm font-bold text-muted">Priority</p>
                 <div className="mt-2 flex items-center gap-3">
                   <Badge
@@ -890,7 +890,7 @@ export function JobMatchView() {
                 )}
               </div>
             ) : (
-              <div className="rounded-lg bg-slate-50 p-4 text-sm text-muted">
+              <div className="rounded-lg bg-surface-subtle p-4 text-sm text-muted">
                 Priority output appears here after calculation.
               </div>
             )}

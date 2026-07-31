@@ -821,7 +821,7 @@ function ContextPanel({
   return (
     <div className="space-y-6 pt-5">
       <form
-        className="grid gap-4 rounded-xl border border-line bg-white p-4 sm:grid-cols-2 sm:p-5"
+        className="grid gap-4 rounded-xl border border-line bg-surface p-4 sm:grid-cols-2 sm:p-5"
         key={session.version}
         onSubmit={onSubmit}
       >
@@ -874,7 +874,7 @@ function ContextPanel({
           <ul className="grid gap-3 lg:grid-cols-2">
             {session.context.claims.map((claim) => (
               <li
-                className="rounded-xl border border-line bg-white p-4"
+                className="rounded-xl border border-line bg-surface p-4"
                 key={claim.sourceClaimId}
               >
                 <div className="flex flex-wrap gap-2">
@@ -906,7 +906,7 @@ function ContextPanel({
         <ul className="grid gap-3 lg:grid-cols-2">
           {session.context.requirements.map((requirement) => (
             <li
-              className="rounded-xl border border-line bg-white p-4"
+              className="rounded-xl border border-line bg-surface p-4"
               key={requirement.requirementId}
             >
               <Badge
@@ -969,7 +969,7 @@ function QuestionsPanel({
               : "Generate grounded questions"}
       </Button>
       <form
-        className="space-y-4 rounded-xl border border-line bg-white p-4 sm:p-5"
+        className="space-y-4 rounded-xl border border-line bg-surface p-4 sm:p-5"
         onSubmit={onSubmit}
       >
         <h2 className="font-black text-foreground">Add a private question</h2>
@@ -1036,7 +1036,7 @@ function QuestionsPanel({
         <ol className="space-y-3">
           {questions.map((question) => (
             <li
-              className="rounded-xl border border-line bg-white p-4 shadow-sm"
+              className="rounded-xl border border-line bg-surface p-4 shadow-sm"
               key={question.id}
             >
               <div className="flex flex-wrap gap-2">
@@ -1102,7 +1102,7 @@ function NotesPanel({
         generation. They are never sent to employers or contacts.
       </Alert>
       <form
-        className="space-y-4 rounded-xl border border-line bg-white p-4 sm:p-5"
+        className="space-y-4 rounded-xl border border-line bg-surface p-4 sm:p-5"
         onSubmit={onCreate}
       >
         <h2 className="font-black text-foreground">Add a private note</h2>
@@ -1133,7 +1133,7 @@ function NotesPanel({
         <div className="space-y-3">
           {notes.map((note) => (
             <form
-              className="space-y-3 rounded-xl border border-line bg-white p-4 shadow-sm"
+              className="space-y-3 rounded-xl border border-line bg-surface p-4 shadow-sm"
               key={`${note.id}-${note.version}`}
               onSubmit={(event) => onSave(note, event)}
             >
@@ -1205,7 +1205,7 @@ function DraftsPanel({
         workspace.
       </Alert>
       <form
-        className="space-y-4 rounded-xl border border-line bg-white p-4 sm:p-5"
+        className="space-y-4 rounded-xl border border-line bg-surface p-4 sm:p-5"
         onSubmit={onSubmit}
       >
         <fieldset className="space-y-3">
@@ -1247,7 +1247,7 @@ function DraftsPanel({
         <div className="space-y-4">
           {drafts.map((draft) => (
             <article
-              className="rounded-xl border border-line bg-white p-4 shadow-sm sm:p-5"
+              className="rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-5"
               key={draft.id}
             >
               <div className="flex flex-wrap gap-2">
@@ -1320,7 +1320,7 @@ function SessionTextarea({
     <label className="space-y-2 text-sm font-bold text-foreground" htmlFor={id}>
       {label}
       <textarea
-        className="min-h-28 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm font-normal text-foreground outline-none transition focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/25"
+        className="min-h-28 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm font-normal text-foreground outline-none transition focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/25"
         id={id}
         {...props}
       />

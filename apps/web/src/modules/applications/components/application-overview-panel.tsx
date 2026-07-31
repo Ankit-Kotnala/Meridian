@@ -113,7 +113,7 @@ export function ApplicationOverviewPanel({
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
       <form
-        className="rounded-xl border border-line bg-white p-4 shadow-sm sm:p-5"
+        className="rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-5"
         onSubmit={(event) => void save(event)}
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -196,7 +196,7 @@ export function ApplicationOverviewPanel({
           <label className="text-sm font-bold text-foreground md:col-span-2">
             Rejection reason
             <textarea
-              className="mt-1 min-h-24 w-full resize-y rounded-xl border border-line bg-white px-3.5 py-3 text-sm text-foreground shadow-sm outline-none focus:border-primary focus:ring-3 focus:ring-primary-soft"
+              className="mt-1 min-h-24 w-full resize-y rounded-xl border border-line bg-surface px-3.5 py-3 text-sm text-foreground shadow-sm outline-none focus:border-primary focus:ring-3 focus:ring-primary-soft"
               defaultValue={application.rejectionReason ?? ""}
               maxLength={500}
               name="rejectionReason"
@@ -205,7 +205,7 @@ export function ApplicationOverviewPanel({
           <label className="text-sm font-bold text-foreground md:col-span-2">
             Offer information
             <textarea
-              className="mt-1 min-h-24 w-full resize-y rounded-xl border border-line bg-white px-3.5 py-3 text-sm text-foreground shadow-sm outline-none focus:border-primary focus:ring-3 focus:ring-primary-soft"
+              className="mt-1 min-h-24 w-full resize-y rounded-xl border border-line bg-surface px-3.5 py-3 text-sm text-foreground shadow-sm outline-none focus:border-primary focus:ring-3 focus:ring-primary-soft"
               defaultValue={application.offerSummary ?? ""}
               maxLength={500}
               name="offerSummary"
@@ -237,7 +237,7 @@ export function ApplicationOverviewPanel({
             <div className="mt-4 space-y-4">
               {contacts.map((contact, index) => (
                 <fieldset
-                  className="rounded-xl bg-slate-50 p-3"
+                  className="rounded-xl bg-surface-subtle p-3"
                   key={contact.editorKey}
                 >
                   <legend className="px-1 text-sm font-black text-foreground">
@@ -332,7 +332,7 @@ export function ApplicationOverviewPanel({
       </form>
 
       <aside className="space-y-4">
-        <section className="rounded-xl border border-line bg-white p-4 shadow-sm">
+        <section className="rounded-xl border border-line bg-surface p-4 shadow-sm">
           <h2 className="text-base font-black text-foreground">
             Pinned sources
           </h2>
@@ -399,7 +399,7 @@ export function ApplicationOverviewPanel({
           onFailure={onFailure}
           onSuccess={onSuccess}
         />
-        <section className="rounded-xl border border-line bg-white p-4 shadow-sm">
+        <section className="rounded-xl border border-line bg-surface p-4 shadow-sm">
           <h2 className="text-base font-black text-foreground">
             Grounding snapshot
           </h2>
@@ -407,7 +407,7 @@ export function ApplicationOverviewPanel({
             <ul className="mt-3 space-y-3">
               {application.evidencePins.slice(0, 5).map((pin) => (
                 <li
-                  className="rounded-lg bg-slate-50 p-3"
+                  className="rounded-lg bg-surface-subtle p-3"
                   key={pin.evidenceRevisionId}
                 >
                   <p className="line-clamp-3 text-sm text-foreground">

@@ -274,7 +274,7 @@ export function StarStoryDetailView({ storyId }: { storyId: string }) {
       )}
 
       <form
-        className="space-y-5 rounded-xl border border-line bg-white p-4 shadow-sm sm:p-5"
+        className="space-y-5 rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-5"
         key={story.version}
         onSubmit={submit}
       >
@@ -395,7 +395,7 @@ export function StarStoryDetailView({ storyId }: { storyId: string }) {
         </div>
         {story.claimPins.map((claim) => (
           <article
-            className="rounded-xl border border-line bg-white p-4 shadow-sm"
+            className="rounded-xl border border-line bg-surface p-4 shadow-sm"
             key={claim.sourceClaimId}
           >
             <div className="flex flex-wrap gap-2">
@@ -427,7 +427,7 @@ export function StarStoryDetailView({ storyId }: { storyId: string }) {
             <ul className="mt-4 grid gap-3 lg:grid-cols-2">
               {claim.evidencePins.map((pin) => (
                 <li
-                  className="rounded-lg border border-line bg-slate-50 p-3"
+                  className="rounded-lg border border-line bg-surface-subtle p-3"
                   key={pin.evidenceRevisionId}
                 >
                   <div className="flex flex-wrap gap-2">
@@ -453,7 +453,7 @@ export function StarStoryDetailView({ storyId }: { storyId: string }) {
         ))}
       </section>
 
-      <section className="rounded-xl border border-red-200 bg-white p-4 shadow-sm sm:p-5">
+      <section className="rounded-xl border border-danger/30 bg-surface p-4 shadow-sm sm:p-5">
         <h2 className="text-lg font-black text-foreground">Delete story</h2>
         <p className="mt-2 text-sm leading-6 text-muted">
           Deleting removes this story from the defense map. It does not alter
@@ -507,7 +507,7 @@ function StoryTextarea({
     <label className="space-y-2 text-sm font-bold text-foreground" htmlFor={id}>
       {label}
       <textarea
-        className="min-h-28 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm font-normal text-foreground outline-none transition focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/25"
+        className="min-h-28 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm font-normal text-foreground outline-none transition focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/25"
         id={id}
         {...props}
       />

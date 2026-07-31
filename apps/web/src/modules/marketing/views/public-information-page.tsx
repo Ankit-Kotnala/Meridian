@@ -19,7 +19,7 @@ export function PublicInformationPage({
     <div className="min-h-screen bg-background">
       <SiteHeader />
       <main id="main-content">
-        <section className="border-b border-line bg-white py-14 sm:py-20">
+        <section className="border-b border-line bg-surface py-14 sm:py-20">
           <div className="site-container max-w-4xl">
             <p className="eyebrow">{page.eyebrow}</p>
             <h1 className="balanced mt-3 font-display text-4xl font-semibold tracking-[-0.045em] sm:text-5xl">
@@ -38,7 +38,7 @@ export function PublicInformationPage({
                   className="grid gap-3 py-6 sm:grid-cols-[2.5rem_13rem_minmax(0,1fr)] sm:gap-5 sm:py-8"
                   key={title}
                 >
-                  <span className="grid size-8 shrink-0 place-items-center rounded-full border border-line-strong bg-white text-xs font-bold text-muted">
+                  <span className="grid size-8 shrink-0 place-items-center rounded-full border border-line-strong bg-surface text-xs font-bold text-muted">
                     {index + 1}
                   </span>
                   <h2 className="text-base font-semibold tracking-[-0.02em]">

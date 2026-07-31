@@ -234,7 +234,7 @@ export function UploadWorkflow({
           </Alert>
         )}
         {working && (
-          <div aria-live="polite" className="rounded-xl bg-slate-50 p-4">
+          <div aria-live="polite" className="rounded-xl bg-surface-subtle p-4">
             <Progress
               label={label}
               value={stage === "uploading" ? progress : null}

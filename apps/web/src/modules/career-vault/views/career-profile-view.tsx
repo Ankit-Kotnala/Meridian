@@ -564,7 +564,7 @@ export function CareerProfileView() {
       />
 
       <section
-        className="mt-7 grid overflow-hidden rounded-[var(--radius-card)] border border-line bg-white sm:grid-cols-2 sm:divide-x sm:divide-line"
+        className="mt-7 grid overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface sm:grid-cols-2 sm:divide-x sm:divide-line"
         aria-label="Career evidence actions"
       >
         <Link

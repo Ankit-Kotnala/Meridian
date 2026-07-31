@@ -19,6 +19,7 @@ import Link from "next/link";
 
 import { Badge, buttonStyles, cn } from "@careeros/ui";
 
+import { BackToTop } from "@/shared/components/back-to-top";
 import { SiteFooter } from "@/shared/components/public-site-footer";
 import { SiteHeader } from "@/shared/components/public-site-header";
 import { ProductMotionProvider } from "@/shared/motion/product-motion-provider";
@@ -150,7 +151,7 @@ function ProductWorkspacePreview() {
 
   return (
     <figure className="preview-float relative mx-auto w-full max-w-[46rem]">
-      <div className="overflow-hidden rounded-[1.1rem] border border-navy/15 bg-white shadow-[0_26px_70px_-34px_rgba(19,45,36,0.42)]">
+      <div className="overflow-hidden rounded-[1.1rem] border border-navy/15 bg-surface shadow-[0_26px_70px_-34px_rgba(19,45,36,0.42)]">
         <div className="flex h-12 items-center justify-between border-b border-line bg-surface-subtle px-4">
           <div aria-hidden="true" className="flex items-center gap-2">
             <span className="size-2 rounded-full bg-border-strong" />
@@ -212,7 +213,7 @@ function ProductWorkspacePreview() {
             </div>
 
             <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_12rem]">
-              <section className="rounded-xl border border-line bg-white">
+              <section className="rounded-xl border border-line bg-surface">
                 <div className="flex items-center justify-between border-b border-line px-4 py-3">
                   <div>
                     <h3 className="text-xs font-semibold text-foreground">
@@ -270,7 +271,7 @@ function ProductWorkspacePreview() {
                 </div>
               </section>
 
-              <section className="rounded-xl border border-line bg-white p-4">
+              <section className="rounded-xl border border-line bg-surface p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-[0.625rem] font-bold uppercase tracking-[0.1em] text-muted">
@@ -307,7 +308,7 @@ function ProductWorkspacePreview() {
             </div>
 
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <div className="flex items-center gap-3 rounded-lg border border-line bg-white px-3 py-2.5">
+              <div className="flex items-center gap-3 rounded-lg border border-line bg-surface px-3 py-2.5">
                 <span className="grid size-7 place-items-center rounded-md bg-primary-soft text-primary">
                   <SearchCheck aria-hidden="true" className="size-3.5" />
                 </span>
@@ -320,7 +321,7 @@ function ProductWorkspacePreview() {
                   </span>
                 </span>
               </div>
-              <div className="flex items-center gap-3 rounded-lg border border-line bg-white px-3 py-2.5">
+              <div className="flex items-center gap-3 rounded-lg border border-line bg-surface px-3 py-2.5">
                 <span className="grid size-7 place-items-center rounded-md bg-primary-soft text-primary">
                   <ShieldCheck aria-hidden="true" className="size-3.5" />
                 </span>
@@ -354,7 +355,14 @@ export function LandingPage() {
           <section className="ambient-canvas relative overflow-hidden border-b border-line">
             <div
               aria-hidden="true"
-              className="absolute inset-y-0 right-0 hidden w-[42%] border-l border-line bg-white/38 backdrop-blur-[2px] lg:block"
+              className="pointer-events-none absolute inset-0 overflow-hidden"
+            >
+              <div className="absolute -left-24 -top-24 size-[26rem] rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--accent-soft)_85%,transparent),transparent_70%)] blur-2xl motion-safe:animate-[orb-drift_16s_var(--ease-standard)_infinite]" />
+              <div className="absolute -bottom-32 right-[-6rem] size-[30rem] rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--primary-soft)_80%,transparent),transparent_70%)] blur-2xl motion-safe:animate-[orb-drift_22s_var(--ease-standard)_infinite_reverse]" />
+            </div>
+            <div
+              aria-hidden="true"
+              className="absolute inset-y-0 right-0 hidden w-[42%] border-l border-line bg-surface/38 backdrop-blur-[2px] lg:block"
             />
             <div className="site-container relative grid gap-12 py-14 sm:py-20 lg:grid-cols-[minmax(0,0.82fr)_minmax(32rem,1.18fr)] lg:items-center lg:gap-14 lg:py-24">
               <Reveal>
@@ -448,7 +456,7 @@ export function LandingPage() {
                 </Link>
               </header>
 
-              <div className="overflow-hidden rounded-xl border border-line bg-white">
+              <div className="overflow-hidden rounded-xl border border-line bg-surface">
                 <div className="grid border-b border-line bg-surface-subtle px-5 py-3 text-[0.6875rem] font-bold uppercase tracking-[0.1em] text-muted sm:grid-cols-[10rem_minmax(0,1fr)_9rem]">
                   <span>System layer</span>
                   <span className="hidden sm:block">Purpose</span>
@@ -493,7 +501,7 @@ export function LandingPage() {
           </section>
 
           <section
-            className="landing-section border-y border-line bg-white"
+            className="landing-section border-y border-line bg-surface"
             id="how-it-works"
           >
             <div className="site-container py-16 sm:py-24">
@@ -517,7 +525,7 @@ export function LandingPage() {
                     className="relative px-6 py-6 md:min-h-52 md:px-6 md:pb-0 md:pt-9"
                     key={label}
                   >
-                    <span className="absolute -left-[0.8rem] top-6 grid size-6 place-items-center rounded-full border border-line-strong bg-white text-[0.6875rem] font-bold text-primary md:-top-3 md:left-6">
+                    <span className="absolute -left-[0.8rem] top-6 grid size-6 place-items-center rounded-full border border-line-strong bg-surface text-[0.6875rem] font-bold text-primary md:-top-3 md:left-6">
                       {index + 1}
                     </span>
                     <p className="text-[0.6875rem] font-bold uppercase tracking-[0.1em] text-muted">
@@ -579,7 +587,7 @@ export function LandingPage() {
           </section>
 
           <section
-            className="landing-section border-y border-line bg-white"
+            className="landing-section border-y border-line bg-surface"
             id="trust"
           >
             <div className="site-container grid gap-12 py-16 sm:py-24 lg:grid-cols-[0.78fr_1.22fr] lg:gap-16">
@@ -638,7 +646,7 @@ export function LandingPage() {
             className="landing-section site-container py-16 sm:py-24"
             id="availability"
           >
-            <div className="grid overflow-hidden rounded-xl border border-line bg-white lg:grid-cols-[1fr_auto] lg:items-center">
+            <div className="grid overflow-hidden rounded-xl border border-line bg-surface lg:grid-cols-[1fr_auto] lg:items-center">
               <div className="px-6 py-7 sm:px-8">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge tone="warning">Technical preview</Badge>
@@ -667,7 +675,7 @@ export function LandingPage() {
             </div>
           </section>
 
-          <section className="landing-section border-t border-line bg-white">
+          <section className="landing-section border-t border-line bg-surface">
             <div className="site-container grid gap-10 py-16 sm:py-24 lg:grid-cols-[0.6fr_1.4fr]">
               <header>
                 <p className="eyebrow">Questions</p>
@@ -720,6 +728,7 @@ export function LandingPage() {
           </section>
         </main>
         <SiteFooter />
+        <BackToTop />
       </div>
     </ProductMotionProvider>
   );

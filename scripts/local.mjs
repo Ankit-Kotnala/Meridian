@@ -105,8 +105,8 @@ function hostEnvironment() {
   const databaseUrl = `postgresql+asyncpg://${postgresUser}:${postgresPassword}@127.0.0.1:${postgresPort}/${postgresDatabase}`;
   const redisUrl = `redis://127.0.0.1:${redisPort}/0`;
   const resultBackend = `redis://127.0.0.1:${redisPort}/1`;
-  const objectEndpoint = `http://127.0.0.1:${minioPort}`;
-  const apiBaseUrl = `http://127.0.0.1:${apiPort}`;
+  const objectEndpoint = `http://localhost:${minioPort}`;
+  const apiBaseUrl = `http://localhost:${apiPort}`;
 
   return {
     ...local,

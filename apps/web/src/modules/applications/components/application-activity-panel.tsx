@@ -393,7 +393,7 @@ export function ApplicationActivityPanel({
     <div className="grid gap-6 xl:grid-cols-2">
       <section
         aria-labelledby="application-tasks-heading"
-        className="rounded-xl border border-line bg-white p-4 shadow-sm sm:p-5"
+        className="rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-5"
       >
         <div className="flex items-center gap-2">
           <CalendarClock aria-hidden="true" className="size-5 text-primary" />
@@ -540,7 +540,7 @@ export function ApplicationActivityPanel({
 
       <section
         aria-labelledby="application-notes-heading"
-        className="rounded-xl border border-line bg-white p-4 shadow-sm sm:p-5"
+        className="rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-5"
       >
         <div className="flex items-center gap-2">
           <MessageSquarePlus
@@ -562,7 +562,7 @@ export function ApplicationActivityPanel({
           <label className="text-sm font-bold text-foreground">
             Add a private application note
             <textarea
-              className="mt-1 min-h-28 w-full resize-y rounded-xl border border-line bg-white px-3.5 py-3 text-sm text-foreground shadow-sm outline-none focus:border-primary focus:ring-3 focus:ring-primary-soft"
+              className="mt-1 min-h-28 w-full resize-y rounded-xl border border-line bg-surface px-3.5 py-3 text-sm text-foreground shadow-sm outline-none focus:border-primary focus:ring-3 focus:ring-primary-soft"
               maxLength={2000}
               name="body"
               required
@@ -602,7 +602,7 @@ export function ApplicationActivityPanel({
         {notes.items.length ? (
           <ul className="mt-5 space-y-3">
             {notes.items.map((note) => (
-              <li className="rounded-xl bg-slate-50 p-3" key={note.id}>
+              <li className="rounded-xl bg-surface-subtle p-3" key={note.id}>
                 <p className="whitespace-pre-wrap text-sm text-foreground">
                   {note.body}
                 </p>
@@ -630,7 +630,7 @@ export function ApplicationActivityPanel({
 
       <section
         aria-labelledby="application-event-form-heading"
-        className="rounded-xl border border-line bg-white p-4 shadow-sm sm:p-5"
+        className="rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-5"
       >
         <h2
           className="text-lg font-black text-foreground"
@@ -664,7 +664,7 @@ export function ApplicationActivityPanel({
           <label className="text-sm font-bold text-foreground sm:col-span-2">
             Description
             <textarea
-              className="mt-1 min-h-24 w-full resize-y rounded-xl border border-line bg-white px-3.5 py-3 text-sm text-foreground shadow-sm outline-none focus:border-primary focus:ring-3 focus:ring-primary-soft"
+              className="mt-1 min-h-24 w-full resize-y rounded-xl border border-line bg-surface px-3.5 py-3 text-sm text-foreground shadow-sm outline-none focus:border-primary focus:ring-3 focus:ring-primary-soft"
               maxLength={1000}
               name="description"
             />
@@ -679,7 +679,7 @@ export function ApplicationActivityPanel({
 
       <section
         aria-labelledby="application-timeline-heading"
-        className="rounded-xl border border-line bg-white p-4 shadow-sm sm:p-5"
+        className="rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-5"
       >
         <h2
           className="text-lg font-black text-foreground"

@@ -92,7 +92,7 @@ export function BillingSettings() {
       <Card className="p-5 sm:p-7">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-3">
-            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-slate-100 text-muted">
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-surface-subtle text-muted">
               <CreditCard aria-hidden="true" className="size-5" />
             </span>
             <div>
@@ -122,12 +122,12 @@ export function BillingSettings() {
         {/* Quota Progress Bars */}
         {subscription && (
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
-              <div className="flex justify-between text-xs font-semibold text-slate-600">
+            <div className="rounded-xl border border-line bg-surface-subtle/50 p-4">
+              <div className="flex justify-between text-xs font-semibold text-muted">
                 <span>Resumes</span>
                 <span>{subscription.resumes_count} / {subscription.resumes_limit}</span>
               </div>
-              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200">
+              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface-inset">
                 <div
                   className="h-full bg-emerald-500 transition-all"
                   style={{
@@ -137,12 +137,12 @@ export function BillingSettings() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
-              <div className="flex justify-between text-xs font-semibold text-slate-600">
+            <div className="rounded-xl border border-line bg-surface-subtle/50 p-4">
+              <div className="flex justify-between text-xs font-semibold text-muted">
                 <span>Monthly AI Change Sets</span>
                 <span>{subscription.change_sets_used} / {subscription.change_sets_limit}</span>
               </div>
-              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200">
+              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface-inset">
                 <div
                   className="h-full bg-blue-500 transition-all"
                   style={{
@@ -152,12 +152,12 @@ export function BillingSettings() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
-              <div className="flex justify-between text-xs font-semibold text-slate-600">
+            <div className="rounded-xl border border-line bg-surface-subtle/50 p-4">
+              <div className="flex justify-between text-xs font-semibold text-muted">
                 <span>Monthly Exports</span>
                 <span>{subscription.exports_used} / {subscription.exports_limit}</span>
               </div>
-              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200">
+              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface-inset">
                 <div
                   className="h-full bg-indigo-500 transition-all"
                   style={{
@@ -177,10 +177,10 @@ export function BillingSettings() {
             <h3 className="text-lg font-bold text-foreground">Available Plans</h3>
             <p className="text-sm text-muted">Select the right plan for your career growth goals.</p>
           </div>
-          <div className="mt-3 flex items-center rounded-lg border border-slate-200 p-1 sm:mt-0">
+          <div className="mt-3 flex items-center rounded-lg border border-line p-1 sm:mt-0">
             <button
               className={`px-3 py-1 text-xs font-medium rounded-md transition ${
-                cycle === "monthly" ? "bg-slate-900 text-white" : "text-slate-600"
+                cycle === "monthly" ? "bg-foreground text-background" : "text-muted"
               }`}
               onClick={() => setCycle("monthly")}
               type="button"
@@ -189,7 +189,7 @@ export function BillingSettings() {
             </button>
             <button
               className={`px-3 py-1 text-xs font-medium rounded-md transition ${
-                cycle === "annual" ? "bg-slate-900 text-white" : "text-slate-600"
+                cycle === "annual" ? "bg-foreground text-background" : "text-muted"
               }`}
               onClick={() => setCycle("annual")}
               type="button"
@@ -209,7 +209,7 @@ export function BillingSettings() {
                 className={`flex flex-col justify-between rounded-xl border p-5 transition ${
                   isCurrent
                     ? "border-emerald-500 bg-emerald-50/10 shadow-sm"
-                    : "border-slate-200 hover:border-slate-300"
+                    : "border-line hover:border-line-strong"
                 }`}
                 key={plan.tier}
               >
@@ -223,7 +223,7 @@ export function BillingSettings() {
                   </p>
                   <p className="mt-2 text-xs leading-5 text-muted">{plan.description}</p>
 
-                  <ul className="mt-4 flex flex-col gap-2 text-xs text-slate-700">
+                  <ul className="mt-4 flex flex-col gap-2 text-xs text-muted">
                     <li className="flex items-center gap-2">
                       <Check className="size-3.5 text-emerald-600" />
                       <span>Up to <strong>{plan.max_resumes}</strong> Resumes</span>

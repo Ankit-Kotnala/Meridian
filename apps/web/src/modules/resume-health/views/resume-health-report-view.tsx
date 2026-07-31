@@ -88,7 +88,7 @@ function fixedPoint(value: number): string {
 function FindingList({ findings }: { findings: ResumeFinding[] }) {
   if (findings.length === 0) {
     return (
-      <p className="rounded-xl bg-slate-50 p-4 text-sm text-muted">
+      <p className="rounded-xl bg-surface-subtle p-4 text-sm text-muted">
         No findings were recorded in this category.
       </p>
     );
@@ -101,7 +101,7 @@ function FindingList({ findings }: { findings: ResumeFinding[] }) {
         return (
           <li className="rounded-xl border border-line p-4" key={finding.id}>
             <div className="flex items-start gap-3">
-              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-slate-50">
+              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-surface-subtle">
                 <Icon aria-hidden="true" className="size-4 text-foreground" />
               </span>
               <div className="min-w-0 flex-1">
@@ -299,7 +299,7 @@ export function ResumeHealthReportView({
                 <p className="mt-2 text-xs leading-5 text-muted">
                   {component.explanation}
                 </p>
-                <details className="mt-3 rounded-xl border border-line bg-slate-50/70 p-3">
+                <details className="mt-3 rounded-xl border border-line bg-surface-subtle/70 p-3">
                   <summary className="cursor-pointer rounded-md text-xs font-bold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
                     How {component.label} was calculated
                   </summary>
@@ -376,31 +376,31 @@ export function ResumeHealthReportView({
         </h2>
         <p className="mt-3 text-sm leading-6 text-muted">{SCORE_DISCLAIMER}</p>
         <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
-          <div className="rounded-xl bg-slate-50 p-4">
+          <div className="rounded-xl bg-surface-subtle p-4">
             <dt className="font-bold text-muted">Engine version</dt>
             <dd className="mt-1 break-all font-mono text-xs text-foreground">
               {report.engineVersion}
             </dd>
           </div>
-          <div className="rounded-xl bg-slate-50 p-4">
+          <div className="rounded-xl bg-surface-subtle p-4">
             <dt className="font-bold text-muted">Configuration version</dt>
             <dd className="mt-1 break-all font-mono text-xs text-foreground">
               {report.configurationVersion}
             </dd>
           </div>
-          <div className="rounded-xl bg-slate-50 p-4">
+          <div className="rounded-xl bg-surface-subtle p-4">
             <dt className="font-bold text-muted">Feature schema version</dt>
             <dd className="mt-1 break-all font-mono text-xs text-foreground">
               {report.featureSchemaVersion}
             </dd>
           </div>
-          <div className="rounded-xl bg-slate-50 p-4">
+          <div className="rounded-xl bg-surface-subtle p-4">
             <dt className="font-bold text-muted">Feature-set hash</dt>
             <dd className="mt-1 break-all font-mono text-xs text-foreground">
               {report.featureSetHash}
             </dd>
           </div>
-          <div className="rounded-xl bg-slate-50 p-4 sm:col-span-2">
+          <div className="rounded-xl bg-surface-subtle p-4 sm:col-span-2">
             <dt className="font-bold text-muted">Input snapshot</dt>
             <dd className="mt-1 text-xs leading-5 text-foreground">
               Reviewed canonical resume {report.canonicalResumeId}. Reanalysis
@@ -420,7 +420,7 @@ export function ResumeHealthReportView({
             <dl className="mt-3 grid gap-2 sm:grid-cols-2">
               {report.featureValues.map((feature) => (
                 <div
-                  className="flex items-baseline justify-between gap-4 rounded-lg bg-slate-50 px-3 py-2 text-xs"
+                  className="flex items-baseline justify-between gap-4 rounded-lg bg-surface-subtle px-3 py-2 text-xs"
                   key={feature.key}
                 >
                   <dt className="font-semibold text-muted">{feature.label}</dt>
@@ -473,9 +473,9 @@ export function ResumeHealthReportView({
 
       <Card className="overflow-hidden">
         <div className="grid gap-6 p-5 sm:p-7 lg:grid-cols-[13rem_1fr] lg:items-center">
-          <div className="flex flex-col items-center rounded-2xl bg-slate-50 p-5 text-center">
+          <div className="flex flex-col items-center rounded-2xl bg-surface-subtle p-5 text-center">
             {report.score === null ? (
-              <span className="grid size-32 place-items-center rounded-full border-8 border-slate-200 text-center text-sm font-black text-muted">
+              <span className="grid size-32 place-items-center rounded-full border-8 border-line text-center text-sm font-black text-muted">
                 Score
                 <br /> unavailable
               </span>
