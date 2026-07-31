@@ -604,9 +604,7 @@ def create_app(
                 )
             uow_factory = getattr(resolved_identity, "_uow_factory", None)
             if uow_factory is not None:
-                application.state.account_privacy_service = AccountPrivacyService(
-                    uow_factory
-                )
+                application.state.account_privacy_service = AccountPrivacyService(uow_factory)
 
         application.state.database = resolved_database
         application.state.identity_service = resolved_identity
