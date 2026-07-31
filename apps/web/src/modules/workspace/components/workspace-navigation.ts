@@ -11,6 +11,7 @@ import {
   Network,
   NotebookPen,
   Settings,
+  ShieldCheck,
   Target,
   UserRound,
   UserRoundCheck,
@@ -83,6 +84,7 @@ export const workspaceNavigationGroups: readonly WorkspaceNavigationGroup[] = [
 export const workspaceUtilityNavigation: readonly WorkspaceNavigationItem[] = [
   { href: "/onboarding", icon: UserRoundCheck, label: "Setup Guide" },
   { href: "/settings", icon: Settings, label: "Settings" },
+  { href: "/admin", icon: ShieldCheck, label: "Admin Console" },
 ];
 
 export function isCurrentWorkspacePath(pathname: string, href: string) {

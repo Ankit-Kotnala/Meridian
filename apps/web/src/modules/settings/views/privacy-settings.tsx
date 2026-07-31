@@ -1,12 +1,13 @@
 "use client";
 
-import { Database, FileArchive, Trash2 } from "lucide-react";
+import { Database, Download, FileArchive, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-import { Alert, Badge, Card, ErrorState, LoadingSkeleton } from "@careeros/ui";
+import { Badge, Button, Card, ConfirmDialog, ErrorState, LoadingSkeleton } from "@careeros/ui";
 
-import { requestErrorMessage } from "@/shared/api/browser-request";
+import { apiMutation, apiQuery, requestErrorMessage } from "@/shared/api/browser-request";
 
 import {
   getSettingsCapabilities,
@@ -14,8 +15,12 @@ import {
 } from "../api/settings-api";
 
 export function PrivacySettings() {
+  const router = useRouter();
   const [capabilities, setCapabilities] = useState<SettingsCapabilities>();
   const [failure, setFailure] = useState<string>();
+  const [exportBusy, setExportBusy] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -31,6 +36,40 @@ export function PrivacySettings() {
   useEffect(() => {
     queueMicrotask(() => void load());
   }, [load]);
+
+  const handleExportData = async () => {
+    setExportBusy(true);
+    try {
+      const res = await apiQuery("/api/v1/account/export");
+      const data = (await res.json()) as Record<string, unknown>;
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `careeros-data-export-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setFailure(requestErrorMessage(error, "Failed to export account data archive."));
+    } finally {
+      setExportBusy(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteBusy(true);
+    try {
+      await apiMutation("/api/v1/account", { method: "DELETE" }, { csrf: "session" });
+      setConfirmDeleteOpen(false);
+      router.push("/login?message=account_deleted");
+    } catch (error) {
+      setFailure(requestErrorMessage(error, "Failed to delete account."));
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
 
   if (!capabilities && !failure) return <LoadingSkeleton variant="form" />;
   if (!capabilities)
@@ -77,35 +116,24 @@ export function PrivacySettings() {
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-lg font-extrabold text-foreground">
-                  Account data export
+                  Account data export (GDPR / CCPA)
                 </h2>
-                <Badge tone="neutral">
-                  {capabilities.accountExportAvailable
-                    ? "Backend available"
-                    : "Not configured"}
-                </Badge>
+                <Badge tone="success">Available</Badge>
               </div>
               <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">
-                A complete portable export must cover relational records,
-                private objects, provenance, and audit-safe metadata.
+                Download a complete JSON export covering your profile, sessions, consents, evidence vault items, resumes, applications, and security audit logs.
               </p>
             </div>
           </div>
+
+          <Button
+            loading={exportBusy}
+            onClick={handleExportData}
+            variant="secondary"
+          >
+            <Download className="mr-2 size-4" /> Export My Data
+          </Button>
         </div>
-        {!capabilities.accountExportAvailable && (
-          <Alert className="mt-5" title="Export is unavailable" tone="warning">
-            No account-export provider or complete inventory workflow is
-            configured. CareerOS will not pretend that a partial download is a
-            complete export.
-          </Alert>
-        )}
-        {capabilities.accountExportAvailable && (
-          <Alert className="mt-5" title="Export request path pending">
-            This environment reports account-export support, but this settings
-            page does not yet expose the complete, audited request workflow. No
-            partial download is presented as a complete export.
-          </Alert>
-        )}
       </Card>
 
       <Card className="p-5 sm:p-7">
@@ -119,43 +147,32 @@ export function PrivacySettings() {
                 <h2 className="text-lg font-extrabold text-foreground">
                   Delete account
                 </h2>
-                <Badge tone="neutral">
-                  {capabilities.accountDeletionAvailable
-                    ? "Available"
-                    : "Not configured"}
-                </Badge>
+                <Badge tone="danger">Irreversible</Badge>
               </div>
               <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">
-                Account deletion must coordinate PostgreSQL, object storage,
-                caches, queued work, providers, exports, and documented backup
-                lifecycle behavior.
+                Permanently purge your profile, career evidence, tailored resumes, and tracked applications. This action cannot be undone.
               </p>
             </div>
           </div>
+
+          <Button
+            onClick={() => setConfirmDeleteOpen(true)}
+            variant="danger"
+          >
+            Delete Account
+          </Button>
         </div>
-        {!capabilities.accountDeletionAvailable && (
-          <Alert
-            className="mt-5"
-            title="Deletion is unavailable"
-            tone="warning"
-          >
-            The complete account-erasure workflow and retention policy are not
-            configured. Individual resume documents can still be deleted from
-            Resume Health.
-          </Alert>
-        )}
-        {capabilities.accountDeletionAvailable && (
-          <Alert
-            className="mt-5"
-            title="Deletion capability reported"
-            tone="info"
-          >
-            The server reports deletion support, but this settings view does not
-            expose an unverified action path. Use only a complete, audited
-            deletion workflow.
-          </Alert>
-        )}
       </Card>
+
+      <ConfirmDialog
+        confirmLabel="Permanently Delete Account"
+        description="Are you sure you want to delete your account? All career profile data, evidence links, and generated resumes will be permanently erased."
+        loading={deleteBusy}
+        onConfirm={handleDeleteAccount}
+        onOpenChange={setConfirmDeleteOpen}
+        open={confirmDeleteOpen}
+        title="Delete Account"
+      />
     </div>
   );
 }

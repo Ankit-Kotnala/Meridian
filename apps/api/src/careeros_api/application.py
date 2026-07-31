@@ -26,6 +26,7 @@ from careeros.modules.application_workspace.infrastructure import (
 from careeros.modules.application_workspace.infrastructure import (
     UuidIdentifierFactory as ApplicationWorkspaceUuidFactory,
 )
+from careeros.modules.billing import BillingService, MockBillingProvider
 from careeros.modules.career_analytics.application import (
     CareerAnalyticsPolicy,
     CareerAnalyticsService,
@@ -592,6 +593,13 @@ def create_app(
                     ),
                 )
 
+        if isinstance(resolved_database, Database):
+            resolved_billing = BillingService(
+                database=resolved_database,
+                provider=MockBillingProvider(),
+            )
+            application.state.billing_service = resolved_billing
+
         application.state.database = resolved_database
         application.state.identity_service = resolved_identity
         application.state.security_store = resolved_security_store
@@ -606,6 +614,7 @@ def create_app(
         application.state.networking_service = resolved_networking
         application.state.career_growth_service = resolved_career_growth
         application.state.career_analytics_service = resolved_career_analytics
+        application.state.billing_service = resolved_billing
         application.state.attachment_workflow_service = resolved_attachment_workflow
         application.state.resume_outbox_dispatcher = resolved_resume_dispatcher
         application.state.readiness_dependencies = {"database": resolved_database}

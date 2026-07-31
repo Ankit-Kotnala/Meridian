@@ -5,6 +5,7 @@ from typing import Annotated, cast
 
 from careeros.modules.identity.application import IdentityService
 from careeros.modules.identity.application.models import RequestContext
+from careeros.modules.identity.application.privacy_service import AccountPrivacyService
 from careeros.modules.identity.domain import AuthenticatedPrincipal
 from careeros.modules.identity.domain.errors import (
     AuthenticationRequired,
@@ -29,6 +30,16 @@ def identity_service(request: Request) -> IdentityService:
     if service is None:
         raise IdentityUnavailable
     return cast(IdentityService, service)
+
+
+def account_privacy_service(request: Request) -> AccountPrivacyService:
+    service = getattr(request.app.state, "account_privacy_service", None)
+    if service is None:
+        # Create on the fly using identity uow factory
+        id_svc = identity_service(request)
+        uow_factory = getattr(id_svc, "_uow_factory")
+        service = AccountPrivacyService(uow_factory)
+    return cast(AccountPrivacyService, service)
 
 
 def request_context(request: Request) -> RequestContext:

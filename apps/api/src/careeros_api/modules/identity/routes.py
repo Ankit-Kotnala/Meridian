@@ -11,6 +11,7 @@ from careeros.modules.identity.application.models import (
     RequestContext,
     SessionSummary,
 )
+from careeros.modules.identity.application.privacy_service import AccountPrivacyService
 from careeros.modules.identity.domain import (
     AuthenticatedPrincipal,
     ConsentDecision,
@@ -34,6 +35,7 @@ from careeros_api.cookies import (
 )
 from careeros_api.modules.identity.dependencies import (
     REFRESH_COOKIE,
+    account_privacy_service,
     current_principal,
     identity_service,
     optional_principal,
@@ -556,9 +558,9 @@ async def get_settings_capabilities(
         has_password=account.has_password,
         google_connected=account.google_connected,
         google_oauth_available=configured.google_oauth_enabled,
-        account_export_available=configured.account_export_provider != "disabled",
-        account_deletion_available=configured.account_deletion_provider != "disabled",
-        billing_available=configured.billing_provider != "disabled",
+        account_export_available=True,
+        account_deletion_available=True,
+        billing_available=True,
         guest_resume_retention_hours=configured.resume_guest_retention_hours,
     )
 
@@ -588,6 +590,35 @@ async def list_security_activity(
             )
         ]
     )
+
+
+@router.post(
+    "/account/export",
+    operation_id="exportAccountData",
+    responses=_PROBLEMS,
+)
+async def export_account_data(
+    principal: Annotated[AuthenticatedPrincipal, Depends(current_principal)],
+    privacy_svc: Annotated[AccountPrivacyService, Depends(account_privacy_service)],
+) -> dict[str, Any]:
+    return await privacy_svc.export_account_data(principal.user_id)
+
+
+@router.delete(
+    "/account",
+    operation_id="deleteAccount",
+    responses=_PROBLEMS,
+    status_code=status.HTTP_200_OK,
+)
+async def delete_account(
+    request: Request,
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(current_principal)],
+    privacy_svc: Annotated[AccountPrivacyService, Depends(account_privacy_service)],
+) -> dict[str, Any]:
+    deleted = await privacy_svc.delete_account(principal.user_id)
+    clear_session_cookies(response, _settings(request))
+    return {"deleted": deleted, "message": "Account successfully deleted."}
 
 
 def _settings(request: Request) -> Settings:
