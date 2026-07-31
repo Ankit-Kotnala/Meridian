@@ -1,7 +1,7 @@
 """Repository and provider ports for plans & billing."""
 
 from abc import ABC, abstractmethod
-from typing import Protocol
+from typing import Any, Protocol
 from uuid import UUID
 
 from careeros.modules.billing.application.models import (
@@ -42,7 +42,9 @@ class BillingRepositoryPort(ABC):
         """Check if webhook event ID was already processed (idempotency)."""
 
     @abstractmethod
-    async def record_webhook_event(self, event_id: str, event_type: str, payload: dict) -> None:
+    async def record_webhook_event(
+        self, event_id: str, event_type: str, payload: dict[str, Any]
+    ) -> None:
         """Record processed webhook event."""
 
 
@@ -51,13 +53,10 @@ class BillingProviderPort(Protocol):
 
     async def create_checkout_session(
         self, request: CreateCheckoutSessionRequest, customer_id: str | None
-    ) -> CheckoutSessionResponse:
-        ...
+    ) -> CheckoutSessionResponse: ...
 
     async def create_portal_session(
         self, request: CreatePortalSessionRequest, customer_id: str
-    ) -> PortalSessionResponse:
-        ...
+    ) -> PortalSessionResponse: ...
 
-    def verify_webhook_signature(self, payload: bytes, signature: str) -> dict:
-        ...
+    def verify_webhook_signature(self, payload: bytes, signature: str) -> dict[str, Any]: ...

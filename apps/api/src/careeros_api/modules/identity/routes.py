@@ -558,9 +558,11 @@ async def get_settings_capabilities(
         has_password=account.has_password,
         google_connected=account.google_connected,
         google_oauth_available=configured.google_oauth_enabled,
-        account_export_available=True,
-        account_deletion_available=True,
-        billing_available=True,
+        account_export_available=getattr(request.app.state, "account_privacy_service", None)
+        is not None,
+        account_deletion_available=getattr(request.app.state, "account_privacy_service", None)
+        is not None,
+        billing_available=getattr(request.app.state, "billing_service", None) is not None,
         guest_resume_retention_hours=configured.resume_guest_retention_hours,
     )
 

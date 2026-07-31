@@ -1,6 +1,6 @@
 """Account privacy service for data export and complete account deletion (GDPR/CCPA)."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -21,7 +21,7 @@ class AccountPrivacyService:
 
             export_bundle = {
                 "version": "1.0.0",
-                "exported_at": datetime.now(timezone.utc).isoformat(),
+                "exported_at": datetime.now(UTC).isoformat(),
                 "account": {
                     "user_id": str(user_id),
                     "email_normalized": user.email_normalized if user else "",
@@ -33,7 +33,9 @@ class AccountPrivacyService:
                         "timezone": profile.timezone if profile else "UTC",
                         "target_role": profile.target_role if profile else None,
                         "industry": profile.industry if profile else None,
-                    } if profile else None,
+                    }
+                    if profile
+                    else None,
                 },
                 "sessions": [
                     {

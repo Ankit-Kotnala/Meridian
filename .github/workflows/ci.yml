@@ -81,11 +81,11 @@ jobs:
       - run: cd apps/api && uv run pytest
       - run: uv run --package careeros-api ruff format --config apps/api/pyproject.toml --check packages/contracts/scripts/export_openapi.py
       - run: uv run --package careeros-api ruff check --config apps/api/pyproject.toml packages/contracts/scripts/export_openapi.py
-      - run: test "$(uv run --package careeros-backend alembic -c packages/backend/alembic.ini heads | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')" = "20260726_0013 (head)"
+      - run: test "$(uv run --package careeros-backend alembic -c packages/backend/alembic.ini heads | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')" = "20260731_0014 (head)"
       - run: uv run --package careeros-backend alembic -c packages/backend/alembic.ini upgrade head
       - run: uv run --package careeros-backend alembic -c packages/backend/alembic.ini downgrade 20260724_0009
       - run: uv run --package careeros-backend alembic -c packages/backend/alembic.ini upgrade head
-      - run: test "$(uv run --package careeros-backend alembic -c packages/backend/alembic.ini current | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')" = "20260726_0013 (head)"
+      - run: test "$(uv run --package careeros-backend alembic -c packages/backend/alembic.ini current | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')" = "20260731_0014 (head)"
       - run: cd packages/backend && uv run --package careeros-backend pytest tests/integration
       - run: uv run --package careeros-api python -c "from careeros_api.main import app; assert app.openapi()"
 
@@ -391,17 +391,17 @@ jobs:
             docker compose logs --no-color --tail 200
             exit 1
           fi
-      - name: Verify the packaged Phase 9 migration path
+      - name: Verify the packaged Phase 10 migration path
         run: |
           heads=$(docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini heads | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')
           printf '%s\n' "$heads"
-          test "$heads" = "20260726_0013 (head)"
+          test "$heads" = "20260731_0014 (head)"
           docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
           docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini downgrade 20260724_0009
           docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
           current=$(docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini current | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')
           printf '%s\n' "$current"
-          test "$current" = "20260726_0013 (head)"
+          test "$current" = "20260731_0014 (head)"
       - name: Probe the running platform
         run: |
           curl --fail --silent --show-error http://127.0.0.1:3000/api/health

@@ -5,9 +5,20 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-import { Badge, Button, Card, ConfirmDialog, ErrorState, LoadingSkeleton } from "@careeros/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  ConfirmDialog,
+  ErrorState,
+  LoadingSkeleton,
+} from "@careeros/ui";
 
-import { apiMutation, apiQuery, requestErrorMessage } from "@/shared/api/browser-request";
+import {
+  apiMutation,
+  apiQuery,
+  requestErrorMessage,
+} from "@/shared/api/browser-request";
 
 import {
   getSettingsCapabilities,
@@ -42,7 +53,9 @@ export function PrivacySettings() {
     try {
       const res = await apiQuery("/api/v1/account/export");
       const data = (await res.json()) as Record<string, unknown>;
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: "application/json",
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -52,7 +65,9 @@ export function PrivacySettings() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
-      setFailure(requestErrorMessage(error, "Failed to export account data archive."));
+      setFailure(
+        requestErrorMessage(error, "Failed to export account data archive."),
+      );
     } finally {
       setExportBusy(false);
     }
@@ -61,7 +76,11 @@ export function PrivacySettings() {
   const handleDeleteAccount = async () => {
     setDeleteBusy(true);
     try {
-      await apiMutation("/api/v1/account", { method: "DELETE" }, { csrf: "session" });
+      await apiMutation(
+        "/api/v1/account",
+        { method: "DELETE" },
+        { csrf: "session" },
+      );
       setConfirmDeleteOpen(false);
       router.push("/login?message=account_deleted");
     } catch (error) {
@@ -121,7 +140,9 @@ export function PrivacySettings() {
                 <Badge tone="success">Available</Badge>
               </div>
               <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">
-                Download a complete JSON export covering your profile, sessions, consents, evidence vault items, resumes, applications, and security audit logs.
+                Download a complete JSON export covering your profile, sessions,
+                consents, evidence vault items, resumes, applications, and
+                security audit logs.
               </p>
             </div>
           </div>
@@ -150,15 +171,13 @@ export function PrivacySettings() {
                 <Badge tone="danger">Irreversible</Badge>
               </div>
               <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">
-                Permanently purge your profile, career evidence, tailored resumes, and tracked applications. This action cannot be undone.
+                Permanently purge your profile, career evidence, tailored
+                resumes, and tracked applications. This action cannot be undone.
               </p>
             </div>
           </div>
 
-          <Button
-            onClick={() => setConfirmDeleteOpen(true)}
-            variant="danger"
-          >
+          <Button onClick={() => setConfirmDeleteOpen(true)} variant="danger">
             Delete Account
           </Button>
         </div>
