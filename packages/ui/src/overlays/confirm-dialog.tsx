@@ -48,7 +48,7 @@ export function ConfirmDialog({
     <dialog
       aria-describedby={descriptionId}
       aria-labelledby={titleId}
-      className="m-auto w-[calc(100%_-_2rem)] max-w-lg rounded-2xl border border-line bg-white p-0 text-foreground shadow-2xl backdrop:bg-navy/60"
+      className="m-auto w-[calc(100%_-_2rem)] max-w-lg rounded-2xl border border-line bg-surface p-0 text-foreground shadow-2xl backdrop:bg-navy/60"
       onCancel={(event) => {
         event.preventDefault();
         if (!loading) close();

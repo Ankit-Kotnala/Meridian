@@ -77,7 +77,7 @@ export function DashboardOverview() {
           <ol className="border-l border-line">
             {scenarioSteps.map(({ description, icon: Icon, label }, index) => (
               <li className="relative pb-7 pl-8 last:pb-0" key={label}>
-                <span className="absolute -left-4 top-0 grid size-8 place-items-center rounded-full border border-line-strong bg-white text-primary">
+                <span className="absolute -left-4 top-0 grid size-8 place-items-center rounded-full border border-line-strong bg-surface text-primary">
                   <Icon aria-hidden="true" className="size-4" />
                 </span>
                 <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted">
@@ -125,7 +125,7 @@ export function DashboardOverview() {
             <h3 className="font-semibold text-foreground">Review includes</h3>
           </div>
           <DefinitionList
-            className="mt-4 border-primary/15 bg-white/70"
+            className="mt-4 border-primary/15 bg-surface/70"
             items={[
               { label: "Original", value: "The current document language" },
               { label: "Proposal", value: "The suggested language" },

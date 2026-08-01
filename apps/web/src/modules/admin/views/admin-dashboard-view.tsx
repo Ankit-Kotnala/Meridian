@@ -116,7 +116,7 @@ export function AdminDashboardView() {
       <Card className="p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <span className="grid size-11 place-items-center rounded-xl bg-slate-900 text-white">
+            <span className="grid size-11 place-items-center rounded-xl bg-foreground text-background">
               <Shield className="size-6" />
             </span>
             <div>
@@ -147,12 +147,12 @@ export function AdminDashboardView() {
             <span className="text-xs font-semibold text-muted">
               Platform Users
             </span>
-            <Users className="size-4 text-slate-500" />
+            <Users className="size-4 text-muted" />
           </div>
           <p className="mt-2 text-3xl font-black text-foreground">
             {metrics?.active_users_count}
           </p>
-          <p className="mt-1 text-xs text-emerald-600">Active accounts</p>
+          <p className="mt-1 text-xs text-success">Active accounts</p>
         </Card>
 
         <Card className="p-5">
@@ -160,7 +160,7 @@ export function AdminDashboardView() {
             <span className="text-xs font-semibold text-muted">
               Total Resumes
             </span>
-            <Database className="size-4 text-slate-500" />
+            <Database className="size-4 text-muted" />
           </div>
           <p className="mt-2 text-3xl font-black text-foreground">
             {metrics?.total_resumes_count}
@@ -173,7 +173,7 @@ export function AdminDashboardView() {
             <span className="text-xs font-semibold text-muted">
               Tracked Applications
             </span>
-            <Activity className="size-4 text-slate-500" />
+            <Activity className="size-4 text-muted" />
           </div>
           <p className="mt-2 text-3xl font-black text-foreground">
             {metrics?.total_applications_count}
@@ -186,12 +186,12 @@ export function AdminDashboardView() {
             <span className="text-xs font-semibold text-muted">
               API Service Version
             </span>
-            <Server className="size-4 text-slate-500" />
+            <Server className="size-4 text-muted" />
           </div>
           <p className="mt-2 text-2xl font-black text-foreground">
             {metrics?.service_version}
           </p>
-          <p className="mt-1 text-xs text-emerald-600">Healthy & operational</p>
+          <p className="mt-1 text-xs text-success">Healthy & operational</p>
         </Card>
       </div>
 
@@ -204,14 +204,14 @@ export function AdminDashboardView() {
           {metrics &&
             Object.entries(metrics.system_health).map(([svc, status]) => (
               <div
-                className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4"
+                className="flex items-center justify-between rounded-xl border border-line bg-surface-subtle p-4"
                 key={svc}
               >
-                <span className="text-sm font-semibold capitalize text-slate-700">
+                <span className="text-sm font-semibold capitalize text-muted-strong">
                   {svc.replace("_", " ")}
                 </span>
-                <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-700">
-                  <CheckCircle className="size-4 text-emerald-600" /> {status}
+                <span className="flex items-center gap-1.5 text-xs font-bold text-success-strong">
+                  <CheckCircle className="size-4 text-success" /> {status}
                 </span>
               </div>
             ))}
@@ -241,7 +241,7 @@ export function AdminDashboardView() {
         ) : (
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="border-b bg-slate-50 text-slate-600">
+              <thead className="border-b bg-surface-subtle text-muted">
                 <tr>
                   <th className="p-3 font-semibold">Job ID</th>
                   <th className="p-3 font-semibold">Task Type</th>
@@ -253,16 +253,16 @@ export function AdminDashboardView() {
               <tbody className="divide-y">
                 {deadLetters.map((job) => (
                   <tr key={job.id}>
-                    <td className="p-3 font-mono text-slate-800">
+                    <td className="p-3 font-mono text-foreground">
                       {job.id.slice(0, 8)}...
                     </td>
-                    <td className="p-3 font-medium text-slate-800">
+                    <td className="p-3 font-medium text-foreground">
                       {job.job_type}
                     </td>
                     <td className="p-3">
                       {job.attempts} / {job.max_attempts}
                     </td>
-                    <td className="p-3 text-red-600">
+                    <td className="p-3 text-danger">
                       {job.last_error ?? "Worker error"}
                     </td>
                     <td className="p-3">

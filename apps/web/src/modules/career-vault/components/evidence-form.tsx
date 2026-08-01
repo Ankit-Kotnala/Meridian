@@ -132,7 +132,7 @@ export function EvidenceForm({
             <p className="text-xs font-semibold text-danger">{errors.type}</p>
           )}
         </div>
-        <div className="rounded-xl border border-line bg-slate-50 p-3 text-sm">
+        <div className="rounded-xl border border-line bg-surface-subtle p-3 text-sm">
           <p className="font-bold">Source: manual entry</p>
           <p className="mt-1 text-xs leading-5 text-muted">
             Resume and attachment provenance can only be created through their

@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 
 import {
   Alert,
-  ApprovalPanel,
   Badge,
   Button,
   Card,
@@ -113,11 +112,11 @@ function SemanticAddFieldForm({
   const [datePrecision, setDatePrecision] = useState<DatePrecision>("unknown");
   const fieldType = semanticFieldType(name);
   return (
-    <div className="grid gap-3 border-t border-line bg-slate-50 p-4 sm:grid-cols-[minmax(9rem,0.4fr)_1fr_auto]">
+    <div className="grid gap-3 border-t border-line bg-surface-subtle p-4 sm:grid-cols-[minmax(9rem,0.4fr)_1fr_auto]">
       <label className="text-xs font-bold text-muted">
         Fact type
         <select
-          className="mt-1 block w-full rounded-lg border border-line bg-white px-2 py-2 text-sm text-foreground"
+          className="mt-1 block w-full rounded-lg border border-line bg-surface px-2 py-2 text-sm text-foreground"
           onChange={(event) => setName(event.target.value)}
           value={name}
         >
@@ -131,7 +130,7 @@ function SemanticAddFieldForm({
       <label className="text-xs font-bold text-muted">
         User-confirmed value
         <input
-          className="mt-1 block w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-foreground"
+          className="mt-1 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-foreground"
           maxLength={10_000}
           onChange={(event) => setValue(event.target.value)}
           value={value}
@@ -141,7 +140,7 @@ function SemanticAddFieldForm({
         <label className="text-xs font-bold text-muted sm:col-start-2">
           Date precision
           <select
-            className="mt-1 block w-full rounded-lg border border-line bg-white px-2 py-2 text-sm text-foreground"
+            className="mt-1 block w-full rounded-lg border border-line bg-surface px-2 py-2 text-sm text-foreground"
             onChange={(event) =>
               setDatePrecision(event.target.value as DatePrecision)
             }
@@ -192,7 +191,7 @@ function SemanticAddEntityForm({
       <label className="text-xs font-bold text-muted">
         New record type
         <select
-          className="mt-1 block w-full rounded-lg border border-line bg-white px-2 py-2 text-sm text-foreground"
+          className="mt-1 block w-full rounded-lg border border-line bg-surface px-2 py-2 text-sm text-foreground"
           onChange={(event) => setKind(event.target.value as SemanticKind)}
           value={kind}
         >
@@ -206,7 +205,7 @@ function SemanticAddEntityForm({
       <label className="text-xs font-bold text-muted">
         {name.replaceAll("_", " ")}
         <input
-          className="mt-1 block w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-foreground"
+          className="mt-1 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-foreground"
           maxLength={10_000}
           onChange={(event) => setValue(event.target.value)}
           value={value}
@@ -558,7 +557,7 @@ export function CanonicalReviewView({
       ) : (
         canonical.sections.map((section, sectionIndex) => (
           <Card className="overflow-hidden" key={section.id}>
-            <header className="border-b border-line bg-slate-50 px-5 py-4">
+            <header className="border-b border-line bg-surface-subtle px-5 py-4">
               <h2 className="text-sm font-extrabold text-foreground">
                 {section.title}
               </h2>
@@ -583,7 +582,7 @@ export function CanonicalReviewView({
                         </Badge>
                       </div>
                       <blockquote
-                        className="mt-3 whitespace-pre-wrap rounded-xl border border-line bg-slate-50 p-3 text-sm leading-6 text-muted"
+                        className="mt-3 whitespace-pre-wrap rounded-xl border border-line bg-surface-subtle p-3 text-sm leading-6 text-muted"
                         id={sourceId}
                       >
                         {field.originalValue || "No value was extracted."}
@@ -606,7 +605,7 @@ export function CanonicalReviewView({
                       </label>
                       <textarea
                         aria-describedby={sourceId}
-                        className="mt-3 min-h-32 w-full resize-y rounded-xl border border-line bg-white px-3 py-2.5 text-sm leading-6 text-foreground shadow-sm outline-none transition focus:border-primary focus:ring-3 focus:ring-primary/15"
+                        className="mt-3 min-h-32 w-full resize-y rounded-xl border border-line bg-surface px-3 py-2.5 text-sm leading-6 text-foreground shadow-sm outline-none transition focus:border-primary focus:ring-3 focus:ring-primary/15"
                         id={inputId}
                         maxLength={10_000}
                         onChange={(event) =>
@@ -658,11 +657,11 @@ export function CanonicalReviewView({
               }
               key={entity.id}
             >
-              <header className="flex flex-col gap-3 border-b border-line bg-slate-50 px-5 py-4 sm:flex-row sm:items-end sm:justify-between">
+              <header className="flex flex-col gap-3 border-b border-line bg-surface-subtle px-5 py-4 sm:flex-row sm:items-end sm:justify-between">
                 <label className="text-xs font-bold text-muted">
                   Record classification
                   <select
-                    className="mt-1 block rounded-lg border border-line bg-white px-2 py-2 text-sm font-bold text-foreground"
+                    className="mt-1 block rounded-lg border border-line bg-surface px-2 py-2 text-sm font-bold text-foreground"
                     disabled={removed}
                     onChange={(event) => {
                       const kind = event.target.value as SemanticKind;
@@ -774,7 +773,7 @@ export function CanonicalReviewView({
                           </Badge>
                         </div>
                         <blockquote
-                          className="mt-3 whitespace-pre-wrap rounded-xl border border-line bg-slate-50 p-3 text-sm leading-6 text-muted"
+                          className="mt-3 whitespace-pre-wrap rounded-xl border border-line bg-surface-subtle p-3 text-sm leading-6 text-muted"
                           id={sourceId}
                         >
                           {field.anchors[0]?.excerpt ||
@@ -793,7 +792,7 @@ export function CanonicalReviewView({
                           <label className="block text-xs font-bold text-muted">
                             Fact classification
                             <select
-                              className="mt-1 block rounded-lg border border-line bg-white px-2 py-1.5 text-foreground"
+                              className="mt-1 block rounded-lg border border-line bg-surface px-2 py-1.5 text-foreground"
                               disabled={removed || fieldRemoved}
                               onChange={(event) =>
                                 setFieldNames((current) => ({
@@ -826,7 +825,7 @@ export function CanonicalReviewView({
                         </label>
                         <textarea
                           aria-describedby={sourceId}
-                          className="mt-3 min-h-24 w-full resize-y rounded-xl border border-line bg-white px-3 py-2.5 text-sm leading-6 text-foreground shadow-sm outline-none transition focus:border-primary focus:ring-3 focus:ring-primary/15"
+                          className="mt-3 min-h-24 w-full resize-y rounded-xl border border-line bg-surface px-3 py-2.5 text-sm leading-6 text-foreground shadow-sm outline-none transition focus:border-primary focus:ring-3 focus:ring-primary/15"
                           disabled={removed || fieldRemoved}
                           id={inputId}
                           maxLength={10_000}
@@ -842,7 +841,7 @@ export function CanonicalReviewView({
                           <label className="mt-2 block text-xs font-bold text-muted">
                             Date precision
                             <select
-                              className="ml-2 rounded-lg border border-line bg-white px-2 py-1.5 text-foreground"
+                              className="ml-2 rounded-lg border border-line bg-surface px-2 py-1.5 text-foreground"
                               onChange={(event) =>
                                 setDatePrecisions((current) => ({
                                   ...current,
@@ -1083,39 +1082,34 @@ export function CanonicalReviewView({
         ]}
       />
 
-      <ApprovalPanel
-        actions={
-          <Button
-            loading={saving}
-            loadingLabel="Saving review…"
-            onClick={() => void saveAndAnalyze()}
-          >
-            <FileCheck2 aria-hidden="true" className="size-4" />
-            {fields.length > 0
-              ? "Save review and analyze"
-              : "Acknowledge and analyze"}
-          </Button>
-        }
-        className="sticky bottom-3 z-20 mt-5 shadow-[var(--shadow-md)]"
-        evidence={`Source: ${document.displayFilename}. The uploaded source remains unchanged.`}
-        title="Explicit review required"
+      <div
+        aria-label="Explicit review required"
+        className="sticky bottom-3 z-20 mt-5 flex flex-wrap items-center gap-3 rounded-[var(--radius-card)] border border-primary/30 bg-primary-soft px-4 py-3 shadow-[var(--shadow-md)]"
+        role="group"
       >
-        <p>
-          {fields.length > 0
-            ? "Confirming these values starts a new deterministic analysis from this reviewed snapshot."
-            : "Acknowledge that no reliable text was extracted. The report will show insufficient data instead of inventing a score."}
-        </p>
-        <label className="mt-3 flex items-start gap-2 text-xs font-bold text-foreground">
+        <label className="flex min-w-0 flex-1 items-start gap-2 text-xs font-bold text-foreground">
           <input
             checked={confirmNoChanges}
-            className="mt-0.5"
+            className="mt-0.5 shrink-0"
             onChange={(event) => setConfirmNoChanges(event.target.checked)}
             type="checkbox"
           />
-          I reviewed the extracted content and confirm that no changes are
-          needed.
+          <span>
+            I reviewed the extracted content and confirm that no changes are
+            needed.
+          </span>
         </label>
-      </ApprovalPanel>
+        <Button
+          loading={saving}
+          loadingLabel="Saving review…"
+          onClick={() => void saveAndAnalyze()}
+        >
+          <FileCheck2 aria-hidden="true" className="size-4" />
+          {fields.length > 0
+            ? "Save review and analyze"
+            : "Acknowledge and analyze"}
+        </Button>
+      </div>
     </main>
   );
 }

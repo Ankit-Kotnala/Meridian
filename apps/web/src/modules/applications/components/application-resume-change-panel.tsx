@@ -152,7 +152,7 @@ export function ApplicationResumeChangePanel({
   return (
     <>
       <details
-        className="rounded-xl border border-line bg-white shadow-sm"
+        className="rounded-xl border border-line bg-surface shadow-sm"
         onToggle={(event) => {
           if (event.currentTarget.open && resumeState.status === "idle") {
             void loadResumes();
@@ -266,7 +266,7 @@ export function ApplicationResumeChangePanel({
               <label className="text-sm font-bold text-foreground">
                 Reason for changing the pinned resume
                 <textarea
-                  className="mt-1 min-h-24 w-full resize-y rounded-xl border border-line bg-white px-3.5 py-3 text-sm text-foreground shadow-sm outline-none focus:border-primary focus:ring-3 focus:ring-primary-soft"
+                  className="mt-1 min-h-24 w-full resize-y rounded-xl border border-line bg-surface px-3.5 py-3 text-sm text-foreground shadow-sm outline-none focus:border-primary focus:ring-3 focus:ring-primary-soft"
                   maxLength={500}
                   onChange={(event) => setReason(event.target.value)}
                   required
@@ -303,7 +303,7 @@ export function ApplicationResumeChangePanel({
             {application.resumeVersionNumber}, with{" "}
             <strong>{selectedResume?.title ?? selectedVersion?.title}</strong>,
             version {selectedVersion?.versionNumber}? The recorded reason is:
-            <span className="mt-2 block rounded-lg bg-slate-50 p-3">
+            <span className="mt-2 block rounded-lg bg-surface-subtle p-3">
               {reason.trim()}
             </span>
           </>

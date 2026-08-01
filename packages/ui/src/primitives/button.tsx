@@ -7,7 +7,7 @@ export const buttonStyles = {
   primary:
     "border border-primary bg-primary text-white shadow-[0_7px_18px_-10px_rgba(23,74,53,0.8)] hover:-translate-y-0.5 hover:border-primary-strong hover:bg-primary-strong hover:shadow-[0_12px_24px_-12px_rgba(23,74,53,0.72)]",
   secondary:
-    "border border-line-strong bg-white text-foreground shadow-sm hover:-translate-y-0.5 hover:border-primary/60 hover:bg-primary-soft/45 hover:shadow-[var(--shadow-md)]",
+    "border border-line-strong bg-surface text-foreground shadow-sm hover:-translate-y-0.5 hover:border-primary/60 hover:bg-primary-soft/45 hover:shadow-[var(--shadow-md)]",
   ghost: "text-muted-strong hover:bg-surface-subtle hover:text-foreground",
   dark: "bg-navy text-white shadow-sm hover:-translate-y-0.5 hover:bg-navy-hover hover:shadow-[var(--shadow-md)]",
   danger:

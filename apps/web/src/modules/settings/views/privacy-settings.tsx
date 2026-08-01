@@ -129,7 +129,7 @@ export function PrivacySettings() {
       <Card className="p-5 sm:p-7">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-3">
-            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-slate-100 text-muted">
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-surface-subtle text-muted">
               <FileArchive aria-hidden="true" className="size-5" />
             </span>
             <div>

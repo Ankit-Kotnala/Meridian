@@ -642,7 +642,7 @@ export function InterviewPrepView() {
               <ul className="grid gap-3 lg:grid-cols-2">
                 {defenseMap.entries.map((entry) => (
                   <li
-                    className="rounded-xl border border-line bg-white p-4 shadow-sm"
+                    className="rounded-xl border border-line bg-surface p-4 shadow-sm"
                     key={entry.claimId}
                   >
                     <div className="flex flex-wrap items-center gap-2">
@@ -713,7 +713,7 @@ export function InterviewPrepView() {
           <ul className="grid gap-3 lg:grid-cols-2">
             {state.stories.map((story) => (
               <li
-                className="rounded-xl border border-line bg-white p-4 shadow-sm"
+                className="rounded-xl border border-line bg-surface p-4 shadow-sm"
                 key={story.id}
               >
                 <div className="flex flex-wrap items-center gap-2">
@@ -808,7 +808,7 @@ export function InterviewPrepView() {
           <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {state.sessions.map((session) => (
               <li
-                className="rounded-xl border border-line bg-white p-4 shadow-sm"
+                className="rounded-xl border border-line bg-surface p-4 shadow-sm"
                 key={session.id}
               >
                 <div className="flex flex-wrap items-center gap-2">
@@ -1063,7 +1063,7 @@ function LabeledTextarea({
       {label}
       <textarea
         aria-describedby={hintId}
-        className="min-h-28 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm font-normal text-foreground outline-none transition focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/25"
+        className="min-h-28 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm font-normal text-foreground outline-none transition focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/25"
         id={id}
         {...props}
       />

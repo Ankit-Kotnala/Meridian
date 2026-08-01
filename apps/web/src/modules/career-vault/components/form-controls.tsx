@@ -15,7 +15,7 @@ export const FieldErrorSummary = forwardRef<
   if (messages.length === 0) return null;
   return (
     <div
-      className="mb-5 rounded-xl border border-red-200 bg-danger-soft p-4 text-sm text-danger"
+      className="mb-5 rounded-xl border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
       ref={ref}
       role="alert"
       tabIndex={-1}
@@ -55,8 +55,8 @@ export function TextareaField({
         aria-describedby={describedBy}
         aria-invalid={Boolean(error)}
         className={cn(
-          "min-h-28 w-full resize-y rounded-xl border border-line bg-white px-3.5 py-3 text-sm leading-6 text-foreground shadow-sm outline-none",
-          "hover:border-slate-300 focus:border-primary focus:ring-3 focus:ring-primary-soft",
+          "min-h-28 w-full resize-y rounded-xl border border-line bg-surface px-3.5 py-3 text-sm leading-6 text-foreground shadow-sm outline-none",
+          "hover:border-line-strong focus:border-primary focus:ring-3 focus:ring-primary-soft",
           "aria-[invalid=true]:border-danger aria-[invalid=true]:focus:ring-danger-soft",
           className,
         )}
