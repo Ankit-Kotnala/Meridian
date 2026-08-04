@@ -126,7 +126,7 @@ export async function updateProfile(
       headers: { "If-Match": `"${profile.version}"` },
       body: JSON.stringify(body),
     },
-    { csrf: "session" },
+    { csrf: "session", retryAfterRefresh: true },
   );
   return parseProfile(await response.json());
 }
@@ -149,7 +149,7 @@ export async function revokeSession(sessionId: string): Promise<void> {
     {
       method: "DELETE",
     },
-    { csrf: "session" },
+    { csrf: "session", retryAfterRefresh: true },
   );
 }
 
@@ -157,7 +157,7 @@ export async function revokeAllSessions(): Promise<void> {
   await apiMutation(
     "/api/v1/auth/logout-all",
     { method: "POST" },
-    { csrf: "session" },
+    { csrf: "session", retryAfterRefresh: true },
   );
 }
 
@@ -185,7 +185,7 @@ export async function setConsent(
       method: "POST",
       body: JSON.stringify(body),
     },
-    { csrf: "session" },
+    { csrf: "session", retryAfterRefresh: true },
   );
   return (await response.json()) as ConsentState;
 }
@@ -212,7 +212,22 @@ export async function changePassword(
       method: "POST",
       body: JSON.stringify(body),
     },
-    { csrf: "session" },
+    { csrf: "session", retryAfterRefresh: true },
+  );
+}
+
+export async function exportAccountData(): Promise<Record<string, unknown>> {
+  const response = await apiQuery("/api/v1/account/export", {
+    retryAfterRefresh: true,
+  });
+  return (await response.json()) as Record<string, unknown>;
+}
+
+export async function deleteAccount(): Promise<void> {
+  await apiMutation(
+    "/api/v1/account",
+    { method: "DELETE" },
+    { csrf: "session", retryAfterRefresh: true },
   );
 }
 
@@ -230,7 +245,7 @@ export async function disconnectGoogle(): Promise<void> {
   await apiMutation(
     "/api/v1/auth/connections/google",
     { method: "DELETE" },
-    { csrf: "session" },
+    { csrf: "session", retryAfterRefresh: true },
   );
 }
 
@@ -255,7 +270,7 @@ export async function updateReminderPreferences(
       headers: { "If-Match": `"${current.version}"` },
       body: JSON.stringify(input),
     },
-    { csrf: "session" },
+    { csrf: "session", retryAfterRefresh: true },
   );
   return parseReminderPreferences(await response.json());
 }

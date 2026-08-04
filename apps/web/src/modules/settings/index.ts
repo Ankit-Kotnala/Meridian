@@ -1,4 +1,5 @@
 export { SettingsNavigation } from "./components/settings-navigation";
+export { SettingsCapabilitiesProvider } from "./components/settings-capabilities-context";
 export { BillingSettings } from "./views/billing-settings";
 export { ConnectionSettings } from "./views/connection-settings";
 export { ConsentSettings } from "./views/consent-settings";

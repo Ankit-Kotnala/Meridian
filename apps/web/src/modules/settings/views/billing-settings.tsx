@@ -3,7 +3,14 @@
 import { Check, CreditCard, ExternalLink } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
-import { Badge, Button, Card, ErrorState, LoadingSkeleton } from "@careeros/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  ErrorState,
+  LoadingSkeleton,
+} from "@careeros/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 
@@ -15,8 +22,11 @@ import {
   type PlanDTO,
   type SubscriptionDTO,
 } from "../api/billing-api";
+import { useSettingsCapabilities } from "../components/settings-capabilities-context";
 
 export function BillingSettings() {
+  const { capabilities, failure: capabilitiesFailure, loading: capabilitiesLoading } =
+    useSettingsCapabilities();
   const [subscription, setSubscription] = useState<SubscriptionDTO>();
   const [plans, setPlans] = useState<PlanDTO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,8 +57,25 @@ export function BillingSettings() {
   }, []);
 
   useEffect(() => {
+    if (!capabilities?.billingAvailable) return;
     queueMicrotask(() => void loadData());
-  }, [loadData]);
+  }, [capabilities?.billingAvailable, loadData]);
+
+  if (capabilitiesLoading && !capabilities) {
+    return <LoadingSkeleton variant="form" />;
+  }
+
+  if (!capabilities?.billingAvailable) {
+    return (
+      <EmptyState
+        description={
+          capabilitiesFailure ??
+          "Billing and subscription management are not enabled in this environment."
+        }
+        title="Billing unavailable"
+      />
+    );
+  }
 
   const handleCheckout = async (tier: "sprint" | "pro" | "coach") => {
     setActionBusy(tier);

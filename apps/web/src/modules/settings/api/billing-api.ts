@@ -32,12 +32,14 @@ export type SubscriptionDTO = {
 };
 
 export async function getSubscription(): Promise<SubscriptionDTO> {
-  const res = await apiQuery("/api/v1/billing/subscription");
+  const res = await apiQuery("/api/v1/billing/subscription", {
+    retryAfterRefresh: true,
+  });
   return (await res.json()) as SubscriptionDTO;
 }
 
 export async function getPlans(): Promise<{ plans: PlanDTO[] }> {
-  const res = await apiQuery("/api/v1/billing/plans");
+  const res = await apiQuery("/api/v1/billing/plans", { retryAfterRefresh: true });
   return (await res.json()) as { plans: PlanDTO[] };
 }
 
@@ -57,7 +59,7 @@ export async function createCheckoutSession(
         cancel_url: `${origin}/settings/billing?status=canceled`,
       }),
     },
-    { csrf: "session" },
+    { csrf: "session", retryAfterRefresh: true },
   );
   return (await res.json()) as { checkout_url: string; session_id: string };
 }
@@ -72,7 +74,7 @@ export async function createPortalSession(): Promise<{ portal_url: string }> {
         return_url: `${origin}/settings/billing`,
       }),
     },
-    { csrf: "session" },
+    { csrf: "session", retryAfterRefresh: true },
   );
   return (await res.json()) as { portal_url: string };
 }
