@@ -30,7 +30,7 @@ export function ScoreBar({
         aria-valuemax={100}
         aria-valuemin={0}
         aria-valuenow={safeScore}
-        className="h-1.5 overflow-hidden rounded-full bg-slate-200"
+        className="h-1.5 overflow-hidden rounded-full bg-surface-inset"
         role="progressbar"
       >
         <div

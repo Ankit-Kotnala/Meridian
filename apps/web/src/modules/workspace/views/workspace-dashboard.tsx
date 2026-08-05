@@ -304,7 +304,7 @@ export function WorkspaceDashboard({
                 <ArrowRight aria-hidden="true" className="size-4" />
               </Link>
             </div>
-            <div className="flex items-center gap-2 border-t border-primary/20 bg-white/55 px-5 py-3 text-xs text-muted sm:px-7">
+            <div className="flex items-center gap-2 border-t border-primary/20 bg-surface/55 px-5 py-3 text-xs text-muted sm:px-7">
               <BadgeCheck aria-hidden="true" className="size-4 text-primary" />
               You review factual changes before they become derived output.
             </div>
@@ -317,7 +317,7 @@ export function WorkspaceDashboard({
             id="foundation-heading"
             title="Career foundation"
           />
-          <ul className="divide-y divide-line rounded-[var(--radius-card)] border border-line bg-white">
+          <ul className="divide-y divide-line rounded-[var(--radius-card)] border border-line bg-surface">
             {foundationLinks.map(({ description, href, icon: Icon, label }) => (
               <li key={href}>
                 <Link

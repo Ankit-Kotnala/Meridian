@@ -79,9 +79,17 @@ class S3ObjectStorage:
             )
         except (BotoCoreError, ClientError) as exc:
             raise RetryableProcessingFailure("object_storage_unavailable") from exc
+
+        # Replace internal endpoint with public endpoint in presigned URL
+        url_str = str(url)
+        internal_url = self._options.internal_endpoint_url.rstrip('/')
+        public_url = self._options.public_endpoint_url.rstrip('/')
+        if url_str.startswith(internal_url):
+            url_str = url_str.replace(internal_url, public_url, 1)
+
         return StorageUploadTarget(
             method="PUT",
-            url=str(url),
+            url=url_str,
             headers={
                 "Content-Type": media_type,
                 "x-amz-meta-expected-size": metadata_value,

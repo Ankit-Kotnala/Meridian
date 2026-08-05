@@ -64,6 +64,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   transpilePackages: ["@careeros/ui"],
+  experimental: {
+    useTypeScriptCli: true,
+  },
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },

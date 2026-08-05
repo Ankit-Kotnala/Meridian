@@ -173,7 +173,7 @@ export function ProfileImportReviewView({
       <div className="space-y-5">
         {proposal.changes.map((change) => (
           <Card className="overflow-hidden" key={change.id}>
-            <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line bg-slate-50 px-5 py-4">
+            <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line bg-surface-subtle px-5 py-4">
               <div>
                 <h2 className="font-extrabold">{change.label}</h2>
                 <p className="mt-1 text-xs text-muted">
@@ -187,7 +187,7 @@ export function ProfileImportReviewView({
             <div className="grid gap-5 p-5 lg:grid-cols-2">
               <div>
                 <p className="text-sm font-extrabold">Current record value</p>
-                <blockquote className="mt-3 min-h-28 whitespace-pre-wrap rounded-xl border border-line bg-white p-4 text-sm leading-6 text-muted">
+                <blockquote className="mt-3 min-h-28 whitespace-pre-wrap rounded-xl border border-line bg-surface p-4 text-sm leading-6 text-muted">
                   {change.currentValue || "No current value"}
                 </blockquote>
               </div>

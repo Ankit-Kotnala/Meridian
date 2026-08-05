@@ -127,25 +127,18 @@ export function PrivacySettings() {
         </div>
       </Card>
 
-      {exportAvailable ? (
-        <Card className="p-5 sm:p-7">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex items-start gap-3">
-              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-slate-100 text-muted">
-                <FileArchive aria-hidden="true" className="size-5" />
-              </span>
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-lg font-extrabold text-foreground">
-                    Account data export (GDPR / CCPA)
-                  </h2>
-                  <Badge tone="success">Available</Badge>
-                </div>
-                <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">
-                  Download a complete JSON export covering your profile,
-                  sessions, consents, evidence vault items, resumes,
-                  applications, and security audit logs.
-                </p>
+      <Card className="p-5 sm:p-7">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-surface-subtle text-muted">
+              <FileArchive aria-hidden="true" className="size-5" />
+            </span>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-lg font-extrabold text-foreground">
+                  Account data export (GDPR / CCPA)
+                </h2>
+                <Badge tone="success">Available</Badge>
               </div>
             </div>
 

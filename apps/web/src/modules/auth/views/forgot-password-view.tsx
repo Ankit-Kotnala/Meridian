@@ -53,7 +53,7 @@ export function ForgotPasswordView() {
             If the address belongs to an eligible account, a password reset link
             will arrive. The same response is shown for every address.
           </Alert>
-          <div className="rounded-xl bg-slate-50 p-4 text-sm leading-6 text-muted">
+          <div className="rounded-xl bg-surface-subtle p-4 text-sm leading-6 text-muted">
             <MailCheck
               aria-hidden="true"
               className="mb-2 size-5 text-primary"

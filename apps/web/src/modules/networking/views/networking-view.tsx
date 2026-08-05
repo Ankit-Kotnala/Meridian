@@ -1044,7 +1044,7 @@ function DueReminderCard({
 }) {
   const [snoozeUntil, setSnoozeUntil] = useState("");
   return (
-    <article className="rounded-xl border border-line bg-white p-4 shadow-sm">
+    <article className="rounded-xl border border-line bg-surface p-4 shadow-sm">
       <Badge tone="warning">Due</Badge>
       <h2 className="mt-2 font-black text-foreground">{item.reminder.title}</h2>
       <p className="mt-1 text-xs text-muted">
@@ -1245,7 +1245,7 @@ function ContactsPanel({
         <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {contacts.map((contact) => (
             <li
-              className="rounded-xl border border-line bg-white p-4 shadow-sm"
+              className="rounded-xl border border-line bg-surface p-4 shadow-sm"
               key={contact.id}
             >
               <div className="flex flex-wrap gap-2">
@@ -1306,7 +1306,7 @@ function ContactCreateForm({
 }) {
   return (
     <form
-      className="space-y-5 rounded-xl border border-line bg-white p-4 shadow-sm sm:p-5"
+      className="space-y-5 rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-5"
       onSubmit={onSubmit}
     >
       <div>
@@ -1522,7 +1522,7 @@ function OrganizationCreateForm({
 }) {
   return (
     <form
-      className="grid gap-4 rounded-xl border border-line bg-white p-4 sm:grid-cols-2 sm:p-5"
+      className="grid gap-4 rounded-xl border border-line bg-surface p-4 sm:grid-cols-2 sm:p-5"
       onSubmit={onSubmit}
     >
       <LabeledInput id="organization-name" label="Name" name="name" required />
@@ -1569,7 +1569,7 @@ function OrganizationForm({
 }) {
   return (
     <form
-      className="grid gap-3 rounded-xl border border-line bg-white p-4 shadow-sm sm:grid-cols-2"
+      className="grid gap-3 rounded-xl border border-line bg-surface p-4 shadow-sm sm:grid-cols-2"
       onSubmit={onSubmit}
     >
       <LabeledInput
@@ -1726,7 +1726,7 @@ function TemplateCreateForm({
 }) {
   return (
     <form
-      className="space-y-4 rounded-xl border border-line bg-white p-4 sm:p-5"
+      className="space-y-4 rounded-xl border border-line bg-surface p-4 sm:p-5"
       onSubmit={onSubmit}
     >
       <div className="grid gap-4 sm:grid-cols-2">
@@ -1778,7 +1778,7 @@ function TemplateForm({
 }) {
   return (
     <form
-      className="space-y-3 rounded-xl border border-line bg-white p-4 shadow-sm"
+      className="space-y-3 rounded-xl border border-line bg-surface p-4 shadow-sm"
       onSubmit={onSubmit}
     >
       <div className="grid gap-3 sm:grid-cols-2">
@@ -1850,7 +1850,7 @@ function LabeledTextarea({
     <label className="space-y-2 text-sm font-bold text-foreground" htmlFor={id}>
       {label}
       <textarea
-        className="min-h-28 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm font-normal text-foreground outline-none transition focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/25"
+        className="min-h-28 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm font-normal text-foreground outline-none transition focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/25"
         id={id}
         {...props}
       />

@@ -268,7 +268,7 @@ export function ChangeStudioView() {
       ) : (
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">
           <section aria-labelledby="suggestions-heading" className="space-y-4">
-            <div className="rounded-lg border border-line bg-white p-4 shadow-sm">
+            <div className="rounded-lg border border-line bg-surface p-4 shadow-sm">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <h2
@@ -340,7 +340,7 @@ export function ChangeStudioView() {
               <ul className="space-y-4">
                 {changeSet.operations.map((operation) => (
                   <li
-                    className="rounded-lg border border-line bg-white p-4 shadow-sm"
+                    className="rounded-lg border border-line bg-surface p-4 shadow-sm"
                     key={operation.id}
                   >
                     <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -464,7 +464,7 @@ export function ChangeStudioView() {
                     </div>
 
                     <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                      <div className="rounded-lg bg-slate-50 p-3">
+                      <div className="rounded-lg bg-surface-subtle p-3">
                         <p className="text-xs font-extrabold uppercase text-muted">
                           Before
                         </p>
@@ -500,7 +500,7 @@ export function ChangeStudioView() {
                         <label className="text-sm font-bold text-foreground">
                           Edit suggestion
                           <textarea
-                            className="mt-1 min-h-28 w-full resize-y rounded-xl border border-line bg-white px-3.5 py-3 text-sm text-foreground shadow-sm outline-none focus:border-primary focus:ring-3 focus:ring-primary-soft"
+                            className="mt-1 min-h-28 w-full resize-y rounded-xl border border-line bg-surface px-3.5 py-3 text-sm text-foreground shadow-sm outline-none focus:border-primary focus:ring-3 focus:ring-primary-soft"
                             maxLength={2000}
                             onChange={(event) =>
                               setDraftText(event.target.value)
@@ -602,7 +602,7 @@ export function ChangeStudioView() {
           <aside className="space-y-4">
             <section
               aria-labelledby="current-version-heading"
-              className="rounded-lg border border-line bg-white p-4 shadow-sm"
+              className="rounded-lg border border-line bg-surface p-4 shadow-sm"
             >
               <h2
                 className="text-lg font-black text-foreground"
@@ -613,14 +613,14 @@ export function ChangeStudioView() {
               <p className="mt-1 text-sm text-muted">
                 Version {currentVersion?.versionNumber ?? "none"}
               </p>
-              <div className="mt-3 min-h-32 whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-sm text-foreground">
+              <div className="mt-3 min-h-32 whitespace-pre-wrap rounded-lg bg-surface-subtle p-3 text-sm text-foreground">
                 {currentVersion?.content || "No accepted changes yet."}
               </div>
             </section>
 
             <section
               aria-labelledby="questions-heading"
-              className="rounded-lg border border-line bg-white p-4 shadow-sm"
+              className="rounded-lg border border-line bg-surface p-4 shadow-sm"
             >
               <div className="flex items-center gap-2">
                 <MessageSquare
@@ -680,7 +680,7 @@ export function ChangeStudioView() {
                           <label className="text-sm font-bold text-foreground">
                             Answer
                             <textarea
-                              className="mt-1 min-h-24 w-full resize-y rounded-xl border border-line bg-white px-3.5 py-3 text-sm text-foreground shadow-sm outline-none focus:border-primary focus:ring-3 focus:ring-primary-soft"
+                              className="mt-1 min-h-24 w-full resize-y rounded-xl border border-line bg-surface px-3.5 py-3 text-sm text-foreground shadow-sm outline-none focus:border-primary focus:ring-3 focus:ring-primary-soft"
                               maxLength={2000}
                               onChange={(event) =>
                                 setAnswers((current) => ({
@@ -709,7 +709,7 @@ export function ChangeStudioView() {
 
             <section
               aria-labelledby="versions-heading"
-              className="rounded-lg border border-line bg-white p-4 shadow-sm"
+              className="rounded-lg border border-line bg-surface p-4 shadow-sm"
             >
               <div className="flex items-center gap-2">
                 <RotateCcw aria-hidden="true" className="size-5 text-primary" />

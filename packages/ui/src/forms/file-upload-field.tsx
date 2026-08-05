@@ -73,7 +73,7 @@ export function FileUploadField({
       </label>
       {selectedFile ? (
         <div className="flex min-h-24 items-center gap-3 rounded-2xl border border-primary/30 bg-primary-soft/35 p-4">
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-white text-primary shadow-sm">
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-surface text-primary shadow-sm">
             <FileText aria-hidden="true" className="size-5" />
           </span>
           <div className="min-w-0 flex-1">
@@ -87,7 +87,7 @@ export function FileUploadField({
           </div>
           <button
             aria-label={`Remove ${selectedFile.name}`}
-            className="grid size-10 shrink-0 place-items-center rounded-xl text-muted transition hover:bg-white hover:text-foreground"
+            className="grid size-10 shrink-0 place-items-center rounded-xl text-muted transition hover:bg-surface hover:text-foreground"
             disabled={disabled}
             onClick={clear}
             type="button"
@@ -98,7 +98,7 @@ export function FileUploadField({
       ) : (
         <div
           className={cn(
-            "group relative grid min-h-44 place-items-center rounded-2xl border-2 border-dashed border-line bg-white p-6 text-center transition hover:border-primary/45 hover:bg-primary-soft/20 focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/20",
+            "group relative grid min-h-44 place-items-center rounded-2xl border-2 border-dashed border-line bg-surface p-6 text-center transition hover:border-primary/45 hover:bg-primary-soft/20 focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/20",
             disabled && "cursor-not-allowed opacity-55",
             error && "border-danger/60 bg-danger-soft/25",
           )}

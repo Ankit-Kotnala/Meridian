@@ -312,7 +312,7 @@ export function RoleExplorerView() {
       )}
 
       <form
-        className="grid gap-3 rounded-lg border border-line bg-white p-4 shadow-sm md:grid-cols-[minmax(0,1fr)_12rem_auto]"
+        className="grid gap-3 rounded-lg border border-line bg-surface p-4 shadow-sm md:grid-cols-[minmax(0,1fr)_12rem_auto]"
         onSubmit={(event) => void searchRoles(event)}
       >
         <label className="text-sm font-bold text-foreground">
@@ -374,7 +374,7 @@ export function RoleExplorerView() {
                 const selected = selectedRoleIds.includes(role.id);
                 return (
                   <article
-                    className="rounded-lg border border-line bg-white p-4 shadow-sm"
+                    className="rounded-lg border border-line bg-surface p-4 shadow-sm"
                     key={role.id}
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -461,7 +461,7 @@ export function RoleExplorerView() {
             <div className="space-y-3">
               {savedRoles.map((savedRole) => (
                 <article
-                  className="rounded-lg border border-line bg-white p-4 shadow-sm"
+                  className="rounded-lg border border-line bg-surface p-4 shadow-sm"
                   key={savedRole.id}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -564,7 +564,7 @@ export function RoleExplorerView() {
           <div className="grid gap-3 lg:grid-cols-3">
             {comparison.entries.map((entry) => (
               <article
-                className="rounded-lg border border-line bg-white p-4 shadow-sm"
+                className="rounded-lg border border-line bg-surface p-4 shadow-sm"
                 key={entry.role.id}
               >
                 <h3 className="font-black text-foreground">
@@ -611,7 +611,7 @@ export function RoleExplorerView() {
               <caption className="sr-only">
                 Recent role readiness analyses
               </caption>
-              <thead className="bg-slate-50 text-left text-xs uppercase text-muted">
+              <thead className="bg-surface-subtle text-left text-xs uppercase text-muted">
                 <tr>
                   <th className="px-4 py-3" scope="col">
                     Role
@@ -631,7 +631,7 @@ export function RoleExplorerView() {
                 {history.map((item) => (
                   <tr
                     className={cn(
-                      "cursor-pointer hover:bg-slate-50",
+                      "cursor-pointer hover:bg-surface-subtle",
                       activeAnalysis?.id === item.id && "bg-primary-soft/50",
                     )}
                     key={item.id}
@@ -682,7 +682,7 @@ function ReadinessPanel({ analysis }: { analysis: RoleReadiness }) {
     (item) => item.matchState === "missing" || item.matchState === "unknown",
   );
   return (
-    <div className="rounded-lg border border-line bg-white p-4 shadow-sm">
+    <div className="rounded-lg border border-line bg-surface p-4 shadow-sm">
       <div className="grid gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]">
         <div>
           <p className="text-sm font-bold text-muted">{analysis.role.title}</p>
@@ -728,7 +728,7 @@ function ReadinessPanel({ analysis }: { analysis: RoleReadiness }) {
           <caption className="sr-only">
             Requirement to evidence readiness results
           </caption>
-          <thead className="bg-slate-50 text-left text-xs uppercase text-muted">
+          <thead className="bg-surface-subtle text-left text-xs uppercase text-muted">
             <tr>
               <th className="px-4 py-3" scope="col">
                 Requirement

@@ -1,7 +1,22 @@
 import type { Metadata, Viewport } from "next";
+import { Inter_Tight, Space_Grotesk } from "next/font/google";
 import type { ReactNode } from "react";
 
+import { ThemeScript } from "@/shared/theme/theme-script";
+
 import "./globals.css";
+
+const sans = Inter_Tight({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-sans-loaded",
+});
+
+const display = Space_Grotesk({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-display-loaded",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -26,8 +41,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  colorScheme: "light",
-  themeColor: "#132d24",
+  colorScheme: "light dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f5f7f3" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a1310" },
+  ],
   width: "device-width",
   initialScale: 1,
 };
@@ -36,7 +54,14 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en">
+    <html
+      className={`${sans.variable} ${display.variable}`}
+      lang="en"
+      suppressHydrationWarning
+    >
+      <head>
+        <ThemeScript />
+      </head>
       <body>
         <a className="skip-link sr-only focus:not-sr-only" href="#main-content">
           Skip to main content

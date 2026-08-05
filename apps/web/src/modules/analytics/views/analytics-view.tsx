@@ -272,7 +272,7 @@ function CountsTable({ counts }: { counts: Record<string, number> }) {
         <caption className="sr-only">
           Observed counts in the selected analytics window
         </caption>
-        <thead className="bg-slate-50 text-xs uppercase tracking-wide text-muted">
+        <thead className="bg-surface-subtle text-xs uppercase tracking-wide text-muted">
           <tr>
             <th className="px-4 py-3" scope="col">
               Observed metric
@@ -312,7 +312,7 @@ function RatesTable({ rates }: { rates: Record<string, AnalyticsRate> }) {
         <caption className="sr-only">
           Observed rates; small cohorts are suppressed for privacy
         </caption>
-        <thead className="bg-slate-50 text-xs uppercase tracking-wide text-muted">
+        <thead className="bg-surface-subtle text-xs uppercase tracking-wide text-muted">
           <tr>
             <th className="px-4 py-3" scope="col">
               Observed rate
@@ -368,7 +368,7 @@ function CoverageTrendTable({
         <caption className="sr-only">
           Requirement coverage trend; small samples are suppressed
         </caption>
-        <thead className="bg-slate-50 text-xs uppercase tracking-wide text-muted">
+        <thead className="bg-surface-subtle text-xs uppercase tracking-wide text-muted">
           <tr>
             <th className="px-4 py-3" scope="col">
               Period
@@ -418,7 +418,7 @@ function ResumeVersionOutcomeTable({
         <caption className="sr-only">
           Observed outcomes segmented by exact immutable resume version
         </caption>
-        <thead className="bg-slate-50 text-xs uppercase tracking-wide text-muted">
+        <thead className="bg-surface-subtle text-xs uppercase tracking-wide text-muted">
           <tr>
             <th className="px-4 py-3" scope="col">
               Resume version
@@ -483,7 +483,7 @@ function BreakdownTables({
             <caption className="bg-surface-subtle px-4 py-3 text-left font-semibold text-foreground">
               {humanize(dimension)}
             </caption>
-            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-muted">
+            <thead className="bg-surface-subtle text-xs uppercase tracking-wide text-muted">
               <tr>
                 <th className="px-4 py-2" scope="col">
                   Category
@@ -611,7 +611,7 @@ function ReportContent({ report }: { report: AnalyticsReport }) {
                 Applications, interviews, offers, and achievements by time
                 bucket
               </caption>
-              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-muted">
+              <thead className="bg-surface-subtle text-xs uppercase tracking-wide text-muted">
                 <tr>
                   <th className="px-4 py-3" scope="col">
                     Period
@@ -678,7 +678,7 @@ function ReportContent({ report }: { report: AnalyticsReport }) {
               <caption className="sr-only">
                 Internal role-readiness measurements over time
               </caption>
-              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-muted">
+              <thead className="bg-surface-subtle text-xs uppercase tracking-wide text-muted">
                 <tr>
                   <th className="px-4 py-3" scope="col">
                     Created
@@ -1300,7 +1300,7 @@ export function AnalyticsView() {
                 </p>
               </Alert>
             )}
-            <div className="mt-5 rounded-xl bg-slate-50 p-4 text-sm leading-6">
+            <div className="mt-5 rounded-xl bg-surface-subtle p-4 text-sm leading-6">
               <strong>Recorded interpretation:</strong>{" "}
               {report.payload?.interpretation ?? report.interpretation}
               <p className="mt-2 font-semibold text-muted">
@@ -1317,7 +1317,7 @@ export function AnalyticsView() {
         </>
       ) : null}
 
-      <aside className="rounded-2xl border border-line bg-slate-50 p-5 text-sm leading-6 text-muted">
+      <aside className="rounded-2xl border border-line bg-surface-subtle p-5 text-sm leading-6 text-muted">
         <div className="flex items-start gap-3">
           <Clock3 aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
           <p>
