@@ -20,33 +20,15 @@ import {
   LoadingSkeleton,
 } from "@careeros/ui";
 
+import { requestErrorMessage } from "@/shared/api/browser-request";
+
 import {
-  apiMutation,
-  apiQuery,
-  requestErrorMessage,
-} from "@/shared/api/browser-request";
-import { fillApiPath } from "@/shared/api/api-path";
-
-export type AdminMetrics = {
-  environment: string;
-  service_version: string;
-  status: string;
-  active_users_count: number;
-  total_resumes_count: number;
-  total_applications_count: number;
-  subscriptions_by_tier: Record<string, number>;
-  system_health: Record<string, string>;
-};
-
-export type DeadLetterJob = {
-  id: string;
-  job_type: string;
-  user_id: string;
-  attempts: number;
-  max_attempts: number;
-  last_error: string | null;
-  failed_at: string;
-};
+  getAdminOverview,
+  getDeadLetterJobs,
+  retryDeadLetterJob,
+  type AdminMetrics,
+  type DeadLetterJob,
+} from "../api/admin-api";
 
 export function AdminDashboardView() {
   const [metrics, setMetrics] = useState<AdminMetrics>();
@@ -58,14 +40,12 @@ export function AdminDashboardView() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [mRes, dlRes] = await Promise.all([
-        apiQuery("/api/v1/admin/overview"),
-        apiQuery("/api/v1/admin/dead-letters"),
+      const [metricsData, jobs] = await Promise.all([
+        getAdminOverview(),
+        getDeadLetterJobs(),
       ]);
-      const mData = (await mRes.json()) as AdminMetrics;
-      const dlData = (await dlRes.json()) as { jobs: DeadLetterJob[] };
-      setMetrics(mData);
-      setDeadLetters(dlData.jobs);
+      setMetrics(metricsData);
+      setDeadLetters(jobs);
       setFailure(undefined);
     } catch (error) {
       setFailure(
@@ -83,13 +63,7 @@ export function AdminDashboardView() {
   const handleRetryJob = async (jobId: string) => {
     setRetryBusy(jobId);
     try {
-      await apiMutation(
-        fillApiPath("/api/v1/admin/dead-letters/{job_id}/retry", {
-          job_id: jobId,
-        }),
-        { method: "POST" },
-        { csrf: "session" },
-      );
+      await retryDeadLetterJob(jobId);
       await loadData();
     } catch (error) {
       setFailure(
@@ -112,7 +86,6 @@ export function AdminDashboardView() {
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      {/* Top Banner */}
       <Card className="p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
@@ -140,7 +113,6 @@ export function AdminDashboardView() {
         </div>
       </Card>
 
-      {/* Metrics Grid */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-4">
         <Card className="p-5">
           <div className="flex items-center justify-between">
@@ -195,7 +167,6 @@ export function AdminDashboardView() {
         </Card>
       </div>
 
-      {/* System Component Health */}
       <Card className="p-6">
         <h3 className="text-base font-bold text-foreground">
           Infrastructure Services Health
@@ -218,7 +189,6 @@ export function AdminDashboardView() {
         </div>
       </Card>
 
-      {/* Dead Letter Queue Manager */}
       <Card className="p-6">
         <div className="flex items-center justify-between">
           <div>
@@ -284,3 +254,5 @@ export function AdminDashboardView() {
     </div>
   );
 }
+
+export type { AdminMetrics, DeadLetterJob };

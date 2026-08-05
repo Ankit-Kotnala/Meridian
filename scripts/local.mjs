@@ -129,6 +129,7 @@ function hostEnvironment() {
     CLAMAV_PORT: clamavPort,
     DATABASE_URL: databaseUrl,
     NEXT_PUBLIC_API_BASE_URL: apiBaseUrl,
+    NEXT_PUBLIC_APP_URL: local.PUBLIC_APP_URL || local.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
     NEXT_PUBLIC_UPLOAD_ORIGIN: objectEndpoint,
     REDIS_URL: redisUrl,
     S3_ENDPOINT_URL: objectEndpoint,

@@ -22,3 +22,7 @@ uv sync --frozen --all-packages --all-groups
 Assert-LastExitCode "Python workspace dependency sync"
 
 Write-Host "CareerOS Phase 0 dependencies are ready."
+Write-Host ""
+Write-Host "Start the full local stack with:  pnpm local:up"
+Write-Host "Or web hot-reload against Docker backend:  pnpm dev:web"
+Write-Host "API only (host process):  pnpm dev:api"

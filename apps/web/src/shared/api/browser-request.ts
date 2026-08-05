@@ -140,7 +140,7 @@ export async function apiQuery(
       ...(options.signal ? { signal: options.signal } : {}),
     });
   let response = await send();
-  if (response.status === 401 && options.retryAfterRefresh) {
+  if (response.status === 401 && options.retryAfterRefresh !== false) {
     await refreshSession();
     response = await send();
   }

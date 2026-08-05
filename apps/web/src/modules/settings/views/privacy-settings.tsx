@@ -3,56 +3,62 @@
 import { Database, Download, FileArchive, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 
 import {
   Badge,
   Button,
   Card,
   ConfirmDialog,
+  EmptyState,
   ErrorState,
   LoadingSkeleton,
 } from "@careeros/ui";
 
-import {
-  apiMutation,
-  apiQuery,
-  requestErrorMessage,
-} from "@/shared/api/browser-request";
+import { requestErrorMessage } from "@/shared/api/browser-request";
 
 import {
-  getSettingsCapabilities,
-  type SettingsCapabilities,
+  deleteAccount,
+  exportAccountData,
 } from "../api/settings-api";
+import { useSettingsCapabilities } from "../components/settings-capabilities-context";
 
 export function PrivacySettings() {
   const router = useRouter();
-  const [capabilities, setCapabilities] = useState<SettingsCapabilities>();
-  const [failure, setFailure] = useState<string>();
+  const { capabilities, failure, loading, reload } = useSettingsCapabilities();
   const [exportBusy, setExportBusy] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [actionFailure, setActionFailure] = useState<string>();
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
-  const load = useCallback(async () => {
-    try {
-      setCapabilities(await getSettingsCapabilities());
-      setFailure(undefined);
-    } catch (error) {
-      setFailure(
-        requestErrorMessage(error, "We couldn’t load privacy capabilities."),
-      );
-    }
-  }, []);
+  if (loading && !capabilities) return <LoadingSkeleton variant="form" />;
+  if (!capabilities) {
+    return (
+      <ErrorState
+        description={failure ?? "We couldn’t load privacy capabilities."}
+        onRetry={reload}
+        title="Privacy settings unavailable"
+      />
+    );
+  }
 
-  useEffect(() => {
-    queueMicrotask(() => void load());
-  }, [load]);
+  const exportAvailable = capabilities.accountExportAvailable;
+  const deletionAvailable = capabilities.accountDeletionAvailable;
+
+  if (!exportAvailable && !deletionAvailable) {
+    return (
+      <EmptyState
+        description="Account export and deletion are not enabled in this environment. Contact your administrator if you need these controls."
+        title="Privacy controls unavailable"
+      />
+    );
+  }
 
   const handleExportData = async () => {
     setExportBusy(true);
+    setActionFailure(undefined);
     try {
-      const res = await apiQuery("/api/v1/account/export");
-      const data = (await res.json()) as Record<string, unknown>;
+      const data = await exportAccountData();
       const blob = new Blob([JSON.stringify(data, null, 2)], {
         type: "application/json",
       });
@@ -65,7 +71,7 @@ export function PrivacySettings() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
-      setFailure(
+      setActionFailure(
         requestErrorMessage(error, "Failed to export account data archive."),
       );
     } finally {
@@ -75,33 +81,28 @@ export function PrivacySettings() {
 
   const handleDeleteAccount = async () => {
     setDeleteBusy(true);
+    setActionFailure(undefined);
     try {
-      await apiMutation(
-        "/api/v1/account",
-        { method: "DELETE" },
-        { csrf: "session" },
-      );
+      await deleteAccount();
       setConfirmDeleteOpen(false);
       router.push("/login?message=account_deleted");
     } catch (error) {
-      setFailure(requestErrorMessage(error, "Failed to delete account."));
+      setActionFailure(requestErrorMessage(error, "Failed to delete account."));
     } finally {
       setDeleteBusy(false);
     }
   };
 
-  if (!capabilities && !failure) return <LoadingSkeleton variant="form" />;
-  if (!capabilities)
-    return (
-      <ErrorState
-        description={failure ?? "We couldn’t load privacy capabilities."}
-        onRetry={load}
-        title="Privacy settings unavailable"
-      />
-    );
-
   return (
     <div className="space-y-5">
+      {actionFailure ? (
+        <ErrorState
+          description={actionFailure}
+          onRetry={() => setActionFailure(undefined)}
+          title="Privacy action failed"
+        />
+      ) : null}
+
       <Card className="p-5 sm:p-7">
         <div className="flex items-start gap-3">
           <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">
@@ -139,49 +140,46 @@ export function PrivacySettings() {
                 </h2>
                 <Badge tone="success">Available</Badge>
               </div>
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">
-                Download a complete JSON export covering your profile, sessions,
-                consents, evidence vault items, resumes, applications, and
-                security audit logs.
-              </p>
             </div>
+
+            <Button
+              loading={exportBusy}
+              onClick={handleExportData}
+              variant="secondary"
+            >
+              <Download className="mr-2 size-4" /> Export My Data
+            </Button>
           </div>
+        </Card>
+      ) : null}
 
-          <Button
-            loading={exportBusy}
-            onClick={handleExportData}
-            variant="secondary"
-          >
-            <Download className="mr-2 size-4" /> Export My Data
-          </Button>
-        </div>
-      </Card>
-
-      <Card className="p-5 sm:p-7">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex items-start gap-3">
-            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-danger-soft text-danger">
-              <Trash2 aria-hidden="true" className="size-5" />
-            </span>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-lg font-extrabold text-foreground">
-                  Delete account
-                </h2>
-                <Badge tone="danger">Irreversible</Badge>
+      {deletionAvailable ? (
+        <Card className="p-5 sm:p-7">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-danger-soft text-danger">
+                <Trash2 aria-hidden="true" className="size-5" />
+              </span>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-lg font-extrabold text-foreground">
+                    Delete account
+                  </h2>
+                  <Badge tone="danger">Irreversible</Badge>
+                </div>
+                <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">
+                  Permanently purge your profile, career evidence, tailored
+                  resumes, and tracked applications. This action cannot be undone.
+                </p>
               </div>
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">
-                Permanently purge your profile, career evidence, tailored
-                resumes, and tracked applications. This action cannot be undone.
-              </p>
             </div>
-          </div>
 
-          <Button onClick={() => setConfirmDeleteOpen(true)} variant="danger">
-            Delete Account
-          </Button>
-        </div>
-      </Card>
+            <Button onClick={() => setConfirmDeleteOpen(true)} variant="danger">
+              Delete Account
+            </Button>
+          </div>
+        </Card>
+      ) : null}
 
       <ConfirmDialog
         confirmLabel="Permanently Delete Account"

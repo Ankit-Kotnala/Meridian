@@ -26,7 +26,7 @@ async function mutate(
   path: Parameters<typeof apiMutation>[0],
   init: Parameters<typeof apiMutation>[1],
 ) {
-  return apiMutation(path, init, { csrf: "session" });
+  return apiMutation(path, init, { csrf: "session", retryAfterRefresh: true });
 }
 
 export async function createChangeSet(
