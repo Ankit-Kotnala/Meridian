@@ -3,10 +3,23 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class PlanResponse(BaseModel):
+def _camel(name: str) -> str:
+    first, *rest = name.split("_")
+    return first + "".join(part.capitalize() for part in rest)
+
+
+class BillingSchema(BaseModel):
+    model_config = ConfigDict(
+        alias_generator=_camel,
+        populate_by_name=True,
+        extra="forbid",
+    )
+
+
+class PlanResponse(BillingSchema):
     tier: str
     name: str
     description: str
