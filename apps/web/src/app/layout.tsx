@@ -23,12 +23,12 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
   ),
   title: {
-    default: "CareerOS — Build from career truth",
-    template: "%s · CareerOS",
+    default: "Rezumi — Build from career truth",
+    template: "%s · Rezumi",
   },
   description:
     "An evidence-backed career operating system for maintaining a structured career record and creating grounded application materials.",
-  applicationName: "CareerOS",
+  applicationName: "Rezumi",
   category: "productivity",
   keywords: [
     "career profile",

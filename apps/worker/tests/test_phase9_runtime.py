@@ -7,27 +7,27 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 import pytest
-from careeros.modules.career_analytics.application import (
+from rezumi.modules.career_analytics.application import (
     AnalyticsReconciliationOutcome,
     ClaimedAnalyticsOutbox,
 )
-from careeros.modules.career_analytics.application.worker_query import (
+from rezumi.modules.career_analytics.application.worker_query import (
     AnalyticsWorkerJobReference,
 )
-from careeros.modules.career_analytics.domain import (
+from rezumi.modules.career_analytics.domain import (
     AnalyticsJobStatus,
     AnalyticsOutboxStatus,
     CareerAnalyticsUnavailable,
 )
-from careeros.modules.networking.domain import (
+from rezumi.modules.networking.domain import (
     NetworkingLeaseConflict,
     NetworkingReminderOutboxEntry,
     ReminderOutboxKind,
     ReminderOutboxStatus,
 )
 
-from careeros_worker import runtime
-from careeros_worker.config import WorkerSettings
+from rezumi_worker import runtime
+from rezumi_worker.config import WorkerSettings
 
 _NOW = datetime(2026, 7, 25, 4, 0, tzinfo=UTC)
 

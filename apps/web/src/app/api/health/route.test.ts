@@ -14,7 +14,7 @@ describe("GET /api/health", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(body).toMatchObject({
-      service: "careeros-web",
+      service: "rezumi-web",
       status: "ok",
       version: "0.1.0",
     });

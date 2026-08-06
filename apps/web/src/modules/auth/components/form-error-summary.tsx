@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-import { Alert } from "@careeros/ui";
+import { Alert } from "@rezumi/ui";
 
 export function FormErrorSummary({
   message,

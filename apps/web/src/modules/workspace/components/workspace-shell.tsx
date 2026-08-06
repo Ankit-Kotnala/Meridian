@@ -4,7 +4,7 @@ import { m } from "motion/react";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-import { cn } from "@careeros/ui";
+import { cn } from "@rezumi/ui";
 import { ProductMotionProvider } from "@/shared/motion/product-motion-provider";
 
 import { WorkspaceSidebar } from "./workspace-sidebar";

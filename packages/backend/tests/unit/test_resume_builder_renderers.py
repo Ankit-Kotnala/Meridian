@@ -10,7 +10,7 @@ from uuid import UUID
 
 import pytest
 
-from careeros.modules.resume_builder.domain import (
+from rezumi.modules.resume_builder.domain import (
     ResumeBullet,
     ResumeEntityFact,
     ResumeFontFamily,
@@ -25,7 +25,7 @@ from careeros.modules.resume_builder.domain import (
     ResumeTemplate,
     ResumeVersion,
 )
-from careeros.modules.resume_builder.infrastructure import (
+from rezumi.modules.resume_builder.infrastructure import (
     DeterministicResumeRenderer,
     ResumeBuilderDocumentExtractor,
     ResumeExportExtractionError,

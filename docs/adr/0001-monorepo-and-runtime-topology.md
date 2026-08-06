@@ -7,7 +7,7 @@
 
 ## Context
 
-CareerOS has a server-rendered/product web application, a typed HTTP API,
+Rezumi has a server-rendered/product web application, a typed HTTP API,
 long-running and security-sensitive document/AI/render work, reusable UI and wire
 contracts, and local PostgreSQL/Redis/object dependencies. The repository began
 empty. A foundation is needed that gives one reproducible developer entry point

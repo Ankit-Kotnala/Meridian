@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from typing import Any, cast
 from uuid import UUID
 
-from careeros.modules.networking.application import (
+from rezumi.modules.networking.application import (
     ContactFilter,
     DueReminderView,
     NetworkingApplicationReference,
@@ -18,7 +18,7 @@ from careeros.modules.networking.application import (
     OrganizationFilter,
     ReminderExecutionView,
 )
-from careeros.modules.networking.domain import (
+from rezumi.modules.networking.domain import (
     DELETED_TEXT,
     ConsentAction,
     ConsentPurpose,

@@ -1,0 +1,63 @@
+"""Billing module root exports."""
+
+from rezumi.modules.billing.application import (
+    BillingProviderPort,
+    BillingRepositoryPort,
+    BillingService,
+    CheckoutSessionResponse,
+    CreateCheckoutSessionRequest,
+    CreatePortalSessionRequest,
+    PlanSummaryDTO,
+    PortalSessionResponse,
+    SubscriptionSummaryDTO,
+    WebhookResultDTO,
+)
+from rezumi.modules.billing.domain import (
+    PLANS,
+    BillingCycle,
+    BillingError,
+    PlanEntitlements,
+    PlanNotFoundError,
+    PlanTier,
+    QuotaExceededError,
+    SubscriptionNotFoundError,
+    SubscriptionStatus,
+    UsageQuota,
+    UserSubscription,
+)
+from rezumi.modules.billing.infrastructure import (
+    BillingWebhookEventModel,
+    MockBillingProvider,
+    SqlAlchemyBillingRepository,
+    SubscriptionModel,
+    UsageQuotaModel,
+)
+
+__all__ = [
+    "PLANS",
+    "BillingCycle",
+    "BillingError",
+    "BillingProviderPort",
+    "BillingRepositoryPort",
+    "BillingService",
+    "BillingWebhookEventModel",
+    "CheckoutSessionResponse",
+    "CreateCheckoutSessionRequest",
+    "CreatePortalSessionRequest",
+    "MockBillingProvider",
+    "PlanEntitlements",
+    "PlanNotFoundError",
+    "PlanSummaryDTO",
+    "PlanTier",
+    "PortalSessionResponse",
+    "QuotaExceededError",
+    "SqlAlchemyBillingRepository",
+    "SubscriptionModel",
+    "SubscriptionNotFoundError",
+    "SubscriptionStatus",
+    "SubscriptionSummaryDTO",
+    "UsageQuota",
+    "UsageQuotaModel",
+    "UserSubscription",
+    "WebhookResultDTO",
+]

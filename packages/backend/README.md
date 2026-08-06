@@ -1,6 +1,6 @@
-# CareerOS backend
+# Rezumi backend
 
-Shared Python foundation and domain/application owner for the CareerOS modular
+Shared Python foundation and domain/application owner for the Rezumi modular
 monolith. Implemented bounded contexts cover identity, Resume Health, Career
 Record, Role Readiness, Job Match, Change Studio, Resume Builder, Application
 Workspace, Interview Prep, Networking, Career Growth, and Career Analytics.
@@ -16,12 +16,12 @@ belongs to `apps/api`, and Celery process/task composition belongs to
 Run from the repository root after `uv sync --frozen --all-packages --all-groups`:
 
 ```bash
-uv run --package careeros-backend ruff format --check packages/backend
-uv run --package careeros-backend ruff check packages/backend
-uv run --package careeros-backend mypy packages/backend/src packages/backend/tests
-uv run --package careeros-backend pytest packages/backend/tests/architecture packages/backend/tests/unit
-uv run --package careeros-backend pytest packages/backend/tests/integration
-uv run --package careeros-backend alembic -c packages/backend/alembic.ini heads
+uv run --package rezumi-backend ruff format --check packages/backend
+uv run --package rezumi-backend ruff check packages/backend
+uv run --package rezumi-backend mypy packages/backend/src packages/backend/tests
+uv run --package rezumi-backend pytest packages/backend/tests/architecture packages/backend/tests/unit
+uv run --package rezumi-backend pytest packages/backend/tests/integration
+uv run --package rezumi-backend alembic -c packages/backend/alembic.ini heads
 ```
 
 Integration tests require their documented isolated PostgreSQL/Redis/object-store
@@ -29,11 +29,11 @@ environment. Use `scripts/verify-phase9.ps1` or the Phase 9 isolated stack runne
 for the complete migration/repository/browser portfolio; do not treat an
 environment-driven skip as a pass.
 
-Database upgrades require `CAREEROS_DATABASE_URL` (or the compatibility alias
+Database upgrades require `REZUMI_DATABASE_URL` (or the compatibility alias
 `DATABASE_URL`) and run with:
 
 ```bash
-uv run --package careeros-backend alembic -c packages/backend/alembic.ini upgrade head
+uv run --package rezumi-backend alembic -c packages/backend/alembic.ini upgrade head
 ```
 
 Phase 9 migration `20260724_0010` adds Interview Prep, Networking, Career Growth,

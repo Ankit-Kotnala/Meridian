@@ -3530,7 +3530,7 @@ export interface components {
         AchievementPageResponse: {
             /** Data */
             data: components["schemas"]["AchievementResponse"][];
-            page: components["schemas"]["careeros_api__modules__career_record__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__career_record__schemas__PageResponse"];
         };
         /** AchievementResponse */
         AchievementResponse: {
@@ -4058,7 +4058,7 @@ export interface components {
         ApplicationEventPageResponse: {
             /** Data */
             data: components["schemas"]["ApplicationEventResponse"][];
-            page: components["schemas"]["careeros_api__modules__application_workspace__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__application_workspace__schemas__PageResponse"];
         };
         /** ApplicationEventResponse */
         ApplicationEventResponse: {
@@ -4131,7 +4131,7 @@ export interface components {
         ApplicationNotePageResponse: {
             /** Data */
             data: components["schemas"]["ApplicationNoteResponse"][];
-            page: components["schemas"]["careeros_api__modules__application_workspace__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__application_workspace__schemas__PageResponse"];
         };
         /** ApplicationNoteResponse */
         ApplicationNoteResponse: {
@@ -4162,7 +4162,7 @@ export interface components {
         ApplicationPackPageResponse: {
             /** Data */
             data: components["schemas"]["ApplicationPackSummaryResponse"][];
-            page: components["schemas"]["careeros_api__modules__application_workspace__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__application_workspace__schemas__PageResponse"];
         };
         /** ApplicationPackResponse */
         ApplicationPackResponse: {
@@ -4270,7 +4270,7 @@ export interface components {
         ApplicationPageResponse: {
             /** Data */
             data: components["schemas"]["ApplicationSummaryResponse"][];
-            page: components["schemas"]["careeros_api__modules__application_workspace__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__application_workspace__schemas__PageResponse"];
         };
         /** ApplicationRequirementResponse */
         ApplicationRequirementResponse: {
@@ -4509,7 +4509,7 @@ export interface components {
         ApplicationTaskPageResponse: {
             /** Data */
             data: components["schemas"]["ApplicationTaskResponse"][];
-            page: components["schemas"]["careeros_api__modules__application_workspace__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__application_workspace__schemas__PageResponse"];
         };
         /** ApplicationTaskResponse */
         ApplicationTaskResponse: {
@@ -4644,7 +4644,7 @@ export interface components {
             /** Originalvalue */
             originalValue: string | null;
             /** Sourcespans */
-            sourceSpans: components["schemas"]["careeros_api__modules__resume_health__schemas__SourceSpanResponse"][];
+            sourceSpans: components["schemas"]["rezumi_api__modules__resume_health__schemas__SourceSpanResponse"][];
             /** Value */
             value: string;
         };
@@ -4778,7 +4778,7 @@ export interface components {
         CareerHealthPageResponse: {
             /** Data */
             data: components["schemas"]["CareerHealthSummaryResponse"][];
-            page: components["schemas"]["careeros_api__modules__career_growth__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__career_growth__schemas__PageResponse"];
         };
         /** CareerHealthResponse */
         CareerHealthResponse: {
@@ -4803,7 +4803,7 @@ export interface components {
              * Disclaimer
              * @constant
              */
-            disclaimer: "CareerOS scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.";
+            disclaimer: "Rezumi scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.";
             /** Displayscore */
             displayScore?: number | null;
             /** Engineversion */
@@ -4857,7 +4857,7 @@ export interface components {
              * Disclaimer
              * @constant
              */
-            disclaimer: "CareerOS scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.";
+            disclaimer: "Rezumi scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.";
             /** Displayscore */
             displayScore?: number | null;
             /** Engineversion */
@@ -4957,98 +4957,6 @@ export interface components {
             userConfirmed: boolean;
             /** Version */
             version: number;
-        };
-        /** PageResponse */
-        careeros_api__modules__application_workspace__schemas__PageResponse: {
-            /** Hasmore */
-            hasMore: boolean;
-            /** Limit */
-            limit: number;
-            /** Nextcursor */
-            nextCursor: string | null;
-        };
-        /** PageResponse */
-        careeros_api__modules__career_growth__schemas__PageResponse: {
-            /** Hasmore */
-            hasMore: boolean;
-            /** Limit */
-            limit: number;
-            /** Nextcursor */
-            nextCursor: string | null;
-        };
-        /** PageResponse */
-        careeros_api__modules__career_record__schemas__PageResponse: {
-            /** Hasmore */
-            hasMore: boolean;
-            /** Limit */
-            limit: number;
-            /** Nextcursor */
-            nextCursor: string | null;
-        };
-        /** SourceSpanResponse */
-        careeros_api__modules__career_record__schemas__SourceSpanResponse: {
-            /** Digest */
-            digest: string;
-            /** End */
-            end: number;
-            /** Excerpt */
-            excerpt: string;
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Page */
-            page?: number | null;
-            /** Start */
-            start: number;
-        };
-        /** PageResponse */
-        careeros_api__modules__interview_prep__schemas__PageResponse: {
-            /** Hasmore */
-            hasMore: boolean;
-            /** Limit */
-            limit: number;
-            /** Nextcursor */
-            nextCursor: string | null;
-        };
-        /** PageResponse */
-        careeros_api__modules__job_match__schemas__PageResponse: {
-            /** Hasmore */
-            hasMore: boolean;
-            /** Limit */
-            limit: number;
-            /** Nextcursor */
-            nextCursor: string | null;
-        };
-        /** PageResponse */
-        careeros_api__modules__networking__schemas__PageResponse: {
-            /** Hasmore */
-            hasMore: boolean;
-            /** Limit */
-            limit: number;
-            /** Nextcursor */
-            nextCursor: string | null;
-        };
-        /** SourceSpanResponse */
-        careeros_api__modules__resume_health__schemas__SourceSpanResponse: {
-            /** End */
-            end: number;
-            /** Excerpt */
-            excerpt: string;
-            /** Page */
-            page: number | null;
-            /** Start */
-            start: number;
-        };
-        /** PageResponse */
-        careeros_api__modules__role_readiness__schemas__PageResponse: {
-            /** Hasmore */
-            hasMore: boolean;
-            /** Limit */
-            limit: number;
-            /** Nextcursor */
-            nextCursor: string | null;
         };
         /** CareerProfileResponse */
         CareerProfileResponse: {
@@ -5164,7 +5072,7 @@ export interface components {
         CareerReviewPageResponse: {
             /** Data */
             data: components["schemas"]["CareerReviewSummaryResponse"][];
-            page: components["schemas"]["careeros_api__modules__career_growth__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__career_growth__schemas__PageResponse"];
         };
         /** CareerReviewResponse */
         CareerReviewResponse: {
@@ -5481,7 +5389,7 @@ export interface components {
             schemaVersion: string;
             /**
              * Scoringdisclaimer
-             * @default CareerOS scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.
+             * @default Rezumi scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.
              */
             scoringDisclaimer: string;
             /**
@@ -5532,15 +5440,15 @@ export interface components {
         /** CheckoutSessionRequest */
         CheckoutSessionRequest: {
             /**
-             * Billing Cycle
+             * Billingcycle
              * @default monthly
              * @enum {string}
              */
-            billing_cycle: "monthly" | "annual";
-            /** Cancel Url */
-            cancel_url: string;
-            /** Success Url */
-            success_url: string;
+            billingCycle: "monthly" | "annual";
+            /** Cancelurl */
+            cancelUrl: string;
+            /** Successurl */
+            successUrl: string;
             /**
              * Tier
              * @enum {string}
@@ -5549,10 +5457,10 @@ export interface components {
         };
         /** CheckoutSessionResponse */
         CheckoutSessionResponse: {
-            /** Checkout Url */
-            checkout_url: string;
-            /** Session Id */
-            session_id: string;
+            /** Checkouturl */
+            checkoutUrl: string;
+            /** Sessionid */
+            sessionId: string;
         };
         /** ClaimGuestDocumentRequest */
         ClaimGuestDocumentRequest: {
@@ -5772,7 +5680,7 @@ export interface components {
             current: components["schemas"]["ConsentStateResponse"];
             /** Events */
             events: components["schemas"]["ConsentEventResponse"][];
-            page: components["schemas"]["careeros_api__modules__networking__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__networking__schemas__PageResponse"];
         };
         /**
          * ConsentLedgerPolicyVersionValue
@@ -5882,7 +5790,7 @@ export interface components {
         ContactNoteListResponse: {
             /** Data */
             data: components["schemas"]["ContactNoteResponse"][];
-            page: components["schemas"]["careeros_api__modules__networking__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__networking__schemas__PageResponse"];
         };
         /** ContactNoteResponse */
         ContactNoteResponse: {
@@ -5908,7 +5816,7 @@ export interface components {
         ContactPageResponse: {
             /** Data */
             data: components["schemas"]["ContactResponse"][];
-            page: components["schemas"]["careeros_api__modules__networking__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__networking__schemas__PageResponse"];
         };
         /**
          * ContactReferralState
@@ -6023,20 +5931,20 @@ export interface components {
             /** Attempts */
             attempts: number;
             /**
-             * Failed At
+             * Failedat
              * Format: date-time
              */
-            failed_at: string;
+            failedAt: string;
             /** Id */
             id: string;
-            /** Job Type */
-            job_type: string;
-            /** Last Error */
-            last_error: string | null;
-            /** Max Attempts */
-            max_attempts: number;
-            /** User Id */
-            user_id: string;
+            /** Jobtype */
+            jobType: string;
+            /** Lasterror */
+            lastError: string | null;
+            /** Maxattempts */
+            maxAttempts: number;
+            /** Userid */
+            userId: string;
         };
         /** DefenseMapEntryResponse */
         DefenseMapEntryResponse: {
@@ -6105,7 +6013,7 @@ export interface components {
         DevelopmentItemPageResponse: {
             /** Data */
             data: components["schemas"]["DevelopmentItemResponse"][];
-            page: components["schemas"]["careeros_api__modules__career_growth__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__career_growth__schemas__PageResponse"];
         };
         /** DevelopmentItemResponse */
         DevelopmentItemResponse: {
@@ -6258,7 +6166,7 @@ export interface components {
         DueReminderListResponse: {
             /** Data */
             data: components["schemas"]["DueReminderResponse"][];
-            page: components["schemas"]["careeros_api__modules__networking__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__networking__schemas__PageResponse"];
         };
         /** DueReminderResponse */
         DueReminderResponse: {
@@ -6526,7 +6434,7 @@ export interface components {
         EvidencePageResponse: {
             /** Data */
             data: components["schemas"]["EvidenceResponse"][];
-            page: components["schemas"]["careeros_api__modules__career_record__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__career_record__schemas__PageResponse"];
         };
         /** EvidenceResponse */
         EvidenceResponse: {
@@ -6793,7 +6701,7 @@ export interface components {
         FollowUpDraftPageResponse: {
             /** Data */
             data: components["schemas"]["FollowUpDraftSummaryResponse"][];
-            page: components["schemas"]["careeros_api__modules__interview_prep__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__interview_prep__schemas__PageResponse"];
         };
         /** FollowUpDraftResponse */
         FollowUpDraftResponse: {
@@ -6930,7 +6838,7 @@ export interface components {
         GoalPageResponse: {
             /** Data */
             data: components["schemas"]["GoalSummaryResponse"][];
-            page: components["schemas"]["careeros_api__modules__career_growth__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__career_growth__schemas__PageResponse"];
         };
         /** GoalResponse */
         GoalResponse: {
@@ -7111,7 +7019,7 @@ export interface components {
         ImportProposalPageResponse: {
             /** Data */
             data: components["schemas"]["ImportProposalResponse"][];
-            page: components["schemas"]["careeros_api__modules__career_record__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__career_record__schemas__PageResponse"];
         };
         /** ImportProposalResponse */
         ImportProposalResponse: {
@@ -7165,7 +7073,7 @@ export interface components {
         InteractionListResponse: {
             /** Data */
             data: components["schemas"]["InteractionResponse"][];
-            page: components["schemas"]["careeros_api__modules__networking__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__networking__schemas__PageResponse"];
         };
         /** InteractionResponse */
         InteractionResponse: {
@@ -7228,7 +7136,7 @@ export interface components {
         InterviewQuestionPageResponse: {
             /** Data */
             data: components["schemas"]["InterviewQuestionSummaryResponse"][];
-            page: components["schemas"]["careeros_api__modules__interview_prep__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__interview_prep__schemas__PageResponse"];
         };
         /** InterviewQuestionResponse */
         InterviewQuestionResponse: {
@@ -7331,7 +7239,7 @@ export interface components {
         InterviewSessionNotePageResponse: {
             /** Data */
             data: components["schemas"]["InterviewSessionNoteResponse"][];
-            page: components["schemas"]["careeros_api__modules__interview_prep__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__interview_prep__schemas__PageResponse"];
         };
         /** InterviewSessionNoteRequest */
         InterviewSessionNoteRequest: {
@@ -7379,7 +7287,7 @@ export interface components {
         InterviewSessionPageResponse: {
             /** Data */
             data: components["schemas"]["InterviewSessionSummaryResponse"][];
-            page: components["schemas"]["careeros_api__modules__interview_prep__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__interview_prep__schemas__PageResponse"];
         };
         /** InterviewSessionResponse */
         InterviewSessionResponse: {
@@ -7598,7 +7506,7 @@ export interface components {
             requirements: components["schemas"]["RequirementMatchResponse"][];
             /**
              * Scoringdisclaimer
-             * @default CareerOS scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.
+             * @default Rezumi scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.
              */
             scoringDisclaimer: string;
             /** Summary */
@@ -7621,7 +7529,7 @@ export interface components {
         JobPageResponse: {
             /** Data */
             data: components["schemas"]["JobResponse"][];
-            page: components["schemas"]["careeros_api__modules__job_match__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__job_match__schemas__PageResponse"];
         };
         /** JobRequirementResponse */
         JobRequirementResponse: {
@@ -7708,8 +7616,8 @@ export interface components {
         };
         /** JobRetryResponse */
         JobRetryResponse: {
-            /** Job Id */
-            job_id: string;
+            /** Jobid */
+            jobId: string;
             /** Message */
             message: string;
             /** Status */
@@ -8040,7 +7948,7 @@ export interface components {
             reconsiderations: string[];
             /**
              * Scoringdisclaimer
-             * @default CareerOS scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.
+             * @default Rezumi scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.
              */
             scoringDisclaimer: string;
         };
@@ -8061,7 +7969,7 @@ export interface components {
         OrganizationPageResponse: {
             /** Data */
             data: components["schemas"]["OrganizationResponse"][];
-            page: components["schemas"]["careeros_api__modules__networking__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__networking__schemas__PageResponse"];
         };
         /** OrganizationResponse */
         OrganizationResponse: {
@@ -8219,40 +8127,40 @@ export interface components {
         };
         /** PlanResponse */
         PlanResponse: {
-            /** Ai Grounding Enabled */
-            ai_grounding_enabled: boolean;
-            /** Analytics Enabled */
-            analytics_enabled: boolean;
-            /** Annual Price Usd */
-            annual_price_usd: number;
+            /** Aigroundingenabled */
+            aiGroundingEnabled: boolean;
+            /** Analyticsenabled */
+            analyticsEnabled: boolean;
+            /** Annualpriceusd */
+            annualPriceUsd: number;
             /** Description */
             description: string;
-            /** Interview Prep Enabled */
-            interview_prep_enabled: boolean;
-            /** Max Change Sets Per Month */
-            max_change_sets_per_month: number;
-            /** Max Exports Per Month */
-            max_exports_per_month: number;
-            /** Max Resumes */
-            max_resumes: number;
-            /** Monthly Price Usd */
-            monthly_price_usd: number;
+            /** Interviewprepenabled */
+            interviewPrepEnabled: boolean;
+            /** Maxchangesetspermonth */
+            maxChangeSetsPerMonth: number;
+            /** Maxexportspermonth */
+            maxExportsPerMonth: number;
+            /** Maxresumes */
+            maxResumes: number;
+            /** Monthlypriceusd */
+            monthlyPriceUsd: number;
             /** Name */
             name: string;
-            /** Networking Enabled */
-            networking_enabled: boolean;
+            /** Networkingenabled */
+            networkingEnabled: boolean;
             /** Tier */
             tier: string;
         };
         /** PortalSessionRequest */
         PortalSessionRequest: {
-            /** Return Url */
-            return_url: string;
+            /** Returnurl */
+            returnUrl: string;
         };
         /** PortalSessionResponse */
         PortalSessionResponse: {
-            /** Portal Url */
-            portal_url: string;
+            /** Portalurl */
+            portalUrl: string;
         };
         /** ProblemField */
         ProblemField: {
@@ -8378,7 +8286,7 @@ export interface components {
              * Disclaimer
              * @constant
              */
-            disclaimer: "Promotion Readiness summarizes CareerOS preparation signals from current eligible evidence and owner-maintained records. It is not an employer decision, hiring probability, promotion guarantee, or assessment of job-market value.";
+            disclaimer: "Promotion Readiness summarizes Rezumi preparation signals from current eligible evidence and owner-maintained records. It is not an employer decision, hiring probability, promotion guarantee, or assessment of job-market value.";
             /**
              * Generatedat
              * Format: date-time
@@ -8417,7 +8325,7 @@ export interface components {
              */
             sourceType: "manual" | "resume" | "achievement" | "attachment" | "url";
             /** Spans */
-            spans: components["schemas"]["careeros_api__modules__career_record__schemas__SourceSpanResponse"][];
+            spans: components["schemas"]["rezumi_api__modules__career_record__schemas__SourceSpanResponse"][];
             /** Userconfirmed */
             userConfirmed: boolean;
         };
@@ -8565,7 +8473,7 @@ export interface components {
         ReferralListResponse: {
             /** Data */
             data: components["schemas"]["ReferralResponse"][];
-            page: components["schemas"]["careeros_api__modules__networking__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__networking__schemas__PageResponse"];
         };
         /** ReferralResponse */
         ReferralResponse: {
@@ -8694,7 +8602,7 @@ export interface components {
         ReminderListResponse: {
             /** Data */
             data: components["schemas"]["ReminderResponse"][];
-            page: components["schemas"]["careeros_api__modules__networking__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__networking__schemas__PageResponse"];
         };
         /** ReminderPreferencesResponse */
         ReminderPreferencesResponse: {
@@ -8874,7 +8782,7 @@ export interface components {
             data: components["schemas"]["RequirementMatchResponse"][];
             /**
              * Scoringdisclaimer
-             * @default CareerOS scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.
+             * @default Rezumi scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.
              */
             scoringDisclaimer: string;
         };
@@ -9705,6 +9613,98 @@ export interface components {
             /** Versionnumber */
             versionNumber: number;
         };
+        /** PageResponse */
+        rezumi_api__modules__application_workspace__schemas__PageResponse: {
+            /** Hasmore */
+            hasMore: boolean;
+            /** Limit */
+            limit: number;
+            /** Nextcursor */
+            nextCursor: string | null;
+        };
+        /** PageResponse */
+        rezumi_api__modules__career_growth__schemas__PageResponse: {
+            /** Hasmore */
+            hasMore: boolean;
+            /** Limit */
+            limit: number;
+            /** Nextcursor */
+            nextCursor: string | null;
+        };
+        /** PageResponse */
+        rezumi_api__modules__career_record__schemas__PageResponse: {
+            /** Hasmore */
+            hasMore: boolean;
+            /** Limit */
+            limit: number;
+            /** Nextcursor */
+            nextCursor: string | null;
+        };
+        /** SourceSpanResponse */
+        rezumi_api__modules__career_record__schemas__SourceSpanResponse: {
+            /** Digest */
+            digest: string;
+            /** End */
+            end: number;
+            /** Excerpt */
+            excerpt: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Page */
+            page?: number | null;
+            /** Start */
+            start: number;
+        };
+        /** PageResponse */
+        rezumi_api__modules__interview_prep__schemas__PageResponse: {
+            /** Hasmore */
+            hasMore: boolean;
+            /** Limit */
+            limit: number;
+            /** Nextcursor */
+            nextCursor: string | null;
+        };
+        /** PageResponse */
+        rezumi_api__modules__job_match__schemas__PageResponse: {
+            /** Hasmore */
+            hasMore: boolean;
+            /** Limit */
+            limit: number;
+            /** Nextcursor */
+            nextCursor: string | null;
+        };
+        /** PageResponse */
+        rezumi_api__modules__networking__schemas__PageResponse: {
+            /** Hasmore */
+            hasMore: boolean;
+            /** Limit */
+            limit: number;
+            /** Nextcursor */
+            nextCursor: string | null;
+        };
+        /** SourceSpanResponse */
+        rezumi_api__modules__resume_health__schemas__SourceSpanResponse: {
+            /** End */
+            end: number;
+            /** Excerpt */
+            excerpt: string;
+            /** Page */
+            page: number | null;
+            /** Start */
+            start: number;
+        };
+        /** PageResponse */
+        rezumi_api__modules__role_readiness__schemas__PageResponse: {
+            /** Hasmore */
+            hasMore: boolean;
+            /** Limit */
+            limit: number;
+            /** Nextcursor */
+            nextCursor: string | null;
+        };
         /** RoleComparisonEntryResponse */
         RoleComparisonEntryResponse: {
             /** Demonstratedcount */
@@ -9726,7 +9726,7 @@ export interface components {
             note: string;
             /**
              * Scoringdisclaimer
-             * @default CareerOS scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.
+             * @default Rezumi scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.
              */
             scoringDisclaimer: string;
         };
@@ -9766,13 +9766,13 @@ export interface components {
         RolePageResponse: {
             /** Data */
             data: components["schemas"]["RoleResponse"][];
-            page: components["schemas"]["careeros_api__modules__role_readiness__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__role_readiness__schemas__PageResponse"];
         };
         /** RoleReadinessPageResponse */
         RoleReadinessPageResponse: {
             /** Data */
             data: components["schemas"]["RoleReadinessResponse"][];
-            page: components["schemas"]["careeros_api__modules__role_readiness__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__role_readiness__schemas__PageResponse"];
         };
         /** RoleReadinessRequest */
         RoleReadinessRequest: {
@@ -9819,7 +9819,7 @@ export interface components {
             savedRoleId: string | null;
             /**
              * Scoringdisclaimer
-             * @default CareerOS scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.
+             * @default Rezumi scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.
              */
             scoringDisclaimer: string;
             /** Summary */
@@ -9878,7 +9878,7 @@ export interface components {
         SavedRolePageResponse: {
             /** Data */
             data: components["schemas"]["SavedRoleResponse"][];
-            page: components["schemas"]["careeros_api__modules__role_readiness__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__role_readiness__schemas__PageResponse"];
         };
         /** SavedRoleResponse */
         SavedRoleResponse: {
@@ -10426,7 +10426,7 @@ export interface components {
         StarStoryPageResponse: {
             /** Data */
             data: components["schemas"]["StarStorySummaryResponse"][];
-            page: components["schemas"]["careeros_api__modules__interview_prep__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__interview_prep__schemas__PageResponse"];
         };
         /** StarStoryResponse */
         StarStoryResponse: {
@@ -10602,33 +10602,33 @@ export interface components {
         StoryStatus: "draft" | "ready" | "archived";
         /** SubscriptionSummaryResponse */
         SubscriptionSummaryResponse: {
-            /** Billing Cycle */
-            billing_cycle: string;
-            /** Cancel At Period End */
-            cancel_at_period_end: boolean;
-            /** Change Sets Limit */
-            change_sets_limit: number;
-            /** Change Sets Used */
-            change_sets_used: number;
+            /** Billingcycle */
+            billingCycle: string;
+            /** Cancelatperiodend */
+            cancelAtPeriodEnd: boolean;
+            /** Changesetslimit */
+            changeSetsLimit: number;
+            /** Changesetsused */
+            changeSetsUsed: number;
             /**
-             * Current Period End
+             * Currentperiodend
              * Format: date-time
              */
-            current_period_end: string;
+            currentPeriodEnd: string;
             /**
-             * Current Period Start
+             * Currentperiodstart
              * Format: date-time
              */
-            current_period_start: string;
+            currentPeriodStart: string;
             entitlements: components["schemas"]["PlanResponse"];
-            /** Exports Limit */
-            exports_limit: number;
-            /** Exports Used */
-            exports_used: number;
-            /** Resumes Count */
-            resumes_count: number;
-            /** Resumes Limit */
-            resumes_limit: number;
+            /** Exportslimit */
+            exportsLimit: number;
+            /** Exportsused */
+            exportsUsed: number;
+            /** Resumescount */
+            resumesCount: number;
+            /** Resumeslimit */
+            resumesLimit: number;
             /** Status */
             status: string;
             /** Tier */
@@ -10636,26 +10636,26 @@ export interface components {
         };
         /** SystemMetricsResponse */
         SystemMetricsResponse: {
-            /** Active Users Count */
-            active_users_count: number;
+            /** Activeuserscount */
+            activeUsersCount: number;
             /** Environment */
             environment: string;
-            /** Service Version */
-            service_version: string;
+            /** Serviceversion */
+            serviceVersion: string;
             /** Status */
             status: string;
-            /** Subscriptions By Tier */
-            subscriptions_by_tier: {
+            /** Subscriptionsbytier */
+            subscriptionsByTier: {
                 [key: string]: number;
             };
-            /** System Health */
-            system_health: {
+            /** Systemhealth */
+            systemHealth: {
                 [key: string]: string;
             };
-            /** Total Applications Count */
-            total_applications_count: number;
-            /** Total Resumes Count */
-            total_resumes_count: number;
+            /** Totalapplicationscount */
+            totalApplicationsCount: number;
+            /** Totalresumescount */
+            totalResumesCount: number;
         };
         /** TaxonomyResponse */
         TaxonomyResponse: {
@@ -10699,7 +10699,7 @@ export interface components {
         TemplateListResponse: {
             /** Data */
             data: components["schemas"]["TemplateResponse"][];
-            page: components["schemas"]["careeros_api__modules__networking__schemas__PageResponse"];
+            page: components["schemas"]["rezumi_api__modules__networking__schemas__PageResponse"];
         };
         /** TemplateResponse */
         TemplateResponse: {
@@ -10838,10 +10838,10 @@ export interface components {
         WebhookResultResponse: {
             /** Detail */
             detail: string;
-            /** Event Id */
-            event_id: string;
-            /** Event Type */
-            event_type: string;
+            /** Eventid */
+            eventId: string;
+            /** Eventtype */
+            eventType: string;
             /** Processed */
             processed: boolean;
         };
@@ -10860,7 +10860,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -10956,7 +10956,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -11055,7 +11055,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -11142,8 +11142,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -11234,7 +11234,7 @@ export interface operations {
                 achievement_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -11324,8 +11324,8 @@ export interface operations {
                 achievement_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -11413,8 +11413,8 @@ export interface operations {
                 achievement_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -11509,8 +11509,8 @@ export interface operations {
                 achievement_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -11595,7 +11595,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -11683,8 +11683,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -11773,7 +11773,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -11806,7 +11806,7 @@ export interface operations {
                 job_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -11837,7 +11837,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -11871,8 +11871,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -11981,7 +11981,7 @@ export interface operations {
                 job_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -12089,7 +12089,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -12194,7 +12194,7 @@ export interface operations {
                 pack_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -12281,7 +12281,7 @@ export interface operations {
                 pack_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -12375,7 +12375,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -12463,8 +12463,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -12555,7 +12555,7 @@ export interface operations {
                 application_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -12645,8 +12645,8 @@ export interface operations {
                 application_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -12734,8 +12734,8 @@ export interface operations {
                 application_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -12829,7 +12829,7 @@ export interface operations {
                 application_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -12919,8 +12919,8 @@ export interface operations {
                 application_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -13014,8 +13014,8 @@ export interface operations {
                 document_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -13103,7 +13103,7 @@ export interface operations {
                 application_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -13193,8 +13193,8 @@ export interface operations {
                 application_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -13288,7 +13288,7 @@ export interface operations {
                 application_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -13378,8 +13378,8 @@ export interface operations {
                 application_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -13473,8 +13473,8 @@ export interface operations {
                 application_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -13568,7 +13568,7 @@ export interface operations {
                 application_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -13658,8 +13658,8 @@ export interface operations {
                 application_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -13754,8 +13754,8 @@ export interface operations {
                 task_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -13847,7 +13847,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -13934,8 +13934,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -14033,8 +14033,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -14220,7 +14220,7 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
+                rezumi_csrf?: string | null;
             };
         };
         requestBody: {
@@ -14321,7 +14321,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -14418,7 +14418,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -14514,7 +14514,7 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
+                rezumi_csrf?: string | null;
             };
         };
         requestBody: {
@@ -14614,8 +14614,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -14709,8 +14709,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -14804,8 +14804,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_refresh?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_refresh?: string | null;
             };
         };
         requestBody?: never;
@@ -14899,7 +14899,7 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
+                rezumi_csrf?: string | null;
             };
         };
         requestBody: {
@@ -14999,7 +14999,7 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
+                rezumi_csrf?: string | null;
             };
         };
         requestBody: {
@@ -15099,7 +15099,7 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
+                rezumi_csrf?: string | null;
             };
         };
         requestBody: {
@@ -15195,7 +15195,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -15293,8 +15293,8 @@ export interface operations {
                 session_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -15388,7 +15388,7 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
+                rezumi_csrf?: string | null;
             };
         };
         requestBody: {
@@ -15486,7 +15486,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -15541,7 +15541,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -15576,7 +15576,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -15641,7 +15641,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -15747,8 +15747,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -15853,7 +15853,7 @@ export interface operations {
                 analysis_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -15960,8 +15960,8 @@ export interface operations {
                 analysis_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -16065,7 +16065,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -16171,8 +16171,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -16281,7 +16281,7 @@ export interface operations {
                 item_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -16389,8 +16389,8 @@ export interface operations {
                 item_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -16502,8 +16502,8 @@ export interface operations {
                 item_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -16607,7 +16607,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -16713,8 +16713,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -16823,7 +16823,7 @@ export interface operations {
                 goal_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -16931,8 +16931,8 @@ export interface operations {
                 goal_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -17044,8 +17044,8 @@ export interface operations {
                 goal_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -17151,8 +17151,8 @@ export interface operations {
                 goal_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -17265,8 +17265,8 @@ export interface operations {
                 milestone_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -17379,8 +17379,8 @@ export interface operations {
                 milestone_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -17481,7 +17481,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -17587,7 +17587,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -17693,8 +17693,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -17803,7 +17803,7 @@ export interface operations {
                 review_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -17911,8 +17911,8 @@ export interface operations {
                 review_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -18019,8 +18019,8 @@ export interface operations {
                 review_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -18128,8 +18128,8 @@ export interface operations {
                 review_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -18236,7 +18236,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -18323,8 +18323,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -18418,8 +18418,8 @@ export interface operations {
                 entity_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -18507,8 +18507,8 @@ export interface operations {
                 entity_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -18602,8 +18602,8 @@ export interface operations {
                 entity_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -18688,7 +18688,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -18776,8 +18776,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -18870,7 +18870,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -18957,8 +18957,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -19049,7 +19049,7 @@ export interface operations {
                 proposal_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -19139,8 +19139,8 @@ export interface operations {
                 proposal_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -19234,8 +19234,8 @@ export interface operations {
                 proposal_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -19320,7 +19320,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -19407,8 +19407,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -19499,7 +19499,7 @@ export interface operations {
                 proposal_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -19590,8 +19590,8 @@ export interface operations {
                 proposal_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -19686,8 +19686,8 @@ export interface operations {
                 proposal_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -19772,7 +19772,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -19859,8 +19859,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -19953,8 +19953,8 @@ export interface operations {
                 relationship_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -20040,8 +20040,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -20132,7 +20132,7 @@ export interface operations {
                 change_set_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -20223,8 +20223,8 @@ export interface operations {
                 change_set_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -20316,8 +20316,8 @@ export interface operations {
                 operation_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -20409,8 +20409,8 @@ export interface operations {
                 operation_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -20506,8 +20506,8 @@ export interface operations {
                 operation_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -20603,8 +20603,8 @@ export interface operations {
                 operation_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -20696,8 +20696,8 @@ export interface operations {
                 operation_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -20789,8 +20789,8 @@ export interface operations {
                 operation_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -20881,8 +20881,8 @@ export interface operations {
                 change_set_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -20973,8 +20973,8 @@ export interface operations {
                 change_set_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -21066,8 +21066,8 @@ export interface operations {
                 version_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -21158,8 +21158,8 @@ export interface operations {
                 clarification_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -21248,7 +21248,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -21344,8 +21344,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -21443,7 +21443,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -21516,7 +21516,7 @@ export interface operations {
                 document_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -21595,8 +21595,8 @@ export interface operations {
                 document_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -21673,8 +21673,8 @@ export interface operations {
                 document_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -21751,7 +21751,7 @@ export interface operations {
                 document_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -21824,7 +21824,7 @@ export interface operations {
                 document_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -21897,7 +21897,7 @@ export interface operations {
                 document_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -21974,7 +21974,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -22061,8 +22061,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -22153,7 +22153,7 @@ export interface operations {
                 evidence_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -22243,8 +22243,8 @@ export interface operations {
                 evidence_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -22332,8 +22332,8 @@ export interface operations {
                 evidence_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -22427,8 +22427,8 @@ export interface operations {
                 evidence_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -22519,8 +22519,8 @@ export interface operations {
                 evidence_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -22608,7 +22608,7 @@ export interface operations {
                 evidence_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -22700,8 +22700,8 @@ export interface operations {
                 upload_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -22791,8 +22791,8 @@ export interface operations {
                 evidence_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -22886,8 +22886,8 @@ export interface operations {
                 evidence_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -22978,8 +22978,8 @@ export interface operations {
                 evidence_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -23073,8 +23073,8 @@ export interface operations {
                 evidence_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -23164,8 +23164,8 @@ export interface operations {
                 evidence_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -23252,7 +23252,7 @@ export interface operations {
                 evidence_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -23337,7 +23337,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -23424,8 +23424,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -23519,8 +23519,8 @@ export interface operations {
                 entity_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -23608,8 +23608,8 @@ export interface operations {
                 entity_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -23703,8 +23703,8 @@ export interface operations {
                 entity_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -23791,8 +23791,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -23883,7 +23883,7 @@ export interface operations {
                 export_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -23973,8 +23973,8 @@ export interface operations {
                 export_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -24064,8 +24064,8 @@ export interface operations {
                 export_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -24152,7 +24152,7 @@ export interface operations {
                 export_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -24239,7 +24239,7 @@ export interface operations {
                 document_id: string;
             };
             cookie?: {
-                careeros_guest_capability?: string | null;
+                rezumi_guest_capability?: string | null;
             };
         };
         requestBody?: never;
@@ -24318,8 +24318,8 @@ export interface operations {
                 document_id: string;
             };
             cookie?: {
-                careeros_guest_capability?: string | null;
-                careeros_guest_csrf?: string | null;
+                rezumi_guest_capability?: string | null;
+                rezumi_guest_csrf?: string | null;
             };
         };
         requestBody?: never;
@@ -24396,8 +24396,8 @@ export interface operations {
                 document_id: string;
             };
             cookie?: {
-                careeros_guest_capability?: string | null;
-                careeros_guest_csrf?: string | null;
+                rezumi_guest_capability?: string | null;
+                rezumi_guest_csrf?: string | null;
             };
         };
         requestBody: {
@@ -24476,9 +24476,9 @@ export interface operations {
                 document_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_guest_capability?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_guest_capability?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -24555,7 +24555,7 @@ export interface operations {
                 document_id: string;
             };
             cookie?: {
-                careeros_guest_capability?: string | null;
+                rezumi_guest_capability?: string | null;
             };
         };
         requestBody?: never;
@@ -24628,7 +24628,7 @@ export interface operations {
                 document_id: string;
             };
             cookie?: {
-                careeros_guest_capability?: string | null;
+                rezumi_guest_capability?: string | null;
             };
         };
         requestBody?: never;
@@ -24701,7 +24701,7 @@ export interface operations {
                 document_id: string;
             };
             cookie?: {
-                careeros_guest_capability?: string | null;
+                rezumi_guest_capability?: string | null;
             };
         };
         requestBody?: never;
@@ -24774,7 +24774,7 @@ export interface operations {
                 job_id: string;
             };
             cookie?: {
-                careeros_guest_capability?: string | null;
+                rezumi_guest_capability?: string | null;
             };
         };
         requestBody?: never;
@@ -24851,8 +24851,8 @@ export interface operations {
                 job_id: string;
             };
             cookie?: {
-                careeros_guest_capability?: string | null;
-                careeros_guest_csrf?: string | null;
+                rezumi_guest_capability?: string | null;
+                rezumi_guest_csrf?: string | null;
             };
         };
         requestBody?: never;
@@ -24927,8 +24927,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_guest_capability?: string | null;
-                careeros_guest_csrf?: string | null;
+                rezumi_guest_capability?: string | null;
+                rezumi_guest_csrf?: string | null;
             };
         };
         requestBody: {
@@ -25005,7 +25005,7 @@ export interface operations {
                 analysis_id: string;
             };
             cookie?: {
-                careeros_guest_capability?: string | null;
+                rezumi_guest_capability?: string | null;
             };
         };
         requestBody?: never;
@@ -25102,8 +25102,8 @@ export interface operations {
                 upload_id: string;
             };
             cookie?: {
-                careeros_guest_capability?: string | null;
-                careeros_guest_csrf?: string | null;
+                rezumi_guest_capability?: string | null;
+                rezumi_guest_csrf?: string | null;
             };
         };
         requestBody?: never;
@@ -25176,8 +25176,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_guest_capability?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_guest_capability?: string | null;
             };
         };
         requestBody: {
@@ -25254,7 +25254,7 @@ export interface operations {
                 application_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -25361,7 +25361,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -25467,8 +25467,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -25577,7 +25577,7 @@ export interface operations {
                 session_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -25685,8 +25685,8 @@ export interface operations {
                 session_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -25792,8 +25792,8 @@ export interface operations {
                 session_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -25905,7 +25905,7 @@ export interface operations {
                 session_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -26011,7 +26011,7 @@ export interface operations {
                 session_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -26119,8 +26119,8 @@ export interface operations {
                 session_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -26232,7 +26232,7 @@ export interface operations {
                 session_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -26340,8 +26340,8 @@ export interface operations {
                 session_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -26454,8 +26454,8 @@ export interface operations {
                 session_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -26562,8 +26562,8 @@ export interface operations {
                 session_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -26675,7 +26675,7 @@ export interface operations {
                 session_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -26783,8 +26783,8 @@ export interface operations {
                 session_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -26894,7 +26894,7 @@ export interface operations {
                 session_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -27002,8 +27002,8 @@ export interface operations {
                 session_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -27111,7 +27111,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -27217,8 +27217,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -27327,7 +27327,7 @@ export interface operations {
                 story_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -27435,8 +27435,8 @@ export interface operations {
                 story_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -27542,8 +27542,8 @@ export interface operations {
                 story_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -27652,7 +27652,7 @@ export interface operations {
                 analysis_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -27739,7 +27739,7 @@ export interface operations {
                 analysis_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -27830,7 +27830,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -27918,8 +27918,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -28010,7 +28010,7 @@ export interface operations {
                 job_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -28100,8 +28100,8 @@ export interface operations {
                 job_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -28189,8 +28189,8 @@ export interface operations {
                 job_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -28284,8 +28284,8 @@ export interface operations {
                 job_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -28375,8 +28375,8 @@ export interface operations {
                 job_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -28468,8 +28468,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -28558,7 +28558,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -28655,8 +28655,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -28783,7 +28783,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -28889,8 +28889,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -28999,7 +28999,7 @@ export interface operations {
                 contact_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -29108,8 +29108,8 @@ export interface operations {
                 contact_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -29216,8 +29216,8 @@ export interface operations {
                 contact_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -29329,7 +29329,7 @@ export interface operations {
                 contact_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -29438,8 +29438,8 @@ export interface operations {
                 contact_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -29552,8 +29552,8 @@ export interface operations {
                 contact_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -29665,7 +29665,7 @@ export interface operations {
                 contact_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -29774,8 +29774,8 @@ export interface operations {
                 contact_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -29887,7 +29887,7 @@ export interface operations {
                 contact_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -29995,8 +29995,8 @@ export interface operations {
                 contact_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -30108,7 +30108,7 @@ export interface operations {
                 contact_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -30217,8 +30217,8 @@ export interface operations {
                 contact_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -30330,7 +30330,7 @@ export interface operations {
                 contact_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -30438,8 +30438,8 @@ export interface operations {
                 contact_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -30551,7 +30551,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -30657,8 +30657,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -30767,7 +30767,7 @@ export interface operations {
                 organization_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -30876,8 +30876,8 @@ export interface operations {
                 organization_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -30984,8 +30984,8 @@ export interface operations {
                 organization_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -31098,8 +31098,8 @@ export interface operations {
                 referral_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -31212,8 +31212,8 @@ export interface operations {
                 reminder_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -31326,8 +31326,8 @@ export interface operations {
                 reminder_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -31436,7 +31436,7 @@ export interface operations {
                 reminder_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -31542,7 +31542,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -31647,7 +31647,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -31753,7 +31753,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -31859,8 +31859,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -31973,8 +31973,8 @@ export interface operations {
                 template_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -32081,7 +32081,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -32178,8 +32178,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -32279,7 +32279,7 @@ export interface operations {
                 priority_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -32364,7 +32364,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -32451,8 +32451,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -32546,8 +32546,8 @@ export interface operations {
                 fact_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -32635,8 +32635,8 @@ export interface operations {
                 fact_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -32730,8 +32730,8 @@ export interface operations {
                 fact_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -32818,7 +32818,7 @@ export interface operations {
                 job_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -32895,8 +32895,8 @@ export interface operations {
                 job_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -32971,8 +32971,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -33049,7 +33049,7 @@ export interface operations {
                 analysis_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -33142,7 +33142,7 @@ export interface operations {
                 version_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -33232,8 +33232,8 @@ export interface operations {
                 version_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -33322,7 +33322,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -33410,8 +33410,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -33502,7 +33502,7 @@ export interface operations {
                 resume_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -33593,8 +33593,8 @@ export interface operations {
                 resume_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -33690,8 +33690,8 @@ export interface operations {
                 version_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -33778,7 +33778,7 @@ export interface operations {
                 resume_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -33865,7 +33865,7 @@ export interface operations {
                 resume_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -33956,8 +33956,8 @@ export interface operations {
                 resume_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -34046,7 +34046,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -34134,8 +34134,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -34226,7 +34226,7 @@ export interface operations {
                 analysis_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -34313,7 +34313,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -34405,7 +34405,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -34492,7 +34492,7 @@ export interface operations {
                 role_id: string;
             };
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -34580,7 +34580,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -34667,8 +34667,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -34762,8 +34762,8 @@ export interface operations {
                 saved_role_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -34851,8 +34851,8 @@ export interface operations {
                 saved_role_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -34943,7 +34943,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -35037,7 +35037,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -35131,7 +35131,7 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: {
-                careeros_session?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -35218,8 +35218,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -35313,8 +35313,8 @@ export interface operations {
                 skill_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -35402,8 +35402,8 @@ export interface operations {
                 skill_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {
@@ -35497,8 +35497,8 @@ export interface operations {
                 skill_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -35589,8 +35589,8 @@ export interface operations {
                 upload_id: string;
             };
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody?: never;
@@ -35663,8 +35663,8 @@ export interface operations {
             };
             path?: never;
             cookie?: {
-                careeros_csrf?: string | null;
-                careeros_session?: string | null;
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
             };
         };
         requestBody: {

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { PageHeader } from "@careeros/ui";
+import { PageHeader } from "@rezumi/ui";
 
 import {
   SettingsCapabilitiesProvider,

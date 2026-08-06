@@ -1,7 +1,7 @@
 import { ArrowRight, FileSearch, UserRoundPlus } from "lucide-react";
 import Link from "next/link";
 
-import { Alert, buttonStyles, cn } from "@careeros/ui";
+import { Alert, buttonStyles, cn } from "@rezumi/ui";
 
 import { AuthPageShell } from "../components/auth-page-shell";
 
@@ -60,8 +60,8 @@ export function GetStartedView() {
         </div>
 
         <Alert title="Real document state only" tone="info">
-          CareerOS displays a report only after a real document passes
-          admission, parsing, explicit review, and deterministic analysis.
+          Rezumi displays a report only after a real document passes admission,
+          parsing, explicit review, and deterministic analysis.
         </Alert>
       </div>
     </AuthPageShell>

@@ -1,6 +1,6 @@
 """Golden and boundary tests for fixed-point Resume Health v2."""
 
-from careeros.modules.resume_health.domain.scoring import (
+from rezumi.modules.resume_health.domain.scoring import (
     CONFIGURATION_VERSION,
     ENGINE_VERSION,
     FEATURE_SCHEMA_VERSION,

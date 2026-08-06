@@ -5,14 +5,14 @@ from collections.abc import Iterator
 from unittest.mock import create_autospec
 
 import pytest
-from careeros.modules.identity.application import IdentityService
 from fastapi.testclient import TestClient
+from rezumi.modules.identity.application import IdentityService
 from starlette.types import Message, Scope
 
-from careeros_api.config import Settings
-from careeros_api.main import create_app
-from careeros_api.middleware import RequestBodyLimitMiddleware
 from conftest import FakeDatabase
+from rezumi_api.config import Settings
+from rezumi_api.main import create_app
+from rezumi_api.middleware import RequestBodyLimitMiddleware
 
 
 def test_declared_oversize_is_rejected_before_body_or_dependencies_are_read(
@@ -36,7 +36,7 @@ def test_declared_oversize_is_rejected_before_body_or_dependencies_are_read(
     assert response.headers["content-type"].startswith("application/problem+json")
     assert response.headers["X-Request-ID"] == "oversize-request"
     assert response.json() == {
-        "type": "https://careeros.example/problems/payload-too-large",
+        "type": "https://rezumi.example/problems/payload-too-large",
         "title": "Payload too large",
         "status": 413,
         "code": "payload_too_large",

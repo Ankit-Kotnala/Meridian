@@ -91,22 +91,22 @@ export function WorkspaceTopBar({
               </div>
             </div>
             <div className="p-2">
-              <p className="eyebrow px-3 pb-1 pt-1.5 !text-[0.625rem]">Manage</p>
-              {workspaceUtilityNavigation.map(
-                ({ href, icon: Icon, label }) => (
-                  <Link
-                    className="flex min-h-11 items-center gap-2.5 rounded-[var(--radius-control)] px-3 text-sm font-semibold text-foreground transition-colors hover:bg-surface-subtle"
-                    href={href}
-                    key={href}
-                  >
-                    <Icon
-                      aria-hidden="true"
-                      className="size-4 text-muted-strong"
-                    />
-                    {label}
-                  </Link>
-                ),
-              )}
+              <p className="eyebrow px-3 pb-1 pt-1.5 !text-[0.625rem]">
+                Manage
+              </p>
+              {workspaceUtilityNavigation.map(({ href, icon: Icon, label }) => (
+                <Link
+                  className="flex min-h-11 items-center gap-2.5 rounded-[var(--radius-control)] px-3 text-sm font-semibold text-foreground transition-colors hover:bg-surface-subtle"
+                  href={href}
+                  key={href}
+                >
+                  <Icon
+                    aria-hidden="true"
+                    className="size-4 text-muted-strong"
+                  />
+                  {label}
+                </Link>
+              ))}
               <div className="mt-1 border-t border-line pt-1">
                 {accountActions}
               </div>

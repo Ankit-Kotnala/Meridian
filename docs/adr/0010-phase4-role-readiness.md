@@ -14,9 +14,9 @@ application boundary rather than reading evidence tables directly.
 
 ## Decision
 
-CareerOS stores a versioned public role taxonomy, role definitions, and
-competencies in `careeros.modules.role_readiness`. The initial taxonomy is a
-CareerOS-authored seed with explicit source/version/license metadata and stable
+Rezumi stores a versioned public role taxonomy, role definitions, and
+competencies in `rezumi.modules.role_readiness`. The initial taxonomy is a
+Rezumi-authored seed with explicit source/version/license metadata and stable
 UUIDs. Future external taxonomy imports must create new taxonomy versions through
 the same application/repository boundary rather than replacing existing analyses.
 

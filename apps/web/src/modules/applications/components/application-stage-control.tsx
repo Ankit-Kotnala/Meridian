@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { Button, Input, Select } from "@careeros/ui";
+import { Button, Input, Select } from "@rezumi/ui";
 
 import type { Application, ApplicationStage } from "../api/types";
 import { allowedStageTransitions, humanize } from "./application-options";

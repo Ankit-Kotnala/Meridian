@@ -63,7 +63,7 @@ const nextConfig: NextConfig = {
   turbopack: { root: workspaceRoot },
   poweredByHeader: false,
   reactStrictMode: true,
-  transpilePackages: ["@careeros/ui"],
+  transpilePackages: ["@rezumi/ui"],
   experimental: {
     useTypeScriptCli: true,
   },

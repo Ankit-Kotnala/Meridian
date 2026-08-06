@@ -1,4 +1,4 @@
-import type { components } from "@careeros/contracts";
+import type { components } from "@rezumi/contracts";
 
 export type Job = components["schemas"]["JobResponse"];
 export type JobPage = components["schemas"]["JobPageResponse"];

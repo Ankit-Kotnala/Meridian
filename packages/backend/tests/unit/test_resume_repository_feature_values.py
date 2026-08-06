@@ -1,7 +1,7 @@
 import pytest
 
-from careeros.modules.resume_health.domain.errors import ResumeStateConflict
-from careeros.modules.resume_health.infrastructure.repository import (
+from rezumi.modules.resume_health.domain.errors import ResumeStateConflict
+from rezumi.modules.resume_health.infrastructure.repository import (
     _analysis_feature_values,
 )
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { ErrorState } from "@careeros/ui";
+import { ErrorState } from "@rezumi/ui";
 
 export default function OnboardingError({ reset }: { reset: () => void }) {
   return (

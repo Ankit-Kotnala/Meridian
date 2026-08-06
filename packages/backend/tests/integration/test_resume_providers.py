@@ -8,23 +8,23 @@ from uuid import uuid4
 
 import pytest
 
-from careeros.modules.resume_health.infrastructure.malware import ClamAvOptions, ClamAvScanner
-from careeros.modules.resume_health.infrastructure.storage import S3ObjectStorage, S3Options
+from rezumi.modules.resume_health.infrastructure.malware import ClamAvOptions, ClamAvScanner
+from rezumi.modules.resume_health.infrastructure.storage import S3ObjectStorage, S3Options
 
 
 @pytest.mark.asyncio
 async def test_private_s3_object_lifecycle() -> None:
-    endpoint = os.environ.get("CAREEROS_TEST_S3_ENDPOINT_URL")
+    endpoint = os.environ.get("REZUMI_TEST_S3_ENDPOINT_URL")
     if endpoint is None:
-        pytest.skip("CAREEROS_TEST_S3_ENDPOINT_URL is required for S3 integration tests")
+        pytest.skip("REZUMI_TEST_S3_ENDPOINT_URL is required for S3 integration tests")
     storage = S3ObjectStorage(
         S3Options(
             internal_endpoint_url=endpoint,
             public_endpoint_url=endpoint,
-            region=os.environ["CAREEROS_TEST_S3_REGION"],
-            bucket=os.environ["CAREEROS_TEST_S3_BUCKET"],
-            access_key_id=os.environ["CAREEROS_TEST_S3_ACCESS_KEY_ID"],
-            secret_access_key=os.environ["CAREEROS_TEST_S3_SECRET_ACCESS_KEY"],
+            region=os.environ["REZUMI_TEST_S3_REGION"],
+            bucket=os.environ["REZUMI_TEST_S3_BUCKET"],
+            access_key_id=os.environ["REZUMI_TEST_S3_ACCESS_KEY_ID"],
+            secret_access_key=os.environ["REZUMI_TEST_S3_SECRET_ACCESS_KEY"],
         )
     )
     first = f"integration/{uuid4().hex}"
@@ -43,10 +43,10 @@ async def test_private_s3_object_lifecycle() -> None:
 
 @pytest.mark.asyncio
 async def test_clamav_detects_isolated_standard_test_signature() -> None:
-    host = os.environ.get("CAREEROS_TEST_CLAMAV_HOST")
-    port = os.environ.get("CAREEROS_TEST_CLAMAV_PORT")
+    host = os.environ.get("REZUMI_TEST_CLAMAV_HOST")
+    port = os.environ.get("REZUMI_TEST_CLAMAV_PORT")
     if host is None or port is None:
-        pytest.skip("CAREEROS_TEST_CLAMAV_HOST/PORT are required for scanner integration tests")
+        pytest.skip("REZUMI_TEST_CLAMAV_HOST/PORT are required for scanner integration tests")
     # Build the standard harmless antivirus test signature at runtime so repository
     # checkout and static scanners never handle an active signature as one literal.
     pieces = [

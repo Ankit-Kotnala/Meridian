@@ -7,34 +7,6 @@ import os
 import pytest
 from sqlalchemy import delete, select
 
-from careeros.foundation.config import DatabaseOptions
-from careeros.foundation.database import Database
-from careeros.modules.identity.infrastructure.models import UserModel
-from careeros.modules.resume_builder.application import (
-    CreateResume,
-    ExportResume,
-    RequestContext,
-    ResumeBuilderPolicy,
-    ResumeBuilderService,
-    ResumeExportCleanupProcessor,
-    ResumeExportProcessor,
-)
-from careeros.modules.resume_builder.domain import (
-    ResumeBuilderNotFound,
-    ResumeFormat,
-    ResumeTemplate,
-)
-from careeros.modules.resume_builder.infrastructure.models import (
-    ResumeBuilderAuditEventModel,
-    ResumeExportModel,
-    ResumeExportObjectCleanupModel,
-    ResumeExportOutboxModel,
-    ResumeModel,
-    ResumeVerificationReportModel,
-)
-from careeros.modules.resume_builder.infrastructure.repository import (
-    SqlAlchemyResumeBuilderUnitOfWorkFactory,
-)
 from resume_builder_memory import (
     OTHER_ID,
     OWNER_ID,
@@ -45,6 +17,34 @@ from resume_builder_memory import (
     TextOnlyRenderer,
     UuidFactory,
 )
+from rezumi.foundation.config import DatabaseOptions
+from rezumi.foundation.database import Database
+from rezumi.modules.identity.infrastructure.models import UserModel
+from rezumi.modules.resume_builder.application import (
+    CreateResume,
+    ExportResume,
+    RequestContext,
+    ResumeBuilderPolicy,
+    ResumeBuilderService,
+    ResumeExportCleanupProcessor,
+    ResumeExportProcessor,
+)
+from rezumi.modules.resume_builder.domain import (
+    ResumeBuilderNotFound,
+    ResumeFormat,
+    ResumeTemplate,
+)
+from rezumi.modules.resume_builder.infrastructure.models import (
+    ResumeBuilderAuditEventModel,
+    ResumeExportModel,
+    ResumeExportObjectCleanupModel,
+    ResumeExportOutboxModel,
+    ResumeModel,
+    ResumeVerificationReportModel,
+)
+from rezumi.modules.resume_builder.infrastructure.repository import (
+    SqlAlchemyResumeBuilderUnitOfWorkFactory,
+)
 
 
 def _context(owner_id) -> RequestContext:
@@ -53,9 +53,9 @@ def _context(owner_id) -> RequestContext:
 
 @pytest.mark.asyncio
 async def test_repository_persists_resume_export_and_denies_cross_user_access() -> None:
-    database_url = os.environ.get("CAREEROS_TEST_DATABASE_URL")
+    database_url = os.environ.get("REZUMI_TEST_DATABASE_URL")
     if database_url is None:
-        pytest.skip("CAREEROS_TEST_DATABASE_URL is required for PostgreSQL integration tests")
+        pytest.skip("REZUMI_TEST_DATABASE_URL is required for PostgreSQL integration tests")
 
     database = Database(DatabaseOptions(url=database_url, pool_size=2, max_overflow=0))
     storage = MemoryStorage()

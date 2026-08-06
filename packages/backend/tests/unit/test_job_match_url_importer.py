@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from careeros.modules.job_match.domain import JobImportRejected
-from careeros.modules.job_match.infrastructure.url_importer import _TextExtractor, _validate_url
+from rezumi.modules.job_match.domain import JobImportRejected
+from rezumi.modules.job_match.infrastructure.url_importer import _TextExtractor, _validate_url
 
 
 def test_validate_url_rejects_non_http_and_loopback_destinations() -> None:

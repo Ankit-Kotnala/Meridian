@@ -30,7 +30,7 @@ from application_workspace_memory import (
     StaticResumeProvider,
     UuidFactory,
 )
-from careeros.modules.application_workspace.application import (
+from rezumi.modules.application_workspace.application import (
     ApplicationEventCursor,
     ApplicationFilter,
     ApplicationInterviewEvidenceReference,
@@ -50,11 +50,11 @@ from careeros.modules.application_workspace.application import (
     UpdateApplication,
     UpdateApplicationTask,
 )
-from careeros.modules.application_workspace.application.service import (
+from rezumi.modules.application_workspace.application.service import (
     _pack_findings,
     _status,
 )
-from careeros.modules.application_workspace.domain import (
+from rezumi.modules.application_workspace.domain import (
     ApplicationEventKind,
     ApplicationEvidencePin,
     ApplicationIdempotencyRecord,

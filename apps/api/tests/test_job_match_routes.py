@@ -8,16 +8,16 @@ from pathlib import Path
 from unittest.mock import create_autospec
 from uuid import uuid4
 
-from careeros.modules.identity.application import IdentityService
-from careeros.modules.identity.domain import AuthenticatedPrincipal, AuthMethod
-from careeros.modules.identity.domain.errors import AuthenticationRequired
-from careeros.modules.job_match.application import JobMatchService
 from fastapi.testclient import TestClient
+from rezumi.modules.identity.application import IdentityService
+from rezumi.modules.identity.domain import AuthenticatedPrincipal, AuthMethod
+from rezumi.modules.identity.domain.errors import AuthenticationRequired
+from rezumi.modules.job_match.application import JobMatchService
 
-from careeros_api.config import Settings
-from careeros_api.constants import SCORING_DISCLAIMER
-from careeros_api.main import create_app
 from conftest import FakeDatabase
+from rezumi_api.config import Settings
+from rezumi_api.constants import SCORING_DISCLAIMER
+from rezumi_api.main import create_app
 
 _BACKEND_TEST_SUPPORT = Path(__file__).resolve().parents[3] / "packages/backend/tests"
 sys.path.insert(0, str(_BACKEND_TEST_SUPPORT))
@@ -82,8 +82,8 @@ def _authenticated_client(
             job_match=job_match,
         )
     )
-    client.cookies.set("careeros_session", "opaque-session")
-    client.cookies.set("careeros_csrf", "opaque-csrf")
+    client.cookies.set("rezumi_session", "opaque-session")
+    client.cookies.set("rezumi_csrf", "opaque-csrf")
     return client
 
 

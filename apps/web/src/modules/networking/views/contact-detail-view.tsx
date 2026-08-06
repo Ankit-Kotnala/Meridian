@@ -32,7 +32,7 @@ import {
   Select,
   Tabs,
   buttonStyles,
-} from "@careeros/ui";
+} from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 
@@ -789,7 +789,7 @@ export function ContactDetailView({ contactId }: { contactId: string }) {
       clearIntent(intent);
       await load();
       setSuccess(
-        "Interaction recorded as local history only. CareerOS did not send anything.",
+        "Interaction recorded as local history only. Rezumi did not send anything.",
       );
       formElement.reset();
     } catch (error) {
@@ -1081,7 +1081,7 @@ export function ContactDetailView({ contactId }: { contactId: string }) {
       </header>
 
       <Alert title="Private and local-only" tone="warning">
-        CareerOS stores this record only for the account owner. It does not
+        Rezumi stores this record only for the account owner. It does not
         scrape, fetch the profile URL, import contacts, send messages, or
         deliver reminders externally.
       </Alert>
@@ -1650,8 +1650,8 @@ function InteractionsPanel({
         </Alert>
       )}
       <Alert title="History only — nothing is sent" tone="warning">
-        Record an interaction that happened elsewhere. CareerOS stores the
-        summary with delivery state “recorded only” and performs no delivery.
+        Record an interaction that happened elsewhere. Rezumi stores the summary
+        with delivery state “recorded only” and performs no delivery.
       </Alert>
       <form
         className="grid gap-4 rounded-xl border border-line bg-surface p-4 sm:grid-cols-2"
@@ -1846,7 +1846,7 @@ function ReferralsPanel({
       )}
       <Alert title="Local status only" tone="warning">
         Referral records track your plan or an event that happened elsewhere.
-        CareerOS never sends a referral request.
+        Rezumi never sends a referral request.
       </Alert>
       <form
         className="grid gap-4 rounded-xl border border-line bg-surface p-4 sm:grid-cols-2"
@@ -2301,7 +2301,9 @@ function ExecutionState({
   return (
     <div
       className={`rounded-lg border p-3 text-sm ${
-        failed ? "border-danger/30 bg-danger-soft" : "border-line bg-surface-subtle"
+        failed
+          ? "border-danger/30 bg-danger-soft"
+          : "border-line bg-surface-subtle"
       }`}
     >
       <div className="flex flex-wrap gap-2">

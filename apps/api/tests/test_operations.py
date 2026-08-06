@@ -5,10 +5,10 @@ from uuid import UUID
 import pytest
 from fastapi.testclient import TestClient
 
-from careeros_api.config import Settings
-from careeros_api.constants import SCORING_DISCLAIMER
-from careeros_api.main import create_app
 from conftest import FakeDatabase
+from rezumi_api.config import Settings
+from rezumi_api.constants import SCORING_DISCLAIMER
+from rezumi_api.main import create_app
 
 
 def test_health_is_live_without_calling_dependencies(
@@ -19,7 +19,7 @@ def test_health_is_live_without_calling_dependencies(
     assert response.status_code == 200
     assert response.json() == {
         "status": "ok",
-        "service": "careeros-api",
+        "service": "rezumi-api",
         "version": "0.1.0",
     }
     assert fake_database.ping_count == 0
@@ -126,7 +126,7 @@ def test_metadata_is_non_sensitive_and_contains_disclaimer(client: TestClient) -
 
     assert response.status_code == 200
     assert response.json() == {
-        "service": "careeros-api",
+        "service": "rezumi-api",
         "version": "0.1.0",
         "api_version": "v1",
         "environment": "test",

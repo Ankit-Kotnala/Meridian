@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
-import { Button, TextField } from "@careeros/ui";
+import { Button, TextField } from "@rezumi/ui";
 
 import {
   authErrorMessage,
@@ -92,7 +92,7 @@ export function LoginView() {
     <AuthPageShell
       description="Use your verified account to open the protected workspace and manage active sessions."
       eyebrow="Welcome back"
-      title="Sign in to CareerOS"
+      title="Sign in to Rezumi"
     >
       <form className="space-y-5" noValidate onSubmit={onSubmit}>
         <FormErrorSummary message={failure} />
@@ -153,7 +153,7 @@ export function LoginView() {
           Google
         </Button>
         <p className="text-center text-sm text-muted">
-          New to CareerOS?{" "}
+          New to Rezumi?{" "}
           <Link className="font-bold text-primary" href="/register">
             Create an account
           </Link>

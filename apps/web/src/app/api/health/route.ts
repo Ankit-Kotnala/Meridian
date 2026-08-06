@@ -6,7 +6,7 @@ export function GET() {
   return NextResponse.json(
     {
       status: "ok",
-      service: "careeros-web",
+      service: "rezumi-web",
       version: "0.1.0",
       timestamp: new Date().toISOString(),
     },

@@ -10,14 +10,14 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import UUID
 
-from careeros.modules.resume_builder.application import (
+from rezumi.modules.resume_builder.application import (
     ExtractedDocumentText,
     RenderedResume,
     ResumeRecord,
     ResumeSourceBullet,
     ResumeSourceSnapshot,
 )
-from careeros.modules.resume_builder.domain import (
+from rezumi.modules.resume_builder.domain import (
     ResumeBuilderAuditEvent,
     ResumeBuilderIdempotencyRecord,
     ResumeDocument,

@@ -204,7 +204,7 @@ def write_docx(path: Path) -> None:
     app = (
         '<?xml version="1.0" encoding="UTF-8"?>'
         '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">'
-        "<Pages>1</Pages><Application>CareerOS fixture generator</Application></Properties>"
+        "<Pages>1</Pages><Application>Rezumi fixture generator</Application></Properties>"
     )
     with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for name, value in (

@@ -1,26 +1,26 @@
 # Local development
 
-CareerOS keeps runtime boundaries explicit while providing one cross-platform
+Rezumi keeps runtime boundaries explicit while providing one cross-platform
 command surface from the repository root. Use the root commands below instead of
 manually reconstructing service dependencies or changing directories.
 
 ## Where to make a change
 
-| Change                                          | Primary location                                                         | Focused check                                 |
-| ----------------------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------- |
-| Page, route shell, or metadata                  | `apps/web/src/app`                                                       | `pnpm test:web`                               |
-| Product UI and state                            | `apps/web/src/modules/<feature>`                                         | `pnpm test:web`                               |
-| Reusable accessible UI                          | `packages/ui/src`                                                        | `pnpm --filter @careeros/ui test`             |
-| Visual tokens                                   | `packages/design-tokens`                                                 | `pnpm --filter @careeros/design-tokens build` |
-| HTTP route, schema, presenter, or dependency    | `apps/api/src/careeros_api/modules/<bounded_context>`                    | `pnpm test:api`                               |
-| Cross-cutting HTTP composition or middleware    | `apps/api/src/careeros_api`                                              | `pnpm test:api`                               |
-| Business rules and use cases                    | `packages/backend/src/careeros/modules/<bounded_context>`                | `pnpm test:backend`                           |
-| Database/provider adapter for a bounded context | `packages/backend/src/careeros/modules/<bounded_context>/infrastructure` | backend unit and integration tests            |
-| Celery task adapter                             | `apps/worker/src/careeros_worker/tasks/<bounded_context>.py`             | `pnpm test:worker`                            |
-| Worker runtime composition                      | `apps/worker/src/careeros_worker/runtime.py`                             | `pnpm test:worker`                            |
-| OpenAPI wire contract                           | FastAPI schemas, then generated `packages/contracts` artifacts           | `pnpm contracts:check`                        |
-| Local/deployment infrastructure                 | `compose.yaml` and `infra`                                               | `docker compose config --quiet`               |
-| Cross-service browser behavior                  | `apps/web/e2e` and `tests/e2e`                                           | the applicable isolated E2E runner            |
+| Change                                          | Primary location                                                       | Focused check                               |
+| ----------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------- |
+| Page, route shell, or metadata                  | `apps/web/src/app`                                                     | `pnpm test:web`                             |
+| Product UI and state                            | `apps/web/src/modules/<feature>`                                       | `pnpm test:web`                             |
+| Reusable accessible UI                          | `packages/ui/src`                                                      | `pnpm --filter @rezumi/ui test`             |
+| Visual tokens                                   | `packages/design-tokens`                                               | `pnpm --filter @rezumi/design-tokens build` |
+| HTTP route, schema, presenter, or dependency    | `apps/api/src/rezumi_api/modules/<bounded_context>`                    | `pnpm test:api`                             |
+| Cross-cutting HTTP composition or middleware    | `apps/api/src/rezumi_api`                                              | `pnpm test:api`                             |
+| Business rules and use cases                    | `packages/backend/src/rezumi/modules/<bounded_context>`                | `pnpm test:backend`                         |
+| Database/provider adapter for a bounded context | `packages/backend/src/rezumi/modules/<bounded_context>/infrastructure` | backend unit and integration tests          |
+| Celery task adapter                             | `apps/worker/src/rezumi_worker/tasks/<bounded_context>.py`             | `pnpm test:worker`                          |
+| Worker runtime composition                      | `apps/worker/src/rezumi_worker/runtime.py`                             | `pnpm test:worker`                          |
+| OpenAPI wire contract                           | FastAPI schemas, then generated `packages/contracts` artifacts         | `pnpm contracts:check`                      |
+| Local/deployment infrastructure                 | `compose.yaml` and `infra`                                             | `docker compose config --quiet`             |
+| Cross-service browser behavior                  | `apps/web/e2e` and `tests/e2e`                                         | the applicable isolated E2E runner          |
 
 Keep Next.js route files thin, keep API and Celery files as delivery adapters, and
 put domain behavior in `packages/backend`. Do not move persistence or queue access
@@ -116,7 +116,7 @@ A skipped or unavailable required gate is a blocker, not a pass.
 Feature-specific API files have one predictable address:
 
 ```text
-apps/api/src/careeros_api/modules/<bounded_context>/
+apps/api/src/rezumi_api/modules/<bounded_context>/
   routes.py
   schemas.py
   presenters.py      # when response mapping is non-trivial
@@ -124,14 +124,14 @@ apps/api/src/careeros_api/modules/<bounded_context>/
   problems.py        # when the feature owns safe problem translation
 ```
 
-Only concrete cross-cutting HTTP concerns remain at `careeros_api` root, such as
+Only concrete cross-cutting HTTP concerns remain at `rezumi_api` root, such as
 application composition, configuration, middleware, shared problem handling, and
 the root router.
 
 Celery task registration follows the same bounded contexts:
 
 ```text
-apps/worker/src/careeros_worker/tasks/
+apps/worker/src/rezumi_worker/tasks/
   career_analytics.py
   career_record.py
   networking.py

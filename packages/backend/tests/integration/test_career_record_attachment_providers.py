@@ -8,13 +8,13 @@ from uuid import uuid4
 import pytest
 from httpx import AsyncClient
 
-from careeros.modules.career_record.application import (
+from rezumi.modules.career_record.application import (
     AttachmentDownloadPurpose,
     AttachmentLimits,
     AttachmentMediaType,
 )
-from careeros.modules.career_record.application.attachment_workflow import ScanVerdict
-from careeros.modules.career_record.infrastructure import (
+from rezumi.modules.career_record.application.attachment_workflow import ScanVerdict
+from rezumi.modules.career_record.infrastructure import (
     AttachmentClamAvOptions,
     AttachmentClamAvScanner,
     AttachmentS3ObjectStorage,
@@ -28,17 +28,17 @@ FIXTURE = (
 
 
 def _storage() -> AttachmentS3ObjectStorage:
-    endpoint = os.environ.get("CAREEROS_TEST_S3_ENDPOINT_URL")
+    endpoint = os.environ.get("REZUMI_TEST_S3_ENDPOINT_URL")
     if endpoint is None:
-        pytest.skip("CAREEROS_TEST_S3_ENDPOINT_URL is required for S3 integration tests")
+        pytest.skip("REZUMI_TEST_S3_ENDPOINT_URL is required for S3 integration tests")
     return AttachmentS3ObjectStorage(
         AttachmentS3Options(
             internal_endpoint_url=endpoint,
             public_endpoint_url=endpoint,
-            region=os.environ["CAREEROS_TEST_S3_REGION"],
-            bucket=os.environ["CAREEROS_TEST_S3_BUCKET"],
-            access_key_id=os.environ["CAREEROS_TEST_S3_ACCESS_KEY_ID"],
-            secret_access_key=os.environ["CAREEROS_TEST_S3_SECRET_ACCESS_KEY"],
+            region=os.environ["REZUMI_TEST_S3_REGION"],
+            bucket=os.environ["REZUMI_TEST_S3_BUCKET"],
+            access_key_id=os.environ["REZUMI_TEST_S3_ACCESS_KEY_ID"],
+            secret_access_key=os.environ["REZUMI_TEST_S3_SECRET_ACCESS_KEY"],
         )
     )
 
@@ -97,10 +97,10 @@ async def test_attachment_s3_signed_transfer_promotion_and_private_download(
 async def test_attachment_clamav_and_bounded_extractor_accept_benign_pdf(
     tmp_path: Path,
 ) -> None:
-    host = os.environ.get("CAREEROS_TEST_CLAMAV_HOST")
-    port = os.environ.get("CAREEROS_TEST_CLAMAV_PORT")
+    host = os.environ.get("REZUMI_TEST_CLAMAV_HOST")
+    port = os.environ.get("REZUMI_TEST_CLAMAV_PORT")
     if host is None or port is None:
-        pytest.skip("CAREEROS_TEST_CLAMAV_HOST/PORT are required for scanner integration tests")
+        pytest.skip("REZUMI_TEST_CLAMAV_HOST/PORT are required for scanner integration tests")
 
     scan = await AttachmentClamAvScanner(
         AttachmentClamAvOptions(host=host, port=int(port), timeout_seconds=30)

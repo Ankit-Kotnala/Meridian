@@ -7,10 +7,10 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import delete
 
-from careeros.foundation.config import DatabaseOptions
-from careeros.foundation.database import Database
-from careeros.modules.identity.infrastructure.models import UserModel
-from careeros.modules.resume_health.domain import (
+from rezumi.foundation.config import DatabaseOptions
+from rezumi.foundation.database import Database
+from rezumi.modules.identity.infrastructure.models import UserModel
+from rezumi.modules.resume_health.domain import (
     AnalysisStatus,
     BlockKind,
     CanonicalBlock,
@@ -45,17 +45,17 @@ from careeros.modules.resume_health.domain import (
     UploadIntent,
     UploadStatus,
 )
-from careeros.modules.resume_health.infrastructure.models import GuestResumeSessionModel
-from careeros.modules.resume_health.infrastructure.repository import (
+from rezumi.modules.resume_health.infrastructure.models import GuestResumeSessionModel
+from rezumi.modules.resume_health.infrastructure.repository import (
     SqlAlchemyResumeUnitOfWorkFactory,
 )
 
 
 @pytest.mark.asyncio
 async def test_repository_scopes_every_resource_and_persists_job_state() -> None:
-    database_url = os.environ.get("CAREEROS_TEST_DATABASE_URL")
+    database_url = os.environ.get("REZUMI_TEST_DATABASE_URL")
     if database_url is None:
-        pytest.skip("CAREEROS_TEST_DATABASE_URL is required for PostgreSQL integration tests")
+        pytest.skip("REZUMI_TEST_DATABASE_URL is required for PostgreSQL integration tests")
     database = Database(DatabaseOptions(url=database_url, pool_size=2, max_overflow=0))
     factory = SqlAlchemyResumeUnitOfWorkFactory(database)
     first_user = uuid4()

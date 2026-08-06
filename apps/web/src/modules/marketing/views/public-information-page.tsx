@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { buttonStyles, cn } from "@careeros/ui";
+import { buttonStyles, cn } from "@rezumi/ui";
 
 import { SiteFooter } from "@/shared/components/public-site-footer";
 import { SiteHeader } from "@/shared/components/public-site-header";

@@ -13,13 +13,13 @@ claims.
 
 Application notes, contacts, tasks, interviews, offer details, and rejection
 reasons are sensitive user-owned data. Board convenience must not weaken
-authorization, concurrency, accessibility, or auditability. CareerOS does not
+authorization, concurrency, accessibility, or auditability. Rezumi does not
 submit applications or send outreach on a user's behalf in the first production
 release.
 
 ## Decision
 
-Add `careeros.modules.application_workspace` as a bounded context with
+Add `rezumi.modules.application_workspace` as a bounded context with
 owner-scoped application records, workflow events, tasks, notes, grounded packs,
 consistency findings, idempotency records, and redacted audit events.
 

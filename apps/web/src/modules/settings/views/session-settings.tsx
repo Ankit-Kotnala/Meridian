@@ -12,7 +12,7 @@ import {
   EmptyState,
   ErrorState,
   LoadingSkeleton,
-} from "@careeros/ui";
+} from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 

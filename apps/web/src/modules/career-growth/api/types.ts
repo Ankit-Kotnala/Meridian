@@ -1,4 +1,4 @@
-import type { components } from "@careeros/contracts";
+import type { components } from "@rezumi/contracts";
 
 type ContractEvidenceLink = components["schemas"]["EvidenceLinkResponse"];
 type ContractGoalMilestone = components["schemas"]["GoalMilestoneResponse"];

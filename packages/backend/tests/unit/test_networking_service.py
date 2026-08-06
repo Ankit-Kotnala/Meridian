@@ -8,7 +8,17 @@ from uuid import UUID
 
 import pytest
 
-from careeros.modules.networking.application import (
+from networking_memory import (
+    APPLICATION_ID,
+    NOW,
+    OTHER_ID,
+    OWNER_ID,
+    FixedClock,
+    MemoryNetworking,
+    StaticApplicationProvider,
+    UuidFactory,
+)
+from rezumi.modules.networking.application import (
     ChangeContactConsent,
     ContactConsentState,
     ContactFilter,
@@ -31,7 +41,7 @@ from careeros.modules.networking.application import (
     UpdateReminder,
     UpdateTemplate,
 )
-from careeros.modules.networking.domain import (
+from rezumi.modules.networking.domain import (
     DELETED_TEXT,
     NETWORKING_CONSENT_LEDGER_POLICY_VERSIONS,
     NETWORKING_CONTACT_CONSENT_POLICY_VERSION,
@@ -63,7 +73,7 @@ from careeros.modules.networking.domain import (
     ReminderStatus,
     TemplateKind,
 )
-from careeros.modules.networking.infrastructure.models import (
+from rezumi.modules.networking.infrastructure.models import (
     NetworkingConsentEventModel,
     NetworkingContactModel,
     NetworkingContactNoteModel,
@@ -71,16 +81,6 @@ from careeros.modules.networking.infrastructure.models import (
     NetworkingReminderModel,
     NetworkingReminderOccurrenceModel,
     NetworkingReminderOutboxModel,
-)
-from networking_memory import (
-    APPLICATION_ID,
-    NOW,
-    OTHER_ID,
-    OWNER_ID,
-    FixedClock,
-    MemoryNetworking,
-    StaticApplicationProvider,
-    UuidFactory,
 )
 
 

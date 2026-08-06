@@ -1,6 +1,6 @@
 "use client";
 
-import { ErrorState, LoadingSkeleton } from "@careeros/ui";
+import { ErrorState, LoadingSkeleton } from "@rezumi/ui";
 
 function InterviewRouteLoading({ label }: { label: string }) {
   return (

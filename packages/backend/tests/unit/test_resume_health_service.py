@@ -9,7 +9,7 @@ from uuid import uuid4
 
 import pytest
 
-from careeros.modules.resume_health.application import (
+from rezumi.modules.resume_health.application import (
     ClaimGuestDocument,
     CorrectionOperation,
     CorrectSemanticField,
@@ -17,7 +17,7 @@ from careeros.modules.resume_health.application import (
     DocumentLimits,
     ResumeRequestContext,
 )
-from careeros.modules.resume_health.application.models import (
+from rezumi.modules.resume_health.application.models import (
     ExtractedBlock,
     ExtractionResult,
     FinalizedUpload,
@@ -25,7 +25,7 @@ from careeros.modules.resume_health.application.models import (
     SourceSpanView,
     StorageUploadTarget,
 )
-from careeros.modules.resume_health.application.service import (
+from rezumi.modules.resume_health.application.service import (
     OutboxDispatcher,
     ResumeHealthPolicy,
     ResumeHealthProcessor,
@@ -34,7 +34,7 @@ from careeros.modules.resume_health.application.service import (
     ResumeJobReconciler,
     ResumeMaintenance,
 )
-from careeros.modules.resume_health.domain import (
+from rezumi.modules.resume_health.domain import (
     AnalysisStatus,
     DocumentStatus,
     JobKind,
@@ -46,7 +46,7 @@ from careeros.modules.resume_health.domain import (
     SourceDocument,
     UploadStatus,
 )
-from careeros.modules.resume_health.domain.errors import (
+from rezumi.modules.resume_health.domain.errors import (
     GuestCapabilityRejected,
     IdempotencyConflict,
     ResumeResourceNotFound,
@@ -55,7 +55,7 @@ from careeros.modules.resume_health.domain.errors import (
     UploadExpired,
     UploadRejected,
 )
-from careeros.modules.resume_health.infrastructure.fakes import (
+from rezumi.modules.resume_health.infrastructure.fakes import (
     FakeDocumentExtractor,
     FakeJobPublisher,
     FakeMalwareScanner,
@@ -64,8 +64,8 @@ from careeros.modules.resume_health.infrastructure.fakes import (
     InMemoryResumeUnitOfWork,
     InMemoryResumeUnitOfWorkFactory,
 )
-from careeros.modules.resume_health.infrastructure.security import HmacGuestCapabilityManager
-from careeros.modules.resume_health.infrastructure.semantic_parser import (
+from rezumi.modules.resume_health.infrastructure.security import HmacGuestCapabilityManager
+from rezumi.modules.resume_health.infrastructure.semantic_parser import (
     LocalResumeParserProvider,
 )
 
@@ -1340,7 +1340,7 @@ async def test_retryable_analysis_failure_keeps_document_ready_until_explicit_ca
         raise RuntimeError("internal scoring detail")
 
     monkeypatch.setattr(
-        "careeros.modules.resume_health.application.service.score_resume_health",
+        "rezumi.modules.resume_health.application.service.score_resume_health",
         crash_scoring,
     )
     failed = await processor.process_job(

@@ -1,4 +1,4 @@
-# CareerOS implementation plan
+# Rezumi implementation plan
 
 Last updated: 2026-07-27
 Plan owner: engineering  
@@ -266,7 +266,7 @@ curl --fail http://localhost:3000/api/health
 curl --fail http://localhost:8000/health
 curl --fail http://localhost:8000/ready
 curl --fail http://localhost:8000/api/v1/meta
-docker compose exec worker python -m careeros_worker.healthcheck
+docker compose exec worker python -m rezumi_worker.healthcheck
 make format-check
 make lint
 make typecheck
@@ -276,7 +276,7 @@ make verify
 
 The worker health command uses Celery remote control through the broker and checks
 that the running worker can respond; the registered deterministic task is
-`careeros.worker.health.ping`.
+`rezumi.worker.health.ping`.
 
 ### Historical Phase 0 baseline evidence
 
@@ -489,7 +489,7 @@ remain evidence for the original generic-block v1 slice only.
 
 - FastAPI remains the OpenAPI authority and thin authorization/validation adapter;
   generated contracts are consumed by the Next.js feature module.
-- `packages/backend/src/careeros/modules/resume_health` owns framework-free domain
+- `packages/backend/src/rezumi/modules/resume_health` owns framework-free domain
   rules and application ports/use cases. SQLAlchemy, S3, ClamAV, and Celery
   adapters point inward; the worker does not import the API.
 - Document text extraction, layout analysis, semantic parsing, OCR, and malware
@@ -642,7 +642,7 @@ achievement/evidence graph.
       admission/processing/outbox/cleanup/audit records, achievement drafts,
       reminder preferences, and Career Record audit events with ownership-aware
       foreign keys, constraints, indexes, and positive versions.
-- [x] `careeros.modules.career_record` is one transactional bounded context with
+- [x] `rezumi.modules.career_record` is one transactional bounded context with
       framework-free domain rules and application ports. It owns career truth,
       evidence authority, eligibility, conflicts, proposals, Achievement Inbox,
       reminder preferences, and redacted audit; SQLAlchemy, Resume Health source,
@@ -827,10 +827,10 @@ been recorded.
       competencies, owner-scoped saved roles, readiness analyses, components,
       competency results, evidence links, idempotency records, and redacted
       audit events.
-- [x] Seed a CareerOS-authored taxonomy version
-      `careeros-seed-roles/2026-07-19` with Product Manager, Software Engineer,
+- [x] Seed a Rezumi-authored taxonomy version
+      `rezumi-seed-roles/2026-07-19` with Product Manager, Software Engineer,
       and Data Analyst definitions and deterministic UUIDs.
-- [x] Add `careeros.modules.role_readiness` with framework-independent domain
+- [x] Add `rezumi.modules.role_readiness` with framework-independent domain
       entities, deterministic fixed-point scoring, application service/ports, and
       SQLAlchemy infrastructure.
 - [x] Consume Phase 3 Career Record through
@@ -884,11 +884,11 @@ through the Phase 3 application boundary.
 | Check                                            | Status | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | ------------------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Pre-edit Phase 3 baseline                        | Pass   | Hosted CI run `29658296318` passed the previous implementation tree before Phase 4 edits.                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| Backend focused Ruff and mypy                    | Pass   | `uv run --package careeros-backend ruff check ...` and `uv run --package careeros-backend mypy` pass for the new backend surface.                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| Backend focused Ruff and mypy                    | Pass   | `uv run --package rezumi-backend ruff check ...` and `uv run --package rezumi-backend mypy` pass for the new backend surface.                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | Backend focused unit/migration tests             | Pass   | Role Readiness scoring/service/migration plus migration-graph tests passed (`9 passed`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | API focused Ruff, mypy, and tests                | Pass   | API Ruff, mypy, `tests/test_role_readiness_routes.py`, and `tests/test_contract_export.py` pass (`3 passed`, one Starlette deprecation warning).                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Generated contracts                              | Pass   | `pnpm contracts:generate` updated the normalized OpenAPI artifact and generated TypeScript schema from FastAPI. `pnpm contracts:check`, contracts build, and the unchanged web typecheck pass; additive response defaults preserve existing client fixtures.                                                                                                                                                                                                                                                                                                     |
-| Web focused Prettier, lint, typecheck, component | Pass   | Role Explorer files format; `pnpm --filter @careeros/web lint`, `typecheck`, and focused Vitest pass (`3 passed`).                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Web focused Prettier, lint, typecheck, component | Pass   | Role Explorer files format; `pnpm --filter @rezumi/web lint`, `typecheck`, and focused Vitest pass (`3 passed`).                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Phase 4 E2E discovery                            | Pass   | With `PLAYWRIGHT_E2E_MODE=full-stack`, Playwright lists the Role Explorer desktop/mobile projects; the spec desktop path runs in the isolated Phase 4 stack.                                                                                                                                                                                                                                                                                                                                                                                                     |
 | Final repository gates                           | Pass   | `scripts/verify-phase4.ps1` passed on 2026-07-19. It runs the documented PowerShell equivalent of the Make gate in this native shell: formatting, lock/contract drift, lint, type checking, unit suites, production builds, Docker Compose config/build/startup, migration head/rollback/forward repair, real dependency integrations, runtime probes, worker hardening checks, and Phase 4 E2E. GNU Make is not installed in this PowerShell environment; an earlier `make format-check` attempt failed with command-not-found and was not treated as evidence. |
 
@@ -900,7 +900,7 @@ integration tests execute. The final rerun passed after that readiness fix.
 
 ### Known limitations and deferred work
 
-- The Phase 4 taxonomy is a small CareerOS-authored seed, not an external labor
+- The Phase 4 taxonomy is a small Rezumi-authored seed, not an external labor
   market taxonomy. External provider ingestion, admin curation, localization,
   market calibration, and taxonomy lifecycle operations remain future work.
 - Role Readiness is a general role comparison, not an exact job match. It does
@@ -929,7 +929,7 @@ passed all required jobs.
       source-spanned job requirements, requirement matches, job-match analyses,
       components, evidence links, opportunity-priority analyses, idempotency
       records, and redacted audit events.
-- [x] Add `careeros.modules.job_match` with framework-independent domain
+- [x] Add `rezumi.modules.job_match` with framework-independent domain
       entities, deterministic extraction/matching/scoring, application service
       and ports, safe URL-import provider interface, and SQLAlchemy
       infrastructure.
@@ -1039,7 +1039,7 @@ The merged Phase 5–7 stack passed hosted CI run `30119088488` on PR #20.
 - [x] Migration `20260719_0007` adds owner-scoped change sets, operations, claim
       ledger entries, clarifying questions, immutable versions, provider run
       metadata, idempotency records, and redacted audit events.
-- [x] `careeros.modules.change_studio` provides framework-independent domain
+- [x] `rezumi.modules.change_studio` provides framework-independent domain
       types, provider gateway ports, deterministic local provider, strict
       candidate validation, grounding verifier, application service, and
       SQLAlchemy persistence.
@@ -1153,7 +1153,7 @@ verification reports, and short-lived download intents. PR #20 merged at
       cleanup budgets, retry/dead-letter state, and truthful deletion
       timestamps. Inconsistent historical deletion state is returned to queued
       cleanup without discarding an object key or inventing a timestamp.
-- [x] `careeros.modules.resume_builder` provides framework-independent domain
+- [x] `rezumi.modules.resume_builder` provides framework-independent domain
       entities, validation, application services, renderer/extractor/storage
       ports, SQLAlchemy persistence, deterministic local rendering, round-trip
       verification, and private export storage.
@@ -1237,7 +1237,7 @@ this run.
 | Current web compatibility           | Blocked | The unchanged web app passes lint, typecheck, all 163 component/unit tests, and a 49-route production build against the additive generated contract. Its browser client does not poll a truthful `202 pending` export to terminal state, and the inherited Job Match expectation contradicts the rendered mandatory-gap action. No `apps/web` file is changed in this PR.                                                                                                         |
 | Generated contracts                 | Pass    | `pnpm contracts:generate` updated the normalized OpenAPI artifact and generated TypeScript schema from FastAPI. `pnpm contracts:check`, contracts build, and the unchanged web typecheck pass; additive response defaults preserve existing client fixtures.                                                                                                                                                                                                                      |
 | Current host repository gate        | Pass    | The host/platform portion of `scripts/verify-phase7.ps1` passes: Prettier, uv lock, contract drift, JavaScript lint/boundaries/types/tests/build, Python Ruff/mypy/tests, Compose config/images/startup, migrations, runtime probes, and worker ping. Counts include 427 backend, 145 API, 89 worker, 163 web, 12 UI, 3 contract, 4 boundary, and 2 edge tests; Next.js built 49 routes.                                                                                          |
-| Final closure repository/stack gate | Blocked | `scripts/verify-phase7.ps1` exited 1 after its host/platform gate passed because a stale CareerOS test project held port `11025`. After scoped cleanup, the isolated rerun passed head/rollback/repair, 42 integrations, and worker/runtime checks, then ended with 6 browser passes, 6 intentional mobile skips, and 2 unchanged frontend failures described below.                                                                                                              |
+| Final closure repository/stack gate | Blocked | `scripts/verify-phase7.ps1` exited 1 after its host/platform gate passed because a stale Rezumi test project held port `11025`. After scoped cleanup, the isolated rerun passed head/rollback/repair, 42 integrations, and worker/runtime checks, then ended with 6 browser passes, 6 intentional mobile skips, and 2 unchanged frontend failures described below.                                                                                                                |
 
 Fresh verification on this isolated backend-only branch supersedes earlier
 mixed-worktree evidence. No frontend-specific fix from the mixed worktree is
@@ -1255,7 +1255,7 @@ fabricating `deleted_at`.
 Docker Desktop recovered and reported server `29.6.2`. The first exact
 `scripts/verify-phase7.ps1` attempt passed its complete host/platform gate but
 the isolated stack could not bind Mailpit port `11025`; a four-hour-old
-`careeros-e2e-41492` test project owned that port. No active verifier owned the
+`rezumi-e2e-41492` test project owned that port. No active verifier owned the
 project, so only its five temporary test containers and disposable volumes were
 removed. The primary stack was restored healthy.
 
@@ -1314,7 +1314,7 @@ job at head `645536b`; final evidence-only run `30128304892` also passed at
       unpinned; they are never backfilled from today's evidence and fail closed
       when Resume Builder or Application Workspace requires grounded generation.
       New Change Studio claims require the complete revision tuple.
-- [x] `careeros.modules.application_workspace` provides framework-independent
+- [x] `rezumi.modules.application_workspace` provides framework-independent
       workflow, provenance, pack, consistency, deletion, interview-context, and
       analytics-snapshot policies behind application ports and SQLAlchemy
       persistence. It reads Job Match, Resume Builder, and Career Record only
@@ -1387,7 +1387,7 @@ job at head `645536b`; final evidence-only run `30128304892` also passed at
   but it does not call a production language provider or durable worker.
   Provider wording and worker throughput may be added only behind the same
   grounding, schema, retry/cost, and consistency rules.
-- Generated messages are drafts for explicit user review. CareerOS does not
+- Generated messages are drafts for explicit user review. Rezumi does not
   submit an application, send email, message a social network, scrape contacts,
   or infer workflow-stage changes.
 - A pre-Phase-8 Change Studio claim without the complete revision tuple remains
@@ -1477,7 +1477,7 @@ owner-authorizing application interfaces.
 ### Known limitations and deferred work
 
 - Contact consent is the account holder's purpose-specific attestation recorded
-  by CareerOS; it is not independent proof from the contact. There is no contact
+  by Rezumi; it is not independent proof from the contact. There is no contact
   scraping, bulk import, CRM/calendar connector, outreach delivery, or autonomous
   application action.
 - Interview questions and follow-up drafts use deterministic local generation.
@@ -1505,13 +1505,13 @@ infrastructure, or PR #23 migration correction.
 
 ### Included
 
-- [x] A separate `careeros.development.local_seed` composition root runs only
+- [x] A separate `rezumi.development.local_seed` composition root runs only
       through the Compose `tools` profile and is not imported by API/worker
       delivery applications.
 - [x] Before dependency I/O, exact guards require `development`, an explicit
-      confirmation, the local `careeros` database identity/name on an
+      confirmation, the local `rezumi` database identity/name on an
       allowlisted Compose/loopback host, local path-free MinIO, the
-      `careeros-documents` bucket, matching SSL settings, and migration head
+      `rezumi-documents` bucket, matching SSL settings, and migration head
       `20260726_0013`.
 - [x] A deterministic UUIDv5 manifest creates 79 visibly fictional rows across
       Identity, Resume Health, Career Record, Role Explorer, Job Match, Change
@@ -1542,7 +1542,7 @@ infrastructure, or PR #23 migration correction.
 | First PostgreSQL/MinIO execution | Pass   | `scripts/seed-local.ps1` at migration head `20260726_0013` created and verified all 79 rows and both private objects, printed the public fixture password only for the newly created `.invalid` account, and represented Phases 1-9.                                                                                                                         |
 | Same-state replay                | Pass   | A second exact wrapper execution preserved the account, verified all 79 rows and both object byte streams, and reported `0 newly created`.                                                                                                                                                                                                                   |
 | Full repository verifier         | Pass   | `scripts/verify.ps1` passed Prettier, lock/contract drift, JS lint/boundaries/types/tests/build, Python Ruff/mypy/tests, Compose config, API/worker/web/edge image builds, forced stack recreation, idempotent migrations, five HTTP probes, and Celery broker ping. Counts: 163 web, 12 UI, 3 contracts, 2 edge, 447 backend, 145 API, and 89 worker tests. |
-| Restored primary stack           | Pass   | The `careeros` project is healthy after verification: API, ClamAV, Mailpit, MinIO, PostgreSQL, Redis, web, edge, worker, and scheduler are healthy; the profile-gated seed service is not part of normal startup.                                                                                                                                            |
+| Restored primary stack           | Pass   | The `rezumi` project is healthy after verification: API, ClamAV, Mailpit, MinIO, PostgreSQL, Redis, web, edge, worker, and scheduler are healthy; the profile-gated seed service is not part of normal startup.                                                                                                                                              |
 
 The first live execution exposed two defects that pure checks could not prove.
 The read-only seed container initially lacked a usable temporary directory; it
@@ -1618,7 +1618,7 @@ Scope boundary:
   API endpoint or payload shape, migration, task name, broker payload, queue,
   production topology, or deployment behavior changed.
 - Moved every flat FastAPI feature adapter into
-  `careeros_api/modules/<bounded_context>` and retained only concrete
+  `rezumi_api/modules/<bounded_context>` and retained only concrete
   cross-cutting HTTP delivery files at the package root.
 - Split the monolithic Celery registration file into Career Analytics, Career
   Record, Networking, Resume Builder, Resume Health, and health task modules.
@@ -1659,7 +1659,7 @@ Verification evidence:
   unavailable on this Windows host, so these are the documented PowerShell
   equivalents of the required Make targets.
 - Contracts/build: `pnpm contracts:check`, API/worker Python format checks,
-  `pnpm build`, and the final 49-route `pnpm --filter @careeros/web build` pass.
+  `pnpm build`, and the final 49-route `pnpm --filter @rezumi/web build` pass.
 - Local infrastructure: `docker compose config --quiet`, `pnpm local:status`,
   and `pnpm local:smoke` pass against the restored primary stack.
 - Isolated Phase 9 verifier: exact head `20260726_0013`; downgrade to the Phase 8

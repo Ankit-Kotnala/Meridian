@@ -4,9 +4,9 @@ import { PanelLeftClose, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { cn } from "@careeros/ui";
+import { cn } from "@rezumi/ui";
 
-import { CareerOsLogo } from "@/shared/components/career-os-logo";
+import { RezumiLogo } from "@/shared/components/rezumi-logo";
 
 import {
   isCurrentWorkspacePath,
@@ -78,7 +78,7 @@ export function WorkspaceSidebar({
             : "items-center justify-between px-4",
         )}
       >
-        <CareerOsLogo compact={collapsed} href="/dashboard" inverted />
+        <RezumiLogo compact={collapsed} href="/dashboard" inverted />
         {onClose && (
           <button
             aria-label="Close application navigation"
@@ -99,7 +99,10 @@ export function WorkspaceSidebar({
           >
             <PanelLeftClose
               aria-hidden="true"
-              className={cn("size-[1.15rem] transition", collapsed && "rotate-180")}
+              className={cn(
+                "size-[1.15rem] transition",
+                collapsed && "rotate-180",
+              )}
             />
           </button>
         )}

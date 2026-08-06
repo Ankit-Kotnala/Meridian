@@ -1,4 +1,4 @@
-import { Stepper, type StepperItem } from "@careeros/ui";
+import { Stepper, type StepperItem } from "@rezumi/ui";
 
 import type { OnboardingStep } from "../api/onboarding-api";
 

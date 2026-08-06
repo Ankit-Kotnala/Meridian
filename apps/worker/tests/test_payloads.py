@@ -4,7 +4,7 @@ from uuid import uuid4
 
 import pytest
 
-from careeros_worker.payloads import parse_identifier_payload, parse_job_payload
+from rezumi_worker.payloads import parse_identifier_payload, parse_job_payload
 
 
 def test_valid_job_and_trace_ids_are_normalized() -> None:

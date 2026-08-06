@@ -18,8 +18,8 @@ from sqlalchemy import (
     Uuid,
 )
 
-from careeros.modules.identity.infrastructure import models as identity_models  # noqa: F401
-from careeros.modules.role_readiness.infrastructure import models
+from rezumi.modules.identity.infrastructure import models as identity_models  # noqa: F401
+from rezumi.modules.role_readiness.infrastructure import models
 
 PUBLIC_TABLES = {
     "role_taxonomy_versions",

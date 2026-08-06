@@ -1,5 +1,5 @@
 {
-  "name": "careeros",
+  "name": "rezumi",
   "version": "0.1.0",
   "private": true,
   "description": "Truth-locked career application operating system",
@@ -8,7 +8,7 @@
     "node": ">=24.0.0"
   },
   "scripts": {
-    "dev": "turbo run dev --filter=@careeros/web",
+    "dev": "turbo run dev --filter=@rezumi/web",
     "dev:web": "node scripts/local.mjs dev-web",
     "dev:api": "node scripts/local.mjs dev-api",
     "dev:worker": "node scripts/local.mjs dev-worker",
@@ -29,22 +29,22 @@
     "lint": "turbo run lint && pnpm check:boundaries",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test && pnpm test:edge",
-    "test:web": "pnpm --filter @careeros/web test",
-    "test:api": "uv run --package careeros-api pytest apps/api/tests",
-    "test:worker": "uv run --package careeros-worker pytest apps/worker/tests",
-    "test:backend": "uv run --package careeros-backend pytest packages/backend/tests/architecture packages/backend/tests/unit",
+    "test:web": "pnpm --filter @rezumi/web test",
+    "test:api": "uv run --package rezumi-api pytest apps/api/tests",
+    "test:worker": "uv run --package rezumi-worker pytest apps/worker/tests",
+    "test:backend": "uv run --package rezumi-backend pytest packages/backend/tests/architecture packages/backend/tests/unit",
     "test:edge": "node --test infra/docker/web-edge/*.test.mjs",
-    "test:e2e": "pnpm --filter @careeros/web test:e2e",
-    "fixtures:preview": "pnpm --filter @careeros/test-fixtures preview",
-    "contracts:export": "uv run --package careeros-api python packages/contracts/scripts/export_openapi.py",
-    "contracts:generate": "pnpm contracts:export && pnpm --filter @careeros/contracts generate",
-    "contracts:check": "uv run --package careeros-api python packages/contracts/scripts/export_openapi.py --check && pnpm --filter @careeros/contracts check-generated",
+    "test:e2e": "pnpm --filter @rezumi/web test:e2e",
+    "fixtures:preview": "pnpm --filter @rezumi/test-fixtures preview",
+    "contracts:export": "uv run --package rezumi-api python packages/contracts/scripts/export_openapi.py",
+    "contracts:generate": "pnpm contracts:export && pnpm --filter @rezumi/contracts generate",
+    "contracts:check": "uv run --package rezumi-api python packages/contracts/scripts/export_openapi.py --check && pnpm --filter @rezumi/contracts check-generated",
     "check:boundaries": "node scripts/check-repository.mjs"
   },
   "devDependencies": {
     "prettier": "3.9.6",
     "tsx": "4.23.1",
     "turbo": "2.10.7",
-    "typescript": "7.0.2"
+    "typescript": "5.9.3"
   }
 }

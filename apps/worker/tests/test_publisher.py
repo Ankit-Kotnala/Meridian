@@ -6,17 +6,17 @@ from unittest.mock import Mock
 from uuid import uuid4
 
 import pytest
-from careeros.modules.career_record.application import PROCESS_EVIDENCE_ATTACHMENT_TASK
-from careeros.modules.resume_builder.domain import ResumeExportOperation
-from careeros.modules.resume_health.application import PROCESS_RESUME_TASK
 from celery import Celery
+from rezumi.modules.career_record.application import PROCESS_EVIDENCE_ATTACHMENT_TASK
+from rezumi.modules.resume_builder.domain import ResumeExportOperation
+from rezumi.modules.resume_health.application import PROCESS_RESUME_TASK
 
-from careeros_worker.publisher import (
+from rezumi_worker.publisher import (
     CeleryAnalyticsPublisher,
     CeleryJobPublisher,
     CeleryResumeExportPublisher,
 )
-from careeros_worker.task_names import (
+from rezumi_worker.task_names import (
     PROCESS_CAREER_ANALYTICS_REFRESH_TASK,
     PROCESS_RESUME_EXPORT_TASK,
 )
@@ -66,7 +66,7 @@ def test_publisher_rejects_a_task_name_from_tampered_outbox_data() -> None:
     publisher = CeleryJobPublisher(application)
 
     try:
-        asyncio.run(publisher.publish("careeros.attacker.task", uuid4(), "2" * 32))
+        asyncio.run(publisher.publish("rezumi.attacker.task", uuid4(), "2" * 32))
     except ValueError as exc:
         assert str(exc) == "outbox task name is not allowlisted"
     else:

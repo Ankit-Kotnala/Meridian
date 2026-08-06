@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
-$originalConfirmation = $env:CAREEROS_ALLOW_LOCAL_SEED
+$originalConfirmation = $env:REZUMI_ALLOW_LOCAL_SEED
 
 try {
     docker compose up --detach --wait postgres minio minio-init
@@ -20,7 +20,7 @@ try {
         throw "Local database migration failed."
     }
 
-    $env:CAREEROS_ALLOW_LOCAL_SEED = "fictional-careeros-local-seed-v1"
+    $env:REZUMI_ALLOW_LOCAL_SEED = "fictional-rezumi-local-seed-v1"
     docker compose --profile tools run --rm --no-deps local-seed
     if ($LASTEXITCODE -ne 0) {
         throw "Fictional local seed failed."
@@ -28,9 +28,9 @@ try {
 }
 finally {
     if ($null -eq $originalConfirmation) {
-        Remove-Item Env:CAREEROS_ALLOW_LOCAL_SEED -ErrorAction SilentlyContinue
+        Remove-Item Env:REZUMI_ALLOW_LOCAL_SEED -ErrorAction SilentlyContinue
     }
     else {
-        $env:CAREEROS_ALLOW_LOCAL_SEED = $originalConfirmation
+        $env:REZUMI_ALLOW_LOCAL_SEED = $originalConfirmation
     }
 }

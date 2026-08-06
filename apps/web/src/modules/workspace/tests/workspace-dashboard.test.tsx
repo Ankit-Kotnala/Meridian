@@ -9,7 +9,7 @@ describe("real workspace dashboard", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: "Welcome to your CareerOS workspace, Alex Morgan.",
+        name: "Welcome to your Rezumi workspace, Alex Morgan.",
       }),
     ).toBeVisible();
     expect(

@@ -6,10 +6,10 @@ from uuid import uuid4
 
 import pytest
 
-from careeros.modules.resume_health.application.semantic_validation import (
+from rezumi.modules.resume_health.application.semantic_validation import (
     validate_parser_semantics,
 )
-from careeros.modules.resume_health.domain import (
+from rezumi.modules.resume_health.domain import (
     BlockKind,
     CanonicalBlock,
     CanonicalResume,
@@ -23,7 +23,7 @@ from careeros.modules.resume_health.domain import (
     SemanticReviewState,
     SourceSpan,
 )
-from careeros.modules.resume_health.infrastructure.semantic_parser import (
+from rezumi.modules.resume_health.infrastructure.semantic_parser import (
     LocalResumeParserProvider,
 )
 

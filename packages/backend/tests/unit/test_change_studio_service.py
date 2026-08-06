@@ -7,13 +7,27 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from careeros.modules.change_studio.application import (
+from change_studio_memory import (
+    ANALYSIS_ID,
+    EVIDENCE_ID,
+    METRIC_EVIDENCE_ID,
+    MISSING_REQUIREMENT_ID,
+    OWNER_ID,
+    REQUIREMENT_ID,
+    FixedClock,
+    MemoryChangeStudio,
+    StaticEvidenceProvider,
+    StaticJobAnalysisProvider,
+    UuidFactory,
+    sample_evidence,
+)
+from rezumi.modules.change_studio.application import (
     ChangeStudioService,
     CreateChangeSet,
     EditOperation,
     RequestContext,
 )
-from careeros.modules.change_studio.domain import (
+from rezumi.modules.change_studio.domain import (
     ChangeOperationType,
     ChangeStudioIdempotencyConflict,
     ChangeStudioNotFound,
@@ -29,21 +43,7 @@ from careeros.modules.change_studio.domain import (
     RiskLevel,
     ground_operation,
 )
-from careeros.modules.change_studio.infrastructure import DeterministicSuggestionProvider
-from change_studio_memory import (
-    ANALYSIS_ID,
-    EVIDENCE_ID,
-    METRIC_EVIDENCE_ID,
-    MISSING_REQUIREMENT_ID,
-    OWNER_ID,
-    REQUIREMENT_ID,
-    FixedClock,
-    MemoryChangeStudio,
-    StaticEvidenceProvider,
-    StaticJobAnalysisProvider,
-    UuidFactory,
-    sample_evidence,
-)
+from rezumi.modules.change_studio.infrastructure import DeterministicSuggestionProvider
 
 
 def _context(owner=OWNER_ID) -> RequestContext:
@@ -349,7 +349,7 @@ def replace_strength(
 
 
 def _provider_response(payload: dict[str, object]):
-    from careeros.modules.change_studio.application import AiProviderResponse
+    from rezumi.modules.change_studio.application import AiProviderResponse
 
     return AiProviderResponse(
         provider_name="test-provider",

@@ -10,7 +10,7 @@ import {
   EmptyState,
   ErrorState,
   LoadingSkeleton,
-} from "@careeros/ui";
+} from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 
@@ -25,8 +25,11 @@ import {
 import { useSettingsCapabilities } from "../components/settings-capabilities-context";
 
 export function BillingSettings() {
-  const { capabilities, failure: capabilitiesFailure, loading: capabilitiesLoading } =
-    useSettingsCapabilities();
+  const {
+    capabilities,
+    failure: capabilitiesFailure,
+    loading: capabilitiesLoading,
+  } = useSettingsCapabilities();
   const [subscription, setSubscription] = useState<SubscriptionDTO>();
   const [plans, setPlans] = useState<PlanDTO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,8 +84,8 @@ export function BillingSettings() {
     setActionBusy(tier);
     try {
       const res = await createCheckoutSession(tier, cycle);
-      if (res.checkout_url) {
-        window.location.assign(res.checkout_url);
+      if (res.checkoutUrl) {
+        window.location.assign(res.checkoutUrl);
       }
     } catch (error) {
       setFailure(
@@ -97,8 +100,8 @@ export function BillingSettings() {
     setActionBusy("portal");
     try {
       const res = await createPortalSession();
-      if (res.portal_url) {
-        window.location.assign(res.portal_url);
+      if (res.portalUrl) {
+        window.location.assign(res.portalUrl);
       }
     } catch (error) {
       setFailure(requestErrorMessage(error, "Failed to open customer portal."));
@@ -160,14 +163,14 @@ export function BillingSettings() {
               <div className="flex justify-between text-xs font-semibold text-muted">
                 <span>Resumes</span>
                 <span>
-                  {subscription.resumes_count} / {subscription.resumes_limit}
+                  {subscription.resumesCount} / {subscription.resumesLimit}
                 </span>
               </div>
               <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface-inset">
                 <div
                   className="h-full bg-emerald-500 transition-all"
                   style={{
-                    width: `${Math.min(100, (subscription.resumes_count / subscription.resumes_limit) * 100)}%`,
+                    width: `${Math.min(100, (subscription.resumesCount / subscription.resumesLimit) * 100)}%`,
                   }}
                 />
               </div>
@@ -177,15 +180,14 @@ export function BillingSettings() {
               <div className="flex justify-between text-xs font-semibold text-muted">
                 <span>Monthly AI Change Sets</span>
                 <span>
-                  {subscription.change_sets_used} /{" "}
-                  {subscription.change_sets_limit}
+                  {subscription.changeSetsUsed} / {subscription.changeSetsLimit}
                 </span>
               </div>
               <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface-inset">
                 <div
                   className="h-full bg-blue-500 transition-all"
                   style={{
-                    width: `${Math.min(100, (subscription.change_sets_used / subscription.change_sets_limit) * 100)}%`,
+                    width: `${Math.min(100, (subscription.changeSetsUsed / subscription.changeSetsLimit) * 100)}%`,
                   }}
                 />
               </div>
@@ -195,14 +197,14 @@ export function BillingSettings() {
               <div className="flex justify-between text-xs font-semibold text-muted">
                 <span>Monthly Exports</span>
                 <span>
-                  {subscription.exports_used} / {subscription.exports_limit}
+                  {subscription.exportsUsed} / {subscription.exportsLimit}
                 </span>
               </div>
               <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface-inset">
                 <div
                   className="h-full bg-indigo-500 transition-all"
                   style={{
-                    width: `${Math.min(100, (subscription.exports_used / subscription.exports_limit) * 100)}%`,
+                    width: `${Math.min(100, (subscription.exportsUsed / subscription.exportsLimit) * 100)}%`,
                   }}
                 />
               </div>
@@ -253,8 +255,8 @@ export function BillingSettings() {
             const isCurrent = plan.tier === currentTier;
             const price =
               cycle === "annual"
-                ? plan.annual_price_usd / 12
-                : plan.monthly_price_usd;
+                ? plan.annualPriceUsd / 12
+                : plan.monthlyPriceUsd;
 
             return (
               <div
@@ -284,30 +286,30 @@ export function BillingSettings() {
                     <li className="flex items-center gap-2">
                       <Check className="size-3.5 text-emerald-600" />
                       <span>
-                        Up to <strong>{plan.max_resumes}</strong> Resumes
+                        Up to <strong>{plan.maxResumes}</strong> Resumes
                       </span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="size-3.5 text-emerald-600" />
                       <span>
-                        <strong>{plan.max_change_sets_per_month}</strong> AI
-                        Change Sets/mo
+                        <strong>{plan.maxChangeSetsPerMonth}</strong> AI Change
+                        Sets/mo
                       </span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="size-3.5 text-emerald-600" />
                       <span>
-                        <strong>{plan.max_exports_per_month}</strong> Verified
+                        <strong>{plan.maxExportsPerMonth}</strong> Verified
                         Exports/mo
                       </span>
                     </li>
-                    {plan.interview_prep_enabled && (
+                    {plan.interviewPrepEnabled && (
                       <li className="flex items-center gap-2">
                         <Check className="size-3.5 text-emerald-600" />
                         <span>Interview Defense Map</span>
                       </li>
                     )}
-                    {plan.analytics_enabled && (
+                    {plan.analyticsEnabled && (
                       <li className="flex items-center gap-2">
                         <Check className="size-3.5 text-emerald-600" />
                         <span>Full Career Analytics</span>

@@ -14,7 +14,7 @@ from career_record_memory import (
     UuidFactory,
 )
 
-from careeros.modules.career_record.application import (
+from rezumi.modules.career_record.application import (
     AcceptSemanticImportProposal,
     CareerEntityData,
     CareerRecordService,
@@ -31,7 +31,7 @@ from careeros.modules.career_record.application import (
     UpdateSkill,
     ValidatedResumeSource,
 )
-from careeros.modules.career_record.domain import (
+from rezumi.modules.career_record.domain import (
     AchievementStatus,
     CareerEntityKind,
     CareerFieldTarget,

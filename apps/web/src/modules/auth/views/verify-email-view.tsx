@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 
-import { Alert, Button, TextField } from "@careeros/ui";
+import { Alert, Button, TextField } from "@rezumi/ui";
 
 import {
   AuthRequestError,
@@ -87,7 +87,7 @@ export function VerifyEmailView() {
 
   return (
     <AuthPageShell
-      description="Verification links are short-lived and single-use. CareerOS does not expose whether another address has an account."
+      description="Verification links are short-lived and single-use. Rezumi does not expose whether another address has an account."
       eyebrow="Email verification"
       title={state === "success" ? "Email verified" : "Verify your email"}
     >

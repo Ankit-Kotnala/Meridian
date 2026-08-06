@@ -7,8 +7,10 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import create_autospec
 from uuid import uuid4
 
-from careeros.modules.identity.application import IdentityService
-from careeros.modules.identity.application.models import (
+from fastapi.testclient import TestClient
+from pydantic import SecretStr
+from rezumi.modules.identity.application import IdentityService
+from rezumi.modules.identity.application.models import (
     AccountSecurityView,
     CurrentUser,
     IssuedSession,
@@ -17,24 +19,22 @@ from careeros.modules.identity.application.models import (
     OnboardingView,
     SecurityActivityView,
 )
-from careeros.modules.identity.domain import (
+from rezumi.modules.identity.domain import (
     AuthenticatedPrincipal,
     AuthMethod,
     ObservedResumeStatus,
     OnboardingStatus,
     OnboardingStep,
 )
-from careeros.modules.identity.domain.errors import AuthenticationRequired
-from fastapi.testclient import TestClient
-from pydantic import SecretStr
+from rezumi.modules.identity.domain.errors import AuthenticationRequired
 
-from careeros_api.config import Settings
-from careeros_api.main import create_app
 from conftest import FakeDatabase
+from rezumi_api.config import Settings
+from rezumi_api.main import create_app
 
 _ORIGIN = "http://localhost:3000"
 _PASSWORD = "a long test-only password"  # noqa: S105
-_BFF_SIGNAL_CONTEXT = b"careeros-bff-client-v1\0"
+_BFF_SIGNAL_CONTEXT = b"rezumi-bff-client-v1\0"
 
 
 def _service():
@@ -146,7 +146,7 @@ def test_staging_identity_rate_context_requires_the_authenticated_bff_source(
             headers={
                 "Origin": _ORIGIN,
                 "X-CSRF-Token": csrf,
-                "X-CareerOS-Client-Signal": forged_signal,
+                "X-Rezumi-Client-Signal": forged_signal,
             },
         )
         accepted = client.post(
@@ -155,7 +155,7 @@ def test_staging_identity_rate_context_requires_the_authenticated_bff_source(
             headers={
                 "Origin": _ORIGIN,
                 "X-CSRF-Token": csrf,
-                "X-CareerOS-Client-Signal": signal,
+                "X-Rezumi-Client-Signal": signal,
             },
         )
 
@@ -194,10 +194,10 @@ def test_login_sets_host_only_http_only_rotating_cookies(
     assert response.status_code == 200
     assert response.json()["user"]["id"] == str(user.id)
     cookies = response.headers.get_list("set-cookie")
-    assert any("careeros_session=access-token" in item and "HttpOnly" in item for item in cookies)
-    assert any("careeros_refresh=refresh-token" in item and "HttpOnly" in item for item in cookies)
+    assert any("rezumi_session=access-token" in item and "HttpOnly" in item for item in cookies)
+    assert any("rezumi_refresh=refresh-token" in item and "HttpOnly" in item for item in cookies)
     assert any(
-        "careeros_csrf=session-csrf-token" in item and "HttpOnly" not in item for item in cookies
+        "rezumi_csrf=session-csrf-token" in item and "HttpOnly" not in item for item in cookies
     )
     assert all("Domain=" not in item for item in cookies)
     assert all("SameSite=lax" in item for item in cookies)
@@ -229,8 +229,8 @@ def test_authenticated_profile_update_passes_owner_principal_and_version(
     )
 
     with TestClient(create_app(settings, database=fake_database, identity=service)) as client:
-        client.cookies.set("careeros_session", "opaque-access")
-        client.cookies.set("careeros_csrf", "opaque-csrf")
+        client.cookies.set("rezumi_session", "opaque-access")
+        client.cookies.set("rezumi_csrf", "opaque-csrf")
         response = client.patch(
             "/api/v1/me",
             json={"targetRole": "Product Manager"},
@@ -273,8 +273,8 @@ def test_password_settings_and_security_activity_use_authenticated_account_state
     ]
 
     with TestClient(create_app(settings, database=fake_database, identity=service)) as client:
-        client.cookies.set("careeros_session", "opaque-access")
-        client.cookies.set("careeros_csrf", "opaque-csrf")
+        client.cookies.set("rezumi_session", "opaque-access")
+        client.cookies.set("rezumi_csrf", "opaque-csrf")
         capabilities = client.get("/api/v1/settings")
         activity = client.get("/api/v1/security-activity?limit=25")
         changed = client.post(
@@ -308,7 +308,7 @@ def test_password_settings_and_security_activity_use_authenticated_account_state
     assert changed.status_code == 204
     service.change_password.assert_awaited_once()
     assert any(
-        item.startswith("careeros_session=") and "Max-Age=0" in item
+        item.startswith("rezumi_session=") and "Max-Age=0" in item
         for item in changed.headers.get_list("set-cookie")
     )
 
@@ -321,8 +321,8 @@ def test_google_disconnect_requires_authenticated_csrf_and_calls_owner_service(
     service.authenticate.return_value = principal
 
     with TestClient(create_app(settings, database=fake_database, identity=service)) as client:
-        client.cookies.set("careeros_session", "opaque-access")
-        client.cookies.set("careeros_csrf", "opaque-csrf")
+        client.cookies.set("rezumi_session", "opaque-access")
+        client.cookies.set("rezumi_csrf", "opaque-csrf")
         response = client.delete(
             "/api/v1/auth/connections/google",
             headers={
@@ -365,8 +365,8 @@ def test_onboarding_pipeline_state_is_read_only_and_server_observed(
     service.update_onboarding.return_value = observed
 
     with TestClient(create_app(settings, database=fake_database, identity=service)) as client:
-        client.cookies.set("careeros_session", "opaque-access")
-        client.cookies.set("careeros_csrf", "opaque-csrf")
+        client.cookies.set("rezumi_session", "opaque-access")
+        client.cookies.set("rezumi_csrf", "opaque-csrf")
         fetched = client.get("/api/v1/onboarding")
         forged = client.patch(
             "/api/v1/onboarding",
@@ -410,8 +410,8 @@ def test_profile_update_rejects_if_match_above_signed_int32_before_service(
     service.authenticate.return_value = _principal(user.id)
 
     with TestClient(create_app(settings, database=fake_database, identity=service)) as client:
-        client.cookies.set("careeros_session", "opaque-access")
-        client.cookies.set("careeros_csrf", "opaque-csrf")
+        client.cookies.set("rezumi_session", "opaque-access")
+        client.cookies.set("rezumi_csrf", "opaque-csrf")
         response = client.patch(
             "/api/v1/me",
             json={"targetRole": "Product Manager"},
@@ -433,18 +433,18 @@ def test_authentication_failure_clears_stale_browser_credentials(
     service.authenticate.side_effect = AuthenticationRequired
 
     with TestClient(create_app(settings, database=fake_database, identity=service)) as client:
-        client.cookies.set("careeros_session", "stale")
-        client.cookies.set("careeros_refresh", "stale")
-        client.cookies.set("careeros_csrf", "stale")
+        client.cookies.set("rezumi_session", "stale")
+        client.cookies.set("rezumi_refresh", "stale")
+        client.cookies.set("rezumi_csrf", "stale")
         response = client.get("/api/v1/me")
 
     assert response.status_code == 401
     assert response.json()["code"] == "authentication_required"
     cookies = response.headers.get_list("set-cookie")
     assert {item.split("=", 1)[0] for item in cookies} == {
-        "careeros_session",
-        "careeros_refresh",
-        "careeros_csrf",
+        "rezumi_session",
+        "rezumi_refresh",
+        "rezumi_csrf",
     }
     assert all("Max-Age=0" in item for item in cookies)
 
@@ -533,7 +533,7 @@ def test_google_oauth_state_is_bound_to_an_http_only_callback_cookie(
         state_cookie = next(
             item
             for item in started.headers.get_list("set-cookie")
-            if item.startswith("careeros_oauth_state=")
+            if item.startswith("rezumi_oauth_state=")
         )
         assert "HttpOnly" in state_cookie
         assert "Path=/api/v1/auth/google/callback" in state_cookie
@@ -549,7 +549,7 @@ def test_google_oauth_state_is_bound_to_an_http_only_callback_cookie(
     assert completed.headers["location"] == "/dashboard"
     service.complete_google_oauth.assert_awaited_once()
     assert any(
-        item.startswith("careeros_oauth_state=") and "Max-Age=0" in item
+        item.startswith("rezumi_oauth_state=") and "Max-Age=0" in item
         for item in completed.headers.get_list("set-cookie")
     )
 

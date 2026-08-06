@@ -220,16 +220,16 @@ try {
       viewport,
     });
     await context.addInitScript(() => {
-      globalThis.__careerOsVisualQa = { events: [], layoutShifts: [], lcp: [] };
+      globalThis.__rezumiVisualQa = { events: [], layoutShifts: [], lcp: [] };
       try {
         new PerformanceObserver((list) => {
-          globalThis.__careerOsVisualQa.lcp.push(...list.getEntries());
+          globalThis.__rezumiVisualQa.lcp.push(...list.getEntries());
         }).observe({ buffered: true, type: "largest-contentful-paint" });
         new PerformanceObserver((list) => {
-          globalThis.__careerOsVisualQa.layoutShifts.push(...list.getEntries());
+          globalThis.__rezumiVisualQa.layoutShifts.push(...list.getEntries());
         }).observe({ buffered: true, type: "layout-shift" });
         new PerformanceObserver((list) => {
-          globalThis.__careerOsVisualQa.events.push(...list.getEntries());
+          globalThis.__rezumiVisualQa.events.push(...list.getEntries());
         }).observe({ durationThreshold: 16, type: "event" });
       } catch {
         // A missing observer is reported as a null lab metric below.
@@ -290,7 +290,7 @@ try {
         await page.waitForTimeout(100);
       }
       const performanceMetrics = await page.evaluate(() => {
-        const captured = globalThis.__careerOsVisualQa ?? {
+        const captured = globalThis.__rezumiVisualQa ?? {
           events: [],
           layoutShifts: [],
           lcp: [],

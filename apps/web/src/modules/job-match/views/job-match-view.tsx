@@ -31,7 +31,7 @@ import {
   Select,
   buttonStyles,
   cn,
-} from "@careeros/ui";
+} from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 
@@ -861,7 +861,10 @@ export function JobMatchView() {
             </form>
 
             {priority ? (
-              <div aria-live="polite" className="rounded-lg bg-surface-subtle p-4">
+              <div
+                aria-live="polite"
+                className="rounded-lg bg-surface-subtle p-4"
+              >
                 <p className="text-sm font-bold text-muted">Priority</p>
                 <div className="mt-2 flex items-center gap-3">
                   <Badge

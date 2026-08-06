@@ -1,4 +1,4 @@
-import type { components } from "@careeros/contracts";
+import type { components } from "@rezumi/contracts";
 
 export type AnalyticsScope =
   components["schemas"]["AnalyticsRefreshRequest"]["scope"];

@@ -18,7 +18,7 @@ import {
   Card,
   ErrorState,
   LoadingSkeleton,
-} from "@careeros/ui";
+} from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 
@@ -122,7 +122,7 @@ export function AdminDashboardView() {
             <Users className="size-4 text-muted" />
           </div>
           <p className="mt-2 text-3xl font-black text-foreground">
-            {metrics?.active_users_count}
+            {metrics?.activeUsersCount}
           </p>
           <p className="mt-1 text-xs text-success">Active accounts</p>
         </Card>
@@ -135,7 +135,7 @@ export function AdminDashboardView() {
             <Database className="size-4 text-muted" />
           </div>
           <p className="mt-2 text-3xl font-black text-foreground">
-            {metrics?.total_resumes_count}
+            {metrics?.totalResumesCount}
           </p>
           <p className="mt-1 text-xs text-muted">Structured documents</p>
         </Card>
@@ -148,7 +148,7 @@ export function AdminDashboardView() {
             <Activity className="size-4 text-muted" />
           </div>
           <p className="mt-2 text-3xl font-black text-foreground">
-            {metrics?.total_applications_count}
+            {metrics?.totalApplicationsCount}
           </p>
           <p className="mt-1 text-xs text-muted">Application packs pinned</p>
         </Card>
@@ -161,7 +161,7 @@ export function AdminDashboardView() {
             <Server className="size-4 text-muted" />
           </div>
           <p className="mt-2 text-2xl font-black text-foreground">
-            {metrics?.service_version}
+            {metrics?.serviceVersion}
           </p>
           <p className="mt-1 text-xs text-success">Healthy & operational</p>
         </Card>
@@ -173,7 +173,7 @@ export function AdminDashboardView() {
         </h3>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-4">
           {metrics &&
-            Object.entries(metrics.system_health).map(([svc, status]) => (
+            Object.entries(metrics.systemHealth).map(([svc, status]) => (
               <div
                 className="flex items-center justify-between rounded-xl border border-line bg-surface-subtle p-4"
                 key={svc}
@@ -227,13 +227,13 @@ export function AdminDashboardView() {
                       {job.id.slice(0, 8)}...
                     </td>
                     <td className="p-3 font-medium text-foreground">
-                      {job.job_type}
+                      {job.jobType}
                     </td>
                     <td className="p-3">
-                      {job.attempts} / {job.max_attempts}
+                      {job.attempts} / {job.maxAttempts}
                     </td>
                     <td className="p-3 text-danger">
-                      {job.last_error ?? "Worker error"}
+                      {job.lastError ?? "Worker error"}
                     </td>
                     <td className="p-3">
                       <Button

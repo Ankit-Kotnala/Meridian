@@ -10,4 +10,4 @@ if ($LASTEXITCODE -ne 0) {
     throw "Phase 4 isolated Role Explorer workflow failed with exit code $LASTEXITCODE."
 }
 
-Write-Host "CareerOS Phase 4 verification passed."
+Write-Host "Rezumi Phase 4 verification passed."

@@ -1,5 +1,5 @@
 {
-  "name": "@careeros/web",
+  "name": "@rezumi/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -16,9 +16,9 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
-    "@careeros/contracts": "workspace:*",
-    "@careeros/design-tokens": "workspace:*",
-    "@careeros/ui": "workspace:*",
+    "@rezumi/contracts": "workspace:*",
+    "@rezumi/design-tokens": "workspace:*",
+    "@rezumi/ui": "workspace:*",
     "lucide-react": "1.28.0",
     "motion": "12.43.0",
     "next": "16.2.12",
@@ -26,8 +26,8 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
-    "@careeros/eslint-config": "workspace:*",
-    "@careeros/typescript-config": "workspace:*",
+    "@rezumi/eslint-config": "workspace:*",
+    "@rezumi/typescript-config": "workspace:*",
     "@playwright/test": "1.62.1",
     "@tailwindcss/postcss": "4.3.3",
     "@testing-library/jest-dom": "7.0.0",
@@ -40,7 +40,7 @@
     "jsdom": "30.0.1",
     "prettier": "3.9.6",
     "tailwindcss": "4.3.3",
-    "typescript": "7.0.2",
+    "typescript": "5.9.3",
     "vitest": "4.1.10"
   },
   "engines": {

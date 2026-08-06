@@ -14,109 +14,109 @@ from alembic.config import Config
 from alembic.script import ScriptDirectory
 from pypdf import PdfReader
 
-from careeros.development.fictional_seed import (
+from rezumi.development.fictional_seed import (
     EXPECTED_MIGRATION_HEAD,
     FIXTURE_EMAIL,
     FictionalSeedManifest,
     build_fictional_seed_manifest,
 )
-from careeros.development.local_seed import (
+from rezumi.development.local_seed import (
     LOCAL_SEED_CONFIRMATION,
     LocalSeedError,
     LocalSeedRefused,
     _ensure_object,
     load_local_seed_settings,
 )
-from careeros.modules.application_workspace.infrastructure.models import (
+from rezumi.modules.application_workspace.infrastructure.models import (
     ApplicationRecordModel,
 )
-from careeros.modules.application_workspace.infrastructure.repository import (
+from rezumi.modules.application_workspace.infrastructure.repository import (
     _application as load_application,
 )
-from careeros.modules.career_analytics.infrastructure.models import (
+from rezumi.modules.career_analytics.infrastructure.models import (
     AnalyticsSnapshotModel,
 )
-from careeros.modules.career_analytics.infrastructure.repository import (
+from rezumi.modules.career_analytics.infrastructure.repository import (
     _snapshot as load_analytics_snapshot,
 )
-from careeros.modules.interview_prep.infrastructure.models import StarStoryModel
-from careeros.modules.interview_prep.infrastructure.repository import (
+from rezumi.modules.interview_prep.infrastructure.models import StarStoryModel
+from rezumi.modules.interview_prep.infrastructure.repository import (
     _story as load_star_story,
 )
-from careeros.modules.resume_builder.application import (
+from rezumi.modules.resume_builder.application import (
     validate_resume_version,
     version_provenance_failures,
 )
-from careeros.modules.resume_builder.domain import (
+from rezumi.modules.resume_builder.domain import (
     build_fidelity_manifest,
     manifest_grounding_failures,
 )
-from careeros.modules.resume_builder.infrastructure.models import ResumeVersionModel
-from careeros.modules.resume_builder.infrastructure.repository import (
+from rezumi.modules.resume_builder.infrastructure.models import ResumeVersionModel
+from rezumi.modules.resume_builder.infrastructure.repository import (
     _version as load_resume_version,
 )
-from careeros.modules.resume_health.application.models import ObjectMetadata
-from careeros.modules.resume_health.domain.errors import UploadRejected
-from careeros.modules.resume_health.infrastructure.models import (
+from rezumi.modules.resume_health.application.models import ObjectMetadata
+from rezumi.modules.resume_health.domain.errors import UploadRejected
+from rezumi.modules.resume_health.infrastructure.models import (
     CanonicalResumeSnapshotModel,
 )
-from careeros.modules.resume_health.infrastructure.repository import (
+from rezumi.modules.resume_health.infrastructure.repository import (
     _snapshot as load_canonical_snapshot,
 )
-from careeros.modules.resume_health.infrastructure.storage import S3ObjectStorage
+from rezumi.modules.resume_health.infrastructure.storage import S3ObjectStorage
 
 
 def _safe_environment() -> dict[str, str]:
     return {
-        "CAREEROS_ENVIRONMENT": "development",
-        "CAREEROS_ALLOW_LOCAL_SEED": LOCAL_SEED_CONFIRMATION,
-        "CAREEROS_DATABASE_URL": (
-            "postgresql+asyncpg://careeros:local-only@postgres:5432/careeros"
+        "REZUMI_ENVIRONMENT": "development",
+        "REZUMI_ALLOW_LOCAL_SEED": LOCAL_SEED_CONFIRMATION,
+        "REZUMI_DATABASE_URL": (
+            "postgresql+asyncpg://rezumi:local-only@postgres:5432/rezumi"
         ),
-        "CAREEROS_S3_ENDPOINT_URL": "http://minio:9000",
-        "CAREEROS_S3_REGION": "us-east-1",
-        "CAREEROS_S3_BUCKET": "careeros-documents",
-        "CAREEROS_S3_ACCESS_KEY_ID": "careeros-app",
-        "CAREEROS_S3_SECRET_ACCESS_KEY": "local-only-object-store-key",
-        "CAREEROS_S3_USE_SSL": "false",
+        "REZUMI_S3_ENDPOINT_URL": "http://minio:9000",
+        "REZUMI_S3_REGION": "us-east-1",
+        "REZUMI_S3_BUCKET": "rezumi-documents",
+        "REZUMI_S3_ACCESS_KEY_ID": "rezumi-app",
+        "REZUMI_S3_SECRET_ACCESS_KEY": "local-only-object-store-key",
+        "REZUMI_S3_USE_SSL": "false",
     }
 
 
 @pytest.mark.parametrize(
     ("updates", "message"),
     (
-        ({"CAREEROS_ENVIRONMENT": "production"}, "development"),
-        ({"CAREEROS_ENVIRONMENT": "staging"}, "development"),
-        ({"CAREEROS_ENVIRONMENT": "test"}, "development"),
-        ({"CAREEROS_ALLOW_LOCAL_SEED": ""}, "confirmation"),
+        ({"REZUMI_ENVIRONMENT": "production"}, "development"),
+        ({"REZUMI_ENVIRONMENT": "staging"}, "development"),
+        ({"REZUMI_ENVIRONMENT": "test"}, "development"),
+        ({"REZUMI_ALLOW_LOCAL_SEED": ""}, "confirmation"),
         (
             {
-                "CAREEROS_DATABASE_URL": (
-                    "postgresql+asyncpg://careeros:local-only@db.example.com/careeros"
+                "REZUMI_DATABASE_URL": (
+                    "postgresql+asyncpg://rezumi:local-only@db.example.com/rezumi"
                 )
             },
             "database",
         ),
         (
             {
-                "CAREEROS_DATABASE_URL": (
-                    "postgresql+asyncpg://other:local-only@postgres:5432/careeros"
+                "REZUMI_DATABASE_URL": (
+                    "postgresql+asyncpg://other:local-only@postgres:5432/rezumi"
                 )
             },
             "database",
         ),
         (
             {
-                "CAREEROS_DATABASE_URL": (
-                    "postgresql+asyncpg://careeros:local-only@postgres:5432/production"
+                "REZUMI_DATABASE_URL": (
+                    "postgresql+asyncpg://rezumi:local-only@postgres:5432/production"
                 )
             },
             "database",
         ),
-        ({"CAREEROS_S3_ENDPOINT_URL": "https://objects.example.com"}, "MinIO"),
-        ({"CAREEROS_S3_BUCKET": "production-documents"}, "bucket"),
-        ({"CAREEROS_S3_USE_SSL": "yes"}, "true or false"),
-        ({"CAREEROS_S3_USE_SSL": "true"}, "must agree"),
+        ({"REZUMI_S3_ENDPOINT_URL": "https://objects.example.com"}, "MinIO"),
+        ({"REZUMI_S3_BUCKET": "production-documents"}, "bucket"),
+        ({"REZUMI_S3_USE_SSL": "yes"}, "true or false"),
+        ({"REZUMI_S3_USE_SSL": "true"}, "must agree"),
     ),
 )
 def test_local_seed_guard_rejects_nonlocal_or_unconfirmed_settings(
@@ -134,8 +134,8 @@ def test_local_seed_guard_requires_explicit_environment_before_other_settings() 
     with pytest.raises(LocalSeedRefused, match="development"):
         load_local_seed_settings(
             {
-                "CAREEROS_ENVIRONMENT": "production",
-                "CAREEROS_ALLOW_LOCAL_SEED": LOCAL_SEED_CONFIRMATION,
+                "REZUMI_ENVIRONMENT": "production",
+                "REZUMI_ALLOW_LOCAL_SEED": LOCAL_SEED_CONFIRMATION,
             }
         )
 
@@ -145,7 +145,7 @@ def test_local_seed_guard_accepts_only_reviewed_compose_local_settings() -> None
 
     assert settings.environment == "development"
     assert settings.s3_endpoint_url == "http://minio:9000"
-    assert settings.s3_bucket == "careeros-documents"
+    assert settings.s3_bucket == "rezumi-documents"
     assert settings.s3_use_ssl is False
     assert "database_url" not in repr(settings)
     assert "secret_access_key" not in repr(settings)

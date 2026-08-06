@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-import { Badge, buttonStyles, cn } from "@careeros/ui";
+import { Badge, buttonStyles, cn } from "@rezumi/ui";
 
 import { BackToTop } from "@/shared/components/back-to-top";
 import { SiteFooter } from "@/shared/components/public-site-footer";
@@ -125,12 +125,12 @@ const outputs = [
 
 const faqs = [
   [
-    "Does CareerOS know an employer's ATS score?",
-    "No. CareerOS uses internal, explainable measurements for specific questions. They are not employer or applicant-tracking-system scores and do not guarantee outcomes.",
+    "Does Rezumi know an employer's ATS score?",
+    "No. Rezumi uses internal, explainable measurements for specific questions. They are not employer or applicant-tracking-system scores and do not guarantee outcomes.",
   ],
   [
-    "Will CareerOS invent stronger achievements?",
-    "No. If a useful detail is missing, CareerOS asks for it. Unsupported evidence is not generation input, and numbers need confirmed or independently verified support.",
+    "Will Rezumi invent stronger achievements?",
+    "No. If a useful detail is missing, Rezumi asks for it. Unsupported evidence is not generation input, and numbers need confirmed or independently verified support.",
   ],
   [
     "Do I need a resume to start?",
@@ -138,7 +138,7 @@ const faqs = [
   ],
   [
     "Is this a production service?",
-    "Not yet. CareerOS is a technical product preview. Public legal notices, support channels, and commercial plans remain launch requirements.",
+    "Not yet. Rezumi is a technical product preview. Public legal notices, support channels, and commercial plans remain launch requirements.",
   ],
 ] as const;
 
@@ -170,7 +170,7 @@ function ProductWorkspacePreview() {
               <span className="grid size-6 place-items-center rounded-md bg-white/10">
                 <Layers3 aria-hidden="true" className="size-3.5" />
               </span>
-              CareerOS
+              Rezumi
             </div>
             <div className="mt-7">
               {["Overview", "Career record", "Evidence", "Opportunities"].map(
@@ -443,7 +443,7 @@ export function LandingPage() {
                   One source of truth. Every workflow downstream.
                 </h2>
                 <p className="mt-5 text-sm leading-7 text-muted">
-                  CareerOS separates facts, evidence, context, and generated
+                  Rezumi separates facts, evidence, context, and generated
                   wording so each layer can be inspected without corrupting the
                   others.
                 </p>
@@ -580,7 +580,7 @@ export function LandingPage() {
               </div>
             </div>
             <p className="mx-auto mt-5 max-w-3xl text-center text-xs leading-5 text-muted">
-              Any readiness measurement shown in CareerOS is an internal,
+              Any readiness measurement shown in Rezumi is an internal,
               explainable aid. It is not an employer or
               applicant-tracking-system score, hiring probability, or guarantee.
             </p>

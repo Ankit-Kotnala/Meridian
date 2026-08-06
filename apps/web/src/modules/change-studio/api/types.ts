@@ -1,4 +1,4 @@
-import type { components } from "@careeros/contracts";
+import type { components } from "@rezumi/contracts";
 
 export type ChangeSet = components["schemas"]["ChangeSetResponse"];
 export type ChangeOperation = components["schemas"]["ChangeOperationResponse"];

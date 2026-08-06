@@ -1,4 +1,4 @@
-import type { paths } from "@careeros/contracts";
+import type { paths } from "@rezumi/contracts";
 
 declare const generatedPathBrand: unique symbol;
 

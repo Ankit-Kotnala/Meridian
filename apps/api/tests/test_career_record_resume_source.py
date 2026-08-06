@@ -5,17 +5,17 @@ from unittest.mock import create_autospec
 from uuid import UUID, uuid4
 
 import pytest
-from careeros.modules.career_record.application.models import ResumeSourceLocator
-from careeros.modules.career_record.domain.errors import (
+from rezumi.modules.career_record.application.models import ResumeSourceLocator
+from rezumi.modules.career_record.domain.errors import (
     CareerRecordError,
     CareerRecordNotFound,
     CareerRecordUnavailable,
     CareerRecordVersionConflict,
 )
-from careeros.modules.career_record.infrastructure import ResumeHealthSourceQuery
-from careeros.modules.resume_health.application import CanonicalSnapshotView, ResumeHealthService
-from careeros.modules.resume_health.application.models import DocumentView
-from careeros.modules.resume_health.domain import (
+from rezumi.modules.career_record.infrastructure import ResumeHealthSourceQuery
+from rezumi.modules.resume_health.application import CanonicalSnapshotView, ResumeHealthService
+from rezumi.modules.resume_health.application.models import DocumentView
+from rezumi.modules.resume_health.domain import (
     BlockKind,
     CanonicalBlock,
     CanonicalResume,
@@ -33,9 +33,9 @@ from careeros.modules.resume_health.domain import (
     SemanticSourceAnchor,
     SourceSpan,
 )
-from careeros.modules.resume_health.domain.errors import ResumeResourceNotFound
+from rezumi.modules.resume_health.domain.errors import ResumeResourceNotFound
 
-from careeros_api.problems import _career_record_problem_details
+from rezumi_api.problems import _career_record_problem_details
 
 
 def _snapshot(

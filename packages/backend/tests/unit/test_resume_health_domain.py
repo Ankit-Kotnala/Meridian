@@ -5,15 +5,15 @@ from uuid import uuid4
 
 import pytest
 
-from careeros.modules.resume_health.domain import (
+from rezumi.modules.resume_health.domain import (
     JobKind,
     JobStatus,
     OwnerScope,
     ProcessingJob,
     ProcessingStage,
 )
-from careeros.modules.resume_health.domain.errors import ResumeStateConflict
-from careeros.modules.resume_health.infrastructure.security import HmacGuestCapabilityManager
+from rezumi.modules.resume_health.domain.errors import ResumeStateConflict
+from rezumi.modules.resume_health.infrastructure.security import HmacGuestCapabilityManager
 
 
 def test_owner_scope_requires_exactly_one_owner() -> None:

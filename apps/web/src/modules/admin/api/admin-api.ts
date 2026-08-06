@@ -1,26 +1,10 @@
+import type { components } from "@rezumi/contracts";
+
 import { fillApiPath } from "@/shared/api/api-path";
 import { apiMutation, apiQuery } from "@/shared/api/browser-request";
 
-export type AdminMetrics = {
-  environment: string;
-  service_version: string;
-  status: string;
-  active_users_count: number;
-  total_resumes_count: number;
-  total_applications_count: number;
-  subscriptions_by_tier: Record<string, number>;
-  system_health: Record<string, string>;
-};
-
-export type DeadLetterJob = {
-  id: string;
-  job_type: string;
-  user_id: string;
-  attempts: number;
-  max_attempts: number;
-  last_error: string | null;
-  failed_at: string;
-};
+export type AdminMetrics = components["schemas"]["SystemMetricsResponse"];
+export type DeadLetterJob = components["schemas"]["DeadLetterJobResponse"];
 
 export async function getAdminOverview(): Promise<AdminMetrics> {
   const response = await apiQuery("/api/v1/admin/overview", {
@@ -33,7 +17,8 @@ export async function getDeadLetterJobs(): Promise<DeadLetterJob[]> {
   const response = await apiQuery("/api/v1/admin/dead-letters", {
     retryAfterRefresh: true,
   });
-  const body = (await response.json()) as { jobs: DeadLetterJob[] };
+  const body =
+    (await response.json()) as components["schemas"]["DeadLetterJobListResponse"];
   return body.jobs;
 }
 

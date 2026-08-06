@@ -5,7 +5,7 @@ Date: 2026-07-19
 
 ## Context
 
-Phase 5 needs exact job matching without weakening CareerOS truth invariants. Job
+Phase 5 needs exact job matching without weakening Rezumi truth invariants. Job
 postings and imported descriptions are hostile input. Career claims must continue
 to come from the owner-scoped Career Record readiness snapshot, and optional role
 context must come through the Role Readiness application boundary. Scores cannot
@@ -13,7 +13,7 @@ be presented as employer, ATS, or hiring-probability scores.
 
 ## Decision
 
-Add `careeros.modules.job_match` as a bounded context with deterministic domain
+Add `rezumi.modules.job_match` as a bounded context with deterministic domain
 scoring, owner-scoped application use cases, SQLAlchemy persistence, and thin
 FastAPI/Next.js adapters.
 

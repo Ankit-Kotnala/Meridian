@@ -79,8 +79,8 @@ function Wait-ContainerExitCode {
     throw "Container wait failed after $Attempts attempts: $LastFailure"
 }
 
-$ExpectedMigrationHead = if ($env:CAREEROS_EXPECTED_MIGRATION_HEAD) {
-    $env:CAREEROS_EXPECTED_MIGRATION_HEAD
+$ExpectedMigrationHead = if ($env:REZUMI_EXPECTED_MIGRATION_HEAD) {
+    $env:REZUMI_EXPECTED_MIGRATION_HEAD
 }
 else {
     "20260731_0014"
@@ -191,16 +191,16 @@ if ($JourneySpec) {
 }
 
 $RepositoryRoot = Split-Path -Parent $PSScriptRoot
-$ProjectName = if ($env:CAREEROS_E2E_PROJECT_NAME) {
-    $env:CAREEROS_E2E_PROJECT_NAME
+$ProjectName = if ($env:REZUMI_E2E_PROJECT_NAME) {
+    $env:REZUMI_E2E_PROJECT_NAME
 }
 else {
-    "careeros-e2e-$PID"
+    "rezumi-e2e-$PID"
 }
-if ($ProjectName -notmatch '^careeros-e2e-[a-z0-9][a-z0-9_-]*$') {
-    throw "CAREEROS_E2E_PROJECT_NAME must begin with careeros-e2e- and contain only lowercase letters, digits, underscores, or hyphens."
+if ($ProjectName -notmatch '^rezumi-e2e-[a-z0-9][a-z0-9_-]*$') {
+    throw "REZUMI_E2E_PROJECT_NAME must begin with rezumi-e2e- and contain only lowercase letters, digits, underscores, or hyphens."
 }
-$KeepFailedStack = $env:CAREEROS_E2E_KEEP_FAILED_STACK -eq "1"
+$KeepFailedStack = $env:REZUMI_E2E_KEEP_FAILED_STACK -eq "1"
 $Overrides = [ordered]@{
     COMPOSE_PROJECT_NAME       = $ProjectName
     POSTGRES_PORT              = if ($env:POSTGRES_PORT) { $env:POSTGRES_PORT } else { "55433" }
@@ -214,25 +214,25 @@ $Overrides = [ordered]@{
     API_PORT                   = if ($env:API_PORT) { $env:API_PORT } else { "18000" }
     WEB_PORT                   = if ($env:WEB_PORT) { $env:WEB_PORT } else { "13000" }
     ENVIRONMENT                = "development"
-    POSTGRES_USER              = "careeros"
+    POSTGRES_USER              = "rezumi"
     POSTGRES_PASSWORD          = "change-me-local-only"
-    POSTGRES_DB                = "careeros"
-    DATABASE_URL               = "postgresql+asyncpg://careeros:change-me-local-only@postgres:5432/careeros"
+    POSTGRES_DB                = "rezumi"
+    DATABASE_URL               = "postgresql+asyncpg://rezumi:change-me-local-only@postgres:5432/rezumi"
     REDIS_URL                  = "redis://redis:6379/0"
     CELERY_BROKER_URL          = "redis://redis:6379/0"
     CELERY_RESULT_BACKEND      = "redis://redis:6379/1"
-    MINIO_ROOT_USER            = "careeros-local"
+    MINIO_ROOT_USER            = "rezumi-local"
     MINIO_ROOT_PASSWORD        = "change-me-local-only"
     S3_ENDPOINT_URL            = "http://minio:9000"
     S3_REGION                  = "us-east-1"
-    S3_BUCKET                  = "careeros-documents"
-    S3_APP_ACCESS_KEY_ID       = "careeros-e2e-app"
+    S3_BUCKET                  = "rezumi-documents"
+    S3_APP_ACCESS_KEY_ID       = "rezumi-e2e-app"
     S3_APP_SECRET_ACCESS_KEY   = "change-me-local-only-e2e-storage-secret"
     S3_USE_SSL                 = "false"
     MALWARE_SCANNER_PROVIDER   = "clamav"
     CLAMAV_HOST                = "clamav"
     CLAMAV_TIMEOUT_SECONDS     = "30"
-    DOCUMENT_TEMP_ROOT         = "/tmp/careeros"
+    DOCUMENT_TEMP_ROOT         = "/tmp/rezumi"
     DOCUMENT_MAX_BYTES         = "10485760"
     DOCUMENT_MAX_PAGES         = "20"
     DOCUMENT_MAX_ARCHIVE_ENTRIES = "256"
@@ -254,13 +254,13 @@ $Overrides = [ordered]@{
     RESUME_EXPORT_ORPHAN_CLEANUP_GRACE_SECONDS = "30"
     DOCUMENT_PROCESSING_TIMEOUT_SECONDS = "120"
     API_BASE_URL               = "http://api:8000"
-    AUTH_TOKEN_PEPPER          = if ($env:CAREEROS_E2E_AUTH_TOKEN_PEPPER) { $env:CAREEROS_E2E_AUTH_TOKEN_PEPPER } else { "change-me-local-only-e2e-auth-token-pepper" }
+    AUTH_TOKEN_PEPPER          = if ($env:REZUMI_E2E_AUTH_TOKEN_PEPPER) { $env:REZUMI_E2E_AUTH_TOKEN_PEPPER } else { "change-me-local-only-e2e-auth-token-pepper" }
     RESUME_CAPABILITY_PEPPER   = "change-me-local-only-e2e-resume-capability-pepper"
     BFF_CLIENT_SIGNAL_SECRET   = "change-me-local-only-e2e-bff-client-signal-secret"
     API_BFF_CLIENT_SIGNAL_SECRET = "change-me-local-only-e2e-bff-client-signal-secret"
     COOKIE_SECURE              = "false"
     EMAIL_PROVIDER             = "smtp"
-    EMAIL_FROM_ADDRESS         = "no-reply@careeros.local"
+    EMAIL_FROM_ADDRESS         = "no-reply@rezumi.local"
     SMTP_HOST                  = "mailpit"
     SMTP_PORT                  = "1025"
     SMTP_USERNAME              = ""
@@ -285,15 +285,15 @@ $Overrides.CORS_ORIGINS = "[`"$PublicAppUrl`"]"
 $Overrides.GOOGLE_REDIRECT_URI = "$PublicAppUrl/api/v1/auth/google/callback"
 $Overrides.PLAYWRIGHT_BASE_URL = $PublicAppUrl
 $Overrides.PLAYWRIGHT_MAILPIT_URL = "http://127.0.0.1:$($Overrides.MAILPIT_HTTP_PORT)"
-$Overrides.CAREEROS_TEST_DATABASE_URL = "postgresql+asyncpg://careeros:change-me-local-only@127.0.0.1:$($Overrides.POSTGRES_PORT)/careeros"
-$Overrides.CAREEROS_TEST_REDIS_URL = "redis://127.0.0.1:$($Overrides.REDIS_PORT)/15"
-$Overrides.CAREEROS_TEST_S3_ENDPOINT_URL = $Overrides.S3_PUBLIC_ENDPOINT_URL
-$Overrides.CAREEROS_TEST_S3_REGION = $Overrides.S3_REGION
-$Overrides.CAREEROS_TEST_S3_BUCKET = $Overrides.S3_BUCKET
-$Overrides.CAREEROS_TEST_S3_ACCESS_KEY_ID = $Overrides.S3_APP_ACCESS_KEY_ID
-$Overrides.CAREEROS_TEST_S3_SECRET_ACCESS_KEY = $Overrides.S3_APP_SECRET_ACCESS_KEY
-$Overrides.CAREEROS_TEST_CLAMAV_HOST = "127.0.0.1"
-$Overrides.CAREEROS_TEST_CLAMAV_PORT = $Overrides.CLAMAV_PORT
+$Overrides.REZUMI_TEST_DATABASE_URL = "postgresql+asyncpg://rezumi:change-me-local-only@127.0.0.1:$($Overrides.POSTGRES_PORT)/rezumi"
+$Overrides.REZUMI_TEST_REDIS_URL = "redis://127.0.0.1:$($Overrides.REDIS_PORT)/15"
+$Overrides.REZUMI_TEST_S3_ENDPOINT_URL = $Overrides.S3_PUBLIC_ENDPOINT_URL
+$Overrides.REZUMI_TEST_S3_REGION = $Overrides.S3_REGION
+$Overrides.REZUMI_TEST_S3_BUCKET = $Overrides.S3_BUCKET
+$Overrides.REZUMI_TEST_S3_ACCESS_KEY_ID = $Overrides.S3_APP_ACCESS_KEY_ID
+$Overrides.REZUMI_TEST_S3_SECRET_ACCESS_KEY = $Overrides.S3_APP_SECRET_ACCESS_KEY
+$Overrides.REZUMI_TEST_CLAMAV_HOST = "127.0.0.1"
+$Overrides.REZUMI_TEST_CLAMAV_PORT = $Overrides.CLAMAV_PORT
 
 $PreviousValues = @{}
 foreach ($Entry in $Overrides.GetEnumerator()) {
@@ -348,7 +348,7 @@ try {
     }
     Push-Location "packages/backend"
     try {
-        uv run --package careeros-backend pytest tests/integration
+        uv run --package rezumi-backend pytest tests/integration
         Assert-LastExitCode "PostgreSQL and Redis identity integration tests"
     }
     finally {
@@ -375,7 +375,7 @@ try {
     if ([int]$AdvertisedPolicy.maxPages -ne [int]$Overrides.DOCUMENT_MAX_PAGES) {
         throw "The API advertised page limit $($AdvertisedPolicy.maxPages), expected $($Overrides.DOCUMENT_MAX_PAGES)."
     }
-    $WorkerMaxPages = docker exec $WorkerContainer python -c "from careeros_worker.config import get_settings; print(get_settings().document_max_pages)"
+    $WorkerMaxPages = docker exec $WorkerContainer python -c "from rezumi_worker.config import get_settings; print(get_settings().document_max_pages)"
     Assert-LastExitCode "Worker page-limit configuration probe"
     if ([int]$WorkerMaxPages -ne [int]$AdvertisedPolicy.maxPages) {
         throw "Worker page limit $WorkerMaxPages differs from the API policy $($AdvertisedPolicy.maxPages)."
@@ -394,7 +394,7 @@ try {
     if ($WorkerInspect.HostConfig.PidsLimit -le 0 -or $WorkerInspect.HostConfig.Memory -le 0 -or $WorkerInspect.HostConfig.NanoCpus -le 0) {
         throw "Document worker CPU, memory, and PID limits must be explicit."
     }
-    if ($WorkerInspect.HostConfig.Tmpfs.PSObject.Properties.Name -notcontains "/tmp/careeros") {
+    if ($WorkerInspect.HostConfig.Tmpfs.PSObject.Properties.Name -notcontains "/tmp/rezumi") {
         throw "Document worker requires a bounded private temporary filesystem."
     }
     if ($WorkerInspect.NetworkSettings.Networks.PSObject.Properties.Count -ne 1) {
@@ -428,7 +428,7 @@ try {
     if (-not $Recovered) {
         throw "API readiness did not recover after PostgreSQL restarted."
     }
-    & pnpm --filter "@careeros/web" exec playwright test @JourneySpecs
+    & pnpm --filter "@rezumi/web" exec playwright test @JourneySpecs
     Assert-LastExitCode "Phase $Phase full-stack browser journeys"
     $MainSucceeded = $true
 }
@@ -440,7 +440,7 @@ finally {
     if (-not $MainSucceeded -and $KeepFailedStack) {
         Write-Warning (
             "Retaining failed isolated project '$ProjectName' because " +
-            "CAREEROS_E2E_KEEP_FAILED_STACK=1. Remove it explicitly after diagnosis."
+            "REZUMI_E2E_KEEP_FAILED_STACK=1. Remove it explicitly after diagnosis."
         )
         $CleanupExitCode = 0
     }
@@ -459,4 +459,4 @@ finally {
     }
 }
 
-Write-Host "CareerOS Phase $Phase isolated full-stack browser journeys passed and all test state was removed."
+Write-Host "Rezumi Phase $Phase isolated full-stack browser journeys passed and all test state was removed."

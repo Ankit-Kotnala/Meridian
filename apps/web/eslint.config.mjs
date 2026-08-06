@@ -1,3 +1,3 @@
-import nextConfig from "@careeros/eslint-config/next";
+import nextConfig from "@rezumi/eslint-config/next";
 
 export default nextConfig;

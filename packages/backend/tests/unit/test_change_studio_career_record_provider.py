@@ -8,7 +8,7 @@ from uuid import UUID
 
 import pytest
 
-from careeros.modules.change_studio.infrastructure.career_record_provider import (
+from rezumi.modules.change_studio.infrastructure.career_record_provider import (
     CareerRecordChangeStudioEvidenceProvider,
 )
 

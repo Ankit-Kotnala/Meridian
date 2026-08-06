@@ -4,7 +4,7 @@ import { CheckSquare2, FileStack, StickyNote } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
 
-import { Badge, EmptyState, cn } from "@careeros/ui";
+import { Badge, EmptyState, cn } from "@rezumi/ui";
 
 import type {
   Application,

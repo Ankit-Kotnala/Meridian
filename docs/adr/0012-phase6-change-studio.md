@@ -6,14 +6,14 @@ Date: 2026-07-19
 ## Context
 
 Phase 6 introduces generated resume-change suggestions without weakening the
-CareerOS source-of-truth rule. The inputs are owner-scoped Career Record evidence
+Rezumi source-of-truth rule. The inputs are owner-scoped Career Record evidence
 and saved Job Match requirement snapshots. Provider output, job descriptions, and
 user edits remain hostile until deterministic validation proves each factual
 claim is grounded.
 
 ## Decision
 
-Add `careeros.modules.change_studio` as a bounded context with strict provider
+Add `rezumi.modules.change_studio` as a bounded context with strict provider
 schema parsing, deterministic grounding, owner-scoped application use cases,
 SQLAlchemy persistence, and thin FastAPI/Next.js adapters.
 

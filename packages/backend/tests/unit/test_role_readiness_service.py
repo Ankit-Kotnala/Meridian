@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from careeros.modules.role_readiness.application import (
+from rezumi.modules.role_readiness.application import (
     AnalyzeRoleReadiness,
     RequestContext,
     RoleFilter,
@@ -15,14 +15,14 @@ from careeros.modules.role_readiness.application import (
     SaveRole,
     UpdateSavedRole,
 )
-from careeros.modules.role_readiness.domain import (
+from rezumi.modules.role_readiness.domain import (
     RoleReadinessIdempotencyConflict,
     RoleReadinessNotFound,
     RoleReadinessValidationError,
     RoleReadinessVersionConflict,
     SkillMatchState,
 )
-from careeros.modules.role_readiness.domain.scoring import CareerReadinessSnapshot
+from rezumi.modules.role_readiness.domain.scoring import CareerReadinessSnapshot
 from role_readiness_memory import (
     ENGINEER_ROLE_ID,
     PRODUCT_ROLE_ID,

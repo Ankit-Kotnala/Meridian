@@ -14,7 +14,7 @@ COPY packages/eslint-config/package.json ./packages/eslint-config/package.json
 COPY packages/test-fixtures/package.json ./packages/test-fixtures/package.json
 COPY packages/typescript-config/package.json ./packages/typescript-config/package.json
 COPY packages/ui/package.json ./packages/ui/package.json
-RUN pnpm install --frozen-lockfile --filter @careeros/web...
+RUN pnpm install --frozen-lockfile --filter @rezumi/web...
 
 FROM base AS builder
 ARG NEXT_PUBLIC_UPLOAD_ORIGIN=http://localhost:9000
@@ -27,7 +27,7 @@ COPY packages/typescript-config ./packages/typescript-config
 COPY packages/ui ./packages/ui
 WORKDIR /workspace/apps/web
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN pnpm --filter @careeros/contracts build && pnpm build
+RUN pnpm --filter @rezumi/contracts build && pnpm build
 
 FROM node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd AS runner
 WORKDIR /app

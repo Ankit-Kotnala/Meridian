@@ -31,7 +31,7 @@ import {
   Tabs,
   buttonStyles,
   cn,
-} from "@careeros/ui";
+} from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 
@@ -50,7 +50,7 @@ import type {
 } from "../api/types";
 
 export const SCORE_DISCLAIMER =
-  "CareerOS scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.";
+  "Rezumi scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.";
 
 const severityPresentation = {
   info: { icon: Info, label: "Information", tone: "primary" as const },
@@ -498,7 +498,7 @@ export function ResumeHealthReportView({
             <div className="flex items-center gap-2">
               <ShieldCheck aria-hidden="true" className="size-5 text-primary" />
               <h2 className="font-extrabold text-foreground">
-                Internal CareerOS measure
+                Internal Rezumi measure
               </h2>
             </div>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
@@ -510,7 +510,7 @@ export function ResumeHealthReportView({
                 title="Not enough reliable data"
                 tone="warning"
               >
-                CareerOS did not turn missing or uncertain information into a
+                Rezumi did not turn missing or uncertain information into a
                 deceptively precise score. Review the warnings and parsed
                 content.
               </Alert>

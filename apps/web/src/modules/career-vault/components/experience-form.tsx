@@ -8,7 +8,7 @@ import {
   FieldLabel,
   Select,
   TextField,
-} from "@careeros/ui";
+} from "@rezumi/ui";
 
 import type { Experience, ExperienceInput, Skill } from "../api/types";
 import type { FieldErrors } from "../validation/career-vault-validation";
@@ -111,7 +111,7 @@ export function ExperienceForm({
           hint={
             startIsYearOnly
               ? `The imported record preserves ${initial?.startDate} as year-only. Choose a month to edit this record.`
-              : "CareerOS stores only the month and year you provide."
+              : "Rezumi stores only the month and year you provide."
           }
           id="experience-start-date"
           label="Start month"
@@ -179,7 +179,7 @@ export function ExperienceForm({
           >
             Overlapping roles at the same employer are shown as promotions;
             overlapping roles at different employers are shown as concurrent.
-            CareerOS records the relationship without changing your dates or
+            Rezumi records the relationship without changing your dates or
             titles.
           </p>
         </div>

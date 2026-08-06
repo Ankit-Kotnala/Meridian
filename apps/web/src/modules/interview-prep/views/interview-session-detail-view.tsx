@@ -31,7 +31,7 @@ import {
   Select,
   Tabs,
   buttonStyles,
-} from "@careeros/ui";
+} from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 
@@ -586,7 +586,7 @@ export function InterviewSessionDetailView({
           : current,
       );
       setSuccess(
-        "A grounded draft was created for your review. CareerOS did not send it.",
+        "A grounded draft was created for your review. Rezumi did not send it.",
       );
     } catch (error) {
       setFailure(
@@ -1200,7 +1200,7 @@ function DraftsPanel({
   return (
     <div className="space-y-5 pt-5">
       <Alert title="Draft only — no sending capability" tone="warning">
-        CareerOS creates grounded text for your review. There is no email,
+        Rezumi creates grounded text for your review. There is no email,
         calendar, applicant-tracking, or social-network send action in this
         workspace.
       </Alert>

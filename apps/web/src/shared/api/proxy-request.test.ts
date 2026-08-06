@@ -45,7 +45,7 @@ describe("API proxy request forwarding", () => {
     const headers = new Headers(init.headers);
     expect(headers.get("x-guest-csrf")).toBe("guest-token");
     expect(headers.has("x-private-client-data")).toBe(false);
-    expect(headers.get("x-careeros-client-signal")).toMatch(
+    expect(headers.get("x-rezumi-client-signal")).toMatch(
       /^v1\.[A-Za-z0-9_-]+\.[0-9a-f]{64}$/,
     );
   });
@@ -54,7 +54,7 @@ describe("API proxy request forwarding", () => {
     const signals: string[] = [];
     const fetchMock = vi.fn().mockImplementation((_url, init: RequestInit) => {
       signals.push(
-        new Headers(init.headers).get("x-careeros-client-signal") ?? "",
+        new Headers(init.headers).get("x-rezumi-client-signal") ?? "",
       );
       return Promise.resolve(Response.json({ ok: true }));
     });
@@ -85,7 +85,7 @@ describe("API proxy request forwarding", () => {
   it("fails closed when the production BFF signing key is absent", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    vi.stubEnv("CAREEROS_ENVIRONMENT", "production");
+    vi.stubEnv("REZUMI_ENVIRONMENT", "production");
     vi.stubEnv("API_BFF_CLIENT_SIGNAL_SECRET", "");
 
     const response = await proxyApiRequest(

@@ -10,4 +10,4 @@ if ($LASTEXITCODE -ne 0) {
     throw "Phase 3 isolated Career Record workflow failed with exit code $LASTEXITCODE."
 }
 
-Write-Host "CareerOS Phase 3 verification passed."
+Write-Host "Rezumi Phase 3 verification passed."

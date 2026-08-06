@@ -18,11 +18,11 @@ describe("API proxy", () => {
     });
     responseHeaders.append(
       "set-cookie",
-      "careeros_session=one; HttpOnly; Path=/",
+      "rezumi_session=one; HttpOnly; Path=/",
     );
     responseHeaders.append(
       "set-cookie",
-      "careeros_refresh=two; HttpOnly; Path=/",
+      "rezumi_refresh=two; HttpOnly; Path=/",
     );
 
     const fetchMock = vi.fn().mockResolvedValue(
@@ -38,7 +38,7 @@ describe("API proxy", () => {
         method: "POST",
         headers: {
           authorization: "Bearer must-not-forward",
-          cookie: "careeros_csrf=token",
+          cookie: "rezumi_csrf=token",
           origin: "http://localhost:3000",
           "if-match": '"4"',
           "x-csrf-token": "token",
@@ -60,7 +60,7 @@ describe("API proxy", () => {
       "http://api:8000/api/v1/auth/login?next=dashboard",
     );
     expect(init.redirect).toBe("manual");
-    expect(headers.get("cookie")).toBe("careeros_csrf=token");
+    expect(headers.get("cookie")).toBe("rezumi_csrf=token");
     expect(headers.get("x-csrf-token")).toBe("token");
     expect(headers.get("if-match")).toBe('"4"');
     expect(headers.has("authorization")).toBe(false);

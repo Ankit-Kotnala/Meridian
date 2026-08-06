@@ -33,7 +33,7 @@ import {
   LoadingSkeleton,
   PageHeader,
   Select,
-} from "@careeros/ui";
+} from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 
@@ -86,7 +86,7 @@ import type {
 } from "../api/types";
 
 export const CAREER_HEALTH_DISCLAIMER =
-  "CareerOS scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.";
+  "Rezumi scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.";
 
 type GrowthData = {
   developmentCursor: string | null;

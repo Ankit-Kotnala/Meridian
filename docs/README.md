@@ -1,4 +1,4 @@
-# CareerOS documentation
+# Rezumi documentation
 
 This directory describes product intent, implemented contracts, architecture,
 security controls, and phased delivery. Architecture documents describe the

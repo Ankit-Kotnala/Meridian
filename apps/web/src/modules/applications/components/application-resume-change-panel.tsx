@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState, type FormEvent } from "react";
 
-import { Alert, Button, ConfirmDialog, Select } from "@careeros/ui";
+import { Alert, Button, ConfirmDialog, Select } from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 

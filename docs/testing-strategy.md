@@ -1,4 +1,4 @@
-# CareerOS testing strategy
+# Rezumi testing strategy
 
 Status: Phase 1/3 observed-onboarding, Settings, and resume-ready Career Record
 closure locally verified; hosted closure evidence is pending authorization.
@@ -85,7 +85,7 @@ Do not mock away the boundary a test is meant to prove.
 
 ### Worker and local services
 
-- Execute/control-ping `careeros.worker.health.ping` through the broker and assert
+- Execute/control-ping `rezumi.worker.health.ping` through the broker and assert
   deterministic safe response.
 - Test worker import/config without contacting unavailable optional providers.
 - Validate Compose configuration and health for PostgreSQL/pgvector, Redis, MinIO,

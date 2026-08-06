@@ -1,4 +1,4 @@
-# CareerOS AI grounding policy
+# Rezumi AI grounding policy
 
 Status: mandatory product policy  
 Applies to: extraction, suggestions, rewrites, application materials, networking
@@ -7,12 +7,12 @@ Last reviewed: 2026-07-25
 
 ## Policy statement
 
-CareerOS never invents career information. A model is an untrusted suggestion and
+Rezumi never invents career information. A model is an untrusted suggestion and
 extraction provider, not a source of career facts. Every factual claim in a
 generated output must map to eligible, authorized evidence and pass deterministic
 grounding checks before the user sees it as an actionable change or can export it.
 
-When information is missing, CareerOS asks a precise question. It does not fill a
+When information is missing, Rezumi asks a precise question. It does not fill a
 gap with a typical, likely, impressive, or statistically plausible value.
 
 This policy cannot be overridden by a resume, job description, user preference,
@@ -107,10 +107,10 @@ flowchart TD
 
 No stage may bypass schema or grounding because the provider is considered
 “trusted.” User manual edits receive the same claim/consistency validation before
-they can be treated as CareerOS-grounded output. Users may preserve their own
+they can be treated as Rezumi-grounded output. Users may preserve their own
 unsupported wording only if the product clearly distinguishes user-authored
 content and policy determines whether export is blocked or strongly warned; a
-CareerOS verified badge is never applied.
+Rezumi verified badge is never applied.
 
 ## Input construction
 
@@ -414,7 +414,7 @@ numbers, and cross-owner application context fail closed.
 Role-specific questions and follow-up drafts are deterministic. They select only
 the immutable session claims/requirements requested by the owner, validate
 numeric tokens against the pinned context, remain private review-only text, and
-are never sent by CareerOS. Before creating a new question bank, every evidence
+are never sent by Rezumi. Before creating a new question bank, every evidence
 pin in its session context is rechecked through Application Workspace against
 live canonical Career Record eligibility and exact current revision
 ID/number/hash, strength, and numeric state. A new follow-up applies the same

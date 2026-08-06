@@ -15,7 +15,7 @@ import {
   type FormEvent,
 } from "react";
 
-import { Alert, Badge, Button, EmptyState, Input, Select } from "@careeros/ui";
+import { Alert, Badge, Button, EmptyState, Input, Select } from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 

@@ -23,7 +23,7 @@ import {
   LoadingSkeleton,
   Select,
   TextField,
-} from "@careeros/ui";
+} from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 
@@ -149,8 +149,8 @@ function AchievementEditor({
         </Button>
       </div>
       <p className="text-sm text-muted">
-        Unanswered prompts remain explicitly “Not answered”; CareerOS never
-        fills missing facts.
+        Unanswered prompts remain explicitly “Not answered”; Rezumi never fills
+        missing facts.
       </p>
       <TextField
         defaultValue={initial?.title ?? ""}
@@ -751,7 +751,7 @@ export function AchievementInboxView() {
 
       <ConfirmDialog
         confirmLabel="Convert to evidence"
-        description="CareerOS will preserve this draft, create evidence atomically, and compute state and eligibility on the server. Review the resulting evidence before using it."
+        description="Rezumi will preserve this draft, create evidence atomically, and compute state and eligibility on the server. Review the resulting evidence before using it."
         loading={loading}
         onConfirm={() => void convert()}
         onOpenChange={(open) => {

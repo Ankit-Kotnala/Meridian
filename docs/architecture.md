@@ -1,11 +1,11 @@
-# CareerOS architecture
+# Rezumi architecture
 
 Status: accepted target architecture; Phases 8 and 9 complete and hosted verified
 Last reviewed: 2026-07-27
 
 ## Architectural objective
 
-CareerOS maintains a user-owned, structured, evidence-backed career record and
+Rezumi maintains a user-owned, structured, evidence-backed career record and
 derives reviewable outputs from it. The architecture optimizes for factual
 integrity, explainability, tenant isolation, secure document processing,
 accessible user control, and replacement of external providers without rewriting
@@ -108,19 +108,19 @@ the API. Container build contexts must include the root workspace while runtime
 images remain independently deployable.
 
 HTTP delivery adapters are co-located by bounded context under
-`apps/api/src/careeros_api/modules/<bounded_context>`. Routes, schemas,
+`apps/api/src/rezumi_api/modules/<bounded_context>`. Routes, schemas,
 presenters, feature dependencies, and feature-specific problem translation stay
 together. Only concrete cross-cutting composition, configuration, middleware,
 cookie/signal policy, shared problems, and the root router remain at the API
 package root. Celery registration follows the same ownership under
-`apps/worker/src/careeros_worker/tasks/<bounded_context>.py`; stable task names,
+`apps/worker/src/rezumi_worker/tasks/<bounded_context>.py`; stable task names,
 identifier-only payloads, queues, retry policy, and runtime ports do not depend on
 source-file location. `tasks/contracts.py` owns result-only adapter shapes and
 `tasks/execution.py` owns bounded maintenance validation and delivery fencing.
 Executable repository checks reject a return to flat feature adapters or a
 monolithic task module.
 
-Within `packages/backend/src/careeros`, stable domain-independent primitives live
+Within `packages/backend/src/rezumi`, stable domain-independent primitives live
 under `foundation`. Each product capability is added under `modules/<feature>`
 only in its owning phase, with `domain`, `application`, `infrastructure`, `api`,
 `tasks`, and tests as real behavior requires. Provider SDKs stay under
@@ -193,7 +193,7 @@ policy/model/prompt versions used so later evidence changes do not rewrite histo
 
 ### Career Record consistency and authority (Phase 3 implementation)
 
-`careeros.modules.career_record` is one transactional bounded context for factual
+`rezumi.modules.career_record` is one transactional bounded context for factual
 career presentation, typed career entities and skills, evidence, conflicts,
 import proposals, Achievement Inbox, reminder preferences, and append-oriented
 redacted audit. Account display, locale, timezone, onboarding, and target-search
@@ -226,7 +226,7 @@ ineligible until independently confirmed or connected to another eligible source
 
 ## Job Match Boundary
 
-`careeros.modules.job_match` owns saved job postings, current extracted
+`rezumi.modules.job_match` owns saved job postings, current extracted
 requirements, immutable job-match analyses, requirement match rows, evidence-link
 snapshots, opportunity priority analyses, idempotency fingerprints, versions, and
 redacted audit events. It consumes eligible evidence through the Career Record
@@ -242,7 +242,7 @@ versioned deterministic formulas and must show the canonical scoring disclaimer.
 
 ## Change Studio Boundary
 
-`careeros.modules.change_studio` owns change sets, structured operations,
+`rezumi.modules.change_studio` owns change sets, structured operations,
 claim-ledger rows, clarifying questions, immutable output versions, provider-run
 metadata, idempotency fingerprints, and redacted audit events. It consumes
 eligible evidence through Career Record and saved job requirements through Job
@@ -260,7 +260,7 @@ and ungrounded numbers fail closed before the user can accept them.
 
 ## Resume Builder Boundary
 
-`careeros.modules.resume_builder` owns structured resume documents, immutable
+`rezumi.modules.resume_builder` owns structured resume documents, immutable
 resume versions, export records, verification reports, download intents,
 idempotency fingerprints, and redacted audit events. It consumes eligible
 Career Record evidence through an application provider and can seed from the
@@ -291,7 +291,7 @@ export UUID, redacted trace ID, and allowlisted operation.
 
 ## Application Workspace Boundary
 
-`careeros.modules.application_workspace` owns application records, workflow
+`rezumi.modules.application_workspace` owns application records, workflow
 events, tasks, notes, application packs, generated documents, consistency
 findings, idempotency fingerprints, and redacted audit events. It consumes a
 saved job through Job Match, an immutable resume version through Resume Builder,
@@ -441,7 +441,7 @@ JSON request, disables standard input/output, rejects oversized or malformed
 results, force-kills and awaits a timed-out child, then removes its workspace.
 POSIX children also receive CPU, address-space, and output limits; Celery and the
 non-root, read-only, CPU/memory/PID-bounded, no-edge-network worker remain the
-outer controls. The reusable renderer extractor used by trusted CareerOS-created
+outer controls. The reusable renderer extractor used by trusted Rezumi-created
 exports still uses the local adapter in-process.
 
 Text extraction, layout analysis, semantic classification, malware scanning, and

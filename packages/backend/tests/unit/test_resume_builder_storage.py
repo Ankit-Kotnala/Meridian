@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 
-from careeros.modules.resume_builder.infrastructure.storage import (
+from rezumi.modules.resume_builder.infrastructure.storage import (
     ResumeExportS3Options,
     ResumeExportS3Storage,
 )

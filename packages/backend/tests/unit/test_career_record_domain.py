@@ -6,7 +6,7 @@ from uuid import uuid4
 
 import pytest
 
-from careeros.modules.career_record.domain import (
+from rezumi.modules.career_record.domain import (
     CareerEntity,
     CareerEntityKind,
     CareerRecordTransitionRejected,

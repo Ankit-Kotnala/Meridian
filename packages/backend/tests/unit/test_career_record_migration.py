@@ -18,8 +18,8 @@ from sqlalchemy import (
     Uuid,
 )
 
-from careeros.modules.career_record.infrastructure import models
-from careeros.modules.identity.infrastructure import models as identity_models  # noqa: F401
+from rezumi.modules.career_record.infrastructure import models
+from rezumi.modules.identity.infrastructure import models as identity_models  # noqa: F401
 
 
 def _phase_tables() -> dict[str, Table]:

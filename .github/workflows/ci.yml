@@ -33,7 +33,7 @@ jobs:
         with:
           python-version: "3.13"
       - run: pnpm install --frozen-lockfile
-      - run: uv sync --frozen --package careeros-api
+      - run: uv sync --frozen --package rezumi-api
       - run: pnpm contracts:check
       - run: pnpm format:check
       - run: pnpm lint
@@ -47,19 +47,19 @@ jobs:
       postgres:
         image: pgvector/pgvector:pg17@sha256:d2ef61f42ef767baa5a1475393303cc235bcd92febd9d7014eddb48b41f3bad0
         env:
-          POSTGRES_USER: careeros
+          POSTGRES_USER: rezumi
           POSTGRES_PASSWORD: ci-only-password
-          POSTGRES_DB: careeros
+          POSTGRES_DB: rezumi
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U careeros -d careeros"
+          --health-cmd "pg_isready -U rezumi -d rezumi"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 12
     env:
-      CAREEROS_DATABASE_URL: postgresql+asyncpg://careeros:ci-only-password@127.0.0.1:5432/careeros
-      CAREEROS_TEST_DATABASE_URL: postgresql+asyncpg://careeros:ci-only-password@127.0.0.1:5432/careeros
+      REZUMI_DATABASE_URL: postgresql+asyncpg://rezumi:ci-only-password@127.0.0.1:5432/rezumi
+      REZUMI_TEST_DATABASE_URL: postgresql+asyncpg://rezumi:ci-only-password@127.0.0.1:5432/rezumi
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
@@ -71,23 +71,23 @@ jobs:
           python-version: "3.13"
       - run: uv lock --check
       - run: uv sync --frozen --all-packages --all-groups
-      - run: cd packages/backend && uv run --package careeros-backend ruff format --check .
-      - run: cd packages/backend && uv run --package careeros-backend ruff check .
-      - run: cd packages/backend && uv run --package careeros-backend mypy
-      - run: cd packages/backend && uv run --package careeros-backend pytest tests/architecture tests/unit
+      - run: cd packages/backend && uv run --package rezumi-backend ruff format --check .
+      - run: cd packages/backend && uv run --package rezumi-backend ruff check .
+      - run: cd packages/backend && uv run --package rezumi-backend mypy
+      - run: cd packages/backend && uv run --package rezumi-backend pytest tests/architecture tests/unit
       - run: cd apps/api && uv run ruff format --check .
       - run: cd apps/api && uv run ruff check .
       - run: cd apps/api && uv run mypy
       - run: cd apps/api && uv run pytest
-      - run: uv run --package careeros-api ruff format --config apps/api/pyproject.toml --check packages/contracts/scripts/export_openapi.py
-      - run: uv run --package careeros-api ruff check --config apps/api/pyproject.toml packages/contracts/scripts/export_openapi.py
-      - run: test "$(uv run --package careeros-backend alembic -c packages/backend/alembic.ini heads | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')" = "20260731_0014 (head)"
-      - run: uv run --package careeros-backend alembic -c packages/backend/alembic.ini upgrade head
-      - run: uv run --package careeros-backend alembic -c packages/backend/alembic.ini downgrade 20260724_0009
-      - run: uv run --package careeros-backend alembic -c packages/backend/alembic.ini upgrade head
-      - run: test "$(uv run --package careeros-backend alembic -c packages/backend/alembic.ini current | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')" = "20260731_0014 (head)"
-      - run: cd packages/backend && uv run --package careeros-backend pytest tests/integration
-      - run: uv run --package careeros-api python -c "from careeros_api.main import app; assert app.openapi()"
+      - run: uv run --package rezumi-api ruff format --config apps/api/pyproject.toml --check packages/contracts/scripts/export_openapi.py
+      - run: uv run --package rezumi-api ruff check --config apps/api/pyproject.toml packages/contracts/scripts/export_openapi.py
+      - run: test "$(uv run --package rezumi-backend alembic -c packages/backend/alembic.ini heads | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')" = "20260731_0014 (head)"
+      - run: uv run --package rezumi-backend alembic -c packages/backend/alembic.ini upgrade head
+      - run: uv run --package rezumi-backend alembic -c packages/backend/alembic.ini downgrade 20260724_0009
+      - run: uv run --package rezumi-backend alembic -c packages/backend/alembic.ini upgrade head
+      - run: test "$(uv run --package rezumi-backend alembic -c packages/backend/alembic.ini current | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')" = "20260731_0014 (head)"
+      - run: cd packages/backend && uv run --package rezumi-backend pytest tests/integration
+      - run: uv run --package rezumi-api python -c "from rezumi_api.main import app; assert app.openapi()"
 
   worker:
     runs-on: ubuntu-latest
@@ -100,12 +100,12 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.13"
-      - run: uv sync --frozen --package careeros-worker --all-groups
+      - run: uv sync --frozen --package rezumi-worker --all-groups
       - run: cd apps/worker && uv run ruff format --check .
       - run: cd apps/worker && uv run ruff check .
       - run: cd apps/worker && uv run mypy
       - run: cd apps/worker && uv run pytest
-      - run: uv run --package careeros-worker python -c "from careeros_worker.app import celery_app; assert celery_app.main == 'careeros_worker'"
+      - run: uv run --package rezumi-worker python -c "from rezumi_worker.app import celery_app; assert celery_app.main == 'rezumi_worker'"
 
   browser-smoke:
     runs-on: ubuntu-latest
@@ -121,7 +121,7 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @careeros/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @rezumi/web exec playwright install --with-deps chromium
       - run: pnpm test:e2e
 
   resume-health-e2e:
@@ -148,9 +148,9 @@ jobs:
       - run: cp .env.example .env
       - run: pnpm install --frozen-lockfile
       - run: uv sync --frozen --all-packages --all-groups
-      - run: pnpm --filter @careeros/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @rezumi/web exec playwright install --with-deps chromium
       - name: Run the isolated authentication and Resume Health journeys
-        run: CAREEROS_E2E_PHASE=2 sh tests/e2e/run-compose.sh
+        run: REZUMI_E2E_PHASE=2 sh tests/e2e/run-compose.sh
 
   career-record-e2e:
     runs-on: ubuntu-latest
@@ -176,9 +176,9 @@ jobs:
       - run: cp .env.example .env
       - run: pnpm install --frozen-lockfile
       - run: uv sync --frozen --all-packages --all-groups
-      - run: pnpm --filter @careeros/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @rezumi/web exec playwright install --with-deps chromium
       - name: Run the isolated Phase 3 Career Record journey suite
-        run: CAREEROS_E2E_PHASE=3 sh tests/e2e/run-compose.sh
+        run: REZUMI_E2E_PHASE=3 sh tests/e2e/run-compose.sh
 
   role-explorer-e2e:
     runs-on: ubuntu-latest
@@ -204,9 +204,9 @@ jobs:
       - run: cp .env.example .env
       - run: pnpm install --frozen-lockfile
       - run: uv sync --frozen --all-packages --all-groups
-      - run: pnpm --filter @careeros/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @rezumi/web exec playwright install --with-deps chromium
       - name: Run the isolated Phase 4 Role Explorer journey suite
-        run: CAREEROS_E2E_PHASE=4 sh tests/e2e/run-compose.sh
+        run: REZUMI_E2E_PHASE=4 sh tests/e2e/run-compose.sh
 
   job-match-e2e:
     runs-on: ubuntu-latest
@@ -232,9 +232,9 @@ jobs:
       - run: cp .env.example .env
       - run: pnpm install --frozen-lockfile
       - run: uv sync --frozen --all-packages --all-groups
-      - run: pnpm --filter @careeros/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @rezumi/web exec playwright install --with-deps chromium
       - name: Run the isolated Phase 5 Job Match journey suite
-        run: CAREEROS_E2E_PHASE=5 sh tests/e2e/run-compose.sh
+        run: REZUMI_E2E_PHASE=5 sh tests/e2e/run-compose.sh
 
   change-studio-e2e:
     runs-on: ubuntu-latest
@@ -260,9 +260,9 @@ jobs:
       - run: cp .env.example .env
       - run: pnpm install --frozen-lockfile
       - run: uv sync --frozen --all-packages --all-groups
-      - run: pnpm --filter @careeros/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @rezumi/web exec playwright install --with-deps chromium
       - name: Run the isolated Phase 6 Change Studio journey suite
-        run: CAREEROS_E2E_PHASE=6 sh tests/e2e/run-compose.sh
+        run: REZUMI_E2E_PHASE=6 sh tests/e2e/run-compose.sh
 
   resume-builder-e2e:
     runs-on: ubuntu-latest
@@ -288,9 +288,9 @@ jobs:
       - run: cp .env.example .env
       - run: pnpm install --frozen-lockfile
       - run: uv sync --frozen --all-packages --all-groups
-      - run: pnpm --filter @careeros/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @rezumi/web exec playwright install --with-deps chromium
       - name: Run the isolated Phase 7 Resume Builder journey suite
-        run: CAREEROS_E2E_PHASE=7 sh tests/e2e/run-compose.sh
+        run: REZUMI_E2E_PHASE=7 sh tests/e2e/run-compose.sh
 
   application-workspace-e2e:
     runs-on: ubuntu-latest
@@ -316,9 +316,9 @@ jobs:
       - run: cp .env.example .env
       - run: pnpm install --frozen-lockfile
       - run: uv sync --frozen --all-packages --all-groups
-      - run: pnpm --filter @careeros/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @rezumi/web exec playwright install --with-deps chromium
       - name: Run the isolated Phase 8 Application Workspace journey suite
-        run: CAREEROS_E2E_PHASE=8 sh tests/e2e/run-compose.sh
+        run: REZUMI_E2E_PHASE=8 sh tests/e2e/run-compose.sh
 
   phase9-career-workspace-e2e:
     runs-on: ubuntu-latest
@@ -344,9 +344,9 @@ jobs:
       - run: cp .env.example .env
       - run: pnpm install --frozen-lockfile
       - run: uv sync --frozen --all-packages --all-groups
-      - run: pnpm --filter @careeros/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @rezumi/web exec playwright install --with-deps chromium
       - name: Run the isolated Phase 9 career workspace journey suite
-        run: CAREEROS_E2E_PHASE=9 sh tests/e2e/run-compose.sh
+        run: REZUMI_E2E_PHASE=9 sh tests/e2e/run-compose.sh
 
   supply-chain:
     runs-on: ubuntu-latest
@@ -374,7 +374,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm audit --audit-level high
       - run: uv sync --frozen --all-packages --all-groups
-      - run: uv run --package careeros-api --with pip-audit==2.10.1 pip-audit
+      - run: uv run --package rezumi-api --with pip-audit==2.10.1 pip-audit
 
   containers:
     runs-on: ubuntu-latest
@@ -409,7 +409,7 @@ jobs:
           curl --fail --silent --show-error http://127.0.0.1:8000/ready
           curl --fail --silent --show-error http://127.0.0.1:8000/api/v1/meta
           curl --fail --silent --show-error http://127.0.0.1:8025/api/v1/info
-          docker compose exec -T worker celery --app careeros_worker.app:celery_app inspect ping --timeout 5
+          docker compose exec -T worker celery --app rezumi_worker.app:celery_app inspect ping --timeout 5
           scheduler_id=$(docker compose ps --quiet worker-scheduler)
           test -n "$scheduler_id"
           test "$(docker inspect --format '{{.State.Health.Status}}' "$scheduler_id")" = healthy
@@ -417,30 +417,30 @@ jobs:
         run: >-
           docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock
           --volume "$PWD/.grype.yaml:/etc/grype.yaml:ro"
-          --volume careeros-grype-cache:/root/.cache/grype
+          --volume rezumi-grype-cache:/root/.cache/grype
           anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d
-          careeros-api:latest --config /etc/grype.yaml --fail-on high --only-fixed
+          rezumi-api:latest --config /etc/grype.yaml --fail-on high --only-fixed
       - name: Scan worker image for fixable high vulnerabilities
         run: >-
           docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock
           --volume "$PWD/.grype.yaml:/etc/grype.yaml:ro"
-          --volume careeros-grype-cache:/root/.cache/grype
+          --volume rezumi-grype-cache:/root/.cache/grype
           anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d
-          careeros-worker:latest --config /etc/grype.yaml --fail-on high --only-fixed
+          rezumi-worker:latest --config /etc/grype.yaml --fail-on high --only-fixed
       - name: Scan web image for fixable high vulnerabilities
         run: >-
           docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock
           --volume "$PWD/.grype.yaml:/etc/grype.yaml:ro"
-          --volume careeros-grype-cache:/root/.cache/grype
+          --volume rezumi-grype-cache:/root/.cache/grype
           anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d
-          careeros-web:latest --config /etc/grype.yaml --fail-on high --only-fixed
+          rezumi-web:latest --config /etc/grype.yaml --fail-on high --only-fixed
       - name: Scan minimized web-edge runtime for fixable high vulnerabilities
         run: >-
           docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock
           --volume "$PWD/.grype.yaml:/etc/grype.yaml:ro"
-          --volume careeros-grype-cache:/root/.cache/grype
+          --volume rezumi-grype-cache:/root/.cache/grype
           anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d
-          careeros-web-edge:latest
+          rezumi-web-edge:latest
           --config /etc/grype.yaml --fail-on high --only-fixed
       - if: always()
         run: docker compose down --volumes --remove-orphans

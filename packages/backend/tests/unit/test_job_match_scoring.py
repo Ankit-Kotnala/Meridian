@@ -6,18 +6,18 @@ from datetime import UTC, datetime
 from hashlib import sha256
 from uuid import uuid4
 
-from careeros.modules.job_match.domain import (
+from job_match_memory import sample_job_text, sample_snapshot
+from rezumi.modules.job_match.domain import (
     EmploymentType,
     JobPosting,
     JobSourceKind,
     RequirementMatchState,
     WorkModel,
 )
-from careeros.modules.job_match.domain.scoring import (
+from rezumi.modules.job_match.domain.scoring import (
     extract_job_content,
     score_job_match,
 )
-from job_match_memory import sample_job_text, sample_snapshot
 
 
 def _job(source_text: str) -> JobPosting:

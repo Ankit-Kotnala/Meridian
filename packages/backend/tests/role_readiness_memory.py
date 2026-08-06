@@ -6,14 +6,14 @@ from datetime import UTC, date, datetime
 from types import TracebackType
 from uuid import UUID, uuid4
 
-from careeros.modules.role_readiness.application.models import (
+from rezumi.modules.role_readiness.application.models import (
     AnalysisRecord,
     PageCursor,
     RoleFilter,
     RoleReadinessAnalyticsPoint,
     RoleReadinessAnalyticsSourceState,
 )
-from careeros.modules.role_readiness.domain import (
+from rezumi.modules.role_readiness.domain import (
     CompetencyDimension,
     CompetencyImportance,
     RoleCompetency,
@@ -23,7 +23,7 @@ from careeros.modules.role_readiness.domain import (
     RoleTaxonomyVersion,
     SavedRole,
 )
-from careeros.modules.role_readiness.domain.scoring import (
+from rezumi.modules.role_readiness.domain.scoring import (
     CareerReadinessSnapshot,
     SnapshotEvidence,
     SnapshotSkill,
@@ -91,9 +91,9 @@ class MemoryRoleReadiness:
     def seed(self) -> None:
         taxonomy = RoleTaxonomyVersion(
             id=TAXONOMY_ID,
-            version="careeros-seed-roles/2026-07-19",
-            source_name="CareerOS authored seed taxonomy",
-            source_license="CareerOS internal product taxonomy",
+            version="rezumi-seed-roles/2026-07-19",
+            source_name="Rezumi authored seed taxonomy",
+            source_license="Rezumi internal product taxonomy",
             description="Test taxonomy.",
             active=True,
             published_at=NOW,

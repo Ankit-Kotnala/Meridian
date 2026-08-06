@@ -8,9 +8,9 @@ resolution-markers = [
 
 [manifest]
 members = [
-    "careeros-api",
-    "careeros-backend",
-    "careeros-worker",
+    "rezumi-api",
+    "rezumi-backend",
+    "rezumi-worker",
 ]
 
 [[package]]
@@ -242,178 +242,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/4e/8d/36af6d99269a701f83809b87a01f4728699eb825ebdedee3a3d515b18f61/botocore-1.43.62.tar.gz", hash = "sha256:94efc419c9f0f41dc2415e4b6b62f04ae21b3ce3930fac47214c4d3f361ea8b8", size = 15818261, upload-time = "2026-07-31T19:35:06.235Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c0/65/d5dae96de68ffc55acf87c3bae76e9dabeeca92aadf1223f20e9a7860aef/botocore-1.43.62-py3-none-any.whl", hash = "sha256:76de153de1ba3e242b2e6df6a13ab8a3fb35d17db562462969e661457b63166e", size = 15502622, upload-time = "2026-07-31T19:35:02.697Z" },
-]
-
-[[package]]
-name = "careeros-api"
-version = "0.1.0"
-source = { editable = "apps/api" }
-dependencies = [
-    { name = "careeros-backend", extra = ["database", "identity", "migrations", "resume"] },
-    { name = "fastapi" },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-    { name = "structlog" },
-    { name = "uvicorn", extra = ["standard"] },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "httpx" },
-    { name = "mypy" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "careeros-backend", extras = ["database", "identity", "migrations", "resume"], editable = "packages/backend" },
-    { name = "fastapi", specifier = "==0.141.1" },
-    { name = "pydantic", specifier = "==2.13.4" },
-    { name = "pydantic-settings", specifier = "==2.14.2" },
-    { name = "structlog", specifier = "==26.1.0" },
-    { name = "uvicorn", extras = ["standard"], specifier = "==0.52.0" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "httpx", specifier = "==0.28.1" },
-    { name = "mypy", specifier = "==2.3.0" },
-    { name = "pytest", specifier = "==9.1.1" },
-    { name = "pytest-asyncio", specifier = "==1.4.0" },
-    { name = "ruff", specifier = "==0.15.21" },
-]
-
-[[package]]
-name = "careeros-backend"
-version = "0.1.0"
-source = { editable = "packages/backend" }
-dependencies = [
-    { name = "structlog" },
-]
-
-[package.optional-dependencies]
-database = [
-    { name = "asyncpg" },
-    { name = "sqlalchemy", extra = ["asyncio"] },
-]
-identity = [
-    { name = "aiosmtplib" },
-    { name = "argon2-cffi" },
-    { name = "authlib" },
-    { name = "email-validator" },
-    { name = "httpx" },
-    { name = "redis" },
-]
-migrations = [
-    { name = "alembic" },
-]
-resume = [
-    { name = "boto3" },
-    { name = "celery", extra = ["redis"] },
-    { name = "pypdf" },
-    { name = "python-docx" },
-    { name = "reportlab" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "aiosmtplib" },
-    { name = "alembic" },
-    { name = "argon2-cffi" },
-    { name = "asyncpg" },
-    { name = "authlib" },
-    { name = "boto3" },
-    { name = "celery", extra = ["redis"] },
-    { name = "email-validator" },
-    { name = "httpx" },
-    { name = "mypy" },
-    { name = "pypdf" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "python-docx" },
-    { name = "redis" },
-    { name = "ruff" },
-    { name = "sqlalchemy", extra = ["asyncio"] },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "aiosmtplib", marker = "extra == 'identity'", specifier = "==5.1.2" },
-    { name = "alembic", marker = "extra == 'migrations'", specifier = "==1.18.5" },
-    { name = "argon2-cffi", marker = "extra == 'identity'", specifier = "==25.1.0" },
-    { name = "asyncpg", marker = "extra == 'database'", specifier = "==0.31.0" },
-    { name = "authlib", marker = "extra == 'identity'", specifier = "==1.7.2" },
-    { name = "boto3", marker = "extra == 'resume'", specifier = "==1.43.60" },
-    { name = "celery", extras = ["redis"], marker = "extra == 'resume'", specifier = "==5.6.3" },
-    { name = "email-validator", marker = "extra == 'identity'", specifier = "==2.3.0" },
-    { name = "httpx", marker = "extra == 'identity'", specifier = "==0.28.1" },
-    { name = "pypdf", marker = "extra == 'resume'", specifier = "==6.14.2" },
-    { name = "python-docx", marker = "extra == 'resume'", specifier = "==1.2.0" },
-    { name = "redis", marker = "extra == 'identity'", specifier = "==6.4.0" },
-    { name = "reportlab", marker = "extra == 'resume'", specifier = "==5.0.0" },
-    { name = "sqlalchemy", extras = ["asyncio"], marker = "extra == 'database'", specifier = "==2.0.51" },
-    { name = "structlog", specifier = "==26.1.0" },
-]
-provides-extras = ["database", "identity", "resume", "migrations"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "aiosmtplib", specifier = "==5.1.2" },
-    { name = "alembic", specifier = "==1.18.5" },
-    { name = "argon2-cffi", specifier = "==25.1.0" },
-    { name = "asyncpg", specifier = "==0.31.0" },
-    { name = "authlib", specifier = "==1.7.2" },
-    { name = "boto3", specifier = "==1.43.60" },
-    { name = "celery", extras = ["redis"], specifier = "==5.6.3" },
-    { name = "email-validator", specifier = "==2.3.0" },
-    { name = "httpx", specifier = "==0.28.1" },
-    { name = "mypy", specifier = "==2.3.0" },
-    { name = "pypdf", specifier = "==6.14.2" },
-    { name = "pytest", specifier = "==9.1.1" },
-    { name = "pytest-asyncio", specifier = "==1.4.0" },
-    { name = "python-docx", specifier = "==1.2.0" },
-    { name = "redis", specifier = "==6.4.0" },
-    { name = "ruff", specifier = "==0.15.21" },
-    { name = "sqlalchemy", extras = ["asyncio"], specifier = "==2.0.51" },
-]
-
-[[package]]
-name = "careeros-worker"
-version = "0.1.0"
-source = { editable = "apps/worker" }
-dependencies = [
-    { name = "careeros-backend", extra = ["database", "resume"] },
-    { name = "celery", extra = ["redis"] },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-    { name = "redis" },
-    { name = "structlog" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "mypy" },
-    { name = "pytest" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "careeros-backend", extras = ["database", "resume"], editable = "packages/backend" },
-    { name = "celery", extras = ["redis"], specifier = "==5.6.3" },
-    { name = "pydantic", specifier = "==2.13.4" },
-    { name = "pydantic-settings", specifier = "==2.14.2" },
-    { name = "redis", specifier = "==6.4.0" },
-    { name = "structlog", specifier = "==26.1.0" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "mypy", specifier = "==2.3.0" },
-    { name = "pytest", specifier = "==9.1.1" },
-    { name = "ruff", specifier = "==0.15.21" },
 ]
 
 [[package]]
@@ -1387,6 +1215,178 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/41/d6/4b7b0cf56880eb96533e607967be6a939e344675601e033d113a0bfa1f4e/reportlab-5.0.0.tar.gz", hash = "sha256:e4494a0c6623ae213bb856fba523171b2b54a7bf629fda02d5e525a7b899a784", size = 3701928, upload-time = "2026-06-18T11:34:31.145Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a3/07/70085c17a369605f15e301d10ab902115019b1126c7253d964afc230c7d6/reportlab-5.0.0-py3-none-any.whl", hash = "sha256:9d5a3affa84919e1111ede580031266a570e93b1ce388219621347965ff1d93c", size = 1956710, upload-time = "2026-06-18T11:34:29.07Z" },
+]
+
+[[package]]
+name = "rezumi-api"
+version = "0.1.0"
+source = { editable = "apps/api" }
+dependencies = [
+    { name = "fastapi" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "rezumi-backend", extra = ["database", "identity", "migrations", "resume"] },
+    { name = "structlog" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "httpx" },
+    { name = "mypy" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastapi", specifier = "==0.141.1" },
+    { name = "pydantic", specifier = "==2.13.4" },
+    { name = "pydantic-settings", specifier = "==2.14.2" },
+    { name = "rezumi-backend", extras = ["database", "identity", "migrations", "resume"], editable = "packages/backend" },
+    { name = "structlog", specifier = "==26.1.0" },
+    { name = "uvicorn", extras = ["standard"], specifier = "==0.52.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "httpx", specifier = "==0.28.1" },
+    { name = "mypy", specifier = "==2.3.0" },
+    { name = "pytest", specifier = "==9.1.1" },
+    { name = "pytest-asyncio", specifier = "==1.4.0" },
+    { name = "ruff", specifier = "==0.15.21" },
+]
+
+[[package]]
+name = "rezumi-backend"
+version = "0.1.0"
+source = { editable = "packages/backend" }
+dependencies = [
+    { name = "structlog" },
+]
+
+[package.optional-dependencies]
+database = [
+    { name = "asyncpg" },
+    { name = "sqlalchemy", extra = ["asyncio"] },
+]
+identity = [
+    { name = "aiosmtplib" },
+    { name = "argon2-cffi" },
+    { name = "authlib" },
+    { name = "email-validator" },
+    { name = "httpx" },
+    { name = "redis" },
+]
+migrations = [
+    { name = "alembic" },
+]
+resume = [
+    { name = "boto3" },
+    { name = "celery", extra = ["redis"] },
+    { name = "pypdf" },
+    { name = "python-docx" },
+    { name = "reportlab" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "aiosmtplib" },
+    { name = "alembic" },
+    { name = "argon2-cffi" },
+    { name = "asyncpg" },
+    { name = "authlib" },
+    { name = "boto3" },
+    { name = "celery", extra = ["redis"] },
+    { name = "email-validator" },
+    { name = "httpx" },
+    { name = "mypy" },
+    { name = "pypdf" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "python-docx" },
+    { name = "redis" },
+    { name = "ruff" },
+    { name = "sqlalchemy", extra = ["asyncio"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aiosmtplib", marker = "extra == 'identity'", specifier = "==5.1.2" },
+    { name = "alembic", marker = "extra == 'migrations'", specifier = "==1.18.5" },
+    { name = "argon2-cffi", marker = "extra == 'identity'", specifier = "==25.1.0" },
+    { name = "asyncpg", marker = "extra == 'database'", specifier = "==0.31.0" },
+    { name = "authlib", marker = "extra == 'identity'", specifier = "==1.7.2" },
+    { name = "boto3", marker = "extra == 'resume'", specifier = "==1.43.60" },
+    { name = "celery", extras = ["redis"], marker = "extra == 'resume'", specifier = "==5.6.3" },
+    { name = "email-validator", marker = "extra == 'identity'", specifier = "==2.3.0" },
+    { name = "httpx", marker = "extra == 'identity'", specifier = "==0.28.1" },
+    { name = "pypdf", marker = "extra == 'resume'", specifier = "==6.14.2" },
+    { name = "python-docx", marker = "extra == 'resume'", specifier = "==1.2.0" },
+    { name = "redis", marker = "extra == 'identity'", specifier = "==6.4.0" },
+    { name = "reportlab", marker = "extra == 'resume'", specifier = "==5.0.0" },
+    { name = "sqlalchemy", extras = ["asyncio"], marker = "extra == 'database'", specifier = "==2.0.51" },
+    { name = "structlog", specifier = "==26.1.0" },
+]
+provides-extras = ["database", "identity", "resume", "migrations"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "aiosmtplib", specifier = "==5.1.2" },
+    { name = "alembic", specifier = "==1.18.5" },
+    { name = "argon2-cffi", specifier = "==25.1.0" },
+    { name = "asyncpg", specifier = "==0.31.0" },
+    { name = "authlib", specifier = "==1.7.2" },
+    { name = "boto3", specifier = "==1.43.60" },
+    { name = "celery", extras = ["redis"], specifier = "==5.6.3" },
+    { name = "email-validator", specifier = "==2.3.0" },
+    { name = "httpx", specifier = "==0.28.1" },
+    { name = "mypy", specifier = "==2.3.0" },
+    { name = "pypdf", specifier = "==6.14.2" },
+    { name = "pytest", specifier = "==9.1.1" },
+    { name = "pytest-asyncio", specifier = "==1.4.0" },
+    { name = "python-docx", specifier = "==1.2.0" },
+    { name = "redis", specifier = "==6.4.0" },
+    { name = "ruff", specifier = "==0.15.21" },
+    { name = "sqlalchemy", extras = ["asyncio"], specifier = "==2.0.51" },
+]
+
+[[package]]
+name = "rezumi-worker"
+version = "0.1.0"
+source = { editable = "apps/worker" }
+dependencies = [
+    { name = "celery", extra = ["redis"] },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "redis" },
+    { name = "rezumi-backend", extra = ["database", "resume"] },
+    { name = "structlog" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "mypy" },
+    { name = "pytest" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "celery", extras = ["redis"], specifier = "==5.6.3" },
+    { name = "pydantic", specifier = "==2.13.4" },
+    { name = "pydantic-settings", specifier = "==2.14.2" },
+    { name = "redis", specifier = "==6.4.0" },
+    { name = "rezumi-backend", extras = ["database", "resume"], editable = "packages/backend" },
+    { name = "structlog", specifier = "==26.1.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "mypy", specifier = "==2.3.0" },
+    { name = "pytest", specifier = "==9.1.1" },
+    { name = "ruff", specifier = "==0.15.21" },
 ]
 
 [[package]]

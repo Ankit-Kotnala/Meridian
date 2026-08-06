@@ -14,13 +14,13 @@ and retention rules.
 
 The Career Record and its evidence graph remain the factual authority.
 Application Workspace owns the immutable job, resume-version, claim, requirement,
-and evidence pins used for a specific application. CareerOS must not scrape
+and evidence pins used for a specific application. Rezumi must not scrape
 contacts, send outreach, invent an interview answer, turn a planned credential
 into an achievement, or describe observed outcomes as causal or predictive.
 
 ## Decision
 
-Add four Phase 9 bounded contexts under `careeros.modules`:
+Add four Phase 9 bounded contexts under `rezumi.modules`:
 `interview_prep`, `networking`, `career_growth`, and `career_analytics`. Each owns
 its persistence, application service, ports, idempotency records, and redacted
 audit events. Cross-context reads use purpose-minimized application interfaces;

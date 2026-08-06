@@ -5,8 +5,8 @@ from collections.abc import Iterator
 import pytest
 from fastapi.testclient import TestClient
 
-from careeros_api.config import Settings
-from careeros_api.main import create_app
+from rezumi_api.config import Settings
+from rezumi_api.main import create_app
 
 
 class FakeDatabase:

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import type { components } from "@careeros/contracts";
+import type { components } from "@rezumi/contracts";
 
 import { serverApiFetch } from "@/shared/api/server-request";
 

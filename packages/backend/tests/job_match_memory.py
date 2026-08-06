@@ -7,14 +7,14 @@ from copy import deepcopy
 from datetime import UTC, datetime
 from uuid import UUID
 
-from careeros.modules.job_match.application import (
+from rezumi.modules.job_match.application import (
     AnalysisRecord,
     ImportedJobSource,
     JobFilter,
     JobRecord,
     PageCursor,
 )
-from careeros.modules.job_match.domain import (
+from rezumi.modules.job_match.domain import (
     CareerMatchSnapshot,
     JobMatchAuditEvent,
     JobPosting,
@@ -54,7 +54,7 @@ class StaticRoleContextProvider:
     async def role_title(self, owner_user_id: UUID, role_id: UUID) -> str:
         _ = owner_user_id
         if role_id != PRODUCT_ROLE_ID:
-            from careeros.modules.job_match.domain import JobMatchNotFound
+            from rezumi.modules.job_match.domain import JobMatchNotFound
 
             raise JobMatchNotFound
         return "Product Manager"

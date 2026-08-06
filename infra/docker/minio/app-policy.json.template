@@ -2,7 +2,7 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "CareerOSBucketMetadata",
+      "Sid": "RezumiBucketMetadata",
       "Effect": "Allow",
       "Action": [
         "s3:GetBucketLocation",
@@ -11,7 +11,7 @@
       "Resource": ["arn:aws:s3:::__BUCKET__"]
     },
     {
-      "Sid": "CareerOSDocumentObjects",
+      "Sid": "RezumiDocumentObjects",
       "Effect": "Allow",
       "Action": [
         "s3:DeleteObject",

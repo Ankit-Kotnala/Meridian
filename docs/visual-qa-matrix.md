@@ -1,4 +1,4 @@
-# CareerOS product-wide visual QA matrix
+# Rezumi product-wide visual QA matrix
 
 Status: redesign verification record
 Run date: 2026-07-27
@@ -165,7 +165,7 @@ authenticated account setup, focus/reflow/error checks, mobile navigation
 interaction, screenshots, and JSON report generation. Example:
 
 ```powershell
-pnpm --filter @careeros/web exec node scripts/capture-visual-qa.mjs `
+pnpm --filter @rezumi/web exec node scripts/capture-visual-qa.mjs `
   --baseUrl=http://localhost:3000 `
   --authenticated=true `
   --mailpitUrl=http://localhost:8025 `

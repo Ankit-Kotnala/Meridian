@@ -1,11 +1,11 @@
-# CareerOS product design system
+# Rezumi product design system
 
 Status: active baseline for the 2026 product-wide UX redesign
 Last reviewed: 2026-07-27
 
 ## Product direction
 
-CareerOS is a calm, evidence-first career operating system. The interface should
+Rezumi is a calm, evidence-first career operating system. The interface should
 feel like a trustworthy working record: text-first, precise, reversible, and
 quiet enough for high-stakes review. The structured Career Profile and its
 evidence graph remain the source of truth; resumes, application materials,
@@ -20,7 +20,7 @@ replace a boundary, or reduce text contrast. Decorative metric cards, invented
 activity, fake customer logos, and vague “magic” affordances are not part of the
 system.
 
-CareerOS currently uses a system-native font stack because the repository does
+Rezumi currently uses a system-native font stack because the repository does
 not include an approved self-hosted font asset. Introducing a network font would
 add a privacy, reliability, and layout-shift dependency. A future font change
 must use a reviewed local asset through `next/font/local` and preserve the
@@ -55,18 +55,18 @@ inputs, not visual templates:
   validate when the user can act on an error, keep entered values, identify the
   field in error, and never rely on color alone.
 - [Notion Agents](https://www.notion.com/product/agents): make automated work
-  visible, scoped, and reviewable. CareerOS applies this as explicit sources,
+  visible, scoped, and reviewable. Rezumi applies this as explicit sources,
   immutable snapshots, and accept/reject paths rather than autonomous mutation.
 - [Motion reduced-motion](https://motion.dev/docs/react-use-reduced-motion) and
   [MotionConfig](https://www.motion.dev/docs/react-motion-config): honor the
   operating-system preference centrally and keep opacity-only continuity where
   transform or layout motion is disabled.
 - [Greenhouse MyGreenhouse stages](https://www.greenhouse.com/product-features/mygreenhouse-stages):
-  make process stages and candidate-owned next steps legible. CareerOS applies
+  make process stages and candidate-owned next steps legible. Rezumi applies
   this to application stage, deadline, follow-up, and exact document-version
   traceability.
 
-The resulting CareerOS pattern is a grouped workspace shell, contextual page
+The resulting Rezumi pattern is a grouped workspace shell, contextual page
 headers, progressive disclosure for advanced detail, visible provenance beside
 decisions, and one honest next step instead of an array of decorative summaries.
 

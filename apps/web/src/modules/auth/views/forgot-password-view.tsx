@@ -4,7 +4,7 @@ import { MailCheck } from "lucide-react";
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 
-import { Alert, Button, TextField } from "@careeros/ui";
+import { Alert, Button, TextField } from "@rezumi/ui";
 
 import { authErrorMessage, forgotPassword } from "../api/auth-api";
 import { AuthPageShell } from "../components/auth-page-shell";

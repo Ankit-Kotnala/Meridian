@@ -3,7 +3,7 @@
 import { Clock3 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-import { Alert } from "@careeros/ui";
+import { Alert } from "@rezumi/ui";
 
 import { UploadWorkflow } from "../components/upload-workflow";
 

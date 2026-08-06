@@ -6,27 +6,27 @@ from typing import Any
 from uuid import uuid4
 
 import pytest
-from careeros.foundation.database import Base
-from careeros.modules.career_record.application import (
+from rezumi.foundation.database import Base
+from rezumi.modules.career_record.application import (
     AttachmentJobStatus,
     AttachmentProcessingOutcome,
     AttachmentReconciliationResult,
     CleanupBatchResult,
     SafeAttachmentError,
 )
-from careeros.modules.resume_builder.application import (
+from rezumi.modules.resume_builder.application import (
     ExportObjectCleanupResult,
     ExportReconciliationResult,
 )
-from careeros.modules.resume_health.application import (
+from rezumi.modules.resume_health.application import (
     JobReconciliationResult,
     OutboxDispatchResult,
     ProcessingOutcome,
 )
-from careeros.modules.resume_health.domain import JobStatus
+from rezumi.modules.resume_health.domain import JobStatus
 
-from careeros_worker import runtime
-from careeros_worker.config import WorkerSettings
+from rezumi_worker import runtime
+from rezumi_worker.config import WorkerSettings
 
 _TEST_TEMP_ROOT = Path.cwd().resolve() / "worker-runtime-test"
 

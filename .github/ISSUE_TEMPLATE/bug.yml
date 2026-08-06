@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a reproducible CareerOS defect without including private career data.
+description: Report a reproducible Rezumi defect without including private career data.
 title: "[Bug]: "
 labels: [bug]
 body:

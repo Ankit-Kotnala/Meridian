@@ -10,14 +10,14 @@ from uuid import UUID, uuid4
 import pytest
 from sqlalchemy import delete, select, text
 
-from careeros.foundation.config import DatabaseOptions
-from careeros.foundation.database import Database
-from careeros.modules.career_record.application.models import (
+from rezumi.foundation.config import DatabaseOptions
+from rezumi.foundation.database import Database
+from rezumi.modules.career_record.application.models import (
     EvidenceFilter,
     EvidenceRecord,
     ProposalFilter,
 )
-from careeros.modules.career_record.domain import (
+from rezumi.modules.career_record.domain import (
     AchievementDraft,
     AchievementMetric,
     AchievementStatus,
@@ -69,16 +69,16 @@ from careeros.modules.career_record.domain import (
     Skill,
     SkillProficiency,
 )
-from careeros.modules.career_record.infrastructure.models import (
+from rezumi.modules.career_record.infrastructure.models import (
     CareerAuditEventModel,
     EvidenceEntityLinkModel,
     EvidenceItemModel,
     EvidenceRevisionModel,
 )
-from careeros.modules.career_record.infrastructure.repository import (
+from rezumi.modules.career_record.infrastructure.repository import (
     SqlAlchemyCareerRecordUnitOfWorkFactory,
 )
-from careeros.modules.identity.infrastructure.models import UserModel
+from rezumi.modules.identity.infrastructure.models import UserModel
 
 
 def _profile(owner_user_id: UUID, now: datetime) -> CareerProfile:
@@ -164,7 +164,7 @@ def _evidence_record(
         statement=statement,
         context="Production migration",
         organization="Example Systems",
-        project="CareerOS",
+        project="Rezumi",
         start_date=PartialDate(2023),
         end_date=PartialDate(2024, 6),
         strength=EvidenceStrength.SUPPORTED,
@@ -276,9 +276,9 @@ def _evidence_record(
 
 @pytest.mark.asyncio
 async def test_analytics_growth_includes_only_achievement_evidence() -> None:
-    database_url = os.environ.get("CAREEROS_TEST_DATABASE_URL")
+    database_url = os.environ.get("REZUMI_TEST_DATABASE_URL")
     if database_url is None:
-        pytest.skip("CAREEROS_TEST_DATABASE_URL is required for PostgreSQL integration tests")
+        pytest.skip("REZUMI_TEST_DATABASE_URL is required for PostgreSQL integration tests")
 
     database = Database(DatabaseOptions(url=database_url, pool_size=2, max_overflow=0))
     factory = SqlAlchemyCareerRecordUnitOfWorkFactory(database)
@@ -347,9 +347,9 @@ async def _add_users(database: Database, user_ids: tuple[UUID, UUID], now: datet
 
 @pytest.mark.asyncio
 async def test_repository_round_trips_owned_profile_proposal_and_evidence_graph() -> None:
-    database_url = os.environ.get("CAREEROS_TEST_DATABASE_URL")
+    database_url = os.environ.get("REZUMI_TEST_DATABASE_URL")
     if database_url is None:
-        pytest.skip("CAREEROS_TEST_DATABASE_URL is required for PostgreSQL integration tests")
+        pytest.skip("REZUMI_TEST_DATABASE_URL is required for PostgreSQL integration tests")
 
     database = Database(DatabaseOptions(url=database_url, pool_size=2, max_overflow=0))
     factory = SqlAlchemyCareerRecordUnitOfWorkFactory(database)
@@ -580,9 +580,9 @@ async def test_repository_round_trips_owned_profile_proposal_and_evidence_graph(
 async def test_resume_ready_repository_round_trips_confirmation_provenance_and_relationships() -> (
     None
 ):
-    database_url = os.environ.get("CAREEROS_TEST_DATABASE_URL")
+    database_url = os.environ.get("REZUMI_TEST_DATABASE_URL")
     if database_url is None:
-        pytest.skip("CAREEROS_TEST_DATABASE_URL is required for PostgreSQL integration tests")
+        pytest.skip("REZUMI_TEST_DATABASE_URL is required for PostgreSQL integration tests")
 
     database = Database(DatabaseOptions(url=database_url, pool_size=2, max_overflow=0))
     factory = SqlAlchemyCareerRecordUnitOfWorkFactory(database)
@@ -716,9 +716,9 @@ async def test_resume_ready_repository_round_trips_confirmation_provenance_and_r
 
 @pytest.mark.asyncio
 async def test_repository_persists_achievement_conversion_and_reminders() -> None:
-    database_url = os.environ.get("CAREEROS_TEST_DATABASE_URL")
+    database_url = os.environ.get("REZUMI_TEST_DATABASE_URL")
     if database_url is None:
-        pytest.skip("CAREEROS_TEST_DATABASE_URL is required for PostgreSQL integration tests")
+        pytest.skip("REZUMI_TEST_DATABASE_URL is required for PostgreSQL integration tests")
 
     database = Database(DatabaseOptions(url=database_url, pool_size=2, max_overflow=0))
     factory = SqlAlchemyCareerRecordUnitOfWorkFactory(database)
@@ -836,9 +836,9 @@ async def test_repository_persists_achievement_conversion_and_reminders() -> Non
 
 @pytest.mark.asyncio
 async def test_concurrent_profile_creation_has_one_winner_and_truthful_reread() -> None:
-    database_url = os.environ.get("CAREEROS_TEST_DATABASE_URL")
+    database_url = os.environ.get("REZUMI_TEST_DATABASE_URL")
     if database_url is None:
-        pytest.skip("CAREEROS_TEST_DATABASE_URL is required for PostgreSQL integration tests")
+        pytest.skip("REZUMI_TEST_DATABASE_URL is required for PostgreSQL integration tests")
 
     database = Database(DatabaseOptions(url=database_url, pool_size=2, max_overflow=0))
     factory = SqlAlchemyCareerRecordUnitOfWorkFactory(database)

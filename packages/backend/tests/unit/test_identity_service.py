@@ -10,17 +10,17 @@ from uuid import UUID
 import pytest
 from identity_memory import MemoryIdentityUnitOfWork, MemoryIdentityUnitOfWorkFactory
 
-from careeros.modules.identity.application.models import (
+from rezumi.modules.identity.application.models import (
     OnboardingResumeObservation,
     RequestContext,
 )
-from careeros.modules.identity.application.service import IdentityPolicy, IdentityService
-from careeros.modules.identity.domain import (
+from rezumi.modules.identity.application.service import IdentityPolicy, IdentityService
+from rezumi.modules.identity.domain import (
     ConsentDecision,
     ObservedResumeStatus,
     OnboardingStep,
 )
-from careeros.modules.identity.domain.errors import (
+from rezumi.modules.identity.domain.errors import (
     AuthenticationRequired,
     CurrentPasswordRejected,
     EmailVerificationRequired,
@@ -32,7 +32,7 @@ from careeros.modules.identity.domain.errors import (
     ResourceNotFound,
     VersionConflict,
 )
-from careeros.modules.identity.infrastructure.fakes import (
+from rezumi.modules.identity.infrastructure.fakes import (
     CapturingEmailSender,
     DeterministicGoogleOAuthProvider,
     FakeOAuthUser,
@@ -40,7 +40,7 @@ from careeros.modules.identity.infrastructure.fakes import (
     InMemoryAbuseLimiter,
     utc_test_clock,
 )
-from careeros.modules.identity.infrastructure.security import (
+from rezumi.modules.identity.infrastructure.security import (
     HmacTokenManager,
     NormalizedEmailValidator,
 )

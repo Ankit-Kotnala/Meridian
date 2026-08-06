@@ -11,7 +11,17 @@ from uuid import UUID
 
 import pytest
 
-from careeros.modules.resume_builder.application import (
+from resume_builder_memory import (
+    OWNER_ID,
+    FixedClock,
+    MemoryResumeBuilder,
+    MemoryStorage,
+    PlainTextExtractor,
+    StaticResumeSourceProvider,
+    TextOnlyRenderer,
+    UuidFactory,
+)
+from rezumi.modules.resume_builder.application import (
     CreateResume,
     ExportResume,
     RenderedResume,
@@ -26,7 +36,7 @@ from careeros.modules.resume_builder.application import (
     ResumeExportWorkerPolicy,
     ResumeRecord,
 )
-from careeros.modules.resume_builder.domain import (
+from rezumi.modules.resume_builder.domain import (
     ResumeAuditAction,
     ResumeEntityFact,
     ResumeExportOperation,
@@ -37,20 +47,10 @@ from careeros.modules.resume_builder.domain import (
     ResumeVersion,
     build_fidelity_manifest,
 )
-from careeros.modules.resume_builder.infrastructure import (
+from rezumi.modules.resume_builder.infrastructure import (
     DeterministicResumeRenderer,
     ResumeBuilderDocumentExtractor,
     ResumeExportExtractionLimits,
-)
-from resume_builder_memory import (
-    OWNER_ID,
-    FixedClock,
-    MemoryResumeBuilder,
-    MemoryStorage,
-    PlainTextExtractor,
-    StaticResumeSourceProvider,
-    TextOnlyRenderer,
-    UuidFactory,
 )
 
 

@@ -68,8 +68,8 @@ function importViolations(path, specifier) {
     (specifier === "next" ||
       specifier.startsWith("next/") ||
       specifier.startsWith("@/") ||
-      specifier.startsWith("@careeros/contracts") ||
-      specifier.startsWith("@careeros/test-fixtures"))
+      specifier.startsWith("@rezumi/contracts") ||
+      specifier.startsWith("@rezumi/test-fixtures"))
   ) {
     violations.push("UI_TO_APPLICATION");
   }
@@ -138,7 +138,7 @@ for (const sourceRoot of sourceRoots) {
   }
 }
 
-const apiRoot = "apps/api/src/careeros_api";
+const apiRoot = "apps/api/src/rezumi_api";
 for (const absolute of await filesBelow(apiRoot)) {
   const path = portable(relative(root, absolute));
   const relativeApiPath = path.slice(apiRoot.length + 1);
@@ -161,23 +161,23 @@ const requiredWorkerTaskModules = [
   "resume_health.py",
 ];
 for (const filename of requiredWorkerTaskModules) {
-  const path = resolve(root, "apps/worker/src/careeros_worker/tasks", filename);
+  const path = resolve(root, "apps/worker/src/rezumi_worker/tasks", filename);
   try {
     if (!(await stat(path)).isFile()) throw new Error("not a file");
   } catch {
     violations.push(
-      `apps/worker/src/careeros_worker/tasks/${filename}: required bounded task module is missing`,
+      `apps/worker/src/rezumi_worker/tasks/${filename}: required bounded task module is missing`,
     );
   }
 }
 try {
   if (
     (
-      await stat(resolve(root, "apps/worker/src/careeros_worker/tasks.py"))
+      await stat(resolve(root, "apps/worker/src/rezumi_worker/tasks.py"))
     ).isFile()
   ) {
     violations.push(
-      "apps/worker/src/careeros_worker/tasks.py: monolithic task module is forbidden",
+      "apps/worker/src/rezumi_worker/tasks.py: monolithic task module is forbidden",
     );
   }
 } catch {

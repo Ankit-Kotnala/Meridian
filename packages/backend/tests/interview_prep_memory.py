@@ -9,14 +9,14 @@ from dataclasses import replace
 from datetime import UTC, datetime
 from uuid import NAMESPACE_URL, UUID, uuid5
 
-from careeros.modules.interview_prep.application import (
+from rezumi.modules.interview_prep.application import (
     InterviewSourceSnapshot,
     PageCursor,
     SourceClaim,
     SourceRequirement,
     StoryFilter,
 )
-from careeros.modules.interview_prep.domain import (
+from rezumi.modules.interview_prep.domain import (
     EvidenceRevisionPin,
     FollowUpDraft,
     InterviewAuditEvent,
@@ -462,5 +462,5 @@ def source_snapshot(
 def _uuids() -> Iterator[UUID]:
     index = 1
     while True:
-        yield uuid5(NAMESPACE_URL, f"careeros-interview-test:{index}")
+        yield uuid5(NAMESPACE_URL, f"rezumi-interview-test:{index}")
         index += 1

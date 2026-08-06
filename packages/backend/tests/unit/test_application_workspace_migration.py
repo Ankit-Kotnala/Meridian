@@ -19,7 +19,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects import postgresql
 
-from careeros.modules.application_workspace.domain import (
+from rezumi.modules.application_workspace.domain import (
     ApplicationAuditAction,
     ApplicationDocumentKind,
     ApplicationDocumentStatus,
@@ -30,10 +30,10 @@ from careeros.modules.application_workspace.domain import (
     OutcomeStatus,
     ReferralStatus,
 )
-from careeros.modules.application_workspace.infrastructure import models
-from careeros.modules.change_studio.infrastructure import models as change_studio_models
-from careeros.modules.identity.infrastructure import models as identity_models  # noqa: F401
-from careeros.modules.resume_builder.infrastructure import models as resume_models  # noqa: F401
+from rezumi.modules.application_workspace.infrastructure import models
+from rezumi.modules.change_studio.infrastructure import models as change_studio_models
+from rezumi.modules.identity.infrastructure import models as identity_models  # noqa: F401
+from rezumi.modules.resume_builder.infrastructure import models as resume_models  # noqa: F401
 
 
 def _phase_tables() -> dict[str, Table]:

@@ -6,24 +6,6 @@ from dataclasses import replace
 
 import pytest
 
-from careeros.modules.resume_builder.application import (
-    CreateResume,
-    ExportResume,
-    RequestContext,
-    ResumeBuilderPolicy,
-    ResumeBuilderService,
-    ResumeExportProcessor,
-    UpdateResume,
-    version_provenance_failures,
-)
-from careeros.modules.resume_builder.domain import (
-    ResumeBuilderNotFound,
-    ResumeBuilderValidationError,
-    ResumeExportBlocked,
-    ResumeExportStatus,
-    ResumeFormat,
-    ResumeTemplate,
-)
 from resume_builder_memory import (
     EVIDENCE_ID,
     OTHER_ID,
@@ -35,6 +17,24 @@ from resume_builder_memory import (
     StaticResumeSourceProvider,
     TextOnlyRenderer,
     UuidFactory,
+)
+from rezumi.modules.resume_builder.application import (
+    CreateResume,
+    ExportResume,
+    RequestContext,
+    ResumeBuilderPolicy,
+    ResumeBuilderService,
+    ResumeExportProcessor,
+    UpdateResume,
+    version_provenance_failures,
+)
+from rezumi.modules.resume_builder.domain import (
+    ResumeBuilderNotFound,
+    ResumeBuilderValidationError,
+    ResumeExportBlocked,
+    ResumeExportStatus,
+    ResumeFormat,
+    ResumeTemplate,
 )
 
 
