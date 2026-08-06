@@ -11,7 +11,7 @@ def _camel(name: str) -> str:
     return first + "".join(part.capitalize() for part in rest)
 
 
-class BillingSchema(BaseModel):
+class BillingSchema(BillingSchema):
     model_config = ConfigDict(
         alias_generator=_camel,
         populate_by_name=True,
@@ -34,11 +34,11 @@ class PlanResponse(BillingSchema):
     annual_price_usd: float
 
 
-class PlanListResponse(BaseModel):
+class PlanListResponse(BillingSchema):
     plans: list[PlanResponse]
 
 
-class SubscriptionSummaryResponse(BaseModel):
+class SubscriptionSummaryResponse(BillingSchema):
     tier: str
     status: str
     billing_cycle: str
@@ -54,27 +54,27 @@ class SubscriptionSummaryResponse(BaseModel):
     exports_limit: int
 
 
-class CheckoutSessionRequest(BaseModel):
+class CheckoutSessionRequest(BillingSchema):
     tier: Literal["sprint", "pro", "coach"]
     billing_cycle: Literal["monthly", "annual"] = "monthly"
     success_url: str = Field(..., max_length=1024)
     cancel_url: str = Field(..., max_length=1024)
 
 
-class CheckoutSessionResponse(BaseModel):
+class CheckoutSessionResponse(BillingSchema):
     checkout_url: str
     session_id: str
 
 
-class PortalSessionRequest(BaseModel):
+class PortalSessionRequest(BillingSchema):
     return_url: str = Field(..., max_length=1024)
 
 
-class PortalSessionResponse(BaseModel):
+class PortalSessionResponse(BillingSchema):
     portal_url: str
 
 
-class WebhookResultResponse(BaseModel):
+class WebhookResultResponse(BillingSchema):
     event_id: str
     event_type: str
     processed: bool

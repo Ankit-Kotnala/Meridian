@@ -2,10 +2,23 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
-class SystemMetricsResponse(BaseModel):
+def _camel(name: str) -> str:
+    first, *rest = name.split("_")
+    return first + "".join(part.capitalize() for part in rest)
+
+
+class AdminSchema(AdminSchema):
+    model_config = ConfigDict(
+        alias_generator=_camel,
+        populate_by_name=True,
+        extra="forbid",
+    )
+
+
+class SystemMetricsResponse(AdminSchema):
     environment: str
     service_version: str
     status: str
@@ -16,7 +29,7 @@ class SystemMetricsResponse(BaseModel):
     system_health: dict[str, str]
 
 
-class DeadLetterJobResponse(BaseModel):
+class DeadLetterJobResponse(AdminSchema):
     id: str
     job_type: str
     user_id: str
@@ -26,11 +39,11 @@ class DeadLetterJobResponse(BaseModel):
     failed_at: datetime
 
 
-class DeadLetterJobListResponse(BaseModel):
+class DeadLetterJobListResponse(AdminSchema):
     jobs: list[DeadLetterJobResponse]
 
 
-class JobRetryResponse(BaseModel):
+class JobRetryResponse(AdminSchema):
     job_id: str
     status: str
     message: str
