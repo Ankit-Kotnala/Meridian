@@ -41,7 +41,7 @@ function json(body: unknown) {
 
 describe("onboarding", () => {
   afterEach(() => {
-    document.cookie = "careeros_csrf=; Max-Age=0; Path=/";
+    document.cookie = "rezumi_csrf=; Max-Age=0; Path=/";
     vi.unstubAllGlobals();
     replace.mockReset();
     refresh.mockReset();
@@ -49,7 +49,7 @@ describe("onboarding", () => {
   });
 
   it("persists each honest handoff before completing preferences", async () => {
-    document.cookie = "careeros_csrf=session-csrf; Path=/";
+    document.cookie = "rezumi_csrf=session-csrf; Path=/";
     let state = { ...initial };
     const fetchMock = vi.fn(
       async (input: string | URL | Request, init?: RequestInit) => {

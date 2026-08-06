@@ -6,7 +6,8 @@ from datetime import UTC, date, datetime
 from unittest.mock import create_autospec
 from uuid import UUID, uuid4
 
-from careeros.modules.career_analytics.application import (
+from fastapi.testclient import TestClient
+from rezumi.modules.career_analytics.application import (
     ANALYTICS_INTERPRETATION,
     APPLICATION_COHORT_DEFINITION,
     METRIC_DEFINITION_VERSION,
@@ -17,7 +18,7 @@ from careeros.modules.career_analytics.application import (
     metric_definitions_payload,
     suppression_policy_payload,
 )
-from careeros.modules.career_analytics.domain import (
+from rezumi.modules.career_analytics.domain import (
     AnalyticsJobStatus,
     AnalyticsScope,
     AnalyticsSnapshotStatus,
@@ -26,13 +27,12 @@ from careeros.modules.career_analytics.domain import (
     CareerAnalyticsUnavailable,
     CareerAnalyticsValidationError,
 )
-from careeros.modules.identity.application import IdentityService
-from careeros.modules.identity.domain import AuthenticatedPrincipal, AuthMethod
-from fastapi.testclient import TestClient
+from rezumi.modules.identity.application import IdentityService
+from rezumi.modules.identity.domain import AuthenticatedPrincipal, AuthMethod
 
-from careeros_api.config import Settings
-from careeros_api.main import create_app
 from conftest import FakeDatabase
+from rezumi_api.config import Settings
+from rezumi_api.main import create_app
 
 _ORIGIN = "http://localhost:3000"
 _NOW = datetime(2026, 7, 24, 20, tzinfo=UTC)
@@ -163,8 +163,8 @@ def _client(
             career_analytics=analytics,
         )
     )
-    client.cookies.set("careeros_session", "opaque-session")
-    client.cookies.set("careeros_csrf", "opaque-csrf")
+    client.cookies.set("rezumi_session", "opaque-session")
+    client.cookies.set("rezumi_csrf", "opaque-csrf")
     return client
 
 

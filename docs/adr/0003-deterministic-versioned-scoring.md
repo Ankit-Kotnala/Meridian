@@ -6,7 +6,7 @@
 
 ## Context
 
-CareerOS needs Resume Health, Role Readiness, Requirement Coverage, Evidence
+Rezumi needs Resume Health, Role Readiness, Requirement Coverage, Evidence
 Strength, Application Readiness, and related measures. Letting a language model
 emit a number would be nondeterministic, difficult to explain, easy to manipulate,
 and likely to be confused with an employer's ATS or hiring probability.

@@ -11,9 +11,16 @@ import pytest
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 
-from careeros.foundation.config import DatabaseOptions
-from careeros.foundation.database import Database
-from careeros.modules.application_workspace.application import (
+from resume_builder_memory import (
+    EVIDENCE_ID,
+    SKILL_EVIDENCE_ID,
+    FixedClock,
+    MemoryStorage,
+    StaticResumeSourceProvider,
+)
+from rezumi.foundation.config import DatabaseOptions
+from rezumi.foundation.database import Database
+from rezumi.modules.application_workspace.application import (
     ApplicationInterviewEvidenceReference,
     ApplicationJobSnapshot,
     ApplicationSourceEvidenceReference,
@@ -24,17 +31,17 @@ from careeros.modules.application_workspace.application import (
     RequestContext,
     UpdateApplication,
 )
-from careeros.modules.application_workspace.domain import (
+from rezumi.modules.application_workspace.domain import (
     ApplicationEvidencePin,
     ApplicationRequirementSnapshot,
     ApplicationStage,
     ApplicationWorkspaceNotFound,
 )
-from careeros.modules.application_workspace.infrastructure import (
+from rezumi.modules.application_workspace.infrastructure import (
     ResumeBuilderVersionSnapshotProvider,
     SqlAlchemyApplicationWorkspaceUnitOfWorkFactory,
 )
-from careeros.modules.application_workspace.infrastructure.models import (
+from rezumi.modules.application_workspace.infrastructure.models import (
     ApplicationAuditEventModel,
     ApplicationDocumentModel,
     ApplicationEventModel,
@@ -42,25 +49,18 @@ from careeros.modules.application_workspace.infrastructure.models import (
     ApplicationRecordModel,
     ApplicationTaskModel,
 )
-from careeros.modules.identity.infrastructure.models import UserModel
-from careeros.modules.resume_builder.application import (
+from rezumi.modules.identity.infrastructure.models import UserModel
+from rezumi.modules.resume_builder.application import (
     CreateResume,
     ResumeBuilderPolicy,
     ResumeBuilderService,
 )
-from careeros.modules.resume_builder.application import (
+from rezumi.modules.resume_builder.application import (
     RequestContext as ResumeRequestContext,
 )
-from careeros.modules.resume_builder.domain import ResumeTemplate
-from careeros.modules.resume_builder.infrastructure.repository import (
+from rezumi.modules.resume_builder.domain import ResumeTemplate
+from rezumi.modules.resume_builder.infrastructure.repository import (
     SqlAlchemyResumeBuilderUnitOfWorkFactory,
-)
-from resume_builder_memory import (
-    EVIDENCE_ID,
-    SKILL_EVIDENCE_ID,
-    FixedClock,
-    MemoryStorage,
-    StaticResumeSourceProvider,
 )
 
 
@@ -152,9 +152,9 @@ def _user(user_id: UUID, email: str) -> UserModel:
 
 @pytest.mark.asyncio
 async def test_application_aggregate_is_owner_scoped_and_hard_deleted() -> None:
-    database_url = os.environ.get("CAREEROS_TEST_DATABASE_URL")
+    database_url = os.environ.get("REZUMI_TEST_DATABASE_URL")
     if database_url is None:
-        pytest.skip("CAREEROS_TEST_DATABASE_URL is required for PostgreSQL integration tests")
+        pytest.skip("REZUMI_TEST_DATABASE_URL is required for PostgreSQL integration tests")
 
     owner_id = uuid4()
     other_id = uuid4()

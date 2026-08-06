@@ -9,7 +9,7 @@ from uuid import UUID
 
 import pytest
 
-from careeros.modules.application_workspace.domain import (
+from rezumi.modules.application_workspace.domain import (
     ApplicationClaimEvidenceLink,
     ApplicationDocumentClaim,
     ApplicationEvidencePin,

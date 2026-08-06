@@ -18,13 +18,13 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from careeros.foundation.config import DatabaseOptions
-from careeros.foundation.database import Database
-from careeros.modules.change_studio.infrastructure.repository import (
+from rezumi.foundation.config import DatabaseOptions
+from rezumi.foundation.database import Database
+from rezumi.modules.change_studio.infrastructure.repository import (
     SqlAlchemyChangeStudioUnitOfWorkFactory,
 )
-from careeros.modules.resume_builder.domain import ResumeBuilderValidationError
-from careeros.modules.resume_builder.infrastructure.sources import (
+from rezumi.modules.resume_builder.domain import ResumeBuilderValidationError
+from rezumi.modules.resume_builder.infrastructure.sources import (
     CareerRecordResumeSourceProvider,
 )
 
@@ -46,7 +46,7 @@ def _alembic_config() -> Config:
 
 
 async def _create_database(admin_url: str, database_name: str) -> None:
-    assert re.fullmatch(r"careeros_phase8_[0-9a-f]{32}", database_name)
+    assert re.fullmatch(r"rezumi_phase8_[0-9a-f]{32}", database_name)
     engine = create_async_engine(admin_url, isolation_level="AUTOCOMMIT")
     try:
         async with engine.connect() as connection:
@@ -58,7 +58,7 @@ async def _create_database(admin_url: str, database_name: str) -> None:
 
 
 async def _drop_database(admin_url: str, database_name: str) -> None:
-    assert re.fullmatch(r"careeros_phase8_[0-9a-f]{32}", database_name)
+    assert re.fullmatch(r"rezumi_phase8_[0-9a-f]{32}", database_name)
     engine = create_async_engine(admin_url, isolation_level="AUTOCOMMIT")
     try:
         async with engine.connect() as connection:
@@ -323,19 +323,19 @@ async def _assert_provenance_columns_absent(database_url: str) -> None:
 def test_upgrade_from_0008_preserves_legacy_claim_and_fails_closed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    configured_url = os.environ.get("CAREEROS_TEST_DATABASE_URL")
+    configured_url = os.environ.get("REZUMI_TEST_DATABASE_URL")
     if configured_url is None:
-        pytest.skip("CAREEROS_TEST_DATABASE_URL is required for PostgreSQL integration tests")
+        pytest.skip("REZUMI_TEST_DATABASE_URL is required for PostgreSQL integration tests")
 
     parsed_url = make_url(configured_url)
-    database_name = f"careeros_phase8_{uuid4().hex}"
+    database_name = f"rezumi_phase8_{uuid4().hex}"
     target_url = parsed_url.set(database=database_name).render_as_string(hide_password=False)
     admin_url = parsed_url.render_as_string(hide_password=False)
     asyncio.run(_create_database(admin_url, database_name))
     try:
-        monkeypatch.setenv("CAREEROS_DATABASE_URL", target_url)
+        monkeypatch.setenv("REZUMI_DATABASE_URL", target_url)
         monkeypatch.setenv("DATABASE_URL", target_url)
-        monkeypatch.setenv("CAREEROS_ENVIRONMENT", "test")
+        monkeypatch.setenv("REZUMI_ENVIRONMENT", "test")
         monkeypatch.setenv("ENVIRONMENT", "test")
 
         command.upgrade(_alembic_config(), "20260719_0008")

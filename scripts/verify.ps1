@@ -51,13 +51,13 @@ Assert-LastExitCode "JavaScript build"
 
 Push-Location "packages/backend"
 try {
-    uv run --package careeros-backend ruff format --check .
+    uv run --package rezumi-backend ruff format --check .
     Assert-LastExitCode "Backend format check"
-    uv run --package careeros-backend ruff check .
+    uv run --package rezumi-backend ruff check .
     Assert-LastExitCode "Backend lint"
-    uv run --package careeros-backend mypy
+    uv run --package rezumi-backend mypy
     Assert-LastExitCode "Backend type check"
-    uv run --package careeros-backend pytest tests/architecture tests/unit
+    uv run --package rezumi-backend pytest tests/architecture tests/unit
     Assert-LastExitCode "Backend unit and architecture tests"
 }
 finally {
@@ -94,9 +94,9 @@ finally {
     Pop-Location
 }
 
-uv run --package careeros-api ruff format --config apps/api/pyproject.toml --check packages/contracts/scripts/export_openapi.py
+uv run --package rezumi-api ruff format --config apps/api/pyproject.toml --check packages/contracts/scripts/export_openapi.py
 Assert-LastExitCode "OpenAPI exporter format check"
-uv run --package careeros-api ruff check --config apps/api/pyproject.toml packages/contracts/scripts/export_openapi.py
+uv run --package rezumi-api ruff check --config apps/api/pyproject.toml packages/contracts/scripts/export_openapi.py
 Assert-LastExitCode "OpenAPI exporter lint"
 
 docker compose config --quiet
@@ -125,6 +125,6 @@ foreach ($Endpoint in $Endpoints) {
     Assert-HttpEndpoint -Endpoint $Endpoint
 }
 
-docker compose exec -T worker celery --app careeros_worker.app:celery_app inspect ping --timeout 5
+docker compose exec -T worker celery --app rezumi_worker.app:celery_app inspect ping --timeout 5
 Assert-LastExitCode "Worker broker round trip"
-Write-Host "CareerOS Phase 0 verification passed."
+Write-Host "Rezumi Phase 0 verification passed."

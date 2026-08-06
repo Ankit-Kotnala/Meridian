@@ -7,9 +7,10 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import create_autospec
 from uuid import UUID, uuid4
 
-from careeros.modules.identity.application import IdentityService
-from careeros.modules.identity.domain import AuthenticatedPrincipal, AuthMethod
-from careeros.modules.networking.application import (
+from fastapi.testclient import TestClient
+from rezumi.modules.identity.application import IdentityService
+from rezumi.modules.identity.domain import AuthenticatedPrincipal, AuthMethod
+from rezumi.modules.networking.application import (
     UNSET,
     ContactConsentHistory,
     ContactConsentState,
@@ -21,7 +22,7 @@ from careeros.modules.networking.application import (
     ReminderExecutionView,
     ReminderResolutionAction,
 )
-from careeros.modules.networking.domain import (
+from rezumi.modules.networking.domain import (
     NETWORKING_CONTACT_CONSENT_POLICY_VERSION,
     NETWORKING_CONTACT_DELETION_POLICY_VERSION,
     ConsentAction,
@@ -48,11 +49,10 @@ from careeros.modules.networking.domain import (
     ReminderStatus,
     TemplateKind,
 )
-from fastapi.testclient import TestClient
 
-from careeros_api.config import Settings
-from careeros_api.main import create_app
 from conftest import FakeDatabase
+from rezumi_api.config import Settings
+from rezumi_api.main import create_app
 
 _ORIGIN = "http://localhost:3000"
 _NOW = datetime(2026, 7, 25, 4, tzinfo=UTC)
@@ -311,8 +311,8 @@ def _client(
         networking=service,
     )
     client = TestClient(application)
-    client.cookies.set("careeros_session", "opaque-session")
-    client.cookies.set("careeros_csrf", "opaque-csrf")
+    client.cookies.set("rezumi_session", "opaque-session")
+    client.cookies.set("rezumi_csrf", "opaque-csrf")
     return client
 
 

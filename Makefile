@@ -3,7 +3,7 @@ SHELL := /bin/sh
 .PHONY: help setup dev dev-web dev-api dev-worker local-up local-backend local-deps local-rebuild local-rebuild-web local-rebuild-backend local-status local-logs local-smoke local-down stop format format-check lint typecheck test test-web test-api test-worker test-backend contracts-check test-integration test-e2e test-e2e-stack-phase1 test-e2e-stack test-e2e-stack-phase3 test-e2e-stack-phase4 test-e2e-stack-phase5 test-e2e-stack-phase6 test-e2e-stack-phase7 test-e2e-stack-phase8 test-e2e-stack-phase9 build security-scan seed migrate reset-db compose-config verify verify-phase1 verify-phase2 verify-phase3 verify-phase4 verify-phase5 verify-phase6 verify-phase7 verify-phase8 verify-phase9
 
 help:
-	@echo "CareerOS development targets"
+	@echo "Rezumi development targets"
 	@echo "  setup            Install pinned JavaScript and Python dependencies"
 	@echo "  dev              Build and start the attached local Compose platform"
 	@echo "  dev-web          Run the web with hot reload against backend containers"
@@ -103,34 +103,34 @@ stop: local-down
 
 format:
 	pnpm format
-	cd packages/backend && uv run --package careeros-backend ruff format .
+	cd packages/backend && uv run --package rezumi-backend ruff format .
 	cd apps/api && uv run ruff format .
 	cd apps/worker && uv run ruff format .
-	uv run --package careeros-api ruff format --config apps/api/pyproject.toml packages/contracts/scripts/export_openapi.py
+	uv run --package rezumi-api ruff format --config apps/api/pyproject.toml packages/contracts/scripts/export_openapi.py
 
 format-check:
 	pnpm format:check
-	cd packages/backend && uv run --package careeros-backend ruff format --check .
+	cd packages/backend && uv run --package rezumi-backend ruff format --check .
 	cd apps/api && uv run ruff format --check .
 	cd apps/worker && uv run ruff format --check .
-	uv run --package careeros-api ruff format --config apps/api/pyproject.toml --check packages/contracts/scripts/export_openapi.py
+	uv run --package rezumi-api ruff format --config apps/api/pyproject.toml --check packages/contracts/scripts/export_openapi.py
 
 lint:
 	pnpm lint
-	cd packages/backend && uv run --package careeros-backend ruff check .
+	cd packages/backend && uv run --package rezumi-backend ruff check .
 	cd apps/api && uv run ruff check .
 	cd apps/worker && uv run ruff check .
-	uv run --package careeros-api ruff check --config apps/api/pyproject.toml packages/contracts/scripts/export_openapi.py
+	uv run --package rezumi-api ruff check --config apps/api/pyproject.toml packages/contracts/scripts/export_openapi.py
 
 typecheck:
 	pnpm typecheck
-	cd packages/backend && uv run --package careeros-backend mypy
+	cd packages/backend && uv run --package rezumi-backend mypy
 	cd apps/api && uv run mypy
 	cd apps/worker && uv run mypy
 
 test:
 	pnpm test
-	cd packages/backend && uv run --package careeros-backend pytest tests/architecture tests/unit
+	cd packages/backend && uv run --package rezumi-backend pytest tests/architecture tests/unit
 	cd apps/api && uv run pytest
 	cd apps/worker && uv run pytest
 
@@ -160,37 +160,37 @@ test-integration:
 	curl --fail --silent --show-error http://localhost:8000/ready
 	curl --fail --silent --show-error http://localhost:8000/api/v1/meta
 	curl --fail --silent --show-error http://localhost:8025/api/v1/info
-	docker compose exec -T worker celery --app careeros_worker.app:celery_app inspect ping --timeout 5
+	docker compose exec -T worker celery --app rezumi_worker.app:celery_app inspect ping --timeout 5
 
 test-e2e:
 	pnpm test:e2e
 
 test-e2e-stack-phase1:
-	CAREEROS_E2E_PHASE=1 sh tests/e2e/run-compose.sh
+	REZUMI_E2E_PHASE=1 sh tests/e2e/run-compose.sh
 
 test-e2e-stack:
-	CAREEROS_E2E_PHASE=2 sh tests/e2e/run-compose.sh
+	REZUMI_E2E_PHASE=2 sh tests/e2e/run-compose.sh
 
 test-e2e-stack-phase3:
-	CAREEROS_E2E_PHASE=3 sh tests/e2e/run-compose.sh
+	REZUMI_E2E_PHASE=3 sh tests/e2e/run-compose.sh
 
 test-e2e-stack-phase4:
-	CAREEROS_E2E_PHASE=4 sh tests/e2e/run-compose.sh
+	REZUMI_E2E_PHASE=4 sh tests/e2e/run-compose.sh
 
 test-e2e-stack-phase5:
-	CAREEROS_E2E_PHASE=5 sh tests/e2e/run-compose.sh
+	REZUMI_E2E_PHASE=5 sh tests/e2e/run-compose.sh
 
 test-e2e-stack-phase6:
-	CAREEROS_E2E_PHASE=6 sh tests/e2e/run-compose.sh
+	REZUMI_E2E_PHASE=6 sh tests/e2e/run-compose.sh
 
 test-e2e-stack-phase7:
-	CAREEROS_E2E_PHASE=7 sh tests/e2e/run-compose.sh
+	REZUMI_E2E_PHASE=7 sh tests/e2e/run-compose.sh
 
 test-e2e-stack-phase8:
-	CAREEROS_E2E_PHASE=8 sh tests/e2e/run-compose.sh
+	REZUMI_E2E_PHASE=8 sh tests/e2e/run-compose.sh
 
 test-e2e-stack-phase9:
-	CAREEROS_E2E_PHASE=9 sh tests/e2e/run-compose.sh
+	REZUMI_E2E_PHASE=9 sh tests/e2e/run-compose.sh
 
 build:
 	pnpm build
@@ -200,18 +200,18 @@ security-scan:
 	docker run --rm --volume "$(CURDIR):/repo:ro" ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f dir /repo --config /repo/.gitleaks.toml --redact --exit-code 1
 	pnpm audit --audit-level high
 	uv sync --frozen --all-packages --all-groups
-	uv run --package careeros-api --with pip-audit==2.10.1 pip-audit
+	uv run --package rezumi-api --with pip-audit==2.10.1 pip-audit
 	docker compose build api worker web web-edge
-	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume careeros-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d careeros-api:latest --config /etc/grype.yaml --fail-on high --only-fixed
-	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume careeros-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d careeros-worker:latest --config /etc/grype.yaml --fail-on high --only-fixed
-	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume careeros-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d careeros-web:latest --config /etc/grype.yaml --fail-on high --only-fixed
-	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume careeros-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d careeros-web-edge:latest --config /etc/grype.yaml --fail-on high --only-fixed
+	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume rezumi-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d rezumi-api:latest --config /etc/grype.yaml --fail-on high --only-fixed
+	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume rezumi-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d rezumi-worker:latest --config /etc/grype.yaml --fail-on high --only-fixed
+	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume rezumi-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d rezumi-web:latest --config /etc/grype.yaml --fail-on high --only-fixed
+	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume rezumi-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d rezumi-web-edge:latest --config /etc/grype.yaml --fail-on high --only-fixed
 
 seed:
 	docker compose up --detach --wait postgres minio minio-init
 	docker compose build api
 	docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
-	CAREEROS_ALLOW_LOCAL_SEED=fictional-careeros-local-seed-v1 docker compose --profile tools run --rm --no-deps local-seed
+	REZUMI_ALLOW_LOCAL_SEED=fictional-rezumi-local-seed-v1 docker compose --profile tools run --rm --no-deps local-seed
 
 migrate:
 	docker compose run --rm api alembic -c packages/backend/alembic.ini upgrade head

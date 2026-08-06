@@ -1,4 +1,4 @@
-# CareerOS API conventions and route plan
+# Rezumi API conventions and route plan
 
 Status: Phase 8 and Phase 9 APIs complete and hosted verified
 Base path for product APIs: `/api/v1`  
@@ -81,18 +81,18 @@ phase is marked complete.
 
 ## Request context and headers
 
-| Header                     | Direction         | Rule                                                                                                     |
-| -------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------- |
-| `X-Request-ID`             | request/response  | Client may supply a bounded safe value; edge replaces invalid values and always returns the effective ID |
-| `traceparent`              | request/internal  | Valid W3C context is propagated; invalid input starts a new trace and is never trusted for authorization |
-| `X-Trace-ID`               | response/internal | Effective 32-hex trace ID returned by the Phase 0 API and bound to structured logs; diagnostic only      |
-| `Idempotency-Key`          | request           | Required where specified; 8-128 characters from `[A-Za-z0-9._:-]`                                        |
-| `If-Match`                 | request           | Required where specified; quoted positive integer version, maximum `2147483647`                          |
-| `ETag`                     | response          | Represents a mutable resource version, not a secret                                                      |
-| `X-CSRF-Token`             | request           | Phase 1 cookie-authenticated state-changing request defense, paired with origin policy                   |
-| `X-Guest-CSRF`             | request           | Phase 2 guest double-submit token, paired with the guest capability cookie and origin policy             |
-| `X-CareerOS-Client-Signal` | internal request  | HMAC-authenticated opaque per-source input from the trusted web BFF; never authorization                 |
-| `Retry-After`              | response          | Returned for applicable `429` or temporary `503` responses                                               |
+| Header                   | Direction         | Rule                                                                                                     |
+| ------------------------ | ----------------- | -------------------------------------------------------------------------------------------------------- |
+| `X-Request-ID`           | request/response  | Client may supply a bounded safe value; edge replaces invalid values and always returns the effective ID |
+| `traceparent`            | request/internal  | Valid W3C context is propagated; invalid input starts a new trace and is never trusted for authorization |
+| `X-Trace-ID`             | response/internal | Effective 32-hex trace ID returned by the Phase 0 API and bound to structured logs; diagnostic only      |
+| `Idempotency-Key`        | request           | Required where specified; 8-128 characters from `[A-Za-z0-9._:-]`                                        |
+| `If-Match`               | request           | Required where specified; quoted positive integer version, maximum `2147483647`                          |
+| `ETag`                   | response          | Represents a mutable resource version, not a secret                                                      |
+| `X-CSRF-Token`           | request           | Phase 1 cookie-authenticated state-changing request defense, paired with origin policy                   |
+| `X-Guest-CSRF`           | request           | Phase 2 guest double-submit token, paired with the guest capability cookie and origin policy             |
+| `X-Rezumi-Client-Signal` | internal request  | HMAC-authenticated opaque per-source input from the trusted web BFF; never authorization                 |
+| `Retry-After`            | response          | Returned for applicable `429` or temporary `503` responses                                               |
 
 Correlation IDs are safe opaque diagnostics. They are shown in user-facing errors
 and logs but never grant access.
@@ -152,7 +152,7 @@ Errors are stable, safe, and actionable without exposing internals:
 
 ```json
 {
-  "type": "https://careeros.example/problems/validation-error",
+  "type": "https://rezumi.example/problems/validation-error",
   "title": "Request validation failed",
   "status": 422,
   "code": "validation_error",
@@ -408,7 +408,7 @@ OpenAPI. Parse/analyze cancellation is cooperative; delete jobs reject
 cancellation because partial erasure must continue to a durable terminal state.
 
 Guest routes use a narrow, opaque capability in the path-restricted, `HttpOnly`,
-`SameSite=Lax` `careeros_guest_capability` cookie. Mutations also require an
+`SameSite=Lax` `rezumi_guest_capability` cookie. Mutations also require an
 exact allowed origin and `X-Guest-CSRF` matching the readable guest CSRF cookie.
 A guest may have one active intake and the default capability/document retention
 is 24 hours (bounded by configuration to seven days). The browser never submits a

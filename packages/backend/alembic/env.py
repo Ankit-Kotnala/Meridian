@@ -7,41 +7,41 @@ from alembic import context
 from sqlalchemy import Connection, pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from careeros.foundation.config import database_url_from_environment
-from careeros.foundation.database import Base
-from careeros.modules.application_workspace.infrastructure import (
+from rezumi.foundation.config import database_url_from_environment
+from rezumi.foundation.database import Base
+from rezumi.modules.application_workspace.infrastructure import (
     models as application_workspace_models,  # noqa: F401
 )
-from careeros.modules.billing.infrastructure import (
+from rezumi.modules.billing.infrastructure import (
     models as billing_models,  # noqa: F401
 )
-from careeros.modules.career_analytics.infrastructure import (
+from rezumi.modules.career_analytics.infrastructure import (
     models as career_analytics_models,  # noqa: F401
 )
-from careeros.modules.career_growth.infrastructure import (
+from rezumi.modules.career_growth.infrastructure import (
     models as career_growth_models,  # noqa: F401
 )
-from careeros.modules.career_record.infrastructure import (
+from rezumi.modules.career_record.infrastructure import (
     models as career_record_models,  # noqa: F401
 )
-from careeros.modules.change_studio.infrastructure import (
+from rezumi.modules.change_studio.infrastructure import (
     models as change_studio_models,  # noqa: F401
 )
-from careeros.modules.identity.infrastructure import models as identity_models  # noqa: F401
-from careeros.modules.interview_prep.infrastructure import (
+from rezumi.modules.identity.infrastructure import models as identity_models  # noqa: F401
+from rezumi.modules.interview_prep.infrastructure import (
     models as interview_prep_models,  # noqa: F401
 )
-from careeros.modules.job_match.infrastructure import models as job_match_models  # noqa: F401
-from careeros.modules.networking.infrastructure import (
+from rezumi.modules.job_match.infrastructure import models as job_match_models  # noqa: F401
+from rezumi.modules.networking.infrastructure import (
     models as networking_models,  # noqa: F401
 )
-from careeros.modules.resume_builder.infrastructure import (
+from rezumi.modules.resume_builder.infrastructure import (
     models as resume_builder_models,  # noqa: F401
 )
-from careeros.modules.resume_health.infrastructure import (
+from rezumi.modules.resume_health.infrastructure import (
     models as resume_health_models,  # noqa: F401
 )
-from careeros.modules.role_readiness.infrastructure import (
+from rezumi.modules.role_readiness.infrastructure import (
     models as role_readiness_models,  # noqa: F401
 )
 

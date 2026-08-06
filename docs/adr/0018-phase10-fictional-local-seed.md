@@ -5,7 +5,7 @@ Date: 2026-07-26
 
 ## Context
 
-CareerOS now has durable product models across Phases 1 through 9 and private
+Rezumi now has durable product models across Phases 1 through 9 and private
 objects in MinIO. The original `make seed` only printed a Phase 0 presentation
 fixture. That behavior could not exercise ownership, provenance, immutable
 version pins, analytics suppression, object references, migrations, or local
@@ -20,7 +20,7 @@ product module's persistence from another would violate module boundaries.
 
 ## Decision
 
-Add a separate `careeros.development.local_seed` tooling composition root and a
+Add a separate `rezumi.development.local_seed` tooling composition root and a
 Compose `tools` profile. It is not imported by the API or worker application,
 has no HTTP/task route, and does not start with the normal platform.
 
@@ -29,15 +29,15 @@ Before dependency I/O, the command requires all of the following:
 - explicit `development` environment;
 - an exact non-secret confirmation value supplied by `make seed` or the checked
   PowerShell wrapper;
-- the local `careeros` database identity and database name on the Compose
+- the local `rezumi` database identity and database name on the Compose
   `postgres` alias or a loopback host;
-- a path-free local MinIO endpoint and the private `careeros-documents` bucket;
+- a path-free local MinIO endpoint and the private `rezumi-documents` bucket;
 - matching URL/SSL settings; and
 - the exact reviewed Alembic migration head.
 
 The seed uses UUIDv5 identifiers in a dedicated namespace, fixed fictional
 timestamps, reserved `.invalid` email addresses, conspicuous fictional labels,
-the existing CareerOS-authored role taxonomy, and no external content. It
+the existing Rezumi-authored role taxonomy, and no external content. It
 creates a valid graph spanning Identity, Resume Health, Career Record, Role
 Explorer, Job Match, Change Studio, Resume Builder, Application Workspace, and
 the four Phase 9 contexts.

@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { CareerOsLogo } from "@/shared/components/career-os-logo";
+import { RezumiLogo } from "@/shared/components/rezumi-logo";
 
 const footerGroups = [
   {
@@ -37,14 +37,14 @@ export function SiteFooter() {
     <footer className="border-t border-white/10 bg-navy text-white">
       <div className="site-container grid gap-10 py-14 md:grid-cols-[1.35fr_2fr]">
         <div>
-          <CareerOsLogo inverted />
+          <RezumiLogo inverted />
           <p className="mt-5 max-w-sm text-sm leading-6 text-emerald-50/70">
             Maintain an evidence-backed career record, then use it to create
             grounded applications you control.
           </p>
           <p className="mt-6 text-xs leading-5 text-emerald-100/50">
-            CareerOS readiness measurements are not employer or applicant
-            tracking system scores and do not guarantee outcomes.
+            Rezumi readiness measurements are not employer or applicant tracking
+            system scores and do not guarantee outcomes.
           </p>
         </div>
         <nav
@@ -74,9 +74,7 @@ export function SiteFooter() {
       </div>
       <div className="border-t border-white/10">
         <div className="site-container flex flex-col gap-2 py-5 text-xs text-emerald-100/50 sm:flex-row sm:items-center sm:justify-between">
-          <p>
-            © {new Date().getFullYear()} CareerOS. Technical product preview.
-          </p>
+          <p>© {new Date().getFullYear()} Rezumi. Technical product preview.</p>
           <p>Career truth before career polish.</p>
         </div>
       </div>

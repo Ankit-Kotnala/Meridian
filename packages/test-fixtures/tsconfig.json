@@ -1,5 +1,5 @@
 {
-  "extends": "@careeros/typescript-config/base.json",
+  "extends": "@rezumi/typescript-config/base.json",
   "compilerOptions": {
     "noEmit": true
   },

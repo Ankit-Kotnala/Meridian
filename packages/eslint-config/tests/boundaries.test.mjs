@@ -41,7 +41,7 @@ test("allows a module to use its own components and shared code", () => {
   assert.equal(
     boundaryViolation(
       "apps/web/src/modules/dashboard/views/dashboard-page.tsx",
-      "@/shared/components/careeros-logo",
+      "@/shared/components/rezumi-logo",
     ),
     undefined,
   );
@@ -50,7 +50,7 @@ test("allows a module to use its own components and shared code", () => {
 test("rejects shared code importing a feature", () => {
   assert.match(
     boundaryViolation(
-      "apps/web/src/shared/components/careeros-logo.tsx",
+      "apps/web/src/shared/components/rezumi-logo.tsx",
       "@/modules/marketing",
     ),
     /shared web code must not import routes or feature modules/,

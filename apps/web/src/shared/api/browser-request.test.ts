@@ -11,13 +11,13 @@ function json(body: unknown, init?: ResponseInit) {
 
 describe("browser API requests", () => {
   afterEach(() => {
-    document.cookie = "careeros_csrf=; Max-Age=0; Path=/";
-    document.cookie = "careeros_guest_csrf=; Max-Age=0; Path=/";
+    document.cookie = "rezumi_csrf=; Max-Age=0; Path=/";
+    document.cookie = "rezumi_guest_csrf=; Max-Age=0; Path=/";
     vi.unstubAllGlobals();
   });
 
   it("uses the separate guest CSRF cookie and header", async () => {
-    document.cookie = "careeros_guest_csrf=guest-token; Path=/";
+    document.cookie = "rezumi_guest_csrf=guest-token; Path=/";
     const fetchMock = vi
       .fn()
       .mockResolvedValue(new Response(null, { status: 204 }));
@@ -36,7 +36,7 @@ describe("browser API requests", () => {
   });
 
   it("uses the session-bound readable CSRF cookie for authenticated writes", async () => {
-    document.cookie = "careeros_csrf=session-token; Path=/";
+    document.cookie = "rezumi_csrf=session-token; Path=/";
     const fetchMock = vi
       .fn()
       .mockResolvedValue(new Response(null, { status: 204 }));
@@ -56,7 +56,7 @@ describe("browser API requests", () => {
   });
 
   it("reuses a valid pre-auth token so anonymous rate limits remain browser-scoped", async () => {
-    document.cookie = "careeros_csrf=stable-pre-auth-token; Path=/";
+    document.cookie = "rezumi_csrf=stable-pre-auth-token; Path=/";
     const fetchMock = vi
       .fn()
       .mockResolvedValue(new Response(null, { status: 204 }));

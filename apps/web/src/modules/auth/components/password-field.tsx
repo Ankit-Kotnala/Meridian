@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { Input } from "@careeros/ui";
+import { Input } from "@rezumi/ui";
 
 type PasswordFieldProps = Omit<
   InputHTMLAttributes<HTMLInputElement>,

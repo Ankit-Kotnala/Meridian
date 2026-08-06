@@ -1,6 +1,6 @@
 import { forwardRef, type ReactNode, type TextareaHTMLAttributes } from "react";
 
-import { cn } from "@careeros/ui";
+import { cn } from "@rezumi/ui";
 
 import type { FieldErrors } from "../validation/career-vault-validation";
 

@@ -5,7 +5,7 @@ import type { UploadIntent } from "../api/types";
 
 const intent = {
   uploadId: "00000000-0000-4000-8000-000000000001",
-  url: "http://localhost:9000/careeros-documents/signed-object?signature=test",
+  url: "http://localhost:9000/rezumi-documents/signed-object?signature=test",
   method: "PUT",
   headers: { "content-type": "application/pdf" },
   expiresAt: "2026-07-15T00:05:00Z",

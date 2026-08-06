@@ -1,5 +1,5 @@
 {
-  "extends": "@careeros/typescript-config/react-library.json",
+  "extends": "@rezumi/typescript-config/react-library.json",
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src"

@@ -8,24 +8,24 @@ from uuid import uuid4
 import pytest
 from httpx import AsyncClient
 
-from careeros.modules.resume_builder.infrastructure import (
+from rezumi.modules.resume_builder.infrastructure import (
     ResumeExportS3Options,
     ResumeExportS3Storage,
 )
 
 
 def _storage() -> ResumeExportS3Storage:
-    endpoint = os.environ.get("CAREEROS_TEST_S3_ENDPOINT_URL")
+    endpoint = os.environ.get("REZUMI_TEST_S3_ENDPOINT_URL")
     if endpoint is None:
-        pytest.skip("CAREEROS_TEST_S3_ENDPOINT_URL is required for S3 integration tests")
+        pytest.skip("REZUMI_TEST_S3_ENDPOINT_URL is required for S3 integration tests")
     return ResumeExportS3Storage(
         ResumeExportS3Options(
             internal_endpoint_url=endpoint,
             public_endpoint_url=endpoint,
-            region=os.environ["CAREEROS_TEST_S3_REGION"],
-            bucket=os.environ["CAREEROS_TEST_S3_BUCKET"],
-            access_key_id=os.environ["CAREEROS_TEST_S3_ACCESS_KEY_ID"],
-            secret_access_key=os.environ["CAREEROS_TEST_S3_SECRET_ACCESS_KEY"],
+            region=os.environ["REZUMI_TEST_S3_REGION"],
+            bucket=os.environ["REZUMI_TEST_S3_BUCKET"],
+            access_key_id=os.environ["REZUMI_TEST_S3_ACCESS_KEY_ID"],
+            secret_access_key=os.environ["REZUMI_TEST_S3_SECRET_ACCESS_KEY"],
             use_ssl=False,
         )
     )

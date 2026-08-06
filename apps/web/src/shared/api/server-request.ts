@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 
-import type { paths } from "@careeros/contracts";
+import type { paths } from "@rezumi/contracts";
 
 import type { GeneratedApiPath } from "./api-path";
 
@@ -21,7 +21,7 @@ export async function serverApiFetch(
   path: keyof paths | GeneratedApiPath,
 ): Promise<Response> {
   const store = await cookies();
-  const cookieHeader = ["careeros_session", "careeros_refresh", "careeros_csrf"]
+  const cookieHeader = ["rezumi_session", "rezumi_refresh", "rezumi_csrf"]
     .map((name) => store.get(name))
     .filter((cookie) => cookie !== undefined)
     .map((cookie) => `${cookie.name}=${cookie.value}`)

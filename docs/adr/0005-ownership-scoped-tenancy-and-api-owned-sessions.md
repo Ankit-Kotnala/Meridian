@@ -7,7 +7,7 @@
 ## Context
 
 Individual users must work immediately, while coaches, universities,
-outplacement providers, and organizations may later collaborate. CareerOS stores
+outplacement providers, and organizations may later collaborate. Rezumi stores
 highly sensitive career documents and contacts, so a guessed UUID, selected
 tenant header, signed object URL, or administrator role cannot imply access. The
 web and API are first-party and can use secure browser cookies.

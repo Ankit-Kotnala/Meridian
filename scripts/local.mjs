@@ -27,7 +27,7 @@ const webServices = ["web", "web-edge"];
 const serviceNames = new Set([...backendServices, ...webServices]);
 
 function usage() {
-  console.log(`CareerOS local development
+  console.log(`Rezumi local development
 
 Usage: node scripts/local.mjs <command> [target]
 
@@ -97,11 +97,11 @@ function hostEnvironment() {
   const clamavPort = local.CLAMAV_PORT || "3310";
   const smtpPort = local.MAILPIT_SMTP_PORT || "1025";
   const apiPort = local.API_PORT || "8000";
-  const postgresUser = encodeURIComponent(local.POSTGRES_USER || "careeros");
+  const postgresUser = encodeURIComponent(local.POSTGRES_USER || "rezumi");
   const postgresPassword = encodeURIComponent(
     local.POSTGRES_PASSWORD || "change-me-local-only",
   );
-  const postgresDatabase = encodeURIComponent(local.POSTGRES_DB || "careeros");
+  const postgresDatabase = encodeURIComponent(local.POSTGRES_DB || "rezumi");
   const databaseUrl = `postgresql+asyncpg://${postgresUser}:${postgresPassword}@127.0.0.1:${postgresPort}/${postgresDatabase}`;
   const redisUrl = `redis://127.0.0.1:${redisPort}/0`;
   const resultBackend = `redis://127.0.0.1:${redisPort}/1`;
@@ -115,21 +115,24 @@ function hostEnvironment() {
       local.API_BFF_CLIENT_SIGNAL_SECRET ||
       local.BFF_CLIENT_SIGNAL_SECRET ||
       "change-me-local-only-bff-client-signal-secret",
-    CAREEROS_CLAMAV_HOST: "127.0.0.1",
-    CAREEROS_CLAMAV_PORT: clamavPort,
-    CAREEROS_DATABASE_URL: databaseUrl,
-    CAREEROS_REDIS_URL: redisUrl,
-    CAREEROS_S3_ENDPOINT_URL: objectEndpoint,
-    CAREEROS_S3_PUBLIC_ENDPOINT_URL: objectEndpoint,
-    CAREEROS_SMTP_HOST: "127.0.0.1",
-    CAREEROS_SMTP_PORT: smtpPort,
+    REZUMI_CLAMAV_HOST: "127.0.0.1",
+    REZUMI_CLAMAV_PORT: clamavPort,
+    REZUMI_DATABASE_URL: databaseUrl,
+    REZUMI_REDIS_URL: redisUrl,
+    REZUMI_S3_ENDPOINT_URL: objectEndpoint,
+    REZUMI_S3_PUBLIC_ENDPOINT_URL: objectEndpoint,
+    REZUMI_SMTP_HOST: "127.0.0.1",
+    REZUMI_SMTP_PORT: smtpPort,
     CELERY_BROKER_URL: redisUrl,
     CELERY_RESULT_BACKEND: resultBackend,
     CLAMAV_HOST: "127.0.0.1",
     CLAMAV_PORT: clamavPort,
     DATABASE_URL: databaseUrl,
     NEXT_PUBLIC_API_BASE_URL: apiBaseUrl,
-    NEXT_PUBLIC_APP_URL: local.PUBLIC_APP_URL || local.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+    NEXT_PUBLIC_APP_URL:
+      local.PUBLIC_APP_URL ||
+      local.NEXT_PUBLIC_APP_URL ||
+      "http://localhost:3000",
     NEXT_PUBLIC_UPLOAD_ORIGIN: objectEndpoint,
     REDIS_URL: redisUrl,
     S3_ENDPOINT_URL: objectEndpoint,
@@ -214,7 +217,7 @@ switch (command) {
   case "dev-web":
     stopServices(webServices);
     startServices(backendServices);
-    run(pnpm, ["--filter", "@careeros/web", "dev"], { env: hostEnvironment() });
+    run(pnpm, ["--filter", "@rezumi/web", "dev"], { env: hostEnvironment() });
     break;
   case "dev-api":
     stopServices(["api"]);
@@ -224,9 +227,9 @@ switch (command) {
       [
         "run",
         "--package",
-        "careeros-api",
+        "rezumi-api",
         "uvicorn",
-        "careeros_api.main:app",
+        "rezumi_api.main:app",
         "--reload",
         "--port",
         readLocalEnvironment().API_PORT || "8000",
@@ -242,10 +245,10 @@ switch (command) {
       [
         "run",
         "--package",
-        "careeros-worker",
+        "rezumi-worker",
         "celery",
         "--app",
-        "careeros_worker.app:celery_app",
+        "rezumi_worker.app:celery_app",
         "worker",
         "--loglevel=INFO",
         "--queues=default,resume-health,resume-builder,career-record,maintenance",

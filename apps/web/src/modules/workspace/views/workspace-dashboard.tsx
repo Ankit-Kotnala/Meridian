@@ -18,7 +18,7 @@ import {
   PageHeader,
   ScoreRing,
   SectionHeader,
-} from "@careeros/ui";
+} from "@rezumi/ui";
 
 type DashboardResumeHealth =
   | { kind: "empty" }
@@ -50,7 +50,7 @@ function nextStepFor(
   if (!onboardingComplete) {
     return {
       description:
-        "Your role and work preferences help CareerOS organize later recommendations without inventing career facts.",
+        "Your role and work preferences help Rezumi organize later recommendations without inventing career facts.",
       href: "/onboarding",
       label: "Continue setup",
       title: "Finish your account setup",
@@ -160,8 +160,8 @@ function ResumeState({
           Check the parsed fields
         </h3>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-          CareerOS extracted structured information from {resumeHealth.filename}
-          . Confirm or correct it before analysis.
+          Rezumi extracted structured information from {resumeHealth.filename}.
+          Confirm or correct it before analysis.
         </p>
         <Link
           className={cn(buttonStyles.base, buttonStyles.primary, "mt-4")}
@@ -217,7 +217,7 @@ function ResumeState({
         <Badge
           tone={resumeHealth.scoreBand === "strong" ? "success" : "warning"}
         >
-          Internal CareerOS measure
+          Internal Rezumi measure
         </Badge>
         <h3 className="mt-3 font-semibold text-foreground">
           Latest report for {resumeHealth.filename}
@@ -279,7 +279,7 @@ export function WorkspaceDashboard({
             account
           </Badge>
         }
-        title={`Welcome to your CareerOS workspace, ${displayName}.`}
+        title={`Welcome to your Rezumi workspace, ${displayName}.`}
       />
 
       <div className="grid gap-7 lg:grid-cols-[minmax(0,1.35fr)_minmax(17rem,0.65fr)]">
@@ -379,7 +379,7 @@ export function WorkspaceDashboard({
               One career record, many grounded outputs
             </h2>
             <p className="mt-1 max-w-3xl text-sm leading-6 text-muted">
-              CareerOS keeps evidence and structured facts upstream. Resumes,
+              Rezumi keeps evidence and structured facts upstream. Resumes,
               application answers, interview stories, and networking drafts are
               downstream work products—not competing sources of truth.
             </p>

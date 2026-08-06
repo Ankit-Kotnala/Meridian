@@ -1,6 +1,6 @@
 "use client";
 
-import type { components } from "@careeros/contracts";
+import type { components } from "@rezumi/contracts";
 
 import { fillApiPath } from "@/shared/api/api-path";
 import { apiMutation, apiQuery } from "@/shared/api/browser-request";

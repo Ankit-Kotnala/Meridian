@@ -3,13 +3,13 @@ requires = ["hatchling>=1.31.0,<2"]
 build-backend = "hatchling.build"
 
 [project]
-name = "careeros-api"
+name = "rezumi-api"
 version = "0.1.0"
-description = "CareerOS FastAPI service"
+description = "Rezumi FastAPI service"
 readme = "README.md"
 requires-python = ">=3.13,<3.15"
 dependencies = [
-  "careeros-backend[database,identity,migrations,resume]==0.1.0",
+  "rezumi-backend[database,identity,migrations,resume]==0.1.0",
   "fastapi==0.141.1",
   "pydantic==2.13.4",
   "pydantic-settings==2.14.2",
@@ -18,7 +18,7 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-careeros-backend = { workspace = true }
+rezumi-backend = { workspace = true }
 
 [dependency-groups]
 dev = [
@@ -30,7 +30,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/careeros_api"]
+packages = ["src/rezumi_api"]
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-config --strict-markers"
@@ -54,5 +54,5 @@ strict = true
 warn_unreachable = true
 pretty = true
 show_error_codes = true
-packages = ["careeros_api"]
+packages = ["rezumi_api"]
 mypy_path = "src"

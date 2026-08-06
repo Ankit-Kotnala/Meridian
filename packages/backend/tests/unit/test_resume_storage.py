@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 
-from careeros.modules.resume_health.infrastructure.storage import S3ObjectStorage, S3Options
+from rezumi.modules.resume_health.infrastructure.storage import S3ObjectStorage, S3Options
 
 
 class _ClosingBody:

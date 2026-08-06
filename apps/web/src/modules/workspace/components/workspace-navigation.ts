@@ -104,5 +104,5 @@ export function resolveWorkspaceContext(pathname: string) {
   );
   return utility
     ? { group: "Account", label: utility.label }
-    : { group: "Workspace", label: "CareerOS" };
+    : { group: "Workspace", label: "Rezumi" };
 }

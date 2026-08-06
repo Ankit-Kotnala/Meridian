@@ -13,7 +13,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { cn } from "@careeros/ui";
+import { cn } from "@rezumi/ui";
 
 import { useSettingsCapabilities } from "./settings-capabilities-context";
 

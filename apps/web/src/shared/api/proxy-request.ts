@@ -33,7 +33,7 @@ const RESPONSE_HEADERS = new Set([
 const DEFAULT_TIMEOUT_MS = 10_000;
 const MIN_TIMEOUT_MS = 1_000;
 const MAX_TIMEOUT_MS = 30_000;
-const BFF_SIGNAL_CONTEXT = "careeros-bff-client-v1\0";
+const BFF_SIGNAL_CONTEXT = "rezumi-bff-client-v1\0";
 const DEVELOPMENT_BFF_SIGNAL_SECRET =
   "change-me-local-only-bff-client-signal-secret";
 const TRUSTED_CLIENT_IP_HEADERS = new Set([
@@ -102,7 +102,7 @@ function signedClientSignal(source: Headers): string {
   if (
     Buffer.byteLength(secret, "utf8") < 32 ||
     (new Set(["production", "staging"]).has(
-      process.env.CAREEROS_ENVIRONMENT ?? "development",
+      process.env.REZUMI_ENVIRONMENT ?? "development",
     ) &&
       (!configuredSecret || configuredSecret === DEVELOPMENT_BFF_SIGNAL_SECRET))
   ) {
@@ -205,7 +205,7 @@ export async function proxyApiRequest(
 
   const hasBody = request.method !== "GET" && request.method !== "HEAD";
   const headers = forwardedRequestHeaders(request.headers);
-  headers.set("X-CareerOS-Client-Signal", clientSignal);
+  headers.set("X-Rezumi-Client-Signal", clientSignal);
   const init: StreamingRequestInit = {
     cache: "no-store",
     headers,

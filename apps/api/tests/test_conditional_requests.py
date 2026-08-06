@@ -2,7 +2,7 @@
 
 import pytest
 
-from careeros_api.conditional_requests import parse_if_match_version
+from rezumi_api.conditional_requests import parse_if_match_version
 
 
 @pytest.mark.parametrize(

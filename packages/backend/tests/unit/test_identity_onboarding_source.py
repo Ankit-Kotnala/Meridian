@@ -6,12 +6,12 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from careeros.modules.identity.domain import ObservedResumeStatus
-from careeros.modules.identity.infrastructure.resume_health_onboarding import (
+from rezumi.modules.identity.domain import ObservedResumeStatus
+from rezumi.modules.identity.infrastructure.resume_health_onboarding import (
     ResumeHealthOnboardingSource,
 )
-from careeros.modules.resume_health.application.models import DocumentView
-from careeros.modules.resume_health.domain import (
+from rezumi.modules.resume_health.application.models import DocumentView
+from rezumi.modules.resume_health.domain import (
     CanonicalSemantics,
     DocumentStatus,
     MalwareStatus,

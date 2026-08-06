@@ -6,17 +6,17 @@ from uuid import uuid4
 import pytest
 from redis.asyncio import Redis
 
-from careeros.modules.identity.domain.errors import OAuthFlowRejected, RateLimited
-from careeros.modules.identity.infrastructure.redis_security import RedisSecurityStore
+from rezumi.modules.identity.domain.errors import OAuthFlowRejected, RateLimited
+from rezumi.modules.identity.infrastructure.redis_security import RedisSecurityStore
 
 
 @pytest.mark.asyncio
 async def test_redis_limits_are_atomic_and_oauth_state_is_single_use() -> None:
-    redis_url = os.environ.get("CAREEROS_TEST_REDIS_URL")
+    redis_url = os.environ.get("REZUMI_TEST_REDIS_URL")
     if redis_url is None:
-        pytest.skip("CAREEROS_TEST_REDIS_URL is required for Redis integration tests")
+        pytest.skip("REZUMI_TEST_REDIS_URL is required for Redis integration tests")
 
-    namespace = f"careeros:test:{uuid4().hex}"
+    namespace = f"rezumi:test:{uuid4().hex}"
     redis = Redis.from_url(redis_url, decode_responses=False)
     store = RedisSecurityStore(
         redis,

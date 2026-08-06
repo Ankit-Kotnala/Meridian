@@ -1,6 +1,6 @@
 "use client";
 
-import { ErrorState, LoadingSkeleton } from "@careeros/ui";
+import { ErrorState, LoadingSkeleton } from "@rezumi/ui";
 
 export function CareerVaultLoading() {
   return (

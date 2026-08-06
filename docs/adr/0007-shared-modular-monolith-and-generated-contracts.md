@@ -27,14 +27,14 @@ Use one root uv workspace containing:
 - `packages/backend`, the shared Python modular-monolith implementation.
 
 The workspace has one committed root `uv.lock`. Both deployables depend on
-`careeros-backend`; the backend imports neither deployable, and the worker never
+`rezumi-backend`; the backend imports neither deployable, and the worker never
 imports the API.
 
-In Phase 0, `packages/backend/src/careeros/foundation` owns only stable shared
+In Phase 0, `packages/backend/src/rezumi/foundation` owns only stable shared
 database, migration, configuration, and structured-logging primitives. Alembic
 configuration and revision history live with this package. Product modules use
 `domain`, `application`, `infrastructure`, `api`, `tasks`, and tests when their
-owning phase begins. Provider SDK adapters live under `careeros.integrations`.
+owning phase begins. Provider SDK adapters live under `rezumi.integrations`.
 Empty future module and integration trees are prohibited.
 
 FastAPI OpenAPI is the only wire-contract authority. A normalized OpenAPI artifact

@@ -22,7 +22,7 @@ export default defineConfig([
         {
           patterns: [
             {
-              group: ["next", "next/**", "@/**", "@careeros/contracts"],
+              group: ["next", "next/**", "@/**", "@rezumi/contracts"],
               message:
                 "Generic UI must not depend on Next, web aliases, or API contracts.",
             },

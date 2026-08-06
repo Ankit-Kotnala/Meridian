@@ -9,10 +9,10 @@ from uuid import UUID
 
 import pytest
 
-from careeros.modules.career_growth.infrastructure.career_record_provider import (
+from rezumi.modules.career_growth.infrastructure.career_record_provider import (
     CareerRecordGrowthSourceProvider,
 )
-from careeros.modules.career_record.domain import EvidenceStrength, EvidenceType
+from rezumi.modules.career_record.domain import EvidenceStrength, EvidenceType
 
 OWNER_ID = UUID("00000000-0000-4000-8000-000000009801")
 SKILL_ID = UUID("00000000-0000-4000-8000-000000009802")

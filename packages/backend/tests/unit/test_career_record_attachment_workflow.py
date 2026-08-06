@@ -19,7 +19,7 @@ from career_record_attachment_memory import (
     SequentialTokens,
     pending_cleanups,
 )
-from careeros.modules.career_record.application.attachment_workflow import (
+from rezumi.modules.career_record.application.attachment_workflow import (
     PROCESS_EVIDENCE_ATTACHMENT_TASK,
     AdmitAttachment,
     AttachmentCleanupProcessor,

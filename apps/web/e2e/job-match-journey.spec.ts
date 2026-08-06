@@ -182,7 +182,7 @@ test("a user saves a job, analyzes exact requirements, and prioritizes it", asyn
     ).toBeVisible();
     await expect(page.getByText("Discovery interview notes")).toBeVisible();
     await expect(
-      page.getByText(/CareerOS scores are internal readiness measurements/i),
+      page.getByText(/Rezumi scores are internal readiness measurements/i),
     ).toBeVisible();
 
     await page.getByLabel("Interest").fill("5");

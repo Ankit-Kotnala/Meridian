@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from types import TracebackType
 from uuid import UUID, uuid4
 
-from careeros.modules.career_growth.application.models import (
+from rezumi.modules.career_growth.application.models import (
     CareerGrowthInsightSource,
     CareerHealthRecord,
     CareerHealthSummary,
@@ -16,7 +16,7 @@ from careeros.modules.career_growth.application.models import (
     PageCursor,
     ReviewListMetadata,
 )
-from careeros.modules.career_growth.domain import (
+from rezumi.modules.career_growth.domain import (
     CareerGoal,
     CareerGrowthAuditEvent,
     CareerGrowthEvidenceLink,

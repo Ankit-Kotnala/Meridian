@@ -1,5 +1,5 @@
 {
-  "extends": "@careeros/typescript-config/nextjs.json",
+  "extends": "@rezumi/typescript-config/nextjs.json",
   "compilerOptions": {
     "paths": {
       "@/*": ["./src/*"]

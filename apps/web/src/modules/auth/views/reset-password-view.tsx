@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 
-import { Alert, Button } from "@careeros/ui";
+import { Alert, Button } from "@rezumi/ui";
 
 import {
   AuthRequestError,

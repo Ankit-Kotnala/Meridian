@@ -4,9 +4,9 @@ import { ArrowRight, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { buttonStyles, cn } from "@careeros/ui";
+import { buttonStyles, cn } from "@rezumi/ui";
 
-import { CareerOsLogo } from "@/shared/components/career-os-logo";
+import { RezumiLogo } from "@/shared/components/rezumi-logo";
 import { ScrollProgress } from "@/shared/motion/scroll-progress";
 import { ThemeToggle } from "@/shared/theme/theme-toggle";
 
@@ -83,7 +83,7 @@ export function SiteHeader() {
                 : "mt-4 max-w-[74rem] rounded-2xl border-line/45 bg-surface-raised/55 px-4 py-2.5 shadow-[var(--shadow-md)] backdrop-blur-lg backdrop-saturate-150 supports-[backdrop-filter]:bg-surface-raised/45",
             )}
           >
-            <CareerOsLogo />
+            <RezumiLogo />
             <nav
               aria-label="Primary navigation"
               className="hidden items-center gap-0.5 md:flex"
@@ -101,7 +101,11 @@ export function SiteHeader() {
             <div className="hidden items-center gap-2 md:flex">
               <ThemeToggle />
               <Link
-                className={cn(buttonStyles.base, buttonStyles.ghost, "min-h-10")}
+                className={cn(
+                  buttonStyles.base,
+                  buttonStyles.ghost,
+                  "min-h-10",
+                )}
                 href="/login"
               >
                 Sign in

@@ -22,7 +22,7 @@ describe("registration", () => {
     fireEvent.click(screen.getByRole("button", { name: "Create account" }));
 
     expect(screen.getByLabelText("Name")).toHaveAccessibleDescription(
-      "Enter the name you want CareerOS to use.",
+      "Enter the name you want Rezumi to use.",
     );
     expect(screen.getByLabelText("Email address")).toHaveAttribute(
       "aria-invalid",

@@ -9,7 +9,7 @@
 A resume is incomplete, formatted for one context, and often contains ambiguous
 or unsupported shorthand. Making an uploaded resume the master record would cause
 tailored versions, application answers, networking copy, and interview stories to
-drift. CareerOS also promises that it will not invent career information.
+drift. Rezumi also promises that it will not invent career information.
 
 ## Decision
 

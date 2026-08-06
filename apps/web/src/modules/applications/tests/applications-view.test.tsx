@@ -136,7 +136,7 @@ describe("Application Workspace list", () => {
       await screen.findByRole("heading", { name: "Product Engineer" }),
     ).toBeVisible();
     expect(
-      screen.getByText(/CareerOS never submits an application on your behalf/i),
+      screen.getByText(/Rezumi never submits an application on your behalf/i),
     ).toBeVisible();
 
     fireEvent.change(

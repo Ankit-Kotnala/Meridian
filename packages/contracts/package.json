@@ -1,5 +1,5 @@
 {
-  "name": "@careeros/contracts",
+  "name": "@rezumi/contracts",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -16,8 +16,8 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "generate": "openapi-typescript openapi/careeros.openapi.json --output src/generated/schema.ts --alphabetize",
-    "check-generated": "openapi-typescript openapi/careeros.openapi.json --output src/generated/schema.ts --alphabetize --check",
+    "generate": "openapi-typescript openapi/rezumi.openapi.json --output src/generated/schema.ts --alphabetize",
+    "check-generated": "openapi-typescript openapi/rezumi.openapi.json --output src/generated/schema.ts --alphabetize --check",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run src"
@@ -26,9 +26,9 @@
     "openapi-fetch": "0.17.0"
   },
   "devDependencies": {
-    "@careeros/typescript-config": "workspace:*",
+    "@rezumi/typescript-config": "workspace:*",
     "openapi-typescript": "7.13.0",
-    "typescript": "7.0.2",
+    "typescript": "5.9.3",
     "vitest": "4.1.10"
   }
 }

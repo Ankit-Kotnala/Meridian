@@ -1,4 +1,4 @@
-import type { components } from "@careeros/contracts";
+import type { components } from "@rezumi/contracts";
 
 export type UploadPolicy = components["schemas"]["UploadPolicyResponse"];
 export type UploadIntent = components["schemas"]["UploadIntentResponse"];

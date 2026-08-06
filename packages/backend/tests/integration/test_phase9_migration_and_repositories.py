@@ -18,18 +18,18 @@ from alembic.script import ScriptDirectory
 from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 
-from careeros.foundation.config import DatabaseOptions
-from careeros.foundation.database import Database
-from careeros.modules.career_analytics.application import (
+from rezumi.foundation.config import DatabaseOptions
+from rezumi.foundation.database import Database
+from rezumi.modules.career_analytics.application import (
     AnalyticsReconciliationOutcome,
     CareerAnalyticsPolicy,
     CareerAnalyticsService,
     RefreshAnalytics,
 )
-from careeros.modules.career_analytics.application import (
+from rezumi.modules.career_analytics.application import (
     RequestContext as AnalyticsRequestContext,
 )
-from careeros.modules.career_analytics.domain import (
+from rezumi.modules.career_analytics.domain import (
     AnalyticsAuditAction,
     AnalyticsJobStatus,
     AnalyticsOutboxMessage,
@@ -41,16 +41,16 @@ from careeros.modules.career_analytics.domain import (
     CareerAnalyticsIdempotencyConflict,
     CareerAnalyticsQuotaExceeded,
 )
-from careeros.modules.career_analytics.infrastructure import (
+from rezumi.modules.career_analytics.infrastructure import (
     SqlAlchemyCareerAnalyticsUnitOfWorkFactory,
 )
-from careeros.modules.career_analytics.infrastructure.models import (
+from rezumi.modules.career_analytics.infrastructure.models import (
     AnalyticsAuditEventModel,
     AnalyticsOutboxModel,
     AnalyticsRefreshJobModel,
     AnalyticsSnapshotModel,
 )
-from careeros.modules.career_growth.application import (
+from rezumi.modules.career_growth.application import (
     CareerGrowthInsightSource,
     CareerGrowthService,
     CreateCareerReview,
@@ -58,26 +58,26 @@ from careeros.modules.career_growth.application import (
     ReviewContent,
     ReviseCareerReview,
 )
-from careeros.modules.career_growth.application import (
+from rezumi.modules.career_growth.application import (
     RequestContext as GrowthRequestContext,
 )
-from careeros.modules.career_growth.domain import (
+from rezumi.modules.career_growth.domain import (
     CareerGrowthNotFound,
     CareerGrowthSourceSnapshot,
     GrowthEvidenceSnapshot,
     ReviewCadence,
     ReviewVersionStatus,
 )
-from careeros.modules.career_growth.infrastructure import (
+from rezumi.modules.career_growth.infrastructure import (
     SqlAlchemyCareerGrowthUnitOfWorkFactory,
 )
-from careeros.modules.career_growth.infrastructure.models import CareerGrowthIdempotencyModel
-from careeros.modules.career_record.infrastructure.models import (
+from rezumi.modules.career_growth.infrastructure.models import CareerGrowthIdempotencyModel
+from rezumi.modules.career_record.infrastructure.models import (
     EvidenceItemModel,
     EvidenceRevisionModel,
 )
-from careeros.modules.identity.infrastructure.models import UserModel
-from careeros.modules.interview_prep.application import (
+from rezumi.modules.identity.infrastructure.models import UserModel
+from rezumi.modules.interview_prep.application import (
     CreateStarStory,
     InterviewPrepService,
     InterviewSourceSnapshot,
@@ -86,10 +86,10 @@ from careeros.modules.interview_prep.application import (
     StoryClaimSelection,
     UpdateStarStory,
 )
-from careeros.modules.interview_prep.application import (
+from rezumi.modules.interview_prep.application import (
     RequestContext as InterviewRequestContext,
 )
-from careeros.modules.interview_prep.domain import (
+from rezumi.modules.interview_prep.domain import (
     EvidenceRevisionPin,
     InterviewPrepConflict,
     InterviewPrepNotFound,
@@ -98,14 +98,14 @@ from careeros.modules.interview_prep.domain import (
     StoryOrigin,
     StoryStatus,
 )
-from careeros.modules.interview_prep.infrastructure import (
+from rezumi.modules.interview_prep.infrastructure import (
     SqlAlchemyInterviewPrepUnitOfWorkFactory,
 )
-from careeros.modules.interview_prep.infrastructure.models import (
+from rezumi.modules.interview_prep.infrastructure.models import (
     InterviewIdempotencyModel,
     StoryClaimPinModel,
 )
-from careeros.modules.networking.application import (
+from rezumi.modules.networking.application import (
     ChangeContactConsent,
     CreateContact,
     CreateContactNote,
@@ -115,10 +115,10 @@ from careeros.modules.networking.application import (
     NetworkingService,
     RecordInteraction,
 )
-from careeros.modules.networking.application import (
+from rezumi.modules.networking.application import (
     RequestContext as NetworkingRequestContext,
 )
-from careeros.modules.networking.domain import (
+from rezumi.modules.networking.domain import (
     NETWORKING_CONSENT_LEDGER_POLICY_VERSIONS,
     NETWORKING_CONTACT_CONSENT_POLICY_VERSION,
     ConsentPurpose,
@@ -130,10 +130,10 @@ from careeros.modules.networking.domain import (
     ReminderOutboxStatus,
     ReminderStatus,
 )
-from careeros.modules.networking.infrastructure import (
+from rezumi.modules.networking.infrastructure import (
     SqlAlchemyNetworkingUnitOfWorkFactory,
 )
-from careeros.modules.networking.infrastructure.models import (
+from rezumi.modules.networking.infrastructure.models import (
     NetworkingConsentEventModel,
     NetworkingContactModel,
     NetworkingContactNoteModel,
@@ -280,9 +280,9 @@ class _GrowthSource:
 
 
 def _database_url() -> str:
-    value = os.environ.get("CAREEROS_TEST_DATABASE_URL")
+    value = os.environ.get("REZUMI_TEST_DATABASE_URL")
     if value is None:
-        pytest.skip("CAREEROS_TEST_DATABASE_URL is required for PostgreSQL integration tests")
+        pytest.skip("REZUMI_TEST_DATABASE_URL is required for PostgreSQL integration tests")
     return value
 
 
@@ -325,8 +325,8 @@ def test_current_migration_head_matches_registered_metadata(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     database_url = _database_url()
-    monkeypatch.setenv("CAREEROS_DATABASE_URL", database_url)
-    monkeypatch.setenv("CAREEROS_ENVIRONMENT", "test")
+    monkeypatch.setenv("REZUMI_DATABASE_URL", database_url)
+    monkeypatch.setenv("REZUMI_ENVIRONMENT", "test")
     config = _alembic_config()
 
     assert ScriptDirectory.from_config(config).get_heads() == ["20260731_0014"]

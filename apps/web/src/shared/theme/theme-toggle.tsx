@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 type Theme = "dark" | "light";
 
-const STORAGE_KEY = "careeros-theme";
+const STORAGE_KEY = "rezumi-theme";
 
 function applyTheme(theme: Theme) {
   const root = document.documentElement;
@@ -17,6 +17,9 @@ export function ThemeToggle() {
   const [theme, setTheme] = useState<Theme | null>(null);
 
   useEffect(() => {
+    // Intentional post-hydration read: theme starts null so SSR and client
+    // markup match, then syncs to the real DOM class once mounted.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTheme(
       document.documentElement.classList.contains("dark") ? "dark" : "light",
     );

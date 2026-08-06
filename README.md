@@ -1,13 +1,13 @@
-# CareerOS
+# Rezumi
 
 **Your career. Verified. Elevated.**
 
-CareerOS is a career application operating system. It turns a structured,
+Rezumi is a career application operating system. It turns a structured,
 evidence-backed career profile into resume analyses, tailored documents,
 application materials, and interview preparation while keeping every factual
 claim under the user's control.
 
-> CareerOS scores are internal readiness measurements. They are not scores
+> Rezumi scores are internal readiness measurements. They are not scores
 > provided by an employer or applicant tracking system and do not guarantee
 > interviews or employment outcomes.
 
@@ -42,7 +42,7 @@ architecture documents.
 - Worker: Celery 5.6.3 with Redis broker/result backend
 - Local services: PostgreSQL with pgvector, Redis, private S3-compatible MinIO,
   required ClamAV scanning, and Mailpit SMTP capture
-- Backend: shared `careeros-backend` modular monolith used by thin API and worker
+- Backend: shared `rezumi-backend` modular monolith used by thin API and worker
   deployables through one root uv workspace and lockfile
 - Contracts: FastAPI OpenAPI as the source of truth, with a normalized artifact,
   generated TypeScript schema, and typed client wrapper in `packages/contracts`
@@ -210,12 +210,12 @@ Career Record eligibility and the exact current evidence revision. Revised,
 revoked, downgraded, unavailable, conflicted, or otherwise ineligible evidence
 fails closed. An exact idempotent replay returns its existing immutable output
 rather than regenerating historical text. Drafts may remain incomplete, and no
-follow-up is sent by CareerOS.
+follow-up is sent by Rezumi.
 
 Networking is available at `/networking`. It is a private, owner-scoped CRM for
 organizations, contacts, relationship stages, tags, notes, interactions,
 referrals, reviewed templates, and local reminders. Contact collection, storage,
-and outreach use a dedicated purpose-specific attestation ledger. CareerOS does
+and outreach use a dedicated purpose-specific attestation ledger. Rezumi does
 not treat account consent or Application Workspace contacts as third-party
 consent, and it does not scrape, import, or deliver outreach. Withdrawing consent
 for collection or storage irreversibly tombstones the contact and redacts all
@@ -489,8 +489,8 @@ verification make replays deterministic and non-destructive.
 
 The seed refuses dependency I/O unless the environment is explicitly
 `development`, an exact one-command confirmation is present, the database uses
-the local `careeros` identity/database on an allowlisted Compose/loopback host,
-the object endpoint is local MinIO, the bucket is `careeros-documents`, and the
+the local `rezumi` identity/database on an allowlisted Compose/loopback host,
+the object endpoint is local MinIO, the bucket is `rezumi-documents`, and the
 database is at reviewed migration head `20260726_0013`. The fresh fixture
 credential is printed only when the account is first created.
 `pnpm fixtures:preview` remains a no-I/O presentation fixture and is not
@@ -512,7 +512,7 @@ the API.
 
 - A career profile and its evidence—not an imported resume—are the durable source
   of truth.
-- CareerOS never fabricates career facts. Missing evidence generates a question.
+- Rezumi never fabricates career facts. Missing evidence generates a question.
 - Material edits require review, evidence visibility, and explicit user action.
 - Scores are deterministic, versioned, explainable internal measurements; an LLM
   never supplies the final numeric score.
@@ -711,4 +711,3 @@ No license or production deployment approval has been selected in Phase 0.
 Treat the repository as private and non-production until those decisions, a
 security review, data-processing terms, retention defaults, backup/restore tests,
 and a protected deployment environment are complete.
-

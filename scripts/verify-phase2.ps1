@@ -10,4 +10,4 @@ if ($LASTEXITCODE -ne 0) {
     throw "Phase 2 isolated document workflow failed with exit code $LASTEXITCODE."
 }
 
-Write-Host "CareerOS Phase 2 verification passed."
+Write-Host "Rezumi Phase 2 verification passed."

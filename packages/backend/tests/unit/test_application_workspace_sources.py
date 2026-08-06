@@ -9,18 +9,18 @@ from uuid import UUID
 
 import pytest
 
-from careeros.modules.application_workspace.application import (
+from rezumi.modules.application_workspace.application import (
     ApplicationInterviewEvidenceReference,
     ApplicationSourceEvidenceReference,
 )
-from careeros.modules.application_workspace.domain import ApplicationWorkspaceConflict
-from careeros.modules.application_workspace.infrastructure import (
+from rezumi.modules.application_workspace.domain import ApplicationWorkspaceConflict
+from rezumi.modules.application_workspace.infrastructure import (
     CareerRecordApplicationEvidenceSnapshotProvider,
     JobMatchApplicationSnapshotProvider,
     ResumeBuilderVersionSnapshotProvider,
 )
-from careeros.modules.career_record.application import CareerRecordNotFound, CareerRecordService
-from careeros.modules.job_match.application import JobMatchService
+from rezumi.modules.career_record.application import CareerRecordNotFound, CareerRecordService
+from rezumi.modules.job_match.application import JobMatchService
 
 _OWNER_ID = UUID("00000000-0000-4000-8000-000000001001")
 _OTHER_OWNER_ID = UUID("00000000-0000-4000-8000-000000001011")

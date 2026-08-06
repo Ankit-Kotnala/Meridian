@@ -1,7 +1,7 @@
 /** Public API types are aliases over the generated OpenAPI schema. */
 
-export { createCareerOsClient } from "./client";
-export type { CareerOsClient } from "./client";
+export { createRezumiClient } from "./client";
+export type { RezumiClient } from "./client";
 export type { components, operations, paths } from "./generated/schema";
 
 import type { components } from "./generated/schema";

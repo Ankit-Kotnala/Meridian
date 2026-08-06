@@ -8,11 +8,24 @@ from uuid import UUID
 
 import pytest
 
-from careeros.modules.application_workspace.application import (
+from interview_prep_memory import (
+    APPLICATION_ID,
+    CLAIM_ID,
+    EVIDENCE_REVISION_ID,
+    OTHER_ID,
+    OWNER_ID,
+    REQUIREMENT_ID,
+    FixedClock,
+    MemoryInterviewPrep,
+    StaticApplicationContext,
+    UuidFactory,
+    source_snapshot,
+)
+from rezumi.modules.application_workspace.application import (
     ApplicationInterviewContext,
     ApplicationInterviewEvidenceReference,
 )
-from careeros.modules.application_workspace.domain import (
+from rezumi.modules.application_workspace.domain import (
     ApplicationClaimEvidenceLink,
     ApplicationDocumentClaim,
     ApplicationEvidencePin,
@@ -25,7 +38,7 @@ from careeros.modules.application_workspace.domain import (
     ApplicationWorkspaceValidationError,
     ApplicationWorkspaceVersionConflict,
 )
-from careeros.modules.interview_prep.application import (
+from rezumi.modules.interview_prep.application import (
     CreateInterviewQuestion,
     CreateInterviewSession,
     CreateSessionNote,
@@ -39,8 +52,8 @@ from careeros.modules.interview_prep.application import (
     UpdateSessionNote,
     UpdateStarStory,
 )
-from careeros.modules.interview_prep.application.models import PageCursor
-from careeros.modules.interview_prep.domain import (
+from rezumi.modules.interview_prep.application.models import PageCursor
+from rezumi.modules.interview_prep.domain import (
     DefenseStatus,
     InterviewPrepConflict,
     InterviewPrepIdempotencyConflict,
@@ -56,21 +69,8 @@ from careeros.modules.interview_prep.domain import (
     StoryOrigin,
     StoryStatus,
 )
-from careeros.modules.interview_prep.infrastructure.sources import (
+from rezumi.modules.interview_prep.infrastructure.sources import (
     ApplicationWorkspaceInterviewContextProvider,
-)
-from interview_prep_memory import (
-    APPLICATION_ID,
-    CLAIM_ID,
-    EVIDENCE_REVISION_ID,
-    OTHER_ID,
-    OWNER_ID,
-    REQUIREMENT_ID,
-    FixedClock,
-    MemoryInterviewPrep,
-    StaticApplicationContext,
-    UuidFactory,
-    source_snapshot,
 )
 
 ALL_FIELDS = (

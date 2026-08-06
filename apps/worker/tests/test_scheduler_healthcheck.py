@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from careeros_worker.scheduler_healthcheck import scheduler_is_responsive
+from rezumi_worker.scheduler_healthcheck import scheduler_is_responsive
 
 
 def write_process(tmp_path: Path, *, pid_text: str, command_line: bytes) -> tuple[Path, Path]:
@@ -22,7 +22,7 @@ def test_scheduler_probe_accepts_a_live_celery_beat_process(tmp_path: Path) -> N
     pid_file, proc_root = write_process(
         tmp_path,
         pid_text="42",
-        command_line=b"python\0celery\0--app\0careeros_worker.app:celery_app\0beat\0",
+        command_line=b"python\0celery\0--app\0rezumi_worker.app:celery_app\0beat\0",
     )
     signal_process = Mock()
 

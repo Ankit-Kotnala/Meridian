@@ -4,12 +4,12 @@ import inspect
 from uuid import uuid4
 
 import pytest
-from careeros.modules.career_analytics.domain import AnalyticsJobStatus
+from rezumi.modules.career_analytics.domain import AnalyticsJobStatus
 
-from careeros_worker import runtime, tasks
-from careeros_worker.config import WorkerSettings
-from careeros_worker.tasks import career_analytics as analytics_tasks
-from careeros_worker.tasks import networking as networking_tasks
+from rezumi_worker import runtime, tasks
+from rezumi_worker.config import WorkerSettings
+from rezumi_worker.tasks import career_analytics as analytics_tasks
+from rezumi_worker.tasks import networking as networking_tasks
 
 
 def _settings() -> WorkerSettings:

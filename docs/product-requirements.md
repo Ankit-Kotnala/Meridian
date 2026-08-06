@@ -1,4 +1,4 @@
-# CareerOS product requirements
+# Rezumi product requirements
 
 Status: baseline product contract  
 Version: 0.2
@@ -7,7 +7,7 @@ Last reviewed: 2026-07-25
 
 ## Product definition
 
-CareerOS is a career application operating system, not a resume parser or an
+Rezumi is a career application operating system, not a resume parser or an
 “ATS score checker.” It helps a person maintain a durable, structured career
 profile and evidence record, then produce and manage truthful, reviewable career
 materials and workflows.
@@ -54,7 +54,7 @@ materials and workflows.
 
 - **PR-TRUTH-001:** Every generated factual career claim SHALL link to one or
   more eligible evidence records and preserve their provenance.
-- **PR-TRUTH-002:** CareerOS SHALL NOT invent employers, dates, titles,
+- **PR-TRUTH-002:** Rezumi SHALL NOT invent employers, dates, titles,
   responsibilities, accomplishments, numbers, savings, customers, team size,
   technologies, certifications, education, awards, leadership, or ownership.
 - **PR-TRUTH-003:** Missing facts SHALL yield a clarifying question or a clearly
@@ -88,7 +88,7 @@ materials and workflows.
 - **PR-SCORE-005:** Score and readiness views SHALL display this language where
   misunderstanding is plausible:
 
-  > CareerOS scores are internal readiness measurements. They are not scores
+  > Rezumi scores are internal readiness measurements. They are not scores
   > provided by an employer or applicant tracking system and do not guarantee
   > interviews or employment outcomes.
 

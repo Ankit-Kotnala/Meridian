@@ -8,7 +8,7 @@ from copy import deepcopy
 from datetime import UTC, date, datetime
 from uuid import UUID
 
-from careeros.modules.career_analytics.application import (
+from rezumi.modules.career_analytics.application import (
     AchievementGrowthPoint,
     AnalyticsSourceWatermark,
     ApplicationAnalyticsFact,
@@ -17,7 +17,7 @@ from careeros.modules.career_analytics.application import (
     ReadinessHistoryPoint,
     SupplementalAnalyticsSnapshot,
 )
-from careeros.modules.career_analytics.domain import (
+from rezumi.modules.career_analytics.domain import (
     AnalyticsAuditEvent,
     AnalyticsJobStatus,
     AnalyticsOutboxMessage,

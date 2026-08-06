@@ -7,27 +7,6 @@ import os
 import pytest
 from sqlalchemy import delete, select
 
-from careeros.foundation.config import DatabaseOptions
-from careeros.foundation.database import Database
-from careeros.modules.change_studio.application import (
-    ChangeStudioService,
-    CreateChangeSet,
-    RequestContext,
-)
-from careeros.modules.change_studio.domain import ChangeStudioNotFound
-from careeros.modules.change_studio.infrastructure import (
-    DeterministicSuggestionProvider,
-)
-from careeros.modules.change_studio.infrastructure.models import (
-    ChangeClaimModel,
-    ChangeSetModel,
-    ChangeStudioAuditEventModel,
-    ProviderRunModel,
-)
-from careeros.modules.change_studio.infrastructure.repository import (
-    SqlAlchemyChangeStudioUnitOfWorkFactory,
-)
-from careeros.modules.identity.infrastructure.models import UserModel
 from change_studio_memory import (
     ANALYSIS_ID,
     OTHER_ID,
@@ -37,6 +16,27 @@ from change_studio_memory import (
     StaticJobAnalysisProvider,
     UuidFactory,
 )
+from rezumi.foundation.config import DatabaseOptions
+from rezumi.foundation.database import Database
+from rezumi.modules.change_studio.application import (
+    ChangeStudioService,
+    CreateChangeSet,
+    RequestContext,
+)
+from rezumi.modules.change_studio.domain import ChangeStudioNotFound
+from rezumi.modules.change_studio.infrastructure import (
+    DeterministicSuggestionProvider,
+)
+from rezumi.modules.change_studio.infrastructure.models import (
+    ChangeClaimModel,
+    ChangeSetModel,
+    ChangeStudioAuditEventModel,
+    ProviderRunModel,
+)
+from rezumi.modules.change_studio.infrastructure.repository import (
+    SqlAlchemyChangeStudioUnitOfWorkFactory,
+)
+from rezumi.modules.identity.infrastructure.models import UserModel
 
 
 def _context(owner_id) -> RequestContext:
@@ -45,9 +45,9 @@ def _context(owner_id) -> RequestContext:
 
 @pytest.mark.asyncio
 async def test_repository_persists_change_studio_and_denies_cross_user_access() -> None:
-    database_url = os.environ.get("CAREEROS_TEST_DATABASE_URL")
+    database_url = os.environ.get("REZUMI_TEST_DATABASE_URL")
     if database_url is None:
-        pytest.skip("CAREEROS_TEST_DATABASE_URL is required for PostgreSQL integration tests")
+        pytest.skip("REZUMI_TEST_DATABASE_URL is required for PostgreSQL integration tests")
 
     database = Database(DatabaseOptions(url=database_url, pool_size=2, max_overflow=0))
     service = ChangeStudioService(

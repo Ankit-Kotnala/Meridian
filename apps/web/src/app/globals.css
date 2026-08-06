@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "@careeros/design-tokens/tokens.css";
+@import "@rezumi/design-tokens/tokens.css";
 
 @source "../../../../packages/ui/src";
 
@@ -22,7 +22,9 @@ body {
   font-family: var(--font-family-sans);
   font-size: 1rem;
   line-height: 1.5;
-  font-feature-settings: "cv05" 1, "ss03" 1;
+  font-feature-settings:
+    "cv05" 1,
+    "ss03" 1;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

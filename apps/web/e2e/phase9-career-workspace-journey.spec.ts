@@ -16,11 +16,11 @@ const actionTimeout = 7_500;
 const workerTimeout = 120_000;
 
 const canonicalScoreDisclaimer =
-  "CareerOS scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.";
+  "Rezumi scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.";
 const nonCausalInterpretation =
   "These analytics describe correlations and observed patterns only. They do not establish causation, predict hiring decisions, or promise career outcomes.";
 const promotionReadinessDisclaimer =
-  "Promotion Readiness summarizes CareerOS preparation signals from current eligible evidence and owner-maintained records. It is not an employer decision, hiring probability, promotion guarantee, or assessment of job-market value.";
+  "Promotion Readiness summarizes Rezumi preparation signals from current eligible evidence and owner-maintained records. It is not an employer decision, hiring probability, promotion guarantee, or assessment of job-market value.";
 
 const fictional = {
   annualRefresh: "Fictional annual evidence-backed resume refresh",
@@ -49,7 +49,7 @@ const fictional = {
   story: "Fictional customer discovery STAR story",
   template: "Fictional reviewed introduction",
   templateBody:
-    "Hello. This is fictional text saved for manual review only; CareerOS must not send it.",
+    "Hello. This is fictional text saved for manual review only; Rezumi must not send it.",
 };
 
 async function expectActionable(locator: Locator) {
@@ -549,7 +549,7 @@ async function exerciseInterviewPrep(page: Page, keyboard: boolean) {
   );
   await expect(
     page.getByText(
-      "A grounded draft was created for your review. CareerOS did not send it.",
+      "A grounded draft was created for your review. Rezumi did not send it.",
     ),
   ).toBeVisible();
   await expect(page.getByText("Review required")).toBeVisible();
@@ -618,7 +618,7 @@ async function exerciseNetworking(page: Page, keyboard: boolean) {
   );
   await attest(
     templateForm.getByRole("checkbox", {
-      name: "I reviewed this text and understand CareerOS will not send it",
+      name: "I reviewed this text and understand Rezumi will not send it",
     }),
     keyboard,
   );
@@ -729,7 +729,7 @@ async function exerciseNetworking(page: Page, keyboard: boolean) {
   );
   await expect(
     page.getByText(
-      "Interaction recorded as local history only. CareerOS did not send anything.",
+      "Interaction recorded as local history only. Rezumi did not send anything.",
     ),
   ).toBeVisible();
   await expect(page.getByText("Recorded Only", { exact: true })).toBeVisible();

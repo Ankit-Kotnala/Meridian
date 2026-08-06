@@ -3,7 +3,7 @@
 import { ArrowUp } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { cn } from "@careeros/ui";
+import { cn } from "@rezumi/ui";
 
 /** Floating control that fades in after the reader scrolls past the fold. */
 export function BackToTop() {

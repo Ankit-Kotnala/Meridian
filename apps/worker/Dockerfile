@@ -17,7 +17,7 @@ COPY --chown=10001:10001 packages/backend/src ./packages/backend/src
 
 RUN UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy uv sync \
       --frozen \
-      --package careeros-worker \
+      --package rezumi-worker \
       --no-dev \
       --no-editable \
     && uv cache clean \
@@ -26,6 +26,6 @@ RUN UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy uv sync \
 USER 10001:10001
 
 HEALTHCHECK --interval=30s --timeout=8s --start-period=15s --retries=3 \
-  CMD ["python", "-m", "careeros_worker.healthcheck"]
+  CMD ["python", "-m", "rezumi_worker.healthcheck"]
 
-CMD ["celery", "--app", "careeros_worker.app:celery_app", "worker", "--loglevel=INFO", "--queues=default,resume-health,resume-builder,career-record,maintenance"]
+CMD ["celery", "--app", "rezumi_worker.app:celery_app", "worker", "--loglevel=INFO", "--queues=default,resume-health,resume-builder,career-record,maintenance"]

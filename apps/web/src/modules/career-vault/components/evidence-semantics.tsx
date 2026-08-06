@@ -5,7 +5,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 
-import { Badge, Card } from "@careeros/ui";
+import { Badge, Card } from "@rezumi/ui";
 
 import type { EvidenceItem, EvidenceState, Provenance } from "../api/types";
 
@@ -18,7 +18,7 @@ const statePresentation: Record<
   }
 > = {
   verified: {
-    description: "Checked through a documented CareerOS verification process.",
+    description: "Checked through a documented Rezumi verification process.",
     label: "Verified",
     tone: "success",
   },

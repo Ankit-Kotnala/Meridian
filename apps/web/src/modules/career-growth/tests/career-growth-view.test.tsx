@@ -201,7 +201,7 @@ const growthInsights = {
       status: "needs_action" as const,
     })),
     disclaimer:
-      "Promotion Readiness summarizes CareerOS preparation signals from current eligible evidence and owner-maintained records. It is not an employer decision, hiring probability, promotion guarantee, or assessment of job-market value.",
+      "Promotion Readiness summarizes Rezumi preparation signals from current eligible evidence and owner-maintained records. It is not an employer decision, hiring probability, promotion guarantee, or assessment of job-market value.",
     generatedAt: "2026-07-24T12:00:00Z",
     status: "building",
   },

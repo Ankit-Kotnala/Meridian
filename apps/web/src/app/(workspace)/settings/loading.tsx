@@ -1,4 +1,4 @@
-import { LoadingSkeleton } from "@careeros/ui";
+import { LoadingSkeleton } from "@rezumi/ui";
 
 export default function SettingsLoading() {
   return <LoadingSkeleton />;

@@ -10,12 +10,12 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import UUID
 
-from careeros.modules.change_studio.application import (
+from rezumi.modules.change_studio.application import (
     ChangeSetRecord,
     JobMatchAnalysisContext,
     RequirementMatchContext,
 )
-from careeros.modules.change_studio.domain import (
+from rezumi.modules.change_studio.domain import (
     ChangeStudioAuditEvent,
     ChangeStudioIdempotencyRecord,
     ChangeStudioNotFound,

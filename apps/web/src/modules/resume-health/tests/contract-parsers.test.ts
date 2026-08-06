@@ -147,7 +147,7 @@ describe("canonical semantic contract parser", () => {
     sections: [],
     warnings: [],
     semanticSchemaVersion: "canonical-semantics/1.0.0",
-    semanticParserVersion: "careeros-semantic-parser/1.0.0",
+    semanticParserVersion: "rezumi-semantic-parser/1.0.0",
     semanticReviewState: "unreviewed",
     semanticEntities: [
       {

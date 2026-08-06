@@ -10,4 +10,4 @@ if ($LASTEXITCODE -ne 0) {
     throw "Phase 1 full-stack browser journey failed with exit code $LASTEXITCODE."
 }
 
-Write-Host "CareerOS Phase 1 verification passed."
+Write-Host "Rezumi Phase 1 verification passed."

@@ -4,7 +4,7 @@ from datetime import datetime
 from types import TracebackType
 from uuid import UUID
 
-from careeros.modules.identity.domain import (
+from rezumi.modules.identity.domain import (
     AuditEvent,
     ConsentEvent,
     OAuthAccount,

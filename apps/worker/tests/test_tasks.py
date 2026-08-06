@@ -4,33 +4,33 @@ import re
 from uuid import uuid4
 
 import pytest
-from careeros.modules.career_record.application import (
+from rezumi.modules.career_record.application import (
     AttachmentJobStatus,
     AttachmentProcessingOutcome,
     AttachmentReconciliationResult,
     CleanupBatchResult,
     SafeAttachmentError,
 )
-from careeros.modules.resume_builder.application import (
+from rezumi.modules.resume_builder.application import (
     ExportOutboxDispatchResult,
     ExportProcessingOutcome,
     ExportReconciliationResult,
 )
-from careeros.modules.resume_builder.domain import ResumeExportStatus
-from careeros.modules.resume_health.application import (
+from rezumi.modules.resume_builder.domain import ResumeExportStatus
+from rezumi.modules.resume_health.application import (
     CleanupResult,
     JobReconciliationResult,
     ProcessingOutcome,
 )
-from careeros.modules.resume_health.domain import JobStatus
+from rezumi.modules.resume_health.domain import JobStatus
 
-from careeros_worker import tasks
-from careeros_worker.base import RetryableTaskError
-from careeros_worker.config import WorkerSettings
-from careeros_worker.runtime import OutboxTaskResult
-from careeros_worker.tasks import career_record as career_record_tasks
-from careeros_worker.tasks import resume_builder as resume_builder_tasks
-from careeros_worker.tasks import resume_health as resume_health_tasks
+from rezumi_worker import tasks
+from rezumi_worker.base import RetryableTaskError
+from rezumi_worker.config import WorkerSettings
+from rezumi_worker.runtime import OutboxTaskResult
+from rezumi_worker.tasks import career_record as career_record_tasks
+from rezumi_worker.tasks import resume_builder as resume_builder_tasks
+from rezumi_worker.tasks import resume_health as resume_health_tasks
 
 _DELIVERY_ID = "delivery-test-id"
 

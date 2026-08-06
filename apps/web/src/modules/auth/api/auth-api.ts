@@ -1,6 +1,6 @@
 "use client";
 
-import type { components } from "@careeros/contracts";
+import type { components } from "@rezumi/contracts";
 
 import {
   ApiRequestError,

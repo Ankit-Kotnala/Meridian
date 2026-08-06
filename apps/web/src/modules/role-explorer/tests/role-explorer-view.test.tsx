@@ -44,9 +44,9 @@ const role: Role = {
     description: "Seed taxonomy.",
     id: "00000000-0000-4000-8000-000000000401",
     publishedAt: "2026-07-19T00:00:00Z",
-    sourceLicense: "CareerOS internal product taxonomy",
-    sourceName: "CareerOS authored seed taxonomy",
-    version: "careeros-seed-roles/2026-07-19",
+    sourceLicense: "Rezumi internal product taxonomy",
+    sourceName: "Rezumi authored seed taxonomy",
+    version: "rezumi-seed-roles/2026-07-19",
   },
   title: "Product Manager",
   version: 1,
@@ -106,10 +106,10 @@ const analysis: RoleReadiness = {
   role,
   savedRoleId: savedRole.id,
   scoringDisclaimer:
-    "CareerOS scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.",
+    "Rezumi scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.",
   summary:
     "Product Manager readiness is based on 1 demonstrated competency and 0 gaps.",
-  taxonomyVersion: "careeros-seed-roles/2026-07-19",
+  taxonomyVersion: "rezumi-seed-roles/2026-07-19",
 };
 
 describe("Role Explorer view", () => {

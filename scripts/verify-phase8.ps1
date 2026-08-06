@@ -10,4 +10,4 @@ if ($LASTEXITCODE -ne 0) {
     throw "Phase 8 isolated Application Workspace workflow failed with exit code $LASTEXITCODE."
 }
 
-Write-Host "CareerOS Phase 8 verification passed."
+Write-Host "Rezumi Phase 8 verification passed."

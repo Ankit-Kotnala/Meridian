@@ -18,8 +18,8 @@ from sqlalchemy import (
     Uuid,
 )
 
-from careeros.modules.change_studio.infrastructure import models
-from careeros.modules.identity.infrastructure import models as identity_models  # noqa: F401
+from rezumi.modules.change_studio.infrastructure import models
+from rezumi.modules.identity.infrastructure import models as identity_models  # noqa: F401
 
 _FORWARD_PROVENANCE_COLUMNS = {
     "evidence_revision_id",

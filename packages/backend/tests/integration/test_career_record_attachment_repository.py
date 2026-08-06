@@ -17,9 +17,9 @@ from career_record_attachment_memory import (
     SequentialIds,
     SequentialTokens,
 )
-from careeros.foundation.config import DatabaseOptions
-from careeros.foundation.database import Database
-from careeros.modules.career_record.application.attachment_workflow import (
+from rezumi.foundation.config import DatabaseOptions
+from rezumi.foundation.database import Database
+from rezumi.modules.career_record.application.attachment_workflow import (
     PROCESS_EVIDENCE_ATTACHMENT_TASK,
     AdmitAttachment,
     AttachmentCleanupProcessor,
@@ -32,15 +32,15 @@ from careeros.modules.career_record.application.attachment_workflow import (
     AttachmentStatus,
     AttachmentWorkflowService,
 )
-from careeros.modules.career_record.infrastructure.attachment_repository import (
+from rezumi.modules.career_record.infrastructure.attachment_repository import (
     SqlAlchemyAttachmentUnitOfWorkFactory,
 )
-from careeros.modules.career_record.infrastructure.models import (
+from rezumi.modules.career_record.infrastructure.models import (
     EvidenceAttachmentAuditEventModel,
     EvidenceAttachmentModel,
     EvidenceItemModel,
 )
-from careeros.modules.identity.infrastructure.models import UserModel
+from rezumi.modules.identity.infrastructure.models import UserModel
 
 PDF = b"%PDF-1.7\n1 0 obj\n<<>>\nendobj\n%%EOF"
 
@@ -49,9 +49,9 @@ PDF = b"%PDF-1.7\n1 0 obj\n<<>>\nendobj\n%%EOF"
 async def test_attachment_workflow_round_trips_owner_scope_outbox_and_tombstone(
     tmp_path: Path,
 ) -> None:
-    database_url = os.environ.get("CAREEROS_TEST_DATABASE_URL")
+    database_url = os.environ.get("REZUMI_TEST_DATABASE_URL")
     if database_url is None:
-        pytest.skip("CAREEROS_TEST_DATABASE_URL is required for PostgreSQL integration tests")
+        pytest.skip("REZUMI_TEST_DATABASE_URL is required for PostgreSQL integration tests")
 
     database = Database(DatabaseOptions(url=database_url, pool_size=2, max_overflow=0))
     factory = SqlAlchemyAttachmentUnitOfWorkFactory(database)

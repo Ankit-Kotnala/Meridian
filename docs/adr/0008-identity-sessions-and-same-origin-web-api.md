@@ -31,9 +31,9 @@ authorization.
 
 Passwords use Argon2id through a maintained library. Authentication material is
 opaque, generated from a cryptographically secure random source, and stored only
-as keyed digests. The API issues host-only cookies named `careeros_session` and
-`careeros_refresh`; both are HTTP-only, `SameSite=Lax`, scoped to `/`, and Secure
-outside explicit local development. A readable `careeros_csrf` cookie contains
+as keyed digests. The API issues host-only cookies named `rezumi_session` and
+`rezumi_refresh`; both are HTTP-only, `SameSite=Lax`, scoped to `/`, and Secure
+outside explicit local development. A readable `rezumi_csrf` cookie contains
 no bearer authority. Unsafe requests require its value in `X-CSRF-Token`, a
 session-bound digest match, and an exact allowed Origin. Authentication rotates
 the session and CSRF material to prevent fixation.
@@ -58,7 +58,7 @@ while production startup rejects incomplete OAuth, weak token-secret, insecure
 cookie, or wildcard-origin configuration.
 
 Phase 1 identity, profile, session, consent, organization extension, audit, and
-onboarding state live in one `careeros.modules.identity` boundary. Individual
+onboarding state live in one `rezumi.modules.identity` boundary. Individual
 accounts do not receive synthetic organizations. Every owned lookup includes the
 authenticated user and resource identifier; cross-user identifiers do not
 disclose existence. Audit metadata is allowlisted and excludes email, passwords,
@@ -98,7 +98,7 @@ cookies, raw tokens, and request bodies.
 - **Direct cross-origin browser calls:** rejected for the first-party web client;
   they add credentialed CORS complexity and weaken the existing same-origin CSP.
 - **Email-only OAuth auto-linking:** rejected because a provider-email collision
-  is not proof that an existing CareerOS account authorized the link.
+  is not proof that an existing Rezumi account authorized the link.
 - **Synthetic organization per user:** rejected because it obscures ownership
   semantics and complicates later membership authorization.
 

@@ -1,5 +1,5 @@
 {
-  "name": "@careeros/typescript-config",
+  "name": "@rezumi/typescript-config",
   "version": "0.1.0",
   "private": true,
   "files": [

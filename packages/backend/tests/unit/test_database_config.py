@@ -2,14 +2,14 @@
 
 import pytest
 
-from careeros.foundation.config import (
+from rezumi.foundation.config import (
     DatabaseOptions,
     database_url_from_environment,
     parse_async_postgresql_url,
 )
-from careeros.foundation.database import Database
+from rezumi.foundation.database import Database
 
-ASYNC_DATABASE_URL = "postgresql+asyncpg://app:secret@database:5432/careeros"
+ASYNC_DATABASE_URL = "postgresql+asyncpg://app:secret@database:5432/rezumi"
 
 
 def test_database_options_redact_the_url_from_repr() -> None:
@@ -29,40 +29,40 @@ def test_database_url_environment_aliases_are_supported() -> None:
 
 
 def test_database_url_is_required_for_migrations() -> None:
-    with pytest.raises(RuntimeError, match="CAREEROS_DATABASE_URL"):
+    with pytest.raises(RuntimeError, match="REZUMI_DATABASE_URL"):
         database_url_from_environment({})
 
 
 def test_database_url_requires_asyncpg() -> None:
     with pytest.raises(ValueError, match="postgresql\\+asyncpg"):
-        parse_async_postgresql_url("postgresql://app:secret@database/careeros")
+        parse_async_postgresql_url("postgresql://app:secret@database/rezumi")
 
 
 @pytest.mark.parametrize(
     "database_url",
     [
-        "postgresql+asyncpg://app:strong-secret@localhost:5432/careeros",
-        "postgresql+asyncpg://app:change-me-local-only@database:5432/careeros",
+        "postgresql+asyncpg://app:strong-secret@localhost:5432/rezumi",
+        "postgresql+asyncpg://app:change-me-local-only@database:5432/rezumi",
     ],
 )
 def test_migration_database_url_rejects_unsafe_production_values(database_url: str) -> None:
     with pytest.raises(ValueError, match="Unsafe production database configuration"):
         database_url_from_environment(
             {
-                "CAREEROS_ENVIRONMENT": "production",
-                "CAREEROS_DATABASE_URL": database_url,
+                "REZUMI_ENVIRONMENT": "production",
+                "REZUMI_DATABASE_URL": database_url,
             }
         )
 
 
 def test_migration_database_url_accepts_a_hardened_production_value() -> None:
-    database_url = "postgresql+asyncpg://app:strong-secret@database:5432/careeros"
+    database_url = "postgresql+asyncpg://app:strong-secret@database:5432/rezumi"
 
     assert (
         database_url_from_environment(
             {
-                "CAREEROS_ENVIRONMENT": "production",
-                "CAREEROS_DATABASE_URL": database_url,
+                "REZUMI_ENVIRONMENT": "production",
+                "REZUMI_DATABASE_URL": database_url,
             }
         )
         == database_url
@@ -73,7 +73,7 @@ def test_migration_environment_must_be_recognized() -> None:
     with pytest.raises(ValueError, match="environment must be one of"):
         database_url_from_environment(
             {
-                "CAREEROS_ENVIRONMENT": "prod",
-                "CAREEROS_DATABASE_URL": ASYNC_DATABASE_URL,
+                "REZUMI_ENVIRONMENT": "prod",
+                "REZUMI_DATABASE_URL": ASYNC_DATABASE_URL,
             }
         )

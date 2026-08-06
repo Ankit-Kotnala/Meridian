@@ -17,7 +17,7 @@ keys, or let a client bypass grounding by editing generated prose directly.
 
 ## Decision
 
-Add `careeros.modules.resume_builder` as a bounded context with structured resume
+Add `rezumi.modules.resume_builder` as a bounded context with structured resume
 documents, immutable versions, deterministic rendering, round-trip verification,
 private exported objects, download intents, idempotency records, and redacted
 audit events.

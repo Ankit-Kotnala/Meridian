@@ -16,7 +16,7 @@ const api = vi.hoisted(() => ({
 vi.mock("../api/job-match-api", () => api);
 
 const disclaimer =
-  "CareerOS scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.";
+  "Rezumi scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.";
 
 const job: Job = {
   applicationDeadline: null,

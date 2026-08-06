@@ -6,7 +6,7 @@ from datetime import UTC, date, datetime
 from types import TracebackType
 from uuid import UUID, uuid4
 
-from careeros.modules.career_record.application.models import (
+from rezumi.modules.career_record.application.models import (
     CareerRecordAnalyticsGrowthPoint,
     CareerRecordAnalyticsSourceState,
     EvidenceFilter,
@@ -16,7 +16,7 @@ from careeros.modules.career_record.application.models import (
     ResumeSourceLocator,
     ValidatedResumeSource,
 )
-from careeros.modules.career_record.domain import (
+from rezumi.modules.career_record.domain import (
     AchievementDraft,
     CareerAuditEvent,
     CareerEntity,

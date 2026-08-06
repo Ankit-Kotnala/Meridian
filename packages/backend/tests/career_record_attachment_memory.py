@@ -10,7 +10,7 @@ from pathlib import Path
 from types import TracebackType
 from uuid import UUID
 
-from careeros.modules.career_record.application.attachment_workflow import (
+from rezumi.modules.career_record.application.attachment_workflow import (
     AttachmentAuditEvent,
     AttachmentDownloadPurpose,
     AttachmentExtractionSummary,

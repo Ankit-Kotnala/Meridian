@@ -8,7 +8,7 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { Badge, Button, Card, EmptyState } from "@careeros/ui";
+import { Badge, Button, Card, EmptyState } from "@rezumi/ui";
 
 import type { Experience } from "../api/types";
 import { ProvenanceList } from "./evidence-semantics";

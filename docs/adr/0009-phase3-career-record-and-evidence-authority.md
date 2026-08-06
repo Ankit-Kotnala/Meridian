@@ -68,7 +68,7 @@ and strength (`Verified`, `Confirmed`, `Supported`, `Inferred`, or
 No independent verification provider is configured in Phase 3. Production user
 APIs therefore cannot create `Verified` evidence. The internal authority port and
 transition are implemented and tested so a later reviewed verifier can be added
-without trusting a client flag. UI copy must explain that CareerOS verification
+without trusting a client flag. UI copy must explain that Rezumi verification
 is a documented evidence process, not employer, credential, or background-check
 certification.
 

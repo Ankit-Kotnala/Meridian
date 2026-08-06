@@ -1,5 +1,5 @@
 {
-  "name": "@careeros/test-fixtures",
+  "name": "@rezumi/test-fixtures",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -9,8 +9,8 @@
     "lint": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@careeros/typescript-config": "workspace:*",
+    "@rezumi/typescript-config": "workspace:*",
     "tsx": "4.23.1",
-    "typescript": "7.0.2"
+    "typescript": "5.9.3"
   }
 }

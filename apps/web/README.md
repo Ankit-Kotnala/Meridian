@@ -1,6 +1,6 @@
-# CareerOS web
+# Rezumi web
 
-Next.js App Router frontend for the CareerOS public experience, Phase 1
+Next.js App Router frontend for the Rezumi public experience, Phase 1
 authentication/onboarding workspace, Phase 2 Resume Health workflow, and
 isolated fictional product preview.
 
@@ -11,10 +11,10 @@ Run these from the repository root:
 ```bash
 pnpm dev:web       # backend containers plus Next.js hot reload
 pnpm test:web      # focused web tests
-pnpm --filter @careeros/web lint
-pnpm --filter @careeros/web typecheck
-pnpm --filter @careeros/web build
-pnpm --filter @careeros/web test:e2e
+pnpm --filter @rezumi/web lint
+pnpm --filter @rezumi/web typecheck
+pnpm --filter @rezumi/web build
+pnpm --filter @rezumi/web test:e2e
 ```
 
 Product behavior lives under `src/modules/<feature>`; App Router files remain
@@ -47,6 +47,6 @@ web Content Security Policy and storage CORS policy.
 The Dockerfile expects the repository root as its build context:
 
 ```bash
-docker build -f apps/web/Dockerfile -t careeros-web .
-docker run --rm -p 3000:3000 careeros-web
+docker build -f apps/web/Dockerfile -t rezumi-web .
+docker run --rm -p 3000:3000 rezumi-web
 ```

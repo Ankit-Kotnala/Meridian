@@ -525,9 +525,9 @@ def _seed_taxonomy() -> None:
         [
             {
                 "id": TAXONOMY_ID,
-                "version": "careeros-seed-roles/2026-07-19",
-                "source_name": "CareerOS authored seed taxonomy",
-                "source_license": "CareerOS internal product taxonomy",
+                "version": "rezumi-seed-roles/2026-07-19",
+                "source_name": "Rezumi authored seed taxonomy",
+                "source_license": "Rezumi internal product taxonomy",
                 "description": (
                     "Initial deterministic role taxonomy for Role Explorer readiness matching."
                 ),

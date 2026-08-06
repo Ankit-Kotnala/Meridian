@@ -2,7 +2,7 @@
 
 import { type FormEvent } from "react";
 
-import { Button, TextField } from "@careeros/ui";
+import { Button, TextField } from "@rezumi/ui";
 
 import type { EvidenceClaimUpdate, EvidenceItem } from "../api/types";
 import type { FieldErrors } from "../validation/career-vault-validation";

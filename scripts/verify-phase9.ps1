@@ -83,7 +83,7 @@ function Restore-PrimaryStack {
 
 & "$PSScriptRoot/verify.ps1"
 if ($LASTEXITCODE -ne 0) {
-    throw "CareerOS platform verification failed with exit code $LASTEXITCODE."
+    throw "Rezumi platform verification failed with exit code $LASTEXITCODE."
 }
 
 $PrimaryStackPaused = $false
@@ -105,4 +105,4 @@ finally {
     }
 }
 
-Write-Host "CareerOS Phase 9 verification passed."
+Write-Host "Rezumi Phase 9 verification passed."

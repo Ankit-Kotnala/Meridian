@@ -2,14 +2,13 @@ import { BadgeCheck, LockKeyhole, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { CareerOsLogo } from "@/shared/components/career-os-logo";
+import { RezumiLogo } from "@/shared/components/rezumi-logo";
 
 const trustPoints = [
   {
     icon: BadgeCheck,
     title: "Evidence before claims",
-    description:
-      "CareerOS never fills missing career facts with invented prose.",
+    description: "Rezumi never fills missing career facts with invented prose.",
   },
   {
     icon: LockKeyhole,
@@ -41,7 +40,7 @@ export function AuthPageShell({
       id="main-content"
     >
       <aside className="hidden bg-navy px-8 py-10 text-white lg:flex lg:flex-col lg:justify-between xl:px-12">
-        <CareerOsLogo href="/" inverted />
+        <RezumiLogo href="/" inverted />
         <div className="my-16 max-w-md">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-100/55">
             Career truth before career polish
@@ -82,7 +81,7 @@ export function AuthPageShell({
 
       <section className="flex min-h-screen items-center justify-center bg-background px-4 py-10 sm:px-8">
         <div className="w-full max-w-md">
-          <CareerOsLogo className="mb-8 lg:hidden" href="/" />
+          <RezumiLogo className="mb-8 lg:hidden" href="/" />
           <div className="surface-card rounded-[var(--radius-card)] p-5 sm:p-8">
             <p className="eyebrow">{eyebrow}</p>
             <h1 className="mt-2 font-display text-2xl font-semibold tracking-[-0.035em] text-foreground sm:text-3xl">

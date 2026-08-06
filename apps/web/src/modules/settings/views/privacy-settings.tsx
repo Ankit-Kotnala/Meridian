@@ -13,14 +13,11 @@ import {
   EmptyState,
   ErrorState,
   LoadingSkeleton,
-} from "@careeros/ui";
+} from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 
-import {
-  deleteAccount,
-  exportAccountData,
-} from "../api/settings-api";
+import { deleteAccount, exportAccountData } from "../api/settings-api";
 import { useSettingsCapabilities } from "../components/settings-capabilities-context";
 
 export function PrivacySettings() {
@@ -65,7 +62,7 @@ export function PrivacySettings() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `careeros-data-export-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `rezumi-data-export-${new Date().toISOString().slice(0, 10)}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -127,18 +124,20 @@ export function PrivacySettings() {
         </div>
       </Card>
 
-      <Card className="p-5 sm:p-7">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex items-start gap-3">
-            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-surface-subtle text-muted">
-              <FileArchive aria-hidden="true" className="size-5" />
-            </span>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-lg font-extrabold text-foreground">
-                  Account data export (GDPR / CCPA)
-                </h2>
-                <Badge tone="success">Available</Badge>
+      {exportAvailable ? (
+        <Card className="p-5 sm:p-7">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-surface-subtle text-muted">
+                <FileArchive aria-hidden="true" className="size-5" />
+              </span>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-lg font-extrabold text-foreground">
+                    Account data export (GDPR / CCPA)
+                  </h2>
+                  <Badge tone="success">Available</Badge>
+                </div>
               </div>
             </div>
 
@@ -169,7 +168,8 @@ export function PrivacySettings() {
                 </div>
                 <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">
                   Permanently purge your profile, career evidence, tailored
-                  resumes, and tracked applications. This action cannot be undone.
+                  resumes, and tracked applications. This action cannot be
+                  undone.
                 </p>
               </div>
             </div>

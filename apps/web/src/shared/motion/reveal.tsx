@@ -3,7 +3,7 @@
 import { m } from "motion/react";
 import type { ReactNode } from "react";
 
-import { cn } from "@careeros/ui";
+import { cn } from "@rezumi/ui";
 
 export function Reveal({
   children,

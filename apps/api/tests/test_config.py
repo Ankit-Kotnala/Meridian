@@ -3,13 +3,13 @@
 import pytest
 from pydantic import ValidationError
 
-from careeros_api.config import Settings
+from rezumi_api.config import Settings
 
 
 def test_secret_is_redacted_in_model_representation() -> None:
     settings = Settings.model_validate({})
 
-    assert "careeros:careeros" not in repr(settings)
+    assert "rezumi:rezumi" not in repr(settings)
     assert settings.database_url.get_secret_value().startswith("postgresql+asyncpg://")
 
 
@@ -39,7 +39,7 @@ def test_production_accepts_explicit_safe_configuration() -> None:
             "auth_token_pepper": "production-test-pepper-is-at-least-32-bytes",
             "resume_capability_pepper": "production-resume-pepper-is-at-least-32-bytes",
             "bff_client_signal_secret": "production-bff-signal-secret-is-at-least-32-bytes",
-            "database_url": "postgresql+asyncpg://app:unique-secret@db:5432/careeros",
+            "database_url": "postgresql+asyncpg://app:unique-secret@db:5432/rezumi",
             "s3_endpoint_url": "https://objects.internal.example.com",
             "s3_public_endpoint_url": "https://uploads.example.com",
             "s3_access_key_id": "production-test-access-key",
@@ -58,8 +58,8 @@ def test_production_accepts_explicit_safe_configuration() -> None:
 @pytest.mark.parametrize(
     "database_url",
     [
-        "postgresql+asyncpg://careeros:change-me-local-only@postgres:5432/careeros",
-        "postgresql+asyncpg://app:unique-password@localhost:5432/careeros",
+        "postgresql+asyncpg://rezumi:change-me-local-only@postgres:5432/rezumi",
+        "postgresql+asyncpg://app:unique-password@localhost:5432/rezumi",
     ],
 )
 def test_production_rejects_compose_or_loopback_database_urls(database_url: str) -> None:
@@ -91,7 +91,7 @@ def test_request_body_limit_has_safe_phase_one_default() -> None:
 def test_analytics_retry_budget_uses_the_shared_bounded_environment_setting(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.delenv("CAREEROS_ANALYTICS_MAX_ATTEMPTS", raising=False)
+    monkeypatch.delenv("REZUMI_ANALYTICS_MAX_ATTEMPTS", raising=False)
     monkeypatch.setenv("ANALYTICS_MAX_ATTEMPTS", "7")
 
     settings = Settings(_env_file=None)  # type: ignore[call-arg]
@@ -147,13 +147,13 @@ def test_storage_endpoints_must_be_credential_free_origins(endpoint: str) -> Non
 
 
 def test_compose_environment_aliases_are_supported(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("CAREEROS_DATABASE_URL", raising=False)
+    monkeypatch.delenv("REZUMI_DATABASE_URL", raising=False)
     monkeypatch.setenv("ENVIRONMENT", "test")
     monkeypatch.setenv("LOG_LEVEL", "WARNING")
     monkeypatch.setenv("DOCUMENT_MAX_PAGES", "12")
     monkeypatch.setenv(
         "DATABASE_URL",
-        "postgresql+asyncpg://app:local-only@postgres:5432/careeros",
+        "postgresql+asyncpg://app:local-only@postgres:5432/rezumi",
     )
 
     settings = Settings(_env_file=None)  # type: ignore[call-arg]
@@ -161,4 +161,4 @@ def test_compose_environment_aliases_are_supported(monkeypatch: pytest.MonkeyPat
     assert settings.environment == "test"
     assert settings.log_level == "WARNING"
     assert settings.resume_max_pages == 12
-    assert settings.database_url.get_secret_value().endswith("@postgres:5432/careeros")
+    assert settings.database_url.get_secret_value().endswith("@postgres:5432/rezumi")

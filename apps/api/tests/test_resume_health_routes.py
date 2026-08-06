@@ -7,12 +7,14 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import ANY, call, create_autospec
 from uuid import UUID, uuid4
 
-from careeros.modules.identity.application import IdentityService
-from careeros.modules.identity.domain import AuthenticatedPrincipal, AuthMethod
-from careeros.modules.identity.domain.errors import AuthenticationRequired, RateLimited
-from careeros.modules.identity.infrastructure.redis_security import RedisSecurityStore
-from careeros.modules.resume_health.application import ResumeHealthService
-from careeros.modules.resume_health.application.models import (
+from fastapi.testclient import TestClient
+from pydantic import SecretStr
+from rezumi.modules.identity.application import IdentityService
+from rezumi.modules.identity.domain import AuthenticatedPrincipal, AuthMethod
+from rezumi.modules.identity.domain.errors import AuthenticationRequired, RateLimited
+from rezumi.modules.identity.infrastructure.redis_security import RedisSecurityStore
+from rezumi.modules.resume_health.application import ResumeHealthService
+from rezumi.modules.resume_health.application.models import (
     AnalysisView,
     CanonicalSnapshotView,
     ClaimGuestDocument,
@@ -27,7 +29,7 @@ from careeros.modules.resume_health.application.models import (
     StorageUploadTarget,
     UploadIntentView,
 )
-from careeros.modules.resume_health.domain import (
+from rezumi.modules.resume_health.domain import (
     AnalysisStatus,
     CanonicalResume,
     DocumentStatus,
@@ -39,18 +41,16 @@ from careeros.modules.resume_health.domain import (
     ProcessingStage,
     ResumeMediaType,
 )
-from fastapi.testclient import TestClient
-from pydantic import SecretStr
 
-from careeros_api.config import Settings
-from careeros_api.constants import SCORING_DISCLAIMER
-from careeros_api.main import create_app
-from careeros_api.modules.resume_health.schemas import ResumeHealthComponentResponse
 from conftest import FakeDatabase
+from rezumi_api.config import Settings
+from rezumi_api.constants import SCORING_DISCLAIMER
+from rezumi_api.main import create_app
+from rezumi_api.modules.resume_health.schemas import ResumeHealthComponentResponse
 
 _ORIGIN = "http://localhost:3000"
 _PRE_AUTH_CSRF = "00000000-0000-4000-8000-000000000001.test-csrf-secret"
-_BFF_SIGNAL_CONTEXT = b"careeros-bff-client-v1\0"
+_BFF_SIGNAL_CONTEXT = b"rezumi-bff-client-v1\0"
 
 
 def _identity() -> IdentityService:
@@ -187,7 +187,7 @@ def test_guest_upload_issues_http_only_capability_and_scoped_intent() -> None:
         expires_at=now + timedelta(minutes=5),
         target=StorageUploadTarget(
             method="PUT",
-            url="http://localhost:9000/careeros-documents/staging/signed",
+            url="http://localhost:9000/rezumi-documents/staging/signed",
             headers={"Content-Type": "application/pdf"},
             expires_at=now + timedelta(minutes=5),
         ),
@@ -217,7 +217,7 @@ def test_guest_upload_issues_http_only_capability_and_scoped_intent() -> None:
     assert response.json()["uploadId"] == str(upload_id)
     cookies = response.headers.get_list("set-cookie")
     assert any(
-        "careeros_guest_capability=" in cookie and "HttpOnly" in cookie for cookie in cookies
+        "rezumi_guest_capability=" in cookie and "HttpOnly" in cookie for cookie in cookies
     )
     assert "opaque-guest-secret" not in str(response.json())
     scope = resume.create_upload_intent.await_args.args[0]
@@ -244,7 +244,7 @@ def test_staging_guest_admission_requires_a_bff_authenticated_client_signal() ->
         expires_at=now + timedelta(minutes=5),
         target=StorageUploadTarget(
             method="PUT",
-            url="http://localhost:9000/careeros-documents/staging/signed",
+            url="http://localhost:9000/rezumi-documents/staging/signed",
             headers={"Content-Type": "application/pdf"},
             expires_at=now + timedelta(minutes=5),
         ),
@@ -275,7 +275,7 @@ def test_staging_guest_admission_requires_a_bff_authenticated_client_signal() ->
             json=payload,
             headers={
                 **headers,
-                "X-CareerOS-Client-Signal": _bff_client_signal(
+                "X-Rezumi-Client-Signal": _bff_client_signal(
                     "203.0.113.42", "forged-bff-key-material-that-is-at-least-32-bytes"
                 ),
             },
@@ -285,7 +285,7 @@ def test_staging_guest_admission_requires_a_bff_authenticated_client_signal() ->
             json=payload,
             headers={
                 **headers,
-                "X-CareerOS-Client-Signal": _bff_client_signal("203.0.113.42", key_material),
+                "X-Rezumi-Client-Signal": _bff_client_signal("203.0.113.42", key_material),
             },
         )
 
@@ -317,7 +317,7 @@ def test_guest_upload_intents_are_rate_limited_without_exposing_the_subject() ->
         expires_at=now + timedelta(minutes=5),
         target=StorageUploadTarget(
             method="PUT",
-            url="http://localhost:9000/careeros-documents/staging/signed",
+            url="http://localhost:9000/rezumi-documents/staging/signed",
             headers={"Content-Type": "application/pdf"},
             expires_at=now + timedelta(minutes=5),
         ),
@@ -382,8 +382,8 @@ def test_account_finalize_preserves_the_caller_idempotency_key() -> None:
             resume_health=resume,
         )
     ) as client:
-        client.cookies.set("careeros_session", "opaque-access")
-        client.cookies.set("careeros_csrf", "opaque-csrf")
+        client.cookies.set("rezumi_session", "opaque-access")
+        client.cookies.set("rezumi_csrf", "opaque-csrf")
         response = client.post(
             f"/api/v1/uploads/{upload_id}/finalize",
             headers={
@@ -441,8 +441,8 @@ def test_account_correction_and_analysis_mutations_are_rate_limited() -> None:
             resume_health=resume,
         )
     ) as client:
-        client.cookies.set("careeros_session", "opaque-access")
-        client.cookies.set("careeros_csrf", "opaque-csrf")
+        client.cookies.set("rezumi_session", "opaque-access")
+        client.cookies.set("rezumi_csrf", "opaque-csrf")
         first_correction = client.patch(
             f"/api/v1/documents/{document.id}/canonical-resume",
             json=correction_payload,
@@ -501,8 +501,8 @@ def test_account_semantic_review_uses_typed_operation_contract() -> None:
             resume_health=resume,
         )
     ) as client:
-        client.cookies.set("careeros_session", "opaque-access")
-        client.cookies.set("careeros_csrf", "opaque-csrf")
+        client.cookies.set("rezumi_session", "opaque-access")
+        client.cookies.set("rezumi_csrf", "opaque-csrf")
         response = client.patch(
             f"/api/v1/documents/{document.id}/canonical-resume",
             json={
@@ -549,8 +549,8 @@ def test_canonical_block_correction_rejects_non_uuid_identifiers_at_transport() 
             resume_health=resume,
         )
     ) as client:
-        client.cookies.set("careeros_session", "opaque-access")
-        client.cookies.set("careeros_csrf", "opaque-csrf")
+        client.cookies.set("rezumi_session", "opaque-access")
+        client.cookies.set("rezumi_csrf", "opaque-csrf")
         response = client.patch(
             f"/api/v1/documents/{document.id}/canonical-resume",
             json={"fields": [{"id": "not-a-uuid", "value": "Verified fictional text"}]},
@@ -601,8 +601,8 @@ def test_guest_correction_and_analysis_mutations_are_rate_limited() -> None:
             resume_health=resume,
         )
     ) as client:
-        client.cookies.set("careeros_guest_capability", capability, path="/api/v1/guest")
-        client.cookies.set("careeros_guest_csrf", "opaque-guest-csrf")
+        client.cookies.set("rezumi_guest_capability", capability, path="/api/v1/guest")
+        client.cookies.set("rezumi_guest_csrf", "opaque-guest-csrf")
         first_correction = client.patch(
             f"/api/v1/guest/documents/{document.id}/canonical-resume",
             json=correction_payload,
@@ -694,10 +694,10 @@ def test_guest_claim_requires_both_authorizations_and_clears_guest_cookies() -> 
             resume_health=resume,
         )
     ) as client:
-        client.cookies.set("careeros_session", "opaque-access")
-        client.cookies.set("careeros_csrf", "opaque-csrf")
+        client.cookies.set("rezumi_session", "opaque-access")
+        client.cookies.set("rezumi_csrf", "opaque-csrf")
         client.cookies.set(
-            "careeros_guest_capability",
+            "rezumi_guest_capability",
             capability,
             path="/api/v1/guest",
         )
@@ -722,9 +722,9 @@ def test_guest_claim_requires_both_authorizations_and_clears_guest_cookies() -> 
     )
     cookies = response.headers.get_list("set-cookie")
     assert any(
-        "careeros_guest_capability=" in cookie and "Max-Age=0" in cookie for cookie in cookies
+        "rezumi_guest_capability=" in cookie and "Max-Age=0" in cookie for cookie in cookies
     )
-    assert any("careeros_guest_csrf=" in cookie and "Max-Age=0" in cookie for cookie in cookies)
+    assert any("rezumi_guest_csrf=" in cookie and "Max-Age=0" in cookie for cookie in cookies)
 
 
 def test_guest_claim_rejects_missing_account_or_guest_authorization() -> None:
@@ -743,7 +743,7 @@ def test_guest_claim_rejects_missing_account_or_guest_authorization() -> None:
             resume_health=resume,
         )
     ) as client:
-        client.cookies.set("careeros_guest_capability", capability, path="/api/v1/guest")
+        client.cookies.set("rezumi_guest_capability", capability, path="/api/v1/guest")
         no_account = client.post(
             f"/api/v1/guest/documents/{document.id}/claim",
             json={"consent": True},
@@ -763,8 +763,8 @@ def test_guest_claim_rejects_missing_account_or_guest_authorization() -> None:
             resume_health=resume,
         )
     ) as client:
-        client.cookies.set("careeros_session", "opaque-access")
-        client.cookies.set("careeros_csrf", "opaque-csrf")
+        client.cookies.set("rezumi_session", "opaque-access")
+        client.cookies.set("rezumi_csrf", "opaque-csrf")
         no_guest = client.post(
             f"/api/v1/guest/documents/{document.id}/claim",
             json={"consent": True},
@@ -782,9 +782,9 @@ def test_guest_claim_rejects_missing_account_or_guest_authorization() -> None:
             resume_health=resume,
         )
     ) as client:
-        client.cookies.set("careeros_session", "opaque-access")
-        client.cookies.set("careeros_csrf", "opaque-csrf")
-        client.cookies.set("careeros_guest_capability", capability, path="/api/v1/guest")
+        client.cookies.set("rezumi_session", "opaque-access")
+        client.cookies.set("rezumi_csrf", "opaque-csrf")
+        client.cookies.set("rezumi_guest_capability", capability, path="/api/v1/guest")
         missing_consent = client.post(
             f"/api/v1/guest/documents/{document.id}/claim",
             json={},
@@ -812,8 +812,8 @@ def test_delete_accepts_eight_character_idempotency_key_boundary() -> None:
             resume_health=resume,
         )
     ) as client:
-        client.cookies.set("careeros_session", "opaque-access")
-        client.cookies.set("careeros_csrf", "opaque-csrf")
+        client.cookies.set("rezumi_session", "opaque-access")
+        client.cookies.set("rezumi_csrf", "opaque-csrf")
         response = client.delete(
             f"/api/v1/documents/{document.id}",
             headers={
@@ -851,8 +851,8 @@ def test_delete_rejects_invalid_or_oversized_idempotency_key_before_service() ->
             resume_health=resume,
         )
     ) as client:
-        client.cookies.set("careeros_session", "opaque-access")
-        client.cookies.set("careeros_csrf", "opaque-csrf")
+        client.cookies.set("rezumi_session", "opaque-access")
+        client.cookies.set("rezumi_csrf", "opaque-csrf")
         invalid_character = client.delete(
             f"/api/v1/documents/{document.id}",
             headers={**base_headers, "Idempotency-Key": "key 0001"},
@@ -881,8 +881,8 @@ def test_delete_rejects_if_match_above_signed_integer_before_service() -> None:
             resume_health=resume,
         )
     ) as client:
-        client.cookies.set("careeros_session", "opaque-access")
-        client.cookies.set("careeros_csrf", "opaque-csrf")
+        client.cookies.set("rezumi_session", "opaque-access")
+        client.cookies.set("rezumi_csrf", "opaque-csrf")
         response = client.delete(
             f"/api/v1/documents/{document.id}",
             headers={
@@ -914,7 +914,7 @@ def test_guest_resource_uses_capability_cookie_not_resource_id() -> None:
             resume_health=resume,
         )
     ) as client:
-        client.cookies.set("careeros_guest_capability", capability, path="/api/v1/guest")
+        client.cookies.set("rezumi_guest_capability", capability, path="/api/v1/guest")
         response = client.get(f"/api/v1/guest/documents/{document.id}")
 
     assert response.status_code == 200
@@ -1165,7 +1165,7 @@ def test_guest_report_keeps_limited_findings_and_capability_scoping() -> None:
             resume_health=resume,
         )
     ) as client:
-        client.cookies.set("careeros_guest_capability", capability, path="/api/v1/guest")
+        client.cookies.set("rezumi_guest_capability", capability, path="/api/v1/guest")
         response = client.get(f"/api/v1/guest/resume-health/{analysis.id}")
 
     assert response.status_code == 200

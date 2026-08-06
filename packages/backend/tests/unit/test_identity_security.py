@@ -4,7 +4,7 @@ import pytest
 from argon2 import extract_parameters
 from argon2.low_level import Type
 
-from careeros.modules.identity.infrastructure.security import (
+from rezumi.modules.identity.infrastructure.security import (
     Argon2PasswordHasher,
     HmacTokenManager,
     NormalizedEmailValidator,

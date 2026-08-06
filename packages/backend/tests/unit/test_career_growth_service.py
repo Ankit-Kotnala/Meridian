@@ -17,7 +17,7 @@ from career_growth_memory import (
     StaticCareerGrowthSource,
     UuidFactory,
 )
-from careeros.modules.career_growth.application import (
+from rezumi.modules.career_growth.application import (
     CareerGrowthPolicy,
     CareerGrowthService,
     CreateCareerReview,
@@ -29,8 +29,8 @@ from careeros.modules.career_growth.application import (
     ReviseCareerReview,
     UpdateGoal,
 )
-from careeros.modules.career_growth.application.models import PageCursor
-from careeros.modules.career_growth.domain import (
+from rezumi.modules.career_growth.application.models import PageCursor
+from rezumi.modules.career_growth.domain import (
     CANONICAL_SCORE_DISCLAIMER,
     CareerGrowthConflict,
     CareerGrowthIdempotencyConflict,
@@ -54,7 +54,7 @@ from careeros.modules.career_growth.domain import (
     ReviewVersionStatus,
     score_career_health,
 )
-from careeros.modules.career_growth.domain.scoring import (
+from rezumi.modules.career_growth.domain.scoring import (
     MAX_INPUT_SNAPSHOT_BYTES,
     _largest_remainder_contributions,
 )

@@ -1,6 +1,6 @@
 "use client";
 
-import type { components, paths } from "@careeros/contracts";
+import type { components, paths } from "@rezumi/contracts";
 
 import type { GeneratedApiPath } from "./api-path";
 import { apiFailure, type ApiFailure } from "./problem-response";
@@ -24,7 +24,7 @@ type ApiPath = keyof paths | GeneratedApiPath;
 
 let refreshInFlight: Promise<void> | undefined;
 
-function csrfCookie(name = "careeros_csrf"): string | undefined {
+function csrfCookie(name = "rezumi_csrf"): string | undefined {
   if (typeof document === "undefined") return undefined;
   const encoded = document.cookie
     .split(";")
@@ -91,7 +91,7 @@ export async function apiMutation(
           ? await getCsrfToken()
           : (csrfCookie() ?? (await getCsrfToken()))
         : options.csrf === "guest"
-          ? csrfCookie("careeros_guest_csrf")
+          ? csrfCookie("rezumi_guest_csrf")
           : csrfCookie();
     if (!token) {
       throw new ApiRequestError({

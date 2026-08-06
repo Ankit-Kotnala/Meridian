@@ -1,7 +1,7 @@
 """Worker health task and container probe tests."""
 
-from careeros_worker.healthcheck import worker_is_responsive
-from careeros_worker.tasks import PING_TASK_NAME, ping
+from rezumi_worker.healthcheck import worker_is_responsive
+from rezumi_worker.tasks import PING_TASK_NAME, ping
 
 
 def test_ping_task_runs_without_a_broker() -> None:
@@ -9,7 +9,7 @@ def test_ping_task_runs_without_a_broker() -> None:
 
     assert result == {
         "status": "ok",
-        "service": "careeros-worker",
+        "service": "rezumi-worker",
         "version": "0.1.0",
     }
     assert ping.name == PING_TASK_NAME

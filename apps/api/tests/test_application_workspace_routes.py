@@ -8,7 +8,8 @@ from datetime import UTC, date, datetime
 from unittest.mock import create_autospec
 from uuid import UUID, uuid4
 
-from careeros.modules.application_workspace.application import (
+from fastapi.testclient import TestClient
+from rezumi.modules.application_workspace.application import (
     UNSET,
     ApplicationCalendarEntry,
     ApplicationPackView,
@@ -18,7 +19,7 @@ from careeros.modules.application_workspace.application import (
     PagedResult,
     UnsetType,
 )
-from careeros.modules.application_workspace.domain import (
+from rezumi.modules.application_workspace.domain import (
     ApplicationClaimEvidenceLink,
     ApplicationDocument,
     ApplicationDocumentClaim,
@@ -40,13 +41,12 @@ from careeros.modules.application_workspace.domain import (
     OutcomeStatus,
     ReferralStatus,
 )
-from careeros.modules.identity.application import IdentityService
-from careeros.modules.identity.domain import AuthenticatedPrincipal, AuthMethod
-from fastapi.testclient import TestClient
+from rezumi.modules.identity.application import IdentityService
+from rezumi.modules.identity.domain import AuthenticatedPrincipal, AuthMethod
 
-from careeros_api.config import Settings
-from careeros_api.main import create_app
 from conftest import FakeDatabase
+from rezumi_api.config import Settings
+from rezumi_api.main import create_app
 
 _ORIGIN = "http://localhost:3000"
 _NOW = datetime(2026, 7, 24, 18, tzinfo=UTC)
@@ -332,8 +332,8 @@ def _client(
             application_workspace=service,
         )
     )
-    client.cookies.set("careeros_session", "opaque-session")
-    client.cookies.set("careeros_csrf", "opaque-csrf")
+    client.cookies.set("rezumi_session", "opaque-session")
+    client.cookies.set("rezumi_csrf", "opaque-csrf")
     return client
 
 

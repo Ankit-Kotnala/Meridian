@@ -18,7 +18,7 @@ import {
   LoadingSkeleton,
   Select,
   buttonStyles,
-} from "@careeros/ui";
+} from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 

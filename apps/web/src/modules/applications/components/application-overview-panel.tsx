@@ -4,7 +4,7 @@ import { Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 
-import { Badge, Button, Input, Select, buttonStyles } from "@careeros/ui";
+import { Badge, Button, Input, Select, buttonStyles } from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 

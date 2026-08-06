@@ -33,11 +33,11 @@ function json(body: unknown) {
 
 describe("account settings", () => {
   beforeEach(() => {
-    document.cookie = "careeros_csrf=session-csrf; Path=/";
+    document.cookie = "rezumi_csrf=session-csrf; Path=/";
   });
 
   afterEach(() => {
-    document.cookie = "careeros_csrf=; Max-Age=0; Path=/";
+    document.cookie = "rezumi_csrf=; Max-Age=0; Path=/";
     replace.mockReset();
     refresh.mockReset();
     vi.unstubAllGlobals();

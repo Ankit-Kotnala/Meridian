@@ -5,8 +5,8 @@ from uuid import uuid4
 
 import pytest
 
-from careeros.integrations.oauth.google import GoogleOAuthOptions, GoogleOAuthProvider
-from careeros.modules.identity.domain.errors import OAuthFlowRejected
+from rezumi.integrations.oauth.google import GoogleOAuthOptions, GoogleOAuthProvider
+from rezumi.modules.identity.domain.errors import OAuthFlowRejected
 
 
 class MemoryFlowStore:

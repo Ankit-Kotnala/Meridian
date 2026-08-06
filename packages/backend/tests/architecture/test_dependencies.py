@@ -28,7 +28,7 @@ DOMAIN_FORBIDDEN = {
 }
 APPLICATION_FORBIDDEN = DOMAIN_FORBIDDEN
 DEPLOYABLE_PERSISTENCE = {"alembic", "asyncpg", "sqlalchemy"}
-BACKEND_MODULE_PREFIX = ("packages", "backend", "src", "careeros", "modules")
+BACKEND_MODULE_PREFIX = ("packages", "backend", "src", "rezumi", "modules")
 
 
 @dataclass(frozen=True, slots=True)
@@ -117,7 +117,7 @@ def resolved_imported_modules(path: Path, source: str) -> list[tuple[int, str]]:
 def _cross_product_import(current_module: str, imported_module: str) -> tuple[str, str] | None:
     parts = imported_module.split(".")
     for index in range(len(parts) - 2):
-        if parts[index : index + 2] != ["careeros", "modules"]:
+        if parts[index : index + 2] != ["rezumi", "modules"]:
             continue
         target_module = parts[index + 2]
         if target_module == current_module:
@@ -181,23 +181,23 @@ def violations_for_source(path: Path, source: str) -> list[ImportViolation]:
                 )
             )
     if normalized.startswith("packages/backend/src/"):
-        forbid({"careeros_api", "careeros_worker"}, "backend must not import deployables")
+        forbid({"rezumi_api", "rezumi_worker"}, "backend must not import deployables")
     if normalized.startswith("apps/api/src/"):
-        forbid({"careeros_worker"}, "API must not import worker")
+        forbid({"rezumi_worker"}, "API must not import worker")
         forbid(DEPLOYABLE_PERSISTENCE, "persistence belongs in packages/backend")
     if normalized.startswith("apps/worker/src/"):
-        forbid({"careeros_api"}, "worker must not import API")
+        forbid({"rezumi_api"}, "worker must not import API")
         forbid(DEPLOYABLE_PERSISTENCE, "persistence belongs in packages/backend")
     if "foundation" in parts:
         for line, imported_module in imports:
             normalized_import = imported_module.lstrip(".")
             if normalized_import.startswith(
-                ("modules.", "integrations.", "careeros.modules.", "careeros.integrations.")
+                ("modules.", "integrations.", "rezumi.modules.", "rezumi.integrations.")
             ) or normalized_import in {
                 "modules",
                 "integrations",
-                "careeros.modules",
-                "careeros.integrations",
+                "rezumi.modules",
+                "rezumi.integrations",
             }:
                 violations.append(
                     ImportViolation(
@@ -235,27 +235,27 @@ def test_repository_respects_backend_dependency_direction() -> None:
     ("path", "source", "expected_package"),
     [
         (
-            Path("packages/backend/src/careeros/modules/evidence/domain/entities.py"),
+            Path("packages/backend/src/rezumi/modules/evidence/domain/entities.py"),
             "from sqlalchemy.orm import DeclarativeBase",
             "sqlalchemy",
         ),
         (
-            Path("packages/backend/src/careeros/modules/evidence/application/handler.py"),
+            Path("packages/backend/src/rezumi/modules/evidence/application/handler.py"),
             "from fastapi import Depends",
             "fastapi",
         ),
         (
-            Path("apps/worker/src/careeros_worker/consumer.py"),
-            "from careeros_api.main import app",
-            "careeros_api",
+            Path("apps/worker/src/rezumi_worker/consumer.py"),
+            "from rezumi_api.main import app",
+            "rezumi_api",
         ),
         (
-            Path("apps/api/src/careeros_api/query.py"),
+            Path("apps/api/src/rezumi_api/query.py"),
             "from sqlalchemy import select",
             "sqlalchemy",
         ),
         (
-            Path("packages/backend/src/careeros/foundation/config/settings.py"),
+            Path("packages/backend/src/rezumi/foundation/config/settings.py"),
             "from ...modules.evidence.domain import Evidence",
             "modules.evidence.domain.Evidence",
         ),
@@ -275,24 +275,24 @@ def test_negative_fixtures_prove_rules_are_active(
     ("source", "expected_import"),
     [
         (
-            "from careeros.modules.resume_health.infrastructure.models "
+            "from rezumi.modules.resume_health.infrastructure.models "
             "import CanonicalResumeSnapshotModel",
-            "careeros.modules.resume_health.infrastructure.models.CanonicalResumeSnapshotModel",
+            "rezumi.modules.resume_health.infrastructure.models.CanonicalResumeSnapshotModel",
         ),
         (
             "from ...resume_health.domain.entities import CanonicalSnapshot",
-            "careeros.modules.resume_health.domain.entities.CanonicalSnapshot",
+            "rezumi.modules.resume_health.domain.entities.CanonicalSnapshot",
         ),
         (
-            "from careeros.modules.resume_health import infrastructure",
-            "careeros.modules.resume_health.infrastructure",
+            "from rezumi.modules.resume_health import infrastructure",
+            "rezumi.modules.resume_health.infrastructure",
         ),
     ],
 )
 def test_product_modules_cannot_reach_across_non_application_boundaries(
     source: str, expected_import: str
 ) -> None:
-    path = Path("packages/backend/src/careeros/modules/evidence/application/handler.py")
+    path = Path("packages/backend/src/rezumi/modules/evidence/application/handler.py")
 
     violations = violations_for_source(path, source)
 
@@ -309,7 +309,7 @@ def test_product_modules_cannot_reach_across_non_application_boundaries(
 def test_product_modules_cannot_bypass_repositories_with_table_objects(
     source: str, expected_access: str
 ) -> None:
-    path = Path("packages/backend/src/careeros/modules/evidence/infrastructure/query.py")
+    path = Path("packages/backend/src/rezumi/modules/evidence/infrastructure/query.py")
 
     violations = violations_for_source(path, source)
 
@@ -317,9 +317,9 @@ def test_product_modules_cannot_bypass_repositories_with_table_objects(
 
 
 def test_product_modules_may_use_explicit_application_contracts() -> None:
-    path = Path("packages/backend/src/careeros/modules/evidence/application/handler.py")
+    path = Path("packages/backend/src/rezumi/modules/evidence/application/handler.py")
     source = (
-        "from careeros.modules.resume_health.application.contracts import CanonicalResumeReader"
+        "from rezumi.modules.resume_health.application.contracts import CanonicalResumeReader"
     )
 
     violations = violations_for_source(path, source)
@@ -342,9 +342,9 @@ def test_workspace_members_depend_on_shared_backend() -> None:
             (REPOSITORY_ROOT / "apps" / deployable / "pyproject.toml").read_text(encoding="utf-8")
         )
         dependencies = configuration["project"]["dependencies"]
-        assert any(dependency.startswith("careeros-backend") for dependency in dependencies)
+        assert any(dependency.startswith("rezumi-backend") for dependency in dependencies)
         direct_dependency_names = {
             dependency.partition("[")[0].partition("==")[0] for dependency in dependencies
         }
         assert direct_dependency_names.isdisjoint(DEPLOYABLE_PERSISTENCE)
-        assert configuration["tool"]["uv"]["sources"]["careeros-backend"] == {"workspace": True}
+        assert configuration["tool"]["uv"]["sources"]["rezumi-backend"] == {"workspace": True}

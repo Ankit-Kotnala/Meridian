@@ -1,21 +1,21 @@
 """Celery configuration tests that do not connect to Redis."""
 
-from careeros.modules.career_record.application import (
+from rezumi.modules.career_record.application import (
     CLEANUP_EVIDENCE_ATTACHMENT_OBJECTS_TASK,
     DISPATCH_EVIDENCE_ATTACHMENT_OUTBOX_TASK,
     PROCESS_EVIDENCE_ATTACHMENT_TASK,
     RECONCILE_EVIDENCE_ATTACHMENT_JOBS_TASK,
 )
-from careeros.modules.resume_health.application import (
+from rezumi.modules.resume_health.application import (
     CLEANUP_RESUME_TASK,
     DISPATCH_OUTBOX_TASK,
     PROCESS_RESUME_TASK,
     RECONCILE_RESUME_TASK,
 )
 
-from careeros_worker.app import create_celery_app
-from careeros_worker.config import WorkerSettings
-from careeros_worker.task_names import (
+from rezumi_worker.app import create_celery_app
+from rezumi_worker.config import WorkerSettings
+from rezumi_worker.task_names import (
     DISPATCH_CAREER_ANALYTICS_OUTBOX_TASK,
     DISPATCH_RESUME_EXPORT_OUTBOX_TASK,
     PROCESS_CAREER_ANALYTICS_REFRESH_TASK,

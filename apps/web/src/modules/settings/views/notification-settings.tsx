@@ -11,7 +11,7 @@ import {
   ErrorState,
   LoadingSkeleton,
   TextField,
-} from "@careeros/ui";
+} from "@rezumi/ui";
 
 import {
   ApiRequestError,

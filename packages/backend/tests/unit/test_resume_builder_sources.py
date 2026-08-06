@@ -10,13 +10,13 @@ from uuid import UUID
 
 import pytest
 
-from careeros.modules.change_studio.domain import (
+from rezumi.modules.change_studio.domain import (
     ChangeClaim,
     ClaimKind,
     ValidationStatus,
 )
-from careeros.modules.resume_builder.domain import ResumeEvidenceLinkBasis
-from careeros.modules.resume_builder.infrastructure.sources import (
+from rezumi.modules.resume_builder.domain import ResumeEvidenceLinkBasis
+from rezumi.modules.resume_builder.infrastructure.sources import (
     CareerRecordResumeSourceProvider,
 )
 

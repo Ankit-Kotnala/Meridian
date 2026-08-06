@@ -1,4 +1,4 @@
-# CareerOS repository rules
+# Rezumi repository rules
 
 This file applies to the entire repository. A more specific `AGENTS.md` may add
 rules for a subtree, but it must not weaken the safety, truthfulness, privacy, or
@@ -37,9 +37,9 @@ verification requirements below.
   import `apps/api`.
 - `packages/backend`: shared Python modular-monolith implementation. Stable,
   domain-independent database, configuration, migration, and observability
-  primitives live in `careeros.foundation`; product code is added under
-  phase-owned `careeros.modules` and provider SDK adapters under
-  `careeros.integrations` only when those phases begin.
+  primitives live in `rezumi.foundation`; product code is added under
+  phase-owned `rezumi.modules` and provider SDK adapters under
+  `rezumi.integrations` only when those phases begin.
 - `packages/ui`: accessible, presentation-oriented React primitives. It must not
   depend on application routes or private API implementation details.
 - `packages/contracts`: normalized OpenAPI artifacts, generated TypeScript types,

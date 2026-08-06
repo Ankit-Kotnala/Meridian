@@ -10,17 +10,17 @@ import pytest
 from docx import Document
 from pypdf import PdfWriter
 
-from careeros.modules.resume_health.application.models import DocumentLimits
-from careeros.modules.resume_health.domain import ResumeMediaType
-from careeros.modules.resume_health.domain.errors import UnsafeDocument
-from careeros.modules.resume_health.infrastructure.extractors import (
+from rezumi.modules.resume_health.application.models import DocumentLimits
+from rezumi.modules.resume_health.domain import ResumeMediaType
+from rezumi.modules.resume_health.domain.errors import UnsafeDocument
+from rezumi.modules.resume_health.infrastructure.extractors import (
     LocalDocumentExtractor,
     LocalDocumentTextExtractor,
 )
-from careeros.modules.resume_health.infrastructure.isolated_extractor import (
+from rezumi.modules.resume_health.infrastructure.isolated_extractor import (
     IsolatedDocumentExtractor,
 )
-from careeros.modules.resume_health.infrastructure.layout import LocalLayoutAnalyzer
+from rezumi.modules.resume_health.infrastructure.layout import LocalLayoutAnalyzer
 
 FIXTURES = Path(__file__).resolve().parents[3] / "test-fixtures" / "generated"
 
@@ -305,7 +305,7 @@ async def test_isolated_extractor_returns_validated_child_result(tmp_path: Path)
     )
 
     assert "ALEX RIVERA" in result.plain_text
-    assert result.parser_version == ("careeros-local-parser/1.0.0+careeros-layout-analyzer/1.0.0")
+    assert result.parser_version == ("rezumi-local-parser/1.0.0+rezumi-layout-analyzer/1.0.0")
     assert not list(tmp_path.glob("parser-*"))
 
 

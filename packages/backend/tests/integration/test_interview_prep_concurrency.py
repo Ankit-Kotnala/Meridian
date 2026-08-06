@@ -11,10 +11,10 @@ from uuid import UUID, uuid4
 import pytest
 from sqlalchemy import delete, func, select
 
-from careeros.foundation.config import DatabaseOptions
-from careeros.foundation.database import Database
-from careeros.modules.identity.infrastructure.models import UserModel
-from careeros.modules.interview_prep.application import (
+from rezumi.foundation.config import DatabaseOptions
+from rezumi.foundation.database import Database
+from rezumi.modules.identity.infrastructure.models import UserModel
+from rezumi.modules.interview_prep.application import (
     CreateInterviewQuestion,
     CreateInterviewSession,
     CreateSessionNote,
@@ -29,7 +29,7 @@ from careeros.modules.interview_prep.application import (
     StoryClaimSelection,
     UpdateStarStory,
 )
-from careeros.modules.interview_prep.domain import (
+from rezumi.modules.interview_prep.domain import (
     DefenseStatus,
     EvidenceRevisionPin,
     FollowUpDraft,
@@ -43,10 +43,10 @@ from careeros.modules.interview_prep.domain import (
     StoryField,
     StoryStatus,
 )
-from careeros.modules.interview_prep.infrastructure import (
+from rezumi.modules.interview_prep.infrastructure import (
     SqlAlchemyInterviewPrepUnitOfWorkFactory,
 )
-from careeros.modules.interview_prep.infrastructure.models import (
+from rezumi.modules.interview_prep.infrastructure.models import (
     FollowUpDraftModel,
     InterviewAuditEventModel,
     InterviewIdempotencyModel,
@@ -104,9 +104,9 @@ class _InterviewContext:
 
 
 def _database() -> Database:
-    url = os.environ.get("CAREEROS_TEST_DATABASE_URL")
+    url = os.environ.get("REZUMI_TEST_DATABASE_URL")
     if url is None:
-        pytest.skip("CAREEROS_TEST_DATABASE_URL is required for PostgreSQL integration tests")
+        pytest.skip("REZUMI_TEST_DATABASE_URL is required for PostgreSQL integration tests")
     return Database(DatabaseOptions(url=url, pool_size=6, max_overflow=0))
 
 

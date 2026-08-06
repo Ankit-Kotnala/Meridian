@@ -30,7 +30,7 @@ import {
   LoadingSkeleton,
   PageHeader,
   Select,
-} from "@careeros/ui";
+} from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 
@@ -52,7 +52,7 @@ export const NON_CAUSAL_INTERPRETATION =
   "These analytics describe correlations and observed patterns only. They do not establish causation, predict hiring decisions, or promise career outcomes.";
 
 const SCORING_DISCLAIMER =
-  "CareerOS scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.";
+  "Rezumi scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.";
 
 type AnalyticsFilters = {
   scope: AnalyticsScope;

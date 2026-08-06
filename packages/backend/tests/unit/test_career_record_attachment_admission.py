@@ -14,14 +14,14 @@ from career_record_attachment_memory import (
     SequentialIds,
     SequentialTokens,
 )
-from careeros.modules.career_record.application.attachment_workflow import (
+from rezumi.modules.career_record.application.attachment_workflow import (
     AttachmentLimits,
     AttachmentProcessor,
     AttachmentWorkflowService,
 )
-from careeros.modules.career_record.application.models import AttachmentAdmissionRequest
-from careeros.modules.career_record.domain import AttachmentStatus
-from careeros.modules.career_record.infrastructure.attachment_admission import (
+from rezumi.modules.career_record.application.models import AttachmentAdmissionRequest
+from rezumi.modules.career_record.domain import AttachmentStatus
+from rezumi.modules.career_record.infrastructure.attachment_admission import (
     AttachmentAdmissionBridge,
 )
 

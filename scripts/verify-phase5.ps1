@@ -10,4 +10,4 @@ if ($LASTEXITCODE -ne 0) {
     throw "Phase 5 isolated Job Match workflow failed with exit code $LASTEXITCODE."
 }
 
-Write-Host "CareerOS Phase 5 verification passed."
+Write-Host "Rezumi Phase 5 verification passed."

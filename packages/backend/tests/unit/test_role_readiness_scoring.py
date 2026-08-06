@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from uuid import UUID, uuid4
 
-from careeros.modules.role_readiness.domain import ReadinessLabel, SkillMatchState
-from careeros.modules.role_readiness.domain.scoring import (
+from rezumi.modules.role_readiness.domain import ReadinessLabel, SkillMatchState
+from rezumi.modules.role_readiness.domain.scoring import (
     CareerReadinessSnapshot,
     SnapshotEvidence,
     SnapshotSkill,

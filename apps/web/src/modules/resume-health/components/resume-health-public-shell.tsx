@@ -1,16 +1,16 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { buttonStyles, cn } from "@careeros/ui";
+import { buttonStyles, cn } from "@rezumi/ui";
 
-import { CareerOsLogo } from "@/shared/components/career-os-logo";
+import { RezumiLogo } from "@/shared/components/rezumi-logo";
 
 export function ResumeHealthPublicShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-surface-raised">
         <div className="site-container flex min-h-17 items-center justify-between gap-2 sm:gap-4">
-          <CareerOsLogo href="/" />
+          <RezumiLogo href="/" />
           <div className="flex items-center gap-2">
             <Link
               className={cn(buttonStyles.base, buttonStyles.ghost)}

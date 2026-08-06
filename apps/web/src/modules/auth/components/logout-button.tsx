@@ -4,7 +4,7 @@ import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { Button } from "@careeros/ui";
+import { Button } from "@rezumi/ui";
 
 import { authErrorMessage, logout } from "../api/auth-api";
 

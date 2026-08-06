@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-import { Badge, buttonStyles, cn, DefinitionList } from "@careeros/ui";
+import { Badge, buttonStyles, cn, DefinitionList } from "@rezumi/ui";
 
 const scenarioSteps = [
   {
@@ -25,7 +25,7 @@ const scenarioSteps = [
   },
   {
     description:
-      "CareerOS can propose a change, but the original, reason, evidence, and requirement stay visible.",
+      "Rezumi can propose a change, but the original, reason, evidence, and requirement stay visible.",
     icon: GitCompareArrows,
     label: "Review the proposed change",
   },
@@ -49,9 +49,9 @@ export function DashboardOverview() {
             Good morning, Jordan Lee
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
-            Jordan is a fictional persona. This guided view explains how
-            CareerOS connects career facts, evidence, requirements, and
-            controlled outputs without presenting invented performance data.
+            Jordan is a fictional persona. This guided view explains how Rezumi
+            connects career facts, evidence, requirements, and controlled
+            outputs without presenting invented performance data.
           </p>
         </div>
         <Link className="text-link text-sm" href="/">
@@ -147,7 +147,7 @@ export function DashboardOverview() {
           </h2>
           <div>
             <p className="text-sm leading-7 text-muted">
-              CareerOS measurements are internal, explainable decision-support
+              Rezumi measurements are internal, explainable decision-support
               signals. They are not scores provided by an employer or applicant
               tracking system, hiring probabilities, or outcome guarantees.
             </p>

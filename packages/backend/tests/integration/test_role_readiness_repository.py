@@ -8,27 +8,27 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import delete, select
 
-from careeros.foundation.config import DatabaseOptions
-from careeros.foundation.database import Database
-from careeros.modules.identity.infrastructure.models import UserModel
-from careeros.modules.role_readiness.application import (
+from rezumi.foundation.config import DatabaseOptions
+from rezumi.foundation.database import Database
+from rezumi.modules.identity.infrastructure.models import UserModel
+from rezumi.modules.role_readiness.application import (
     AnalyzeRoleReadiness,
     RequestContext,
     RoleFilter,
     RoleReadinessService,
     SaveRole,
 )
-from careeros.modules.role_readiness.domain import RoleReadinessNotFound
-from careeros.modules.role_readiness.domain.scoring import (
+from rezumi.modules.role_readiness.domain import RoleReadinessNotFound
+from rezumi.modules.role_readiness.domain.scoring import (
     CareerReadinessSnapshot,
     SnapshotEvidence,
     SnapshotSkill,
 )
-from careeros.modules.role_readiness.infrastructure.models import (
+from rezumi.modules.role_readiness.infrastructure.models import (
     RoleReadinessAnalysisModel,
     RoleReadinessAuditEventModel,
 )
-from careeros.modules.role_readiness.infrastructure.repository import (
+from rezumi.modules.role_readiness.infrastructure.repository import (
     SqlAlchemyRoleReadinessUnitOfWorkFactory,
 )
 from role_readiness_memory import (
@@ -65,9 +65,9 @@ def _snapshot() -> CareerReadinessSnapshot:
 
 @pytest.mark.asyncio
 async def test_repository_persists_role_analysis_and_denies_cross_user_access() -> None:
-    database_url = os.environ.get("CAREEROS_TEST_DATABASE_URL")
+    database_url = os.environ.get("REZUMI_TEST_DATABASE_URL")
     if database_url is None:
-        pytest.skip("CAREEROS_TEST_DATABASE_URL is required for PostgreSQL integration tests")
+        pytest.skip("REZUMI_TEST_DATABASE_URL is required for PostgreSQL integration tests")
 
     database = Database(DatabaseOptions(url=database_url, pool_size=2, max_overflow=0))
     owner_id = uuid4()

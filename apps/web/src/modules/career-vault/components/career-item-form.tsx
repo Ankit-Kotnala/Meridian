@@ -2,7 +2,7 @@
 
 import { type FormEvent } from "react";
 
-import { Button, FieldLabel, Select, TextField } from "@careeros/ui";
+import { Button, FieldLabel, Select, TextField } from "@rezumi/ui";
 
 import type { CareerItem, CareerItemInput } from "../api/types";
 import type { FieldErrors } from "../validation/career-vault-validation";

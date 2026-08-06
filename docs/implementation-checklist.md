@@ -1,4 +1,4 @@
-# CareerOS implementation checklist
+# Rezumi implementation checklist
 
 Status: living delivery checklist  
 Last reviewed: 2026-07-25
@@ -64,7 +64,7 @@ earlier baseline evidence remains historical.
 - [x] Implement API `GET /health`, `GET /ready`, and `GET /api/v1/meta` with safe
       schemas; readiness checks required dependencies without leaking topology.
 - [x] Keep the Celery 5.6.3 worker thin, preserve task
-      `careeros.worker.health.ping`, and retain its broker-backed health check.
+      `rezumi.worker.health.ping`, and retain its broker-backed health check.
 - [x] Establish real `packages/backend`, generated `packages/contracts`, generic
       `packages/ui`, `packages/design-tokens`, `packages/eslint-config`,
       `packages/typescript-config`, and `packages/test-fixtures` boundaries.
@@ -528,7 +528,7 @@ Dependencies: current merged application baseline and the accepted monorepo ADRs
 - [x] Preserve `apps/web`, `apps/api`, `apps/worker`, and `packages/backend`
       runtime and dependency boundaries; do not flatten the backend.
 - [x] Co-locate every FastAPI bounded-context adapter below
-      `careeros_api/modules/<bounded_context>` while leaving only concrete
+      `rezumi_api/modules/<bounded_context>` while leaving only concrete
       cross-cutting delivery files at the API root.
 - [x] Split Celery registration into bounded-context task modules while
       preserving task names, queues, payloads, retry/fencing behavior, and public

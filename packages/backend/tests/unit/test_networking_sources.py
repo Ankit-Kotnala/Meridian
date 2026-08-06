@@ -7,10 +7,10 @@ from uuid import UUID
 
 import pytest
 
-from careeros.modules.application_workspace.application import ApplicationReference
-from careeros.modules.application_workspace.domain import ApplicationStage
-from careeros.modules.networking.application import NetworkingApplicationReference
-from careeros.modules.networking.infrastructure import (
+from rezumi.modules.application_workspace.application import ApplicationReference
+from rezumi.modules.application_workspace.domain import ApplicationStage
+from rezumi.modules.networking.application import NetworkingApplicationReference
+from rezumi.modules.networking.infrastructure import (
     ApplicationWorkspaceNetworkingReferenceProvider,
 )
 

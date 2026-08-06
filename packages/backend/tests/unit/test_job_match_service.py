@@ -6,22 +6,6 @@ from uuid import uuid4
 
 import pytest
 
-from careeros.modules.job_match.application import (
-    CreateJob,
-    JobMatchService,
-    PrioritizeOpportunity,
-    RequestContext,
-)
-from careeros.modules.job_match.domain import (
-    EmploymentType,
-    JobMatchIdempotencyConflict,
-    JobMatchNotFound,
-    JobSourceKind,
-    PreferenceFit,
-    RequirementMatchState,
-    TailoringEffort,
-    WorkModel,
-)
 from job_match_memory import (
     FixedClock,
     MemoryJobMatch,
@@ -31,6 +15,22 @@ from job_match_memory import (
     UuidFactory,
     sample_job_text,
     sample_snapshot,
+)
+from rezumi.modules.job_match.application import (
+    CreateJob,
+    JobMatchService,
+    PrioritizeOpportunity,
+    RequestContext,
+)
+from rezumi.modules.job_match.domain import (
+    EmploymentType,
+    JobMatchIdempotencyConflict,
+    JobMatchNotFound,
+    JobSourceKind,
+    PreferenceFit,
+    RequirementMatchState,
+    TailoringEffort,
+    WorkModel,
 )
 
 

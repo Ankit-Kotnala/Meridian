@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-CareerOS: a "truth-locked" career application operating system. A structured,
+Rezumi: a "truth-locked" career application operating system. A structured,
 evidence-backed career profile (`career_record`) is the source of truth; resumes,
 job-match analyses, AI suggestions, and application packs are all derived,
 reviewable outputs with machine-checkable provenance back to that evidence. This
@@ -27,7 +27,7 @@ apps/
   api/                 Thin FastAPI HTTP delivery; adapters under modules/<bounded_context>
   worker/              Thin Celery delivery; task adapters under tasks/<bounded_context>.py
 packages/
-  backend/             Shared Python modular monolith (careeros.foundation + careeros.modules.<feature>)
+  backend/             Shared Python modular monolith (rezumi.foundation + rezumi.modules.<feature>)
   contracts/           OpenAPI artifact, generated TS schema, typed openapi-fetch client
   ui/                  Generic accessible React components (no product/route logic)
   design-tokens/       Shared visual tokens
@@ -46,7 +46,7 @@ the JS packages.
 
 ### Backend module shape
 
-Each `packages/backend/src/careeros/modules/<feature>` follows a ports-and-adapters
+Each `packages/backend/src/rezumi/modules/<feature>` follows a ports-and-adapters
 layout: `domain` (framework-free entities/rules), `application` (services/ports),
 `infrastructure` (SQLAlchemy repositories, providers implementing those ports),
 plus module-owned `api`/`tasks` where relevant. `apps/api` and `apps/worker` are
@@ -121,9 +121,9 @@ Per-workspace/single-suite commands:
 
 ```sh
 pnpm test:web                                            # apps/web vitest (all)
-pnpm --filter @careeros/web test -- <pattern>             # vitest, filtered
-pnpm --filter @careeros/web test:watch                    # vitest watch mode
-pnpm --filter @careeros/ui test                            # packages/ui vitest
+pnpm --filter @rezumi/web test -- <pattern>             # vitest, filtered
+pnpm --filter @rezumi/web test:watch                    # vitest watch mode
+pnpm --filter @rezumi/ui test                            # packages/ui vitest
 pnpm test:api                                              # uv run pytest apps/api/tests
 pnpm test:worker                                           # uv run pytest apps/worker/tests
 pnpm test:backend                                          # uv run pytest packages/backend/tests/{architecture,unit}

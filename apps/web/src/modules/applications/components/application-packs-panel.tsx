@@ -22,7 +22,7 @@ import {
   CheckboxField,
   ConfirmDialog,
   EmptyState,
-} from "@careeros/ui";
+} from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 
@@ -343,7 +343,7 @@ export function ApplicationPacksPanel({
           Select only the drafts you need. Every factual claim must resolve to
           eligible evidence pinned to resume version{" "}
           {application.resumeVersionNumber}. Generated documents are drafts;
-          CareerOS does not submit or send them.
+          Rezumi does not submit or send them.
         </p>
         <form
           className="mt-4"

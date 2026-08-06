@@ -3,10 +3,10 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { createCareerOsClient } from "./index";
+import { createRezumiClient } from "./index";
 
 const openApiPath = fileURLToPath(
-  new URL("../openapi/careeros.openapi.json", import.meta.url),
+  new URL("../openapi/rezumi.openapi.json", import.meta.url),
 );
 const openApi = JSON.parse(readFileSync(openApiPath, "utf8")) as {
   paths: Record<string, { get?: { operationId?: string } }>;
@@ -32,7 +32,7 @@ describe("generated platform contracts", () => {
   });
 
   it("creates a path-typed fetch client without making a request", () => {
-    const client = createCareerOsClient("https://api.example.test");
+    const client = createRezumiClient("https://api.example.test");
 
     expect(client.GET).toBeTypeOf("function");
   });

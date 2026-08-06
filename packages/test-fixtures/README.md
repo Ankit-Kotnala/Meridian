@@ -10,7 +10,7 @@ Phase 2 document fixtures live in `generated/`. They contain only fictional
 `example.test` data and are reproducibly created by:
 
 ```powershell
-uv run --package careeros-backend python packages/test-fixtures/scripts/generate-resume-documents.py
+uv run --package rezumi-backend python packages/test-fixtures/scripts/generate-resume-documents.py
 ```
 
 `generated/manifest.json` pins the byte length and SHA-256 digest of each benign

@@ -32,7 +32,7 @@ def _alembic_config() -> Config:
 
 
 async def _create_database(admin_url: str, database_name: str) -> None:
-    assert re.fullmatch(r"careeros_phase9_repair_[0-9a-f]{32}", database_name)
+    assert re.fullmatch(r"rezumi_phase9_repair_[0-9a-f]{32}", database_name)
     engine = create_async_engine(admin_url, isolation_level="AUTOCOMMIT")
     try:
         async with engine.connect() as connection:
@@ -44,7 +44,7 @@ async def _create_database(admin_url: str, database_name: str) -> None:
 
 
 async def _drop_database(admin_url: str, database_name: str) -> None:
-    assert re.fullmatch(r"careeros_phase9_repair_[0-9a-f]{32}", database_name)
+    assert re.fullmatch(r"rezumi_phase9_repair_[0-9a-f]{32}", database_name)
     engine = create_async_engine(admin_url, isolation_level="AUTOCOMMIT")
     try:
         async with engine.connect() as connection:
@@ -858,19 +858,19 @@ async def _assert_growth_target_insert_delete_is_serialized(database_url: str) -
 def test_phase9_repairs_pre_release_phase8_schema_drift(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    configured_url = os.environ.get("CAREEROS_TEST_DATABASE_URL")
+    configured_url = os.environ.get("REZUMI_TEST_DATABASE_URL")
     if configured_url is None:
-        pytest.skip("CAREEROS_TEST_DATABASE_URL is required for PostgreSQL integration tests")
+        pytest.skip("REZUMI_TEST_DATABASE_URL is required for PostgreSQL integration tests")
 
     parsed_url = make_url(configured_url)
-    database_name = f"careeros_phase9_repair_{uuid4().hex}"
+    database_name = f"rezumi_phase9_repair_{uuid4().hex}"
     target_url = parsed_url.set(database=database_name).render_as_string(hide_password=False)
     admin_url = parsed_url.render_as_string(hide_password=False)
     asyncio.run(_create_database(admin_url, database_name))
     try:
-        monkeypatch.setenv("CAREEROS_DATABASE_URL", target_url)
+        monkeypatch.setenv("REZUMI_DATABASE_URL", target_url)
         monkeypatch.setenv("DATABASE_URL", target_url)
-        monkeypatch.setenv("CAREEROS_ENVIRONMENT", "test")
+        monkeypatch.setenv("REZUMI_ENVIRONMENT", "test")
         monkeypatch.setenv("ENVIRONMENT", "test")
         config = _alembic_config()
 
@@ -901,19 +901,19 @@ def test_phase9_repairs_pre_release_phase8_schema_drift(
 def test_phase9_growth_relationships_are_database_enforced(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    configured_url = os.environ.get("CAREEROS_TEST_DATABASE_URL")
+    configured_url = os.environ.get("REZUMI_TEST_DATABASE_URL")
     if configured_url is None:
-        pytest.skip("CAREEROS_TEST_DATABASE_URL is required for PostgreSQL integration tests")
+        pytest.skip("REZUMI_TEST_DATABASE_URL is required for PostgreSQL integration tests")
 
     parsed_url = make_url(configured_url)
-    database_name = f"careeros_phase9_repair_{uuid4().hex}"
+    database_name = f"rezumi_phase9_repair_{uuid4().hex}"
     target_url = parsed_url.set(database=database_name).render_as_string(hide_password=False)
     admin_url = parsed_url.render_as_string(hide_password=False)
     asyncio.run(_create_database(admin_url, database_name))
     try:
-        monkeypatch.setenv("CAREEROS_DATABASE_URL", target_url)
+        monkeypatch.setenv("REZUMI_DATABASE_URL", target_url)
         monkeypatch.setenv("DATABASE_URL", target_url)
-        monkeypatch.setenv("CAREEROS_ENVIRONMENT", "test")
+        monkeypatch.setenv("REZUMI_ENVIRONMENT", "test")
         monkeypatch.setenv("ENVIRONMENT", "test")
         config = _alembic_config()
 
@@ -932,19 +932,19 @@ def test_phase9_growth_relationships_are_database_enforced(
 def test_phase9_growth_target_delete_waits_for_uncommitted_evidence_link(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    configured_url = os.environ.get("CAREEROS_TEST_DATABASE_URL")
+    configured_url = os.environ.get("REZUMI_TEST_DATABASE_URL")
     if configured_url is None:
-        pytest.skip("CAREEROS_TEST_DATABASE_URL is required for PostgreSQL integration tests")
+        pytest.skip("REZUMI_TEST_DATABASE_URL is required for PostgreSQL integration tests")
 
     parsed_url = make_url(configured_url)
-    database_name = f"careeros_phase9_repair_{uuid4().hex}"
+    database_name = f"rezumi_phase9_repair_{uuid4().hex}"
     target_url = parsed_url.set(database=database_name).render_as_string(hide_password=False)
     admin_url = parsed_url.render_as_string(hide_password=False)
     asyncio.run(_create_database(admin_url, database_name))
     try:
-        monkeypatch.setenv("CAREEROS_DATABASE_URL", target_url)
+        monkeypatch.setenv("REZUMI_DATABASE_URL", target_url)
         monkeypatch.setenv("DATABASE_URL", target_url)
-        monkeypatch.setenv("CAREEROS_ENVIRONMENT", "test")
+        monkeypatch.setenv("REZUMI_ENVIRONMENT", "test")
         monkeypatch.setenv("ENVIRONMENT", "test")
         config = _alembic_config()
 

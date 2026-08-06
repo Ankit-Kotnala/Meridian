@@ -8,7 +8,7 @@ from copy import deepcopy
 from datetime import UTC, date, datetime
 from uuid import NAMESPACE_URL, UUID, uuid5
 
-from careeros.modules.application_workspace.application import (
+from rezumi.modules.application_workspace.application import (
     ApplicationAnalyticsCursor,
     ApplicationAnalyticsSourceState,
     ApplicationCalendarEntry,
@@ -24,7 +24,7 @@ from careeros.modules.application_workspace.application import (
     ApplicationSummary,
     PageCursor,
 )
-from careeros.modules.application_workspace.domain import (
+from rezumi.modules.application_workspace.domain import (
     ApplicationAuditEvent,
     ApplicationDocument,
     ApplicationEvent,

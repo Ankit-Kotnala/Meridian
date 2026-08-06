@@ -7,14 +7,15 @@ from pathlib import Path
 from unittest.mock import create_autospec
 from uuid import uuid4
 
-from careeros.foundation.config import DatabaseOptions
-from careeros.foundation.database import Database
-from careeros.modules.career_record.application import (
+from fastapi.testclient import TestClient
+from rezumi.foundation.config import DatabaseOptions
+from rezumi.foundation.database import Database
+from rezumi.modules.career_record.application import (
     AttachmentWorkflowService,
     CareerRecordService,
     ValidatedResumeSource,
 )
-from careeros.modules.career_record.domain import (
+from rezumi.modules.career_record.domain import (
     CareerEntity,
     CareerEntityKind,
     EmploymentType,
@@ -26,17 +27,16 @@ from careeros.modules.career_record.domain import (
     ValidatedSemanticCandidate,
     exact_claim_sha256,
 )
-from careeros.modules.identity.application import IdentityService
-from careeros.modules.identity.application.models import CurrentUser
-from careeros.modules.identity.domain import AuthenticatedPrincipal, AuthMethod
-from careeros.modules.identity.domain.errors import AuthenticationRequired
-from careeros.modules.resume_health.application import ResumeHealthService
-from fastapi.testclient import TestClient
+from rezumi.modules.identity.application import IdentityService
+from rezumi.modules.identity.application.models import CurrentUser
+from rezumi.modules.identity.domain import AuthenticatedPrincipal, AuthMethod
+from rezumi.modules.identity.domain.errors import AuthenticationRequired
+from rezumi.modules.resume_health.application import ResumeHealthService
 
-from careeros_api.config import Settings
-from careeros_api.main import create_app
-from careeros_api.modules.career_record.routes import _matches_accepted_proposal
 from conftest import FakeDatabase
+from rezumi_api.config import Settings
+from rezumi_api.main import create_app
+from rezumi_api.modules.career_record.routes import _matches_accepted_proposal
 
 # Reuse the backend's protocol-complete test adapter without shipping it in the
 # runtime wheel. API and backend tests remain separate uv workspace members.
@@ -167,8 +167,8 @@ def _authenticated_client(
             career_record=career,
         )
     )
-    client.cookies.set("careeros_session", "opaque-session")
-    client.cookies.set("careeros_csrf", "opaque-csrf")
+    client.cookies.set("rezumi_session", "opaque-session")
+    client.cookies.set("rezumi_csrf", "opaque-csrf")
     return client
 
 

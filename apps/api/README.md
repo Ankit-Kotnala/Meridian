@@ -1,6 +1,6 @@
-# CareerOS API
+# Rezumi API
 
-Thin FastAPI delivery service for the shared CareerOS backend. It composes the
+Thin FastAPI delivery service for the shared Rezumi backend. It composes the
 implemented identity, Resume Health, Career Record, Role Explorer, Job Match,
 Change Studio, Resume Builder, Application Workspace, Interview Prep,
 Networking, Career Growth, and Career Analytics application services without
@@ -21,20 +21,20 @@ make typecheck
 ```
 
 Feature delivery files live under
-`src/careeros_api/modules/<bounded_context>/{routes,schemas,presenters,dependencies}.py`.
+`src/rezumi_api/modules/<bounded_context>/{routes,schemas,presenters,dependencies}.py`.
 Only concrete cross-cutting HTTP composition, middleware, configuration, and
 problem handling remain at the package root. See `docs/local-development.md` for
 the full repository map and container workflows.
 
 Run the complete current integration and browser portfolio from the repository
 root with `.\scripts\verify-phase9.ps1` on PowerShell or
-`CAREEROS_E2E_PHASE=9 tests/e2e/run-compose.sh` in a POSIX environment. Focused
+`REZUMI_E2E_PHASE=9 tests/e2e/run-compose.sh` in a POSIX environment. Focused
 API tests remain credential-free through deterministic/local adapters.
 
 Migrations are owned by `packages/backend`. From the repository root, run
-`uv run --package careeros-backend alembic -c packages/backend/alembic.ini upgrade head`.
+`uv run --package rezumi-backend alembic -c packages/backend/alembic.ini upgrade head`.
 
-Configuration uses `CAREEROS_`-prefixed environment variables. The default
+Configuration uses `REZUMI_`-prefixed environment variables. The default
 database URL is suitable only for local development. Production configuration
 rejects debug mode, wildcard trusted hosts, and the known development database
 credential. Database URLs are represented as secrets and are never returned by

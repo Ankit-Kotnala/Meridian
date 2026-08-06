@@ -10,10 +10,10 @@ from uuid import UUID, uuid4
 import pytest
 from sqlalchemy import and_, delete, func, select
 
-from careeros.foundation.config import DatabaseOptions
-from careeros.foundation.database import Database
-from careeros.modules.identity.infrastructure.models import UserModel
-from careeros.modules.networking.application import (
+from rezumi.foundation.config import DatabaseOptions
+from rezumi.foundation.database import Database
+from rezumi.modules.identity.infrastructure.models import UserModel
+from rezumi.modules.networking.application import (
     ContactView,
     CreateContact,
     CreateContactNote,
@@ -25,7 +25,7 @@ from careeros.modules.networking.application import (
     RequestContext,
     UpdateContact,
 )
-from careeros.modules.networking.domain import (
+from rezumi.modules.networking.domain import (
     NETWORKING_CONTACT_CONSENT_POLICY_VERSION,
     NetworkingContactNote,
     NetworkingOrganization,
@@ -33,11 +33,11 @@ from careeros.modules.networking.domain import (
     ReminderOccurrenceStatus,
     ReminderOutboxStatus,
 )
-from careeros.modules.networking.infrastructure import (
+from rezumi.modules.networking.infrastructure import (
     SqlAlchemyNetworkingUnitOfWork,
     SqlAlchemyNetworkingUnitOfWorkFactory,
 )
-from careeros.modules.networking.infrastructure.models import (
+from rezumi.modules.networking.infrastructure.models import (
     NetworkingContactModel,
     NetworkingContactNoteModel,
     NetworkingOrganizationModel,
@@ -117,9 +117,9 @@ class _OwnerLockObservedUnitOfWork(SqlAlchemyNetworkingUnitOfWork):
 
 
 def _database() -> Database:
-    url = os.environ.get("CAREEROS_TEST_DATABASE_URL")
+    url = os.environ.get("REZUMI_TEST_DATABASE_URL")
     if url is None:
-        pytest.skip("CAREEROS_TEST_DATABASE_URL is required for PostgreSQL integration tests")
+        pytest.skip("REZUMI_TEST_DATABASE_URL is required for PostgreSQL integration tests")
     return Database(DatabaseOptions(url=url, pool_size=6, max_overflow=0))
 
 

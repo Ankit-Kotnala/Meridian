@@ -33,7 +33,7 @@ import {
   Select,
   Tabs,
   buttonStyles,
-} from "@careeros/ui";
+} from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 
@@ -843,7 +843,7 @@ export function NetworkingView() {
             Refresh
           </Button>
         }
-        description="Maintain contacts, relationship history, referrals, reviewed templates, and local reminders. CareerOS never scrapes contacts, imports them without consent, or sends outreach."
+        description="Maintain contacts, relationship history, referrals, reviewed templates, and local reminders. Rezumi never scrapes contacts, imports them without consent, or sends outreach."
         eyebrow="Relationships"
         title="A private, consent-based relationship workspace"
       />
@@ -1312,7 +1312,7 @@ function ContactCreateForm({
       <div>
         <h2 className="font-black text-foreground">Add a private contact</h2>
         <p className="mt-1 text-sm text-muted">
-          Enter only data you are permitted to collect and store. CareerOS does
+          Enter only data you are permitted to collect and store. Rezumi does
           not fetch the profile URL or import contact data.
         </p>
       </div>
@@ -1388,7 +1388,7 @@ function ContactCreateForm({
           required
         />
         <CheckboxField
-          description="Required. You attest that this contact's information may be stored in CareerOS."
+          description="Required. You attest that this contact's information may be stored in Rezumi."
           id="contact-consent-storage"
           label="Storage consent is attested"
           name="storageAttested"
@@ -1655,8 +1655,8 @@ function TemplatesPanel({
   return (
     <div className="space-y-5 pt-5">
       <Alert title="Reviewed local text only" tone="info">
-        Templates are never sent from CareerOS. Review content before saving,
-        then copy it manually only where current outreach consent permits.
+        Templates are never sent from Rezumi. Review content before saving, then
+        copy it manually only where current outreach consent permits.
       </Alert>
       <div className="flex flex-wrap gap-3">
         <NetworkInput
@@ -1756,7 +1756,7 @@ function TemplateCreateForm({
       />
       <CheckboxField
         id="template-reviewed"
-        label="I reviewed this text and understand CareerOS will not send it"
+        label="I reviewed this text and understand Rezumi will not send it"
         name="userReviewed"
         required
       />

@@ -1,11 +1,11 @@
-# @careeros/contracts
+# @rezumi/contracts
 
 This package is the TypeScript view of the FastAPI wire contract. The source
 chain is intentionally one-way:
 
 ```text
 apps/api Pydantic responses
-  -> packages/contracts/openapi/careeros.openapi.json
+  -> packages/contracts/openapi/rezumi.openapi.json
   -> packages/contracts/src/generated/schema.ts
   -> typed openapi-fetch client
 ```

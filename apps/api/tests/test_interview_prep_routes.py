@@ -9,9 +9,10 @@ from datetime import UTC, datetime
 from unittest.mock import create_autospec
 from uuid import UUID, uuid4
 
-from careeros.modules.identity.application import IdentityService
-from careeros.modules.identity.domain import AuthenticatedPrincipal, AuthMethod
-from careeros.modules.interview_prep.application import (
+from fastapi.testclient import TestClient
+from rezumi.modules.identity.application import IdentityService
+from rezumi.modules.identity.domain import AuthenticatedPrincipal, AuthMethod
+from rezumi.modules.interview_prep.application import (
     DefenseMap,
     DefenseMapEntry,
     FollowUpDraftReadView,
@@ -25,7 +26,7 @@ from careeros.modules.interview_prep.application import (
     SessionView,
     StoryReadView,
 )
-from careeros.modules.interview_prep.domain import (
+from rezumi.modules.interview_prep.domain import (
     DefenseStatus,
     EvidenceRevisionPin,
     FollowUpDraft,
@@ -47,11 +48,10 @@ from careeros.modules.interview_prep.domain import (
     StoryOrigin,
     StoryStatus,
 )
-from fastapi.testclient import TestClient
 
-from careeros_api.config import Settings
-from careeros_api.main import create_app
 from conftest import FakeDatabase
+from rezumi_api.config import Settings
+from rezumi_api.main import create_app
 
 _ORIGIN = "http://localhost:3000"
 _NOW = datetime(2026, 7, 25, 3, tzinfo=UTC)
@@ -378,8 +378,8 @@ def _client(
         interview_prep=service,
     )
     client = TestClient(app)
-    client.cookies.set("careeros_session", "opaque-session")
-    client.cookies.set("careeros_csrf", "opaque-csrf")
+    client.cookies.set("rezumi_session", "opaque-session")
+    client.cookies.set("rezumi_csrf", "opaque-csrf")
     return client
 
 

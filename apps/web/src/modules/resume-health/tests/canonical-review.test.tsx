@@ -152,7 +152,7 @@ describe("canonical resume review", () => {
       ...canonical,
       schemaVersion: "canonical-resume/2.0.0",
       semanticSchemaVersion: "canonical-semantics/1.0.0",
-      semanticParserVersion: "careeros-semantic-parser/1.0.0",
+      semanticParserVersion: "rezumi-semantic-parser/1.0.0",
       semanticReviewState: "unreviewed",
       legacyUpgradeRequired: false,
       semanticEntities: [
@@ -324,7 +324,7 @@ describe("canonical resume review", () => {
       ...canonical,
       schemaVersion: "canonical-resume/2.0.0",
       semanticSchemaVersion: "canonical-semantics/1.0.0",
-      semanticParserVersion: "careeros-semantic-parser/1.0.0",
+      semanticParserVersion: "rezumi-semantic-parser/1.0.0",
       semanticReviewState: "unreviewed",
       legacyUpgradeRequired: false,
       semanticEntities: [

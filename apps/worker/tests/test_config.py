@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from careeros_worker.config import WorkerSettings
+from rezumi_worker.config import WorkerSettings
 
 
 def test_redis_url_is_used_as_broker_and_backend_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -31,7 +31,7 @@ def test_connection_urls_are_redacted() -> None:
         {
             "broker_url": "redis://:private@redis:6379/0",
             "result_backend": "redis://:private@redis:6379/1",
-            "database_url": "postgresql+asyncpg://careeros:private@postgres:5432/careeros",
+            "database_url": "postgresql+asyncpg://rezumi:private@postgres:5432/rezumi",
             "s3_access_key_id": "private-access",
             "s3_secret_access_key": "private-storage-secret",
         }
@@ -73,8 +73,8 @@ def test_production_accepts_explicit_non_local_redis_urls() -> None:
             "broker_url": "rediss://broker.internal.example:6380/0",
             "result_backend": "rediss://backend.internal.example:6380/1",
             "database_url": (
-                "postgresql+asyncpg://careeros:production-credential@"
-                "postgres.internal.example:5432/careeros"
+                "postgresql+asyncpg://rezumi:production-credential@"
+                "postgres.internal.example:5432/rezumi"
             ),
             "s3_endpoint_url": "https://s3.internal.example",
             "s3_public_endpoint_url": "https://uploads.example.com",
@@ -117,7 +117,7 @@ def test_document_limits_and_scanner_settings_are_bounded() -> None:
     assert settings.resume_job_reconciliation_stale_seconds == 600
     assert settings.attachment_job_reconciliation_interval_seconds == 45
     assert settings.attachment_job_reconciliation_stale_seconds == 720
-    assert settings.document_temp_root.as_posix() == "/tmp/careeros"  # noqa: S108
+    assert settings.document_temp_root.as_posix() == "/tmp/rezumi"  # noqa: S108
 
 
 def test_phase9_worker_policies_are_bounded_and_configurable() -> None:
@@ -192,8 +192,8 @@ def test_production_cannot_disable_required_malware_scanning() -> None:
                 "broker_url": "rediss://broker.internal.example:6380/0",
                 "result_backend": "rediss://backend.internal.example:6380/1",
                 "database_url": (
-                    "postgresql+asyncpg://careeros:production-credential@"
-                    "postgres.internal.example:5432/careeros"
+                    "postgresql+asyncpg://rezumi:production-credential@"
+                    "postgres.internal.example:5432/rezumi"
                 ),
                 "s3_endpoint_url": "https://s3.internal.example",
                 "s3_public_endpoint_url": "https://uploads.example.com",

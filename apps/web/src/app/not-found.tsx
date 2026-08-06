@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { buttonStyles, cn, EmptyState } from "@careeros/ui";
+import { buttonStyles, cn, EmptyState } from "@rezumi/ui";
 
 export default function NotFound() {
   return (

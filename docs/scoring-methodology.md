@@ -1,22 +1,22 @@
-# CareerOS scoring methodology
+# Rezumi scoring methodology
 
 Status: Resume Health v2, Role Readiness v1, Job Match v1, Phase 6 Change Studio controls, and Career Health v1 implemented
 Last reviewed: 2026-07-25
 
 ## Required interpretation
 
-> CareerOS scores are internal readiness measurements. They are not scores
+> Rezumi scores are internal readiness measurements. They are not scores
 > provided by an employer or applicant tracking system and do not guarantee
 > interviews or employment outcomes.
 
-CareerOS does not know an employer's private ATS configuration, recruiter
+Rezumi does not know an employer's private ATS configuration, recruiter
 preferences, candidate pool, or hiring decision. A score summarizes observable,
-documented features under a published CareerOS formula. It is not a hiring
+documented features under a published Rezumi formula. It is not a hiring
 probability, ranking against other candidates, or causal prediction.
 
 The disclaimer appears next to the first score in a report, in methodology/help
 content, and in exported score reports. Compact views may use a clearly linked
-short label (“Internal CareerOS measure”) only when the full disclaimer is one
+short label (“Internal Rezumi measure”) only when the full disclaimer is one
 accessible action away.
 
 ## Terminology
@@ -390,7 +390,7 @@ preparation report derived from eligible achievement evidence, skill-evidence
 coverage, evidenced completed milestones, an evidenced completed promotion plan,
 an evidence-backed finalized review, and an evidenced annual resume refresh. Its states
 (`insufficient_evidence`, `building`, and `review_ready`) describe whether those
-CareerOS preparation records are present; they do not rank people or infer a
+Rezumi preparation records are present; they do not rank people or infer a
 decision by an employer. A persisted completed-milestone, completed-promotion,
 finalized-review, or annual-refresh link contributes only while its evidence ID,
 revision ID/number, statement hash, and revision timestamp still match the
@@ -399,7 +399,7 @@ continue to support the report.
 
 Every Promotion Readiness representation uses this separate required language:
 
-> Promotion Readiness summarizes CareerOS preparation signals from current
+> Promotion Readiness summarizes Rezumi preparation signals from current
 > eligible evidence and owner-maintained records. It is not an employer decision,
 > hiring probability, promotion guarantee, or assessment of job-market value.
 
@@ -493,7 +493,7 @@ Proposed state ceilings for Phase 3+ configuration are:
 | Unsupported    |                    0.00 | No                                                                               |
 
 These are ceilings: irrelevant or contradictory verified evidence does not score
-high. “Verified” means verified under a documented CareerOS evidence process; it
+high. “Verified” means verified under a documented Rezumi evidence process; it
 does not imply an employer, regulator, or background-check company certified it.
 
 Truth Confidence considers eligible evidence coverage, directness of source

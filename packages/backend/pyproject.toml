@@ -3,9 +3,9 @@ requires = ["hatchling>=1.31.0,<2"]
 build-backend = "hatchling.build"
 
 [project]
-name = "careeros-backend"
+name = "rezumi-backend"
 version = "0.1.0"
-description = "Shared CareerOS backend foundation"
+description = "Shared Rezumi backend foundation"
 readme = "README.md"
 requires-python = ">=3.13,<3.15"
 dependencies = [
@@ -58,7 +58,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/careeros"]
+packages = ["src/rezumi"]
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-config --strict-markers"
@@ -83,7 +83,7 @@ strict = true
 warn_unreachable = true
 pretty = true
 show_error_codes = true
-packages = ["careeros"]
+packages = ["rezumi"]
 mypy_path = "src"
 
 [[tool.mypy.overrides]]

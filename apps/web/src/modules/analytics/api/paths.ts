@@ -1,4 +1,4 @@
-import type { paths } from "@careeros/contracts";
+import type { paths } from "@rezumi/contracts";
 
 import { fillApiPath, type GeneratedApiPath } from "@/shared/api/api-path";
 import { buildApiQueryString } from "@/shared/api/api-query-string";

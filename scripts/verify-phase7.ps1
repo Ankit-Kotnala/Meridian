@@ -105,4 +105,4 @@ finally {
     }
 }
 
-Write-Host "CareerOS Phase 7 verification passed."
+Write-Host "Rezumi Phase 7 verification passed."

@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 from docx import Document
 
-from careeros.modules.career_record.application.attachment_workflow import (
+from rezumi.modules.career_record.application.attachment_workflow import (
     AttachmentDownloadPurpose,
     AttachmentLimits,
     AttachmentMediaType,
@@ -16,14 +16,14 @@ from careeros.modules.career_record.application.attachment_workflow import (
     ScanVerdict,
     UnsafeAttachment,
 )
-from careeros.modules.career_record.infrastructure.attachment_extractor import (
+from rezumi.modules.career_record.infrastructure.attachment_extractor import (
     BoundedAttachmentExtractor,
 )
-from careeros.modules.career_record.infrastructure.attachment_scanner import (
+from rezumi.modules.career_record.infrastructure.attachment_scanner import (
     AttachmentClamAvOptions,
     AttachmentClamAvScanner,
 )
-from careeros.modules.career_record.infrastructure.attachment_storage import (
+from rezumi.modules.career_record.infrastructure.attachment_storage import (
     AttachmentS3ObjectStorage,
     AttachmentS3Options,
 )

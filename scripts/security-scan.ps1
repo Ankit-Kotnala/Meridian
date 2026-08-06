@@ -78,7 +78,7 @@ try {
 
     uv sync --frozen --all-packages --all-groups
     Assert-LastExitCode "Python workspace dependency sync"
-    uv run --package careeros-api --with pip-audit==2.10.1 pip-audit
+    uv run --package rezumi-api --with pip-audit==2.10.1 pip-audit
     Assert-LastExitCode "Python workspace pip-audit"
 
     foreach ($Service in @("api", "worker", "web", "web-edge")) {
@@ -86,7 +86,7 @@ try {
         Assert-LastExitCode "Application image build for $Service"
     }
 
-    foreach ($RuntimeImage in @("careeros-api:latest", "careeros-worker:latest")) {
+    foreach ($RuntimeImage in @("rezumi-api:latest", "rezumi-worker:latest")) {
         docker run --rm $RuntimeImage python -c (
             "import os, ssl; " +
             "assert os.getuid() == 10001; " +
@@ -96,10 +96,10 @@ try {
     }
 
     $Images = @(
-        "careeros-api:latest",
-        "careeros-worker:latest",
-        "careeros-web:latest",
-        "careeros-web-edge:latest"
+        "rezumi-api:latest",
+        "rezumi-worker:latest",
+        "rezumi-web:latest",
+        "rezumi-web-edge:latest"
     )
     $NativeGrypeExecutable = $null
     if ($env:OS -eq "Windows_NT") {
@@ -153,7 +153,7 @@ try {
         Remove-Item -LiteralPath $ArchivePath -Force
     }
 
-    Write-Host "CareerOS security scans passed."
+    Write-Host "Rezumi security scans passed."
 }
 finally {
     Pop-Location

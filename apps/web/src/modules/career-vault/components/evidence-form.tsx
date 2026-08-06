@@ -8,7 +8,7 @@ import {
   FieldLabel,
   Select,
   TextField,
-} from "@careeros/ui";
+} from "@rezumi/ui";
 
 import type { EvidenceInput, Experience, Skill } from "../api/types";
 import type { FieldErrors } from "../validation/career-vault-validation";

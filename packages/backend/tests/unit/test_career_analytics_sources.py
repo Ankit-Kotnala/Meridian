@@ -9,16 +9,16 @@ from uuid import UUID
 
 import pytest
 
-from careeros.modules.career_analytics.domain import (
+from rezumi.modules.career_analytics.domain import (
     CareerAnalyticsSourceLimitExceeded,
     CareerAnalyticsUnavailable,
 )
-from careeros.modules.career_analytics.infrastructure.sources import (
+from rezumi.modules.career_analytics.infrastructure.sources import (
     CareerRecordAnalyticsProvider,
     CompositeSupplementalAnalyticsSource,
     RoleReadinessAnalyticsProvider,
 )
-from careeros.modules.role_readiness.application import (
+from rezumi.modules.role_readiness.application import (
     RoleReadinessUnavailable,
     RoleReadinessValidationError,
 )

@@ -1,4 +1,4 @@
-# CareerOS security threat model
+# Rezumi security threat model
 
 Status: Phase 8 and Phase 9 controls complete and hosted verified
 Method: asset/trust-boundary analysis with STRIDE-style threat enumeration  
@@ -933,7 +933,7 @@ integrity, ownership, migrations, object references, and documented RPO/RTO.
   patching, corpus testing, and kill switches remain necessary.
 - Resume Health parsing now uses a killable, reaped child process with bounded
   request/result contracts, temporary-workspace cleanup, and POSIX resource
-  limits. Evidence-attachment and trusted CareerOS-created export extraction
+  limits. Evidence-attachment and trusted Rezumi-created export extraction
   still use the local `asyncio.to_thread` adapter; cancelling those awaits does
   not forcibly terminate the underlying Python thread. Celery task limits and
   the non-root, read-only, CPU/memory/PID-bounded, no-edge-network worker
@@ -973,7 +973,7 @@ integrity, ownership, migrations, object references, and documented RPO/RTO.
   Career Record does not fetch them. Any future evidence fetch must use or harden
   the Phase 5 redirect/DNS/private-address/size/time SSRF policy rather than
   reusing a generic HTTP client.
-- Phase 4 uses a small CareerOS-authored seed role taxonomy. External taxonomy
+- Phase 4 uses a small Rezumi-authored seed role taxonomy. External taxonomy
   provider ingestion, admin curation workflow, localization, and market-specific
   role calibration remain later work.
 - Backups and third-party retention delay physical erasure; policy and user

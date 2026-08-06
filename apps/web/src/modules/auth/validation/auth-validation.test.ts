@@ -22,7 +22,7 @@ describe("auth validation", () => {
   it("requires a bounded display name", () => {
     expect(validateDisplayName("Alex Morgan")).toBeUndefined();
     expect(validateDisplayName(" ")).toBe(
-      "Enter the name you want CareerOS to use.",
+      "Enter the name you want Rezumi to use.",
     );
   });
 });

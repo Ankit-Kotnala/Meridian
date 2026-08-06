@@ -16,7 +16,7 @@ from career_analytics_memory import (
     StaticApplicationSource,
     StaticSupplementalSource,
 )
-from careeros.modules.career_analytics.application import (
+from rezumi.modules.career_analytics.application import (
     ANALYTICS_INTERPRETATION,
     AchievementGrowthPoint,
     AnalyticsReconciliationOutcome,
@@ -30,7 +30,7 @@ from careeros.modules.career_analytics.application import (
     SupplementalAnalyticsSnapshot,
     aggregate,
 )
-from careeros.modules.career_analytics.domain import (
+from rezumi.modules.career_analytics.domain import (
     AnalyticsAuditAction,
     AnalyticsAuditEvent,
     AnalyticsJobStatus,

@@ -1,4 +1,4 @@
-import type { components } from "@careeros/contracts";
+import type { components } from "@rezumi/contracts";
 
 export type Resume = components["schemas"]["ResumeResponse"];
 export type ResumeCreateInput = components["schemas"]["ResumeCreateRequest"];
