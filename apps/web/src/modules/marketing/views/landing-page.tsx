@@ -466,7 +466,7 @@ export function LandingPage() {
                   {systemLayers.map(
                     ({ description, icon: Icon, label, meta }, index) => (
                       <li
-                        className="grid gap-3 px-5 py-5 sm:grid-cols-[10rem_minmax(0,1fr)_9rem] sm:items-center"
+                        className="grid gap-3 px-5 py-5 transition-colors hover:bg-surface-subtle/70 sm:grid-cols-[10rem_minmax(0,1fr)_9rem] sm:items-center"
                         key={label}
                       >
                         <div className="flex items-center gap-3">
@@ -504,43 +504,45 @@ export function LandingPage() {
             className="landing-section border-y border-line bg-surface"
             id="how-it-works"
           >
-            <div className="site-container py-16 sm:py-24">
-              <header className="grid gap-5 md:grid-cols-[1fr_1fr] md:items-end">
-                <div>
-                  <p className="eyebrow">Operating workflow</p>
-                  <h2 className="balanced mt-3 max-w-2xl font-display text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">
-                    Move from raw history to approved work without losing
-                    control.
-                  </h2>
-                </div>
-                <p className="max-w-xl text-sm leading-7 text-muted md:justify-self-end">
-                  Each stage has a clear input, review state, and next decision.
-                  Uncertainty stays visible until you resolve it.
-                </p>
-              </header>
+            <Reveal>
+              <div className="site-container py-16 sm:py-24">
+                <header className="grid gap-5 md:grid-cols-[1fr_1fr] md:items-end">
+                  <div>
+                    <p className="eyebrow">Operating workflow</p>
+                    <h2 className="balanced mt-3 max-w-2xl font-display text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">
+                      Move from raw history to approved work without losing
+                      control.
+                    </h2>
+                  </div>
+                  <p className="max-w-xl text-sm leading-7 text-muted md:justify-self-end">
+                    Each stage has a clear input, review state, and next
+                    decision. Uncertainty stays visible until you resolve it.
+                  </p>
+                </header>
 
-              <ol className="mt-12 grid border-l border-line md:grid-cols-4 md:border-l-0 md:border-t">
-                {workflow.map(({ description, label }, index) => (
-                  <li
-                    className="relative px-6 py-6 md:min-h-52 md:px-6 md:pb-0 md:pt-9"
-                    key={label}
-                  >
-                    <span className="absolute -left-[0.8rem] top-6 grid size-6 place-items-center rounded-full border border-line-strong bg-surface text-[0.6875rem] font-bold text-primary md:-top-3 md:left-6">
-                      {index + 1}
-                    </span>
-                    <p className="text-[0.6875rem] font-bold uppercase tracking-[0.1em] text-muted">
-                      Stage {index + 1}
-                    </p>
-                    <h3 className="mt-2 font-semibold text-foreground">
-                      {label}
-                    </h3>
-                    <p className="mt-3 text-sm leading-6 text-muted">
-                      {description}
-                    </p>
-                  </li>
-                ))}
-              </ol>
-            </div>
+                <ol className="mt-12 grid border-l border-line md:grid-cols-4 md:border-l-0 md:border-t">
+                  {workflow.map(({ description, label }, index) => (
+                    <li
+                      className="relative px-6 py-6 md:min-h-52 md:px-6 md:pb-0 md:pt-9"
+                      key={label}
+                    >
+                      <span className="absolute -left-[0.8rem] top-6 grid size-6 place-items-center rounded-full border border-line-strong bg-surface text-[0.6875rem] font-bold text-primary md:-top-3 md:left-6">
+                        {index + 1}
+                      </span>
+                      <p className="text-[0.6875rem] font-bold uppercase tracking-[0.1em] text-muted">
+                        Stage {index + 1}
+                      </p>
+                      <h3 className="mt-2 font-semibold text-foreground">
+                        {label}
+                      </h3>
+                      <p className="mt-3 text-sm leading-6 text-muted">
+                        {description}
+                      </p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </Reveal>
           </section>
 
           <section className="landing-section site-container py-16 sm:py-24">
@@ -562,10 +564,10 @@ export function LandingPage() {
                 <div className="grid gap-px overflow-hidden rounded-xl border border-white/10 bg-white/10 sm:grid-cols-2">
                   {outputs.map(
                     ({ description, icon: CapabilityIcon, title }) => (
-                      <div className="bg-navy px-5 py-5" key={title}>
+                      <div className="group bg-navy px-5 py-5" key={title}>
                         <CapabilityIcon
                           aria-hidden="true"
-                          className="size-5 text-emerald-300"
+                          className="size-5 text-emerald-300 transition-transform duration-200 group-hover:scale-110"
                         />
                         <h3 className="mt-4 text-sm font-semibold text-white">
                           {title}
@@ -617,7 +619,7 @@ export function LandingPage() {
                 {trustControls.map(
                   ({ description, icon: Icon, title }, index) => (
                     <div
-                      className="grid gap-4 py-6 sm:grid-cols-[2rem_minmax(0,1fr)_auto] sm:items-start"
+                      className="grid gap-4 rounded-lg py-6 transition-colors hover:bg-surface-subtle/60 sm:grid-cols-[2rem_minmax(0,1fr)_auto] sm:items-start"
                       key={title}
                     >
                       <Icon

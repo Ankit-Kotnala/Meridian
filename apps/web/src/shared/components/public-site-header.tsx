@@ -20,64 +20,23 @@ const navigation = [
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
-    let lastY = window.scrollY;
-    // Accumulate continuous travel in one direction so the header only tucks
-    // away after a deliberate scroll, not on every small twitch.
-    let downTravel = 0;
-    let upTravel = 0;
-
-    const onScroll = () => {
-      const y = window.scrollY;
-      setScrolled(y > 8);
-
-      const nearBottom =
-        y + window.innerHeight >= document.documentElement.scrollHeight - 120;
-      const goingDown = y > lastY;
-
-      if (goingDown) {
-        downTravel += y - lastY;
-        upTravel = 0;
-      } else {
-        upTravel += lastY - y;
-        downTravel = 0;
-      }
-
-      if (y < 120) {
-        setHidden(false);
-      } else if (nearBottom || downTravel > 64) {
-        setHidden(true);
-      } else if (upTravel > 24) {
-        setHidden(false);
-      }
-
-      lastY = y;
-    };
-
+    // The header stays pinned at all times; we only track whether the page has
+    // scrolled so the bar can condense into its raised, blurred state.
+    const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const tucked = hidden && !open;
-
   return (
     <>
-      <ScrollProgress />
-      <header
-        className={cn(
-          "fixed inset-x-0 top-0 z-50 origin-top transform-gpu transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.33,1,0.68,1)] will-change-transform motion-reduce:transition-none",
-          tucked
-            ? "-translate-y-[calc(100%+1.5rem)] scale-[0.98] opacity-0"
-            : "translate-y-0 scale-100 opacity-100",
-        )}
-      >
-        <div className={cn("px-3", tucked && "pointer-events-none")}>
+      <header className="fixed inset-x-0 top-0 z-50">
+        <div className="px-3">
           <div
             className={cn(
-              "mx-auto flex items-center justify-between gap-4 border transition-[max-width,margin,padding,background-color,border-color,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              "relative mx-auto flex items-center justify-between gap-4 overflow-hidden border transition-[max-width,margin,padding,background-color,border-color,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
               scrolled
                 ? "mt-2 max-w-[62rem] rounded-2xl border-line/70 bg-surface-raised/80 px-3 py-2 shadow-[var(--shadow-lg)] backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-surface-raised/72"
                 : "mt-4 max-w-[74rem] rounded-2xl border-line/45 bg-surface-raised/55 px-4 py-2.5 shadow-[var(--shadow-md)] backdrop-blur-lg backdrop-saturate-150 supports-[backdrop-filter]:bg-surface-raised/45",
@@ -138,6 +97,9 @@ export function SiteHeader() {
                 <Menu aria-hidden="true" className="size-5" />
               )}
             </button>
+
+            {/* Scroll progress fills across the bottom edge of the bar. */}
+            <ScrollProgress className="absolute inset-x-0 bottom-0 h-[3px]" />
           </div>
 
           {open && (

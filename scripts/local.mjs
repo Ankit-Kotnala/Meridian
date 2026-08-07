@@ -265,7 +265,9 @@ switch (command) {
         "rezumi_worker.app:celery_app",
         "worker",
         "--loglevel=INFO",
-        ...(process.platform === "win32" ? ["--pool=solo", "--concurrency=1"] : []),
+        ...(process.platform === "win32"
+          ? ["--pool=solo", "--concurrency=1"]
+          : []),
         "--queues=default,resume-health,resume-builder,career-record,maintenance",
       ],
       { env: hostEnvironment() },
@@ -298,7 +300,3 @@ switch (command) {
     usage();
     process.exit(2);
 }
-
-
-
-
