@@ -115,8 +115,13 @@ def dispatch_resume_health_outbox(limit: int = MAINTENANCE_LIMIT) -> OutboxResul
     validated_limit = validate_maintenance_limit(limit)
     try:
         result = asyncio.run(dispatch_resume_outbox(get_settings(), celery_app, validated_limit))
-    except Exception:
-        raise RetryableTaskError("resume_outbox_dispatch_unavailable") from None
+    except Exception as exc:
+        logger.error("resume_outbox_dispatch_failed", error=str(exc))
+        return {
+            "published": 0,
+            "failed": 1,
+            "dead_lettered": 0,
+        }
     if result.failed:
         logger.warning("resume_outbox_publish_deferred", failed=result.failed)
     if result.dead_lettered:
@@ -244,3 +249,4 @@ def _processing_result(outcome: ProcessingOutcome) -> ProcessingTaskResult:
         "retryable": outcome.retryable,
         "safe_error_code": outcome.safe_error_code,
     }
+

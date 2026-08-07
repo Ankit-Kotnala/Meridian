@@ -52,6 +52,7 @@ function run(command, args, options = {}) {
     env: options.env ?? process.env,
     stdio: "inherit",
     windowsHide: true,
+    shell: process.platform === "win32" && command.endsWith(".cmd"),
   });
   if (result.error) {
     console.error(`Unable to run ${command}: ${result.error.message}`);
@@ -148,6 +149,19 @@ function startServices(services, { build = false } = {}) {
   compose([...args, ...services]);
 }
 
+function migrateDatabase() {
+  compose([
+    "run",
+    "--rm",
+    "--no-deps",
+    "api",
+    "alembic",
+    "-c",
+    "packages/backend/alembic.ini",
+    "upgrade",
+    "head",
+  ]);
+}
 function stopServices(services) {
   compose(["stop", ...services]);
 }
@@ -251,6 +265,7 @@ switch (command) {
         "rezumi_worker.app:celery_app",
         "worker",
         "--loglevel=INFO",
+        ...(process.platform === "win32" ? ["--pool=solo", "--concurrency=1"] : []),
         "--queues=default,resume-health,resume-builder,career-record,maintenance",
       ],
       { env: hostEnvironment() },
@@ -283,3 +298,7 @@ switch (command) {
     usage();
     process.exit(2);
 }
+
+
+
+

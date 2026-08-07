@@ -107,8 +107,13 @@ def dispatch_career_analytics_refresh_outbox(
                 validated_limit,
             )
         )
-    except Exception:
-        raise RetryableTaskError("analytics_outbox_dispatch_unavailable") from None
+    except Exception as exc:
+        logger.error("analytics_outbox_dispatch_failed", error=str(exc))
+        return {
+            "published": 0,
+            "failed": 1,
+            "dead_lettered": 0,
+        }
     if result.failed:
         logger.warning("analytics_outbox_publish_deferred", count=result.failed)
     if result.dead_lettered:
@@ -188,3 +193,5 @@ def _schedule_analytics_retry(
         countdown=countdown,
         max_retries=settings.analytics_max_attempts + settings.task_max_retries,
     )
+
+

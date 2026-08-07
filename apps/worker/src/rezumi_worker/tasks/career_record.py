@@ -92,8 +92,13 @@ def dispatch_evidence_attachment_outbox(
         result = asyncio.run(
             dispatch_attachment_outbox(get_settings(), celery_app, validated_limit)
         )
-    except Exception:
-        raise RetryableTaskError("attachment_outbox_dispatch_unavailable") from None
+    except Exception as exc:
+        logger.error("attachment_outbox_dispatch_failed", error=str(exc))
+        return {
+            "published": 0,
+            "failed": 1,
+            "dead_lettered": 0,
+        }
     if result.failed:
         logger.warning("attachment_outbox_publish_deferred", failed=result.failed)
     if result.dead_lettered:
@@ -194,3 +199,5 @@ def _attachment_processing_result(
             outcome.safe_error_code.value if outcome.safe_error_code is not None else None
         ),
     }
+
+
