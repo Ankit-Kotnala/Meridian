@@ -35,7 +35,7 @@ class DocumentLimits:
     max_serialized_artifact_bytes: int = 2 * 1024 * 1024
     processing_timeout_seconds: float = 120.0
     temp_root: Path = field(
-        default_factory=lambda: Path(tempfile.gettempdir()).resolve() / "rezumi"
+        default_factory=lambda: Path("/tmp/rezumi").resolve() / "rezumi"
     )
 
     def __post_init__(self) -> None:
@@ -365,3 +365,4 @@ class CleanupResult:
 
 def owner_scope(user_id: UUID | None, guest_session_id: UUID | None) -> OwnerScope:
     return OwnerScope(user_id=user_id, guest_session_id=guest_session_id)
+

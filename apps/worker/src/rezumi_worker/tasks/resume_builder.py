@@ -79,8 +79,13 @@ def dispatch_resume_builder_export_outbox(
         result = asyncio.run(
             dispatch_resume_export_outbox(get_settings(), celery_app, validated_limit)
         )
-    except Exception:
-        raise RetryableTaskError("resume_export_outbox_dispatch_unavailable") from None
+    except Exception as exc:
+        logger.error("resume_export_outbox_dispatch_failed", error=str(exc))
+        return {
+            "published": 0,
+            "failed": 1,
+            "dead_lettered": 0,
+        }
     if result.failed:
         logger.warning("resume_export_outbox_publish_deferred", failed=result.failed)
     if result.dead_lettered:
@@ -124,3 +129,5 @@ def reconcile_resume_builder_exports(
         "object_cleanup_failures": result.object_cleanup_failures,
         "object_cleanup_dead_letters": result.object_cleanup_dead_letters,
     }
+
+

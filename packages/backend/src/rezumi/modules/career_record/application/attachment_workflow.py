@@ -206,7 +206,7 @@ class AttachmentLimits:
     max_extracted_characters: int = 500_000
     max_extracted_blocks: int = 5_000
     processing_timeout_seconds: float = 120.0
-    temp_root: Path = Path(tempfile.gettempdir()).resolve() / "rezumi-attachments"
+    temp_root: Path = Path("/tmp/rezumi").resolve() / "rezumi-attachments"
 
     def __post_init__(self) -> None:
         integer_limits = (
@@ -2283,3 +2283,4 @@ def _redact_deleted_attachment(attachment: AttachmentRecord, now: datetime) -> N
 def _bounded_identifier(value: str, field: str) -> None:
     if not 1 <= len(value) <= 128 or any(ord(character) < 32 for character in value):
         raise ValueError(f"{field} must be 1 to 128 printable characters")
+
