@@ -7,8 +7,13 @@ from collections.abc import Awaitable
 from typing import Any, cast
 
 from redis.asyncio import Redis
+from redis.exceptions import RedisError
 
-from rezumi.modules.identity.domain.errors import OAuthFlowRejected, RateLimited
+from rezumi.modules.identity.domain.errors import (
+    IdentityUnavailable,
+    OAuthFlowRejected,
+    RateLimited,
+)
 
 _LIMIT_SCRIPT = """
 local current = redis.call('INCR', KEYS[1])
@@ -32,11 +37,16 @@ class RedisSecurityStore:
 
     async def check(self, action: str, subject: str, limit: int, window_seconds: int) -> None:
         key = self._key("limit", action, subject)
-        evaluation = cast(
-            Awaitable[list[int | bytes | str]],
-            self._redis.eval(_LIMIT_SCRIPT, 1, key, str(window_seconds)),
-        )
-        result = await evaluation
+        try:
+            evaluation = cast(
+                Awaitable[list[int | bytes | str]],
+                self._redis.eval(_LIMIT_SCRIPT, 1, key, str(window_seconds)),
+            )
+            result = await evaluation
+        except RedisError as exc:
+            # A backing-store outage must surface as a retryable 503, not an
+            # opaque 500 from the generic handler.
+            raise IdentityUnavailable from exc
         current, ttl = int(result[0]), max(1, int(result[1]))
         if current > limit:
             raise RateLimited(ttl)

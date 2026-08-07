@@ -1,6 +1,5 @@
 """Transport-neutral commands and views for Resume Health use cases."""
 
-import tempfile
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -34,8 +33,10 @@ class DocumentLimits:
     max_extracted_blocks: int = 5_000
     max_serialized_artifact_bytes: int = 2 * 1024 * 1024
     processing_timeout_seconds: float = 120.0
+    # Configurable local scratch root (overridden by DOCUMENT_TEMP_ROOT in
+    # deployments); randomized subpaths are created underneath at runtime.
     temp_root: Path = field(
-        default_factory=lambda: Path("/tmp/rezumi").resolve() / "rezumi"
+        default_factory=lambda: Path("/tmp/rezumi").resolve() / "rezumi"  # noqa: S108
     )
 
     def __post_init__(self) -> None:
@@ -365,4 +366,3 @@ class CleanupResult:
 
 def owner_scope(user_id: UUID | None, guest_session_id: UUID | None) -> OwnerScope:
     return OwnerScope(user_id=user_id, guest_session_id=guest_session_id)
-
