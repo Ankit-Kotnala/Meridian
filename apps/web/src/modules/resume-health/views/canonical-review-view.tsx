@@ -1,6 +1,6 @@
 "use client";
 
-import { FileCheck2, Plus, RefreshCcw, Trash2 } from "lucide-react";
+import { Check, FileCheck2, Plus, RefreshCcw, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -9,6 +9,7 @@ import {
   Badge,
   Button,
   Card,
+  cn,
   EmptyState,
   ErrorState,
   LoadingSkeleton,
@@ -736,98 +737,30 @@ export function CanonicalReviewView({
                   </Button>
                 </div>
               </header>
-              <div className="divide-y divide-line">
-                {entity.fields.map((field, fieldIndex) => {
-                  const presentation = confidence(field.confidence);
-                  const inputId = `semantic-${entityIndex}-${fieldIndex}`;
-                  const sourceId = `${inputId}-source`;
-                  const fieldRemoved = removedFields[field.id] ?? false;
-                  const mappedName = fieldNames[field.id] ?? field.name;
-                  return (
-                    <div
-                      className={
-                        fieldRemoved
-                          ? "grid gap-5 p-5 opacity-60 lg:grid-cols-2"
-                          : "grid gap-5 p-5 lg:grid-cols-2"
-                      }
-                      key={field.id}
-                    >
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-sm font-extrabold capitalize text-foreground">
-                            {mappedName.replaceAll("_", " ")}
-                          </h3>
-                          <Badge tone={presentation.tone}>
-                            {presentation.label}
-                          </Badge>
-                          <Badge
-                            tone={
-                              field.reviewState === "unreviewed"
-                                ? "warning"
-                                : field.reviewState === "removed"
-                                  ? "danger"
-                                  : "success"
-                            }
-                          >
-                            {field.reviewState.replaceAll("_", " ")}
-                          </Badge>
-                        </div>
-                        <blockquote
-                          className="mt-3 whitespace-pre-wrap rounded-xl border border-line bg-surface-subtle p-3 text-sm leading-6 text-muted"
-                          id={sourceId}
-                        >
-                          {field.anchors[0]?.excerpt ||
-                            "User-added value; no source anchor is claimed."}
-                        </blockquote>
-                        {field.anchors[0] && (
-                          <p className="mt-2 text-xs leading-5 text-muted">
-                            Exact source anchor: page {field.anchors[0].page},
-                            characters {field.anchors[0].start}–
-                            {field.anchors[0].end}
-                          </p>
+              {nextKind === "skill" ? (
+                <div className="flex flex-wrap gap-2 p-5">
+                  {entity.fields.map((field, fieldIndex) => {
+                    const fieldRemoved = removedFields[field.id] ?? false;
+                    const confirmed = confirmedFields[field.id] ?? false;
+                    const chipSourceId = `semantic-${entityIndex}-${fieldIndex}-source`;
+                    const skillValue = semanticValues[field.id] ?? "";
+                    return (
+                      <span
+                        className={cn(
+                          "group inline-flex items-center gap-1.5 rounded-full border py-1 pl-3 pr-1.5 text-sm transition-colors",
+                          fieldRemoved
+                            ? "border-line bg-surface-subtle text-muted line-through"
+                            : confirmed || field.reviewState !== "unreviewed"
+                              ? "border-primary/40 bg-primary-soft/50 text-foreground"
+                              : "border-line bg-surface text-foreground",
                         )}
-                      </div>
-                      <div>
-                        {nextKind !== entity.kind && (
-                          <label className="block text-xs font-bold text-muted">
-                            Fact classification
-                            <select
-                              className="mt-1 block rounded-lg border border-line bg-surface px-2 py-1.5 text-foreground"
-                              disabled={removed || fieldRemoved}
-                              onChange={(event) =>
-                                setFieldNames((current) => ({
-                                  ...current,
-                                  [field.id]: event.target.value,
-                                }))
-                              }
-                              value={mappedName}
-                            >
-                              {semanticFieldNamesForType(
-                                nextKind,
-                                field.fieldType,
-                              ).map((candidate) => (
-                                <option key={candidate} value={candidate}>
-                                  {candidate.replaceAll("_", " ")}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                        )}
-                        <label
-                          className={
-                            nextKind !== entity.kind
-                              ? "mt-3 block text-sm font-extrabold capitalize text-foreground"
-                              : "block text-sm font-extrabold capitalize text-foreground"
-                          }
-                          htmlFor={inputId}
-                        >
-                          Reviewed {mappedName.replaceAll("_", " ")}
-                        </label>
-                        <textarea
-                          aria-describedby={sourceId}
-                          className="mt-3 min-h-24 w-full resize-y rounded-xl border border-line bg-surface px-3 py-2.5 text-sm leading-6 text-foreground shadow-sm outline-none transition focus:border-primary focus:ring-3 focus:ring-primary/15"
+                        key={field.id}
+                      >
+                        <input
+                          aria-describedby={chipSourceId}
+                          aria-label={`Skill ${fieldIndex + 1}`}
+                          className="min-w-8 max-w-48 bg-transparent font-semibold outline-none disabled:opacity-60"
                           disabled={removed || fieldRemoved}
-                          id={inputId}
                           maxLength={10_000}
                           onChange={(event) =>
                             setSemanticValues((current) => ({
@@ -835,70 +768,228 @@ export function CanonicalReviewView({
                               [field.id]: event.target.value,
                             }))
                           }
-                          value={semanticValues[field.id] ?? ""}
+                          size={Math.max(2, skillValue.length)}
+                          value={skillValue}
                         />
-                        {field.fieldType === "date" && (
-                          <label className="mt-2 block text-xs font-bold text-muted">
-                            Date precision
-                            <select
-                              className="ml-2 rounded-lg border border-line bg-surface px-2 py-1.5 text-foreground"
-                              onChange={(event) =>
-                                setDatePrecisions((current) => ({
+                        <span className="sr-only" id={chipSourceId}>
+                          {field.anchors[0]
+                            ? `Source page ${field.anchors[0].page}, characters ${field.anchors[0].start} to ${field.anchors[0].end}.`
+                            : "User-added skill; no source anchor is claimed."}
+                        </span>
+                        {field.reviewState === "unreviewed" &&
+                          !fieldRemoved && (
+                            <button
+                              aria-label={
+                                confirmed
+                                  ? `Unconfirm ${skillValue || "skill"}`
+                                  : `Confirm ${skillValue || "skill"}`
+                              }
+                              aria-pressed={confirmed}
+                              className={cn(
+                                "grid size-5 place-items-center rounded-full border transition-colors",
+                                confirmed
+                                  ? "border-primary bg-primary text-white"
+                                  : "border-line text-muted hover:border-primary hover:text-primary",
+                              )}
+                              disabled={removed}
+                              onClick={() =>
+                                setConfirmedFields((current) => ({
                                   ...current,
-                                  [field.id]: event.target
-                                    .value as DatePrecision,
+                                  [field.id]: !confirmed,
                                 }))
                               }
-                              value={
-                                datePrecisions[field.id] ??
-                                field.datePrecision ??
-                                "unknown"
+                              type="button"
+                            >
+                              <Check aria-hidden="true" className="size-3" />
+                            </button>
+                          )}
+                        <button
+                          aria-label={
+                            fieldRemoved
+                              ? `Restore ${skillValue || "skill"}`
+                              : `Remove ${skillValue || "skill"}`
+                          }
+                          className="grid size-5 place-items-center rounded-full text-muted transition-colors hover:bg-danger-soft hover:text-danger disabled:opacity-40"
+                          disabled={removed}
+                          onClick={() =>
+                            setRemovedFields((current) => ({
+                              ...current,
+                              [field.id]: !fieldRemoved,
+                            }))
+                          }
+                          type="button"
+                        >
+                          <X aria-hidden="true" className="size-3.5" />
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="divide-y divide-line">
+                  {entity.fields.map((field, fieldIndex) => {
+                    const presentation = confidence(field.confidence);
+                    const inputId = `semantic-${entityIndex}-${fieldIndex}`;
+                    const sourceId = `${inputId}-source`;
+                    const fieldRemoved = removedFields[field.id] ?? false;
+                    const mappedName = fieldNames[field.id] ?? field.name;
+                    return (
+                      <div
+                        className={
+                          fieldRemoved
+                            ? "grid gap-5 p-5 opacity-60 lg:grid-cols-2"
+                            : "grid gap-5 p-5 lg:grid-cols-2"
+                        }
+                        key={field.id}
+                      >
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-sm font-extrabold capitalize text-foreground">
+                              {mappedName.replaceAll("_", " ")}
+                            </h3>
+                            <Badge tone={presentation.tone}>
+                              {presentation.label}
+                            </Badge>
+                            <Badge
+                              tone={
+                                field.reviewState === "unreviewed"
+                                  ? "warning"
+                                  : field.reviewState === "removed"
+                                    ? "danger"
+                                    : "success"
                               }
                             >
-                              <option value="day">day</option>
-                              <option value="month">month</option>
-                              <option value="year">year</option>
-                              <option value="unknown">unknown</option>
-                            </select>
-                          </label>
-                        )}
-                        <div className="mt-3 flex flex-wrap gap-3">
-                          {field.reviewState === "unreviewed" && (
-                            <label className="flex items-center gap-2 text-xs font-bold text-foreground">
-                              <input
-                                checked={confirmedFields[field.id] ?? false}
+                              {field.reviewState.replaceAll("_", " ")}
+                            </Badge>
+                          </div>
+                          <blockquote
+                            className="mt-3 whitespace-pre-wrap rounded-xl border border-line bg-surface-subtle p-3 text-sm leading-6 text-muted"
+                            id={sourceId}
+                          >
+                            {field.anchors[0]?.excerpt ||
+                              "User-added value; no source anchor is claimed."}
+                          </blockquote>
+                          {field.anchors[0] && (
+                            <p className="mt-2 text-xs leading-5 text-muted">
+                              Exact source anchor: page {field.anchors[0].page},
+                              characters {field.anchors[0].start}–
+                              {field.anchors[0].end}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          {nextKind !== entity.kind && (
+                            <label className="block text-xs font-bold text-muted">
+                              Fact classification
+                              <select
+                                className="mt-1 block rounded-lg border border-line bg-surface px-2 py-1.5 text-foreground"
                                 disabled={removed || fieldRemoved}
                                 onChange={(event) =>
-                                  setConfirmedFields((current) => ({
+                                  setFieldNames((current) => ({
                                     ...current,
-                                    [field.id]: event.target.checked,
+                                    [field.id]: event.target.value,
                                   }))
                                 }
-                                type="checkbox"
-                              />
-                              Confirm extracted value
+                                value={mappedName}
+                              >
+                                {semanticFieldNamesForType(
+                                  nextKind,
+                                  field.fieldType,
+                                ).map((candidate) => (
+                                  <option key={candidate} value={candidate}>
+                                    {candidate.replaceAll("_", " ")}
+                                  </option>
+                                ))}
+                              </select>
                             </label>
                           )}
-                          <Button
-                            disabled={removed}
-                            onClick={() =>
-                              setRemovedFields((current) => ({
+                          <label
+                            className={
+                              nextKind !== entity.kind
+                                ? "mt-3 block text-sm font-extrabold capitalize text-foreground"
+                                : "block text-sm font-extrabold capitalize text-foreground"
+                            }
+                            htmlFor={inputId}
+                          >
+                            Reviewed {mappedName.replaceAll("_", " ")}
+                          </label>
+                          <textarea
+                            aria-describedby={sourceId}
+                            className="mt-3 min-h-24 w-full resize-y rounded-xl border border-line bg-surface px-3 py-2.5 text-sm leading-6 text-foreground shadow-sm outline-none transition focus:border-primary focus:ring-3 focus:ring-primary/15"
+                            disabled={removed || fieldRemoved}
+                            id={inputId}
+                            maxLength={10_000}
+                            onChange={(event) =>
+                              setSemanticValues((current) => ({
                                 ...current,
-                                [field.id]: !fieldRemoved,
+                                [field.id]: event.target.value,
                               }))
                             }
-                            type="button"
-                            variant="secondary"
-                          >
-                            <Trash2 aria-hidden="true" className="size-4" />
-                            {fieldRemoved ? "Undo remove" : "Remove fact"}
-                          </Button>
+                            value={semanticValues[field.id] ?? ""}
+                          />
+                          {field.fieldType === "date" && (
+                            <label className="mt-2 block text-xs font-bold text-muted">
+                              Date precision
+                              <select
+                                className="ml-2 rounded-lg border border-line bg-surface px-2 py-1.5 text-foreground"
+                                onChange={(event) =>
+                                  setDatePrecisions((current) => ({
+                                    ...current,
+                                    [field.id]: event.target
+                                      .value as DatePrecision,
+                                  }))
+                                }
+                                value={
+                                  datePrecisions[field.id] ??
+                                  field.datePrecision ??
+                                  "unknown"
+                                }
+                              >
+                                <option value="day">day</option>
+                                <option value="month">month</option>
+                                <option value="year">year</option>
+                                <option value="unknown">unknown</option>
+                              </select>
+                            </label>
+                          )}
+                          <div className="mt-3 flex flex-wrap gap-3">
+                            {field.reviewState === "unreviewed" && (
+                              <label className="flex items-center gap-2 text-xs font-bold text-foreground">
+                                <input
+                                  checked={confirmedFields[field.id] ?? false}
+                                  disabled={removed || fieldRemoved}
+                                  onChange={(event) =>
+                                    setConfirmedFields((current) => ({
+                                      ...current,
+                                      [field.id]: event.target.checked,
+                                    }))
+                                  }
+                                  type="checkbox"
+                                />
+                                Confirm extracted value
+                              </label>
+                            )}
+                            <Button
+                              disabled={removed}
+                              onClick={() =>
+                                setRemovedFields((current) => ({
+                                  ...current,
+                                  [field.id]: !fieldRemoved,
+                                }))
+                              }
+                              type="button"
+                              variant="secondary"
+                            >
+                              <Trash2 aria-hidden="true" className="size-4" />
+                              {fieldRemoved ? "Undo remove" : "Remove fact"}
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
               {!removed && (
                 <SemanticAddFieldForm
                   entity={{ ...entity, kind: nextKind }}
