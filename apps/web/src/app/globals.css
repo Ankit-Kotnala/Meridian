@@ -221,6 +221,41 @@ textarea {
   box-shadow: var(--shadow-card);
 }
 
+/*
+ * Workspace home masthead. Ambient brand wash over the standard surface so the
+ * greeting and next-best-step read as one panel; the top rule keeps the brand
+ * gradient present without tinting the text behind it.
+ */
+.workspace-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border));
+  border-radius: var(--radius-card);
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      color-mix(in srgb, var(--accent-soft) 85%, transparent) 0,
+      transparent 26rem
+    ),
+    radial-gradient(
+      circle at 0% 110%,
+      color-mix(in srgb, var(--primary-soft) 75%, transparent) 0,
+      transparent 24rem
+    ),
+    var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.workspace-hero::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  content: "";
+}
+
 .nav-link {
   position: relative;
 }
