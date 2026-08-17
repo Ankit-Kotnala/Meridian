@@ -45,6 +45,6 @@
     "prettier": "3.9.6",
     "tsx": "4.23.1",
     "turbo": "2.10.7",
-    "typescript": "5.9.3"
+    "typescript": "7.0.2"
   }
 }
