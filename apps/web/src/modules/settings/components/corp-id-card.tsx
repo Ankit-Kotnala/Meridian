@@ -1,15 +1,9 @@
 "use client";
 
-import {
-  BadgeCheck,
-  Check,
-  CircleDashed,
-  Copy,
-  ShieldCheck,
-} from "lucide-react";
+import { BadgeCheck, Check, CircleDashed, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { Badge, Button, cn } from "@rezumi/ui";
+import { Badge, cn } from "@rezumi/ui";
 
 import {
   CORP_ID_DISCLAIMER,
@@ -19,6 +13,7 @@ import {
 } from "@/shared/identity/corp-id";
 
 import { getCorpIdChecks } from "../api/settings-api";
+import { CorpIdCredentialCard } from "./corp-id-credential-card";
 
 const TIER_ORDER: readonly CorpIdTier[] = [
   "unverified",
@@ -41,9 +36,11 @@ const LADDER: readonly { label: string; tier: CorpIdTier }[] = [
 ];
 
 export function CorpIdCard({
+  displayName,
   emailVerified,
   userId,
 }: {
+  displayName: string;
   emailVerified: boolean;
   userId: string;
 }) {
@@ -51,7 +48,6 @@ export function CorpIdCard({
     confirmedEvidence: number;
     experiences: number;
   }>();
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -74,16 +70,6 @@ export function CorpIdCard({
     experiences: checks?.experiences ?? 0,
   });
   const reached = TIER_ORDER.indexOf(standing.tier);
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(corpId ?? "");
-      setCopied(true);
-      globalThis.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
-    }
-  }
 
   return (
     <section
@@ -112,10 +98,6 @@ export function CorpIdCard({
             )}
           </div>
         </div>
-        <Button onClick={() => void copy()} variant="secondary">
-          <Copy aria-hidden="true" className="size-4" />
-          {copied ? "Copied" : "Copy ID"}
-        </Button>
       </div>
 
       <div className="border-t border-primary/15 bg-surface/70 p-5 sm:p-6">
@@ -162,7 +144,28 @@ export function CorpIdCard({
           })}
         </ul>
 
-        <p className="mt-4 border-t border-line pt-3 text-xs leading-5 text-muted">
+        <div className="mt-5 border-t border-line pt-5">
+          <h3 className="text-sm font-semibold text-foreground">
+            Your credential
+          </h3>
+          <p className="mt-1 text-xs leading-5 text-muted">
+            Download it as an image to share or print. It reflects your standing
+            at the moment you download it.
+          </p>
+          <div className="mt-4">
+            <CorpIdCredentialCard
+              checks={{
+                confirmedEvidence: checks?.confirmedEvidence ?? 0,
+                emailVerified,
+                experiences: checks?.experiences ?? 0,
+              }}
+              corpId={corpId}
+              displayName={displayName}
+            />
+          </div>
+        </div>
+
+        <p className="mt-5 border-t border-line pt-3 text-xs leading-5 text-muted">
           {CORP_ID_DISCLAIMER}
         </p>
       </div>

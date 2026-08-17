@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/modules/auth";
+import { AutoImportRunner } from "@/modules/career-vault";
 import { onboardingIsComplete } from "@/modules/onboarding";
 import { dashboardResumeHealth } from "@/modules/resume-health";
 import { dashboardSummary, WorkspaceDashboard } from "@/modules/workspace";
@@ -19,10 +20,12 @@ export default async function DashboardPage() {
   ]);
   return (
     <WorkspaceDashboard
+      autoImport={<AutoImportRunner />}
       displayName={user.displayName}
       onboardingComplete={complete}
       resumeHealth={resumeHealth}
       summary={summary}
+      userId={user.id}
     />
   );
 }

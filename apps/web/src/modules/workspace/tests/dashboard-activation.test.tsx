@@ -23,6 +23,7 @@ function summary(overrides: Partial<DashboardSummary> = {}): DashboardSummary {
     record: {
       achievements: count(0),
       evidence: count(0),
+      evidenceConfirmed: count(0),
       experiences: count(0),
       skills: count(0),
     },
@@ -94,6 +95,7 @@ describe("activation chain projection", () => {
         record: {
           achievements: count(0),
           evidence: count(3),
+          evidenceConfirmed: count(3),
           experiences: count(4),
           skills: count(9),
         },
@@ -111,6 +113,7 @@ describe("activation chain projection", () => {
         record: {
           achievements: count(0),
           evidence: count(0),
+          evidenceConfirmed: count(0),
           experiences: unavailable,
           skills: count(0),
         },
@@ -167,6 +170,7 @@ describe("activation chain rendering", () => {
             record: {
               achievements: count(0),
               evidence: count(0),
+              evidenceConfirmed: count(0),
               experiences: unavailable,
               skills: count(0),
             },

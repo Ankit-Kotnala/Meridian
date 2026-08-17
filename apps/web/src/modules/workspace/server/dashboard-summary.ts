@@ -39,6 +39,8 @@ export type DashboardPipeline =
 export type DashboardRecordCounts = {
   achievements: DashboardCount;
   evidence: DashboardCount;
+  /** Evidence a person has confirmed, which is what Corp ID standing reads. */
+  evidenceConfirmed: DashboardCount;
   experiences: DashboardCount;
   skills: DashboardCount;
 };
@@ -71,6 +73,7 @@ const EMPTY_SUMMARY: DashboardSummary = {
   record: {
     achievements: UNAVAILABLE,
     evidence: UNAVAILABLE,
+    evidenceConfirmed: UNAVAILABLE,
     experiences: UNAVAILABLE,
     skills: UNAVAILABLE,
   },
@@ -160,6 +163,7 @@ function readSkills(payload: Record<string, unknown> | null): SkillSummary {
 }
 
 type EvidenceSummary = {
+  confirmed: DashboardCount;
   count: DashboardCount;
   notCitable: number;
 };
@@ -167,13 +171,20 @@ type EvidenceSummary = {
 function readEvidence(
   payload: Record<string, unknown> | null,
 ): EvidenceSummary {
-  if (!payload) return { count: UNAVAILABLE, notCitable: 0 };
+  if (!payload) {
+    return { confirmed: UNAVAILABLE, count: UNAVAILABLE, notCitable: 0 };
+  }
   const records = asList(payload.data).map(asRecord);
-  const notCitable = records.filter((record) => {
-    const state = asText(record?.state);
-    return state === "inferred" || state === "unsupported";
-  }).length;
+  const states = records.map((record) => asText(record?.state));
+  const notCitable = states.filter(
+    (state) => state === "inferred" || state === "unsupported",
+  ).length;
   return {
+    confirmed: counted(
+      states.filter((state) => state === "confirmed" || state === "verified")
+        .length,
+      hasMore(payload),
+    ),
     count: counted(records.length, hasMore(payload)),
     notCitable,
   };
@@ -486,6 +497,7 @@ export async function dashboardSummary(): Promise<DashboardSummary> {
       record: {
         achievements: achievements.count,
         evidence: evidence.count,
+        evidenceConfirmed: evidence.confirmed,
         experiences: experiences.count,
         skills: skills.count,
       },

@@ -1,7 +1,16 @@
-import { ArrowRight, BadgeCheck, ShieldCheck, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  BadgeCheck,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 
-import { Badge, buttonStyles, cn, SectionHeader } from "@rezumi/ui";
+import { Badge, buttonStyles, cn } from "@rezumi/ui";
+
+import { corpIdFor } from "@/shared/identity/corp-id";
 
 import {
   ActivationChain,
@@ -13,7 +22,7 @@ import {
   AttentionPanel,
   CareerRecordStats,
   PipelinePanel,
-  QuickLaunch,
+  StandingTile,
   TruthLockNote,
 } from "../components/dashboard-sections";
 import {
@@ -34,6 +43,7 @@ const EMPTY_SUMMARY: DashboardSummary = {
   record: {
     achievements: UNAVAILABLE,
     evidence: UNAVAILABLE,
+    evidenceConfirmed: UNAVAILABLE,
     experiences: UNAVAILABLE,
     skills: UNAVAILABLE,
   },
@@ -111,6 +121,10 @@ function nextStepFor(
   };
 }
 
+/**
+ * Compact command bar. The old full-width hero spent most of the fold on
+ * greeting copy; this keeps the identity line and moves the decision inline.
+ */
 function DashboardHero({
   displayName,
   nextStep,
@@ -119,60 +133,53 @@ function DashboardHero({
   nextStep: NextStep;
 }) {
   return (
-    <section className="workspace-hero px-5 py-6 sm:px-8 sm:py-8">
-      <div className="grid gap-7 lg:grid-cols-[minmax(0,1.15fr)_minmax(19rem,0.85fr)] lg:items-center">
+    <section className="workspace-hero px-4 py-5 sm:px-6 sm:py-6">
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
         <div className="min-w-0">
-          <p className="eyebrow">Workspace home</p>
-          <h1 className="balanced mt-2 font-display text-[clamp(1.6rem,2.6vw,2.1rem)] font-semibold leading-[1.14] tracking-[-0.035em] text-foreground">
-            Welcome to your Rezumi workspace, {displayName}.
-          </h1>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-muted sm:text-[0.9375rem]">
-            Start with the next useful action, then return to your structured
-            career record whenever the underlying facts change.
-          </p>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge tone="success">
               <ShieldCheck aria-hidden="true" className="size-3.5" /> Private
-              account
             </Badge>
             <Badge tone="primary">
               <BadgeCheck aria-hidden="true" className="size-3.5" /> Evidence
               grounded
             </Badge>
           </div>
+          <h1 className="balanced mt-2.5 font-display text-[clamp(1.35rem,2.1vw,1.75rem)] font-semibold leading-[1.15] tracking-[-0.035em] text-foreground">
+            Welcome to your Rezumi workspace, {displayName}.
+          </h1>
         </div>
 
         <section
           aria-labelledby="next-step-heading"
-          className="rounded-[var(--radius-card)] border border-primary/25 bg-surface/85 p-5 shadow-[var(--shadow-sm)] backdrop-blur-sm"
+          className="flex shrink-0 flex-col gap-3 rounded-[var(--radius-card)] border border-primary/25 bg-surface/80 p-4 backdrop-blur-sm sm:flex-row sm:items-center lg:max-w-xl"
         >
-          <p className="eyebrow flex items-center gap-1.5 !text-primary-strong">
-            <Sparkles aria-hidden="true" className="size-3.5" />
-            Next best step
-          </p>
-          <h2
-            className="mt-2.5 text-lg font-semibold tracking-[-0.02em] text-foreground"
-            id="next-step-heading"
-          >
-            {nextStep.title}
-          </h2>
-          <p className="mt-1.5 text-sm leading-6 text-muted">
-            {nextStep.description}
-          </p>
+          <span className="grid size-9 shrink-0 place-items-center rounded-[var(--radius-small)] bg-primary text-white">
+            <Sparkles aria-hidden="true" className="size-4" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="metric-label !text-primary-strong">Next best step</p>
+            <h2
+              className="mt-0.5 text-sm font-semibold text-foreground"
+              id="next-step-heading"
+            >
+              {nextStep.title}
+            </h2>
+            <p className="mt-0.5 text-xs leading-5 text-muted">
+              {nextStep.description}
+            </p>
+          </div>
           <Link
             className={cn(
               buttonStyles.base,
               buttonStyles.primary,
-              "mt-4 w-full",
+              "shrink-0 self-start sm:self-center",
             )}
             href={nextStep.href}
           >
             {nextStep.label}
             <ArrowRight aria-hidden="true" className="size-4" />
           </Link>
-          <p className="mt-3 text-xs leading-5 text-muted">
-            You review factual changes before they become derived output.
-          </p>
         </section>
       </div>
     </section>
@@ -180,16 +187,26 @@ function DashboardHero({
 }
 
 export function WorkspaceDashboard({
+  autoImport,
   displayName,
   onboardingComplete,
   resumeHealth = { kind: "empty" },
   summary = EMPTY_SUMMARY,
+  userId,
 }: {
+  /**
+   * Zero-touch import reporter, injected by the route so the workspace module
+   * never depends on the Career Record module directly.
+   */
+  autoImport?: ReactNode;
   displayName: string;
   onboardingComplete: boolean;
   resumeHealth?: DashboardResumeHealth;
   summary?: DashboardSummary;
+  /** Account identifier the Corp ID standing tile is derived from. */
+  userId?: string;
 }) {
+  const corpId = userId === undefined ? null : corpIdFor(userId);
   if (onboardingComplete && shouldGateWorkspace(resumeHealth, summary)) {
     return <ActivationGate displayName={displayName} />;
   }
@@ -199,38 +216,47 @@ export function WorkspaceDashboard({
   const activating = chain.some(({ state }) => state !== "done");
 
   return (
-    <main className="workspace-page space-y-8" id="main-content">
+    <main className="workspace-page space-y-4" id="main-content">
       <DashboardHero displayName={displayName} nextStep={nextStep} />
+
+      {autoImport}
 
       {activating && <ActivationChain steps={chain} />}
 
-      <CareerRecordStats record={summary.record} />
+      {/* Bento row: the hero metric, the record, and standing. */}
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,5fr)_minmax(0,4fr)_minmax(0,3fr)]">
+        <section
+          aria-labelledby="resume-state-heading"
+          className="dash-tile min-w-0"
+        >
+          <div className="flex items-center justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
+            <h2 className="metric-label" id="resume-state-heading">
+              Latest resume state
+            </h2>
+            <Link
+              className="inline-flex items-center gap-0.5 text-xs font-bold text-primary-strong hover:underline"
+              href="/resume-health/account"
+            >
+              Open
+              <ArrowUpRight aria-hidden="true" className="size-3.5" />
+            </Link>
+          </div>
+          <ResumeState resumeHealth={resumeHealth} />
+        </section>
 
-      <div className="grid gap-8 lg:grid-cols-2">
+        <CareerRecordStats record={summary.record} />
+
+        <StandingTile corpId={corpId} record={summary.record} />
+      </div>
+
+      {/* Bento row: what needs a decision, and where opportunities stand. */}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]">
         <AttentionPanel
           degraded={summary.attentionDegraded}
           items={summary.attention}
         />
         <PipelinePanel pipeline={summary.pipeline} />
       </div>
-
-      <section aria-labelledby="resume-state-heading">
-        <SectionHeader
-          actions={
-            <Link className="text-link text-sm" href="/resume-health/account">
-              Open Resume health
-            </Link>
-          }
-          description="Only your latest persisted private-document state appears here."
-          id="resume-state-heading"
-          title="Latest resume state"
-        />
-        <div className="data-region">
-          <ResumeState resumeHealth={resumeHealth} />
-        </div>
-      </section>
-
-      <QuickLaunch />
 
       <TruthLockNote />
     </main>

@@ -15,6 +15,7 @@ function summary(overrides: Partial<DashboardSummary> = {}): DashboardSummary {
     record: {
       achievements: unavailable,
       evidence: unavailable,
+      evidenceConfirmed: unavailable,
       experiences: unavailable,
       skills: unavailable,
     },
@@ -95,6 +96,7 @@ describe("real workspace dashboard", () => {
           record: {
             achievements: count(2),
             evidence: count(100, true),
+            evidenceConfirmed: count(100, true),
             experiences: count(4),
             skills: unavailable,
           },
@@ -220,6 +222,7 @@ describe("real workspace dashboard", () => {
           record: {
             achievements: count(0),
             evidence: count(0),
+            evidenceConfirmed: count(0),
             experiences: count(0),
             skills: count(0),
           },
@@ -246,6 +249,7 @@ describe("workspace activation gate", () => {
           record: {
             achievements: count(0),
             evidence: count(0),
+            evidenceConfirmed: count(0),
             experiences: count(0),
             skills: count(0),
           },
@@ -281,6 +285,7 @@ describe("workspace activation gate", () => {
           record: {
             achievements: count(0),
             evidence: count(0),
+            evidenceConfirmed: count(0),
             experiences: count(2),
             skills: count(0),
           },
@@ -307,6 +312,7 @@ describe("workspace activation gate", () => {
           record: {
             achievements: count(0),
             evidence: count(0),
+            evidenceConfirmed: count(0),
             experiences: count(0),
             skills: count(0),
           },

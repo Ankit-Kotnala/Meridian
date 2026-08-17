@@ -1,3 +1,4 @@
+export { AutoImportRunner } from "./components/auto-import-runner";
 export { AchievementInboxView } from "./views/achievement-inbox-view";
 export { CareerProfileView } from "./views/career-profile-view";
 export { EvidenceDetailView } from "./views/evidence-detail-view";

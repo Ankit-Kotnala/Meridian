@@ -1,21 +1,21 @@
 import {
   AlertTriangle,
   Archive,
-  ArrowRight,
-  BookOpenCheck,
-  BriefcaseBusiness,
-  CheckCircle2,
+  ArrowUpRight,
+  BadgeCheck,
+  Check,
   ChevronRight,
-  ClipboardList,
+  CircleDashed,
   Info,
   NotebookPen,
+  ShieldCheck,
   Sparkles,
   UserRound,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 
-import { Badge, cn, SectionHeader } from "@rezumi/ui";
+import { Badge, cn } from "@rezumi/ui";
 
 import type {
   DashboardAttentionItem,
@@ -25,7 +25,53 @@ import type {
   DashboardRecordCounts,
 } from "../server/dashboard-summary";
 
-/** Renders a count, or an explicit dash when the owning endpoint failed. */
+/** Shared tile chrome so the bento grid stays visually consistent. */
+function Tile({
+  accent = false,
+  action,
+  children,
+  className,
+  label,
+  labelId,
+  title,
+}: {
+  accent?: boolean;
+  action?: { href: string; label: string };
+  children: React.ReactNode;
+  className?: string;
+  label: string;
+  labelId: string;
+  title?: string;
+}) {
+  return (
+    <section
+      aria-labelledby={labelId}
+      className={cn("dash-tile", accent && "dash-tile-accent", className)}
+    >
+      <div className="flex items-center justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
+        <h2 className="metric-label" id={labelId}>
+          {label}
+        </h2>
+        {action && (
+          <Link
+            className="inline-flex items-center gap-0.5 text-xs font-bold text-primary-strong hover:underline"
+            href={action.href}
+          >
+            {action.label}
+            <ArrowUpRight aria-hidden="true" className="size-3.5" />
+          </Link>
+        )}
+      </div>
+      {title && (
+        <p className="px-4 pt-2 text-sm font-semibold text-foreground sm:px-5">
+          {title}
+        </p>
+      )}
+      {children}
+    </section>
+  );
+}
+
 function CountValue({ count }: { count: DashboardCount }) {
   if (count.kind === "unavailable") {
     return (
@@ -42,100 +88,75 @@ function CountValue({ count }: { count: DashboardCount }) {
   );
 }
 
-function countHint(count: DashboardCount, hint: string): string {
-  return count.kind === "unavailable" ? "Count unavailable right now" : hint;
-}
-
-function StatTile({
-  count,
-  hint,
-  href,
-  icon: Icon,
-  label,
-}: {
-  count: DashboardCount;
-  hint: string;
+const RECORD_ROWS: readonly {
+  count: keyof DashboardRecordCounts;
   href: string;
   icon: LucideIcon;
   label: string;
-}) {
-  return (
-    <Link
-      className="surface-card surface-interactive group flex flex-col gap-3 rounded-[var(--radius-card)] p-4 sm:p-5"
-      href={href}
-    >
-      <span className="flex items-center justify-between gap-2">
-        <span className="grid size-9 place-items-center rounded-[var(--radius-small)] bg-primary-soft text-primary-strong transition-colors group-hover:bg-primary group-hover:text-white">
-          <Icon aria-hidden="true" className="size-4" />
-        </span>
-        <ChevronRight
-          aria-hidden="true"
-          className="size-4 text-muted transition-transform group-hover:translate-x-0.5"
-        />
-      </span>
-      <span>
-        <span className="block font-display text-3xl font-semibold tabular-nums leading-none tracking-[-0.045em] text-foreground">
-          <CountValue count={count} />
-        </span>
-        <span className="mt-2 block text-sm font-semibold text-foreground">
-          {label}
-        </span>
-        <span className="mt-1 block text-xs leading-5 text-muted">
-          {countHint(count, hint)}
-        </span>
-      </span>
-    </Link>
-  );
-}
+}[] = [
+  {
+    count: "experiences",
+    href: "/career-profile",
+    icon: UserRound,
+    label: "Experiences",
+  },
+  {
+    count: "skills",
+    href: "/career-profile",
+    icon: Sparkles,
+    label: "Skills",
+  },
+  { count: "evidence", href: "/evidence", icon: Archive, label: "Evidence" },
+  {
+    count: "achievements",
+    href: "/achievement-inbox",
+    icon: NotebookPen,
+    label: "Open achievements",
+  },
+];
 
 export function CareerRecordStats({
   record,
 }: {
   record: DashboardRecordCounts;
 }) {
+  const unavailable = RECORD_ROWS.some(
+    ({ count }) => record[count].kind === "unavailable",
+  );
+
   return (
-    <section aria-labelledby="career-record-heading">
-      <SectionHeader
-        actions={
-          <Link className="text-link text-sm" href="/career-profile">
-            Open career profile
-          </Link>
-        }
-        description="Counts come from your own account. Nothing here is estimated or filled in for you."
-        id="career-record-heading"
-        title="Your career record"
-      />
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatTile
-          count={record.experiences}
-          hint="Roles and positions on file"
-          href="/career-profile"
-          icon={UserRound}
-          label="Experiences"
-        />
-        <StatTile
-          count={record.skills}
-          hint="Skills you can support with evidence"
-          href="/career-profile"
-          icon={Sparkles}
-          label="Skills"
-        />
-        <StatTile
-          count={record.evidence}
-          hint="Private records that can ground a claim"
-          href="/evidence"
-          icon={Archive}
-          label="Evidence"
-        />
-        <StatTile
-          count={record.achievements}
-          hint="Captured outcomes not yet converted"
-          href="/achievement-inbox"
-          icon={NotebookPen}
-          label="Open achievements"
-        />
-      </div>
-    </section>
+    <Tile
+      action={{ href: "/career-profile", label: "Open" }}
+      className="min-w-0"
+      label="Your career record"
+      labelId="career-record-heading"
+    >
+      <ul className="mt-1 flex-1 divide-y divide-line/70">
+        {RECORD_ROWS.map(({ count, href, icon: Icon, label }) => (
+          <li key={label}>
+            <Link
+              className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-primary-soft/30 sm:px-5"
+              href={href}
+            >
+              <span className="grid size-7 shrink-0 place-items-center rounded-[var(--radius-small)] bg-surface-subtle text-muted-strong transition-colors group-hover:bg-primary-soft group-hover:text-primary-strong">
+                <Icon aria-hidden="true" className="size-3.5" />
+              </span>
+              <span className="min-w-0 flex-1 truncate text-sm text-muted-strong">
+                {label}
+              </span>
+              <span className="metric-value text-2xl text-foreground">
+                <CountValue count={record[count]} />
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      {unavailable && (
+        <p className="px-4 pb-4 pt-2 text-xs leading-5 text-muted sm:px-5">
+          Count unavailable right now
+        </p>
+      )}
+    </Tile>
   );
 }
 
@@ -159,73 +180,71 @@ export function AttentionPanel({
   items: readonly DashboardAttentionItem[];
 }) {
   return (
-    <section aria-labelledby="attention-heading" className="flex flex-col">
-      <SectionHeader
-        description="Derived from your account state. Every item links to the place where you decide."
-        id="attention-heading"
-        title="Needs your review"
-      />
-      <div className="data-region flex-1">
-        {items.length === 0 ? (
-          <div className="flex h-full min-h-44 flex-col items-center justify-center gap-2 p-6 text-center">
-            <span className="grid size-10 place-items-center rounded-full bg-success-soft text-success-strong">
-              <CheckCircle2 aria-hidden="true" className="size-5" />
-            </span>
-            <p className="text-sm font-semibold text-foreground">
-              {degraded
-                ? "No reviewable items could be loaded"
-                : "Nothing is waiting on you"}
-            </p>
-            <p className="max-w-xs text-xs leading-5 text-muted">
-              {degraded
-                ? "Part of your account state is temporarily unavailable, so this list may be incomplete. Nothing was changed."
-                : "New review items appear here when your record, applications, or reminders need a decision."}
-            </p>
-          </div>
-        ) : (
-          <ul className="divide-y divide-line">
-            {items.map(({ description, href, id, label, tone }) => {
-              const { className, icon: Icon } = attentionTones[tone];
-              return (
-                <li key={id}>
-                  <Link
-                    className="group flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-primary-soft/35 sm:px-5"
-                    href={href}
+    <Tile
+      accent={items.length > 0}
+      className="min-w-0"
+      label={`Needs your review${items.length > 0 ? ` · ${items.length}` : ""}`}
+      labelId="attention-heading"
+    >
+      {items.length === 0 ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-1.5 px-6 py-10 text-center">
+          <span className="grid size-9 place-items-center rounded-full bg-success-soft text-success-strong">
+            <Check aria-hidden="true" className="size-4" />
+          </span>
+          <p className="mt-1 text-sm font-semibold text-foreground">
+            {degraded
+              ? "No reviewable items could be loaded"
+              : "Nothing is waiting on you"}
+          </p>
+          <p className="max-w-xs text-xs leading-5 text-muted">
+            {degraded
+              ? "Part of your account state is temporarily unavailable. Nothing was changed."
+              : "Items appear here when your record, applications, or reminders need a decision."}
+          </p>
+        </div>
+      ) : (
+        <ul className="mt-1 flex-1 divide-y divide-line/70">
+          {items.map(({ description, href, id, label, tone }) => {
+            const { className, icon: Icon } = attentionTones[tone];
+            return (
+              <li key={id}>
+                <Link
+                  className="group flex items-start gap-3 px-4 py-3 transition-colors hover:bg-primary-soft/30 sm:px-5"
+                  href={href}
+                >
+                  <span
+                    className={cn(
+                      "mt-px grid size-7 shrink-0 place-items-center rounded-[var(--radius-small)]",
+                      className,
+                    )}
                   >
-                    <span
-                      className={cn(
-                        "mt-0.5 grid size-8 shrink-0 place-items-center rounded-[var(--radius-small)]",
-                        className,
-                      )}
-                    >
-                      <Icon aria-hidden="true" className="size-4" />
+                    <Icon aria-hidden="true" className="size-3.5" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold leading-5 text-foreground">
+                      {label}
                     </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-semibold text-foreground">
-                        {label}
-                      </span>
-                      <span className="mt-1 block text-xs leading-5 text-muted">
-                        {description}
-                      </span>
+                    <span className="mt-0.5 block text-xs leading-5 text-muted">
+                      {description}
                     </span>
-                    <ChevronRight
-                      aria-hidden="true"
-                      className="mt-1 size-4 shrink-0 text-muted transition-transform group-hover:translate-x-0.5"
-                    />
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
+                  </span>
+                  <ChevronRight
+                    aria-hidden="true"
+                    className="mt-1 size-4 shrink-0 text-muted transition-transform group-hover:translate-x-0.5"
+                  />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
       {degraded && items.length > 0 && (
-        <p className="mt-2 text-xs leading-5 text-muted">
+        <p className="px-4 pb-4 pt-2 text-xs leading-5 text-muted sm:px-5">
           Part of your account state could not be loaded, so this list may be
           incomplete.
         </p>
       )}
-    </section>
+    </Tile>
   );
 }
 
@@ -250,32 +269,22 @@ function pipelineSummaryText(
 
 export function PipelinePanel({ pipeline }: { pipeline: DashboardPipeline }) {
   return (
-    <section aria-labelledby="pipeline-heading" className="flex flex-col">
-      <SectionHeader
-        actions={
-          <Link className="text-link text-sm" href="/applications">
-            Open applications
-          </Link>
-        }
-        description="Stage counts for the opportunities you are tracking."
-        id="pipeline-heading"
-        title="Application pipeline"
-      />
-      <div className="data-region flex-1 p-5 sm:p-6">
+    <Tile
+      action={{ href: "/applications", label: "Open" }}
+      className="min-w-0"
+      label="Application pipeline"
+      labelId="pipeline-heading"
+    >
+      <div className="flex flex-1 flex-col px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
         {pipeline.kind === "unavailable" ? (
           <p className="text-sm leading-6 text-muted">
             Your application pipeline could not be loaded. No application was
-            changed.{" "}
-            <Link className="text-link" href="/applications">
-              Open Applications
-            </Link>{" "}
-            to try again.
+            changed.
           </p>
         ) : pipeline.total === 0 ? (
-          <div className="flex flex-col items-start gap-3">
+          <div className="flex flex-1 flex-col justify-center gap-2 py-4">
             <p className="text-sm leading-6 text-muted">
-              You are not tracking any applications yet. Save a role to follow
-              it through preparation, submission, and interviews.
+              You are not tracking any applications yet.
             </p>
             <Link className="text-link text-sm" href="/job-match">
               Start from a job match
@@ -284,12 +293,12 @@ export function PipelinePanel({ pipeline }: { pipeline: DashboardPipeline }) {
         ) : (
           <>
             <div className="flex items-baseline gap-2">
-              <span className="font-display text-3xl font-semibold tabular-nums leading-none tracking-[-0.045em] text-foreground">
+              <span className="metric-value text-4xl text-foreground">
                 {pipeline.total}
                 {pipeline.atLeast ? "+" : ""}
               </span>
-              <span className="text-sm text-muted">
-                tracked {pipeline.total === 1 ? "application" : "applications"}
+              <span className="text-xs text-muted">
+                tracked
                 {pipeline.openTasks > 0
                   ? ` · ${pipeline.openTasks} open ${pipeline.openTasks === 1 ? "task" : "tasks"}`
                   : ""}
@@ -298,18 +307,15 @@ export function PipelinePanel({ pipeline }: { pipeline: DashboardPipeline }) {
 
             <div
               aria-hidden="true"
-              className="mt-4 flex h-2.5 w-full gap-1 overflow-hidden rounded-full bg-surface-inset"
+              className="mt-3 flex h-2 w-full gap-0.5 overflow-hidden rounded-full bg-surface-inset"
             >
               {pipeline.groups
                 .filter(({ count }) => count > 0)
                 .map(({ count, key }) => (
                   <span
-                    className="h-full rounded-full"
+                    className="h-full first:rounded-l-full last:rounded-r-full"
                     key={key}
-                    style={{
-                      background: pipelineTone[key],
-                      flexGrow: count,
-                    }}
+                    style={{ background: pipelineTone[key], flexGrow: count }}
                   />
                 ))}
             </div>
@@ -321,21 +327,23 @@ export function PipelinePanel({ pipeline }: { pipeline: DashboardPipeline }) {
               )}
             </p>
 
-            <ul className="mt-4 divide-y divide-line border-t border-line">
+            <ul className="mt-3 divide-y divide-line/70 border-t border-line/70">
               {pipeline.groups.map(({ count, key, label }) => (
                 <li
-                  className="flex items-center justify-between gap-3 py-2.5 text-sm"
+                  className="flex items-center justify-between gap-3 py-1.5 text-sm"
                   key={key}
                 >
-                  <span className="flex min-w-0 items-center gap-2.5">
+                  <span className="flex min-w-0 items-center gap-2">
                     <span
                       aria-hidden="true"
-                      className="size-2.5 shrink-0 rounded-full"
+                      className="size-2 shrink-0 rounded-full"
                       style={{ background: pipelineTone[key] }}
                     />
-                    <span className="truncate text-muted-strong">{label}</span>
+                    <span className="truncate text-xs text-muted-strong">
+                      {label}
+                    </span>
                   </span>
-                  <span className="font-semibold tabular-nums text-foreground">
+                  <span className="text-sm font-semibold tabular-nums text-foreground">
                     {count}
                   </span>
                 </li>
@@ -344,110 +352,107 @@ export function PipelinePanel({ pipeline }: { pipeline: DashboardPipeline }) {
           </>
         )}
       </div>
-    </section>
+    </Tile>
   );
 }
 
-const quickLaunch = [
-  {
-    description: "Roles, skills, and preferences that ground every output.",
-    href: "/career-profile",
-    icon: UserRound,
-    label: "Career Profile",
-  },
-  {
-    description: "Private supporting records behind each factual claim.",
-    href: "/evidence",
-    icon: Archive,
-    label: "Evidence Vault",
-  },
-  {
-    description: "Capture outcomes while the details are still fresh.",
-    href: "/achievement-inbox",
-    icon: NotebookPen,
-    label: "Achievement Inbox",
-  },
-  {
-    description: "Compare a role's requirements against your record.",
-    href: "/job-match",
-    icon: BriefcaseBusiness,
-    label: "Job Match",
-  },
-  {
-    description: "Track stages, tasks, and follow-ups per opportunity.",
-    href: "/applications",
-    icon: ClipboardList,
-    label: "Applications",
-  },
-  {
-    description: "Build grounded stories and rehearse defensible answers.",
-    href: "/interview-prep",
-    icon: BookOpenCheck,
-    label: "Interview Prep",
-  },
-] as const;
+const STANDING_STEPS: readonly string[] = [
+  "Email confirmed",
+  "Career record",
+  "Evidence confirmed",
+];
 
-export function QuickLaunch() {
+/**
+ * Corp ID standing on the home screen. Standing is derived from the same checks
+ * as the Settings credential, so the two can never disagree.
+ */
+export function StandingTile({
+  corpId,
+  record,
+}: {
+  corpId: string | null;
+  record: DashboardRecordCounts;
+}) {
+  if (!corpId) return null;
+  const met = (count: DashboardCount) =>
+    count.kind === "count" && count.value > 0;
+  const reached = [
+    true,
+    met(record.experiences),
+    met(record.evidenceConfirmed),
+  ];
+  const label = reached[2]
+    ? "Evidenced"
+    : reached[1]
+      ? "Profiled"
+      : "Registered";
+
   return (
-    <section aria-labelledby="quick-launch-heading">
-      <SectionHeader
-        description="Jump straight to the workspace you need."
-        id="quick-launch-heading"
-        title="Go to"
-      />
-      <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {quickLaunch.map(({ description, href, icon: Icon, label }) => (
-          <li key={href}>
-            <Link
-              className="surface-card surface-interactive group flex h-full items-start gap-3 rounded-[var(--radius-card)] p-4"
-              href={href}
-            >
-              <span className="grid size-9 shrink-0 place-items-center rounded-[var(--radius-small)] bg-surface-subtle text-muted-strong transition-colors group-hover:bg-primary-soft group-hover:text-primary-strong">
-                <Icon aria-hidden="true" className="size-4" />
+    <Tile
+      action={{ href: "/settings", label: "Card" }}
+      className="min-w-0"
+      label="Rezumi Corp ID"
+      labelId="standing-heading"
+    >
+      <div className="flex flex-1 flex-col px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
+        <p className="font-mono text-lg font-bold tracking-[0.06em] text-foreground">
+          {corpId}
+        </p>
+        <Badge className="mt-2 self-start" tone="primary">
+          <BadgeCheck aria-hidden="true" className="size-3.5" />
+          {label}
+        </Badge>
+
+        <ul className="mt-4 space-y-1.5">
+          {STANDING_STEPS.map((step, index) => (
+            <li className="flex items-center gap-2 text-xs" key={step}>
+              <span
+                className={cn(
+                  "grid size-4 shrink-0 place-items-center rounded-full",
+                  reached[index]
+                    ? "bg-success-soft text-success-strong"
+                    : "bg-surface-inset text-muted",
+                )}
+              >
+                {reached[index] ? (
+                  <Check aria-hidden="true" className="size-2.5" />
+                ) : (
+                  <CircleDashed aria-hidden="true" className="size-2.5" />
+                )}
               </span>
-              <span className="min-w-0">
-                <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                  {label}
-                  <ArrowRight
-                    aria-hidden="true"
-                    className="size-3.5 text-muted opacity-0 transition-opacity group-hover:opacity-100"
-                  />
-                </span>
-                <span className="mt-1 block text-xs leading-5 text-muted">
-                  {description}
-                </span>
+              <span
+                className={reached[index] ? "text-muted-strong" : "text-muted"}
+              >
+                {step}
               </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </section>
+              <span className="sr-only">
+                {reached[index] ? "complete" : "not yet complete"}
+              </span>
+            </li>
+          ))}
+        </ul>
+
+        <p className="mt-auto pt-4 text-[0.6875rem] leading-4 text-muted">
+          Records your standing with Rezumi. Not an employer or third-party
+          verification.
+        </p>
+      </div>
+    </Tile>
   );
 }
 
 export function TruthLockNote() {
   return (
-    <section
-      aria-labelledby="operating-model-heading"
-      className="rounded-[var(--radius-card)] border border-line bg-surface-subtle/60 p-5 sm:p-6"
-    >
-      <Badge tone="primary">How Rezumi works</Badge>
-      <h2
-        className="mt-3 font-semibold text-foreground"
-        id="operating-model-heading"
-      >
-        One career record, many grounded outputs
-      </h2>
-      <p className="mt-1.5 max-w-3xl text-sm leading-6 text-muted">
-        Rezumi keeps evidence and structured facts upstream. Resumes,
-        application answers, interview stories, and networking drafts are
-        downstream work products&mdash;not competing sources of truth. Every
-        measurement shown in this workspace is an internal, explainable signal,
-        never an employer or applicant-tracking-system score.
-      </p>
-      <Link className="text-link mt-3 inline-flex text-sm" href="/methodology">
-        Read the scoring methodology
+    <footer className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-line pt-4 text-xs leading-5 text-muted">
+      <ShieldCheck aria-hidden="true" className="size-3.5 shrink-0" />
+      <span>
+        One career record upstream; resumes, answers, and stories are derived
+        from it. Every measurement here is an internal, explainable
+        signal&mdash;never an employer or applicant-tracking-system score.
+      </span>
+      <Link className="text-link" href="/methodology">
+        Scoring methodology
       </Link>
-    </section>
+    </footer>
   );
 }

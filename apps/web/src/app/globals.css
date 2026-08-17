@@ -256,6 +256,69 @@ textarea {
   content: "";
 }
 
+/*
+ * Bento tile for the workspace home. A single hairline top highlight and a very
+ * shallow vertical wash give depth without the heavy card shadow the older
+ * stacked layout relied on, so a dense grid of these still reads as calm.
+ */
+.dash-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  border-radius: var(--radius-card);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-raised) 88%, transparent),
+    var(--surface) 42%
+  );
+  box-shadow: var(--shadow-sm);
+}
+
+.dash-tile::before {
+  position: absolute;
+  top: 0;
+  right: 1rem;
+  left: 1rem;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--primary) 28%, transparent),
+    transparent
+  );
+  content: "";
+}
+
+.dash-tile-accent::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  background: linear-gradient(180deg, var(--primary), var(--accent));
+  content: "";
+}
+
+/* Micro label above a metric. Smaller and tighter than `.eyebrow`. */
+.metric-label {
+  color: var(--muted);
+  font-size: 0.625rem;
+  font-weight: 750;
+  letter-spacing: 0.14em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.metric-value {
+  font-family: var(--font-family-display);
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  letter-spacing: -0.045em;
+  line-height: 1;
+}
+
 .nav-link {
   position: relative;
 }
