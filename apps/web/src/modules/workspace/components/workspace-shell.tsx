@@ -7,12 +7,14 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@rezumi/ui";
 import { ProductMotionProvider } from "@/shared/motion/product-motion-provider";
 
+import { WorkspaceSectionNav } from "./workspace-section-nav";
 import { WorkspaceSidebar } from "./workspace-sidebar";
 import { WorkspaceTopBar } from "./workspace-top-bar";
 
 export type WorkspaceViewer = {
   displayName: string;
   email: string;
+  id: string;
 };
 
 export function WorkspaceShell({
@@ -85,6 +87,7 @@ export function WorkspaceShell({
             onOpenMenu={() => setMobileOpen(true)}
             viewer={viewer}
           />
+          <WorkspaceSectionNav />
           <m.div
             animate={{ opacity: 1, y: 0 }}
             className="workspace-canvas"

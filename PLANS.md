@@ -157,6 +157,105 @@ total the API does not promise. No metric is hardcoded and the canonical interna
   view against the compiled Tailwind stylesheet at 1440 px and 420 px in light
   and dark themes, not the running stack.
 
+## Activation-first workspace (2026-08-17)
+
+Direction recorded in
+[ADR 0019](docs/adr/0019-activation-first-workspace-and-assisted-application-supply-chain.md).
+This change makes the already-implemented capability chain legible from the
+authenticated home and consolidates navigation ahead of Phases 11-13. It adds no
+bounded context and no backend behavior.
+
+### Implemented and verified
+
+- [x] `/dashboard` gates on real state. With no document and no experience it
+      renders a single focused activation panel with one upload action and a
+      manual-entry path; an account that built its record by hand is not gated,
+      and an unavailable experience count never triggers the gate.
+- [x] An activation chain projects cross-module state (document scanned, parsed
+      fields reviewed, health report, career record populated, first opportunity)
+      into a stepper that marks exactly one step current, links to the owning
+      module for each decision, and reports `unknown` for any step whose endpoint
+      failed rather than claiming it is incomplete. It hides itself once complete.
+- [x] Pending typed and semantic import proposals are surfaced as a review item,
+      so the decision that populates the career record is no longer buried.
+- [x] Sidebar navigation consolidated from fifteen entries to seven sections with
+      per-section sub-navigation. Every prior route remains addressable, and a
+      test asserts that.
+- [x] Rezumi Corp ID derived from the account UUID in Crockford base32, with a
+      four-tier standing driven only by checks Rezumi performs. Every tier's copy
+      is asserted not to reference employers, hiring, background checks, or
+      applicant-tracking systems.
+- [x] `pnpm format:check`, `pnpm lint` (web architecture plus repository
+      boundaries), and `pnpm typecheck`: pass.
+- [x] `pnpm test`: pass. Web grew from 176 to 212 tests across 48 files; the new
+      coverage is the chain projection, the gate decision, the consolidated
+      navigation model, and Corp ID derivation and standing.
+
+### Deferred with reasons
+
+- [!] `pnpm build`, `make test-integration`, and `make test-e2e` were not run: the
+  Docker daemon is unavailable on this host. The one E2E assertion that
+  touches this surface (`auth-journey` expecting the
+  `Welcome to your Rezumi workspace,` heading) is preserved by inspection,
+  which is not a pass.
+- [!] Python gates were not run because no Python file changed. The local `.venv`
+  had to be rebuilt from `uv.lock` before `uv run` worked at all on this host;
+  that is a host repair, not evidence of a backend gate.
+- [!] Visual checks used a static render of the new components against the
+  compiled Tailwind stylesheet at 1440 px and 420 px in light and dark. The
+  seven-width run against the live stack is outstanding.
+- [!] The Corp ID is derived and truncated to 50 bits, so it is a display
+  identifier only. Persisting an immutable column and any external lookup are
+  Phase 11 work.
+
+## Phase 11 - Declared-link evidence enrichment (planned)
+
+Goal: a candidate's record reflects what they demonstrably did, from the links
+they already list, so scores stop under-crediting real work.
+
+- [ ] `DeclaredProfileConnector` port in `career_record` with a deterministic
+      local fake; no adapter may require third-party credentials for local dev.
+- [ ] Adapters only for platforms whose terms permit automated reads of a public
+      profile. A user declaring a link does not override those terms.
+- [ ] Reuse the existing hostile-URL controls verbatim: HTTP(S) only, every
+      resolved address and redirect validated, private/link-local/loopback
+      blocked, time and response caps, sanitized content, no script execution.
+- [ ] Fetch results become import proposals carrying source URL, fetch timestamp,
+      and the exact excerpt relied upon. `Supported` on ingest, `Confirmed` only
+      by the user, never `Verified`.
+- [ ] Worker task with ownership, idempotency key, timeout, bounded retry,
+      dead-letter behavior, and no logging of fetched page text.
+- [ ] Persist the Corp ID as an immutable owner-scoped column and move standing
+      to the API so it is computed once rather than per client.
+
+## Phase 12 - Opportunity supply and assisted apply (planned)
+
+- [ ] `JobSourceConnector` port with adapters for published ATS and job-board
+      APIs (Greenhouse, Lever, Ashby, SmartRecruiters, Workable) and Workday
+      tenant career-site endpoints, plus recorded fixtures per adapter.
+- [ ] Ingestion dedupe, freshness, and rate limiting; every response treated as
+      hostile input. No adapter for a platform that prohibits automated
+      collection; wider coverage comes from licensed data, not our own scraping.
+- [ ] `ApplicationProfile` in `application_workspace`: owner-scoped reusable
+      answers for work authorization, notice period, compensation expectation,
+      locations, links, and optional voluntary-disclosure preferences.
+- [ ] Assisted apply: a tailored resume version plus pre-answered standard
+      questions with provenance, delivered as a prefilled handoff link the user
+      submits in their own session, and a copy-ready pack for the rest.
+- [ ] Explicitly out of scope: storing third-party portal passwords, creating
+      accounts on a user's behalf, authenticating as a user to a third party, and
+      any bot-detection or CAPTCHA bypass. Programmatic submission only via OAuth
+      or a documented employer-enabled application API.
+
+## Phase 13 - Gap-to-learning loop (planned)
+
+- [ ] Read competency gaps from `role_readiness` and open them as
+      `career_growth` development items of kind `learning` or `certification`.
+- [ ] Completing an item prompts the evidence it produced, closing the loop back
+      into the career record.
+- [ ] No learning recommendation may assert an outcome, a ranking, a hiring
+      probability, or a comparison against other candidates.
+
 ### Open verification and product risks
 
 - [!] The connected interactive browser and direct local-image tool remain

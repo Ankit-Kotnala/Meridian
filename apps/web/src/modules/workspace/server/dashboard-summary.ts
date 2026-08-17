@@ -43,7 +43,18 @@ export type DashboardRecordCounts = {
   skills: DashboardCount;
 };
 
+/**
+ * Cross-module state the workspace home projects into the activation chain. The
+ * chain itself is derived in the view; this only reports what each owning module
+ * currently persists.
+ */
+export type DashboardActivation = {
+  jobs: DashboardCount;
+  pendingImports: DashboardCount;
+};
+
 export type DashboardSummary = {
+  activation: DashboardActivation;
   attention: readonly DashboardAttentionItem[];
   attentionDegraded: boolean;
   pipeline: DashboardPipeline;
@@ -53,6 +64,7 @@ export type DashboardSummary = {
 const UNAVAILABLE = { kind: "unavailable" } as const;
 
 const EMPTY_SUMMARY: DashboardSummary = {
+  activation: { jobs: UNAVAILABLE, pendingImports: UNAVAILABLE },
   attention: [],
   attentionDegraded: true,
   pipeline: UNAVAILABLE,
@@ -270,12 +282,34 @@ function readDueReminders(payload: Record<string, unknown> | null): number {
   return payload ? asList(payload.data).length : 0;
 }
 
+/** Count proposals still awaiting a person, across both import proposal kinds. */
+function readPendingImports(
+  semantic: Record<string, unknown> | null,
+  typed: Record<string, unknown> | null,
+): DashboardCount {
+  if (!semantic && !typed) return UNAVAILABLE;
+  const pending = [semantic, typed]
+    .filter((payload): payload is Record<string, unknown> => payload !== null)
+    .flatMap((payload) => asList(payload.data))
+    .filter((item) => asText(asRecord(item)?.status) === "pending");
+  const atLeast = [semantic, typed].some(
+    (payload) => payload !== null && hasMore(payload),
+  );
+  return counted(pending.length, atLeast);
+}
+
+function readJobs(payload: Record<string, unknown> | null): DashboardCount {
+  if (!payload) return UNAVAILABLE;
+  return counted(asList(payload.data).length, hasMore(payload));
+}
+
 function attentionItems({
   achievements,
   applications,
   dueReminders,
   evidence,
   experiences,
+  pendingImports,
   skills,
 }: {
   achievements: AchievementSummary;
@@ -283,10 +317,21 @@ function attentionItems({
   dueReminders: number;
   evidence: EvidenceSummary;
   experiences: ExperienceSummary;
+  pendingImports: DashboardCount;
   skills: SkillSummary;
 }): readonly DashboardAttentionItem[] {
   const items: DashboardAttentionItem[] = [];
 
+  if (pendingImports.kind === "count" && pendingImports.value > 0) {
+    const total = pendingImports.value;
+    items.push({
+      description: `${total} ${plural(total, "fact extracted from your resume is", "facts extracted from your resume are")} waiting for your decision. Nothing enters your career record until you accept it.`,
+      href: "/career-profile/imports",
+      id: "pending-imports",
+      label: "Accept or reject imported resume facts",
+      tone: "warning",
+    });
+  }
   if (experiences.conflicts > 0) {
     items.push({
       description: `Rezumi found ${experiences.conflicts} ${plural(experiences.conflicts, "conflict", "conflicts")} between recorded roles. Resolving them keeps derived documents consistent.`,
@@ -388,15 +433,21 @@ export async function dashboardSummary(): Promise<DashboardSummary> {
       applicationPayload,
       evidencePayload,
       experiencePayload,
+      jobPayload,
       reminderPayload,
+      semanticImportPayload,
       skillPayload,
+      typedImportPayload,
     ] = await Promise.all([
       readJson(workspaceSummaryPaths.achievements),
       readJson(workspaceSummaryPaths.applications),
       readJson(workspaceSummaryPaths.evidence),
       readJson(workspaceSummaryPaths.experiences),
+      readJson(workspaceSummaryPaths.jobs),
       readJson(workspaceSummaryPaths.dueReminders),
+      readJson(workspaceSummaryPaths.semanticImportProposals),
       readJson(workspaceSummaryPaths.skills),
+      readJson(workspaceSummaryPaths.importProposals),
     ]);
 
     const achievements = readAchievements(achievementPayload);
@@ -405,14 +456,20 @@ export async function dashboardSummary(): Promise<DashboardSummary> {
     const experiences = readExperiences(experiencePayload);
     const skills = readSkills(skillPayload);
     const dueReminders = readDueReminders(reminderPayload);
+    const pendingImports = readPendingImports(
+      semanticImportPayload,
+      typedImportPayload,
+    );
 
     return {
+      activation: { jobs: readJobs(jobPayload), pendingImports },
       attention: attentionItems({
         achievements,
         applications,
         dueReminders,
         evidence,
         experiences,
+        pendingImports,
         skills,
       }),
       attentionDegraded: [
@@ -421,7 +478,9 @@ export async function dashboardSummary(): Promise<DashboardSummary> {
         evidencePayload,
         experiencePayload,
         reminderPayload,
+        semanticImportPayload,
         skillPayload,
+        typedImportPayload,
       ].some((payload) => payload === null),
       pipeline: applications.pipeline,
       record: {

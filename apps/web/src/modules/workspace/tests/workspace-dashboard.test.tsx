@@ -8,6 +8,7 @@ const unavailable = { kind: "unavailable" } as const;
 
 function summary(overrides: Partial<DashboardSummary> = {}): DashboardSummary {
   return {
+    activation: { jobs: unavailable, pendingImports: unavailable },
     attention: [],
     attentionDegraded: false,
     pipeline: unavailable,
@@ -207,6 +208,14 @@ describe("real workspace dashboard", () => {
       <WorkspaceDashboard
         displayName="Alex Morgan"
         onboardingComplete
+        resumeHealth={{
+          analysisId: "00000000-0000-4000-8000-000000000030",
+          disclaimer: "Internal measure. Not an employer score.",
+          filename: "fictional.pdf",
+          kind: "report",
+          score: 73,
+          scoreBand: "developing",
+        }}
         summary={summary({
           record: {
             achievements: count(0),
@@ -224,5 +233,99 @@ describe("real workspace dashboard", () => {
     expect(
       screen.getByRole("link", { name: /Add your first role/ }),
     ).toHaveAttribute("href", "/career-profile");
+  });
+});
+
+describe("workspace activation gate", () => {
+  it("replaces the workspace with an upload gate when nothing exists yet", () => {
+    render(
+      <WorkspaceDashboard
+        displayName="Sam Rivera"
+        onboardingComplete
+        summary={summary({
+          record: {
+            achievements: count(0),
+            evidence: count(0),
+            experiences: count(0),
+            skills: count(0),
+          },
+        })}
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Add your resume to activate your workspace.",
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: /Upload your resume/ }),
+    ).toHaveAttribute("href", "/resume-health/account");
+    expect(
+      screen.getByRole("link", { name: /Build it manually instead/ }),
+    ).toHaveAttribute("href", "/career-profile");
+    expect(
+      screen.queryByRole("region", { name: "Your career record" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("region", { name: "Application pipeline" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not gate an account that built its record without a resume", () => {
+    render(
+      <WorkspaceDashboard
+        displayName="Sam Rivera"
+        onboardingComplete
+        summary={summary({
+          record: {
+            achievements: count(0),
+            evidence: count(0),
+            experiences: count(2),
+            skills: count(0),
+          },
+        })}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("heading", {
+        name: "Add your resume to activate your workspace.",
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "Your career record" }),
+    ).toBeVisible();
+  });
+
+  it("does not gate before onboarding is finished", () => {
+    render(
+      <WorkspaceDashboard
+        displayName="Sam Rivera"
+        onboardingComplete={false}
+        summary={summary({
+          record: {
+            achievements: count(0),
+            evidence: count(0),
+            experiences: count(0),
+            skills: count(0),
+          },
+        })}
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Finish your account setup" }),
+    ).toBeVisible();
+  });
+
+  it("keeps the record unavailable state out of the gate decision", () => {
+    render(<WorkspaceDashboard displayName="Sam Rivera" onboardingComplete />);
+
+    expect(
+      screen.queryByRole("heading", {
+        name: "Add your resume to activate your workspace.",
+      }),
+    ).not.toBeInTheDocument();
   });
 });
