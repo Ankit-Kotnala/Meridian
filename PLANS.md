@@ -130,6 +130,33 @@ rules.
 - `docker compose ps`: the API, web, edge, PostgreSQL, Redis, MinIO, Mailpit,
   ClamAV, worker, and scheduler services were healthy during protected QA.
 
+### Workspace home revamp (2026-08-16)
+
+The authenticated `/dashboard` was rebuilt from a prose walkthrough into a
+data-backed workspace home. `apps/web/src/modules/workspace/server/dashboard-summary.ts`
+reads only the signed-in account's own read-only endpoints (achievements,
+applications, evidence, experiences, due networking reminders, skills) in
+parallel; each section degrades to an explicit "unavailable" state instead of an
+invented zero, and a full cursor page renders as `100+` rather than an exact
+total the API does not promise. No metric is hardcoded and the canonical internal
+-score disclaimer remains on the resume-state and operating-model sections.
+
+- [x] Masthead with the greeting and the next-best-step decision, career-record
+      stat tiles, an account-derived review queue, a stage-grouped application
+      pipeline with a screen-reader text summary, the persisted resume state,
+      quick launch, and the truth-lock note.
+- [x] Route-matched loading skeleton and workspace-width error state.
+- [x] `pnpm format:check`, `pnpm lint` (including web architecture and repository
+      boundaries), and `pnpm typecheck`: pass.
+- [x] `pnpm test`: pass — 45 web files/176 tests plus UI, contracts, boundary, and
+      edge suites. 13 of those web tests cover the new summary aggregator and
+      dashboard states.
+- [!] `make test-e2e`, `make test-integration`, `pnpm build`, and the Python gates
+  were not run: the Docker daemon is unavailable on this host and no Python
+  surface changed. Visual verification used a static server render of the new
+  view against the compiled Tailwind stylesheet at 1440 px and 420 px in light
+  and dark themes, not the running stack.
+
 ### Open verification and product risks
 
 - [!] The connected interactive browser and direct local-image tool remain
@@ -232,8 +259,9 @@ its expanded local gates pass, and commit `9558f33` passed hosted CI run
   phases
 
 The Phase 0 fictional dashboard remains isolated at `/demo/dashboard`. The real
-`/dashboard` is authenticated and intentionally shows an honest empty state until
-Phase 2 introduces resume processing and analysis.
+`/dashboard` is authenticated and summarizes only the signed-in account's own
+persisted records; it shows honest empty and unavailable states rather than
+placeholder metrics.
 
 ### Phase 0 dependencies
 
