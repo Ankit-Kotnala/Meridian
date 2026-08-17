@@ -112,6 +112,64 @@ async def test_local_semantic_parser_emits_typed_source_anchored_values() -> Non
     assert semantics == repeated
 
 
+@pytest.mark.asyncio
+async def test_skills_section_becomes_single_structured_entity() -> None:
+    document_id = uuid4()
+    digest = sha256(b"fictional skills resume").hexdigest()
+    skills_section_id = uuid4()
+    first = "Python, PostgreSQL, TypeScript"
+    second = "React | Node.js"
+    resume = CanonicalResume(
+        schema_version="canonical-resume/2.0.0",
+        sections=(
+            CanonicalSection(
+                id=skills_section_id,
+                kind=SectionKind.SKILLS,
+                title="Skills",
+                confidence_basis_points=9_000,
+                blocks=(
+                    CanonicalBlock(
+                        id=uuid4(),
+                        kind=BlockKind.PARAGRAPH,
+                        text=first,
+                        confidence_basis_points=9_000,
+                        spans=(SourceSpan(1, 0, len(first)),),
+                    ),
+                    CanonicalBlock(
+                        id=uuid4(),
+                        kind=BlockKind.PARAGRAPH,
+                        text=second,
+                        confidence_basis_points=9_000,
+                        spans=(SourceSpan(1, 40, 40 + len(second)),),
+                    ),
+                ),
+            ),
+        ),
+        warnings=(),
+    )
+
+    semantics = await LocalResumeParserProvider().parse(document_id, resume, digest)
+
+    skill_entities = [
+        entity for entity in semantics.entities if entity.kind is SemanticEntityKind.SKILL
+    ]
+    # Every skill line collapses into one structured section rather than one
+    # entity per line, and each individual skill becomes its own name field.
+    assert len(skill_entities) == 1
+    entity = skill_entities[0]
+    assert entity.source_section_id == skills_section_id
+    assert all(field.name == "name" for field in entity.fields)
+    assert [field.value for field in entity.fields] == [
+        "Python",
+        "PostgreSQL",
+        "TypeScript",
+        "React",
+        "Node.js",
+    ]
+    validate_parser_semantics(resume, semantics, digest)
+    assert await LocalResumeParserProvider().parse(document_id, resume, digest) == semantics
+
+
 def test_canonical_resume_round_trip_preserves_semantics_and_legacy_reads() -> None:
     resume = _resume()
     semantics = CanonicalSemantics(

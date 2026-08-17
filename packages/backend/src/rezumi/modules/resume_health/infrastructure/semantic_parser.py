@@ -45,6 +45,10 @@ _DATE = re.compile(
     re.IGNORECASE,
 )
 _SPLIT = re.compile(r"\s*(?:\||•|·)\s*")
+# Skills lists commonly separate individual skills with commas or semicolons in
+# addition to pipes/bullets. Slashes and hyphens are intentionally excluded so
+# compound skills like "CI/CD", "TCP/IP", or "A/B testing" stay intact.
+_SKILL_SPLIT = re.compile(r"\s*(?:,|;|\||•|·)\s*")
 
 
 @dataclass(frozen=True, slots=True)
@@ -182,7 +186,7 @@ def _section_candidates(
                 end,
                 8_000,
             )
-            for value, start, end in _source_values(text, ())
+            for value, start, end in _source_values(text, (), _SKILL_SPLIT)
         )
     if block.kind is BlockKind.BULLET:
         name = "achievement" if kind is SemanticEntityKind.EXPERIENCE else "description"
@@ -251,6 +255,11 @@ def _entity_block_groups(
     kind: SemanticEntityKind,
     blocks: tuple[CanonicalBlock, ...],
 ) -> tuple[tuple[CanonicalBlock, ...], ...]:
+    if kind is SemanticEntityKind.SKILL:
+        # Every skill line belongs to one structured Skills entity, so the review
+        # UI shows a single section listing each skill instead of one card per
+        # line. An empty section yields no group and is skipped by the caller.
+        return (blocks,) if blocks else ()
     if kind is not SemanticEntityKind.EXPERIENCE:
         return tuple((block,) for block in blocks)
     groups: list[list[CanonicalBlock]] = []
@@ -298,6 +307,7 @@ def _date_precision(value: str) -> DatePrecision:
 def _source_values(
     text: str,
     excluded_ranges: tuple[tuple[int, int], ...],
+    splitter: re.Pattern[str] = _SPLIT,
 ) -> tuple[tuple[str, int, int], ...]:
     """Return only contiguous source substrings with their exact block offsets."""
     values: list[tuple[str, int, int]] = []
@@ -312,7 +322,7 @@ def _source_values(
 
     for source_start, source_end in source_ranges:
         segment_start = source_start
-        for separator in _SPLIT.finditer(text, source_start, source_end):
+        for separator in splitter.finditer(text, source_start, source_end):
             _append_source_value(values, text, segment_start, separator.start())
             segment_start = separator.end()
         _append_source_value(values, text, segment_start, source_end)
