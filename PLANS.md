@@ -187,17 +187,34 @@ bounded context and no backend behavior.
       applicant-tracking systems.
 - [x] `pnpm format:check`, `pnpm lint` (web architecture plus repository
       boundaries), and `pnpm typecheck`: pass.
-- [x] `pnpm test`: pass. Web grew from 176 to 212 tests across 48 files; the new
+- [x] `pnpm test`: pass. Web grew from 176 to 218 tests across 48 files; the new
       coverage is the chain projection, the gate decision, the consolidated
-      navigation model, and Corp ID derivation and standing.
+      navigation model, the activation readers in the summary aggregator, and
+      Corp ID derivation and standing.
+- [x] `pnpm build`: pass; 51 routes compiled.
+- [x] Playwright specs audited against the navigation change. The consolidated
+      sub-navigation renders outside `#main-content`, so the
+      `#main-content`-scoped link queries in `phase9-career-workspace-journey`
+      are unaffected, no spec drives the rail by a removed label, and the
+      mobile-drawer assertion in `auth-journey` only checks the dialog and focus
+      restoration. This is a read of the specs, not an execution of them.
 
 ### Deferred with reasons
 
-- [!] `pnpm build`, `make test-integration`, and `make test-e2e` were not run: the
-  Docker daemon is unavailable on this host. The one E2E assertion that
-  touches this surface (`auth-journey` expecting the
-  `Welcome to your Rezumi workspace,` heading) is preserved by inspection,
-  which is not a pass.
+- [!] `docker compose config --quiet`: pass.
+- [!] `make test-integration` and `make test-e2e` remain unrun, blocked by host
+  disk exhaustion rather than by anything in this change. The Docker daemon was
+  started successfully and `docker compose config` validated, but
+  `docker compose up --build` failed partway through image pulls with
+  "There is not enough space on the disk", and `playwright install chromium`
+  failed for the same reason. `df` reports drive C: at 476 GB of 476 GB used
+  with 0 bytes available. Docker CLI calls, including `docker compose down`,
+  then stopped responding. Free space on the host and rerun both gates before
+  treating this surface as stack-verified.
+- [!] One `vitest run` executed while Docker Desktop was starting collected 47 of
+  48 files and reported one error; the clean rerun passed 48 files and 218
+  tests. Treated as host resource contention, consistent with the disk state
+  above.
 - [!] Python gates were not run because no Python file changed. The local `.venv`
   had to be rebuilt from `uv.lock` before `uv run` worked at all on this host;
   that is a host repair, not evidence of a backend gate.

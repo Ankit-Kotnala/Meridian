@@ -169,6 +169,113 @@ describe("dashboard summary", () => {
     });
   });
 
+  it("counts only pending proposals across both import kinds", async () => {
+    respondWith({
+      "/api/v1/career-profile/import-proposals": {
+        data: [{ status: "pending" }, { status: "accepted" }],
+        page,
+      },
+      "/api/v1/career-profile/semantic-import-proposals": {
+        data: [
+          { status: "pending" },
+          { status: "pending" },
+          { status: "rejected" },
+        ],
+      },
+    });
+
+    const summary = await dashboardSummary();
+
+    expect(summary.activation.pendingImports).toEqual({
+      atLeast: false,
+      kind: "count",
+      value: 3,
+    });
+  });
+
+  it("reports saved opportunities for the activation chain", async () => {
+    respondWith({
+      "/api/v1/jobs": {
+        data: [{ id: "job-1" }, { id: "job-2" }],
+        page,
+      },
+    });
+
+    const summary = await dashboardSummary();
+
+    expect(summary.activation.jobs).toEqual({
+      atLeast: false,
+      kind: "count",
+      value: 2,
+    });
+  });
+
+  it("marks pending imports unavailable only when both sources fail", async () => {
+    respondWith({}, [
+      "/api/v1/career-profile/import-proposals",
+      "/api/v1/career-profile/semantic-import-proposals",
+      "/api/v1/jobs",
+    ]);
+
+    const summary = await dashboardSummary();
+
+    expect(summary.activation.pendingImports).toEqual({
+      kind: "unavailable",
+    });
+    expect(summary.activation.jobs).toEqual({ kind: "unavailable" });
+  });
+
+  it("still counts pending imports when only one source fails", async () => {
+    respondWith(
+      {
+        "/api/v1/career-profile/semantic-import-proposals": {
+          data: [{ status: "pending" }],
+        },
+      },
+      ["/api/v1/career-profile/import-proposals"],
+    );
+
+    const summary = await dashboardSummary();
+
+    expect(summary.activation.pendingImports).toEqual({
+      atLeast: false,
+      kind: "count",
+      value: 1,
+    });
+    expect(summary.attentionDegraded).toBe(true);
+  });
+
+  it("raises a review item that routes to the import decision", async () => {
+    respondWith({
+      "/api/v1/career-profile/semantic-import-proposals": {
+        data: [{ status: "pending" }, { status: "pending" }],
+      },
+    });
+
+    const summary = await dashboardSummary();
+    const item = summary.attention.find(({ id }) => id === "pending-imports");
+
+    expect(item).toMatchObject({
+      href: "/career-profile/imports",
+      tone: "warning",
+    });
+    expect(item?.description).toContain("2 facts extracted from your resume");
+  });
+
+  it("raises no import review item when nothing is pending", async () => {
+    respondWith({
+      "/api/v1/career-profile/semantic-import-proposals": {
+        data: [{ status: "accepted" }],
+      },
+    });
+
+    const summary = await dashboardSummary();
+
+    expect(summary.attention.map(({ id }) => id)).not.toContain(
+      "pending-imports",
+    );
+  });
+
   it("ignores deadlines on closed applications", async () => {
     respondWith({
       "/api/v1/applications": {
