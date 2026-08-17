@@ -1928,3 +1928,6 @@ not expand Phase 10 product scope.
 
 Publishing this review branch is part of the requested phase workflow; no PR is
 merged and no production deployment occurs without explicit later approval.
+## Local stack note
+
+`pnpm local:up` now passes with the web runtime image copying workspace `node_modules` and `@swc/helpers` declared directly in `apps/web/package.json`. Verified on 2026-08-17 when `web`, `web-edge`, `api`, `worker`, and `worker-scheduler` all reported healthy in `docker compose ps`.

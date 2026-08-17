@@ -41,6 +41,7 @@ RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack 
         /usr/local/bin/yarnpkg \
     && addgroup --system --gid 1001 nodejs \
     && adduser --system --uid 1001 nextjs
+COPY --from=builder --chown=nextjs:nodejs /workspace/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /workspace/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /workspace/apps/web/.next/static ./apps/web/.next/static
 WORKDIR /app/apps/web
