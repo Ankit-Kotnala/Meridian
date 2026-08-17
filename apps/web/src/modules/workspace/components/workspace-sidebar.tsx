@@ -9,23 +9,24 @@ import { cn } from "@rezumi/ui";
 import { RezumiLogo } from "@/shared/components/rezumi-logo";
 
 import {
-  isCurrentWorkspacePath,
-  workspaceNavigationGroups,
-  type WorkspaceNavigationItem,
+  isCurrentWorkspaceSection,
+  workspaceSections,
+  type WorkspaceSection,
 } from "./workspace-navigation";
 
 function NavigationLink({
   collapsed,
-  item: { href, icon: Icon, label },
   onNavigate,
   pathname,
+  section,
 }: {
   collapsed: boolean;
-  item: WorkspaceNavigationItem;
   onNavigate?: (() => void) | undefined;
   pathname: string;
+  section: WorkspaceSection;
 }) {
-  const active = isCurrentWorkspacePath(pathname, href);
+  const { href, icon: Icon, label } = section;
+  const active = isCurrentWorkspaceSection(pathname, section);
   return (
     <Link
       {...(active ? { "aria-current": "page" as const } : {})}
@@ -112,35 +113,18 @@ export function WorkspaceSidebar({
         aria-label="Application navigation"
         className="relative flex-1 overflow-y-auto px-2 py-3"
       >
-        {workspaceNavigationGroups.map((group, groupIndex) => (
-          <section
-            aria-labelledby={`workspace-nav-${groupIndex}`}
-            className={cn(groupIndex > 0 && "mt-4")}
-            key={group.label}
-          >
-            <h2
-              className={cn(
-                "mb-1.5 px-3 text-[0.625rem] font-bold uppercase tracking-[0.13em] text-emerald-100/50",
-                collapsed && "sr-only",
-              )}
-              id={`workspace-nav-${groupIndex}`}
-            >
-              {group.label}
-            </h2>
-            <ul className="space-y-0.5">
-              {group.items.map((item) => (
-                <li key={item.href}>
-                  <NavigationLink
-                    collapsed={collapsed}
-                    item={item}
-                    onNavigate={onNavigate}
-                    pathname={pathname}
-                  />
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))}
+        <ul className="space-y-0.5">
+          {workspaceSections.map((section) => (
+            <li key={section.id}>
+              <NavigationLink
+                collapsed={collapsed}
+                onNavigate={onNavigate}
+                pathname={pathname}
+                section={section}
+              />
+            </li>
+          ))}
+        </ul>
         <div className="h-2" />
       </nav>
 

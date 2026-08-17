@@ -4,6 +4,12 @@ import Link from "next/link";
 import { Badge, buttonStyles, cn, SectionHeader } from "@rezumi/ui";
 
 import {
+  ActivationChain,
+  ActivationGate,
+  activationChain,
+  shouldGateWorkspace,
+} from "../components/dashboard-activation";
+import {
   AttentionPanel,
   CareerRecordStats,
   PipelinePanel,
@@ -21,6 +27,7 @@ export type { DashboardResumeHealth };
 const UNAVAILABLE = { kind: "unavailable" } as const;
 
 const EMPTY_SUMMARY: DashboardSummary = {
+  activation: { jobs: UNAVAILABLE, pendingImports: UNAVAILABLE },
   attention: [],
   attentionDegraded: false,
   pipeline: UNAVAILABLE,
@@ -183,11 +190,19 @@ export function WorkspaceDashboard({
   resumeHealth?: DashboardResumeHealth;
   summary?: DashboardSummary;
 }) {
+  if (onboardingComplete && shouldGateWorkspace(resumeHealth, summary)) {
+    return <ActivationGate displayName={displayName} />;
+  }
+
   const nextStep = nextStepFor(onboardingComplete, resumeHealth, summary);
+  const chain = activationChain(resumeHealth, summary);
+  const activating = chain.some(({ state }) => state !== "done");
 
   return (
     <main className="workspace-page space-y-8" id="main-content">
       <DashboardHero displayName={displayName} nextStep={nextStep} />
+
+      {activating && <ActivationChain steps={chain} />}
 
       <CareerRecordStats record={summary.record} />
 

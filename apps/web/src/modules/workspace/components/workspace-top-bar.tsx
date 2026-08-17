@@ -1,10 +1,11 @@
 "use client";
 
-import { ChevronDown, Menu } from "lucide-react";
+import { ChevronDown, Menu, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode, RefObject } from "react";
 
+import { corpIdFor } from "@/shared/identity/corp-id";
 import { ThemeToggle } from "@/shared/theme/theme-toggle";
 
 import type { WorkspaceViewer } from "./workspace-shell";
@@ -35,6 +36,7 @@ export function WorkspaceTopBar({
   viewer: WorkspaceViewer;
 }) {
   const context = resolveWorkspaceContext(usePathname());
+  const corpId = corpIdFor(viewer.id);
 
   return (
     <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-4 border-b border-line/80 bg-surface/72 px-4 shadow-[0_1px_0_color-mix(in_srgb,var(--foreground)_4%,transparent)] backdrop-blur-xl backdrop-saturate-150 sm:px-6">
@@ -88,6 +90,13 @@ export function WorkspaceTopBar({
                   {viewer.displayName}
                 </p>
                 <p className="truncate text-xs text-muted">{viewer.email}</p>
+                {corpId && (
+                  <p className="mt-1 flex items-center gap-1 truncate text-[0.6875rem] font-bold tracking-[0.02em] text-primary-strong">
+                    <ShieldCheck aria-hidden="true" className="size-3" />
+                    <span className="sr-only">Rezumi Corp ID: </span>
+                    {corpId}
+                  </p>
+                )}
               </div>
             </div>
             <div className="p-2">

@@ -6,7 +6,7 @@ import { serverApiFetch } from "@/shared/api/server-request";
 
 export type CurrentUserView = Pick<
   components["schemas"]["MeResponse"],
-  "displayName" | "email" | "emailVerified" | "version"
+  "displayName" | "email" | "emailVerified" | "id" | "version"
 >;
 
 function currentUser(value: unknown): CurrentUserView | undefined {
@@ -16,6 +16,7 @@ function currentUser(value: unknown): CurrentUserView | undefined {
     typeof candidate.displayName !== "string" ||
     typeof candidate.email !== "string" ||
     typeof candidate.emailVerified !== "boolean" ||
+    typeof candidate.id !== "string" ||
     typeof candidate.version !== "number"
   ) {
     return undefined;
@@ -24,6 +25,7 @@ function currentUser(value: unknown): CurrentUserView | undefined {
     displayName: candidate.displayName,
     email: candidate.email,
     emailVerified: candidate.emailVerified,
+    id: candidate.id,
     version: candidate.version,
   };
 }
