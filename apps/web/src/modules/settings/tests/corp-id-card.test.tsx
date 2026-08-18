@@ -39,21 +39,43 @@ describe("Corp ID card", () => {
   it("shows the derived identifier with the scope disclaimer", async () => {
     stubApi([], []);
 
-    render(<CorpIdCard emailVerified userId={USER_ID} />);
+    render(
+      <CorpIdCard displayName="Ankit Kotnala" emailVerified userId={USER_ID} />,
+    );
 
     const card = screen.getByRole("region", { name: "Rezumi Corp ID" });
+    // The identifier and the scope limit appear twice by design: once as card
+    // text and once inside the downloadable credential artwork.
     expect(
-      within(card).getByText(/^RZ-[0-9A-Z]{5}-[0-9A-Z]{5}$/),
-    ).toBeVisible();
+      within(card).getAllByText(/^RZ-[0-9A-Z]{5}-[0-9A-Z]{5}$/).length,
+    ).toBeGreaterThan(0);
     expect(
-      within(card).getByText(/not an employer credential, a background check/i),
-    ).toBeVisible();
+      within(card).getAllByText(
+        /not an employer credential, a background check/i,
+      ).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("offers the credential as a downloadable image", async () => {
+    stubApi([], []);
+
+    render(
+      <CorpIdCard displayName="Ankit Kotnala" emailVerified userId={USER_ID} />,
+    );
+
+    expect(screen.getByRole("button", { name: /Download PNG/ })).toBeVisible();
+    expect(screen.getByRole("button", { name: /Download SVG/ })).toBeVisible();
+    expect(
+      screen.getByRole("img", { name: /Rezumi Corp ID credential for/ }),
+    ).toBeInTheDocument();
   });
 
   it("raises standing to Evidenced once confirmed evidence exists", async () => {
     stubApi([{ state: "confirmed" }], [{ id: "experience-1" }]);
 
-    render(<CorpIdCard emailVerified userId={USER_ID} />);
+    render(
+      <CorpIdCard displayName="Ankit Kotnala" emailVerified userId={USER_ID} />,
+    );
 
     await waitFor(() => {
       expect(screen.getByText("Evidenced")).toBeVisible();
@@ -64,7 +86,9 @@ describe("Corp ID card", () => {
   it("names the next check when standing can still rise", async () => {
     stubApi([{ state: "inferred" }], [{ id: "experience-1" }]);
 
-    render(<CorpIdCard emailVerified userId={USER_ID} />);
+    render(
+      <CorpIdCard displayName="Ankit Kotnala" emailVerified userId={USER_ID} />,
+    );
 
     await waitFor(() => {
       expect(screen.getByText("Profiled")).toBeVisible();
@@ -77,7 +101,13 @@ describe("Corp ID card", () => {
   it("withholds standing while the email is unconfirmed", async () => {
     stubApi([{ state: "confirmed" }], [{ id: "experience-1" }]);
 
-    render(<CorpIdCard emailVerified={false} userId={USER_ID} />);
+    render(
+      <CorpIdCard
+        displayName="Ankit Kotnala"
+        emailVerified={false}
+        userId={USER_ID}
+      />,
+    );
 
     expect(screen.getByText("Unverified")).toBeVisible();
     expect(screen.getByText(/Confirm your email address\./)).toBeVisible();
@@ -89,7 +119,9 @@ describe("Corp ID card", () => {
       vi.fn(() => Promise.reject(new Error("offline"))),
     );
 
-    render(<CorpIdCard emailVerified userId={USER_ID} />);
+    render(
+      <CorpIdCard displayName="Ankit Kotnala" emailVerified userId={USER_ID} />,
+    );
 
     await waitFor(() => {
       expect(screen.getByText("Registered")).toBeVisible();
@@ -100,7 +132,11 @@ describe("Corp ID card", () => {
     stubApi([], []);
 
     const { container } = render(
-      <CorpIdCard emailVerified userId="not-a-uuid" />,
+      <CorpIdCard
+        displayName="Ankit Kotnala"
+        emailVerified
+        userId="not-a-uuid"
+      />,
     );
 
     expect(container).toBeEmptyDOMElement();

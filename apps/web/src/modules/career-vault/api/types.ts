@@ -176,6 +176,12 @@ export type ProfileImportChange = {
   id: string;
   label: string;
   proposedValue: string;
+  /**
+   * How this value was settled during typed resume review. Every field passes
+   * through review, so this records who last touched it rather than whether it
+   * was reviewed at all.
+   */
+  reviewState: "confirmed" | "corrected" | "user_added";
   source: Provenance;
 };
 

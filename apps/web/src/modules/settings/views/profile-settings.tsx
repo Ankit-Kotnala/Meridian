@@ -101,7 +101,11 @@ export function ProfileSettings() {
 
   return (
     <div className="space-y-6">
-      <CorpIdCard emailVerified={profile.emailVerified} userId={profile.id} />
+      <CorpIdCard
+        displayName={profile.displayName}
+        emailVerified={profile.emailVerified}
+        userId={profile.id}
+      />
       <Card className="p-5 sm:p-7">
         <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
           <div>

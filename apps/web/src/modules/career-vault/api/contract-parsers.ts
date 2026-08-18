@@ -19,6 +19,7 @@ import type {
   PersonalFact,
   ProfileConflict,
   ProfileImportBatch,
+  ProfileImportChange,
   ProfileImportProposal,
   ProfileImportQuestion,
   Provenance,
@@ -590,6 +591,7 @@ export function parseProfileImportProposal(
           .replaceAll("_", " ")
           .replace(/^\w/, (value) => value.toUpperCase()),
         proposedValue,
+        reviewState: reviewState as ProfileImportChange["reviewState"],
         source: {
           available: sourceAvailable,
           confidence,

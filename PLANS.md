@@ -225,6 +225,54 @@ bounded context and no backend behavior.
   identifier only. Persisting an immutable column and any external lookup are
   Phase 11 work.
 
+## Zero-touch import and the Corp ID credential (2026-08-18)
+
+- [x] Import proposals now apply without a second prompt. Every field already
+      passed typed resume review, where a person confirmed, corrected, or typed
+      it, so re-accepting was redundant. `AutoImportRunner` applies the
+      unambiguous set on the workspace home and reports what it did.
+- [x] What still stops for a person is narrow and named: a conflict with an
+      existing record, a value the parser could not anchor back to the file,
+      parser confidence below 0.9, or a reviewed snapshot that is gone.
+      `autoImportHold` returns the specific reason, covered by 12 tests.
+- [x] `ProfileImportChange.reviewState` is now parsed explicitly instead of
+      being inferred from a display label.
+- [x] The Corp ID is a downloadable credential. `credentialSvg` renders a
+      self-contained, theme-independent artifact; the card offers PNG (2x
+      raster) and SVG downloads. Holder names are escaped before rendering and
+      case-folded before escaping, so entities cannot be corrupted.
+- [x] `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, and
+      `pnpm build`: pass. Web is 50 files / 239 tests, all passing.
+
+### Workspace home redesign
+
+- [x] The uniform vertical card stack is now an asymmetric bento grid. The tall
+      hero became a single-row command bar carrying the identity line and the
+      next decision; the four repeated stat cards collapsed into one dense
+      record tile; the redundant six-tile quick-launch grid is gone now that
+      navigation is consolidated to seven sections; the closing prose block is a
+      one-line footer. The populated home fits one fold at 1440 px instead of
+      requiring a long scroll.
+- [x] Added a Corp ID standing tile so the credential is visible from the home
+      screen. Its standing is derived from the same checks as the Settings
+      credential, so the two cannot disagree.
+- [x] `.dash-tile`, `.metric-label`, and `.metric-value` carry the tile chrome
+      through design tokens, so both themes follow without per-component work.
+- [x] `evidenceConfirmed` added to the summary aggregator, since standing reads
+      user-confirmed evidence rather than total evidence.
+- [x] Verified at 1440 px and 420 px in light and dark against the compiled
+      stylesheet.
+
+### Not done
+
+- [!] Target role is not auto-filled from the resume because the parser does not
+  extract one. `semanticKind` covers contact, experience, education, project,
+  skill, and certification only; there is no objective or target-role field to
+  read. Adding it is a backend parser and contract change.
+- [!] `make test-integration` and `make test-e2e` still unrun for this surface.
+  Disk space is now available, so both are unblocked; `playwright install`
+  is still required before the E2E suite can start.
+
 ## Phase 11 - Declared-link evidence enrichment (planned)
 
 Goal: a candidate's record reflects what they demonstrably did, from the links
@@ -1928,6 +1976,7 @@ not expand Phase 10 product scope.
 
 Publishing this review branch is part of the requested phase workflow; no PR is
 merged and no production deployment occurs without explicit later approval.
+
 ## Local stack note
 
 `pnpm local:up` now passes with the web runtime image copying workspace `node_modules` and `@swc/helpers` declared directly in `apps/web/package.json`. Verified on 2026-08-17 when `web`, `web-edge`, `api`, `worker`, and `worker-scheduler` all reported healthy in `docker compose ps`.
