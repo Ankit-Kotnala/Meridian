@@ -115,6 +115,11 @@ const RECORD_ROWS: readonly {
   },
 ];
 
+/**
+ * Key figures for the account's own record, as a row of large-numeral cards.
+ * Each figure links to the surface that owns it, and an unavailable count is
+ * rendered as an explicit dash rather than being collapsed into a zero.
+ */
 export function CareerRecordStats({
   record,
 }: {
@@ -125,38 +130,44 @@ export function CareerRecordStats({
   );
 
   return (
-    <Tile
-      action={{ href: "/career-profile", label: "Open" }}
-      className="min-w-0"
-      label="Your career record"
-      labelId="career-record-heading"
-    >
-      <ul className="mt-1 flex-1 divide-y divide-line/70">
+    <section aria-labelledby="career-record-heading" className="min-w-0">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="metric-label" id="career-record-heading">
+          Your career record
+        </h2>
+        <Link
+          className="inline-flex items-center gap-0.5 text-xs font-bold text-primary-strong hover:underline"
+          href="/career-profile"
+        >
+          Open
+          <ArrowUpRight aria-hidden="true" className="size-3.5" />
+        </Link>
+      </div>
+
+      <ul className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {RECORD_ROWS.map(({ count, href, icon: Icon, label }) => (
-          <li key={label}>
-            <Link
-              className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-primary-soft/30 sm:px-5"
-              href={href}
-            >
-              <span className="grid size-7 shrink-0 place-items-center rounded-[var(--radius-small)] bg-surface-subtle text-muted-strong transition-colors group-hover:bg-primary-soft group-hover:text-primary-strong">
-                <Icon aria-hidden="true" className="size-3.5" />
+          <li className="min-w-0" key={label}>
+            <Link className="stat-card group h-full" href={href}>
+              <span className="flex items-center gap-2 text-muted-strong">
+                <Icon aria-hidden="true" className="size-3.5 shrink-0" />
+                <span className="metric-label truncate !text-muted-strong">
+                  {label}
+                </span>
               </span>
-              <span className="min-w-0 flex-1 truncate text-sm text-muted-strong">
-                {label}
-              </span>
-              <span className="metric-value text-2xl text-foreground">
+              <span className="stat-figure text-foreground">
                 <CountValue count={record[count]} />
               </span>
             </Link>
           </li>
         ))}
       </ul>
+
       {unavailable && (
-        <p className="px-4 pb-4 pt-2 text-xs leading-5 text-muted sm:px-5">
+        <p className="mt-2.5 text-xs leading-5 text-muted">
           Count unavailable right now
         </p>
       )}
-    </Tile>
+    </section>
   );
 }
 

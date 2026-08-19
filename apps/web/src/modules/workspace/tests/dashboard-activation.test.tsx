@@ -34,10 +34,12 @@ function summary(overrides: Partial<DashboardSummary> = {}): DashboardSummary {
 const report: DashboardResumeHealth = {
   analysisId: "00000000-0000-4000-8000-000000000030",
   disclaimer: "Internal measure.",
+  documentId: "00000000-0000-4000-8000-000000000031",
   filename: "fictional.pdf",
   kind: "report",
   score: 71,
   scoreBand: "developing",
+  snapshotId: "00000000-0000-4000-8000-000000000032",
 };
 
 function stateOf(steps: readonly { id: string; state: string }[], id: string) {

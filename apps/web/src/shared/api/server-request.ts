@@ -17,8 +17,17 @@ function serverApiOrigin(): string {
   return value.origin;
 }
 
+/**
+ * Server reads are bounded so one unresponsive dependency cannot hold a page
+ * open indefinitely. Callers already degrade a failed read into an explicit
+ * "unavailable" state, and an aborted read reaches them on that same path, so a
+ * stalled section renders as unavailable instead of stalling the whole route.
+ */
+const SERVER_READ_TIMEOUT_MS = 8_000;
+
 export async function serverApiFetch(
   path: keyof paths | GeneratedApiPath,
+  timeoutMs: number = SERVER_READ_TIMEOUT_MS,
 ): Promise<Response> {
   const store = await cookies();
   const cookieHeader = ["rezumi_session", "rezumi_refresh", "rezumi_csrf"]
@@ -29,6 +38,7 @@ export async function serverApiFetch(
 
   const init: RequestInit = {
     cache: "no-store",
+    signal: AbortSignal.timeout(timeoutMs),
   };
   if (cookieHeader) init.headers = { cookie: cookieHeader };
   return fetch(`${serverApiOrigin()}${path}`, init);

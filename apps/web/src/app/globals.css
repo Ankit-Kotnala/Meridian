@@ -301,6 +301,102 @@ textarea {
   content: "";
 }
 
+/*
+ * Workspace home key figures. The record counts used to sit in a cramped list
+ * inside one tile; as a row of large-numeral cards they read at a glance, which
+ * is the only job the top of the home screen has.
+ */
+.stat-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: var(--radius-card);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--surface-raised) 92%, transparent),
+    var(--surface) 60%
+  );
+  padding: 1rem 1.125rem;
+  box-shadow: var(--shadow-sm);
+  transition:
+    border-color var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-standard) var(--ease-standard),
+    transform var(--motion-standard) var(--ease-standard);
+}
+
+.stat-card:hover {
+  border-color: color-mix(in srgb, var(--primary) 34%, var(--border));
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
+}
+
+.stat-card::after {
+  position: absolute;
+  top: 0;
+  left: 1.125rem;
+  width: 2.25rem;
+  height: 2px;
+  border-radius: 0 0 2px 2px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  content: "";
+}
+
+.stat-figure {
+  font-family: var(--font-family-display);
+  font-size: clamp(1.75rem, 3.4vw, 2.35rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+
+/*
+ * Compact activation rail. The five activation steps previously rendered as a
+ * tall vertical timeline that pushed the actual workspace below the fold; laid
+ * out as a horizontal track they stay glanceable and give the fold back.
+ */
+.activation-track {
+  display: grid;
+  gap: 0.625rem;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+@media (min-width: 640px) {
+  .activation-track {
+    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  }
+}
+
+.activation-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3125rem;
+  border-radius: var(--radius-control);
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  padding: 0.75rem 0.8125rem 0.8125rem;
+}
+
+.activation-step[data-state="current"] {
+  border-color: color-mix(in srgb, var(--primary) 42%, var(--border));
+  background: color-mix(in srgb, var(--primary-soft) 42%, var(--surface));
+}
+
+.activation-step[data-state="done"] {
+  border-color: color-mix(in srgb, var(--success) 28%, var(--border));
+}
+
+.dark .stat-card {
+  background:
+    linear-gradient(165deg, rgb(255 255 255 / 0.045), rgb(255 255 255 / 0.012)),
+    var(--surface);
+  border-color: color-mix(in srgb, var(--border) 88%, black);
+}
+
 /* Micro label above a metric. Smaller and tighter than `.eyebrow`. */
 .metric-label {
   color: var(--muted);

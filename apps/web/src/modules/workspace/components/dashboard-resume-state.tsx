@@ -19,10 +19,12 @@ export type DashboardResumeHealth =
   | {
       analysisId: string;
       disclaimer: string;
+      documentId: string;
       filename: string;
       kind: "report";
       score: number | null;
       scoreBand: "developing" | "needsAttention" | "strong" | null;
+      snapshotId: string;
     };
 
 function StatePanel({

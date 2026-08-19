@@ -168,6 +168,15 @@ const stateVisual: Record<
   },
 };
 
+/**
+ * Compact activation rail.
+ *
+ * The five steps read left to right as a track rather than as a tall vertical
+ * timeline, which used to consume the whole first screen before any of the
+ * actual workspace appeared. Only the step that is actually in progress carries
+ * its explanation and its action, so the rail states what to do next without
+ * repeating five paragraphs the reader did not ask for.
+ */
 export function ActivationChain({
   steps,
 }: {
@@ -175,110 +184,103 @@ export function ActivationChain({
 }) {
   const complete = steps.filter(({ state }) => state === "done").length;
   const unknown = steps.some(({ state }) => state === "unknown");
-
+  const current = steps.find(({ state }) => state === "current");
   const percent = Math.round((complete / steps.length) * 100);
 
   return (
     <section
       aria-labelledby="activation-heading"
-      className="data-region p-5 sm:p-7"
+      className="data-region p-4 sm:p-5"
     >
-      <div className="grid gap-7 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)]">
-        <header>
+      <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3">
+        <div className="min-w-0">
           <p className="eyebrow flex items-center gap-1.5 !text-primary-strong">
             <Sparkles aria-hidden="true" className="size-3.5" />
-            Getting your workspace working
+            Activating your workspace
           </p>
           <h2
-            className="mt-2 font-display text-xl font-semibold tracking-[-0.025em] text-foreground"
+            className="mt-1 font-display text-lg font-semibold tracking-[-0.025em] text-foreground"
             id="activation-heading"
           >
             {complete} of {steps.length} steps complete
           </h2>
+        </div>
+
+        <div className="flex min-w-[12rem] flex-1 items-center gap-3 sm:max-w-xs">
           <div
             aria-hidden="true"
-            className="mt-3.5 h-1.5 w-full overflow-hidden rounded-full bg-surface-inset"
+            className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-inset"
           >
             <span
               className="block h-full rounded-full bg-gradient-to-r from-primary to-accent transition-[width]"
               style={{ width: `${percent}%` }}
             />
           </div>
-          <p className="mt-3 text-sm leading-6 text-muted">
-            Each step runs on your own data and waits for your decision before
-            it changes anything. Nothing is added to your career record without
-            you.
-          </p>
-          {unknown && (
-            <Badge className="mt-3" tone="warning">
-              Some step states could not be loaded
-            </Badge>
-          )}
-        </header>
-
-        <ol className="space-y-0">
-          {steps.map(({ action, description, id, label, state }, index) => {
-            const visual = stateVisual[state];
-            const Icon = visual.icon;
-            return (
-              <li className="relative flex gap-4 pb-6 last:pb-0" key={id}>
-                {index < steps.length - 1 && (
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      "absolute left-[0.9375rem] top-8 bottom-0 w-px",
-                      state === "done" ? "bg-success/40" : "bg-line",
-                    )}
-                  />
-                )}
-                <span
-                  className={cn(
-                    "relative z-10 mt-0.5 grid size-8 shrink-0 place-items-center rounded-full border",
-                    visual.className,
-                  )}
-                >
-                  <Icon aria-hidden="true" className="size-4" />
-                </span>
-                <div className="min-w-0 flex-1 pt-0.5">
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <h3
-                      className={cn(
-                        "text-sm font-semibold",
-                        state === "pending"
-                          ? "text-muted-strong"
-                          : "text-foreground",
-                      )}
-                    >
-                      {label}
-                    </h3>
-                    <span className="text-xs font-bold uppercase tracking-[0.06em] text-muted">
-                      {visual.label}
-                    </span>
-                  </div>
-                  <p className="mt-1 max-w-2xl text-xs leading-5 text-muted">
-                    {description}
-                  </p>
-                  {action && state !== "pending" && (
-                    <Link
-                      className={cn(
-                        buttonStyles.base,
-                        state === "current"
-                          ? buttonStyles.primary
-                          : buttonStyles.secondary,
-                        "mt-3 min-h-9 px-3 text-xs",
-                      )}
-                      href={action.href}
-                    >
-                      {action.label}
-                      <ArrowRight aria-hidden="true" className="size-3.5" />
-                    </Link>
-                  )}
-                </div>
-              </li>
-            );
-          })}
-        </ol>
+          <span className="metric-value text-sm text-muted-strong">
+            {percent}%
+          </span>
+        </div>
       </div>
+
+      {unknown && (
+        <Badge className="mt-3" tone="warning">
+          Some step states could not be loaded
+        </Badge>
+      )}
+
+      <ol className="activation-track mt-4">
+        {steps.map(({ id, label, state }) => {
+          const visual = stateVisual[state];
+          const Icon = visual.icon;
+          return (
+            <li className="activation-step" data-state={state} key={id}>
+              <span
+                className={cn(
+                  "grid size-6 place-items-center rounded-full border",
+                  visual.className,
+                )}
+              >
+                <Icon aria-hidden="true" className="size-3" />
+              </span>
+              <h3
+                className={cn(
+                  "text-xs font-semibold leading-4",
+                  state === "pending" ? "text-muted-strong" : "text-foreground",
+                )}
+              >
+                {label}
+              </h3>
+              <span className="text-[0.625rem] font-bold uppercase tracking-[0.08em] text-muted">
+                {visual.label}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+
+      {current && (
+        <div className="mt-4 flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="max-w-2xl text-xs leading-5 text-muted">
+            <span className="font-semibold text-foreground">
+              {current.label}.
+            </span>{" "}
+            {current.description}
+          </p>
+          {current.action && (
+            <Link
+              className={cn(
+                buttonStyles.base,
+                buttonStyles.primary,
+                "min-h-9 shrink-0 self-start px-3 text-xs sm:self-center",
+              )}
+              href={current.action.href}
+            >
+              {current.action.label}
+              <ArrowRight aria-hidden="true" className="size-3.5" />
+            </Link>
+          )}
+        </div>
+      )}
     </section>
   );
 }

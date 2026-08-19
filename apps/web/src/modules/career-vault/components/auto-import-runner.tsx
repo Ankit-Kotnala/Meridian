@@ -9,24 +9,39 @@ import { Badge, cn } from "@rezumi/ui";
 
 import {
   acceptProfileImportProposal,
+  createProfileImportProposals,
   listProfileImportProposals,
 } from "../api/career-vault-api";
 import { planAutoImport } from "../auto-import/eligibility";
 
 type RunState =
   | { kind: "applying"; done: number; total: number }
-  | { kind: "done"; applied: number; held: number }
+  | { kind: "done"; applied: number; held: number; questions: number }
   | { kind: "failed"; applied: number; message: string }
   | { kind: "idle" };
 
 /**
- * Applies every unambiguous import proposal without prompting.
+ * Derives import proposals from the reviewed resume, then applies every
+ * unambiguous one without prompting.
  *
- * Fields reached this point only after a person confirmed them in typed resume
+ * Proposal creation runs here because nothing else triggers it: without this
+ * call a reviewed resume produced no proposals at all, so the career record
+ * stayed empty and the workspace never finished activating. The endpoint is
+ * idempotent on (snapshot, semantic entity), so re-running it on every
+ * dashboard visit re-derives nothing and creates no duplicates.
+ *
+ * Fields reach this point only after a person confirmed them in typed resume
  * review, so a second accept step was pure friction. Anything ambiguous is left
  * for review and reported here rather than written silently.
  */
-export function AutoImportRunner() {
+export function AutoImportRunner({
+  documentId,
+  snapshotId,
+}: {
+  /** Reviewed source to derive proposals from, absent until a report exists. */
+  documentId?: string;
+  snapshotId?: string;
+}) {
   const [state, setState] = useState<RunState>({ kind: "idle" });
   const started = useRef(false);
   const router = useRouter();
@@ -38,14 +53,37 @@ export function AutoImportRunner() {
 
     async function run() {
       let applied = 0;
+      let questions = 0;
       try {
+        if (documentId !== undefined && snapshotId !== undefined) {
+          // A snapshot that is no longer importable must not hide proposals
+          // already derived from an earlier one, so this failure is carried
+          // rather than thrown: the list below is the authoritative state.
+          try {
+            const batch = await createProfileImportProposals(
+              documentId,
+              snapshotId,
+            );
+            questions = batch.questions.length;
+          } catch {
+            questions = 0;
+          }
+          if (!active) return;
+        }
+
         const { apply, hold } = planAutoImport(
           await listProfileImportProposals(),
         );
         if (!active) return;
         if (apply.length === 0) {
-          if (hold.length > 0)
-            setState({ applied: 0, held: hold.length, kind: "done" });
+          if (hold.length > 0 || questions > 0) {
+            setState({
+              applied: 0,
+              held: hold.length,
+              kind: "done",
+              questions,
+            });
+          }
           return;
         }
 
@@ -57,7 +95,7 @@ export function AutoImportRunner() {
           setState({ done: applied, kind: "applying", total: apply.length });
         }
 
-        setState({ applied, held: hold.length, kind: "done" });
+        setState({ applied, held: hold.length, kind: "done", questions });
         router.refresh();
       } catch (error) {
         if (!active) return;
@@ -77,10 +115,15 @@ export function AutoImportRunner() {
     return () => {
       active = false;
     };
-  }, [router]);
+  }, [documentId, router, snapshotId]);
 
   if (state.kind === "idle") return null;
-  if (state.kind === "done" && state.applied === 0 && state.held === 0) {
+  if (
+    state.kind === "done" &&
+    state.applied === 0 &&
+    state.held === 0 &&
+    state.questions === 0
+  ) {
     return null;
   }
 
@@ -147,6 +190,18 @@ export function AutoImportRunner() {
                 </>
               ) : (
                 "Nothing needed your review."
+              )}
+              {state.questions > 0 && (
+                <>
+                  {" "}
+                  {state.questions}{" "}
+                  {state.questions === 1 ? "entry was" : "entries were"} missing
+                  a required field, so no fact was invented for{" "}
+                  {state.questions === 1 ? "it" : "them"}.{" "}
+                  <Link className="text-link" href="/career-profile">
+                    Add the missing details
+                  </Link>
+                </>
               )}
             </p>
           </>
