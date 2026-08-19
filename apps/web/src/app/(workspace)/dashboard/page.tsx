@@ -20,7 +20,16 @@ export default async function DashboardPage() {
   ]);
   return (
     <WorkspaceDashboard
-      autoImport={<AutoImportRunner />}
+      autoImport={
+        <AutoImportRunner
+          {...(resumeHealth.kind === "report"
+            ? {
+                documentId: resumeHealth.documentId,
+                snapshotId: resumeHealth.snapshotId,
+              }
+            : {})}
+        />
+      }
       displayName={user.displayName}
       onboardingComplete={complete}
       resumeHealth={resumeHealth}

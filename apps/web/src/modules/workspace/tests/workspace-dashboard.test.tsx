@@ -51,10 +51,12 @@ describe("real workspace dashboard", () => {
         resumeHealth={{
           analysisId: "00000000-0000-4000-8000-000000000030",
           disclaimer: "Internal measure. Not an employer score.",
+          documentId: "00000000-0000-4000-8000-000000000031",
           filename: "fictional.pdf",
           kind: "report",
           score: 73,
           scoreBand: "developing",
+          snapshotId: "00000000-0000-4000-8000-000000000032",
         }}
       />,
     );
@@ -213,10 +215,12 @@ describe("real workspace dashboard", () => {
         resumeHealth={{
           analysisId: "00000000-0000-4000-8000-000000000030",
           disclaimer: "Internal measure. Not an employer score.",
+          documentId: "00000000-0000-4000-8000-000000000031",
           filename: "fictional.pdf",
           kind: "report",
           score: 73,
           scoreBand: "developing",
+          snapshotId: "00000000-0000-4000-8000-000000000032",
         }}
         summary={summary({
           record: {

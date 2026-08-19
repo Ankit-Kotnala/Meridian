@@ -273,6 +273,91 @@ bounded context and no backend behavior.
   Disk space is now available, so both are unblocked; `playwright install`
   is still required before the E2E suite can start.
 
+## Resume-to-career-record activation repair (2026-08-19)
+
+A reviewed resume could not populate a career record at all. Three independent
+defects compounded, so the workspace home sat on "Career record populated - in
+progress" indefinitely and the account was told to add roles by hand.
+
+### Root causes found and fixed
+
+- [x] Section headings were only recognized when the extractor guessed
+      `heading`, which it does solely for upper-case or colon-terminated lines.
+      An ordinary title-case "Work Experience" heading was body text, so the
+      whole resume collapsed into one `other` section and produced zero
+      experience entities. `_section_heading_kind` now classifies a section
+      break on the block's text, and `_SECTION_NAMES` covers the common
+      synonyms ("Employment History", "Career History", "Core Competencies")
+      plus decorated forms.
+- [x] `_entity_block_groups` started a new EXPERIENCE entity at every non-bullet
+      block, so a role's title line and its employer/date line became separate
+      entities and neither held the title + employer + start_date trio that
+      `_semantic_mapping_issues` requires. A record's header lines now stay in
+      one group; a new record starts after that record's bullets, or on a second
+      dated line when a section lists roles without bullets.
+- [x] Header values were only split on `|`, bullet, and middot, so "Senior
+      Engineer, Acme Corp" produced a single `title` and no `employer`. Segments
+      are now sub-split on commas, dashes, and "at", but only while the record
+      still has unfilled names, so "San Francisco, CA" stays one location and
+      "University of Texas at Austin" stays one institution.
+- [x] Nothing ever called `POST /career-profile/semantic-import-proposals`.
+      `AutoImportRunner` listed proposals that were never created, so it applied
+      nothing. It now derives proposals from the reviewed snapshot first; the
+      endpoint is idempotent on (snapshot, semantic entity), so repeat dashboard
+      visits create no duplicates.
+- [x] `/career-profile/imports` called `notFound()` without query parameters,
+      which is exactly where the workspace home sends someone to accept pending
+      facts. It now lists the account's pending proposals in that case.
+
+### Evidence
+
+- [x] End-to-end trace of a realistic fictional DOCX through extraction,
+      canonicalization, semantic parsing, and career-record mapping: 2
+      experiences, 1 education, 1 skill set, and 1 contact map to importable
+      proposals with 0 blocking questions. Before the fix the same file produced
+      0 experience entities and 0 proposals.
+- [x] `validate_parser_semantics` passes on that trace, so every emitted value
+      is still an exact substring of the immutable source at its exact offsets.
+      No value is synthesized, and a record missing a required field still
+      becomes a question rather than an invented fact.
+
+### Workspace home redesign
+
+- [x] Record counts moved from a cramped list inside one tile to a row of
+      large-numeral stat cards, which is what the top of the home screen is for.
+- [x] The five-step activation timeline was a tall vertical list that consumed
+      the first screen. It is now a horizontal track; only the step actually in
+      progress carries its explanation and its action.
+- [x] Layout is now decisions-left / sources-right instead of two bento rows,
+      and the masthead carries the greeting and the single next action.
+- [x] Verified against the compiled stylesheet at 1440 px and 375 px: no
+      horizontal overflow, stat cards in one row (2x2 on mobile), activation
+      track in one row (stacked on mobile).
+
+### Additional fix
+
+- [x] `serverApiFetch` had no timeout, so one unresponsive dependency held the
+      dashboard's server render open indefinitely - a direct cause of the
+      reported "does not fully load". Server reads are now bounded at 8 s and
+      an aborted read degrades to the existing explicit "unavailable" state.
+
+### Gate evidence
+
+- [x] `pnpm lint`, `pnpm typecheck`, `pnpm test` (51 files / 243 tests), edge
+      tests, `ruff check`, `ruff format --check`, `mypy` (227 files), backend
+      `pytest tests/unit tests/architecture` (454), `apps/api` pytest (145),
+      `apps/worker` pytest (89): all pass.
+- [!] `pnpm contracts:check` fails before and after this change: the pinned
+  `openapi-typescript@7.13.0` crashes on `typescript@7.0.2`
+  (`TypeError: Cannot read properties of undefined (reading 'factory')`).
+  Pre-existing tooling incompatibility, unrelated to this change, which
+  touched no API schema. Needs a dependency decision.
+- [!] `ruff format --check` also reports `tests/architecture/test_dependencies.py`
+  and `tests/unit/test_local_seed.py`. Both fail on a clean tree and were
+  left untouched.
+- [!] `make test-integration` and `make test-e2e` not run: no local stack was
+  running and Playwright browsers are not installed.
+
 ## Phase 11 - Declared-link evidence enrichment (planned)
 
 Goal: a candidate's record reflects what they demonstrably did, from the links

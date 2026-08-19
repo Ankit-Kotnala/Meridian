@@ -17,28 +17,44 @@ import {
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 
-import { createProfileImportProposals } from "../api/career-vault-api";
+import {
+  createProfileImportProposals,
+  listProfileImportProposals,
+} from "../api/career-vault-api";
 import type { ProfileImportBatch } from "../api/types";
 
+/**
+ * Shows the proposals derived from a reviewed resume snapshot, or, when no
+ * snapshot is named, the proposals the account already has awaiting a decision.
+ */
 export function ProfileImportStartView({
   documentId,
   snapshotId,
 }: {
-  documentId: string;
-  snapshotId: string;
-}) {
+  documentId?: string;
+  snapshotId?: string;
+} = {}) {
   const [batch, setBatch] = useState<ProfileImportBatch>();
   const [failure, setFailure] = useState<string>();
 
   const load = useCallback(async () => {
     setFailure(undefined);
     try {
-      setBatch(await createProfileImportProposals(documentId, snapshotId));
+      setBatch(
+        documentId !== undefined && snapshotId !== undefined
+          ? await createProfileImportProposals(documentId, snapshotId)
+          : {
+              proposals: (await listProfileImportProposals()).filter(
+                (proposal) => proposal.status === "pending",
+              ),
+              questions: [],
+            },
+      );
     } catch (error) {
       setFailure(
         requestErrorMessage(
           error,
-          "We couldn’t create proposals from this reviewed resume snapshot.",
+          "We couldn’t load proposals from your reviewed resume.",
         ),
       );
     }
@@ -125,8 +141,16 @@ export function ProfileImportStartView({
               Return to Career Profile
             </Link>
           }
-          description="The snapshot had no complete reviewed fields eligible for a proposal. Missing values remain questions rather than inferred facts."
-          title="No import proposals"
+          description={
+            documentId === undefined
+              ? "Every proposal from your reviewed resume has already been accepted or rejected. Nothing is waiting for a decision."
+              : "The snapshot had no complete reviewed fields eligible for a proposal. Missing values remain questions rather than inferred facts."
+          }
+          title={
+            documentId === undefined
+              ? "Nothing waiting for review"
+              : "No import proposals"
+          }
         />
       ) : (
         <div className="space-y-4">

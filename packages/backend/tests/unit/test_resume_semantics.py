@@ -310,3 +310,124 @@ async def test_date_locale_concurrent_roles_and_career_gap_remain_factual_record
         DatePrecision.YEAR,
         DatePrecision.UNKNOWN,
     }
+
+
+def _block(text: str, start: int, kind: BlockKind = BlockKind.PARAGRAPH) -> CanonicalBlock:
+    return CanonicalBlock(
+        id=uuid4(),
+        kind=kind,
+        text=text,
+        confidence_basis_points=9_000,
+        spans=(SourceSpan(1, start, start + len(text)),),
+    )
+
+
+def _experience_resume(*blocks: CanonicalBlock) -> CanonicalResume:
+    return CanonicalResume(
+        schema_version="canonical-resume/2.0.0",
+        sections=(
+            CanonicalSection(
+                id=uuid4(),
+                kind=SectionKind.EXPERIENCE,
+                title="Work Experience",
+                confidence_basis_points=9_000,
+                blocks=blocks,
+            ),
+        ),
+        warnings=(),
+    )
+
+
+@pytest.mark.asyncio
+async def test_multi_line_experience_header_becomes_one_importable_record() -> None:
+    """A role whose header wraps across lines still yields title, employer, and dates.
+
+    Career Record refuses to propose an experience without all three, so a
+    parser that split the header into separate entities produced a resume that
+    could never populate a career record.
+    """
+    document_id = uuid4()
+    digest = sha256(b"fictional wrapped header").hexdigest()
+    resume = _experience_resume(
+        _block("Senior Software Engineer, Northwind Financial", 0),
+        _block("San Francisco, CA | Mar 2021 - Present", 60),
+        _block("Led the policy ledger migration.", 110, BlockKind.BULLET),
+        _block("Software Engineer, Blue Harbor Systems", 150),
+        _block("Austin, TX | Jun 2017 - Feb 2021", 200),
+    )
+
+    semantics = await LocalResumeParserProvider().parse(document_id, resume, digest)
+
+    experiences = [
+        entity for entity in semantics.entities if entity.kind is SemanticEntityKind.EXPERIENCE
+    ]
+    assert len(experiences) == 2
+    first = {field.name: field.value for field in experiences[0].fields}
+    assert first["title"] == "Senior Software Engineer"
+    assert first["employer"] == "Northwind Financial"
+    assert first["location"] == "San Francisco, CA"
+    assert first["start_date"] == "Mar 2021"
+    assert first["end_date"] == "Present"
+    second = {field.name: field.value for field in experiences[1].fields}
+    assert second["title"] == "Software Engineer"
+    assert second["employer"] == "Blue Harbor Systems"
+    assert second["start_date"] == "Jun 2017"
+    validate_parser_semantics(resume, semantics, digest)
+
+
+@pytest.mark.asyncio
+async def test_consecutive_dated_roles_without_bullets_stay_separate_records() -> None:
+    """Two one-line roles must not merge into a single record."""
+    document_id = uuid4()
+    digest = sha256(b"fictional bulletless roles").hexdigest()
+    resume = _experience_resume(
+        _block("Staff Engineer, Northwind Financial, 2021 - 2024", 0),
+        _block("Senior Engineer, Blue Harbor Systems, 2017 - 2021", 60),
+    )
+
+    semantics = await LocalResumeParserProvider().parse(document_id, resume, digest)
+
+    experiences = [
+        entity for entity in semantics.entities if entity.kind is SemanticEntityKind.EXPERIENCE
+    ]
+    assert [
+        {field.name: field.value for field in entity.fields}["employer"] for entity in experiences
+    ] == ["Northwind Financial", "Blue Harbor Systems"]
+    validate_parser_semantics(resume, semantics, digest)
+
+
+@pytest.mark.asyncio
+async def test_weak_separators_stop_once_the_record_has_its_names() -> None:
+    """An institution containing "at" survives once earlier names are filled."""
+    document_id = uuid4()
+    digest = sha256(b"fictional education").hexdigest()
+    resume = CanonicalResume(
+        schema_version="canonical-resume/2.0.0",
+        sections=(
+            CanonicalSection(
+                id=uuid4(),
+                kind=SectionKind.EDUCATION,
+                title="Education",
+                confidence_basis_points=9_000,
+                blocks=(
+                    _block("B.S. Computer Science, University of Texas at Austin", 0),
+                    _block("2013 - 2017", 60),
+                ),
+            ),
+        ),
+        warnings=(),
+    )
+
+    semantics = await LocalResumeParserProvider().parse(document_id, resume, digest)
+
+    education = {
+        field.name: field.value
+        for entity in semantics.entities
+        if entity.kind is SemanticEntityKind.EDUCATION
+        for field in entity.fields
+    }
+    assert education["degree"] == "B.S. Computer Science"
+    assert education["institution"] == "University of Texas at Austin"
+    assert education["start_date"] == "2013"
+    assert education["end_date"] == "2017"
+    validate_parser_semantics(resume, semantics, digest)

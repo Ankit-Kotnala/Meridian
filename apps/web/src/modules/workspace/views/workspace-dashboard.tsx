@@ -122,8 +122,9 @@ function nextStepFor(
 }
 
 /**
- * Compact command bar. The old full-width hero spent most of the fold on
- * greeting copy; this keeps the identity line and moves the decision inline.
+ * Workspace masthead. The greeting and the one decision worth making sit on the
+ * same line at the top of the page, so the fold carries identity and intent
+ * rather than paragraphs of orientation copy.
  */
 function DashboardHero({
   displayName,
@@ -133,8 +134,8 @@ function DashboardHero({
   nextStep: NextStep;
 }) {
   return (
-    <section className="workspace-hero px-4 py-5 sm:px-6 sm:py-6">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
+    <section className="workspace-hero px-5 py-6 sm:px-7 sm:py-8">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-10">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone="success">
@@ -145,35 +146,37 @@ function DashboardHero({
               grounded
             </Badge>
           </div>
-          <h1 className="balanced mt-2.5 font-display text-[clamp(1.35rem,2.1vw,1.75rem)] font-semibold leading-[1.15] tracking-[-0.035em] text-foreground">
+          <h1 className="balanced mt-3 font-display text-[clamp(1.6rem,3vw,2.4rem)] font-semibold leading-[1.08] tracking-[-0.04em] text-foreground">
             Welcome to your Rezumi workspace, {displayName}.
           </h1>
+          <p className="balanced mt-2.5 max-w-xl text-sm leading-6 text-muted">
+            One reviewed career record upstream. Everything below is derived
+            from it, and nothing changes without your decision.
+          </p>
         </div>
 
         <section
           aria-labelledby="next-step-heading"
-          className="flex shrink-0 flex-col gap-3 rounded-[var(--radius-card)] border border-primary/25 bg-surface/80 p-4 backdrop-blur-sm sm:flex-row sm:items-center lg:max-w-xl"
+          className="w-full min-w-0 rounded-[var(--radius-card)] border border-primary/25 bg-surface/85 p-4 shadow-[var(--shadow-sm)] backdrop-blur-sm lg:w-[22rem]"
         >
-          <span className="grid size-9 shrink-0 place-items-center rounded-[var(--radius-small)] bg-primary text-white">
-            <Sparkles aria-hidden="true" className="size-4" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="metric-label !text-primary-strong">Next best step</p>
-            <h2
-              className="mt-0.5 text-sm font-semibold text-foreground"
-              id="next-step-heading"
-            >
-              {nextStep.title}
-            </h2>
-            <p className="mt-0.5 text-xs leading-5 text-muted">
-              {nextStep.description}
-            </p>
-          </div>
+          <p className="metric-label flex items-center gap-1.5 !text-primary-strong">
+            <Sparkles aria-hidden="true" className="size-3" />
+            Next best step
+          </p>
+          <h2
+            className="mt-1.5 font-display text-base font-semibold tracking-[-0.02em] text-foreground"
+            id="next-step-heading"
+          >
+            {nextStep.title}
+          </h2>
+          <p className="mt-1 text-xs leading-5 text-muted">
+            {nextStep.description}
+          </p>
           <Link
             className={cn(
               buttonStyles.base,
               buttonStyles.primary,
-              "shrink-0 self-start sm:self-center",
+              "mt-3.5 w-full justify-center",
             )}
             href={nextStep.href}
           >
@@ -216,46 +219,47 @@ export function WorkspaceDashboard({
   const activating = chain.some(({ state }) => state !== "done");
 
   return (
-    <main className="workspace-page space-y-4" id="main-content">
+    <main className="workspace-page space-y-5" id="main-content">
       <DashboardHero displayName={displayName} nextStep={nextStep} />
 
       {autoImport}
 
       {activating && <ActivationChain steps={chain} />}
 
-      {/* Bento row: the hero metric, the record, and standing. */}
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,5fr)_minmax(0,4fr)_minmax(0,3fr)]">
-        <section
-          aria-labelledby="resume-state-heading"
-          className="dash-tile min-w-0"
-        >
-          <div className="flex items-center justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
-            <h2 className="metric-label" id="resume-state-heading">
-              Latest resume state
-            </h2>
-            <Link
-              className="inline-flex items-center gap-0.5 text-xs font-bold text-primary-strong hover:underline"
-              href="/resume-health/account"
-            >
-              Open
-              <ArrowUpRight aria-hidden="true" className="size-3.5" />
-            </Link>
-          </div>
-          <ResumeState resumeHealth={resumeHealth} />
-        </section>
+      {/* Key figures first: the record is what everything else is derived from. */}
+      <CareerRecordStats record={summary.record} />
 
-        <CareerRecordStats record={summary.record} />
-
-        <StandingTile corpId={corpId} record={summary.record} />
-      </div>
-
-      {/* Bento row: what needs a decision, and where opportunities stand. */}
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]">
+      {/* Decisions on the left, the surfaces they come from on the right. */}
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] xl:items-start">
         <AttentionPanel
           degraded={summary.attentionDegraded}
           items={summary.attention}
         />
-        <PipelinePanel pipeline={summary.pipeline} />
+
+        <div className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-1">
+          <section
+            aria-labelledby="resume-state-heading"
+            className="dash-tile min-w-0"
+          >
+            <div className="flex items-center justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
+              <h2 className="metric-label" id="resume-state-heading">
+                Latest resume state
+              </h2>
+              <Link
+                className="inline-flex items-center gap-0.5 text-xs font-bold text-primary-strong hover:underline"
+                href="/resume-health/account"
+              >
+                Open
+                <ArrowUpRight aria-hidden="true" className="size-3.5" />
+              </Link>
+            </div>
+            <ResumeState resumeHealth={resumeHealth} />
+          </section>
+
+          <PipelinePanel pipeline={summary.pipeline} />
+
+          <StandingTile corpId={corpId} record={summary.record} />
+        </div>
       </div>
 
       <TruthLockNote />
