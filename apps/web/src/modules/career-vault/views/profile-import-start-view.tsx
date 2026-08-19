@@ -44,6 +44,7 @@ export function ProfileImportStartView({
         documentId !== undefined && snapshotId !== undefined
           ? await createProfileImportProposals(documentId, snapshotId)
           : {
+              appliedCount: 0,
               proposals: (await listProfileImportProposals()).filter(
                 (proposal) => proposal.status === "pending",
               ),
