@@ -108,9 +108,18 @@ function nextStepFor(
     experiences.kind === "count" &&
     experiences.value === 0
   ) {
+    if (resumeHealth.importSnapshotId === undefined) {
+      return {
+        description:
+          "Confirm or correct the extracted fields in Resume Health. Career Record import starts only after that review is saved.",
+        href: `/resume-health/account/review/${encodeURIComponent(resumeHealth.documentId)}`,
+        label: "Review parsed resume",
+        title: "Finish reviewing parsed fields",
+      };
+    }
     return {
       description:
-        "Your resume was reviewed and scored, but the parsed facts still need to land in your career record. Refresh this page or open your profile to apply them.",
+        "Your reviewed resume facts are ready to land in your career record. Open your profile or refresh this page to apply them.",
       href: "/career-profile",
       label: "Open career profile",
       title: "Add parsed resume facts to your record",

@@ -27,16 +27,25 @@ export type DashboardResumeHealthState =
       kind: "report";
       score: number | null;
       scoreBand: "developing" | "needsAttention" | "strong" | null;
+      /** Snapshot frozen when the report was calculated. */
       snapshotId: string;
+      /** Latest reviewed canonical snapshot, when import is allowed. */
+      importSnapshotId?: string;
     };
 
 export function resumeHealthImportSource(
   resumeHealth: DashboardResumeHealthState,
 ): { documentId: string; snapshotId: string } | undefined {
-  if (resumeHealth.kind === "report" || resumeHealth.kind === "importReady") {
+  if (resumeHealth.kind === "importReady") {
     return {
       documentId: resumeHealth.documentId,
       snapshotId: resumeHealth.snapshotId,
+    };
+  }
+  if (resumeHealth.kind === "report" && resumeHealth.importSnapshotId !== undefined) {
+    return {
+      documentId: resumeHealth.documentId,
+      snapshotId: resumeHealth.importSnapshotId,
     };
   }
   return undefined;
@@ -79,6 +88,7 @@ export async function dashboardResumeHealth(): Promise<DashboardResumeHealthStat
       );
       if (!reportResponse.ok) return { kind: "error" };
       const report = parseReport(await reportResponse.json());
+      const importSource = await reviewedImportSource(document);
       return {
         analysisId: report.id,
         disclaimer: report.disclaimer,
@@ -88,6 +98,9 @@ export async function dashboardResumeHealth(): Promise<DashboardResumeHealthStat
         score: report.score,
         scoreBand: report.scoreBand,
         snapshotId: report.canonicalResumeId,
+        ...(importSource === null
+          ? {}
+          : { importSnapshotId: importSource.snapshotId }),
       };
     }
     const importSource = await reviewedImportSource(document);
