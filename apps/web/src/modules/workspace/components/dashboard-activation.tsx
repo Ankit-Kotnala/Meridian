@@ -50,7 +50,8 @@ export function activationChain(
   const hasRecord = isPositive(summary.record.experiences);
   const hasImports = isPositive(summary.activation.pendingImports);
   const hasJobs = isPositive(summary.activation.jobs);
-  const settled = resumeHealth.kind === "report";
+  const settled =
+    resumeHealth.kind === "report" || resumeHealth.kind === "importReady";
   const stalled =
     resumeHealth.kind === "failed" ||
     resumeHealth.kind === "error" ||

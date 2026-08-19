@@ -17,6 +17,12 @@ export type DashboardResumeHealth =
   | { filename: string; kind: "processing" }
   | { documentId: string; filename: string; kind: "review" }
   | {
+      documentId: string;
+      filename: string;
+      kind: "importReady";
+      snapshotId: string;
+    }
+  | {
       analysisId: string;
       disclaimer: string;
       documentId: string;
@@ -168,9 +174,31 @@ export function ResumeState({
     );
   }
 
-  return (
-    <div className="flex flex-1 flex-col gap-3.5 px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
-      <div className="flex items-center gap-4">
+  if (resumeHealth.kind === "importReady") {
+    return (
+      <StatePanel
+        action={
+          <Link
+            className={cn(buttonStyles.base, buttonStyles.primary)}
+            href="/career-profile"
+          >
+            Open career profile
+          </Link>
+        }
+        badge={<Badge tone="success">Review complete</Badge>}
+        title="Populating your career record"
+      >
+        {resumeHealth.filename} was reviewed. Rezumi is adding your confirmed
+        experiences, skills, education, and contact details to your career
+        record automatically.
+      </StatePanel>
+    );
+  }
+
+  if (resumeHealth.kind === "report") {
+    return (
+      <div className="flex flex-1 flex-col gap-3.5 px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
+        <div className="flex items-center gap-4">
         {resumeHealth.score === null ? (
           <span className="grid size-24 shrink-0 place-items-center rounded-full border-8 border-surface-inset text-center text-xs font-bold text-muted">
             Score unavailable

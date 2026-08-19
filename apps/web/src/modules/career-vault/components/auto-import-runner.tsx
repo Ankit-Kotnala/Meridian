@@ -7,12 +7,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Badge, cn } from "@rezumi/ui";
 
-import {
-  acceptProfileImportProposal,
-  createProfileImportProposals,
-  listProfileImportProposals,
-} from "../api/career-vault-api";
-import { planAutoImport } from "../auto-import/eligibility";
+import { runAutoImport } from "../auto-import/run-auto-import";
 
 type RunState =
   | { kind: "applying"; done: number; total: number }
@@ -53,49 +48,32 @@ export function AutoImportRunner({
 
     async function run() {
       let applied = 0;
-      let questions = 0;
       try {
-        if (documentId !== undefined && snapshotId !== undefined) {
-          // A snapshot that is no longer importable must not hide proposals
-          // already derived from an earlier one, so this failure is carried
-          // rather than thrown: the list below is the authoritative state.
-          try {
-            const batch = await createProfileImportProposals(
-              documentId,
-              snapshotId,
-            );
-            questions = batch.questions.length;
-          } catch {
-            questions = 0;
-          }
-          if (!active) return;
-        }
-
-        const { apply, hold } = planAutoImport(
-          await listProfileImportProposals(),
-        );
+        const result = await runAutoImport(documentId, snapshotId, (progress) => {
+          if (!active || progress.total === 0) return;
+          setState({
+            done: progress.done,
+            kind: "applying",
+            total: progress.total,
+          });
+        });
         if (!active) return;
-        if (apply.length === 0) {
-          if (hold.length > 0 || questions > 0) {
-            setState({
-              applied: 0,
-              held: hold.length,
-              kind: "done",
-              questions,
-            });
-          }
+
+        applied = result.applied;
+        if (
+          result.applied === 0 &&
+          result.held === 0 &&
+          result.questions === 0
+        ) {
           return;
         }
 
-        setState({ done: 0, kind: "applying", total: apply.length });
-        for (const proposal of apply) {
-          await acceptProfileImportProposal(proposal, {}, crypto.randomUUID());
-          applied += 1;
-          if (!active) return;
-          setState({ done: applied, kind: "applying", total: apply.length });
-        }
-
-        setState({ applied, held: hold.length, kind: "done", questions });
+        setState({
+          applied: result.applied,
+          held: result.held,
+          kind: "done",
+          questions: result.questions,
+        });
         router.refresh();
       } catch (error) {
         if (!active) return;

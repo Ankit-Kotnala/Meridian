@@ -18,6 +18,8 @@ import {
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 
+import { runAutoImport } from "@/modules/career-vault/auto-import/run-auto-import";
+
 import {
   ApiRequestError,
   getDocument,
@@ -446,6 +448,7 @@ export function CanonicalReviewView({
         setSaving(false);
         return;
       }
+      let reviewedSnapshotId = canonical.id;
       if (semanticMode && semanticOperations.length > 0) {
         const reviewed = await updateCanonicalResume(
           access,
@@ -458,6 +461,7 @@ export function CanonicalReviewView({
           },
         );
         setCanonical(reviewed);
+        reviewedSnapshotId = reviewed.id;
       } else if (changedFields.length > 0) {
         const reviewed = await updateCanonicalResume(
           access,
@@ -470,6 +474,7 @@ export function CanonicalReviewView({
           },
         );
         setCanonical(reviewed);
+        reviewedSnapshotId = reviewed.id;
       } else if (confirmNoChanges) {
         const reviewed = await updateCanonicalResume(
           access,
@@ -482,6 +487,14 @@ export function CanonicalReviewView({
           },
         );
         setCanonical(reviewed);
+        reviewedSnapshotId = reviewed.id;
+      }
+      if (access === "account") {
+        try {
+          await runAutoImport(documentId, reviewedSnapshotId);
+        } catch {
+          // Analysis still proceeds; the dashboard import runner retries later.
+        }
       }
       const accepted = await startResumeHealth(
         access,
