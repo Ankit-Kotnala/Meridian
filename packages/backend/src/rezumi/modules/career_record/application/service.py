@@ -1951,7 +1951,18 @@ class CareerRecordService:
                     created_at=now,
                     updated_at=now,
                 )
-                await uow.add_semantic_proposal(proposal)
+                try:
+                    await uow.add_semantic_proposal(proposal)
+                except CareerRecordConflict:
+                    raced = await uow.find_semantic_proposal(
+                        owner_user_id,
+                        candidate.snapshot_id,
+                        candidate.semantic_entity_id,
+                    )
+                    if raced is None:
+                        raise
+                    created.append(raced)
+                    continue
                 await uow.add_audit(
                     self._audit(
                         owner_user_id,

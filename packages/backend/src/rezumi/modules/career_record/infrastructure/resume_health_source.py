@@ -183,16 +183,52 @@ class ResumeHealthSourceQuery:
         document_id: UUID,
         snapshot_id: UUID,
     ) -> tuple[ValidatedSemanticCandidate, ...]:
+        """Return importable candidates from a reviewed snapshot.
+
+        Analysis and import links often retain an older canonical snapshot id.
+        When that snapshot is not reviewed, fall back to the latest canonical
+        snapshot for the same owned document.
+        """
+
         scope = OwnerScope(user_id=owner_user_id)
         try:
             document = await self._reader.get_document(scope, document_id)
-            snapshot = await self._reader.get_snapshot(scope, document_id, snapshot_id)
         except ResumeHealthError:
             return ()
+        snapshot_ids = [snapshot_id]
+        try:
+            latest = await self._reader.get_canonical_resume(scope, document_id)
+        except ResumeHealthError:
+            latest = None
+        if latest is not None and latest.id not in snapshot_ids:
+            snapshot_ids.append(latest.id)
+
+        for candidate_snapshot_id in snapshot_ids:
+            try:
+                snapshot = await self._reader.get_snapshot(
+                    scope,
+                    document_id,
+                    candidate_snapshot_id,
+                )
+            except ResumeHealthError:
+                continue
+            candidates = self._reviewed_semantic_candidates_from_snapshot(
+                document,
+                snapshot,
+            )
+            if candidates:
+                return candidates
+        return ()
+
+    def _reviewed_semantic_candidates_from_snapshot(
+        self,
+        document: DocumentView,
+        snapshot: CanonicalSnapshotView,
+    ) -> tuple[ValidatedSemanticCandidate, ...]:
         semantics = snapshot.resume.semantics
         if (
             document.status is not DocumentStatus.READY
-            or snapshot.document_id != document_id
+            or snapshot.document_id != document.id
             or semantics is None
             or semantics.review_state
             not in {SemanticReviewState.CONFIRMED, SemanticReviewState.CORRECTED}
@@ -248,7 +284,7 @@ class ResumeHealthSourceQuery:
             if fields:
                 candidates.append(
                     ValidatedSemanticCandidate(
-                        document_id=document_id,
+                        document_id=document.id,
                         snapshot_id=snapshot.id,
                         snapshot_revision=snapshot.revision,
                         schema_version=semantics.schema_version,

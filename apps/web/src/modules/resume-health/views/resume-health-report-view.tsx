@@ -281,6 +281,13 @@ export function ResumeHealthReportView({
   const sectionFeedback = report.findings.filter(
     (finding) => finding.category === "section_feedback",
   );
+  const semanticReviewState = document?.canonicalResume?.semanticReviewState;
+  const importSnapshotId =
+    (semanticReviewState === "confirmed" ||
+      semanticReviewState === "corrected") &&
+    document?.currentCanonicalResumeId
+      ? document.currentCanonicalResumeId
+      : undefined;
 
   const overviewPanel = (
     <div className="grid gap-5 py-5 lg:grid-cols-[1.1fr_0.9fr]">
@@ -544,23 +551,37 @@ export function ResumeHealthReportView({
         ]}
       />
 
-      {access === "account" && report && (
+      {access === "account" && report && importSnapshotId !== undefined && (
         <div className="mt-5 space-y-3">
           <AutoImportRunner
             documentId={report.documentId}
-            snapshotId={report.canonicalResumeId}
+            snapshotId={importSnapshotId}
           />
           <p className="text-xs text-muted">
             Anything that still needs a decision is in{" "}
             <Link
               className="text-link"
-              href={`/career-profile/imports?documentId=${encodeURIComponent(report.documentId)}&snapshotId=${encodeURIComponent(report.canonicalResumeId)}`}
+              href={`/career-profile/imports?documentId=${encodeURIComponent(report.documentId)}&snapshotId=${encodeURIComponent(importSnapshotId)}`}
             >
               resume import review
             </Link>
             .
           </p>
         </div>
+      )}
+
+      {access === "account" && report && importSnapshotId === undefined && (
+        <Alert className="mt-5" title="Career Record import not ready" tone="info">
+          Finish reviewing the parsed fields before adding them to your career
+          record.{" "}
+          <Link
+            className="text-link"
+            href={`/resume-health/account/review/${encodeURIComponent(report.documentId)}`}
+          >
+            Review parsed resume
+          </Link>
+          .
+        </Alert>
       )}
 
       {access === "guest" && document && (

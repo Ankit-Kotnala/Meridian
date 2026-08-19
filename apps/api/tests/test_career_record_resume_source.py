@@ -132,7 +132,7 @@ async def test_reviewed_semantic_candidate_copies_exact_original_excerpt() -> No
         spans=(SourceSpan(page=1, start=100, end=100 + len(text)),),
     )
     service = _available_service(document_id, snapshot_id, block)
-    service.get_canonical_resume.return_value = _snapshot(
+    reviewed_snapshot = _snapshot(
         document_id,
         snapshot_id,
         block,
@@ -142,6 +142,8 @@ async def test_reviewed_semantic_candidate_copies_exact_original_excerpt() -> No
             anchor_end=117,
         ),
     )
+    service.get_canonical_resume.return_value = reviewed_snapshot
+    service.get_snapshot.return_value = reviewed_snapshot
 
     candidates = await ResumeHealthSourceQuery(service).reviewed_semantic_candidates(
         owner_id,
@@ -151,6 +153,60 @@ async def test_reviewed_semantic_candidate_copies_exact_original_excerpt() -> No
 
     assert candidates[0].fields[0].value == "Software Engineer"
     assert candidates[0].fields[0].anchors[0].source_excerpt == "Software Engineer"
+
+
+@pytest.mark.asyncio
+async def test_reviewed_semantic_candidates_fall_back_to_latest_reviewed_snapshot() -> None:
+    owner_id = uuid4()
+    document_id = uuid4()
+    stale_snapshot_id = uuid4()
+    reviewed_snapshot_id = uuid4()
+    block_id = uuid4()
+    text = "Software Engineer | Example Corp"
+    block = CanonicalBlock(
+        id=block_id,
+        kind=BlockKind.PARAGRAPH,
+        text=text,
+        confidence_basis_points=9_000,
+        spans=(SourceSpan(page=1, start=100, end=100 + len(text)),),
+    )
+    reviewed_semantics = _reviewed_semantics(
+        block_id,
+        anchor_start=100,
+        anchor_end=117,
+    )
+    stale_snapshot = _snapshot(document_id, stale_snapshot_id, block)
+    reviewed_snapshot = _snapshot(
+        document_id,
+        reviewed_snapshot_id,
+        block,
+        semantics=reviewed_semantics,
+    )
+    service = _available_service(document_id, stale_snapshot_id, block)
+    service.get_canonical_resume.return_value = reviewed_snapshot
+
+    async def snapshot_for(
+        scope: object,
+        requested_document_id: UUID,
+        requested_snapshot_id: UUID,
+    ) -> CanonicalSnapshotView:
+        assert requested_document_id == document_id
+        if requested_snapshot_id == stale_snapshot_id:
+            return stale_snapshot
+        if requested_snapshot_id == reviewed_snapshot_id:
+            return reviewed_snapshot
+        raise ResumeResourceNotFound
+
+    service.get_snapshot.side_effect = snapshot_for
+
+    candidates = await ResumeHealthSourceQuery(service).reviewed_semantic_candidates(
+        owner_id,
+        document_id,
+        stale_snapshot_id,
+    )
+
+    assert len(candidates) == 1
+    assert candidates[0].snapshot_id == reviewed_snapshot_id
 
 
 @pytest.mark.asyncio
@@ -165,7 +221,7 @@ async def test_reviewed_semantic_candidate_fails_closed_for_stale_anchor() -> No
         spans=(SourceSpan(page=1, start=100, end=100 + len(text)),),
     )
     service = _available_service(document_id, snapshot_id, block)
-    service.get_canonical_resume.return_value = _snapshot(
+    reviewed_snapshot = _snapshot(
         document_id,
         snapshot_id,
         block,
@@ -175,6 +231,8 @@ async def test_reviewed_semantic_candidate_fails_closed_for_stale_anchor() -> No
             anchor_end=27,
         ),
     )
+    service.get_canonical_resume.return_value = reviewed_snapshot
+    service.get_snapshot.return_value = reviewed_snapshot
 
     assert (
         await ResumeHealthSourceQuery(service).reviewed_semantic_candidates(
@@ -365,7 +423,9 @@ def _available_service(
     document_id: UUID, snapshot_id: UUID, block: CanonicalBlock
 ) -> ResumeHealthService:
     service = create_autospec(ResumeHealthService, instance=True)
-    service.get_canonical_resume.return_value = _snapshot(document_id, snapshot_id, block)
+    snapshot_view = _snapshot(document_id, snapshot_id, block)
+    service.get_canonical_resume.return_value = snapshot_view
+    service.get_snapshot.return_value = snapshot_view
     now = datetime(2026, 7, 15, 12, 0, tzinfo=UTC)
     service.get_document.return_value = DocumentView(
         id=document_id,

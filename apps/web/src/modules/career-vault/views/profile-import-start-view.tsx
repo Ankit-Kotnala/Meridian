@@ -15,7 +15,10 @@ import {
   cn,
 } from "@rezumi/ui";
 
-import { requestErrorMessage } from "@/shared/api/browser-request";
+import {
+  ApiRequestError,
+  requestErrorMessage,
+} from "@/shared/api/browser-request";
 
 import {
   createProfileImportProposals,
@@ -52,6 +55,20 @@ export function ProfileImportStartView({
             },
       );
     } catch (error) {
+      if (error instanceof ApiRequestError) {
+        if (error.failure.code === "career_record_source_unavailable") {
+          setFailure(
+            "Parsed field review is not complete, or the reviewed snapshot no longer matches this resume. Open Resume Health, finish reviewing the extracted fields, then try again.",
+          );
+          return;
+        }
+        if (error.failure.code === "career_record_conflict") {
+          setFailure(
+            "Import is already running or was just created. Refresh this page in a moment.",
+          );
+          return;
+        }
+      }
       setFailure(
         requestErrorMessage(
           error,

@@ -31,6 +31,7 @@ export type DashboardResumeHealth =
       score: number | null;
       scoreBand: "developing" | "needsAttention" | "strong" | null;
       snapshotId: string;
+      importSnapshotId?: string;
     };
 
 function StatePanel({
