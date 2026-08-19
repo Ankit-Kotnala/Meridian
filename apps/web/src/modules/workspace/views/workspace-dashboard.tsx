@@ -93,6 +93,15 @@ function nextStepFor(
       title: "Resolve the current resume state",
     };
   }
+  if (resumeHealth.kind === "importReady") {
+    return {
+      description:
+        "Your reviewed resume facts are being added to your career record automatically. Open your profile to see experiences, skills, and contact details.",
+      href: "/career-profile",
+      label: "Open career profile",
+      title: "Populate your career record",
+    };
+  }
   const experiences = summary.record.experiences;
   if (experiences.kind === "count" && experiences.value === 0) {
     return {

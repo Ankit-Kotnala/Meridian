@@ -1,7 +1,8 @@
 import { fillApiPath } from "@/shared/api/api-path";
 import { serverApiFetch } from "@/shared/api/server-request";
 
-import { parseDocumentList, parseReport } from "../api/contract-parsers";
+import { parseDocument, parseDocumentList, parseReport } from "../api/contract-parsers";
+import type { DocumentSummary } from "../api/types";
 
 export type DashboardResumeHealthState =
   | { kind: "empty" }
@@ -10,6 +11,13 @@ export type DashboardResumeHealthState =
   | { filename: string; kind: "failed" }
   | { filename: string; kind: "processing" }
   | { documentId: string; filename: string; kind: "review" }
+  | {
+      documentId: string;
+      filename: string;
+      /** Reviewed semantics are ready to populate the career record. */
+      kind: "importReady";
+      snapshotId: string;
+    }
   | {
       analysisId: string;
       disclaimer: string;
@@ -21,6 +29,37 @@ export type DashboardResumeHealthState =
       scoreBand: "developing" | "needsAttention" | "strong" | null;
       snapshotId: string;
     };
+
+export function resumeHealthImportSource(
+  resumeHealth: DashboardResumeHealthState,
+): { documentId: string; snapshotId: string } | undefined {
+  if (resumeHealth.kind === "report" || resumeHealth.kind === "importReady") {
+    return {
+      documentId: resumeHealth.documentId,
+      snapshotId: resumeHealth.snapshotId,
+    };
+  }
+  return undefined;
+}
+
+async function reviewedImportSource(
+  document: DocumentSummary,
+): Promise<{ documentId: string; snapshotId: string } | null> {
+  const snapshotId = document.currentCanonicalResumeId;
+  if (snapshotId == null) return null;
+  const detailResponse = await serverApiFetch(
+    fillApiPath("/api/v1/documents/{document_id}", {
+      document_id: document.id,
+    }),
+  );
+  if (!detailResponse.ok) return null;
+  const detail = parseDocument(await detailResponse.json());
+  const reviewState = detail.canonicalResume?.semanticReviewState;
+  if (reviewState === "confirmed" || reviewState === "corrected") {
+    return { documentId: document.id, snapshotId };
+  }
+  return null;
+}
 
 export async function dashboardResumeHealth(): Promise<DashboardResumeHealthState> {
   try {
@@ -49,6 +88,15 @@ export async function dashboardResumeHealth(): Promise<DashboardResumeHealthStat
         score: report.score,
         scoreBand: report.scoreBand,
         snapshotId: report.canonicalResumeId,
+      };
+    }
+    const importSource = await reviewedImportSource(document);
+    if (importSource !== null) {
+      return {
+        documentId: importSource.documentId,
+        filename: document.displayFilename,
+        kind: "importReady",
+        snapshotId: importSource.snapshotId,
       };
     }
     if (document.status === "reviewReady") {

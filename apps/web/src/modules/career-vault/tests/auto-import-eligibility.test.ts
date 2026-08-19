@@ -90,20 +90,18 @@ describe("auto import eligibility", () => {
     expect(isAutoApplicable(conflicting)).toBe(false);
   });
 
-  it("holds a parsed value that cannot be traced back to the file", () => {
-    expect(autoImportHold(proposal({ changes: [change({ spans: 0 })] }))).toBe(
-      "untraceable",
-    );
+  it("applies a confirmed value that cannot be traced back to the file", () => {
+    expect(autoImportHold(proposal({ changes: [change({ spans: 0 })] }))).toBeNull();
   });
 
-  it("holds a parsed value below the confidence floor", () => {
+  it("applies a confirmed value below the confidence floor", () => {
     expect(
       autoImportHold(
         proposal({
           changes: [change({ confidence: AUTO_IMPORT_MIN_CONFIDENCE - 0.01 })],
         }),
       ),
-    ).toBe("lowConfidence");
+    ).toBeNull();
   });
 
   it("applies a parsed value exactly at the confidence floor", () => {

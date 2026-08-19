@@ -60,6 +60,22 @@ describe("activation chain projection", () => {
     expect(stateOf(steps, "opportunity")).toBe("pending");
   });
 
+  it("marks review and report complete once semantics are reviewed", () => {
+    const steps = activationChain(
+      {
+        documentId: "doc-1",
+        filename: "fictional.pdf",
+        kind: "importReady",
+        snapshotId: "00000000-0000-4000-8000-000000000032",
+      },
+      summary(),
+    );
+
+    expect(stateOf(steps, "review")).toBe("done");
+    expect(stateOf(steps, "report")).toBe("done");
+    expect(stateOf(steps, "record")).toBe("current");
+  });
+
   it("points the review step at the document awaiting confirmation", () => {
     const steps = activationChain(
       { documentId: "doc 1/2", filename: "fictional.pdf", kind: "review" },

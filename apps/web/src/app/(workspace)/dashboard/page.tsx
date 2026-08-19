@@ -4,7 +4,10 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/modules/auth";
 import { AutoImportRunner } from "@/modules/career-vault";
 import { onboardingIsComplete } from "@/modules/onboarding";
-import { dashboardResumeHealth } from "@/modules/resume-health";
+import {
+  dashboardResumeHealth,
+  resumeHealthImportSource,
+} from "@/modules/resume-health";
 import { dashboardSummary, WorkspaceDashboard } from "@/modules/workspace";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -18,17 +21,16 @@ export default async function DashboardPage() {
     dashboardResumeHealth(),
     dashboardSummary(),
   ]);
+  const importSource = resumeHealthImportSource(resumeHealth);
   return (
     <WorkspaceDashboard
       autoImport={
-        <AutoImportRunner
-          {...(resumeHealth.kind === "report"
-            ? {
-                documentId: resumeHealth.documentId,
-                snapshotId: resumeHealth.snapshotId,
-              }
-            : {})}
-        />
+        importSource === undefined ? undefined : (
+          <AutoImportRunner
+            documentId={importSource.documentId}
+            snapshotId={importSource.snapshotId}
+          />
+        )
       }
       displayName={user.displayName}
       onboardingComplete={complete}

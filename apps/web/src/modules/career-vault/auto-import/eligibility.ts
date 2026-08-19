@@ -31,8 +31,14 @@ export function autoImportHold(
 
   for (const change of proposal.changes) {
     if (change.conflict !== null) return "conflict";
-    // A value the user typed during review needs no anchor: they authored it.
-    if (change.reviewState === "user_added") continue;
+    // Values settled during typed resume review do not need a second gate.
+    if (
+      change.reviewState === "user_added" ||
+      change.reviewState === "confirmed" ||
+      change.reviewState === "corrected"
+    ) {
+      continue;
+    }
     if (change.source.spans.length === 0) return "untraceable";
     const confidence = change.source.confidence;
     if (confidence !== null && confidence < AUTO_IMPORT_MIN_CONFIDENCE) {
