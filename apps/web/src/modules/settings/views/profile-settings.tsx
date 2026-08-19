@@ -25,6 +25,7 @@ import {
   type ProfileState,
   updateProfile,
 } from "../api/settings-api";
+import { CorpIdCard } from "../components/corp-id-card";
 
 export function ProfileSettings() {
   const [profile, setProfile] = useState<ProfileState>();
@@ -99,143 +100,155 @@ export function ProfileSettings() {
     );
 
   return (
-    <Card className="p-5 sm:p-7">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-extrabold text-foreground">
-            Profile and account
-          </h2>
-          <p className="mt-1 text-sm leading-6 text-muted">
-            Manage presentation and future filtering preferences. Employment
-            facts are not stored here.
-          </p>
-        </div>
-        <Badge tone={profile.emailVerified ? "success" : "warning"}>
-          {profile.emailVerified ? "Email verified" : "Verification required"}
-        </Badge>
-      </div>
-      {failure && (
-        <Alert className="mb-5" title="Profile not saved" tone="danger">
-          {failure}
-          <Button className="mt-3" onClick={load} variant="secondary">
-            <RefreshCcw aria-hidden="true" className="size-4" /> Reload profile
-          </Button>
-        </Alert>
-      )}
-      {saved && (
-        <Alert className="mb-5" title="Profile saved" tone="success">
-          Your current account preferences are up to date.
-        </Alert>
-      )}
-      <form className="space-y-5" onSubmit={onSubmit}>
-        <div className="grid gap-5 sm:grid-cols-2">
-          <TextField
-            defaultValue={profile.displayName}
-            id="displayName"
-            label="Name"
-            maxLength={100}
-            name="displayName"
-            required
-          />
-          <TextField
-            disabled
-            id="accountEmail"
-            label="Verified email"
-            value={profile.email}
-          />
-          <TextField
-            defaultValue={profile.targetRole ?? ""}
-            id="targetRole"
-            label="Target role (optional)"
-            maxLength={160}
-            name="targetRole"
-          />
-          <TextField
-            defaultValue={profile.preferredLocation ?? ""}
-            id="preferredLocation"
-            label="Preferred location (optional)"
-            maxLength={160}
-            name="preferredLocation"
-          />
-          <div className="space-y-2">
-            <FieldLabel htmlFor="workModel">Work model (optional)</FieldLabel>
-            <Select
-              defaultValue={profile.workModel ?? ""}
-              id="workModel"
-              name="workModel"
-            >
-              <option value="">No preference</option>
-              <option value="onsite">On-site</option>
-              <option value="hybrid">Hybrid</option>
-              <option value="remote">Remote</option>
-              <option value="flexible">Flexible</option>
-            </Select>
+    <div className="space-y-6">
+      <CorpIdCard
+        displayName={profile.displayName}
+        emailVerified={profile.emailVerified}
+        userId={profile.id}
+      />
+      <Card className="p-5 sm:p-7">
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-extrabold text-foreground">
+              Profile and account
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-muted">
+              Manage presentation and future filtering preferences. Employment
+              facts are not stored here.
+            </p>
           </div>
-          <div className="space-y-2">
-            <FieldLabel htmlFor="seniority">Seniority (optional)</FieldLabel>
-            <Select
-              defaultValue={profile.seniority ?? ""}
-              id="seniority"
-              name="seniority"
-            >
-              <option value="">No preference</option>
-              <option value="entry">Entry</option>
-              <option value="mid">Mid-level</option>
-              <option value="senior">Senior</option>
-              <option value="lead">Lead</option>
-              <option value="executive">Executive</option>
-            </Select>
-          </div>
-          <TextField
-            defaultValue={profile.industry ?? ""}
-            id="industry"
-            label="Industry (optional)"
-            maxLength={120}
-            name="industry"
-          />
-          <TextField
-            defaultValue={profile.language}
-            id="language"
-            label="Language"
-            maxLength={35}
-            name="language"
-            required
-          />
-          <TextField
-            defaultValue={profile.locale}
-            id="locale"
-            label="Locale"
-            maxLength={35}
-            name="locale"
-            required
-          />
-          <TextField
-            defaultValue={profile.timezone}
-            id="timezone"
-            label="Time zone"
-            maxLength={64}
-            name="timezone"
-            required
-          />
-          <div className="space-y-2 sm:col-span-2">
-            <FieldLabel htmlFor="writingStyle">Writing preference</FieldLabel>
-            <Select
-              defaultValue={profile.writingStyle}
-              id="writingStyle"
-              name="writingStyle"
-            >
-              <option value="concise">Concise</option>
-              <option value="balanced">Balanced</option>
-              <option value="detailed">Detailed</option>
-            </Select>
-          </div>
+          <Badge tone={profile.emailVerified ? "success" : "warning"}>
+            {profile.emailVerified ? "Email verified" : "Verification required"}
+          </Badge>
         </div>
-        <div className="flex justify-end">
-          <Button loading={saving} loadingLabel="Saving profile…" type="submit">
-            Save profile
-          </Button>
-        </div>
-      </form>
-    </Card>
+        {failure && (
+          <Alert className="mb-5" title="Profile not saved" tone="danger">
+            {failure}
+            <Button className="mt-3" onClick={load} variant="secondary">
+              <RefreshCcw aria-hidden="true" className="size-4" /> Reload
+              profile
+            </Button>
+          </Alert>
+        )}
+        {saved && (
+          <Alert className="mb-5" title="Profile saved" tone="success">
+            Your current account preferences are up to date.
+          </Alert>
+        )}
+        <form className="space-y-5" onSubmit={onSubmit}>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <TextField
+              defaultValue={profile.displayName}
+              id="displayName"
+              label="Name"
+              maxLength={100}
+              name="displayName"
+              required
+            />
+            <TextField
+              disabled
+              id="accountEmail"
+              label="Verified email"
+              value={profile.email}
+            />
+            <TextField
+              defaultValue={profile.targetRole ?? ""}
+              id="targetRole"
+              label="Target role (optional)"
+              maxLength={160}
+              name="targetRole"
+            />
+            <TextField
+              defaultValue={profile.preferredLocation ?? ""}
+              id="preferredLocation"
+              label="Preferred location (optional)"
+              maxLength={160}
+              name="preferredLocation"
+            />
+            <div className="space-y-2">
+              <FieldLabel htmlFor="workModel">Work model (optional)</FieldLabel>
+              <Select
+                defaultValue={profile.workModel ?? ""}
+                id="workModel"
+                name="workModel"
+              >
+                <option value="">No preference</option>
+                <option value="onsite">On-site</option>
+                <option value="hybrid">Hybrid</option>
+                <option value="remote">Remote</option>
+                <option value="flexible">Flexible</option>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <FieldLabel htmlFor="seniority">Seniority (optional)</FieldLabel>
+              <Select
+                defaultValue={profile.seniority ?? ""}
+                id="seniority"
+                name="seniority"
+              >
+                <option value="">No preference</option>
+                <option value="entry">Entry</option>
+                <option value="mid">Mid-level</option>
+                <option value="senior">Senior</option>
+                <option value="lead">Lead</option>
+                <option value="executive">Executive</option>
+              </Select>
+            </div>
+            <TextField
+              defaultValue={profile.industry ?? ""}
+              id="industry"
+              label="Industry (optional)"
+              maxLength={120}
+              name="industry"
+            />
+            <TextField
+              defaultValue={profile.language}
+              id="language"
+              label="Language"
+              maxLength={35}
+              name="language"
+              required
+            />
+            <TextField
+              defaultValue={profile.locale}
+              id="locale"
+              label="Locale"
+              maxLength={35}
+              name="locale"
+              required
+            />
+            <TextField
+              defaultValue={profile.timezone}
+              id="timezone"
+              label="Time zone"
+              maxLength={64}
+              name="timezone"
+              required
+            />
+            <div className="space-y-2 sm:col-span-2">
+              <FieldLabel htmlFor="writingStyle">Writing preference</FieldLabel>
+              <Select
+                defaultValue={profile.writingStyle}
+                id="writingStyle"
+                name="writingStyle"
+              >
+                <option value="concise">Concise</option>
+                <option value="balanced">Balanced</option>
+                <option value="detailed">Detailed</option>
+              </Select>
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button
+              loading={saving}
+              loadingLabel="Saving profile…"
+              type="submit"
+            >
+              Save profile
+            </Button>
+          </div>
+        </form>
+      </Card>
+    </div>
   );
 }

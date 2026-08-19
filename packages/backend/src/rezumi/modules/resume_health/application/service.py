@@ -121,17 +121,62 @@ _OUTCOME_WORDS = re.compile(
 _DATE_SIGNAL = re.compile(r"\b(?:19|20)\d{2}\b")
 _SECTION_NAMES: dict[str, SectionKind] = {
     "summary": SectionKind.SUMMARY,
+    "professional summary": SectionKind.SUMMARY,
+    "career summary": SectionKind.SUMMARY,
+    "executive summary": SectionKind.SUMMARY,
     "profile": SectionKind.SUMMARY,
+    "professional profile": SectionKind.SUMMARY,
+    "about me": SectionKind.SUMMARY,
+    "objective": SectionKind.SUMMARY,
+    "career objective": SectionKind.SUMMARY,
     "experience": SectionKind.EXPERIENCE,
     "work experience": SectionKind.EXPERIENCE,
+    "working experience": SectionKind.EXPERIENCE,
     "professional experience": SectionKind.EXPERIENCE,
+    "relevant experience": SectionKind.EXPERIENCE,
+    "industry experience": SectionKind.EXPERIENCE,
+    "employment": SectionKind.EXPERIENCE,
+    "employment history": SectionKind.EXPERIENCE,
+    "work history": SectionKind.EXPERIENCE,
+    "career history": SectionKind.EXPERIENCE,
+    "professional background": SectionKind.EXPERIENCE,
     "education": SectionKind.EDUCATION,
+    "education and training": SectionKind.EDUCATION,
+    "academic background": SectionKind.EDUCATION,
+    "academic qualifications": SectionKind.EDUCATION,
+    "qualifications": SectionKind.EDUCATION,
     "skills": SectionKind.SKILLS,
     "technical skills": SectionKind.SKILLS,
+    "core skills": SectionKind.SKILLS,
+    "key skills": SectionKind.SKILLS,
+    "core competencies": SectionKind.SKILLS,
+    "competencies": SectionKind.SKILLS,
+    "areas of expertise": SectionKind.SKILLS,
+    "technologies": SectionKind.SKILLS,
+    "technical proficiencies": SectionKind.SKILLS,
+    "tools and technologies": SectionKind.SKILLS,
     "projects": SectionKind.PROJECTS,
+    "key projects": SectionKind.PROJECTS,
+    "selected projects": SectionKind.PROJECTS,
+    "personal projects": SectionKind.PROJECTS,
     "certifications": SectionKind.CERTIFICATIONS,
+    "certification": SectionKind.CERTIFICATIONS,
+    "certifications and licenses": SectionKind.CERTIFICATIONS,
+    "licenses and certifications": SectionKind.CERTIFICATIONS,
+    "courses and certifications": SectionKind.CERTIFICATIONS,
     "contact": SectionKind.CONTACT,
+    "contact information": SectionKind.CONTACT,
+    "contact details": SectionKind.CONTACT,
 }
+# Section headings are frequently decorated ("— EXPERIENCE —", "▌Work History")
+# or joined with an ampersand. Normalizing decoration away lets one vocabulary
+# entry match the many ways the same heading is typeset.
+_HEADING_DECORATION = re.compile(r"^[^0-9A-Za-z]+|[^0-9A-Za-z]+$")
+_HEADING_SEPARATORS = re.compile(r"\s*[&/]\s*|[\s_]+")
+# A heading is a short label, not a sentence. This bounds what may be promoted
+# to a section break so a body line that merely opens with a section word stays
+# body text.
+_MAX_HEADING_CHARACTERS = 64
 
 
 @dataclass(frozen=True, slots=True)
@@ -2301,6 +2346,29 @@ def _outcome(job: ProcessingJob) -> ProcessingOutcome:
     return ProcessingOutcome(job.id, job.status, job.retryable, job.safe_error_code)
 
 
+def _normalized_heading(text: str) -> str:
+    """Reduce a candidate heading to its comparable vocabulary form."""
+    stripped = _HEADING_DECORATION.sub("", text.strip())
+    return _HEADING_SEPARATORS.sub(" ", stripped).strip().casefold()
+
+
+def _section_heading_kind(item: Any) -> SectionKind | None:
+    """Classify one extracted block as a section break, or not a heading at all.
+
+    Section headings are matched on their text rather than on the extractor's
+    block-kind guess. That guess only recognizes upper-case or colon-terminated
+    lines, so an ordinary title-case "Work Experience" heading was previously
+    left as body text and collapsed the whole document into one unrecognized
+    section. Bullets are never headings regardless of what they say.
+    """
+    if item.kind == "bullet":
+        return None
+    text = item.text.strip()
+    if not text or len(text) > _MAX_HEADING_CHARACTERS:
+        return None
+    return _SECTION_NAMES.get(_normalized_heading(text))
+
+
 def _canonicalize(document_id: UUID, extraction: Any) -> CanonicalResume:
     sections: list[CanonicalSection] = []
     current_kind = SectionKind.OTHER
@@ -2325,8 +2393,7 @@ def _canonicalize(document_id: UUID, extraction: Any) -> CanonicalResume:
         current_blocks = []
 
     for index, item in enumerate(extraction.reading_order):
-        normalized = item.text.strip().rstrip(":").casefold()
-        section_kind = _SECTION_NAMES.get(normalized) if item.kind == "heading" else None
+        section_kind = _section_heading_kind(item)
         if section_kind is not None:
             flush()
             current_kind = section_kind

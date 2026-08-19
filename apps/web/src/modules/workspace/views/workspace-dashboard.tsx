@@ -1,13 +1,28 @@
-import { ArrowRight, BadgeCheck, ShieldCheck, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  BadgeCheck,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 
-import { Badge, buttonStyles, cn, SectionHeader } from "@rezumi/ui";
+import { Badge, buttonStyles, cn } from "@rezumi/ui";
 
+import { corpIdFor } from "@/shared/identity/corp-id";
+
+import {
+  ActivationChain,
+  ActivationGate,
+  activationChain,
+  shouldGateWorkspace,
+} from "../components/dashboard-activation";
 import {
   AttentionPanel,
   CareerRecordStats,
   PipelinePanel,
-  QuickLaunch,
+  StandingTile,
   TruthLockNote,
 } from "../components/dashboard-sections";
 import {
@@ -21,12 +36,14 @@ export type { DashboardResumeHealth };
 const UNAVAILABLE = { kind: "unavailable" } as const;
 
 const EMPTY_SUMMARY: DashboardSummary = {
+  activation: { jobs: UNAVAILABLE, pendingImports: UNAVAILABLE },
   attention: [],
   attentionDegraded: false,
   pipeline: UNAVAILABLE,
   record: {
     achievements: UNAVAILABLE,
     evidence: UNAVAILABLE,
+    evidenceConfirmed: UNAVAILABLE,
     experiences: UNAVAILABLE,
     skills: UNAVAILABLE,
   },
@@ -104,6 +121,11 @@ function nextStepFor(
   };
 }
 
+/**
+ * Workspace masthead. The greeting and the one decision worth making sit on the
+ * same line at the top of the page, so the fold carries identity and intent
+ * rather than paragraphs of orientation copy.
+ */
 function DashboardHero({
   displayName,
   nextStep,
@@ -112,60 +134,55 @@ function DashboardHero({
   nextStep: NextStep;
 }) {
   return (
-    <section className="workspace-hero px-5 py-6 sm:px-8 sm:py-8">
-      <div className="grid gap-7 lg:grid-cols-[minmax(0,1.15fr)_minmax(19rem,0.85fr)] lg:items-center">
+    <section className="workspace-hero px-5 py-6 sm:px-7 sm:py-8">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-10">
         <div className="min-w-0">
-          <p className="eyebrow">Workspace home</p>
-          <h1 className="balanced mt-2 font-display text-[clamp(1.6rem,2.6vw,2.1rem)] font-semibold leading-[1.14] tracking-[-0.035em] text-foreground">
-            Welcome to your Rezumi workspace, {displayName}.
-          </h1>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-muted sm:text-[0.9375rem]">
-            Start with the next useful action, then return to your structured
-            career record whenever the underlying facts change.
-          </p>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge tone="success">
               <ShieldCheck aria-hidden="true" className="size-3.5" /> Private
-              account
             </Badge>
             <Badge tone="primary">
               <BadgeCheck aria-hidden="true" className="size-3.5" /> Evidence
               grounded
             </Badge>
           </div>
+          <h1 className="balanced mt-3 font-display text-[clamp(1.6rem,3vw,2.4rem)] font-semibold leading-[1.08] tracking-[-0.04em] text-foreground">
+            Welcome to your Rezumi workspace, {displayName}.
+          </h1>
+          <p className="balanced mt-2.5 max-w-xl text-sm leading-6 text-muted">
+            One reviewed career record upstream. Everything below is derived
+            from it, and nothing changes without your decision.
+          </p>
         </div>
 
         <section
           aria-labelledby="next-step-heading"
-          className="rounded-[var(--radius-card)] border border-primary/25 bg-surface/85 p-5 shadow-[var(--shadow-sm)] backdrop-blur-sm"
+          className="w-full min-w-0 rounded-[var(--radius-card)] border border-primary/25 bg-surface/85 p-4 shadow-[var(--shadow-sm)] backdrop-blur-sm lg:w-[22rem]"
         >
-          <p className="eyebrow flex items-center gap-1.5 !text-primary-strong">
-            <Sparkles aria-hidden="true" className="size-3.5" />
+          <p className="metric-label flex items-center gap-1.5 !text-primary-strong">
+            <Sparkles aria-hidden="true" className="size-3" />
             Next best step
           </p>
           <h2
-            className="mt-2.5 text-lg font-semibold tracking-[-0.02em] text-foreground"
+            className="mt-1.5 font-display text-base font-semibold tracking-[-0.02em] text-foreground"
             id="next-step-heading"
           >
             {nextStep.title}
           </h2>
-          <p className="mt-1.5 text-sm leading-6 text-muted">
+          <p className="mt-1 text-xs leading-5 text-muted">
             {nextStep.description}
           </p>
           <Link
             className={cn(
               buttonStyles.base,
               buttonStyles.primary,
-              "mt-4 w-full",
+              "mt-3.5 w-full justify-center",
             )}
             href={nextStep.href}
           >
             {nextStep.label}
             <ArrowRight aria-hidden="true" className="size-4" />
           </Link>
-          <p className="mt-3 text-xs leading-5 text-muted">
-            You review factual changes before they become derived output.
-          </p>
         </section>
       </div>
     </section>
@@ -173,49 +190,77 @@ function DashboardHero({
 }
 
 export function WorkspaceDashboard({
+  autoImport,
   displayName,
   onboardingComplete,
   resumeHealth = { kind: "empty" },
   summary = EMPTY_SUMMARY,
+  userId,
 }: {
+  /**
+   * Zero-touch import reporter, injected by the route so the workspace module
+   * never depends on the Career Record module directly.
+   */
+  autoImport?: ReactNode;
   displayName: string;
   onboardingComplete: boolean;
   resumeHealth?: DashboardResumeHealth;
   summary?: DashboardSummary;
+  /** Account identifier the Corp ID standing tile is derived from. */
+  userId?: string;
 }) {
+  const corpId = userId === undefined ? null : corpIdFor(userId);
+  if (onboardingComplete && shouldGateWorkspace(resumeHealth, summary)) {
+    return <ActivationGate displayName={displayName} />;
+  }
+
   const nextStep = nextStepFor(onboardingComplete, resumeHealth, summary);
+  const chain = activationChain(resumeHealth, summary);
+  const activating = chain.some(({ state }) => state !== "done");
 
   return (
-    <main className="workspace-page space-y-8" id="main-content">
+    <main className="workspace-page space-y-5" id="main-content">
       <DashboardHero displayName={displayName} nextStep={nextStep} />
 
+      {autoImport}
+
+      {activating && <ActivationChain steps={chain} />}
+
+      {/* Key figures first: the record is what everything else is derived from. */}
       <CareerRecordStats record={summary.record} />
 
-      <div className="grid gap-8 lg:grid-cols-2">
+      {/* Decisions on the left, the surfaces they come from on the right. */}
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] xl:items-start">
         <AttentionPanel
           degraded={summary.attentionDegraded}
           items={summary.attention}
         />
-        <PipelinePanel pipeline={summary.pipeline} />
-      </div>
 
-      <section aria-labelledby="resume-state-heading">
-        <SectionHeader
-          actions={
-            <Link className="text-link text-sm" href="/resume-health/account">
-              Open Resume health
-            </Link>
-          }
-          description="Only your latest persisted private-document state appears here."
-          id="resume-state-heading"
-          title="Latest resume state"
-        />
-        <div className="data-region">
-          <ResumeState resumeHealth={resumeHealth} />
+        <div className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-1">
+          <section
+            aria-labelledby="resume-state-heading"
+            className="dash-tile min-w-0"
+          >
+            <div className="flex items-center justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
+              <h2 className="metric-label" id="resume-state-heading">
+                Latest resume state
+              </h2>
+              <Link
+                className="inline-flex items-center gap-0.5 text-xs font-bold text-primary-strong hover:underline"
+                href="/resume-health/account"
+              >
+                Open
+                <ArrowUpRight aria-hidden="true" className="size-3.5" />
+              </Link>
+            </div>
+            <ResumeState resumeHealth={resumeHealth} />
+          </section>
+
+          <PipelinePanel pipeline={summary.pipeline} />
+
+          <StandingTile corpId={corpId} record={summary.record} />
         </div>
-      </section>
-
-      <QuickLaunch />
+      </div>
 
       <TruthLockNote />
     </main>

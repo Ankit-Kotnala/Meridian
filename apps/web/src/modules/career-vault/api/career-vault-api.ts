@@ -325,6 +325,23 @@ export async function getProfileImportProposal(
   );
 }
 
+/** List every import proposal the account currently has, newest state included. */
+export async function listProfileImportProposals(): Promise<
+  ProfileImportProposal[]
+> {
+  const body: unknown = await (
+    await query(careerVaultPaths.profileImportProposals)
+  ).json();
+  const data =
+    typeof body === "object" && body !== null
+      ? (body as { data?: unknown }).data
+      : undefined;
+  if (!Array.isArray(data)) {
+    throw new Error("Invalid profile import proposal list response.");
+  }
+  return data.map(parseProfileImportProposal);
+}
+
 export async function createProfileImportProposals(
   documentId: string,
   snapshotId: string,

@@ -44,7 +44,13 @@ _DATE = re.compile(
     r")\b",
     re.IGNORECASE,
 )
-_SPLIT = re.compile(r"\s*(?:\||•|·)\s*")
+_SPLIT = re.compile(r"\s*(?:\||•|·|\t)\s*")
+# Weak separators are only applied when a record still has unfilled names, so a
+# header line is cut exactly as far as the record requires and no further. The
+# first cut may use "at" ("Senior Engineer at Acme"); later cuts may not, so an
+# institution such as "University of Texas at Austin" survives intact.
+_WEAK_SPLIT_FIRST = re.compile(r"\s*,\s*|\s+[\u2013\u2014-]\s+|\s+at\s+", re.IGNORECASE)
+_WEAK_SPLIT_REST = re.compile(r"\s*,\s*|\s+[\u2013\u2014-]\s+")
 # Skills lists commonly separate individual skills with commas or semicolons in
 # addition to pipes/bullets. Slashes and hyphens are intentionally excluded so
 # compound skills like "CI/CD", "TCP/IP", or "A/B testing" stay intact.
@@ -90,9 +96,7 @@ class LocalResumeParserProvider:
                 continue
             groups = _entity_block_groups(kind, section.blocks)
             for index, blocks in enumerate(groups):
-                candidates = tuple(
-                    candidate for block in blocks for candidate in _section_candidates(kind, block)
-                )
+                candidates = _group_candidates(kind, blocks)
                 if candidates:
                     entities.append(
                         _entity(
@@ -171,44 +175,83 @@ def _contact_candidates(blocks: tuple[CanonicalBlock, ...]) -> tuple[_FieldCandi
     return tuple(candidates)
 
 
-def _section_candidates(
-    kind: SemanticEntityKind, block: CanonicalBlock
+def _group_candidates(
+    kind: SemanticEntityKind,
+    blocks: tuple[CanonicalBlock, ...],
 ) -> tuple[_FieldCandidate, ...]:
-    text = block.text
+    """Name one record's fields across every line that belongs to that record.
+
+    A resume record's header is routinely spread over several lines, with the
+    title on one and the employer, location, and dates on the next. Naming
+    positionally across the whole group, instead of restarting at the first name
+    on every line, is what lets a record collect the title/employer/start_date
+    trio that a Career Record import proposal requires.
+    """
     if kind is SemanticEntityKind.SKILL:
         return tuple(
-            _FieldCandidate(
-                "name",
-                SemanticFieldType.TEXT,
-                value,
-                block,
-                start,
-                end,
-                8_000,
-            )
-            for value, start, end in _source_values(text, (), _SKILL_SPLIT)
-        )
-    if block.kind is BlockKind.BULLET:
-        name = "achievement" if kind is SemanticEntityKind.EXPERIENCE else "description"
-        return (
-            _FieldCandidate(
-                name,
-                SemanticFieldType.BULLET,
-                text,
-                block,
-                0,
-                len(text),
-                8_500,
-            ),
+            _FieldCandidate("name", SemanticFieldType.TEXT, value, block, start, end, 8_000)
+            for block in blocks
+            for value, start, end in _source_values(block.text, (), _SKILL_SPLIT)
         )
 
     candidates: list[_FieldCandidate] = []
+    pending_text = list(_text_names(kind))
+    pending_dates = list(_date_names(kind))
+    for block in blocks:
+        if block.kind is BlockKind.BULLET:
+            name = "achievement" if kind is SemanticEntityKind.EXPERIENCE else "description"
+            candidates.append(
+                _FieldCandidate(
+                    name,
+                    SemanticFieldType.BULLET,
+                    block.text,
+                    block,
+                    0,
+                    len(block.text),
+                    8_500,
+                )
+            )
+            continue
+        candidates.extend(_header_candidates(block, pending_text, pending_dates))
+
+    if candidates:
+        return tuple(candidates)
+    header = next(
+        (block for block in blocks if block.kind is not BlockKind.BULLET and block.text),
+        None,
+    )
+    if header is None:
+        return ()
+    # A header whose only content is separator punctuation yields no exact
+    # source value. Name the whole line rather than dropping the record.
+    return (
+        _FieldCandidate(
+            _text_names(kind)[0],
+            SemanticFieldType.TEXT,
+            header.text,
+            header,
+            0,
+            len(header.text),
+            5_500,
+        ),
+    )
+
+
+def _header_candidates(
+    block: CanonicalBlock,
+    pending_text: list[str],
+    pending_dates: list[str],
+) -> list[_FieldCandidate]:
+    """Consume the record's still-unfilled names from one header line."""
+    text = block.text
+    candidates: list[_FieldCandidate] = []
     date_matches = list(_DATE.finditer(text))
-    date_names = _date_names(kind, len(date_matches))
-    for match, name in zip(date_matches, date_names, strict=False):
+    for match in date_matches:
+        if not pending_dates:
+            break
         candidates.append(
             _FieldCandidate(
-                name,
+                pending_dates.pop(0),
                 SemanticFieldType.DATE,
                 match.group(),
                 block,
@@ -218,15 +261,16 @@ def _section_candidates(
                 _date_precision(match.group()),
             )
         )
-    values = _source_values(
+    segments = _source_values(
         text,
         tuple((match.start(), match.end()) for match in date_matches),
     )
-    names = _text_names(kind)
-    for (value, start, end), name in zip(values, names, strict=False):
+    for value, start, end in _split_for_names(text, segments, len(pending_text)):
+        if not pending_text:
+            break
         candidates.append(
             _FieldCandidate(
-                name,
+                pending_text.pop(0),
                 SemanticFieldType.TEXT,
                 value,
                 block,
@@ -235,20 +279,49 @@ def _section_candidates(
                 7_000,
             )
         )
-    if not candidates:
-        fallback_name = _text_names(kind)[0]
-        candidates.append(
-            _FieldCandidate(
-                fallback_name,
-                SemanticFieldType.TEXT,
-                text,
-                block,
-                0,
-                len(text),
-                5_500,
-            )
-        )
-    return tuple(candidates)
+    return candidates
+
+
+def _split_for_names(
+    text: str,
+    segments: tuple[tuple[str, int, int], ...],
+    needed: int,
+) -> tuple[tuple[str, int, int], ...]:
+    """Sub-split header segments only while the record still needs more names.
+
+    "Senior Engineer, Acme Corp" has to become a title and an employer, but
+    "San Francisco, CA" has to stay a single location once title and employer
+    are already filled. Splitting strictly on demand keeps both readings exact.
+    """
+    if len(segments) >= needed:
+        return segments
+    expanded: list[tuple[str, int, int]] = []
+    for index, (_, start, end) in enumerate(segments):
+        room = needed - len(expanded) - (len(segments) - index - 1)
+        expanded.extend(_split_segment(text, start, end, room))
+    return tuple(expanded)
+
+
+def _split_segment(
+    text: str,
+    start: int,
+    end: int,
+    limit: int,
+) -> tuple[tuple[str, int, int], ...]:
+    """Cut one header segment into at most ``limit`` exact source values."""
+    parts: list[tuple[str, int, int]] = [(text[start:end], start, end)]
+    pattern = _WEAK_SPLIT_FIRST
+    while len(parts) < limit:
+        value, value_start, value_end = parts[-1]
+        cut = _source_values(value, (), pattern)
+        if len(cut) < 2:
+            break
+        head, head_start, head_end = cut[0]
+        rest_start = value_start + cut[1][1]
+        parts[-1] = (head, value_start + head_start, value_start + head_end)
+        parts.append((text[rest_start:value_end], rest_start, value_end))
+        pattern = _WEAK_SPLIT_REST
+    return tuple(parts)
 
 
 def _entity_block_groups(
@@ -260,15 +333,38 @@ def _entity_block_groups(
         # UI shows a single section listing each skill instead of one card per
         # line. An empty section yields no group and is skipped by the caller.
         return (blocks,) if blocks else ()
-    if kind is not SemanticEntityKind.EXPERIENCE:
-        return tuple((block,) for block in blocks)
     groups: list[list[CanonicalBlock]] = []
+    previous_was_bullet = False
     for block in blocks:
-        if block.kind is not BlockKind.BULLET or not groups:
+        if block.kind is BlockKind.BULLET:
+            if groups:
+                groups[-1].append(block)
+            else:
+                groups.append([block])
+            previous_was_bullet = True
+            continue
+        # A record's header wraps over consecutive lines, so those lines stay in
+        # one group. A new record starts after that record's bullets, or when a
+        # second dated line appears in a section that lists jobs without bullets.
+        starts_record = (
+            not groups
+            or previous_was_bullet
+            or (_carries_date(groups[-1]) and _DATE.search(block.text) is not None)
+        )
+        if starts_record:
             groups.append([block])
         else:
             groups[-1].append(block)
+        previous_was_bullet = False
     return tuple(tuple(group) for group in groups)
+
+
+def _carries_date(group: list[CanonicalBlock]) -> bool:
+    """Whether a record's header lines already supplied a date range."""
+    return any(
+        block.kind is not BlockKind.BULLET and _DATE.search(block.text) is not None
+        for block in group
+    )
 
 
 def _text_names(kind: SemanticEntityKind) -> tuple[str, ...]:
@@ -282,15 +378,15 @@ def _text_names(kind: SemanticEntityKind) -> tuple[str, ...]:
     }[kind]
 
 
-def _date_names(kind: SemanticEntityKind, count: int) -> tuple[str, ...]:
+def _date_names(kind: SemanticEntityKind) -> tuple[str, ...]:
     if kind is SemanticEntityKind.CERTIFICATION:
-        return ("issued_date", "expires_date")[:count]
+        return ("issued_date", "expires_date")
     if kind in {
         SemanticEntityKind.EXPERIENCE,
         SemanticEntityKind.EDUCATION,
         SemanticEntityKind.PROJECT,
     }:
-        return ("start_date", "end_date")[:count]
+        return ("start_date", "end_date")
     return ()
 
 

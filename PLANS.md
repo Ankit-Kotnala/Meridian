@@ -157,6 +157,255 @@ total the API does not promise. No metric is hardcoded and the canonical interna
   view against the compiled Tailwind stylesheet at 1440 px and 420 px in light
   and dark themes, not the running stack.
 
+## Activation-first workspace (2026-08-17)
+
+Direction recorded in
+[ADR 0019](docs/adr/0019-activation-first-workspace-and-assisted-application-supply-chain.md).
+This change makes the already-implemented capability chain legible from the
+authenticated home and consolidates navigation ahead of Phases 11-13. It adds no
+bounded context and no backend behavior.
+
+### Implemented and verified
+
+- [x] `/dashboard` gates on real state. With no document and no experience it
+      renders a single focused activation panel with one upload action and a
+      manual-entry path; an account that built its record by hand is not gated,
+      and an unavailable experience count never triggers the gate.
+- [x] An activation chain projects cross-module state (document scanned, parsed
+      fields reviewed, health report, career record populated, first opportunity)
+      into a stepper that marks exactly one step current, links to the owning
+      module for each decision, and reports `unknown` for any step whose endpoint
+      failed rather than claiming it is incomplete. It hides itself once complete.
+- [x] Pending typed and semantic import proposals are surfaced as a review item,
+      so the decision that populates the career record is no longer buried.
+- [x] Sidebar navigation consolidated from fifteen entries to seven sections with
+      per-section sub-navigation. Every prior route remains addressable, and a
+      test asserts that.
+- [x] Rezumi Corp ID derived from the account UUID in Crockford base32, with a
+      four-tier standing driven only by checks Rezumi performs. Every tier's copy
+      is asserted not to reference employers, hiring, background checks, or
+      applicant-tracking systems.
+- [x] `pnpm format:check`, `pnpm lint` (web architecture plus repository
+      boundaries), and `pnpm typecheck`: pass.
+- [x] `pnpm test`: pass. Web grew from 176 to 218 tests across 48 files; the new
+      coverage is the chain projection, the gate decision, the consolidated
+      navigation model, the activation readers in the summary aggregator, and
+      Corp ID derivation and standing.
+- [x] `pnpm build`: pass; 51 routes compiled.
+- [x] Playwright specs audited against the navigation change. The consolidated
+      sub-navigation renders outside `#main-content`, so the
+      `#main-content`-scoped link queries in `phase9-career-workspace-journey`
+      are unaffected, no spec drives the rail by a removed label, and the
+      mobile-drawer assertion in `auth-journey` only checks the dialog and focus
+      restoration. This is a read of the specs, not an execution of them.
+
+### Deferred with reasons
+
+- [!] `docker compose config --quiet`: pass.
+- [!] `make test-integration` and `make test-e2e` remain unrun, blocked by host
+  disk exhaustion rather than by anything in this change. The Docker daemon was
+  started successfully and `docker compose config` validated, but
+  `docker compose up --build` failed partway through image pulls with
+  "There is not enough space on the disk", and `playwright install chromium`
+  failed for the same reason. `df` reports drive C: at 476 GB of 476 GB used
+  with 0 bytes available. Docker CLI calls, including `docker compose down`,
+  then stopped responding. Free space on the host and rerun both gates before
+  treating this surface as stack-verified.
+- [!] One `vitest run` executed while Docker Desktop was starting collected 47 of
+  48 files and reported one error; the clean rerun passed 48 files and 218
+  tests. Treated as host resource contention, consistent with the disk state
+  above.
+- [!] Python gates were not run because no Python file changed. The local `.venv`
+  had to be rebuilt from `uv.lock` before `uv run` worked at all on this host;
+  that is a host repair, not evidence of a backend gate.
+- [!] Visual checks used a static render of the new components against the
+  compiled Tailwind stylesheet at 1440 px and 420 px in light and dark. The
+  seven-width run against the live stack is outstanding.
+- [!] The Corp ID is derived and truncated to 50 bits, so it is a display
+  identifier only. Persisting an immutable column and any external lookup are
+  Phase 11 work.
+
+## Zero-touch import and the Corp ID credential (2026-08-18)
+
+- [x] Import proposals now apply without a second prompt. Every field already
+      passed typed resume review, where a person confirmed, corrected, or typed
+      it, so re-accepting was redundant. `AutoImportRunner` applies the
+      unambiguous set on the workspace home and reports what it did.
+- [x] What still stops for a person is narrow and named: a conflict with an
+      existing record, a value the parser could not anchor back to the file,
+      parser confidence below 0.9, or a reviewed snapshot that is gone.
+      `autoImportHold` returns the specific reason, covered by 12 tests.
+- [x] `ProfileImportChange.reviewState` is now parsed explicitly instead of
+      being inferred from a display label.
+- [x] The Corp ID is a downloadable credential. `credentialSvg` renders a
+      self-contained, theme-independent artifact; the card offers PNG (2x
+      raster) and SVG downloads. Holder names are escaped before rendering and
+      case-folded before escaping, so entities cannot be corrupted.
+- [x] `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, and
+      `pnpm build`: pass. Web is 50 files / 239 tests, all passing.
+
+### Workspace home redesign
+
+- [x] The uniform vertical card stack is now an asymmetric bento grid. The tall
+      hero became a single-row command bar carrying the identity line and the
+      next decision; the four repeated stat cards collapsed into one dense
+      record tile; the redundant six-tile quick-launch grid is gone now that
+      navigation is consolidated to seven sections; the closing prose block is a
+      one-line footer. The populated home fits one fold at 1440 px instead of
+      requiring a long scroll.
+- [x] Added a Corp ID standing tile so the credential is visible from the home
+      screen. Its standing is derived from the same checks as the Settings
+      credential, so the two cannot disagree.
+- [x] `.dash-tile`, `.metric-label`, and `.metric-value` carry the tile chrome
+      through design tokens, so both themes follow without per-component work.
+- [x] `evidenceConfirmed` added to the summary aggregator, since standing reads
+      user-confirmed evidence rather than total evidence.
+- [x] Verified at 1440 px and 420 px in light and dark against the compiled
+      stylesheet.
+
+### Not done
+
+- [!] Target role is not auto-filled from the resume because the parser does not
+  extract one. `semanticKind` covers contact, experience, education, project,
+  skill, and certification only; there is no objective or target-role field to
+  read. Adding it is a backend parser and contract change.
+- [!] `make test-integration` and `make test-e2e` still unrun for this surface.
+  Disk space is now available, so both are unblocked; `playwright install`
+  is still required before the E2E suite can start.
+
+## Resume-to-career-record activation repair (2026-08-19)
+
+A reviewed resume could not populate a career record at all. Three independent
+defects compounded, so the workspace home sat on "Career record populated - in
+progress" indefinitely and the account was told to add roles by hand.
+
+### Root causes found and fixed
+
+- [x] Section headings were only recognized when the extractor guessed
+      `heading`, which it does solely for upper-case or colon-terminated lines.
+      An ordinary title-case "Work Experience" heading was body text, so the
+      whole resume collapsed into one `other` section and produced zero
+      experience entities. `_section_heading_kind` now classifies a section
+      break on the block's text, and `_SECTION_NAMES` covers the common
+      synonyms ("Employment History", "Career History", "Core Competencies")
+      plus decorated forms.
+- [x] `_entity_block_groups` started a new EXPERIENCE entity at every non-bullet
+      block, so a role's title line and its employer/date line became separate
+      entities and neither held the title + employer + start_date trio that
+      `_semantic_mapping_issues` requires. A record's header lines now stay in
+      one group; a new record starts after that record's bullets, or on a second
+      dated line when a section lists roles without bullets.
+- [x] Header values were only split on `|`, bullet, and middot, so "Senior
+      Engineer, Acme Corp" produced a single `title` and no `employer`. Segments
+      are now sub-split on commas, dashes, and "at", but only while the record
+      still has unfilled names, so "San Francisco, CA" stays one location and
+      "University of Texas at Austin" stays one institution.
+- [x] Nothing ever called `POST /career-profile/semantic-import-proposals`.
+      `AutoImportRunner` listed proposals that were never created, so it applied
+      nothing. It now derives proposals from the reviewed snapshot first; the
+      endpoint is idempotent on (snapshot, semantic entity), so repeat dashboard
+      visits create no duplicates.
+- [x] `/career-profile/imports` called `notFound()` without query parameters,
+      which is exactly where the workspace home sends someone to accept pending
+      facts. It now lists the account's pending proposals in that case.
+
+### Evidence
+
+- [x] End-to-end trace of a realistic fictional DOCX through extraction,
+      canonicalization, semantic parsing, and career-record mapping: 2
+      experiences, 1 education, 1 skill set, and 1 contact map to importable
+      proposals with 0 blocking questions. Before the fix the same file produced
+      0 experience entities and 0 proposals.
+- [x] `validate_parser_semantics` passes on that trace, so every emitted value
+      is still an exact substring of the immutable source at its exact offsets.
+      No value is synthesized, and a record missing a required field still
+      becomes a question rather than an invented fact.
+
+### Workspace home redesign
+
+- [x] Record counts moved from a cramped list inside one tile to a row of
+      large-numeral stat cards, which is what the top of the home screen is for.
+- [x] The five-step activation timeline was a tall vertical list that consumed
+      the first screen. It is now a horizontal track; only the step actually in
+      progress carries its explanation and its action.
+- [x] Layout is now decisions-left / sources-right instead of two bento rows,
+      and the masthead carries the greeting and the single next action.
+- [x] Verified against the compiled stylesheet at 1440 px and 375 px: no
+      horizontal overflow, stat cards in one row (2x2 on mobile), activation
+      track in one row (stacked on mobile).
+
+### Additional fix
+
+- [x] `serverApiFetch` had no timeout, so one unresponsive dependency held the
+      dashboard's server render open indefinitely - a direct cause of the
+      reported "does not fully load". Server reads are now bounded at 8 s and
+      an aborted read degrades to the existing explicit "unavailable" state.
+
+### Gate evidence
+
+- [x] `pnpm lint`, `pnpm typecheck`, `pnpm test` (51 files / 243 tests), edge
+      tests, `ruff check`, `ruff format --check`, `mypy` (227 files), backend
+      `pytest tests/unit tests/architecture` (454), `apps/api` pytest (145),
+      `apps/worker` pytest (89): all pass.
+- [!] `pnpm contracts:check` fails before and after this change: the pinned
+  `openapi-typescript@7.13.0` crashes on `typescript@7.0.2`
+  (`TypeError: Cannot read properties of undefined (reading 'factory')`).
+  Pre-existing tooling incompatibility, unrelated to this change, which
+  touched no API schema. Needs a dependency decision.
+- [!] `ruff format --check` also reports `tests/architecture/test_dependencies.py`
+  and `tests/unit/test_local_seed.py`. Both fail on a clean tree and were
+  left untouched.
+- [!] `make test-integration` and `make test-e2e` not run: no local stack was
+  running and Playwright browsers are not installed.
+
+## Phase 11 - Declared-link evidence enrichment (planned)
+
+Goal: a candidate's record reflects what they demonstrably did, from the links
+they already list, so scores stop under-crediting real work.
+
+- [ ] `DeclaredProfileConnector` port in `career_record` with a deterministic
+      local fake; no adapter may require third-party credentials for local dev.
+- [ ] Adapters only for platforms whose terms permit automated reads of a public
+      profile. A user declaring a link does not override those terms.
+- [ ] Reuse the existing hostile-URL controls verbatim: HTTP(S) only, every
+      resolved address and redirect validated, private/link-local/loopback
+      blocked, time and response caps, sanitized content, no script execution.
+- [ ] Fetch results become import proposals carrying source URL, fetch timestamp,
+      and the exact excerpt relied upon. `Supported` on ingest, `Confirmed` only
+      by the user, never `Verified`.
+- [ ] Worker task with ownership, idempotency key, timeout, bounded retry,
+      dead-letter behavior, and no logging of fetched page text.
+- [ ] Persist the Corp ID as an immutable owner-scoped column and move standing
+      to the API so it is computed once rather than per client.
+
+## Phase 12 - Opportunity supply and assisted apply (planned)
+
+- [ ] `JobSourceConnector` port with adapters for published ATS and job-board
+      APIs (Greenhouse, Lever, Ashby, SmartRecruiters, Workable) and Workday
+      tenant career-site endpoints, plus recorded fixtures per adapter.
+- [ ] Ingestion dedupe, freshness, and rate limiting; every response treated as
+      hostile input. No adapter for a platform that prohibits automated
+      collection; wider coverage comes from licensed data, not our own scraping.
+- [ ] `ApplicationProfile` in `application_workspace`: owner-scoped reusable
+      answers for work authorization, notice period, compensation expectation,
+      locations, links, and optional voluntary-disclosure preferences.
+- [ ] Assisted apply: a tailored resume version plus pre-answered standard
+      questions with provenance, delivered as a prefilled handoff link the user
+      submits in their own session, and a copy-ready pack for the rest.
+- [ ] Explicitly out of scope: storing third-party portal passwords, creating
+      accounts on a user's behalf, authenticating as a user to a third party, and
+      any bot-detection or CAPTCHA bypass. Programmatic submission only via OAuth
+      or a documented employer-enabled application API.
+
+## Phase 13 - Gap-to-learning loop (planned)
+
+- [ ] Read competency gaps from `role_readiness` and open them as
+      `career_growth` development items of kind `learning` or `certification`.
+- [ ] Completing an item prompts the evidence it produced, closing the loop back
+      into the career record.
+- [ ] No learning recommendation may assert an outcome, a ranking, a hiring
+      probability, or a comparison against other candidates.
+
 ### Open verification and product risks
 
 - [!] The connected interactive browser and direct local-image tool remain
@@ -1812,3 +2061,7 @@ not expand Phase 10 product scope.
 
 Publishing this review branch is part of the requested phase workflow; no PR is
 merged and no production deployment occurs without explicit later approval.
+
+## Local stack note
+
+`pnpm local:up` now passes with the web runtime image copying workspace `node_modules` and `@swc/helpers` declared directly in `apps/web/package.json`. Verified on 2026-08-17 when `web`, `web-edge`, `api`, `worker`, and `worker-scheduler` all reported healthy in `docker compose ps`.

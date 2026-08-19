@@ -13,10 +13,13 @@ export type DashboardResumeHealthState =
   | {
       analysisId: string;
       disclaimer: string;
+      /** Reviewed source the Career Record import reads its facts from. */
+      documentId: string;
       filename: string;
       kind: "report";
       score: number | null;
       scoreBand: "developing" | "needsAttention" | "strong" | null;
+      snapshotId: string;
     };
 
 export async function dashboardResumeHealth(): Promise<DashboardResumeHealthState> {
@@ -40,10 +43,12 @@ export async function dashboardResumeHealth(): Promise<DashboardResumeHealthStat
       return {
         analysisId: report.id,
         disclaimer: report.disclaimer,
+        documentId: report.documentId,
         filename: document.displayFilename,
         kind: "report",
         score: report.score,
         scoreBand: report.scoreBand,
+        snapshotId: report.canonicalResumeId,
       };
     }
     if (document.status === "reviewReady") {

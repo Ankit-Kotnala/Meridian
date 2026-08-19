@@ -104,6 +104,7 @@ const proposal: ProfileImportProposal = {
       id: "00000000-0000-4000-8000-000000000104",
       label: "Professional summary",
       proposedValue: "Proposed summary",
+      reviewState: "confirmed",
       source: {
         available: true,
         confidence: 90,

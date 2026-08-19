@@ -28,6 +28,7 @@ function parseProfile(value: unknown): ProfileState {
     typeof candidate.displayName !== "string" ||
     typeof candidate.email !== "string" ||
     typeof candidate.emailVerified !== "boolean" ||
+    typeof candidate.id !== "string" ||
     typeof candidate.locale !== "string" ||
     typeof candidate.timezone !== "string" ||
     typeof candidate.language !== "string" ||
@@ -100,6 +101,47 @@ export async function getProfile(): Promise<ProfileState> {
   return parseProfile(
     await (await apiQuery("/api/v1/me", { retryAfterRefresh: true })).json(),
   );
+}
+
+/**
+ * Read the two career-record counts the Corp ID tier depends on.
+ *
+ * Failure is not fatal: a missing count reports zero contribution so the tier
+ * degrades downward rather than claiming standing the account has not earned.
+ */
+export async function getCorpIdChecks(): Promise<{
+  confirmedEvidence: number;
+  experiences: number;
+}> {
+  async function count(
+    path: "/api/v1/evidence" | "/api/v1/experiences",
+    keep: (item: Record<string, unknown>) => boolean,
+  ): Promise<number> {
+    try {
+      const body: unknown = await (
+        await apiQuery(path, { retryAfterRefresh: true })
+      ).json();
+      const data = (body as { data?: unknown } | null)?.data;
+      if (!Array.isArray(data)) return 0;
+      return data.filter(
+        (item): boolean =>
+          typeof item === "object" &&
+          item !== null &&
+          keep(item as Record<string, unknown>),
+      ).length;
+    } catch {
+      return 0;
+    }
+  }
+
+  const [confirmedEvidence, experiences] = await Promise.all([
+    count(
+      "/api/v1/evidence",
+      (item) => item.state === "confirmed" || item.state === "verified",
+    ),
+    count("/api/v1/experiences", () => true),
+  ]);
+  return { confirmedEvidence, experiences };
 }
 
 export async function updateProfile(
