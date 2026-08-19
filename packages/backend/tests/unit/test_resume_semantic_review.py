@@ -204,6 +204,35 @@ def test_auto_confirm_parsed_semantics_confirms_unreviewed_fields() -> None:
 
     assert confirmed.review_state is SemanticReviewState.CONFIRMED
     assert confirmed.entities[0].fields[0].review_state is SemanticReviewState.CONFIRMED
+
+
+def test_confirm_no_changes_is_idempotent_when_already_confirmed() -> None:
+    semantics = CanonicalSemantics(
+        schema_version="canonical-semantics/1.0.0",
+        parser_version="local-semantic/1",
+        entities=(
+            SemanticEntity(
+                id=uuid4(),
+                kind=SemanticEntityKind.SKILL,
+                review_state=SemanticReviewState.CONFIRMED,
+                fields=(
+                    SemanticField(
+                        id=uuid4(),
+                        name="name",
+                        field_type=SemanticFieldType.TEXT,
+                        value="Python",
+                        confidence_basis_points=8_000,
+                        review_state=SemanticReviewState.CONFIRMED,
+                    ),
+                ),
+            ),
+        ),
+        review_state=SemanticReviewState.CONFIRMED,
+    )
+
+    confirmed_again = apply_semantic_review(semantics, (), confirm_no_changes=True)
+
+    assert confirmed_again is semantics
     with pytest.raises(ResumeStateConflict):
         apply_semantic_review(
             semantics,

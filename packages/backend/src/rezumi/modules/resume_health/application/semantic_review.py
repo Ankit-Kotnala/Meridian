@@ -192,6 +192,8 @@ def apply_semantic_review(
         ),
     )
     if revised == semantics:
+        if confirm_no_changes:
+            return semantics
         raise ResumeStateConflict
     return revised
 
