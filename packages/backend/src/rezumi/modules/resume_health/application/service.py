@@ -764,6 +764,9 @@ class ResumeHealthService:
                 confirm_no_changes=confirm_no_changes,
             )
             revised_resume = replace(resume, semantics=reviewed)
+            if revised_resume == resume:
+                await uow.commit()
+                return _snapshot_view(current, original.resume)
             if (
                 len(
                     json.dumps(
@@ -1471,6 +1474,10 @@ class ResumeHealthProcessor:
                 validate_parser_semantics(canonical, semantics, digest.hex())
             except ValueError as exc:
                 raise UnsafeDocument("semantic_parser_invalid_output") from exc
+            owner_user_id = document.owner.user_id
+            if owner_user_id is not None:
+                with suppress(ResumeStateConflict):
+                    semantics = auto_confirm_parsed_semantics(semantics)
             canonical = replace(
                 canonical,
                 schema_version="canonical-resume/2.0.0",
@@ -1512,29 +1519,8 @@ class ResumeHealthProcessor:
                 parser_version=extraction.parser_version,
                 created_at=now,
             )
-            snapshots = [snapshot]
             import_snapshot_id = snapshot.id
             owner_user_id = document.owner.user_id
-            if canonical.semantics is not None and owner_user_id is not None:
-                with suppress(ResumeStateConflict):
-                    reviewed_resume = replace(
-                        canonical,
-                        semantics=auto_confirm_parsed_semantics(canonical.semantics),
-                    )
-                    reviewed_snapshot = CanonicalSnapshot(
-                        id=uuid4(),
-                        document_id=document.id,
-                        owner=document.owner,
-                        revision=2,
-                        resume=reviewed_resume,
-                        plain_text_sha256=snapshot.plain_text_sha256,
-                        parser_version=extraction.parser_version,
-                        based_on_snapshot_id=snapshot.id,
-                        corrected_by_user=False,
-                        created_at=now,
-                    )
-                    snapshots.append(reviewed_snapshot)
-                    import_snapshot_id = reviewed_snapshot.id
             async with self._uow() as uow:
                 locked_job = await uow.get_job_system(job.id, for_update=True)
                 locked_document = await uow.get_document_system(document.id, for_update=True)
@@ -1559,8 +1545,7 @@ class ResumeHealthProcessor:
                 locked_job.succeed(now)
                 await uow.add_artifact(plain_artifact)
                 await uow.add_artifact(reading_artifact)
-                for stored_snapshot in snapshots:
-                    await uow.add_snapshot(stored_snapshot)
+                await uow.add_snapshot(snapshot)
                 await uow.save_document(locked_document)
                 await uow.save_job(locked_job)
                 await uow.add_audit(
@@ -1580,7 +1565,7 @@ class ResumeHealthProcessor:
                 committed
                 and owner_user_id is not None
                 and self._career_record is not None
-                and len(snapshots) > 1
+                and canonical.semantics is not None
             ):
                 await self._populate_career_record_from_snapshot(
                     owner_user_id,

@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, FileCheck2, Plus, RefreshCcw, Trash2, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -280,8 +280,66 @@ export function CanonicalReviewView({
   const [failure, setFailure] = useState<string>();
   const [conflict, setConflict] = useState(false);
   const [saving, setSaving] = useState(false);
+  const canonicalRef = useRef<CanonicalResume | undefined>(undefined);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    canonicalRef.current = canonical;
+  }, [canonical]);
+
+  const applyDocument = useCallback((nextDocument: DocumentDetail) => {
+    const nextCanonical = nextDocument.canonicalResume ?? undefined;
+    setDocument(nextDocument);
+    setCanonical(nextCanonical);
+    canonicalRef.current = nextCanonical;
+    setValues(
+      Object.fromEntries(
+        (nextCanonical?.sections ?? []).flatMap((section) =>
+          section.fields.map((field) => [field.id, field.value]),
+        ),
+      ),
+    );
+    setSemanticValues(
+      Object.fromEntries(
+        (nextCanonical?.semanticEntities ?? []).flatMap((entity) =>
+          entity.fields.map((field) => [field.id, field.value]),
+        ),
+      ),
+    );
+    setDatePrecisions(
+      Object.fromEntries(
+        (nextCanonical?.semanticEntities ?? []).flatMap((entity) =>
+          entity.fields.flatMap((field) =>
+            field.datePrecision
+              ? [[field.id, field.datePrecision] as const]
+              : [],
+          ),
+        ),
+      ),
+    );
+    setEntityKinds(
+      Object.fromEntries(
+        (nextCanonical?.semanticEntities ?? []).map((entity) => [
+          entity.id,
+          entity.kind,
+        ]),
+      ),
+    );
+    setFieldNames(
+      Object.fromEntries(
+        (nextCanonical?.semanticEntities ?? []).flatMap((entity) =>
+          entity.fields.map((field) => [field.id, field.name]),
+        ),
+      ),
+    );
+    setConfirmedFields({});
+    setRemovedFields({});
+    setRemovedEntities({});
+    setAddedOperations([]);
+    setConfirmNoChanges(false);
+    return nextCanonical;
+  }, []);
+
+  const load = useCallback(async (): Promise<CanonicalResume | undefined> => {
     setFailure(undefined);
     setConflict(false);
     try {
@@ -292,55 +350,9 @@ export function CanonicalReviewView({
           getReadingOrder(access, documentId),
         ],
       );
-      setDocument(nextDocument);
-      setCanonical(nextDocument.canonicalResume ?? undefined);
       setPlainText(nextPlainText);
       setReadingOrder(nextReadingOrder);
-      setValues(
-        Object.fromEntries(
-          (nextDocument.canonicalResume?.sections ?? []).flatMap((section) =>
-            section.fields.map((field) => [field.id, field.value]),
-          ),
-        ),
-      );
-      setSemanticValues(
-        Object.fromEntries(
-          (nextDocument.canonicalResume?.semanticEntities ?? []).flatMap(
-            (entity) => entity.fields.map((field) => [field.id, field.value]),
-          ),
-        ),
-      );
-      setDatePrecisions(
-        Object.fromEntries(
-          (nextDocument.canonicalResume?.semanticEntities ?? []).flatMap(
-            (entity) =>
-              entity.fields.flatMap((field) =>
-                field.datePrecision
-                  ? [[field.id, field.datePrecision] as const]
-                  : [],
-              ),
-          ),
-        ),
-      );
-      setEntityKinds(
-        Object.fromEntries(
-          (nextDocument.canonicalResume?.semanticEntities ?? []).map(
-            (entity) => [entity.id, entity.kind],
-          ),
-        ),
-      );
-      setFieldNames(
-        Object.fromEntries(
-          (nextDocument.canonicalResume?.semanticEntities ?? []).flatMap(
-            (entity) => entity.fields.map((field) => [field.id, field.name]),
-          ),
-        ),
-      );
-      setConfirmedFields({});
-      setRemovedFields({});
-      setRemovedEntities({});
-      setAddedOperations([]);
-      setConfirmNoChanges(false);
+      return applyDocument(nextDocument);
     } catch (error) {
       setFailure(
         requestErrorMessage(
@@ -348,8 +360,9 @@ export function CanonicalReviewView({
           "We couldn’t load the parsed resume for review.",
         ),
       );
+      return undefined;
     }
-  }, [access, documentId]);
+  }, [access, applyDocument, documentId]);
 
   useEffect(() => {
     queueMicrotask(() => void load());
@@ -361,133 +374,158 @@ export function CanonicalReviewView({
   );
   const semanticEntities = canonical?.semanticEntities ?? [];
 
-  async function saveAndAnalyze() {
-    if (!canonical) return;
+  async function persistReview(
+    activeCanonical: CanonicalResume,
+  ): Promise<string> {
+    const changedFields = fields.flatMap((field) => {
+      const value = (values[field.id] ?? "").trim();
+      return value === field.value ? [] : [{ id: field.id, value }];
+    });
+    const semanticOperations: SemanticReviewOperation[] = [];
+    for (const entity of semanticEntities) {
+      if (removedEntities[entity.id]) {
+        semanticOperations.push({
+          operation: "removeEntity",
+          entityId: entity.id,
+        });
+        continue;
+      }
+      const nextKind = entityKinds[entity.id] ?? entity.kind;
+      if (nextKind !== entity.kind) {
+        semanticOperations.push({
+          operation: "reclassifyEntity",
+          entityId: entity.id,
+          kind: nextKind,
+          fields: entity.fields.map((field) => ({
+            fieldId: field.id,
+            name: fieldNames[field.id] ?? field.name,
+          })),
+        });
+      }
+      for (const field of entity.fields) {
+        if (removedFields[field.id]) {
+          semanticOperations.push({
+            operation: "removeField",
+            fieldId: field.id,
+          });
+          continue;
+        }
+        const value = (semanticValues[field.id] ?? "").trim();
+        if (value !== field.value) {
+          semanticOperations.push({
+            operation: "correctField",
+            fieldId: field.id,
+            value,
+            datePrecision:
+              field.fieldType === "date"
+                ? (datePrecisions[field.id] ?? "unknown")
+                : null,
+          });
+        } else if (
+          confirmedFields[field.id] &&
+          field.reviewState === "unreviewed"
+        ) {
+          semanticOperations.push({
+            operation: "confirmField",
+            fieldId: field.id,
+          });
+        }
+      }
+    }
+    semanticOperations.push(...addedOperations);
+    const semanticMode =
+      activeCanonical.semanticSchemaVersion !== null ||
+      activeCanonical.legacyUpgradeRequired;
+    const alreadyReviewed =
+      activeCanonical.semanticReviewState === "confirmed" ||
+      activeCanonical.semanticReviewState === "corrected";
+    if (
+      semanticMode &&
+      semanticOperations.length === 0 &&
+      changedFields.length === 0 &&
+      !confirmNoChanges &&
+      !alreadyReviewed
+    ) {
+      throw new Error(
+        "Confirm that no changes are needed, or record at least one typed review action.",
+      );
+    }
+    if (
+      confirmNoChanges &&
+      (semanticOperations.length > 0 || changedFields.length > 0)
+    ) {
+      throw new Error(
+        "The no-change confirmation cannot be combined with review edits. Clear it or undo the edits.",
+      );
+    }
+    const needsReviewSave =
+      changedFields.length > 0 ||
+      semanticOperations.length > 0 ||
+      (confirmNoChanges && semanticMode && !alreadyReviewed);
+    if (!needsReviewSave) {
+      return activeCanonical.id;
+    }
+    if (semanticMode && semanticOperations.length > 0) {
+      const reviewed = await updateCanonicalResume(
+        access,
+        documentId,
+        activeCanonical.version,
+        {
+          fields: [],
+          semanticOperations,
+          confirmNoChanges: false,
+        },
+      );
+      setCanonical(reviewed);
+      canonicalRef.current = reviewed;
+      return reviewed.id;
+    }
+    if (changedFields.length > 0) {
+      const reviewed = await updateCanonicalResume(
+        access,
+        documentId,
+        activeCanonical.version,
+        {
+          fields: changedFields,
+          semanticOperations: [],
+          confirmNoChanges: false,
+        },
+      );
+      setCanonical(reviewed);
+      canonicalRef.current = reviewed;
+      return reviewed.id;
+    }
+    const reviewed = await updateCanonicalResume(
+      access,
+      documentId,
+      activeCanonical.version,
+      {
+        fields: [],
+        semanticOperations: [],
+        confirmNoChanges: true,
+      },
+    );
+    setCanonical(reviewed);
+    canonicalRef.current = reviewed;
+    return reviewed.id;
+  }
+
+  async function saveAndAnalyze(reloadAttempt = false) {
+    const activeCanonical = canonicalRef.current;
+    if (!activeCanonical) return;
     setSaving(true);
     setFailure(undefined);
     setConflict(false);
     try {
-      const changedFields = fields.flatMap((field) => {
-        const value = (values[field.id] ?? "").trim();
-        return value === field.value ? [] : [{ id: field.id, value }];
-      });
-      const semanticOperations: SemanticReviewOperation[] = [];
-      for (const entity of semanticEntities) {
-        if (removedEntities[entity.id]) {
-          semanticOperations.push({
-            operation: "removeEntity",
-            entityId: entity.id,
-          });
-          continue;
+      let reviewedSnapshotId: string;
+      try {
+        reviewedSnapshotId = await persistReview(activeCanonical);
+      } catch (error) {
+        if (error instanceof Error && !(error instanceof ApiRequestError)) {
+          setFailure(error.message);
+          return;
         }
-        const nextKind = entityKinds[entity.id] ?? entity.kind;
-        if (nextKind !== entity.kind) {
-          semanticOperations.push({
-            operation: "reclassifyEntity",
-            entityId: entity.id,
-            kind: nextKind,
-            fields: entity.fields.map((field) => ({
-              fieldId: field.id,
-              name: fieldNames[field.id] ?? field.name,
-            })),
-          });
-        }
-        for (const field of entity.fields) {
-          if (removedFields[field.id]) {
-            semanticOperations.push({
-              operation: "removeField",
-              fieldId: field.id,
-            });
-            continue;
-          }
-          const value = (semanticValues[field.id] ?? "").trim();
-          if (value !== field.value) {
-            semanticOperations.push({
-              operation: "correctField",
-              fieldId: field.id,
-              value,
-              datePrecision:
-                field.fieldType === "date"
-                  ? (datePrecisions[field.id] ?? "unknown")
-                  : null,
-            });
-          } else if (
-            confirmedFields[field.id] &&
-            field.reviewState === "unreviewed"
-          ) {
-            semanticOperations.push({
-              operation: "confirmField",
-              fieldId: field.id,
-            });
-          }
-        }
-      }
-      semanticOperations.push(...addedOperations);
-      const semanticMode =
-        canonical.semanticSchemaVersion !== null ||
-        canonical.legacyUpgradeRequired;
-      if (
-        semanticMode &&
-        semanticOperations.length === 0 &&
-        changedFields.length === 0 &&
-        !confirmNoChanges
-      ) {
-        setFailure(
-          "Confirm that no changes are needed, or record at least one typed review action.",
-        );
-        setSaving(false);
-        return;
-      }
-      if (
-        confirmNoChanges &&
-        (semanticOperations.length > 0 || changedFields.length > 0)
-      ) {
-        setFailure(
-          "The no-change confirmation cannot be combined with review edits. Clear it or undo the edits.",
-        );
-        setSaving(false);
-        return;
-      }
-      let reviewedSnapshotId = canonical.id;
-      if (semanticMode && semanticOperations.length > 0) {
-        const reviewed = await updateCanonicalResume(
-          access,
-          documentId,
-          canonical.version,
-          {
-            fields: [],
-            semanticOperations,
-            confirmNoChanges: false,
-          },
-        );
-        setCanonical(reviewed);
-        reviewedSnapshotId = reviewed.id;
-      } else if (changedFields.length > 0) {
-        const reviewed = await updateCanonicalResume(
-          access,
-          documentId,
-          canonical.version,
-          {
-            fields: changedFields,
-            semanticOperations: [],
-            confirmNoChanges: false,
-          },
-        );
-        setCanonical(reviewed);
-        reviewedSnapshotId = reviewed.id;
-      } else if (confirmNoChanges) {
-        const reviewed = await updateCanonicalResume(
-          access,
-          documentId,
-          canonical.version,
-          {
-            fields: [],
-            semanticOperations: [],
-            confirmNoChanges: true,
-          },
-        );
-        setCanonical(reviewed);
-        reviewedSnapshotId = reviewed.id;
+        throw error;
       }
       if (access === "account") {
         try {
@@ -509,6 +547,17 @@ export function CanonicalReviewView({
         `${prefix}/processing/${encodeURIComponent(accepted.job.id)}`,
       );
     } catch (error) {
+      if (
+        error instanceof ApiRequestError &&
+        error.failure.status === 409 &&
+        !reloadAttempt
+      ) {
+        const refreshed = await load();
+        if (refreshed) {
+          await saveAndAnalyze(true);
+          return;
+        }
+      }
       if (error instanceof ApiRequestError && error.failure.status === 409) {
         setConflict(true);
         setFailure(
