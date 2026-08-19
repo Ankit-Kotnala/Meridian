@@ -60,6 +60,9 @@ from rezumi.modules.career_record.domain.errors import (
 )
 from rezumi.modules.identity.application import IdentityService
 from rezumi.modules.identity.domain import AuthenticatedPrincipal
+from rezumi.modules.resume_health.application import ResumeHealthService
+from rezumi.modules.resume_health.application.models import ResumeRequestContext
+from rezumi.modules.resume_health.domain import OwnerScope
 
 from rezumi_api.conditional_requests import parse_if_match_version
 from rezumi_api.modules.career_record.dependencies import (
@@ -68,6 +71,7 @@ from rezumi_api.modules.career_record.dependencies import (
     career_record_service,
     career_request_context,
 )
+from rezumi_api.modules.resume_health.routes import resume_health_service
 from rezumi_api.modules.career_record.presenters import (
     achievement_response,
     career_item_response,
@@ -1072,13 +1076,19 @@ async def create_semantic_import_proposals(
     principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
     context: Annotated[RequestContext, Depends(career_request_context)],
     service: Annotated[CareerRecordService, Depends(career_record_service)],
+    resume_service: Annotated[ResumeHealthService, Depends(resume_health_service)],
 ) -> SemanticImportBatchResponse:
     await service.get_or_create_profile(principal.user_id, context)
+    reviewed_snapshot_id = await resume_service.ensure_reviewed_snapshot_for_import(
+        OwnerScope(user_id=principal.user_id),
+        payload.document_id,
+        ResumeRequestContext("career-import", context.trace_id),
+    )
     result = await service.populate_from_reviewed_snapshot(
         principal.user_id,
         CreateSemanticImportProposals(
             document_id=payload.document_id,
-            snapshot_id=payload.snapshot_id,
+            snapshot_id=reviewed_snapshot_id,
         ),
         context,
     )

@@ -194,7 +194,7 @@ def _semantic_mapping_issues(
     elif kind is SemanticCandidateKind.SKILL:
         required = ("name",)
     elif kind is SemanticCandidateKind.EXPERIENCE:
-        required = ("title", "employer", "start_date")
+        required = ("title", "employer")
     elif kind is SemanticCandidateKind.EDUCATION:
         required = ("institution",)
     elif kind is SemanticCandidateKind.PROJECT:

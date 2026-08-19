@@ -615,7 +615,7 @@ async def test_semantic_contact_and_skill_candidates_do_not_overwrite_or_invent_
     )
 
     assert len(batch.proposals) == 2
-    assert batch.questions[0].missing_fields == ("employer", "start_date")
+    assert batch.questions[0].missing_fields == ("employer",)
     for proposal in batch.proposals:
         values = {field.semantic_field_id: field.value for field in proposal.fields}
         await service.accept_semantic_import_proposal(
