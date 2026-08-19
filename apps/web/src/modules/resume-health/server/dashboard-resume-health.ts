@@ -42,10 +42,10 @@ export function resumeHealthImportSource(
       snapshotId: resumeHealth.snapshotId,
     };
   }
-  if (resumeHealth.kind === "report" && resumeHealth.importSnapshotId !== undefined) {
+  if (resumeHealth.kind === "report") {
     return {
       documentId: resumeHealth.documentId,
-      snapshotId: resumeHealth.importSnapshotId,
+      snapshotId: resumeHealth.importSnapshotId ?? resumeHealth.snapshotId,
     };
   }
   return undefined;

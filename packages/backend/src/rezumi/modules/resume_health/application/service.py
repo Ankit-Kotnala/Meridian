@@ -12,6 +12,13 @@ from datetime import timedelta
 from hashlib import sha256
 from pathlib import Path
 from typing import Any
+
+from rezumi.modules.career_record.application import (
+    CareerRecordService,
+    CreateSemanticImportProposals,
+    RequestContext,
+)
+from rezumi.modules.career_record.domain.errors import CareerRecordError
 from uuid import UUID, uuid4, uuid5
 
 from rezumi.modules.resume_health.application.models import (
@@ -49,7 +56,10 @@ from rezumi.modules.resume_health.application.ports import (
     ResumeUnitOfWork,
     UnitOfWorkFactory,
 )
-from rezumi.modules.resume_health.application.semantic_review import apply_semantic_review
+from rezumi.modules.resume_health.application.semantic_review import (
+    apply_semantic_review,
+    auto_confirm_parsed_semantics,
+)
 from rezumi.modules.resume_health.application.semantic_validation import (
     validate_parser_semantics,
 )
@@ -800,6 +810,67 @@ class ResumeHealthService:
             await uow.commit()
         return _snapshot_view(snapshot, original.resume)
 
+    async def ensure_reviewed_snapshot_for_import(
+        self,
+        scope: OwnerScope,
+        document_id: UUID,
+        context: ResumeRequestContext,
+    ) -> UUID:
+        """Auto-confirm parsed semantics when import is requested before manual review."""
+
+        latest = await self._source_reader.get_canonical_resume(scope, document_id)
+        semantics = latest.resume.semantics
+        if semantics is None:
+            raise ResumeStateConflict
+        if semantics.review_state in {
+            SemanticReviewState.CONFIRMED,
+            SemanticReviewState.CORRECTED,
+        }:
+            return latest.id
+        reviewed_semantics = auto_confirm_parsed_semantics(semantics)
+        now = self._clock.now()
+        async with self._uow() as uow:
+            await uow.lock_intake_admission(scope)
+            document = await uow.get_document(scope, document_id, for_update=True)
+            current = await uow.get_latest_snapshot(scope, document_id, for_update=True)
+            if document is None or current is None:
+                raise ResumeResourceNotFound
+            if document.status != DocumentStatus.READY:
+                raise ResumeStateConflict
+            if current.revision >= self._policy.max_canonical_revisions:
+                raise ResumeStateConflict
+            reviewed_resume = replace(current.resume, semantics=reviewed_semantics)
+            snapshot = CanonicalSnapshot(
+                id=uuid4(),
+                document_id=document.id,
+                owner=scope,
+                revision=current.revision + 1,
+                resume=reviewed_resume,
+                plain_text_sha256=current.plain_text_sha256,
+                parser_version=current.parser_version,
+                based_on_snapshot_id=current.id,
+                corrected_by_user=False,
+                created_at=now,
+            )
+            document.version += 1
+            document.updated_at = now
+            await uow.add_snapshot(snapshot)
+            await uow.save_document(document)
+            await uow.add_audit(
+                _audit(
+                    scope,
+                    "canonical_resume.auto_confirmed",
+                    "succeeded",
+                    "document",
+                    document.id,
+                    context,
+                    now,
+                    {"revision": str(snapshot.revision)},
+                )
+            )
+            await uow.commit()
+        return snapshot.id
+
     async def get_job(self, scope: OwnerScope, job_id: UUID) -> ProcessingJobView:
         async with self._uow() as uow:
             job = await uow.get_job(scope, job_id)
@@ -1154,6 +1225,7 @@ class ResumeHealthProcessor:
         limits: DocumentLimits,
         semantic_parser: ResumeParserProvider | None = None,
         ocr: OcrProvider | None = None,
+        career_record: CareerRecordService | None = None,
         execution_lease_seconds: int = 330,
         upload_cleanup_grace_seconds: int = 900,
         max_object_cleanup_attempts: int = 10,
@@ -1166,6 +1238,7 @@ class ResumeHealthProcessor:
         self._limits = limits
         self._semantic_parser = semantic_parser
         self._ocr = ocr
+        self._career_record = career_record
         if (
             execution_lease_seconds < 1
             or upload_cleanup_grace_seconds < 1
@@ -1178,6 +1251,31 @@ class ResumeHealthProcessor:
         self._limits.temp_root.mkdir(mode=0o700, parents=True, exist_ok=True)
         if self._limits.temp_root.is_symlink():
             raise ValueError("temporary root must not be a symbolic link")
+
+    async def _populate_career_record_from_snapshot(
+        self,
+        owner_user_id: UUID,
+        document_id: UUID,
+        snapshot_id: UUID,
+        trace_id: str,
+    ) -> None:
+        if self._career_record is None:
+            return
+        context = RequestContext(
+            actor_user_id=owner_user_id,
+            request_id="resume-parse",
+            trace_id=trace_id,
+        )
+        with suppress(CareerRecordError):
+            await self._career_record.get_or_create_profile(owner_user_id, context)
+            await self._career_record.populate_from_reviewed_snapshot(
+                owner_user_id,
+                CreateSemanticImportProposals(
+                    document_id=document_id,
+                    snapshot_id=snapshot_id,
+                ),
+                context,
+            )
 
     async def process_job(
         self, job_id: UUID, trace_id: str, execution_token: str | None = None
@@ -1414,6 +1512,29 @@ class ResumeHealthProcessor:
                 parser_version=extraction.parser_version,
                 created_at=now,
             )
+            snapshots = [snapshot]
+            import_snapshot_id = snapshot.id
+            owner_user_id = document.owner.user_id
+            if canonical.semantics is not None and owner_user_id is not None:
+                with suppress(ResumeStateConflict):
+                    reviewed_resume = replace(
+                        canonical,
+                        semantics=auto_confirm_parsed_semantics(canonical.semantics),
+                    )
+                    reviewed_snapshot = CanonicalSnapshot(
+                        id=uuid4(),
+                        document_id=document.id,
+                        owner=document.owner,
+                        revision=2,
+                        resume=reviewed_resume,
+                        plain_text_sha256=snapshot.plain_text_sha256,
+                        parser_version=extraction.parser_version,
+                        based_on_snapshot_id=snapshot.id,
+                        corrected_by_user=False,
+                        created_at=now,
+                    )
+                    snapshots.append(reviewed_snapshot)
+                    import_snapshot_id = reviewed_snapshot.id
             async with self._uow() as uow:
                 locked_job = await uow.get_job_system(job.id, for_update=True)
                 locked_document = await uow.get_document_system(document.id, for_update=True)
@@ -1438,7 +1559,8 @@ class ResumeHealthProcessor:
                 locked_job.succeed(now)
                 await uow.add_artifact(plain_artifact)
                 await uow.add_artifact(reading_artifact)
-                await uow.add_snapshot(snapshot)
+                for stored_snapshot in snapshots:
+                    await uow.add_snapshot(stored_snapshot)
                 await uow.save_document(locked_document)
                 await uow.save_job(locked_job)
                 await uow.add_audit(
@@ -1454,6 +1576,18 @@ class ResumeHealthProcessor:
                 )
                 await uow.commit()
                 committed = True
+            if (
+                committed
+                and owner_user_id is not None
+                and self._career_record is not None
+                and len(snapshots) > 1
+            ):
+                await self._populate_career_record_from_snapshot(
+                    owner_user_id,
+                    document.id,
+                    import_snapshot_id,
+                    job.trace_id,
+                )
         finally:
             if not committed:
                 await self._delete_uncommitted_artifacts(

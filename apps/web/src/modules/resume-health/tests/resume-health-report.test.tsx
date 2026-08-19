@@ -143,24 +143,21 @@ describe("Resume Health report", () => {
     expect(screen.getByText("Extractable characters")).toBeVisible();
     expect(screen.getByText("612")).toBeVisible();
     expect(
-      screen.queryByRole("link", { name: "resume import review" }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByText(/Career Record import not ready/i),
-    ).toBeVisible();
-    expect(
-      screen.getByRole("link", { name: "Review parsed resume" }),
+      screen.getByRole("link", { name: "resume import review" }),
     ).toHaveAttribute(
       "href",
-      `/resume-health/account/review/${report.documentId}`,
+      `/career-profile/imports?documentId=${report.documentId}&snapshotId=${report.canonicalResumeId}`,
     );
+    expect(
+      screen.getByText(/Parsed experiences, skills, and contact details/i),
+    ).toBeVisible();
 
     fireEvent.click(screen.getByRole("tab", { name: "All findings" }));
     expect(screen.getByText("Clarify summary")).toBeVisible();
     expect(screen.queryByText(/hiring probability/i)).not.toBeInTheDocument();
   });
 
-  it("offers import review once parsed fields are reviewed", async () => {
+  it("links import review to the current canonical snapshot", async () => {
     const reviewedSnapshotId = "00000000-0000-4000-8000-000000000021";
     api.getResumeHealthReport.mockResolvedValue(report);
     api.getDocument.mockResolvedValue({

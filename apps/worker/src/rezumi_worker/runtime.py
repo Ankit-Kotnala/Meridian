@@ -1047,6 +1047,26 @@ def _analytics_result_from_view(
     )
 
 
+def _career_record_service(database: Database, settings: WorkerSettings) -> CareerRecordService:
+    attachment_workflow = AttachmentWorkflowService(
+        unit_of_work=SqlAlchemyAttachmentUnitOfWorkFactory(database),
+        clock=AttachmentSystemClock(),
+        storage=_attachment_storage(settings),
+        limits=_attachment_limits(settings),
+        policy=_attachment_policy(settings),
+    )
+    return CareerRecordService(
+        unit_of_work=SqlAlchemyCareerRecordUnitOfWorkFactory(database),
+        clock=AttachmentSystemClock(),
+        identifiers=CareerRecordUuidFactory(),
+        resume_sources=ResumeHealthSourceQuery(
+            ResumeHealthSourceReader(SqlAlchemyResumeUnitOfWorkFactory(database))
+        ),
+        attachments=AttachmentAdmissionBridge(attachment_workflow),
+        verification_authority=None,
+    )
+
+
 def _processor(resources: _RuntimeResources, settings: WorkerSettings) -> ResumeHealthProcessor:
     return ResumeHealthProcessor(
         unit_of_work=resources.unit_of_work,
@@ -1056,6 +1076,7 @@ def _processor(resources: _RuntimeResources, settings: WorkerSettings) -> Resume
         extractor=resources.extractor,
         semantic_parser=LocalResumeParserProvider(),
         limits=resources.limits,
+        career_record=_career_record_service(resources.database, settings),
         execution_lease_seconds=(settings.task_time_limit_seconds + _EXECUTION_LEASE_GRACE_SECONDS),
     )
 
