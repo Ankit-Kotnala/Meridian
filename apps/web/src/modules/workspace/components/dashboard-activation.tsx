@@ -51,7 +51,10 @@ export function activationChain(
   const hasImports = isPositive(summary.activation.pendingImports);
   const hasJobs = isPositive(summary.activation.jobs);
   const settled =
-    resumeHealth.kind === "report" || resumeHealth.kind === "importReady";
+    resumeHealth.kind === "importReady" ||
+    (summary.record.experiences.kind === "count" &&
+      summary.record.experiences.value > 0);
+  const reportReady = resumeHealth.kind === "report";
   const stalled =
     resumeHealth.kind === "failed" ||
     resumeHealth.kind === "error" ||
@@ -90,7 +93,7 @@ export function activationChain(
     {
       description:
         "An explainable internal measurement of how well the document reads to machines and recruiters.",
-      done: settled,
+      done: reportReady,
       id: "report",
       label: "Resume health report ready",
       ...(resumeHealth.kind === "report"

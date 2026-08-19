@@ -43,6 +43,13 @@ class ResumeHealthSourceReader(Protocol):
         document_id: UUID,
     ) -> CanonicalSnapshotView: ...
 
+    async def get_snapshot(
+        self,
+        scope: OwnerScope,
+        document_id: UUID,
+        snapshot_id: UUID,
+    ) -> CanonicalSnapshotView: ...
+
 
 class ResumeHealthSourceQuery:
     """Validate exact owned source spans without reaching into another store."""
@@ -179,13 +186,12 @@ class ResumeHealthSourceQuery:
         scope = OwnerScope(user_id=owner_user_id)
         try:
             document = await self._reader.get_document(scope, document_id)
-            snapshot = await self._reader.get_canonical_resume(scope, document_id)
+            snapshot = await self._reader.get_snapshot(scope, document_id, snapshot_id)
         except ResumeHealthError:
             return ()
         semantics = snapshot.resume.semantics
         if (
             document.status is not DocumentStatus.READY
-            or snapshot.id != snapshot_id
             or snapshot.document_id != document_id
             or semantics is None
             or semantics.review_state

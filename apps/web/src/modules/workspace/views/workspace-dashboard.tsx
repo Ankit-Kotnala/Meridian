@@ -103,6 +103,19 @@ function nextStepFor(
     };
   }
   const experiences = summary.record.experiences;
+  if (
+    resumeHealth.kind === "report" &&
+    experiences.kind === "count" &&
+    experiences.value === 0
+  ) {
+    return {
+      description:
+        "Your resume was reviewed and scored, but the parsed facts still need to land in your career record. Refresh this page or open your profile to apply them.",
+      href: "/career-profile",
+      label: "Open career profile",
+      title: "Add parsed resume facts to your record",
+    };
+  }
   if (experiences.kind === "count" && experiences.value === 0) {
     return {
       description:

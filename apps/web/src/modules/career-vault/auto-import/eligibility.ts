@@ -15,6 +15,13 @@ import type { ProfileImportProposal } from "../api/types";
  * did not actually settle.
  */
 
+/** Merge targets, not decisions that need another prompt. */
+const MERGE_CONFLICTS = new Set([
+  "existing_personal_fact",
+  "existing_skill",
+  "existing_entity",
+]);
+
 /** Parser confidence required for a value that was not typed by the user. */
 export const AUTO_IMPORT_MIN_CONFIDENCE = 0.9;
 
@@ -30,7 +37,12 @@ export function autoImportHold(
   if (proposal.changes.length === 0) return "untraceable";
 
   for (const change of proposal.changes) {
-    if (change.conflict !== null) return "conflict";
+    if (
+      change.conflict !== null &&
+      !MERGE_CONFLICTS.has(change.conflict)
+    ) {
+      return "conflict";
+    }
     // Values settled during typed resume review do not need a second gate.
     if (
       change.reviewState === "user_added" ||

@@ -82,12 +82,22 @@ describe("auto import eligibility", () => {
     const conflicting = proposal({
       changes: [
         change(),
-        change({ conflict: "employer_mismatch", id: "field-2" }),
+        change({ conflict: "entity_title_conflict", id: "field-2" }),
       ],
     });
 
     expect(autoImportHold(conflicting)).toBe("conflict");
     expect(isAutoApplicable(conflicting)).toBe(false);
+  });
+
+  it("applies a proposal that merges into an existing record", () => {
+    expect(
+      autoImportHold(
+        proposal({
+          changes: [change({ conflict: "existing_entity" })],
+        }),
+      ),
+    ).toBeNull();
   });
 
   it("applies a confirmed value that cannot be traced back to the file", () => {

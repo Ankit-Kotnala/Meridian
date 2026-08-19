@@ -91,7 +91,9 @@ export function DocumentList({ documents }: { documents: DocumentSummary[] }) {
         className="grid gap-4 lg:grid-cols-2"
       >
         {documents.map((document) => {
-          const status = statusPresentation[document.status];
+          const status = document.latestAnalysisId
+            ? { label: "Report ready", tone: "success" as const }
+            : statusPresentation[document.status];
           const nextHref = document.latestAnalysisId
             ? `/resume-health/account/report/${encodeURIComponent(document.latestAnalysisId)}`
             : document.status === "reviewReady"

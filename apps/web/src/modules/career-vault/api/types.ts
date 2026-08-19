@@ -202,6 +202,7 @@ export type ProfileImportQuestion = {
 };
 
 export type ProfileImportBatch = {
+  appliedCount: number;
   proposals: ProfileImportProposal[];
   questions: ProfileImportQuestion[];
 };

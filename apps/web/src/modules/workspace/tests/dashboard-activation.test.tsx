@@ -93,6 +93,13 @@ describe("activation chain projection", () => {
       report,
       summary({
         activation: { jobs: count(0), pendingImports: count(4) },
+        record: {
+          achievements: count(0),
+          evidence: count(0),
+          evidenceConfirmed: count(0),
+          experiences: count(2),
+          skills: count(0),
+        },
       }),
     );
 
@@ -121,6 +128,13 @@ describe("activation chain projection", () => {
     );
 
     expect(steps.every((step) => step.state === "done")).toBe(true);
+  });
+
+  it("keeps review incomplete when a report exists but the career record is empty", () => {
+    const steps = activationChain(report, summary());
+
+    expect(stateOf(steps, "review")).toBe("current");
+    expect(stateOf(steps, "report")).toBe("done");
   });
 
   it("reports an unknown step instead of claiming it is incomplete", () => {
@@ -163,6 +177,13 @@ describe("activation chain rendering", () => {
           report,
           summary({
             activation: { jobs: count(0), pendingImports: count(2) },
+            record: {
+              achievements: count(0),
+              evidence: count(0),
+              evidenceConfirmed: count(0),
+              experiences: count(1),
+              skills: count(0),
+            },
           }),
         )}
       />,

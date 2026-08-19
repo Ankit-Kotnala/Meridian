@@ -238,6 +238,23 @@ class ResumeHealthSourceReader:
             raise ResumeResourceNotFound
         return _snapshot_view(current, original.resume)
 
+    async def get_snapshot(
+        self,
+        scope: OwnerScope,
+        document_id: UUID,
+        snapshot_id: UUID,
+    ) -> CanonicalSnapshotView:
+        async with self._uow() as uow:
+            snapshot = await uow.get_snapshot(scope, snapshot_id)
+            original = await uow.get_first_snapshot(scope, document_id)
+        if (
+            snapshot is None
+            or original is None
+            or snapshot.document_id != document_id
+        ):
+            raise ResumeResourceNotFound
+        return _snapshot_view(snapshot, original.resume)
+
 
 class ResumeHealthService:
     """Short request/transaction use cases; document bytes stay in object storage."""
@@ -565,6 +582,11 @@ class ResumeHealthService:
         self, scope: OwnerScope, document_id: UUID
     ) -> CanonicalSnapshotView:
         return await self._source_reader.get_canonical_resume(scope, document_id)
+
+    async def get_snapshot(
+        self, scope: OwnerScope, document_id: UUID, snapshot_id: UUID
+    ) -> CanonicalSnapshotView:
+        return await self._source_reader.get_snapshot(scope, document_id, snapshot_id)
 
     async def correct_canonical_resume(
         self,
