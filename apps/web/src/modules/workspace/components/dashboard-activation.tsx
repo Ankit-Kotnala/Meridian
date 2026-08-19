@@ -93,14 +93,21 @@ export function activationChain(
       done: settled,
       id: "report",
       label: "Resume health report ready",
-      ...(settled
+      ...(resumeHealth.kind === "report"
         ? {
             action: {
               href: `/resume-health/account/report/${encodeURIComponent(resumeHealth.analysisId)}`,
               label: "Open report",
             },
           }
-        : {}),
+        : resumeHealth.kind === "importReady"
+          ? {
+              action: {
+                href: "/career-profile",
+                label: "Open career profile",
+              },
+            }
+          : {}),
     },
     {
       description:
@@ -419,3 +426,4 @@ export function ActivationGate({ displayName }: { displayName: string }) {
     </main>
   );
 }
+
