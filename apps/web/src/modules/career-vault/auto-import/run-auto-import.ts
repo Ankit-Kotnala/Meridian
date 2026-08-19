@@ -27,17 +27,19 @@ export async function runAutoImport(
   onProgress?: (progress: AutoImportProgress) => void,
 ): Promise<AutoImportResult> {
   let questions = 0;
+  let appliedFromCreate = 0;
   if (documentId !== undefined && snapshotId !== undefined) {
     try {
       const batch = await createProfileImportProposals(documentId, snapshotId);
       questions = batch.questions.length;
+      appliedFromCreate = batch.appliedCount;
     } catch {
       questions = 0;
     }
   }
 
   const { apply, hold } = planAutoImport(await listProfileImportProposals());
-  let applied = 0;
+  let applied = appliedFromCreate;
   onProgress?.({ done: 0, total: apply.length });
   for (const proposal of apply) {
     await acceptProfileImportProposal(proposal, {}, crypto.randomUUID());

@@ -624,6 +624,8 @@ export function parseProfileImportProposal(
 export function parseProfileImportBatch(value: unknown): ProfileImportBatch {
   const candidate = record(value, "profile import batch");
   return {
+    appliedCount:
+      typeof candidate.appliedCount === "number" ? candidate.appliedCount : 0,
     proposals: list(
       candidate.proposals,
       "profile import proposals",

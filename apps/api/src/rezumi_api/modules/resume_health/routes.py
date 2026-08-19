@@ -9,6 +9,9 @@ from uuid import UUID
 import structlog
 from fastapi import APIRouter, Cookie, Depends, Header, Request, Response, status
 from pydantic import AfterValidator, StringConstraints
+from rezumi.modules.career_record.application import CareerRecordService
+from rezumi.modules.career_record.application.models import CreateSemanticImportProposals
+from rezumi.modules.career_record.domain import CareerRecordError
 from rezumi.modules.identity.application.models import RequestContext
 from rezumi.modules.identity.application.ports import AbuseLimiter
 from rezumi.modules.identity.domain import AuthenticatedPrincipal
@@ -58,6 +61,10 @@ from rezumi_api.conditional_requests import (
 )
 from rezumi_api.config import Settings
 from rezumi_api.constants import SCORING_DISCLAIMER
+from rezumi_api.modules.career_record.dependencies import (
+    career_record_service,
+    career_request_context,
+)
 from rezumi_api.modules.identity.dependencies import (
     current_principal,
     request_context,
@@ -710,6 +717,9 @@ async def _correct(
     expected_version: int,
     context: RequestContext,
     response: Response,
+    *,
+    career_service: CareerRecordService | None = None,
+    career_context: RequestContext | None = None,
 ) -> CanonicalResumeResponse:
     await _check_mutation_rate(request, "resume_correction", scope)
     if payload.fields:
@@ -733,6 +743,23 @@ async def _correct(
             confirm_no_changes=payload.confirm_no_changes,
             context=_resume_context(context),
         )
+        if (
+            career_service is not None
+            and career_context is not None
+            and scope.user_id is not None
+        ):
+            try:
+                await career_service.get_or_create_profile(scope.user_id, career_context)
+                await career_service.populate_from_reviewed_snapshot(
+                    scope.user_id,
+                    CreateSemanticImportProposals(
+                        document_id=document_id,
+                        snapshot_id=snapshot.id,
+                    ),
+                    career_context,
+                )
+            except CareerRecordError:
+                pass
     response.headers["ETag"] = f'"{snapshot.revision}"'
     response.headers["Cache-Control"] = "no-store"
     return _canonical_response(snapshot)
@@ -752,6 +779,8 @@ async def correct_canonical_resume(
     principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
     service: Annotated[ResumeHealthService, Depends(resume_health_service)],
     context: Annotated[RequestContext, Depends(request_context)],
+    career_service: Annotated[CareerRecordService, Depends(career_record_service)],
+    career_context: Annotated[RequestContext, Depends(career_request_context)],
     if_match: IfMatchHeader,
 ) -> CanonicalResumeResponse:
     return await _correct(
@@ -763,6 +792,8 @@ async def correct_canonical_resume(
         parse_if_match_version(if_match),
         context,
         response,
+        career_service=career_service,
+        career_context=career_context,
     )
 
 

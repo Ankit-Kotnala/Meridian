@@ -35,6 +35,8 @@ import {
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 
+import { AutoImportRunner } from "@/modules/career-vault";
+
 import {
   ApiRequestError,
   claimGuestDocument,
@@ -542,30 +544,23 @@ export function ResumeHealthReportView({
         ]}
       />
 
-      {access === "account" && (
-        <Card className="mt-5 flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-          <div className="flex items-start gap-3">
-            <FileDiff
-              aria-hidden="true"
-              className="mt-0.5 size-5 shrink-0 text-primary"
-            />
-            <div>
-              <h2 className="font-extrabold">
-                Propose reviewed Career Record facts
-              </h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-                Create pending proposals from the typed fields you reviewed.
-                Your Career Record is unchanged until you accept each proposal.
-              </p>
-            </div>
-          </div>
-          <Link
-            className={cn(buttonStyles.base, buttonStyles.primary)}
-            href={`/career-profile/imports?documentId=${encodeURIComponent(report.documentId)}&snapshotId=${encodeURIComponent(report.canonicalResumeId)}`}
-          >
-            Review import proposals
-          </Link>
-        </Card>
+      {access === "account" && report && (
+        <div className="mt-5 space-y-3">
+          <AutoImportRunner
+            documentId={report.documentId}
+            snapshotId={report.canonicalResumeId}
+          />
+          <p className="text-xs text-muted">
+            Anything that still needs a decision is in{" "}
+            <Link
+              className="text-link"
+              href={`/career-profile/imports?documentId=${encodeURIComponent(report.documentId)}&snapshotId=${encodeURIComponent(report.canonicalResumeId)}`}
+            >
+              resume import review
+            </Link>
+            .
+          </p>
+        </div>
       )}
 
       {access === "guest" && document && (

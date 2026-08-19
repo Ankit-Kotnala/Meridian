@@ -197,6 +197,7 @@ class SemanticImportQuestion:
 class SemanticImportBatch:
     proposals: tuple[SemanticImportProposal, ...]
     questions: tuple[SemanticImportQuestion, ...]
+    applied_count: int = 0
 
 
 @dataclass(frozen=True, slots=True)

@@ -132,6 +132,9 @@ from .ports import (
 )
 
 _IDEMPOTENCY_KEY = re.compile(r"^[A-Za-z0-9._:-]{8,128}$")
+_MERGE_CONFLICT_CODES = frozenset(
+    {"existing_personal_fact", "existing_skill", "existing_entity"},
+)
 # Career Analytics accepts a public 3,650-day delta and expands both ends by
 # one UTC day so every IANA timezone boundary is represented. This internal
 # source-only limit is therefore intentionally two days wider.
@@ -348,6 +351,14 @@ def _semantic_entity_data(
             end_date=date_value(end_name),
         )
     raise CareerRecordValidationError("semantic candidate is not a career entity")
+
+
+def _semantic_auto_apply_blocked(proposal: SemanticImportProposal) -> bool:
+    """Return True when a reviewed proposal still needs an explicit decision."""
+
+    if proposal.conflict_code is None:
+        return False
+    return proposal.conflict_code not in _MERGE_CONFLICT_CODES
 
 
 def _semantic_target_match(
@@ -1955,6 +1966,48 @@ class CareerRecordService:
                 created.append(proposal)
             await uow.commit()
         return SemanticImportBatch(tuple(created), tuple(questions))
+
+    async def populate_from_reviewed_snapshot(
+        self,
+        owner_user_id: UUID,
+        command: CreateSemanticImportProposals,
+        context: RequestContext,
+    ) -> SemanticImportBatch:
+        """Create proposals from a reviewed snapshot and apply every safe one."""
+
+        batch = await self.create_semantic_import_proposals(owner_user_id, command, context)
+        applied = 0
+        for proposal in batch.proposals:
+            if proposal.status is not SemanticImportStatus.PENDING:
+                continue
+            if _semantic_auto_apply_blocked(proposal):
+                continue
+            values = {
+                field.semantic_field_id: field.value for field in proposal.fields
+            }
+            try:
+                await self.accept_semantic_import_proposal(
+                    owner_user_id,
+                    proposal.id,
+                    proposal.version,
+                    AcceptSemanticImportProposal(
+                        values=values,
+                        idempotency_key=f"auto-import:{proposal.id}",
+                        target_record_id=proposal.target_record_id,
+                    ),
+                    context,
+                )
+            except (
+                CareerRecordConflict,
+                CareerRecordNotFound,
+                CareerRecordSourceUnavailable,
+                CareerRecordTransitionRejected,
+                CareerRecordValidationError,
+                CareerRecordVersionConflict,
+            ):
+                continue
+            applied += 1
+        return SemanticImportBatch(batch.proposals, batch.questions, applied)
 
     async def get_semantic_import_proposal(
         self, owner_user_id: UUID, proposal_id: UUID

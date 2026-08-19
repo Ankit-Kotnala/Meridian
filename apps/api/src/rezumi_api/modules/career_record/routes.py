@@ -1074,7 +1074,7 @@ async def create_semantic_import_proposals(
     service: Annotated[CareerRecordService, Depends(career_record_service)],
 ) -> SemanticImportBatchResponse:
     await service.get_or_create_profile(principal.user_id, context)
-    result = await service.create_semantic_import_proposals(
+    result = await service.populate_from_reviewed_snapshot(
         principal.user_id,
         CreateSemanticImportProposals(
             document_id=payload.document_id,
@@ -1096,6 +1096,7 @@ async def create_semantic_import_proposals(
             )
             for question in result.questions
         ],
+        applied_count=result.applied_count,
     )
 
 
