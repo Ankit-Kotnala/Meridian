@@ -15,6 +15,7 @@ from uuid import UUID
 import structlog
 from celery import Celery  # type: ignore[import-untyped,unused-ignore]
 from rezumi.foundation.config import DatabaseOptions
+from rezumi.foundation.config.mongodb import MongoOptions
 from rezumi.foundation.database import Database
 from rezumi.modules.application_workspace.application import (
     ApplicationWorkspaceService,
@@ -165,11 +166,14 @@ from rezumi.modules.resume_health.application import (
     ResumeJobReconciler,
     ResumeMaintenance,
 )
+from rezumi.modules.resume_health.application.ports import ParsedResumeDocumentStore
 from rezumi.modules.resume_health.infrastructure import (
     ClamAvOptions,
     ClamAvScanner,
+    DisabledParsedResumeDocumentStore,
     IsolatedDocumentExtractor,
     LocalResumeParserProvider,
+    MongoParsedResumeDocumentStore,
     S3ObjectStorage,
     S3Options,
     SqlAlchemyResumeUnitOfWorkFactory,
@@ -251,6 +255,7 @@ class NetworkingReminderRecoveryResult:
 class _RuntimeResources:
     database: Database
     storage: S3ObjectStorage
+    parsed_resume_store: ParsedResumeDocumentStore
     unit_of_work: SqlAlchemyResumeUnitOfWorkFactory
     clock: SystemClock
     scanner: ClamAvScanner
@@ -324,6 +329,7 @@ async def _runtime_resources(settings: WorkerSettings) -> AsyncIterator[_Runtime
 
     database = _database(settings)
     storage: S3ObjectStorage | None = None
+    parsed_resume_store: ParsedResumeDocumentStore | None = None
     try:
         storage = S3ObjectStorage(
             S3Options(
@@ -338,9 +344,11 @@ async def _runtime_resources(settings: WorkerSettings) -> AsyncIterator[_Runtime
                 read_timeout_seconds=settings.database_command_timeout_seconds,
             )
         )
+        parsed_resume_store = _parsed_resume_store(settings)
         yield _RuntimeResources(
             database=database,
             storage=storage,
+            parsed_resume_store=parsed_resume_store,
             unit_of_work=SqlAlchemyResumeUnitOfWorkFactory(database),
             clock=SystemClock(),
             scanner=ClamAvScanner(
@@ -366,10 +374,14 @@ async def _runtime_resources(settings: WorkerSettings) -> AsyncIterator[_Runtime
         )
     finally:
         try:
-            if storage is not None:
-                await storage.dispose()
+            if parsed_resume_store is not None:
+                await parsed_resume_store.dispose()
         finally:
-            await database.dispose()
+            try:
+                if storage is not None:
+                    await storage.dispose()
+            finally:
+                await database.dispose()
 
 
 @asynccontextmanager
@@ -1077,7 +1089,20 @@ def _processor(resources: _RuntimeResources, settings: WorkerSettings) -> Resume
         semantic_parser=LocalResumeParserProvider(),
         limits=resources.limits,
         career_record=_career_record_service(resources.database, settings),
+        parsed_resume_store=resources.parsed_resume_store,
         execution_lease_seconds=(settings.task_time_limit_seconds + _EXECUTION_LEASE_GRACE_SECONDS),
+    )
+
+
+def _parsed_resume_store(settings: WorkerSettings) -> ParsedResumeDocumentStore:
+    if not settings.mongodb_enabled:
+        return DisabledParsedResumeDocumentStore()
+    return MongoParsedResumeDocumentStore(
+        MongoOptions(
+            url=settings.mongodb_url,
+            database_name=settings.mongodb_database_name,
+            collection_name=settings.mongodb_user_data_collection,
+        )
     )
 
 

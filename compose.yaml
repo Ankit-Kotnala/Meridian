@@ -89,6 +89,14 @@ x-app-environment: &app-environment
   REZUMI_GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
   REZUMI_GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:3000/api/v1/auth/google/callback}
   REZUMI_CONSENT_POLICY_VERSION: ${CONSENT_POLICY_VERSION:-2026-07-15}
+  REZUMI_MONGODB_ENABLED: ${MONGODB_ENABLED:-true}
+  REZUMI_MONGODB_URL: ${MONGODB_URL:-mongodb://host.docker.internal:27017}
+  REZUMI_MONGODB_DATABASE: ${MONGODB_DATABASE:-Rezumi}
+  REZUMI_MONGODB_USER_DATA_COLLECTION: ${MONGODB_USER_DATA_COLLECTION:-user-data}
+  MONGODB_ENABLED: ${MONGODB_ENABLED:-true}
+  MONGODB_URL: ${MONGODB_URL:-mongodb://host.docker.internal:27017}
+  MONGODB_DATABASE: ${MONGODB_DATABASE:-Rezumi}
+  MONGODB_USER_DATA_COLLECTION: ${MONGODB_USER_DATA_COLLECTION:-user-data}
 
 services:
   postgres:
@@ -120,6 +128,21 @@ services:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
+      retries: 12
+    restart: unless-stopped
+    networks: [backend, host-services]
+
+  mongo:
+    profiles: ["bundled-mongo"]
+    image: mongo:8.0.10-noble
+    ports:
+      - "127.0.0.1:${MONGODB_PORT:-27018}:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
       retries: 12
     restart: unless-stopped
     networks: [backend, host-services]
@@ -270,6 +293,8 @@ services:
         condition: service_completed_successfully
       clamav:
         condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     read_only: true
     init: true
     cap_drop: ["ALL"]
@@ -297,7 +322,7 @@ services:
       retries: 6
       start_period: 20s
     restart: unless-stopped
-    networks: [backend]
+    networks: [backend, host-services]
 
   worker-scheduler:
     build:
@@ -454,6 +479,7 @@ services:
 volumes:
   postgres-data:
   redis-data:
+  mongo-data:
   minio-data:
   clamav-data:
 

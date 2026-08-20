@@ -14,6 +14,7 @@ from .fakes import (
 from .isolated_extractor import IsolatedDocumentExtractor
 from .layout import LocalLayoutAnalyzer
 from .malware import ClamAvOptions, ClamAvScanner
+from .mongodb_store import DisabledParsedResumeDocumentStore, MongoParsedResumeDocumentStore
 from .queue import CeleryJobPublisher, CeleryPublisherOptions
 from .repository import SqlAlchemyResumeUnitOfWorkFactory
 from .security import HmacGuestCapabilityManager, SystemClock
@@ -25,6 +26,7 @@ __all__ = [
     "CeleryPublisherOptions",
     "ClamAvOptions",
     "ClamAvScanner",
+    "DisabledParsedResumeDocumentStore",
     "DisabledOcrProvider",
     "FakeDocumentExtractor",
     "FakeJobPublisher",
@@ -39,6 +41,7 @@ __all__ = [
     "LocalDocumentTextExtractor",
     "LocalLayoutAnalyzer",
     "LocalResumeParserProvider",
+    "MongoParsedResumeDocumentStore",
     "S3ObjectStorage",
     "S3Options",
     "SqlAlchemyResumeUnitOfWorkFactory",

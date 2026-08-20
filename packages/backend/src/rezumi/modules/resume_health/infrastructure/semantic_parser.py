@@ -179,25 +179,34 @@ def _group_candidates(
     kind: SemanticEntityKind,
     blocks: tuple[CanonicalBlock, ...],
 ) -> tuple[_FieldCandidate, ...]:
-    """Name one record's fields across every line that belongs to that record.
-
-    A resume record's header is routinely spread over several lines, with the
-    title on one and the employer, location, and dates on the next. Naming
-    positionally across the whole group, instead of restarting at the first name
-    on every line, is what lets a record collect the title/employer/start_date
-    trio that a Career Record import proposal requires.
-    """
     if kind is SemanticEntityKind.SKILL:
-        return tuple(
-            _FieldCandidate("name", SemanticFieldType.TEXT, value, block, start, end, 8_000)
-            for block in blocks
-            for value, start, end in _source_values(block.text, (), _SKILL_SPLIT)
-        )
+        candidates: list[_FieldCandidate] = []
+        for block in blocks:
+            text = block.text
+            prefix_len = 0
+            if ":" in text:
+                prefix, _, text = text.partition(":")
+                prefix_len = len(prefix) + 1
+            candidates.extend(
+                _FieldCandidate(
+                    "name",
+                    SemanticFieldType.TEXT,
+                    value,
+                    block,
+                    start + prefix_len,
+                    end + prefix_len,
+                    8_000,
+                )
+                for value, start, end in _source_values(text, (), _SKILL_SPLIT)
+            )
+        return tuple(candidates)
 
     candidates: list[_FieldCandidate] = []
-    pending_text = list(_text_names(kind))
+    pending_text: list[str] = []
     pending_dates = list(_date_names(kind))
-    for block in blocks:
+    for index, block in enumerate(blocks):
+        if not pending_text:
+            pending_text = list(_text_names_for_block(kind, block))
         if block.kind is BlockKind.BULLET:
             name = "achievement" if kind is SemanticEntityKind.EXPERIENCE else "description"
             candidates.append(
@@ -211,6 +220,20 @@ def _group_candidates(
                     8_500,
                 )
             )
+            continue
+        if _is_wrapped_bullet_continuation(block, blocks, index):
+            if kind is SemanticEntityKind.EXPERIENCE:
+                candidates.append(
+                    _FieldCandidate(
+                        "achievement",
+                        SemanticFieldType.BULLET,
+                        block.text,
+                        block,
+                        0,
+                        len(block.text),
+                        8_000,
+                    )
+                )
             continue
         candidates.extend(_header_candidates(block, pending_text, pending_dates))
 
@@ -226,7 +249,7 @@ def _group_candidates(
     # source value. Name the whole line rather than dropping the record.
     return (
         _FieldCandidate(
-            _text_names(kind)[0],
+            _text_names_for_block(kind, header)[0],
             SemanticFieldType.TEXT,
             header.text,
             header,
@@ -328,35 +351,81 @@ def _entity_block_groups(
     kind: SemanticEntityKind,
     blocks: tuple[CanonicalBlock, ...],
 ) -> tuple[tuple[CanonicalBlock, ...], ...]:
+    if kind is SemanticEntityKind.EDUCATION:
+        blocks = _education_blocks(blocks)
     if kind is SemanticEntityKind.SKILL:
         # Every skill line belongs to one structured Skills entity, so the review
         # UI shows a single section listing each skill instead of one card per
         # line. An empty section yields no group and is skipped by the caller.
         return (blocks,) if blocks else ()
     groups: list[list[CanonicalBlock]] = []
-    previous_was_bullet = False
     for block in blocks:
         if block.kind is BlockKind.BULLET:
             if groups:
                 groups[-1].append(block)
             else:
                 groups.append([block])
-            previous_was_bullet = True
             continue
-        # A record's header wraps over consecutive lines, so those lines stay in
-        # one group. A new record starts after that record's bullets, or when a
-        # second dated line appears in a section that lists jobs without bullets.
-        starts_record = (
-            not groups
-            or previous_was_bullet
-            or (_carries_date(groups[-1]) and _DATE.search(block.text) is not None)
-        )
+        starts_record = not groups or _starts_new_record(kind, block, groups[-1])
         if starts_record:
             groups.append([block])
         else:
             groups[-1].append(block)
-        previous_was_bullet = False
     return tuple(tuple(group) for group in groups)
+
+
+def _starts_new_record(
+    kind: SemanticEntityKind,
+    block: CanonicalBlock,
+    current_group: list[CanonicalBlock],
+) -> bool:
+    if _carries_date(current_group) and _DATE.search(block.text) is not None:
+        return True
+    if not any(item.kind is BlockKind.BULLET for item in current_group):
+        return False
+    text = block.text.lstrip()
+    if text and text[0].islower():
+        return False
+    if "|" in block.text:
+        return True
+    return "," in block.text and _DATE.search(block.text) is None
+
+
+def _is_wrapped_bullet_continuation(
+    block: CanonicalBlock,
+    blocks: tuple[CanonicalBlock, ...],
+    index: int,
+) -> bool:
+    if block.kind is BlockKind.BULLET or index == 0:
+        return False
+    if blocks[index - 1].kind is BlockKind.BULLET:
+        return True
+    text = block.text.lstrip()
+    return bool(text) and text[0].islower()
+
+
+def _education_blocks(blocks: tuple[CanonicalBlock, ...]) -> tuple[CanonicalBlock, ...]:
+    cutoff = len(blocks)
+    for index, block in enumerate(blocks):
+        if block.kind is not BlockKind.HEADING:
+            continue
+        normalized = block.text.casefold()
+        if "certification" in normalized or "achievement" in normalized:
+            cutoff = index
+            break
+    return blocks[:cutoff]
+
+
+def _text_names_for_block(kind: SemanticEntityKind, block: CanonicalBlock) -> tuple[str, ...]:
+    if kind is SemanticEntityKind.EXPERIENCE:
+        if "|" in block.text:
+            return ("employer", "title", "location")
+        return ("title", "employer", "location")
+    if kind is SemanticEntityKind.EDUCATION:
+        if "|" in block.text:
+            return ("institution", "degree", "field", "location")
+        return ("degree", "institution", "field", "location")
+    return _text_names(kind)
 
 
 def _carries_date(group: list[CanonicalBlock]) -> bool:

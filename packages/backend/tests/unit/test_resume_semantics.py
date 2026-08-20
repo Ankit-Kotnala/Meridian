@@ -431,3 +431,73 @@ async def test_weak_separators_stop_once_the_record_has_its_names() -> None:
     assert education["start_date"] == "2013"
     assert education["end_date"] == "2017"
     validate_parser_semantics(resume, semantics, digest)
+
+
+@pytest.mark.asyncio
+async def test_pipe_delimited_experience_headers_map_employer_before_title() -> None:
+    document_id = uuid4()
+    digest = sha256(b"pipe experience header").hexdigest()
+    resume = _experience_resume(
+        _block(
+            "Zinnia | Software Engineer I (AI/ML & Full Stack) | New Delhi, India  Jan 2026 - Present",
+            0,
+        ),
+        _block(
+            "• Independently architected and built a production-bound AI assistant with React and FastAPI.",
+            120,
+            BlockKind.BULLET,
+        ),
+        _block(
+            "routing enterprise questions through 5 governed paths: SQL, knowledge retrieval, hybrid.",
+            220,
+        ),
+    )
+
+    semantics = await LocalResumeParserProvider().parse(document_id, resume, digest)
+
+    experiences = [
+        entity for entity in semantics.entities if entity.kind is SemanticEntityKind.EXPERIENCE
+    ]
+    assert len(experiences) == 1
+    fields = {field.name: field.value for field in experiences[0].fields}
+    assert fields["employer"] == "Zinnia"
+    assert fields["title"] == "Software Engineer I (AI/ML & Full Stack)"
+    assert fields["location"] == "New Delhi, India"
+    achievements = fields.get("achievement")
+    assert achievements
+    validate_parser_semantics(resume, semantics, digest)
+
+
+@pytest.mark.asyncio
+async def test_pipe_delimited_education_headers_map_institution_before_degree() -> None:
+    document_id = uuid4()
+    digest = sha256(b"pipe education header").hexdigest()
+    resume = CanonicalResume(
+        schema_version="canonical-resume/2.0.0",
+        sections=(
+            CanonicalSection(
+                id=uuid4(),
+                kind=SectionKind.EDUCATION,
+                title="Education",
+                confidence_basis_points=9_000,
+                blocks=(
+                    _block("CDAC Noida | MCA, Artificial Intelligence | 2024 - 2026 | CGPA: 8.90/10", 0),
+                    _block("CERTIFICATIONS & ACHIEVEMENTS", 80, BlockKind.HEADING),
+                    _block("SWAYAM Certified Machine Learning Engineer", 120),
+                ),
+            ),
+        ),
+        warnings=(),
+    )
+
+    semantics = await LocalResumeParserProvider().parse(document_id, resume, digest)
+
+    education = [
+        entity for entity in semantics.entities if entity.kind is SemanticEntityKind.EDUCATION
+    ]
+    assert len(education) == 1
+    fields = {field.name: field.value for field in education[0].fields}
+    assert fields["institution"] == "CDAC Noida"
+    assert fields["degree"] == "MCA"
+    assert fields["field"] == "Artificial Intelligence"
+    validate_parser_semantics(resume, semantics, digest)

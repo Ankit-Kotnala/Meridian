@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
-from typing import Self
+from typing import Any, Self
 from uuid import UUID
 
 from rezumi.modules.resume_health.application.models import (
@@ -560,3 +560,28 @@ class InMemoryResumeUnitOfWorkFactory:
 
     def __call__(self) -> InMemoryResumeUnitOfWork:
         return InMemoryResumeUnitOfWork(self.state)
+
+
+class InMemoryParsedResumeDocumentStore:
+    def __init__(self) -> None:
+        self.documents: dict[str, dict[str, Any]] = {}
+        self.deleted: list[str] = []
+
+    async def ping(self) -> None:
+        return None
+
+    async def upsert(self, document: dict[str, Any]) -> None:
+        resume_id = str(document["resumeId"])
+        existing = self.documents.get(resume_id)
+        if existing is None:
+            self.documents[resume_id] = {**document, "createdAt": document.get("updatedAt")}
+            return
+        self.documents[resume_id] = {**existing, **document}
+
+    async def delete(self, resume_id: UUID) -> None:
+        key = str(resume_id)
+        self.documents.pop(key, None)
+        self.deleted.append(key)
+
+    async def dispose(self) -> None:
+        return None

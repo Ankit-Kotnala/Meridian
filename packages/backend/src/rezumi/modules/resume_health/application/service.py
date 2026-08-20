@@ -8,7 +8,7 @@ import re
 import tempfile
 from contextlib import suppress
 from dataclasses import dataclass, replace
-from datetime import timedelta
+from datetime import datetime, timedelta
 from hashlib import sha256
 from pathlib import Path
 from typing import Any
@@ -44,6 +44,9 @@ from rezumi.modules.resume_health.application.models import (
     SemanticReviewOperation,
     UploadIntentView,
 )
+from rezumi.modules.resume_health.application.parsed_resume_document import (
+    build_user_data_document,
+)
 from rezumi.modules.resume_health.application.ports import (
     CapabilityManager,
     Clock,
@@ -52,6 +55,7 @@ from rezumi.modules.resume_health.application.ports import (
     MalwareScanner,
     ObjectStorage,
     OcrProvider,
+    ParsedResumeDocumentStore,
     ResumeParserProvider,
     ResumeUnitOfWork,
     UnitOfWorkFactory,
@@ -1229,6 +1233,7 @@ class ResumeHealthProcessor:
         semantic_parser: ResumeParserProvider | None = None,
         ocr: OcrProvider | None = None,
         career_record: CareerRecordService | None = None,
+        parsed_resume_store: ParsedResumeDocumentStore | None = None,
         execution_lease_seconds: int = 330,
         upload_cleanup_grace_seconds: int = 900,
         max_object_cleanup_attempts: int = 10,
@@ -1242,6 +1247,7 @@ class ResumeHealthProcessor:
         self._semantic_parser = semantic_parser
         self._ocr = ocr
         self._career_record = career_record
+        self._parsed_resume_store = parsed_resume_store
         if (
             execution_lease_seconds < 1
             or upload_cleanup_grace_seconds < 1
@@ -1573,6 +1579,14 @@ class ResumeHealthProcessor:
                     import_snapshot_id,
                     job.trace_id,
                 )
+            if committed and self._parsed_resume_store is not None:
+                with suppress(RetryableProcessingFailure):
+                    await self._persist_parsed_resume(
+                        document=document,
+                        snapshot_id=import_snapshot_id,
+                        canonical=canonical,
+                        parsed_at=now,
+                    )
         finally:
             if not committed:
                 await self._delete_uncommitted_artifacts(
@@ -1772,6 +1786,29 @@ class ResumeHealthProcessor:
                 )
             )
             await uow.commit()
+        if self._parsed_resume_store is not None:
+            with suppress(RetryableProcessingFailure):
+                await self._parsed_resume_store.delete(document.id)
+
+    async def _persist_parsed_resume(
+        self,
+        *,
+        document: SourceDocument,
+        snapshot_id: UUID,
+        canonical: CanonicalResume,
+        parsed_at: datetime,
+    ) -> None:
+        if self._parsed_resume_store is None:
+            return
+        payload = build_user_data_document(
+            resume_id=document.id,
+            owner=document.owner,
+            snapshot_id=snapshot_id,
+            display_filename=document.display_filename,
+            canonical=canonical,
+            parsed_at=parsed_at,
+        )
+        await self._parsed_resume_store.upsert(payload)
 
     async def _document(self, job: ProcessingJob) -> SourceDocument:
         async with self._uow() as uow:

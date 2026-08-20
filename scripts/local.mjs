@@ -140,6 +140,8 @@ function hostEnvironment() {
     S3_PUBLIC_ENDPOINT_URL: objectEndpoint,
     SMTP_HOST: "127.0.0.1",
     SMTP_PORT: smtpPort,
+    MONGODB_URL: local.MONGODB_URL || "mongodb://127.0.0.1:27017",
+    REZUMI_MONGODB_URL: local.MONGODB_URL || "mongodb://127.0.0.1:27017",
   };
 }
 
