@@ -178,6 +178,13 @@ _SECTION_NAMES: dict[str, SectionKind] = {
     "certifications and licenses": SectionKind.CERTIFICATIONS,
     "licenses and certifications": SectionKind.CERTIFICATIONS,
     "courses and certifications": SectionKind.CERTIFICATIONS,
+    "certifications & achievements": SectionKind.CERTIFICATIONS,
+    "certifications and achievements": SectionKind.CERTIFICATIONS,
+    "certifications achievements": SectionKind.CERTIFICATIONS,
+    "achievements": SectionKind.CERTIFICATIONS,
+    "selected ai projects": SectionKind.PROJECTS,
+    "selected projects": SectionKind.PROJECTS,
+    "ai projects": SectionKind.PROJECTS,
     "contact": SectionKind.CONTACT,
     "contact information": SectionKind.CONTACT,
     "contact details": SectionKind.CONTACT,
@@ -2556,7 +2563,8 @@ def _canonicalize(document_id: UUID, extraction: Any) -> CanonicalResume:
 
     def flush() -> None:
         nonlocal section_index, current_blocks
-        if not current_blocks:
+        coalesced = _merge_bullet_continuations(current_blocks)
+        if not coalesced:
             return
         sections.append(
             CanonicalSection(
@@ -2564,7 +2572,7 @@ def _canonicalize(document_id: UUID, extraction: Any) -> CanonicalResume:
                 kind=current_kind,
                 title=current_title,
                 confidence_basis_points=9_000 if current_kind != SectionKind.OTHER else 6_000,
-                blocks=tuple(current_blocks),
+                blocks=coalesced,
             )
         )
         section_index += 1
@@ -2592,6 +2600,42 @@ def _canonicalize(document_id: UUID, extraction: Any) -> CanonicalResume:
         sections=tuple(sections),
         warnings=tuple(extraction.warnings),
     )
+
+
+def _merge_bullet_continuations(
+    blocks: list[CanonicalBlock],
+) -> tuple[CanonicalBlock, ...]:
+    """Join PDF line-wrap continuations back onto the bullet they belong to."""
+    if not blocks:
+        return ()
+    merged: list[CanonicalBlock] = []
+    for block in blocks:
+        if (
+            merged
+            and merged[-1].kind is BlockKind.BULLET
+            and block.kind is BlockKind.PARAGRAPH
+            and _is_wrapped_bullet_line(block.text)
+        ):
+            previous = merged[-1]
+            continuation = block.text.strip()
+            combined = f"{previous.text} {continuation}"
+            span = previous.spans[0] if previous.spans else None
+            if span is not None:
+                merged[-1] = replace(
+                    previous,
+                    text=combined,
+                    spans=(replace(span, end=span.end + len(continuation) + 1),),
+                )
+            else:
+                merged[-1] = replace(previous, text=combined)
+            continue
+        merged.append(block)
+    return tuple(merged)
+
+
+def _is_wrapped_bullet_line(text: str) -> bool:
+    stripped = text.strip()
+    return bool(stripped) and stripped[0].islower()
 
 
 def _features(resume: CanonicalResume, page_count: int) -> ResumeHealthFeatures:

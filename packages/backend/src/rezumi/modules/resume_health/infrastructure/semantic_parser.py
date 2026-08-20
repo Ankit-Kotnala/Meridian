@@ -55,6 +55,17 @@ _WEAK_SPLIT_REST = re.compile(r"\s*,\s*|\s+[\u2013\u2014-]\s+")
 # addition to pipes/bullets. Slashes and hyphens are intentionally excluded so
 # compound skills like "CI/CD", "TCP/IP", or "A/B testing" stay intact.
 _SKILL_SPLIT = re.compile(r"\s*(?:,|;|\||•|·)\s*")
+_SUBSECTION_HEADINGS = frozenset(
+    {
+        "selected ai projects",
+        "selected projects",
+        "ai projects",
+        "key projects",
+        "personal projects",
+        "certifications & achievements",
+        "certifications and achievements",
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -388,7 +399,20 @@ def _starts_new_record(
         return False
     if "|" in block.text:
         return True
+    if _looks_like_subsection_heading(block.text):
+        return True
     return "," in block.text and _DATE.search(block.text) is None
+
+
+def _looks_like_subsection_heading(text: str) -> bool:
+    stripped = text.strip()
+    if not stripped or len(stripped) > 64 or _DATE.search(stripped):
+        return False
+    normalized = re.sub(r"^[^0-9A-Za-z]+|[^0-9A-Za-z]+$", "", stripped).strip().casefold()
+    if normalized in _SUBSECTION_HEADINGS:
+        return True
+    words = stripped.split()
+    return len(words) <= 8 and stripped.isupper()
 
 
 def _is_wrapped_bullet_continuation(

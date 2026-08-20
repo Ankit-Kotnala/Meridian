@@ -91,8 +91,17 @@ def _entity_to_record(entity: SemanticEntity) -> dict[str, Any] | None:
         if field.review_state is SemanticReviewState.REMOVED:
             continue
         has_values = True
-        if field.field_type is SemanticFieldType.BULLET or field.name in {"achievement", "skill"}:
+        if (
+            field.field_type is SemanticFieldType.BULLET
+            or field.name in {"achievement", "skill"}
+            or (entity.kind is SemanticEntityKind.SKILL and field.name == "name")
+        ):
             list_fields.setdefault(field.name, []).append(field.value)
+            continue
+        if field.name in record:
+            existing = record.pop(field.name)
+            list_fields.setdefault(field.name, []).append(str(existing))
+            list_fields[field.name].append(field.value)
             continue
         record[field.name] = field.value
 

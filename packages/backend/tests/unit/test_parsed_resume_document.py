@@ -110,6 +110,42 @@ def test_build_user_data_document_organizes_semantics_by_section() -> None:
     assert document["experience"][0]["achievement"] == ["Shipped feature X"]
 
 
+def test_build_user_data_document_collects_repeated_skill_names() -> None:
+    semantics = CanonicalSemantics(
+        schema_version="canonical-semantics/1.0.0",
+        parser_version="local/1.0.0",
+        entities=(
+            SemanticEntity(
+                id=uuid4(),
+                kind=SemanticEntityKind.SKILL,
+                review_state=SemanticReviewState.CONFIRMED,
+                fields=(
+                    _field(name="name", value="Python"),
+                    _field(name="name", value="FastAPI"),
+                    _field(name="name", value="LangGraph"),
+                ),
+            ),
+        ),
+    )
+    canonical = CanonicalResume(
+        schema_version="canonical-resume/2.0.0",
+        sections=(),
+        warnings=(),
+        semantics=semantics,
+    )
+
+    document = build_user_data_document(
+        resume_id=uuid4(),
+        owner=OwnerScope(user_id=uuid4()),
+        snapshot_id=uuid4(),
+        display_filename="resume.pdf",
+        canonical=canonical,
+        parsed_at=datetime(2026, 7, 15, tzinfo=UTC),
+    )
+
+    assert document["skills"][0]["name"] == ["Python", "FastAPI", "LangGraph"]
+
+
 async def test_in_memory_store_upserts_by_resume_id() -> None:
     store = InMemoryParsedResumeDocumentStore()
     resume_id = str(uuid4())
