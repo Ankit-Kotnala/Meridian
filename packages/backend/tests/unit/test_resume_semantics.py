@@ -99,6 +99,7 @@ async def test_local_semantic_parser_emits_typed_source_anchored_values() -> Non
     }
     fields = [field for entity in semantics.entities for field in entity.fields]
     assert any(field.field_type is SemanticFieldType.EMAIL for field in fields)
+    assert any(field.field_type is SemanticFieldType.URL for field in fields)
     assert any(
         field.field_type is SemanticFieldType.DATE and field.date_precision is DatePrecision.MONTH
         for field in fields

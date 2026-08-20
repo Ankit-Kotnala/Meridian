@@ -643,6 +643,100 @@ async def test_semantic_contact_and_skill_candidates_do_not_overwrite_or_invent_
 
 
 @pytest.mark.asyncio
+async def test_semantic_contact_with_bare_profile_links_accepts() -> None:
+    owner = uuid4()
+    document_id = uuid4()
+    snapshot_id = uuid4()
+    contact = _semantic_candidate(
+        document_id,
+        snapshot_id,
+        SemanticCandidateKind.CONTACT,
+        (
+            _semantic_field("name", "Alex Example"),
+            _semantic_field("email", "alex@example.test", field_type="email"),
+            _semantic_field(
+                "link",
+                "linkedin.com/in/alex-example",
+                field_type="url",
+            ),
+        ),
+    )
+    memory = MemoryCareerRecord()
+    sources = FakeResumeSourceQuery()
+    sources.add_semantic(owner, document_id, snapshot_id, (contact,))
+    service = _service(memory, sources)
+    await service.get_or_create_profile(owner, _context(owner))
+
+    batch = await service.create_semantic_import_proposals(
+        owner,
+        CreateSemanticImportProposals(document_id, snapshot_id),
+        _context(owner),
+    )
+    proposal = batch.proposals[0]
+    values = {field.semantic_field_id: field.value for field in proposal.fields}
+    await service.accept_semantic_import_proposal(
+        owner,
+        proposal.id,
+        proposal.version,
+        AcceptSemanticImportProposal(values, f"semantic:accept:{proposal.id}"),
+        _context(owner),
+    )
+
+    assert {
+        (fact.kind.value, fact.value)
+        for fact in memory.personal_facts.values()
+    } == {
+        ("name", "Alex Example"),
+        ("email", "alex@example.test"),
+        ("link", "https://linkedin.com/in/alex-example"),
+    }
+
+
+@pytest.mark.asyncio
+async def test_semantic_skill_proposal_imports_every_reviewed_name() -> None:
+    owner = uuid4()
+    document_id = uuid4()
+    snapshot_id = uuid4()
+    skill = _semantic_candidate(
+        document_id,
+        snapshot_id,
+        SemanticCandidateKind.SKILL,
+        (
+            _semantic_field("name", "Python"),
+            _semantic_field("name", "TypeScript"),
+            _semantic_field("name", "FastAPI"),
+        ),
+    )
+    memory = MemoryCareerRecord()
+    sources = FakeResumeSourceQuery()
+    sources.add_semantic(owner, document_id, snapshot_id, (skill,))
+    service = _service(memory, sources)
+    await service.get_or_create_profile(owner, _context(owner))
+
+    batch = await service.create_semantic_import_proposals(
+        owner,
+        CreateSemanticImportProposals(document_id, snapshot_id),
+        _context(owner),
+    )
+
+    assert len(batch.proposals) == 3
+    for proposal in batch.proposals:
+        values = {field.semantic_field_id: field.value for field in proposal.fields}
+        await service.accept_semantic_import_proposal(
+            owner,
+            proposal.id,
+            proposal.version,
+            AcceptSemanticImportProposal(values, f"semantic:accept:{proposal.id}"),
+            _context(owner),
+        )
+    assert {skill.name for skill in memory.skills.values()} == {
+        "Python",
+        "TypeScript",
+        "FastAPI",
+    }
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "spoofed_statement",
     [
