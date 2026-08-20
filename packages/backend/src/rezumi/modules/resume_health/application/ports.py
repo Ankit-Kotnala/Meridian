@@ -4,7 +4,7 @@ from collections.abc import AsyncIterator
 from datetime import datetime
 from pathlib import Path
 from types import TracebackType
-from typing import Protocol, Self
+from typing import Any, Protocol, Self
 from uuid import UUID
 
 from rezumi.modules.resume_health.application.models import (
@@ -111,6 +111,16 @@ class ResumeParserProvider(Protocol):
         resume: CanonicalResume,
         source_sha256: str,
     ) -> CanonicalSemantics: ...
+
+
+class ParsedResumeDocumentStore(Protocol):
+    async def ping(self) -> None: ...
+
+    async def upsert(self, document: dict[str, Any]) -> None: ...
+
+    async def delete(self, resume_id: UUID) -> None: ...
+
+    async def dispose(self) -> None: ...
 
 
 class OcrProvider(Protocol):

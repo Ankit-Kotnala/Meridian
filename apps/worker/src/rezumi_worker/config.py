@@ -505,6 +505,31 @@ class WorkerSettings(BaseSettings):
         ),
     )
 
+    mongodb_enabled: bool = Field(
+        default=True,
+        validation_alias=AliasChoices("REZUMI_MONGODB_ENABLED", "MONGODB_ENABLED"),
+    )
+    mongodb_url: str = Field(
+        default="mongodb://localhost:27017",
+        min_length=1,
+        validation_alias=AliasChoices("REZUMI_MONGODB_URL", "MONGODB_URL"),
+    )
+    mongodb_database_name: str = Field(
+        default="Rezumi",
+        min_length=1,
+        max_length=63,
+        validation_alias=AliasChoices("REZUMI_MONGODB_DATABASE", "MONGODB_DATABASE"),
+    )
+    mongodb_user_data_collection: str = Field(
+        default="user-data",
+        min_length=1,
+        max_length=120,
+        validation_alias=AliasChoices(
+            "REZUMI_MONGODB_USER_DATA_COLLECTION",
+            "MONGODB_USER_DATA_COLLECTION",
+        ),
+    )
+
     @field_validator("s3_endpoint_url", "s3_public_endpoint_url")
     @classmethod
     def validate_storage_endpoint(cls, value: str) -> str:

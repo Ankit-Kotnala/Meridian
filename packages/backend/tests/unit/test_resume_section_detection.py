@@ -8,7 +8,7 @@ from rezumi.modules.resume_health.application.models import (
     SourceSpanView,
 )
 from rezumi.modules.resume_health.application.service import _canonicalize
-from rezumi.modules.resume_health.domain import SectionKind
+from rezumi.modules.resume_health.domain import BlockKind, SectionKind
 
 
 def _extraction(*lines: tuple[str, str]) -> ExtractionResult:
@@ -92,3 +92,47 @@ def test_body_text_and_bullets_are_never_promoted_to_section_headings() -> None:
     )
 
     assert kinds == [SectionKind.EXPERIENCE]
+
+
+def test_certifications_and_achievements_heading_splits_from_education() -> None:
+    kinds = _kinds(
+        _extraction(
+            ("paragraph", "Education"),
+            ("paragraph", "CDAC Noida | MCA | 2024 - 2026"),
+            ("heading", "CERTIFICATIONS & ACHIEVEMENTS"),
+            ("paragraph", "SWAYAM Certified Machine Learning Engineer"),
+        )
+    )
+
+    assert kinds == [SectionKind.EDUCATION, SectionKind.CERTIFICATIONS]
+
+
+def test_selected_projects_heading_splits_from_experience() -> None:
+    kinds = _kinds(
+        _extraction(
+            ("paragraph", "Professional Experience"),
+            ("paragraph", "Acme | Engineer | Remote Jan 2024 - Present"),
+            ("bullet", "- Built platform."),
+            ("heading", "SELECTED AI PROJECTS"),
+            ("paragraph", "DocIQ | Document Intelligence | Python, FastAPI"),
+        )
+    )
+
+    assert kinds == [SectionKind.EXPERIENCE, SectionKind.PROJECTS]
+
+
+def test_wrapped_bullet_lines_merge_into_one_block() -> None:
+    canonical = _canonicalize(
+        uuid4(),
+        _extraction(
+            ("paragraph", "Experience"),
+            ("paragraph", "Acme | Engineer | Remote"),
+            ("bullet", "- Built a platform with FastAPI."),
+            ("paragraph", "routing enterprise questions through governed paths."),
+        ),
+    )
+    experience = next(section for section in canonical.sections if section.kind is SectionKind.EXPERIENCE)
+    bullets = [block for block in experience.blocks if block.kind is BlockKind.BULLET]
+
+    assert len(bullets) == 1
+    assert "routing enterprise questions" in bullets[0].text

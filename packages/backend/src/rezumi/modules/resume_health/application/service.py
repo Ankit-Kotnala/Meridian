@@ -8,7 +8,7 @@ import re
 import tempfile
 from contextlib import suppress
 from dataclasses import dataclass, replace
-from datetime import timedelta
+from datetime import datetime, timedelta
 from hashlib import sha256
 from pathlib import Path
 from typing import Any
@@ -44,6 +44,9 @@ from rezumi.modules.resume_health.application.models import (
     SemanticReviewOperation,
     UploadIntentView,
 )
+from rezumi.modules.resume_health.application.parsed_resume_document import (
+    build_user_data_document,
+)
 from rezumi.modules.resume_health.application.ports import (
     CapabilityManager,
     Clock,
@@ -52,6 +55,7 @@ from rezumi.modules.resume_health.application.ports import (
     MalwareScanner,
     ObjectStorage,
     OcrProvider,
+    ParsedResumeDocumentStore,
     ResumeParserProvider,
     ResumeUnitOfWork,
     UnitOfWorkFactory,
@@ -174,6 +178,13 @@ _SECTION_NAMES: dict[str, SectionKind] = {
     "certifications and licenses": SectionKind.CERTIFICATIONS,
     "licenses and certifications": SectionKind.CERTIFICATIONS,
     "courses and certifications": SectionKind.CERTIFICATIONS,
+    "certifications & achievements": SectionKind.CERTIFICATIONS,
+    "certifications and achievements": SectionKind.CERTIFICATIONS,
+    "certifications achievements": SectionKind.CERTIFICATIONS,
+    "achievements": SectionKind.CERTIFICATIONS,
+    "selected ai projects": SectionKind.PROJECTS,
+    "selected projects": SectionKind.PROJECTS,
+    "ai projects": SectionKind.PROJECTS,
     "contact": SectionKind.CONTACT,
     "contact information": SectionKind.CONTACT,
     "contact details": SectionKind.CONTACT,
@@ -1229,6 +1240,7 @@ class ResumeHealthProcessor:
         semantic_parser: ResumeParserProvider | None = None,
         ocr: OcrProvider | None = None,
         career_record: CareerRecordService | None = None,
+        parsed_resume_store: ParsedResumeDocumentStore | None = None,
         execution_lease_seconds: int = 330,
         upload_cleanup_grace_seconds: int = 900,
         max_object_cleanup_attempts: int = 10,
@@ -1242,6 +1254,7 @@ class ResumeHealthProcessor:
         self._semantic_parser = semantic_parser
         self._ocr = ocr
         self._career_record = career_record
+        self._parsed_resume_store = parsed_resume_store
         if (
             execution_lease_seconds < 1
             or upload_cleanup_grace_seconds < 1
@@ -1573,6 +1586,14 @@ class ResumeHealthProcessor:
                     import_snapshot_id,
                     job.trace_id,
                 )
+            if committed and self._parsed_resume_store is not None:
+                with suppress(RetryableProcessingFailure):
+                    await self._persist_parsed_resume(
+                        document=document,
+                        snapshot_id=import_snapshot_id,
+                        canonical=canonical,
+                        parsed_at=now,
+                    )
         finally:
             if not committed:
                 await self._delete_uncommitted_artifacts(
@@ -1772,6 +1793,29 @@ class ResumeHealthProcessor:
                 )
             )
             await uow.commit()
+        if self._parsed_resume_store is not None:
+            with suppress(RetryableProcessingFailure):
+                await self._parsed_resume_store.delete(document.id)
+
+    async def _persist_parsed_resume(
+        self,
+        *,
+        document: SourceDocument,
+        snapshot_id: UUID,
+        canonical: CanonicalResume,
+        parsed_at: datetime,
+    ) -> None:
+        if self._parsed_resume_store is None:
+            return
+        payload = build_user_data_document(
+            resume_id=document.id,
+            owner=document.owner,
+            snapshot_id=snapshot_id,
+            display_filename=document.display_filename,
+            canonical=canonical,
+            parsed_at=parsed_at,
+        )
+        await self._parsed_resume_store.upsert(payload)
 
     async def _document(self, job: ProcessingJob) -> SourceDocument:
         async with self._uow() as uow:
@@ -2519,7 +2563,8 @@ def _canonicalize(document_id: UUID, extraction: Any) -> CanonicalResume:
 
     def flush() -> None:
         nonlocal section_index, current_blocks
-        if not current_blocks:
+        coalesced = _merge_bullet_continuations(current_blocks)
+        if not coalesced:
             return
         sections.append(
             CanonicalSection(
@@ -2527,7 +2572,7 @@ def _canonicalize(document_id: UUID, extraction: Any) -> CanonicalResume:
                 kind=current_kind,
                 title=current_title,
                 confidence_basis_points=9_000 if current_kind != SectionKind.OTHER else 6_000,
-                blocks=tuple(current_blocks),
+                blocks=coalesced,
             )
         )
         section_index += 1
@@ -2555,6 +2600,42 @@ def _canonicalize(document_id: UUID, extraction: Any) -> CanonicalResume:
         sections=tuple(sections),
         warnings=tuple(extraction.warnings),
     )
+
+
+def _merge_bullet_continuations(
+    blocks: list[CanonicalBlock],
+) -> tuple[CanonicalBlock, ...]:
+    """Join PDF line-wrap continuations back onto the bullet they belong to."""
+    if not blocks:
+        return ()
+    merged: list[CanonicalBlock] = []
+    for block in blocks:
+        if (
+            merged
+            and merged[-1].kind is BlockKind.BULLET
+            and block.kind is BlockKind.PARAGRAPH
+            and _is_wrapped_bullet_line(block.text)
+        ):
+            previous = merged[-1]
+            continuation = block.text.strip()
+            combined = f"{previous.text} {continuation}"
+            span = previous.spans[0] if previous.spans else None
+            if span is not None:
+                merged[-1] = replace(
+                    previous,
+                    text=combined,
+                    spans=(replace(span, end=span.end + len(continuation) + 1),),
+                )
+            else:
+                merged[-1] = replace(previous, text=combined)
+            continue
+        merged.append(block)
+    return tuple(merged)
+
+
+def _is_wrapped_bullet_line(text: str) -> bool:
+    stripped = text.strip()
+    return bool(stripped) and stripped[0].islower()
 
 
 def _features(resume: CanonicalResume, page_count: int) -> ResumeHealthFeatures:
