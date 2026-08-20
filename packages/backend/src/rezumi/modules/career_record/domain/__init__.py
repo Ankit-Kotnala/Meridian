@@ -88,6 +88,7 @@ from .semantic_import import (
     SemanticImportStatus,
     SemanticImportTarget,
     ValidatedSemanticCandidate,
+    normalize_semantic_url,
 )
 
 __all__ = [
@@ -162,6 +163,7 @@ __all__ = [
     "TimelineFinding",
     "TimelineFindingKind",
     "ValidatedSemanticCandidate",
+    "normalize_semantic_url",
     "VerificationDecision",
     "VerificationMethod",
     "evidence_eligibility",

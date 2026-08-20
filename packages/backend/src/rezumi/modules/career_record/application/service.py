@@ -71,11 +71,13 @@ from rezumi.modules.career_record.domain import (
     SemanticImportStatus,
     SemanticImportTarget,
     Skill,
+    ValidatedSemanticCandidate,
     VerificationDecision,
     evidence_eligibility,
     exact_claim_sha256,
     initial_revision,
     material_revision,
+    normalize_semantic_url,
     reorder_entities,
     timeline_findings,
     transition_revision,
@@ -180,6 +182,41 @@ def _semantic_values_by_name(
     return grouped
 
 
+def _expand_semantic_candidates(
+    candidates: tuple[ValidatedSemanticCandidate, ...],
+) -> tuple[ValidatedSemanticCandidate, ...]:
+    """Split multi-name skill snapshots into one import candidate per skill."""
+
+    expanded: list[ValidatedSemanticCandidate] = []
+    for candidate in candidates:
+        if candidate.kind is not SemanticCandidateKind.SKILL:
+            expanded.append(candidate)
+            continue
+        name_fields = [field for field in candidate.fields if field.name == "name"]
+        if len(name_fields) <= 1:
+            expanded.append(candidate)
+            continue
+        category = next(
+            (field for field in candidate.fields if field.name == "category"),
+            None,
+        )
+        for name_field in name_fields:
+            fields = (name_field,) + ((category,) if category is not None else ())
+            expanded.append(
+                ValidatedSemanticCandidate(
+                    document_id=candidate.document_id,
+                    snapshot_id=candidate.snapshot_id,
+                    snapshot_revision=candidate.snapshot_revision,
+                    schema_version=candidate.schema_version,
+                    parser_version=candidate.parser_version,
+                    semantic_entity_id=name_field.semantic_field_id,
+                    kind=candidate.kind,
+                    fields=fields,
+                )
+            )
+    return tuple(expanded)
+
+
 def _semantic_mapping_issues(
     kind: SemanticCandidateKind,
     fields: tuple[SemanticImportField, ...],
@@ -221,6 +258,11 @@ def _semantic_mapping_issues(
         if field.name == "employment_type":
             try:
                 _employment_type(value)
+            except CareerRecordValidationError:
+                issues.append(field.name)
+        if field.field_type == "url" and value:
+            try:
+                normalize_semantic_url(value)
             except CareerRecordValidationError:
                 issues.append(field.name)
     return tuple(dict.fromkeys(issues))
@@ -582,6 +624,20 @@ class CareerRecordService:
         self._attachments = attachments
         self._verification_authority = verification_authority
         self._policy = policy or CareerRecordPolicy()
+
+    async def _reviewed_semantic_candidates(
+        self,
+        owner_user_id: UUID,
+        document_id: UUID,
+        snapshot_id: UUID,
+    ) -> tuple[ValidatedSemanticCandidate, ...]:
+        return _expand_semantic_candidates(
+            await self._resume_sources.reviewed_semantic_candidates(
+                owner_user_id,
+                document_id,
+                snapshot_id,
+            )
+        )
 
     async def create_profile(
         self, owner_user_id: UUID, command: CreateCareerProfile, context: RequestContext
@@ -1012,7 +1068,7 @@ class CareerRecordService:
             or provenance.semantic_field_id is None
         ):
             return False
-        candidates = await self._resume_sources.reviewed_semantic_candidates(
+        candidates = await self._reviewed_semantic_candidates(
             owner_user_id,
             provenance.document_id,
             provenance.snapshot_id,
@@ -1863,13 +1919,14 @@ class CareerRecordService:
         """Create idempotent proposals from reviewed typed semantics only."""
 
         self._authorize(owner_user_id, context)
-        candidates = await self._resume_sources.reviewed_semantic_candidates(
+        candidates = await self._reviewed_semantic_candidates(
             owner_user_id,
             command.document_id,
             command.snapshot_id,
         )
         if not candidates:
             raise CareerRecordSourceUnavailable("a reviewed owned semantic snapshot is required")
+        candidates = _expand_semantic_candidates(candidates)
         now = self._clock.now()
         created: list[SemanticImportProposal] = []
         questions: list[SemanticImportQuestion] = []
@@ -2040,7 +2097,7 @@ class CareerRecordService:
         self, owner_user_id: UUID, proposal_id: UUID
     ) -> bool:
         proposal = await self.get_semantic_import_proposal(owner_user_id, proposal_id)
-        candidates = await self._resume_sources.reviewed_semantic_candidates(
+        candidates = await self._reviewed_semantic_candidates(
             owner_user_id,
             proposal.document_id,
             proposal.snapshot_id,
@@ -2075,7 +2132,7 @@ class CareerRecordService:
             return await self._semantic_acceptance_view(owner_user_id, saved)
         if saved.status is not SemanticImportStatus.PENDING:
             raise CareerRecordTransitionRejected("a rejected semantic proposal cannot be accepted")
-        candidates = await self._resume_sources.reviewed_semantic_candidates(
+        candidates = await self._reviewed_semantic_candidates(
             owner_user_id,
             saved.document_id,
             saved.snapshot_id,
@@ -2258,6 +2315,8 @@ class CareerRecordService:
         for field in proposal.fields:
             kind = PersonalFactKind(field.name)
             value = values[field.semantic_field_id].strip()
+            if field.field_type == "url":
+                value = normalize_semantic_url(value)
             fact = next(
                 (item for item in existing if item.kind is kind and item.value == value),
                 None,
@@ -2307,8 +2366,59 @@ class CareerRecordService:
         now: datetime,
     ) -> Skill:
         by_name = _semantic_values_by_name(proposal.fields, values)
-        name = by_name["name"][0]
+        names = by_name.get("name", [])
+        if not names:
+            raise CareerRecordValidationError("skill proposal requires a name")
         category = by_name.get("category", [None])[0]
+        name_fields = [field for field in proposal.fields if field.name == "name"]
+        last_skill: Skill | None = None
+        for index, name in enumerate(names):
+            record_id = target_record_id if index == 0 else None
+            field = name_fields[index] if index < len(name_fields) else name_fields[-1]
+            last_skill = await self._upsert_confirmed_skill(
+                uow,
+                proposal,
+                name=name,
+                category=category,
+                target_record_id=record_id,
+                now=now,
+            )
+            await uow.add_field_provenance(
+                self._semantic_provenance(
+                    proposal,
+                    field,
+                    values[field.semantic_field_id],
+                    CareerFieldTarget.SKILL,
+                    last_skill.id,
+                    now,
+                )
+            )
+        for field in proposal.fields:
+            if field.name == "name":
+                continue
+            await uow.add_field_provenance(
+                self._semantic_provenance(
+                    proposal,
+                    field,
+                    values[field.semantic_field_id],
+                    CareerFieldTarget.SKILL,
+                    last_skill.id,
+                    now,
+                )
+            )
+        assert last_skill is not None
+        return last_skill
+
+    async def _upsert_confirmed_skill(
+        self,
+        uow: CareerRecordUnitOfWork,
+        proposal: SemanticImportProposal,
+        *,
+        name: str,
+        category: str | None,
+        target_record_id: UUID | None,
+        now: datetime,
+    ) -> Skill:
         skill = (
             await uow.get_skill(proposal.owner_user_id, target_record_id, for_update=True)
             if target_record_id is not None
@@ -2374,17 +2484,6 @@ class CareerRecordService:
             elif confirmation.state is not ConfirmationState.CONFIRMED:
                 confirmation.confirm(now)
                 await uow.save_skill_confirmation(confirmation)
-        for field in proposal.fields:
-            await uow.add_field_provenance(
-                self._semantic_provenance(
-                    proposal,
-                    field,
-                    values[field.semantic_field_id],
-                    CareerFieldTarget.SKILL,
-                    skill.id,
-                    now,
-                )
-            )
         return skill
 
     async def _accept_entity_proposal(

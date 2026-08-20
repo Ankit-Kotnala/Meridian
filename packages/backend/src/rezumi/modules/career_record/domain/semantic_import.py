@@ -21,6 +21,20 @@ def _bounded_text(value: str, field: str, maximum: int) -> str:
     return normalized
 
 
+def normalize_semantic_url(value: str) -> str:
+    """Normalize resume-extracted links into absolute HTTP(S) URLs."""
+
+    normalized = _bounded_text(value, "personal link", 2_048)
+    parsed = urlsplit(normalized)
+    if parsed.scheme in {"http", "https"} and parsed.netloc:
+        return normalized
+    if normalized.lower().startswith("www."):
+        return f"https://{normalized}"
+    if "://" not in normalized:
+        return f"https://{normalized.lstrip('/')}"
+    raise CareerRecordValidationError("personal link must use HTTP(S)")
+
+
 def _personal_fact_value(kind: PersonalFactKind, value: str) -> str:
     normalized = _bounded_text(value, "personal fact value", 2_048)
     if (
@@ -29,9 +43,7 @@ def _personal_fact_value(kind: PersonalFactKind, value: str) -> str:
     ):
         raise CareerRecordValidationError("personal email is invalid")
     if kind is PersonalFactKind.LINK:
-        parsed = urlsplit(normalized)
-        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-            raise CareerRecordValidationError("personal link must use HTTP(S)")
+        normalized = normalize_semantic_url(normalized)
     return normalized
 
 
