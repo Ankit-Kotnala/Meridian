@@ -10,12 +10,13 @@ import {
   NotebookPen,
   ShieldCheck,
   Sparkles,
+  Target,
   UserRound,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 
-import { Badge, cn } from "@rezumi/ui";
+import { Badge, cn, buttonStyles } from "@rezumi/ui";
 
 import type {
   DashboardAttentionItem,
@@ -46,10 +47,10 @@ function Tile({
   return (
     <section
       aria-labelledby={labelId}
-      className={cn("dash-tile", accent && "dash-tile-accent", className)}
+      className={cn("workspace-panel", className)}
     >
-      <div className="flex items-center justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
-        <h2 className="metric-label" id={labelId}>
+      <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3.5 sm:px-5">
+        <h2 className="text-sm font-bold text-foreground" id={labelId}>
           {label}
         </h2>
         {action && (
@@ -130,9 +131,15 @@ export function CareerRecordStats({
   );
 
   return (
-    <section aria-labelledby="career-record-heading" className="min-w-0">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="metric-label" id="career-record-heading">
+    <section
+      aria-labelledby="career-record-heading"
+      className="workspace-panel min-w-0"
+    >
+      <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3.5 sm:px-5">
+        <h2
+          className="text-sm font-bold text-foreground"
+          id="career-record-heading"
+        >
           Your career record
         </h2>
         <Link
@@ -144,15 +151,13 @@ export function CareerRecordStats({
         </Link>
       </div>
 
-      <ul className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <ul className="grid grid-cols-2 divide-x divide-line xl:grid-cols-4">
         {RECORD_ROWS.map(({ count, href, icon: Icon, label }) => (
           <li className="min-w-0" key={label}>
             <Link className="stat-card group h-full" href={href}>
-              <span className="flex items-center gap-2 text-muted-strong">
-                <Icon aria-hidden="true" className="size-3.5 shrink-0" />
-                <span className="metric-label truncate !text-muted-strong">
-                  {label}
-                </span>
+              <span className="flex items-center gap-2 text-muted">
+                <Icon aria-hidden="true" className="size-4 shrink-0" />
+                <span className="truncate text-xs font-semibold">{label}</span>
               </span>
               <span className="stat-figure text-foreground">
                 <CountValue count={record[count]} />
@@ -162,8 +167,21 @@ export function CareerRecordStats({
         ))}
       </ul>
 
+      <div className="workspace-banner flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <div className="flex items-center gap-2.5 text-sm text-foreground">
+          <Target aria-hidden="true" className="size-4 shrink-0 text-primary" />
+          <span>Need help with your resume?</span>
+        </div>
+        <Link
+          className={cn(buttonStyles.base, buttonStyles.primary, "shrink-0")}
+          href="/resume-health/account"
+        >
+          Start Resume Review
+        </Link>
+      </div>
+
       {unavailable && (
-        <p className="mt-2.5 text-xs leading-5 text-muted">
+        <p className="border-t border-line px-4 py-2.5 text-xs leading-5 text-muted sm:px-5">
           Count unavailable right now
         </p>
       )}

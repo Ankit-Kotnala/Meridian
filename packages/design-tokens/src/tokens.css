@@ -1,54 +1,52 @@
 :root {
   color-scheme: light;
-  --background: #f5f7f3;
+  --background: #f8f9fa;
   --surface: #ffffff;
   --surface-raised: #fbfdfb;
   --surface-subtle: #edf2ee;
-  --surface-inset: #e5ebe6;
-  --foreground: #132019;
-  --muted: #5a685f;
-  --muted-strong: #405148;
-  --border: #d8e1da;
-  --border-strong: #aebdb2;
-  --primary: #246248;
-  --primary-strong: #174a35;
-  --primary-soft: #e5f1ea;
-  --accent: #167b79;
-  --accent-strong: #0e5e5c;
-  --accent-soft: #dff3f0;
-  --navy: #102d24;
-  --navy-hover: #194236;
-  --success: #167451;
-  --success-strong: #0d5b3e;
-  --success-soft: #e3f3ea;
-  --warning: #a66710;
-  --warning-strong: #754706;
-  --warning-visual: #c77c12;
-  --warning-soft: #fff3d6;
-  --danger: #b4233c;
-  --danger-strong: #8f172d;
-  --danger-soft: #fde9ec;
+  --surface-inset: #e8ece9;
+  --foreground: #1a1f1c;
+  --muted: #5c6b62;
+  --muted-strong: #3d4a42;
+  --border: #e0e4e1;
+  --border-strong: #c5cdc7;
+  --primary: #0b3d2e;
+  --primary-strong: #082f23;
+  --primary-soft: #e6f4ea;
+  --accent: #1a7a5e;
+  --accent-strong: #145f49;
+  --accent-soft: #dff3eb;
+  --navy: #0b3d2e;
+  --navy-hover: #0f4d3a;
+  --success: #168a5c;
+  --success-strong: #0f6b47;
+  --success-soft: #e3f5ec;
+  --warning: #b8860b;
+  --warning-strong: #946b09;
+  --warning-visual: #d4a017;
+  --warning-soft: #fef6e3;
+  --danger: #c53030;
+  --danger-strong: #9b2c2c;
+  --danger-soft: #fdeaea;
   --info: #2f6685;
   --info-strong: #214b65;
   --info-soft: #e6f1f6;
   --focus: #075cad;
   --selection: #cfe5d8;
-  --score-track: #e1e7e2;
-  --radius-card: 0.875rem;
+  --score-track: #e1e7e3;
+  --radius-card: 0.75rem;
   --radius-control: 0.625rem;
   --radius-small: 0.45rem;
-  --shadow-sm: 0 1px 2px rgb(13 39 30 / 0.07);
-  --shadow-card:
-    0 1px 2px rgb(13 39 30 / 0.045), 0 8px 24px -18px rgb(13 39 30 / 0.2);
-  --shadow-card-hover:
-    0 2px 4px rgb(13 39 30 / 0.055), 0 18px 42px -22px rgb(13 39 30 / 0.28);
-  --shadow-md: 0 12px 32px -12px rgb(13 39 30 / 0.16);
-  --shadow-lg: 0 28px 72px -24px rgb(13 39 30 / 0.24);
-  --space-page-inline: clamp(1rem, 2.2vw, 2rem);
-  --space-page-block: clamp(1.25rem, 3vw, 2.5rem);
-  --content-wide: 78rem;
+  --shadow-sm: none;
+  --shadow-card: none;
+  --shadow-card-hover: none;
+  --shadow-md: 0 4px 12px -4px rgb(11 61 46 / 0.12);
+  --shadow-lg: 0 8px 24px -8px rgb(11 61 46 / 0.16);
+  --space-page-inline: clamp(1rem, 2.2vw, 1.75rem);
+  --space-page-block: clamp(1rem, 2.5vw, 1.75rem);
+  --content-wide: 80rem;
   --content-reading: 45rem;
-  --sidebar-width: 16.5rem;
+  --sidebar-width: 15.5rem;
   --motion-fast: 140ms;
   --motion-standard: 240ms;
   --motion-slow: 420ms;
@@ -62,13 +60,6 @@
     "Segoe UI", ui-sans-serif, system-ui, sans-serif;
 }
 
-/*
- * Dark theme. Every surface/text/brand token is redeclared here; because the
- * `@theme inline` map points the Tailwind color utilities at these custom
- * properties, toggling `.dark` on <html> re-themes the whole app with no
- * per-component changes. Brand hues are lifted for legibility on dark
- * backgrounds and shadows are deepened toward true black.
- */
 .dark {
   color-scheme: dark;
   --background: #0a1310;
@@ -105,13 +96,11 @@
   --focus: #58a6ef;
   --selection: #1d4635;
   --score-track: #223129;
-  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.45);
-  --shadow-card:
-    0 1px 2px rgb(0 0 0 / 0.32), 0 10px 26px -18px rgb(0 0 0 / 0.72);
-  --shadow-card-hover:
-    0 2px 4px rgb(0 0 0 / 0.4), 0 20px 46px -22px rgb(0 0 0 / 0.82);
-  --shadow-md: 0 14px 34px -12px rgb(0 0 0 / 0.6);
-  --shadow-lg: 0 30px 78px -24px rgb(0 0 0 / 0.72);
+  --shadow-sm: none;
+  --shadow-card: none;
+  --shadow-card-hover: none;
+  --shadow-md: 0 4px 12px -4px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 8px 24px -8px rgb(0 0 0 / 0.5);
 }
 
 @theme inline {

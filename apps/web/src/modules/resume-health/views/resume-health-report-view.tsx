@@ -2,6 +2,7 @@
 
 import {
   AlertTriangle,
+  ArrowLeft,
   CheckCircle2,
   Clock3,
   FileWarning,
@@ -20,7 +21,6 @@ import {
   Badge,
   Button,
   Card,
-  CardHeader,
   CheckboxField,
   ConfirmDialog,
   ErrorState,
@@ -282,25 +282,33 @@ export function ResumeHealthReportView({
   );
 
   const overviewPanel = (
-    <div className="grid gap-5 py-5 lg:grid-cols-[1.1fr_0.9fr]">
-      <Card>
-        <CardHeader
-          description="Versioned component contributions"
-          title="Score breakdown"
-        />
-        <div className="space-y-5 p-5 sm:p-6">
+    <div className="grid gap-5 py-5 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.85fr)]">
+      <div className="workspace-panel">
+        <div className="border-b border-line px-4 py-3.5 sm:px-5">
+          <h2 className="text-sm font-bold text-foreground">Score breakdown</h2>
+          <p className="mt-0.5 text-xs text-muted">
+            Versioned component contributions
+          </p>
+        </div>
+        <div className="space-y-5 p-4 sm:p-5">
           {report.components.length > 0 ? (
             report.components.map((component) => (
               <div key={component.key}>
                 <ScoreBar
                   label={`${component.label} (${component.weight}% weight)`}
                   score={component.score}
-                  tone="primary"
+                  tone={
+                    component.score >= 80
+                      ? "success"
+                      : component.score >= 65
+                        ? "warning"
+                        : "primary"
+                  }
                 />
                 <p className="mt-2 text-xs leading-5 text-muted">
                   {component.explanation}
                 </p>
-                <details className="mt-3 rounded-xl border border-line bg-surface-subtle/70 p-3">
+                <details className="mt-3 rounded-[var(--radius-control)] border border-line bg-surface-subtle/70 p-3">
                   <summary className="cursor-pointer rounded-md text-xs font-bold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
                     How {component.label} was calculated
                   </summary>
@@ -346,13 +354,16 @@ export function ResumeHealthReportView({
             </p>
           )}
         </div>
-      </Card>
-      <Card>
-        <CardHeader description="Prioritized actions" title="Quick wins" />
-        <div className="p-5">
+      </div>
+      <div className="workspace-panel">
+        <div className="border-b border-line px-4 py-3.5 sm:px-5">
+          <h2 className="text-sm font-bold text-foreground">Suggested changes</h2>
+          <p className="mt-0.5 text-xs text-muted">Prioritized actions</p>
+        </div>
+        <div className="p-4 sm:p-5">
           <FindingList findings={quickWins} />
         </div>
-      </Card>
+      </div>
     </div>
   );
 
@@ -445,16 +456,27 @@ export function ResumeHealthReportView({
     <main
       className={
         access === "account"
-          ? "mx-auto max-w-6xl p-4 sm:p-6 lg:p-8"
+          ? "workspace-page space-y-5"
           : "site-container py-8 sm:py-12"
       }
       id="main-content"
     >
-      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="eyebrow">General document check</p>
-          <h1 className="mt-2 text-2xl font-black tracking-[-0.035em] text-foreground sm:text-3xl">
-            Resume Health report
+          {access === "account" && (
+            <Link
+              className="mb-3 inline-flex items-center gap-1.5 text-sm font-semibold text-primary-strong hover:underline"
+              href="/resume-health/account"
+            >
+              <ArrowLeft aria-hidden="true" className="size-4" />
+              Resume Health
+            </Link>
+          )}
+          {access !== "account" && (
+            <p className="eyebrow">General document check</p>
+          )}
+          <h1 className="font-display text-2xl font-bold tracking-[-0.03em] text-foreground sm:text-3xl">
+            {access === "account" ? "Resume Health" : "Resume Health report"}
           </h1>
           <p className="mt-2 text-sm text-muted">
             Calculated {date(report.computedAt)} from a reviewed immutable
@@ -472,37 +494,52 @@ export function ResumeHealthReportView({
         </Alert>
       )}
 
-      <Card className="overflow-hidden">
-        <div className="grid gap-6 p-5 sm:p-7 lg:grid-cols-[13rem_1fr] lg:items-center">
-          <div className="flex flex-col items-center rounded-2xl bg-surface-subtle p-5 text-center">
+      <section className="workspace-panel overflow-hidden">
+        <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-start">
+          <div className="flex flex-col items-center">
             {report.score === null ? (
-              <span className="grid size-32 place-items-center rounded-full border-8 border-line text-center text-sm font-black text-muted">
+              <span className="grid size-32 place-items-center rounded-full border-[10px] border-line text-center text-sm font-bold text-muted">
                 Score
                 <br /> unavailable
               </span>
             ) : (
               <ScoreRing
+                bandLabel={scoreLabel}
                 label="Resume Health Score"
                 score={report.score}
                 size="lg"
                 tone={scoreTone}
               />
             )}
-            <Badge
-              className="mt-4"
-              tone={scoreTone === "primary" ? "primary" : scoreTone}
-            >
-              {scoreLabel}
-            </Badge>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <ShieldCheck aria-hidden="true" className="size-5 text-primary" />
-              <h2 className="font-extrabold text-foreground">
-                Internal Rezumi measure
-              </h2>
+          <div className="min-w-0">
+            <div className="flex flex-wrap gap-2">
+              <Badge tone={scoreTone === "primary" ? "primary" : scoreTone}>
+                {scoreLabel}
+              </Badge>
+              {report.status !== "insufficientData" && (
+                <Badge tone="success">Well structured</Badge>
+              )}
+              {report.warnings.length > 0 && (
+                <Badge tone="warning">Needs improvement</Badge>
+              )}
             </div>
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
+            <h2
+              className="mt-3 truncate text-base font-bold text-foreground"
+              title={document?.displayFilename}
+            >
+              {document?.displayFilename ?? "Resume document"}
+            </h2>
+            <p className="mt-1 text-xs text-muted">
+              {document ? `Updated ${date(document.updatedAt)}` : null}
+            </p>
+            <div className="mt-3 flex items-center gap-2">
+              <ShieldCheck aria-hidden="true" className="size-4 text-primary" />
+              <span className="text-sm font-semibold text-foreground">
+                Internal Rezumi measure
+              </span>
+            </div>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
               {SCORE_DISCLAIMER}
             </p>
             {report.status === "insufficientData" && (
@@ -516,25 +553,42 @@ export function ResumeHealthReportView({
                 content.
               </Alert>
             )}
-            {report.warnings.length > 0 && (
-              <ul className="mt-4 space-y-2 text-xs leading-5 text-muted">
-                {report.warnings.map((warning) => (
-                  <li className="flex items-start gap-2" key={warning}>
-                    <AlertTriangle
-                      aria-hidden="true"
-                      className="mt-0.5 size-3.5 shrink-0 text-warning-strong"
-                    />
-                    {warning}
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
         </div>
-      </Card>
+
+        {report.components.length > 0 && (
+          <ul className="grid grid-cols-2 divide-x divide-line border-t border-line sm:grid-cols-4">
+            {report.components.slice(0, 4).map((component) => (
+              <li className="px-4 py-4 text-center sm:px-5" key={component.key}>
+                <p className="text-xs font-semibold text-muted">{component.label}</p>
+                <p className="mt-1 text-xl font-bold tabular-nums text-foreground">
+                  {component.score}
+                  <span className="text-sm font-semibold text-muted">/100</span>
+                </p>
+                <div
+                  aria-hidden="true"
+                  className="mx-auto mt-2 h-1 max-w-[5rem] overflow-hidden rounded-full bg-surface-inset"
+                >
+                  <div
+                    className={cn(
+                      "h-full rounded-full",
+                      component.score >= 80
+                        ? "bg-success"
+                        : component.score >= 65
+                          ? "bg-warning-visual"
+                          : "bg-primary",
+                    )}
+                    style={{ width: `${component.score}%` }}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <Tabs
-        className="mt-6"
+        className="mt-2"
         label="Resume Health report sections"
         tabs={[
           { id: "overview", label: "Overview", panel: overviewPanel },
