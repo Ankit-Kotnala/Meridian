@@ -11,7 +11,7 @@ ignore:
   - vulnerability: CVE-2026-15308
     package:
       name: python
-      version: 3.13.14
+      version: 3.13.15
       type: binary
   - vulnerability: GHSA-vxpw-j846-p89q
     package:

@@ -1,4 +1,4 @@
-FROM python:3.13-alpine3.24@sha256:399babc8b49529dabfd9c922f2b5eea81d611e4512e3ed250d75bd2e7683f4b0 AS runtime
+FROM python:3.13-alpine3.24@sha256:42825e7ec3437b3bce923c237484eb23d32128476e18307d2f48951bf86f1db2 AS runtime
 
 ENV PATH="/workspace/.venv/bin:${PATH}" \
     PYTHONDONTWRITEBYTECODE=1 \
