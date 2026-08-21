@@ -129,5 +129,3 @@ def reconcile_resume_builder_exports(
         "object_cleanup_failures": result.object_cleanup_failures,
         "object_cleanup_dead_letters": result.object_cleanup_dead_letters,
     }
-
-

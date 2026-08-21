@@ -487,9 +487,7 @@ class CareerSemanticImportProposalModel(Base):
     semantic_entity_id: Mapped[UUID] = mapped_column(Uuid, nullable=False)
     semantic_kind: Mapped[str] = mapped_column(String(24), nullable=False)
     fields_json: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False)
-    accepted_values_json: Mapped[dict[str, str] | None] = mapped_column(
-        JSONB(none_as_null=True)
-    )
+    accepted_values_json: Mapped[dict[str, str] | None] = mapped_column(JSONB(none_as_null=True))
     decision_idempotency_key: Mapped[str | None] = mapped_column(String(128))
     status: Mapped[str] = mapped_column(String(16), nullable=False)
     conflict_code: Mapped[str | None] = mapped_column(String(80))

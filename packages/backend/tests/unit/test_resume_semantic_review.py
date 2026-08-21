@@ -33,6 +33,7 @@ from rezumi.modules.resume_health.domain import (
     SemanticField,
     SemanticFieldType,
     SemanticReviewState,
+    SemanticSourceAnchor,
     SourceSpan,
 )
 from rezumi.modules.resume_health.domain.errors import ResumeStateConflict
@@ -66,6 +67,28 @@ async def _semantics():
         uuid4(),
         resume,
         sha256(b"fictional").hexdigest(),
+    )
+
+
+def _skill_field(*, review_state: SemanticReviewState) -> SemanticField:
+    block_id = uuid4()
+    value = "Python"
+    return SemanticField(
+        id=uuid4(),
+        name="name",
+        field_type=SemanticFieldType.TEXT,
+        value=value,
+        confidence_basis_points=8_000,
+        review_state=review_state,
+        anchors=(
+            SemanticSourceAnchor(
+                block_id=block_id,
+                page=1,
+                start=0,
+                end=len(value),
+                source_sha256=sha256(b"fictional skill").hexdigest(),
+            ),
+        ),
     )
 
 
@@ -185,16 +208,7 @@ def test_auto_confirm_parsed_semantics_confirms_unreviewed_fields() -> None:
                 id=uuid4(),
                 kind=SemanticEntityKind.SKILL,
                 review_state=SemanticReviewState.UNREVIEWED,
-                fields=(
-                    SemanticField(
-                        id=uuid4(),
-                        name="name",
-                        field_type=SemanticFieldType.TEXT,
-                        value="Python",
-                        confidence_basis_points=8_000,
-                        review_state=SemanticReviewState.UNREVIEWED,
-                    ),
-                ),
+                fields=(_skill_field(review_state=SemanticReviewState.UNREVIEWED),),
             ),
         ),
         review_state=SemanticReviewState.UNREVIEWED,
@@ -215,16 +229,7 @@ def test_confirm_no_changes_is_idempotent_when_already_confirmed() -> None:
                 id=uuid4(),
                 kind=SemanticEntityKind.SKILL,
                 review_state=SemanticReviewState.CONFIRMED,
-                fields=(
-                    SemanticField(
-                        id=uuid4(),
-                        name="name",
-                        field_type=SemanticFieldType.TEXT,
-                        value="Python",
-                        confidence_basis_points=8_000,
-                        review_state=SemanticReviewState.CONFIRMED,
-                    ),
-                ),
+                fields=(_skill_field(review_state=SemanticReviewState.CONFIRMED),),
             ),
         ),
         review_state=SemanticReviewState.CONFIRMED,

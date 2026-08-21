@@ -1,7 +1,11 @@
 import { fillApiPath } from "@/shared/api/api-path";
 import { serverApiFetch } from "@/shared/api/server-request";
 
-import { parseDocument, parseDocumentList, parseReport } from "../api/contract-parsers";
+import {
+  parseDocument,
+  parseDocumentList,
+  parseReport,
+} from "../api/contract-parsers";
 import type { DocumentSummary } from "../api/types";
 
 export type DashboardResumeHealthState =
@@ -68,6 +72,36 @@ async function reviewedImportSource(
     return { documentId: document.id, snapshotId };
   }
   return null;
+}
+
+export async function reportImportSource(
+  analysisId: string,
+): Promise<{ documentId: string; snapshotId: string } | undefined> {
+  try {
+    const reportResponse = await serverApiFetch(
+      fillApiPath("/api/v1/resume-health/{analysis_id}", {
+        analysis_id: analysisId,
+      }),
+    );
+    if (!reportResponse.ok) return undefined;
+    const report = parseReport(await reportResponse.json());
+    const detailResponse = await serverApiFetch(
+      fillApiPath("/api/v1/documents/{document_id}", {
+        document_id: report.documentId,
+      }),
+    );
+    if (!detailResponse.ok) return undefined;
+    const detail = parseDocument(await detailResponse.json());
+    const snapshotId = detail.currentCanonicalResumeId;
+    if (snapshotId == null) return undefined;
+    const reviewState = detail.canonicalResume?.semanticReviewState;
+    if (reviewState !== "confirmed" && reviewState !== "corrected") {
+      return undefined;
+    }
+    return { documentId: report.documentId, snapshotId };
+  } catch {
+    return undefined;
+  }
 }
 
 export async function dashboardResumeHealth(): Promise<DashboardResumeHealthState> {

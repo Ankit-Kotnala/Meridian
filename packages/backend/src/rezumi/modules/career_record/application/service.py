@@ -2050,9 +2050,7 @@ class CareerRecordService:
                 continue
             if _semantic_auto_apply_blocked(proposal):
                 continue
-            values = {
-                field.semantic_field_id: field.value for field in proposal.fields
-            }
+            values = {field.semantic_field_id: field.value for field in proposal.fields}
             try:
                 await self.accept_semantic_import_proposal(
                     owner_user_id,
@@ -2393,6 +2391,8 @@ class CareerRecordService:
                     now,
                 )
             )
+        if last_skill is None:
+            raise CareerRecordValidationError("skill proposal requires a name")
         for field in proposal.fields:
             if field.name == "name":
                 continue
@@ -2406,7 +2406,6 @@ class CareerRecordService:
                     now,
                 )
             )
-        assert last_skill is not None
         return last_skill
 
     async def _upsert_confirmed_skill(

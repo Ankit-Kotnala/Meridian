@@ -199,5 +199,3 @@ def _attachment_processing_result(
             outcome.safe_error_code.value if outcome.safe_error_code is not None else None
         ),
     }
-
-

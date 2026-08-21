@@ -131,7 +131,9 @@ def test_wrapped_bullet_lines_merge_into_one_block() -> None:
             ("paragraph", "routing enterprise questions through governed paths."),
         ),
     )
-    experience = next(section for section in canonical.sections if section.kind is SectionKind.EXPERIENCE)
+    experience = next(
+        section for section in canonical.sections if section.kind is SectionKind.EXPERIENCE
+    )
     bullets = [block for block in experience.blocks if block.kind is BlockKind.BULLET]
 
     assert len(bullets) == 1

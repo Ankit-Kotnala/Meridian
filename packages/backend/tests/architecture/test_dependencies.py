@@ -318,9 +318,7 @@ def test_product_modules_cannot_bypass_repositories_with_table_objects(
 
 def test_product_modules_may_use_explicit_application_contracts() -> None:
     path = Path("packages/backend/src/rezumi/modules/evidence/application/handler.py")
-    source = (
-        "from rezumi.modules.resume_health.application.contracts import CanonicalResumeReader"
-    )
+    source = "from rezumi.modules.resume_health.application.contracts import CanonicalResumeReader"
 
     violations = violations_for_source(path, source)
 

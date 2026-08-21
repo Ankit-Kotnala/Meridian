@@ -600,4 +600,3 @@ class WorkerSettings(BaseSettings):
 @lru_cache(maxsize=1)
 def get_settings() -> WorkerSettings:
     return WorkerSettings()
-

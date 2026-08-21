@@ -158,13 +158,16 @@ def _authenticated_client(
     fake_database: FakeDatabase,
     identity: IdentityService,
     career: CareerRecordService,
+    resume: ResumeHealthService | None = None,
 ) -> TestClient:
+    resume_health = resume or create_autospec(ResumeHealthService, instance=True)
     client = TestClient(
         create_app(
             settings,
             database=fake_database,
             identity=identity,
             career_record=career,
+            resume_health=resume_health,
         )
     )
     client.cookies.set("rezumi_session", "opaque-session")
@@ -342,8 +345,12 @@ def test_semantic_import_http_flow_is_typed_idempotent_and_owner_scoped(
     candidate = _semantic_candidate(document_id, snapshot_id)
     sources.add_semantic(owner_id, document_id, snapshot_id, (candidate,))
     identity, career, state, _ = _services(owner_id, sources)
+    resume = create_autospec(ResumeHealthService, instance=True)
+    resume.ensure_reviewed_snapshot_for_import.return_value = snapshot_id
 
-    with _authenticated_client(settings, fake_database, identity, career) as client:
+    with _authenticated_client(
+        settings, fake_database, identity, career, resume=resume
+    ) as client:
         assert client.get("/api/v1/career-profile").status_code == 200
         created = client.post(
             "/api/v1/career-profile/semantic-import-proposals",
@@ -356,15 +363,16 @@ def test_semantic_import_http_flow_is_typed_idempotent_and_owner_scoped(
         assert created.status_code == 201
         body = created.json()
         assert body["questions"] == []
+        assert body["appliedCount"] == 1
         proposal = body["proposals"][0]
         assert proposal["target"] == "entity"
-        assert proposal["status"] == "pending"
+        assert proposal["status"] == "accepted"
         assert proposal["sourceAvailable"] is True
         assert proposal["fields"][0]["anchors"][0]["digest"].startswith("sha256:")
         assert (
             proposal["fields"][0]["anchors"][0]["excerpt"] == proposal["fields"][0]["proposedValue"]
         )
-        assert state.entities == {}
+        assert len(state.entities) == 1
 
         proposal_id = proposal["id"]
         values = {item["id"]: item["proposedValue"] for item in proposal["fields"]}
@@ -375,14 +383,12 @@ def test_semantic_import_http_flow_is_typed_idempotent_and_owner_scoped(
         )
         assert missing_idempotency.status_code == 422
 
-        accepted = client.post(
+        duplicate_accept = client.post(
             f"/api/v1/career-profile/semantic-import-proposals/{proposal_id}/accept",
             json={"values": values},
             headers=_write_headers(version=proposal["version"], idempotency=True),
         )
-        assert accepted.status_code == 200
-        assert accepted.json()["status"] == "accepted"
-        assert len(state.entities) == 1
+        assert duplicate_accept.status_code == 409
         imported = client.get("/api/v1/experiences")
         assert imported.status_code == 200
         assert imported.json()["data"][0]["userConfirmed"] is True
@@ -390,7 +396,10 @@ def test_semantic_import_http_flow_is_typed_idempotent_and_owner_scoped(
         replay = client.post(
             f"/api/v1/career-profile/semantic-import-proposals/{proposal_id}/accept",
             json={"values": values},
-            headers=_write_headers(version=proposal["version"], idempotency=True),
+            headers={
+                **_write_headers(version=proposal["version"]),
+                "Idempotency-Key": f"auto-import:{proposal_id}",
+            },
         )
         assert replay.status_code == 200
         assert len(state.entities) == 1

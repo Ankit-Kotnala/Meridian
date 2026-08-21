@@ -193,5 +193,3 @@ def _schedule_analytics_retry(
         countdown=countdown,
         max_retries=settings.analytics_max_attempts + settings.task_max_retries,
     )
-
-

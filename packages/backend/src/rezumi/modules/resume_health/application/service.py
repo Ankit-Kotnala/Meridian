@@ -12,15 +12,14 @@ from datetime import datetime, timedelta
 from hashlib import sha256
 from pathlib import Path
 from typing import Any
+from uuid import UUID, uuid4, uuid5
 
 from rezumi.modules.career_record.application import (
+    CareerRecordError,
     CareerRecordService,
     CreateSemanticImportProposals,
     RequestContext,
 )
-from rezumi.modules.career_record.domain.errors import CareerRecordError
-from uuid import UUID, uuid4, uuid5
-
 from rezumi.modules.resume_health.application.models import (
     AnalysisView,
     CanonicalSnapshotView,
@@ -183,7 +182,6 @@ _SECTION_NAMES: dict[str, SectionKind] = {
     "certifications achievements": SectionKind.CERTIFICATIONS,
     "achievements": SectionKind.CERTIFICATIONS,
     "selected ai projects": SectionKind.PROJECTS,
-    "selected projects": SectionKind.PROJECTS,
     "ai projects": SectionKind.PROJECTS,
     "contact": SectionKind.CONTACT,
     "contact information": SectionKind.CONTACT,
@@ -268,11 +266,7 @@ class ResumeHealthSourceReader:
         async with self._uow() as uow:
             snapshot = await uow.get_snapshot(scope, snapshot_id)
             original = await uow.get_first_snapshot(scope, document_id)
-        if (
-            snapshot is None
-            or original is None
-            or snapshot.document_id != document_id
-        ):
+        if snapshot is None or original is None or snapshot.document_id != document_id:
             raise ResumeResourceNotFound
         return _snapshot_view(snapshot, original.resume)
 

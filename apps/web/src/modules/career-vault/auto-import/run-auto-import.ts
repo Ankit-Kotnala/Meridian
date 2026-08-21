@@ -32,7 +32,7 @@ export async function runAutoImport(
     try {
       const batch = await createProfileImportProposals(documentId, snapshotId);
       questions = batch.questions.length;
-      appliedFromCreate = batch.appliedCount;
+      appliedFromCreate = batch.appliedCount ?? 0;
     } catch {
       questions = 0;
     }

@@ -191,14 +191,14 @@ def _group_candidates(
     blocks: tuple[CanonicalBlock, ...],
 ) -> tuple[_FieldCandidate, ...]:
     if kind is SemanticEntityKind.SKILL:
-        candidates: list[_FieldCandidate] = []
+        skill_candidates: list[_FieldCandidate] = []
         for block in blocks:
             text = block.text
             prefix_len = 0
             if ":" in text:
                 prefix, _, text = text.partition(":")
                 prefix_len = len(prefix) + 1
-            candidates.extend(
+            skill_candidates.extend(
                 _FieldCandidate(
                     "name",
                     SemanticFieldType.TEXT,
@@ -210,7 +210,7 @@ def _group_candidates(
                 )
                 for value, start, end in _source_values(text, (), _SKILL_SPLIT)
             )
-        return tuple(candidates)
+        return tuple(skill_candidates)
 
     candidates: list[_FieldCandidate] = []
     pending_text: list[str] = []
