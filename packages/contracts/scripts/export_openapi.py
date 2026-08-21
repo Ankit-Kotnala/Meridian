@@ -7,9 +7,9 @@ import json
 from pathlib import Path
 from typing import Any
 
+from pydantic_settings import PydanticBaseSettingsSource
 from rezumi_api.application import create_app
 from rezumi_api.config import Settings
-from pydantic_settings import PydanticBaseSettingsSource
 
 SCHEMA_PATH = Path(__file__).resolve().parents[1] / "openapi" / "rezumi.openapi.json"
 
