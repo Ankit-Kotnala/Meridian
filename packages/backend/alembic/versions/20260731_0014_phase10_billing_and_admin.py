@@ -23,7 +23,7 @@ def upgrade() -> None:
     op.create_table(
         "subscriptions",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, nullable=False),
-        sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=False, unique=True),
+        sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("tier", sa.String(length=32), nullable=False, server_default=sa.text("'free'")),
         sa.Column(
             "status", sa.String(length=32), nullable=False, server_default=sa.text("'active'")
@@ -57,7 +57,7 @@ def upgrade() -> None:
             server_default=sa.text("now()"),
         ),
     )
-    op.create_index("ix_subscriptions_user_id", "subscriptions", ["user_id"])
+    op.create_index("ix_subscriptions_user_id", "subscriptions", ["user_id"], unique=True)
 
     op.create_table(
         "usage_quotas",
