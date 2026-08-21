@@ -56,8 +56,10 @@ def upgrade() -> None:
             nullable=False,
             server_default=sa.text("now()"),
         ),
+        sa.PrimaryKeyConstraint("id", name="pk_subscriptions"),
+        sa.UniqueConstraint("user_id", name="uq_subscriptions_user_id"),
     )
-    op.create_index("ix_subscriptions_user_id", "subscriptions", ["user_id"], unique=True)
+    op.create_index("ix_subscriptions_user_id", "subscriptions", ["user_id"])
 
     op.create_table(
         "usage_quotas",
