@@ -6,7 +6,6 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   Alert,
   Button,
-  Card,
   ErrorState,
   FileUploadField,
   formatBytes,
@@ -73,7 +72,7 @@ export function UploadWorkflow({
       .catch((error) => {
         if (!active) return;
         setPolicyFailure(
-          requestErrorMessage(error, "We couldn’t load the upload policy."),
+          requestErrorMessage(error, "We couldn't load the upload policy."),
         );
       });
     return () => {
@@ -160,7 +159,7 @@ export function UploadWorkflow({
             error,
             error instanceof Error
               ? error.message
-              : "We couldn’t upload this resume.",
+              : "We couldn't upload this resume.",
           ),
         );
       }
@@ -210,72 +209,74 @@ export function UploadWorkflow({
     .join(" ");
 
   return (
-    <Card className="p-5 sm:p-6">
-      <form className="space-y-5" onSubmit={submit}>
-        <FileUploadField
-          accept={policy.acceptedMediaTypes.join(",")}
-          disabled={working}
-          error={fileError}
-          hint={formatLimits}
-          id={`resume-file-${access}`}
-          label="Resume file"
-          onFileChange={selectFile}
-          selectedFile={file}
-        />
-        {failure && (
-          <Alert title="Upload not completed" tone="danger">
-            <span>{failure}</span>
-            {hasPendingAttempt && (
-              <span className="mt-1 block">
-                Retry safely reuses this upload and its completion key; it does
-                not reserve another document slot.
-              </span>
-            )}
-          </Alert>
-        )}
-        {working && (
-          <div aria-live="polite" className="rounded-xl bg-surface-subtle p-4">
-            <Progress
-              label={label}
-              value={stage === "uploading" ? progress : null}
-            />
-            <p className="mt-3 text-xs leading-5 text-muted">
-              Keep this page open until Rezumi confirms the private upload.
-            </p>
-          </div>
-        )}
-        <Alert title="Private admission pipeline" tone="info">
-          <span className="inline-flex items-start gap-2">
-            <ShieldCheck
-              aria-hidden="true"
-              className="mt-0.5 size-4 shrink-0"
-            />
-            New files stay quarantined while Rezumi verifies their signature,
-            limits, and malware status. Uploaded content is never executed.
-          </span>
-        </Alert>
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          {stage === "uploading" && (
-            <Button
-              onClick={() => transfer.current?.abort()}
-              type="button"
-              variant="secondary"
-            >
-              <XCircle aria-hidden="true" className="size-4" /> Cancel upload
-            </Button>
+    <form className="space-y-4" onSubmit={submit}>
+      <FileUploadField
+        accept={policy.acceptedMediaTypes.join(",")}
+        className="[&_.rounded-2xl.border-dashed]:workspace-upload-zone [&_.rounded-2xl.border-dashed]:shadow-none [&_.rounded-2xl.border-dashed]:hover:bg-surface"
+        disabled={working}
+        error={fileError}
+        hint={formatLimits}
+        id={`resume-file-${access}`}
+        label="Resume file"
+        onFileChange={selectFile}
+        selectedFile={file}
+      />
+      {failure && (
+        <Alert title="Upload not completed" tone="danger">
+          <span>{failure}</span>
+          {hasPendingAttempt && (
+            <span className="mt-1 block">
+              Retry safely reuses this upload and its completion key; it does
+              not reserve another document slot.
+            </span>
           )}
-          <Button
-            disabled={!file || Boolean(fileError)}
-            loading={working}
-            loadingLabel={`${label}…`}
-            type="submit"
-          >
-            {hasPendingAttempt
-              ? "Retry upload and review"
-              : "Upload and review"}
-          </Button>
+        </Alert>
+      )}
+      {working && (
+        <div
+          aria-live="polite"
+          className="rounded-[var(--radius-control)] bg-surface-subtle p-4"
+        >
+          <Progress
+            label={label}
+            value={stage === "uploading" ? progress : null}
+          />
+          <p className="mt-3 text-xs leading-5 text-muted">
+            Keep this page open until Rezumi confirms the private upload.
+          </p>
         </div>
-      </form>
-    </Card>
+      )}
+      <Alert title="Private admission pipeline" tone="info">
+        <span className="inline-flex items-start gap-2">
+          <ShieldCheck
+            aria-hidden="true"
+            className="mt-0.5 size-4 shrink-0"
+          />
+          New files stay quarantined while Rezumi verifies their signature,
+          limits, and malware status. Uploaded content is never executed.
+        </span>
+      </Alert>
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        {stage === "uploading" && (
+          <Button
+            onClick={() => transfer.current?.abort()}
+            type="button"
+            variant="secondary"
+          >
+            <XCircle aria-hidden="true" className="size-4" /> Cancel upload
+          </Button>
+        )}
+        <Button
+          disabled={!file || Boolean(fileError)}
+          loading={working}
+          loadingLabel={`${label}…`}
+          type="submit"
+        >
+          {hasPendingAttempt
+            ? "Retry upload and review"
+            : "Upload and review"}
+        </Button>
+      </div>
+    </form>
   );
 }

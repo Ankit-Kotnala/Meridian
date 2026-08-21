@@ -47,7 +47,7 @@ export function ThemeToggle() {
             ? "Switch to light theme"
             : "Switch to dark theme"
       }
-      className="grid size-10 place-items-center rounded-[var(--radius-control)] border border-line bg-surface text-muted-strong shadow-sm transition-[background-color,border-color,color,transform] duration-150 hover:-translate-y-0.5 hover:border-primary/45 hover:bg-primary-soft/50 hover:text-primary-strong active:translate-y-0"
+      className="grid size-10 place-items-center rounded-[var(--radius-control)] border border-line text-muted-strong transition-colors hover:bg-surface-subtle hover:text-foreground"
       onClick={toggle}
       type="button"
     >

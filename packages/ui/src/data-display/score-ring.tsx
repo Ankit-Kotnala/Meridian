@@ -1,6 +1,7 @@
 import { cn } from "../internal/cn";
 
 type ScoreRingProps = {
+  bandLabel?: string;
   label: string;
   score: number;
   suffix?: string;
@@ -20,7 +21,14 @@ const sizes = {
   lg: "size-40",
 } as const;
 
+const strokeWidths = {
+  sm: 7,
+  md: 8,
+  lg: 9,
+} as const;
+
 export function ScoreRing({
+  bandLabel,
   label,
   score,
   suffix = "/100",
@@ -29,6 +37,7 @@ export function ScoreRing({
 }: ScoreRingProps) {
   const safeScore = Math.max(0, Math.min(100, score));
   const radius = 42;
+  const strokeWidth = strokeWidths[size];
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (safeScore / 100) * circumference;
 
@@ -49,7 +58,7 @@ export function ScoreRing({
           fill="none"
           r={radius}
           stroke="var(--score-track)"
-          strokeWidth="8"
+          strokeWidth={strokeWidth}
         />
         <circle
           cx="50"
@@ -60,14 +69,23 @@ export function ScoreRing({
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           strokeLinecap="round"
-          strokeWidth="8"
+          strokeWidth={strokeWidth}
         />
       </svg>
       <div className="absolute text-center">
-        <strong className="block text-2xl font-black tracking-[-0.04em] text-foreground">
+        <strong
+          className={cn(
+            "block font-black tracking-[-0.04em] text-foreground",
+            size === "sm" ? "text-2xl" : size === "md" ? "text-3xl" : "text-4xl",
+          )}
+        >
           {safeScore}
         </strong>
-        <span className="text-[0.62rem] font-bold text-muted">{suffix}</span>
+        {bandLabel ? (
+          <span className="text-[0.65rem] font-bold text-muted">{bandLabel}</span>
+        ) : (
+          <span className="text-[0.62rem] font-bold text-muted">{suffix}</span>
+        )}
       </div>
     </div>
   );

@@ -1,9 +1,11 @@
 "use client";
 
-import { ChevronDown, Menu, ShieldCheck } from "lucide-react";
+import { Bell, ChevronDown, Menu, Search, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode, RefObject } from "react";
+
+import { cn } from "@rezumi/ui";
 
 import { corpIdFor } from "@/shared/identity/corp-id";
 import { ThemeToggle } from "@/shared/theme/theme-toggle";
@@ -39,11 +41,11 @@ export function WorkspaceTopBar({
   const corpId = corpIdFor(viewer.id);
 
   return (
-    <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-4 border-b border-line/80 bg-surface/72 px-4 shadow-[0_1px_0_color-mix(in_srgb,var(--foreground)_4%,transparent)] backdrop-blur-xl backdrop-saturate-150 sm:px-6">
-      <div className="flex min-w-0 items-center gap-3">
+    <header className="sticky top-0 z-30 flex min-h-[4.25rem] items-center gap-4 border-b border-line bg-surface px-4 sm:px-6">
+      <div className="flex min-w-0 items-center gap-3 lg:hidden">
         <button
           aria-label="Open application navigation"
-          className="grid size-11 shrink-0 place-items-center rounded-[var(--radius-control)] border border-line bg-surface text-foreground shadow-sm transition-colors hover:border-primary/40 hover:bg-primary-soft/50 lg:hidden"
+          className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-control)] border border-line text-foreground"
           onClick={onOpenMenu}
           ref={menuButtonRef}
           type="button"
@@ -51,38 +53,58 @@ export function WorkspaceTopBar({
           <Menu aria-hidden="true" className="size-5" />
         </button>
         <div className="min-w-0 leading-tight">
-          <p className="eyebrow truncate !text-[0.6875rem] tracking-[0.09em]">
-            {context.group}
-          </p>
-          <p className="mt-0.5 truncate text-sm font-semibold text-foreground">
+          <p className="truncate text-sm font-bold text-foreground">
             {context.label}
           </p>
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5">
+      <div className="hidden min-w-0 flex-1 lg:block">
+        <label className="relative mx-auto block max-w-2xl">
+          <span className="sr-only">Search workspace</span>
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted"
+          />
+          <input
+            className="h-11 w-full rounded-[var(--radius-control)] border border-line bg-surface-subtle/60 pl-10 pr-4 text-sm text-foreground placeholder:text-muted focus-visible:border-primary/40 focus-visible:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+            placeholder="Search anything… (e.g. skills, roles, feedback)"
+            type="search"
+          />
+        </label>
+      </div>
+
+      <div className="ml-auto flex items-center gap-1.5">
         <ThemeToggle />
+
+        <button
+          aria-label="Notifications"
+          className="grid size-10 place-items-center rounded-[var(--radius-control)] border border-line text-muted-strong transition-colors hover:bg-surface-subtle hover:text-foreground"
+          type="button"
+        >
+          <Bell aria-hidden="true" className="size-[1.125rem]" />
+        </button>
 
         <details className="group relative">
           <summary
             aria-label={`Account menu for ${viewer.displayName}`}
-            className="flex min-h-11 list-none items-center gap-2 rounded-[var(--radius-control)] border border-transparent px-1.5 text-left transition-colors hover:border-line hover:bg-surface hover:shadow-sm [&::-webkit-details-marker]:hidden"
+            className="flex min-h-10 list-none items-center gap-2 rounded-[var(--radius-control)] border border-transparent px-1.5 text-left transition-colors hover:border-line hover:bg-surface-subtle [&::-webkit-details-marker]:hidden"
           >
             <span className="sr-only">Account menu</span>
-            <span className="grid size-8 place-items-center rounded-full bg-gradient-to-br from-primary to-accent text-[0.6875rem] font-bold text-white shadow-[0_2px_6px_-2px_color-mix(in_srgb,var(--primary)_70%,transparent)] ring-2 ring-surface">
+            <span className="grid size-9 place-items-center rounded-full bg-primary text-xs font-bold text-white">
               {initials(viewer.displayName)}
             </span>
-            <span className="hidden max-w-40 truncate text-xs font-semibold text-foreground sm:block">
+            <span className="hidden max-w-36 truncate text-sm font-semibold text-foreground md:block">
               {viewer.displayName}
             </span>
             <ChevronDown
               aria-hidden="true"
-              className="hidden size-3.5 text-muted transition-transform group-open:rotate-180 sm:block"
+              className="hidden size-3.5 text-muted transition-transform group-open:rotate-180 md:block"
             />
           </summary>
           <div className="absolute right-0 mt-2 w-72 overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface shadow-[var(--shadow-lg)]">
-            <div className="flex items-center gap-3 border-b border-line bg-gradient-to-br from-primary-soft/55 to-transparent px-4 py-3.5">
-              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-accent text-xs font-bold text-white shadow-[0_2px_6px_-2px_color-mix(in_srgb,var(--primary)_70%,transparent)] ring-2 ring-surface">
+            <div className="flex items-center gap-3 border-b border-line px-4 py-3.5">
+              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-white">
                 {initials(viewer.displayName)}
               </span>
               <div className="min-w-0">
@@ -105,7 +127,7 @@ export function WorkspaceTopBar({
               </p>
               {workspaceUtilityNavigation.map(({ href, icon: Icon, label }) => (
                 <Link
-                  className="flex min-h-11 items-center gap-2.5 rounded-[var(--radius-control)] px-3 text-sm font-semibold text-foreground transition-colors hover:bg-surface-subtle"
+                  className="flex min-h-10 items-center gap-2.5 rounded-[var(--radius-control)] px-3 text-sm font-semibold text-foreground transition-colors hover:bg-surface-subtle"
                   href={href}
                   key={href}
                 >

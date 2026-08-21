@@ -129,18 +129,7 @@ textarea {
 .workspace-canvas {
   isolation: isolate;
   min-height: calc(100vh - 4rem);
-  background:
-    radial-gradient(
-      circle at 82% -8%,
-      color-mix(in srgb, var(--accent-soft) 42%, transparent) 0,
-      transparent 28rem
-    ),
-    linear-gradient(
-      180deg,
-      var(--background) 0%,
-      #f8faf7 38%,
-      var(--background) 100%
-    );
+  background: var(--background);
 }
 
 .workspace-page {
@@ -221,127 +210,73 @@ textarea {
   box-shadow: var(--shadow-card);
 }
 
-/*
- * Workspace home masthead. Ambient brand wash over the standard surface so the
- * greeting and next-best-step read as one panel; the top rule keeps the brand
- * gradient present without tinting the text behind it.
- */
+/* Flat workspace sections — subtle borders and background shifts, no card shadows. */
+.workspace-panel {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
 .workspace-hero {
   position: relative;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border));
+  border: 1px solid color-mix(in srgb, var(--primary) 12%, var(--border));
   border-radius: var(--radius-card);
-  background:
-    radial-gradient(
-      circle at 100% 0%,
-      color-mix(in srgb, var(--accent-soft) 85%, transparent) 0,
-      transparent 26rem
-    ),
-    radial-gradient(
-      circle at 0% 110%,
-      color-mix(in srgb, var(--primary-soft) 75%, transparent) 0,
-      transparent 24rem
-    ),
-    var(--surface);
-  box-shadow: var(--shadow-card);
+  background: var(--primary-soft);
 }
 
-.workspace-hero::before {
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--primary), var(--accent));
-  content: "";
+.dash-tile,
+.workspace-panel {
+  display: flex;
+  flex-direction: column;
 }
 
-/*
- * Bento tile for the workspace home. A single hairline top highlight and a very
- * shallow vertical wash give depth without the heavy card shadow the older
- * stacked layout relied on, so a dense grid of these still reads as calm.
- */
 .dash-tile {
-  position: relative;
-  display: flex;
-  flex-direction: column;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  border: 1px solid var(--border);
   border-radius: var(--radius-card);
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--surface-raised) 88%, transparent),
-    var(--surface) 42%
-  );
-  box-shadow: var(--shadow-sm);
+  background: var(--surface);
 }
 
-.dash-tile::before {
-  position: absolute;
-  top: 0;
-  right: 1rem;
-  left: 1rem;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    color-mix(in srgb, var(--primary) 28%, transparent),
-    transparent
-  );
-  content: "";
-}
-
-.dash-tile-accent::after {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 2px;
-  background: linear-gradient(180deg, var(--primary), var(--accent));
-  content: "";
-}
-
-/*
- * Workspace home key figures. The record counts used to sit in a cramped list
- * inside one tile; as a row of large-numeral cards they read at a glance, which
- * is the only job the top of the home screen has.
- */
 .stat-card {
-  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
-  border-radius: var(--radius-card);
-  background: linear-gradient(
-    165deg,
-    color-mix(in srgb, var(--surface-raised) 92%, transparent),
-    var(--surface) 60%
-  );
-  padding: 1rem 1.125rem;
-  box-shadow: var(--shadow-sm);
-  transition:
-    border-color var(--motion-fast) var(--ease-standard),
-    box-shadow var(--motion-standard) var(--ease-standard),
-    transform var(--motion-standard) var(--ease-standard);
+  gap: 0.5rem;
+  border-right: 1px solid var(--border);
+  background: transparent;
+  padding: 1.25rem 1rem;
+  transition: background-color var(--motion-fast) var(--ease-standard);
+}
+
+.stat-card:last-child {
+  border-right: 0;
 }
 
 .stat-card:hover {
-  border-color: color-mix(in srgb, var(--primary) 34%, var(--border));
-  box-shadow: var(--shadow-card-hover);
-  transform: translateY(-2px);
+  background: color-mix(in srgb, var(--primary-soft) 35%, transparent);
 }
 
-.stat-card::after {
-  position: absolute;
-  top: 0;
-  left: 1.125rem;
-  width: 2.25rem;
-  height: 2px;
-  border-radius: 0 0 2px 2px;
-  background: linear-gradient(90deg, var(--primary), var(--accent));
-  content: "";
+.workspace-banner {
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--primary-soft) 45%, var(--surface));
+}
+
+.workspace-promo {
+  border: 1px solid rgb(255 255 255 / 0.12);
+  border-radius: var(--radius-card);
+  background: rgb(255 255 255 / 0.08);
+}
+
+.workspace-upload-zone {
+  border: 2px dashed color-mix(in srgb, var(--primary) 28%, var(--border));
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.workspace-feature-grid {
+  border-top: 1px solid var(--border);
+  background: var(--primary-soft);
 }
 
 .stat-figure {
@@ -390,11 +325,8 @@ textarea {
   border-color: color-mix(in srgb, var(--success) 28%, var(--border));
 }
 
-.dark .stat-card {
-  background:
-    linear-gradient(165deg, rgb(255 255 255 / 0.045), rgb(255 255 255 / 0.012)),
-    var(--surface);
-  border-color: color-mix(in srgb, var(--border) 88%, black);
+.dark .stat-card:hover {
+  background: color-mix(in srgb, var(--primary-soft) 55%, transparent);
 }
 
 /* Micro label above a metric. Smaller and tighter than `.eyebrow`. */
@@ -523,18 +455,7 @@ textarea {
 }
 
 .dark .workspace-canvas {
-  background:
-    radial-gradient(
-      circle at 82% -8%,
-      color-mix(in srgb, var(--accent-soft) 45%, transparent) 0,
-      transparent 28rem
-    ),
-    linear-gradient(
-      180deg,
-      var(--background) 0%,
-      #0c1712 40%,
-      var(--background) 100%
-    );
+  background: var(--background);
 }
 
 /* Thin, theme-aware scrollbars for a more finished feel. */

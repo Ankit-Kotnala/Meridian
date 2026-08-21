@@ -3,15 +3,15 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { cn } from "../internal/cn";
 
 export const buttonStyles = {
-  base: "inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] px-4 text-sm font-bold transition-[background-color,border-color,color,box-shadow,transform] duration-150 active:translate-y-px aria-disabled:cursor-not-allowed aria-disabled:opacity-60 aria-disabled:active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 disabled:active:translate-y-0",
+  base: "inline-flex min-h-10 items-center justify-center gap-2 rounded-[var(--radius-control)] px-4 text-sm font-bold transition-[background-color,border-color,color] duration-150 aria-disabled:cursor-not-allowed aria-disabled:opacity-60 disabled:cursor-not-allowed disabled:opacity-60",
   primary:
-    "border border-primary bg-primary text-white shadow-[0_7px_18px_-10px_rgba(23,74,53,0.8)] hover:-translate-y-0.5 hover:border-primary-strong hover:bg-primary-strong hover:shadow-[0_12px_24px_-12px_rgba(23,74,53,0.72)]",
+    "border border-primary bg-primary text-white hover:border-primary-strong hover:bg-primary-strong",
   secondary:
-    "border border-line-strong bg-surface text-foreground shadow-sm hover:-translate-y-0.5 hover:border-primary/60 hover:bg-primary-soft/45 hover:shadow-[var(--shadow-md)]",
+    "border border-line-strong bg-surface text-foreground hover:border-primary/50 hover:bg-primary-soft/50",
   ghost: "text-muted-strong hover:bg-surface-subtle hover:text-foreground",
-  dark: "bg-navy text-white shadow-sm hover:-translate-y-0.5 hover:bg-navy-hover hover:shadow-[var(--shadow-md)]",
+  dark: "bg-navy text-white hover:bg-navy-hover",
   danger:
-    "border border-danger bg-danger text-white shadow-sm hover:border-danger-strong hover:bg-danger-strong",
+    "border border-danger bg-danger text-white hover:border-danger-strong hover:bg-danger-strong",
 } as const;
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {

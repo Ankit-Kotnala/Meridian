@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock3, FileCheck2, FileWarning, Trash2 } from "lucide-react";
+import { Clock3, FileCheck2, FileWarning, MoreHorizontal, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -38,7 +38,87 @@ function date(value: string): string {
   }).format(new Date(value));
 }
 
-export function DocumentList({ documents }: { documents: DocumentSummary[] }) {
+function relativeTime(value: string): string {
+  const deltaMs = Date.now() - new Date(value).getTime();
+  const hours = Math.floor(deltaMs / (1000 * 60 * 60));
+  if (hours < 1) return "Just now";
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
+}
+
+function SidebarDocumentRow({
+  document,
+  onDelete,
+}: {
+  document: DocumentSummary;
+  onDelete: () => void;
+}) {
+  const nextHref = document.latestAnalysisId
+    ? `/resume-health/account/report/${encodeURIComponent(document.latestAnalysisId)}`
+    : document.status === "reviewReady"
+      ? `/resume-health/account/review/${encodeURIComponent(document.id)}`
+      : undefined;
+
+  const content = (
+    <>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-foreground">
+          {document.displayFilename}
+        </p>
+        <p className="mt-0.5 text-xs text-muted">
+          {relativeTime(document.updatedAt ?? document.createdAt)}
+        </p>
+      </div>
+      {document.latestAnalysisId ? (
+        <span className="flex shrink-0 items-center gap-1.5">
+          <span className="size-2 rounded-full bg-success" />
+          <span className="text-sm font-bold tabular-nums text-foreground">
+            —
+          </span>
+        </span>
+      ) : (
+        <Badge tone={statusPresentation[document.status].tone}>
+          {statusPresentation[document.status].label}
+        </Badge>
+      )}
+      <button
+        aria-label={`More actions for ${document.displayFilename}`}
+        className="grid size-8 shrink-0 place-items-center rounded-[var(--radius-control)] text-muted hover:bg-surface-subtle hover:text-foreground"
+        onClick={(event) => {
+          event.preventDefault();
+          onDelete();
+        }}
+        type="button"
+      >
+        <MoreHorizontal aria-hidden="true" className="size-4" />
+      </button>
+    </>
+  );
+
+  if (nextHref) {
+    return (
+      <Link
+        className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-primary-soft/35 sm:px-5"
+        href={nextHref}
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-3 sm:px-5">{content}</div>
+  );
+}
+
+export function DocumentList({
+  documents,
+  variant = "grid",
+}: {
+  documents: DocumentSummary[];
+  variant?: "grid" | "sidebar";
+}) {
   const router = useRouter();
   const [pending, setPending] = useState<DocumentSummary>();
   const [deleting, setDeleting] = useState(false);
@@ -62,7 +142,7 @@ export function DocumentList({ documents }: { documents: DocumentSummary[] }) {
       setFailure(
         requestErrorMessage(
           error,
-          "We couldn’t delete this resume. Refetch the latest version and try again.",
+          "We couldn't delete this resume. Refetch the latest version and try again.",
         ),
       );
     } finally {
@@ -73,9 +153,43 @@ export function DocumentList({ documents }: { documents: DocumentSummary[] }) {
   if (documents.length === 0) {
     return (
       <EmptyState
+        className="border-0 bg-transparent"
         description="Upload a real PDF or DOCX to create your first private parse and Resume Health report."
         title="No resumes uploaded"
       />
+    );
+  }
+
+  if (variant === "sidebar") {
+    return (
+      <>
+        {failure && (
+          <Alert className="m-4" title="Resume not deleted" tone="danger">
+            {failure}
+          </Alert>
+        )}
+        <ul aria-label="Your uploaded resumes" className="divide-y divide-line/80">
+          {documents.map((document) => (
+            <li key={document.id}>
+              <SidebarDocumentRow
+                document={document}
+                onDelete={() => setPending(document)}
+              />
+            </li>
+          ))}
+        </ul>
+        <ConfirmDialog
+          confirmLabel="Delete resume"
+          description="This removes the private source document, parsed derivatives, active processing, and reports according to the documented deletion policy. This cannot be undone."
+          loading={deleting}
+          onConfirm={() => void remove()}
+          onOpenChange={(open) => {
+            if (!open && !deleting) setPending(undefined);
+          }}
+          open={Boolean(pending)}
+          title="Delete this resume?"
+        />
+      </>
     );
   }
 
