@@ -70,9 +70,7 @@ def _safe_environment() -> dict[str, str]:
     return {
         "REZUMI_ENVIRONMENT": "development",
         "REZUMI_ALLOW_LOCAL_SEED": LOCAL_SEED_CONFIRMATION,
-        "REZUMI_DATABASE_URL": (
-            "postgresql+asyncpg://rezumi:local-only@postgres:5432/rezumi"
-        ),
+        "REZUMI_DATABASE_URL": ("postgresql+asyncpg://rezumi:local-only@postgres:5432/rezumi"),
         "REZUMI_S3_ENDPOINT_URL": "http://minio:9000",
         "REZUMI_S3_REGION": "us-east-1",
         "REZUMI_S3_BUCKET": "rezumi-documents",
@@ -98,11 +96,7 @@ def _safe_environment() -> dict[str, str]:
             "database",
         ),
         (
-            {
-                "REZUMI_DATABASE_URL": (
-                    "postgresql+asyncpg://other:local-only@postgres:5432/rezumi"
-                )
-            },
+            {"REZUMI_DATABASE_URL": ("postgresql+asyncpg://other:local-only@postgres:5432/rezumi")},
             "database",
         ),
         (

@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { isResourceId, ResumeHealthReportView } from "@/modules/resume-health";
+import { AutoImportRunner } from "@/modules/career-vault";
+import {
+  isResourceId,
+  reportImportSource,
+  ResumeHealthReportView,
+} from "@/modules/resume-health";
 
 export const metadata: Metadata = { title: "Resume Health report" };
 
@@ -12,5 +17,19 @@ export default async function AccountReportPage({
 }) {
   const { analysisId } = await params;
   if (!isResourceId(analysisId)) notFound();
-  return <ResumeHealthReportView access="account" analysisId={analysisId} />;
+  const importSource = await reportImportSource(analysisId);
+  return (
+    <ResumeHealthReportView
+      access="account"
+      analysisId={analysisId}
+      autoImport={
+        importSource === undefined ? undefined : (
+          <AutoImportRunner
+            documentId={importSource.documentId}
+            snapshotId={importSource.snapshotId}
+          />
+        )
+      }
+    />
+  );
 }

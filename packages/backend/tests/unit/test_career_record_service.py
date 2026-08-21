@@ -682,10 +682,7 @@ async def test_semantic_contact_with_bare_profile_links_accepts() -> None:
         _context(owner),
     )
 
-    assert {
-        (fact.kind.value, fact.value)
-        for fact in memory.personal_facts.values()
-    } == {
+    assert {(fact.kind.value, fact.value) for fact in memory.personal_facts.values()} == {
         ("name", "Alex Example"),
         ("email", "alex@example.test"),
         ("link", "https://linkedin.com/in/alex-example"),

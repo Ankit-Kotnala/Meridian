@@ -37,10 +37,7 @@ export function autoImportHold(
   if (proposal.changes.length === 0) return "untraceable";
 
   for (const change of proposal.changes) {
-    if (
-      change.conflict !== null &&
-      !MERGE_CONFLICTS.has(change.conflict)
-    ) {
+    if (change.conflict !== null && !MERGE_CONFLICTS.has(change.conflict)) {
       return "conflict";
     }
     // Values settled during typed resume review do not need a second gate.

@@ -6,6 +6,7 @@ export { ResumeHealthReportView } from "./views/resume-health-report-view";
 export { ResumeHealthPublicShell } from "./components/resume-health-public-shell";
 export {
   dashboardResumeHealth,
+  reportImportSource,
   resumeHealthImportSource,
   type DashboardResumeHealthState,
 } from "./server/dashboard-resume-health";

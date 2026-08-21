@@ -37,7 +37,7 @@ class MongoParsedResumeDocumentStore:
 
     def __init__(self, options: MongoOptions) -> None:
         self._options = options
-        self._client = MongoClient(
+        self._client: MongoClient[Any] = MongoClient(
             options.url,
             connectTimeoutMS=options.connect_timeout_ms,
             serverSelectionTimeoutMS=options.server_selection_timeout_ms,

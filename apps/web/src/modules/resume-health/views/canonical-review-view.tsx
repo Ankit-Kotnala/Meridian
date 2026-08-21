@@ -18,8 +18,6 @@ import {
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 
-import { runAutoImport } from "@/modules/career-vault/auto-import/run-auto-import";
-
 import {
   ApiRequestError,
   getDocument,
@@ -517,22 +515,14 @@ export function CanonicalReviewView({
     setFailure(undefined);
     setConflict(false);
     try {
-      let reviewedSnapshotId: string;
       try {
-        reviewedSnapshotId = await persistReview(activeCanonical);
+        await persistReview(activeCanonical);
       } catch (error) {
         if (error instanceof Error && !(error instanceof ApiRequestError)) {
           setFailure(error.message);
           return;
         }
         throw error;
-      }
-      if (access === "account") {
-        try {
-          await runAutoImport(documentId, reviewedSnapshotId);
-        } catch {
-          // Analysis still proceeds; the dashboard import runner retries later.
-        }
       }
       const accepted = await startResumeHealth(
         access,

@@ -200,53 +200,49 @@ export function ResumeState({
     return (
       <div className="flex flex-1 flex-col gap-3.5 px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
         <div className="flex items-center gap-4">
-        {resumeHealth.score === null ? (
-          <span className="grid size-24 shrink-0 place-items-center rounded-full border-8 border-surface-inset text-center text-xs font-bold text-muted">
-            Score unavailable
-          </span>
-        ) : (
-          <ScoreRing
-            label="Resume Health Score"
-            score={resumeHealth.score}
-            size="sm"
-            tone={resumeHealth.scoreBand === "strong" ? "success" : "warning"}
-          />
-        )}
-        <div className="min-w-0">
-          <Badge
-            tone={resumeHealth.scoreBand === "strong" ? "success" : "warning"}
-          >
-            Internal Rezumi measure
-          </Badge>
-          <h3
-            className="mt-2 truncate text-sm font-semibold text-foreground"
-            title={resumeHealth.filename}
-          >
-            {resumeHealth.filename}
-          </h3>
-          <p className="text-xs text-muted">Latest analysed report</p>
+          {resumeHealth.score === null ? (
+            <span className="grid size-24 shrink-0 place-items-center rounded-full border-8 border-surface-inset text-center text-xs font-bold text-muted">
+              Score unavailable
+            </span>
+          ) : (
+            <ScoreRing
+              label="Resume Health Score"
+              score={resumeHealth.score}
+              size="sm"
+              tone={resumeHealth.scoreBand === "strong" ? "success" : "warning"}
+            />
+          )}
+          <div className="min-w-0">
+            <Badge
+              tone={resumeHealth.scoreBand === "strong" ? "success" : "warning"}
+            >
+              Internal Rezumi measure
+            </Badge>
+            <h3
+              className="mt-2 truncate text-sm font-semibold text-foreground"
+              title={resumeHealth.filename}
+            >
+              {resumeHealth.filename}
+            </h3>
+            <p className="text-xs text-muted">Latest analysed report</p>
+          </div>
         </div>
+
+        <p className="text-[0.6875rem] leading-4 text-muted">
+          {resumeHealth.disclaimer}
+        </p>
+
+        <Link
+          className={cn(
+            buttonStyles.base,
+            buttonStyles.primary,
+            "mt-auto self-start",
+          )}
+          href={`/resume-health/account/report/${encodeURIComponent(resumeHealth.analysisId)}`}
+        >
+          Open full report <ArrowRight aria-hidden="true" className="size-4" />
+        </Link>
       </div>
-
-      <p className="text-[0.6875rem] leading-4 text-muted">
-        {resumeHealth.disclaimer}
-      </p>
-
-      <Link
-        className={cn(
-          buttonStyles.base,
-          buttonStyles.primary,
-          "mt-auto self-start",
-        )}
-        href={`/resume-health/account/report/${encodeURIComponent(resumeHealth.analysisId)}`}
-      >
-        Open full report <ArrowRight aria-hidden="true" className="size-4" />
-      </Link>
-    </div>
-  );
+    );
+  }
 }
-}
-
-
-
-

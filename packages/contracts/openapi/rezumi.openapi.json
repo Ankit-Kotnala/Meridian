@@ -18529,6 +18529,12 @@
       "SemanticImportBatchResponse": {
         "additionalProperties": false,
         "properties": {
+          "appliedCount": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Appliedcount",
+            "type": "integer"
+          },
           "proposals": {
             "items": {
               "$ref": "#/components/schemas/SemanticImportProposalResponse"

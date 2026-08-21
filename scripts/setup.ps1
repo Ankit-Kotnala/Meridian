@@ -13,7 +13,7 @@ if (-not (Test-Path ".env")) {
 
 corepack enable
 Assert-LastExitCode "Corepack enable"
-corepack prepare pnpm@11.13.0 --activate
+corepack prepare pnpm@11.14.0 --activate
 Assert-LastExitCode "pnpm activation"
 pnpm install --frozen-lockfile
 Assert-LastExitCode "pnpm install"

@@ -49,14 +49,18 @@ export function AutoImportRunner({
     async function run() {
       let applied = 0;
       try {
-        const result = await runAutoImport(documentId, snapshotId, (progress) => {
-          if (!active || progress.total === 0) return;
-          setState({
-            done: progress.done,
-            kind: "applying",
-            total: progress.total,
-          });
-        });
+        const result = await runAutoImport(
+          documentId,
+          snapshotId,
+          (progress) => {
+            if (!active || progress.total === 0) return;
+            setState({
+              done: progress.done,
+              kind: "applying",
+              total: progress.total,
+            });
+          },
+        );
         if (!active) return;
 
         applied = result.applied;

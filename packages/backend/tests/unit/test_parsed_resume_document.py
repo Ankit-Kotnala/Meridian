@@ -8,8 +8,8 @@ from rezumi.modules.resume_health.application.parsed_resume_document import (
 )
 from rezumi.modules.resume_health.domain import (
     CanonicalResume,
-    CanonicalSemantics,
     CanonicalSection,
+    CanonicalSemantics,
     OwnerScope,
     SectionKind,
     SemanticEntity,
@@ -63,7 +63,9 @@ def test_build_user_data_document_organizes_semantics_by_section() -> None:
                 review_state=SemanticReviewState.CONFIRMED,
                 fields=(
                     _field(name="name", value="Alex Example"),
-                    _field(name="email", value="alex@example.com", field_type=SemanticFieldType.EMAIL),
+                    _field(
+                        name="email", value="alex@example.com", field_type=SemanticFieldType.EMAIL
+                    ),
                 ),
             ),
             SemanticEntity(
@@ -73,7 +75,11 @@ def test_build_user_data_document_organizes_semantics_by_section() -> None:
                 fields=(
                     _field(name="employer", value="Acme Corp"),
                     _field(name="title", value="Engineer"),
-                    _field(name="achievement", value="Shipped feature X", field_type=SemanticFieldType.BULLET),
+                    _field(
+                        name="achievement",
+                        value="Shipped feature X",
+                        field_type=SemanticFieldType.BULLET,
+                    ),
                 ),
             ),
         ),
@@ -149,7 +155,11 @@ def test_build_user_data_document_collects_repeated_skill_names() -> None:
 async def test_in_memory_store_upserts_by_resume_id() -> None:
     store = InMemoryParsedResumeDocumentStore()
     resume_id = str(uuid4())
-    first = {"resumeId": resume_id, "updatedAt": "2026-07-15T00:00:00+00:00", "contact": {"name": "A"}}
+    first = {
+        "resumeId": resume_id,
+        "updatedAt": "2026-07-15T00:00:00+00:00",
+        "contact": {"name": "A"},
+    }
     second = {
         "resumeId": resume_id,
         "updatedAt": "2026-07-15T01:00:00+00:00",

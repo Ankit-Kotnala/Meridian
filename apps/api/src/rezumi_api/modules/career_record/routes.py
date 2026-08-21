@@ -71,7 +71,6 @@ from rezumi_api.modules.career_record.dependencies import (
     career_record_service,
     career_request_context,
 )
-from rezumi_api.modules.resume_health.routes import resume_health_service
 from rezumi_api.modules.career_record.presenters import (
     achievement_response,
     career_item_response,
@@ -142,6 +141,7 @@ from rezumi_api.modules.identity.dependencies import (
     require_authenticated_csrf,
 )
 from rezumi_api.modules.identity.schemas import ProblemResponse
+from rezumi_api.modules.resume_health.routes import resume_health_service
 
 router = APIRouter(prefix="/api/v1", tags=["Career Record"])
 _PROBLEMS: dict[int | str, dict[str, Any]] = {

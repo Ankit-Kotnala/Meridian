@@ -33,9 +33,7 @@ _BIDI_CONTROLS = dict.fromkeys(
     ]
 )
 _COLUMN_GAP = re.compile(r"\S[ \t]{8,}\S")
-_BULLET_PREFIX = re.compile(
-    r"^(?:[-*•▪◦·\u2022\uf0b7\uf0a7\u25aa\u25cf]|\d+[.)])\s+"
-)
+_BULLET_PREFIX = re.compile(r"^(?:[-*•▪◦·\u2022\uf0b7\uf0a7\u25aa\u25cf]|\d+[.)])\s+")
 
 
 class LocalDocumentExtractor:

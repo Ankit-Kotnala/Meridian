@@ -101,7 +101,9 @@ describe("auto import eligibility", () => {
   });
 
   it("applies a confirmed value that cannot be traced back to the file", () => {
-    expect(autoImportHold(proposal({ changes: [change({ spans: 0 })] }))).toBeNull();
+    expect(
+      autoImportHold(proposal({ changes: [change({ spans: 0 })] })),
+    ).toBeNull();
   });
 
   it("applies a confirmed value below the confidence floor", () => {

@@ -440,16 +440,25 @@ async def test_pipe_delimited_experience_headers_map_employer_before_title() -> 
     digest = sha256(b"pipe experience header").hexdigest()
     resume = _experience_resume(
         _block(
-            "Zinnia | Software Engineer I (AI/ML & Full Stack) | New Delhi, India  Jan 2026 - Present",
+            (
+                "Zinnia | Software Engineer I (AI/ML & Full Stack) | "
+                "New Delhi, India  Jan 2026 - Present"
+            ),
             0,
         ),
         _block(
-            "• Independently architected and built a production-bound AI assistant with React and FastAPI.",
+            (
+                "• Independently architected and built a production-bound AI assistant "
+                "with React and FastAPI."
+            ),
             120,
             BlockKind.BULLET,
         ),
         _block(
-            "routing enterprise questions through 5 governed paths: SQL, knowledge retrieval, hybrid.",
+            (
+                "routing enterprise questions through 5 governed paths: "
+                "SQL, knowledge retrieval, hybrid."
+            ),
             220,
         ),
     )
@@ -482,7 +491,9 @@ async def test_pipe_delimited_education_headers_map_institution_before_degree() 
                 title="Education",
                 confidence_basis_points=9_000,
                 blocks=(
-                    _block("CDAC Noida | MCA, Artificial Intelligence | 2024 - 2026 | CGPA: 8.90/10", 0),
+                    _block(
+                        "CDAC Noida | MCA, Artificial Intelligence | 2024 - 2026 | CGPA: 8.90/10", 0
+                    ),
                     _block("CERTIFICATIONS & ACHIEVEMENTS", 80, BlockKind.HEADING),
                     _block("SWAYAM Certified Machine Learning Engineer", 120),
                 ),

@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
+from rezumi.modules.career_record.application import CareerRecordService
 from rezumi.modules.identity.application import IdentityService
 from rezumi.modules.identity.domain import AuthenticatedPrincipal, AuthMethod
 from rezumi.modules.identity.domain.errors import AuthenticationRequired, RateLimited
@@ -61,6 +62,17 @@ def _identity() -> IdentityService:
 
 def _resume() -> ResumeHealthService:
     return create_autospec(ResumeHealthService, instance=True)
+
+
+def _career() -> CareerRecordService:
+    return create_autospec(CareerRecordService, instance=True)
+
+
+def _app(**overrides):
+    settings = overrides.pop("settings", _settings())
+    if "identity" in overrides and "career_record" not in overrides:
+        overrides["career_record"] = _career()
+    return create_app(settings, database=FakeDatabase(), **overrides)
 
 
 def _principal() -> AuthenticatedPrincipal:
@@ -193,9 +205,7 @@ def test_guest_upload_issues_http_only_capability_and_scoped_intent() -> None:
         ),
     )
     with TestClient(
-        create_app(
-            _settings(),
-            database=FakeDatabase(),
+        _app(
             identity=identity,
             resume_health=resume,
         )
@@ -216,9 +226,7 @@ def test_guest_upload_issues_http_only_capability_and_scoped_intent() -> None:
     assert response.headers["Cache-Control"] == "no-store"
     assert response.json()["uploadId"] == str(upload_id)
     cookies = response.headers.get_list("set-cookie")
-    assert any(
-        "rezumi_guest_capability=" in cookie and "HttpOnly" in cookie for cookie in cookies
-    )
+    assert any("rezumi_guest_capability=" in cookie and "HttpOnly" in cookie for cookie in cookies)
     assert "opaque-guest-secret" not in str(response.json())
     scope = resume.create_upload_intent.await_args.args[0]
     assert scope == OwnerScope(guest_session_id=guest_id)
@@ -260,9 +268,8 @@ def test_staging_guest_admission_requires_a_bff_authenticated_client_signal() ->
     }
 
     with TestClient(
-        create_app(
-            settings,
-            database=FakeDatabase(),
+        _app(
+            settings=settings,
             identity=identity,
             resume_health=resume,
         )
@@ -331,9 +338,8 @@ def test_guest_upload_intents_are_rate_limited_without_exposing_the_subject() ->
     }
 
     with TestClient(
-        create_app(
-            settings,
-            database=FakeDatabase(),
+        _app(
+            settings=settings,
             identity=identity,
             security_store=limiter,
             resume_health=resume,
@@ -375,9 +381,7 @@ def test_account_finalize_preserves_the_caller_idempotency_key() -> None:
     resume.get_job.return_value = job
 
     with TestClient(
-        create_app(
-            _settings(),
-            database=FakeDatabase(),
+        _app(
             identity=identity,
             resume_health=resume,
         )
@@ -433,9 +437,8 @@ def test_account_correction_and_analysis_mutations_are_rate_limited() -> None:
     analysis_payload = {"documentId": str(document.id)}
 
     with TestClient(
-        create_app(
-            settings,
-            database=FakeDatabase(),
+        _app(
+            settings=settings,
             identity=identity,
             security_store=limiter,
             resume_health=resume,
@@ -493,9 +496,7 @@ def test_account_semantic_review_uses_typed_operation_contract() -> None:
     resume.review_canonical_semantics.return_value = snapshot
 
     with TestClient(
-        create_app(
-            _settings(),
-            database=FakeDatabase(),
+        _app(
             identity=identity,
             security_store=limiter,
             resume_health=resume,
@@ -541,9 +542,7 @@ def test_canonical_block_correction_rejects_non_uuid_identifiers_at_transport() 
     identity.authenticate.return_value = principal
 
     with TestClient(
-        create_app(
-            _settings(),
-            database=FakeDatabase(),
+        _app(
             identity=identity,
             security_store=limiter,
             resume_health=resume,
@@ -593,9 +592,8 @@ def test_guest_correction_and_analysis_mutations_are_rate_limited() -> None:
     analysis_payload = {"documentId": str(document.id)}
 
     with TestClient(
-        create_app(
-            settings,
-            database=FakeDatabase(),
+        _app(
+            settings=settings,
             identity=identity,
             security_store=limiter,
             resume_health=resume,
@@ -650,9 +648,7 @@ def test_account_documents_require_auth_and_scope_to_principal() -> None:
     resume.list_documents.return_value = (document,)
     identity.authenticate.return_value = principal
     with TestClient(
-        create_app(
-            _settings(),
-            database=FakeDatabase(),
+        _app(
             identity=identity,
             resume_health=resume,
         )
@@ -666,9 +662,7 @@ def test_account_documents_require_auth_and_scope_to_principal() -> None:
     denied_identity = _identity()
     denied_identity.authenticate.side_effect = AuthenticationRequired
     with TestClient(
-        create_app(
-            _settings(),
-            database=FakeDatabase(),
+        _app(
             identity=denied_identity,
             resume_health=resume,
         )
@@ -687,9 +681,7 @@ def test_guest_claim_requires_both_authorizations_and_clears_guest_cookies() -> 
     resume.claim_guest_document.return_value = document
 
     with TestClient(
-        create_app(
-            _settings(),
-            database=FakeDatabase(),
+        _app(
             identity=identity,
             resume_health=resume,
         )
@@ -721,9 +713,7 @@ def test_guest_claim_requires_both_authorizations_and_clears_guest_cookies() -> 
         ANY,
     )
     cookies = response.headers.get_list("set-cookie")
-    assert any(
-        "rezumi_guest_capability=" in cookie and "Max-Age=0" in cookie for cookie in cookies
-    )
+    assert any("rezumi_guest_capability=" in cookie and "Max-Age=0" in cookie for cookie in cookies)
     assert any("rezumi_guest_csrf=" in cookie and "Max-Age=0" in cookie for cookie in cookies)
 
 
@@ -736,9 +726,7 @@ def test_guest_claim_rejects_missing_account_or_guest_authorization() -> None:
 
     identity.authenticate.side_effect = AuthenticationRequired
     with TestClient(
-        create_app(
-            _settings(),
-            database=FakeDatabase(),
+        _app(
             identity=identity,
             resume_health=resume,
         )
@@ -756,9 +744,7 @@ def test_guest_claim_rejects_missing_account_or_guest_authorization() -> None:
     identity.authenticate.side_effect = None
     identity.authenticate.return_value = principal
     with TestClient(
-        create_app(
-            _settings(),
-            database=FakeDatabase(),
+        _app(
             identity=identity,
             resume_health=resume,
         )
@@ -775,9 +761,7 @@ def test_guest_claim_rejects_missing_account_or_guest_authorization() -> None:
     resume.claim_guest_document.assert_not_awaited()
 
     with TestClient(
-        create_app(
-            _settings(),
-            database=FakeDatabase(),
+        _app(
             identity=identity,
             resume_health=resume,
         )
@@ -805,9 +789,7 @@ def test_delete_accepts_eight_character_idempotency_key_boundary() -> None:
     resume.request_delete.return_value = job
 
     with TestClient(
-        create_app(
-            _settings(),
-            database=FakeDatabase(),
+        _app(
             identity=identity,
             resume_health=resume,
         )
@@ -844,9 +826,7 @@ def test_delete_rejects_invalid_or_oversized_idempotency_key_before_service() ->
     }
 
     with TestClient(
-        create_app(
-            _settings(),
-            database=FakeDatabase(),
+        _app(
             identity=identity,
             resume_health=resume,
         )
@@ -874,9 +854,7 @@ def test_delete_rejects_if_match_above_signed_integer_before_service() -> None:
     document = _document()
 
     with TestClient(
-        create_app(
-            _settings(),
-            database=FakeDatabase(),
+        _app(
             identity=identity,
             resume_health=resume,
         )
@@ -907,9 +885,7 @@ def test_guest_resource_uses_capability_cookie_not_resource_id() -> None:
     resume.authenticate_guest.return_value = scope
     resume.get_document.return_value = document
     with TestClient(
-        create_app(
-            _settings(),
-            database=FakeDatabase(),
+        _app(
             identity=identity,
             resume_health=resume,
         )
@@ -976,9 +952,7 @@ def test_report_exposes_ordered_fixed_point_feature_trace() -> None:
     resume.get_analysis.return_value = analysis
     resume.get_document.return_value = document
     with TestClient(
-        create_app(
-            _settings(),
-            database=FakeDatabase(),
+        _app(
             identity=identity,
             resume_health=resume,
         )
@@ -1102,9 +1076,7 @@ def test_report_includes_versions_hash_and_canonical_disclaimer_without_false_ze
     resume.get_analysis.return_value = analysis
     resume.get_document.return_value = document
     with TestClient(
-        create_app(
-            _settings(),
-            database=FakeDatabase(),
+        _app(
             identity=identity,
             resume_health=resume,
         )
@@ -1158,9 +1130,7 @@ def test_guest_report_keeps_limited_findings_and_capability_scoping() -> None:
     resume.get_analysis.return_value = analysis
     resume.get_document.return_value = document
     with TestClient(
-        create_app(
-            _settings(),
-            database=FakeDatabase(),
+        _app(
             identity=identity,
             resume_health=resume,
         )

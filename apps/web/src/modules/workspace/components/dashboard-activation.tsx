@@ -94,7 +94,7 @@ export function activationChain(
     {
       description:
         "An explainable internal measurement of how well the document reads to machines and recruiters.",
-      done: reportReady,
+      done: reportReady || resumeHealth.kind === "importReady",
       id: "report",
       label: "Resume health report ready",
       ...(resumeHealth.kind === "report"
@@ -430,4 +430,3 @@ export function ActivationGate({ displayName }: { displayName: string }) {
     </main>
   );
 }
-

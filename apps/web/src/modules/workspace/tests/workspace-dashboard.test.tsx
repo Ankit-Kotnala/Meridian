@@ -235,10 +235,12 @@ describe("real workspace dashboard", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Start your career record" }),
+      screen.getByRole("heading", {
+        name: "Add parsed resume facts to your record",
+      }),
     ).toBeVisible();
     expect(
-      screen.getByRole("link", { name: /Add your first role/ }),
+      screen.getByRole("link", { name: /Open career profile/ }),
     ).toHaveAttribute("href", "/career-profile");
   });
 });

@@ -10,7 +10,12 @@ import structlog
 from fastapi import APIRouter, Cookie, Depends, Header, Request, Response, status
 from pydantic import AfterValidator, StringConstraints
 from rezumi.modules.career_record.application import CareerRecordService
-from rezumi.modules.career_record.application.models import CreateSemanticImportProposals
+from rezumi.modules.career_record.application.models import (
+    CreateSemanticImportProposals,
+)
+from rezumi.modules.career_record.application.models import (
+    RequestContext as CareerRequestContext,
+)
 from rezumi.modules.career_record.domain import CareerRecordError
 from rezumi.modules.identity.application.models import RequestContext
 from rezumi.modules.identity.application.ports import AbuseLimiter
@@ -719,7 +724,7 @@ async def _correct(
     response: Response,
     *,
     career_service: CareerRecordService | None = None,
-    career_context: RequestContext | None = None,
+    career_context: CareerRequestContext | None = None,
 ) -> CanonicalResumeResponse:
     await _check_mutation_rate(request, "resume_correction", scope)
     if payload.fields:
@@ -743,11 +748,7 @@ async def _correct(
             confirm_no_changes=payload.confirm_no_changes,
             context=_resume_context(context),
         )
-        if (
-            career_service is not None
-            and career_context is not None
-            and scope.user_id is not None
-        ):
+        if career_service is not None and career_context is not None and scope.user_id is not None:
             try:
                 await career_service.get_or_create_profile(scope.user_id, career_context)
                 await career_service.populate_from_reviewed_snapshot(
@@ -780,7 +781,7 @@ async def correct_canonical_resume(
     service: Annotated[ResumeHealthService, Depends(resume_health_service)],
     context: Annotated[RequestContext, Depends(request_context)],
     career_service: Annotated[CareerRecordService, Depends(career_record_service)],
-    career_context: Annotated[RequestContext, Depends(career_request_context)],
+    career_context: Annotated[CareerRequestContext, Depends(career_request_context)],
     if_match: IfMatchHeader,
 ) -> CanonicalResumeResponse:
     return await _correct(

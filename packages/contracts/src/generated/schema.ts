@@ -10024,6 +10024,11 @@ export interface components {
         };
         /** SemanticImportBatchResponse */
         SemanticImportBatchResponse: {
+            /**
+             * Appliedcount
+             * @default 0
+             */
+            appliedCount: number;
             /** Proposals */
             proposals: components["schemas"]["SemanticImportProposalResponse"][];
             /** Questions */

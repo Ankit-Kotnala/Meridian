@@ -113,7 +113,13 @@ describe("Resume Health report", () => {
       expiresAt: null,
       canonicalResume: null,
     });
-    render(<ResumeHealthReportView access="account" analysisId={report.id} />);
+    render(
+      <ResumeHealthReportView
+        access="account"
+        analysisId={report.id}
+        autoImport={<div data-testid="auto-import" />}
+      />,
+    );
 
     expect(
       await screen.findByRole("img", { name: "Resume Health Score: 73/100" }),
@@ -178,7 +184,13 @@ describe("Resume Health report", () => {
         semanticReviewState: "confirmed",
       },
     });
-    render(<ResumeHealthReportView access="account" analysisId={report.id} />);
+    render(
+      <ResumeHealthReportView
+        access="account"
+        analysisId={report.id}
+        autoImport={<div data-testid="auto-import" />}
+      />,
+    );
 
     expect(
       await screen.findByRole("link", { name: "resume import review" }),
@@ -197,7 +209,13 @@ describe("Resume Health report", () => {
       scoreBand: null,
       components: [],
     });
-    render(<ResumeHealthReportView access="account" analysisId={report.id} />);
+    render(
+      <ResumeHealthReportView
+        access="account"
+        analysisId={report.id}
+        autoImport={<div data-testid="auto-import" />}
+      />,
+    );
     expect(await screen.findByText("Score unavailable")).toBeVisible();
     expect(screen.getByText("Not enough reliable data")).toBeVisible();
     expect(

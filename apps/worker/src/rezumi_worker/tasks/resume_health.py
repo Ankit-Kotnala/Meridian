@@ -249,4 +249,3 @@ def _processing_result(outcome: ProcessingOutcome) -> ProcessingTaskResult:
         "retryable": outcome.retryable,
         "safe_error_code": outcome.safe_error_code,
     }
-

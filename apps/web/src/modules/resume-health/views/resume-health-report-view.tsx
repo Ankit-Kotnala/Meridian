@@ -4,7 +4,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock3,
-  FileDiff,
   FileWarning,
   Info,
   Lightbulb,
@@ -13,7 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -34,8 +33,6 @@ import {
 } from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
-
-import { AutoImportRunner } from "@/modules/career-vault";
 
 import {
   ApiRequestError,
@@ -134,9 +131,11 @@ function FindingList({ findings }: { findings: ResumeFinding[] }) {
 export function ResumeHealthReportView({
   access,
   analysisId,
+  autoImport,
 }: {
   access: ResumeHealthAccess;
   analysisId: string;
+  autoImport?: ReactNode;
 }) {
   const router = useRouter();
   const [report, setReport] = useState<ResumeHealthReport>();
@@ -544,14 +543,9 @@ export function ResumeHealthReportView({
         ]}
       />
 
-      {access === "account" && report && (
+      {access === "account" && report && autoImport && (
         <div className="mt-5 space-y-3">
-          <AutoImportRunner
-            documentId={report.documentId}
-            snapshotId={
-              document?.currentCanonicalResumeId ?? report.canonicalResumeId
-            }
-          />
+          {autoImport}
           <p className="text-xs text-muted">
             Parsed experiences, skills, and contact details are added to your
             career record automatically. Anything ambiguous is in{" "}
