@@ -89,12 +89,12 @@ x-app-environment: &app-environment
   REZUMI_GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
   REZUMI_GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:3000/api/v1/auth/google/callback}
   REZUMI_CONSENT_POLICY_VERSION: ${CONSENT_POLICY_VERSION:-2026-07-15}
-  REZUMI_MONGODB_ENABLED: ${MONGODB_ENABLED:-true}
-  REZUMI_MONGODB_URL: ${MONGODB_URL:-mongodb://host.docker.internal:27017}
+  REZUMI_MONGODB_ENABLED: ${MONGODB_ENABLED:-false}
+  REZUMI_MONGODB_URL: ${MONGODB_URL:-mongodb://mongo:27017}
   REZUMI_MONGODB_DATABASE: ${MONGODB_DATABASE:-Rezumi}
   REZUMI_MONGODB_USER_DATA_COLLECTION: ${MONGODB_USER_DATA_COLLECTION:-user-data}
-  MONGODB_ENABLED: ${MONGODB_ENABLED:-true}
-  MONGODB_URL: ${MONGODB_URL:-mongodb://host.docker.internal:27017}
+  MONGODB_ENABLED: ${MONGODB_ENABLED:-false}
+  MONGODB_URL: ${MONGODB_URL:-mongodb://mongo:27017}
   MONGODB_DATABASE: ${MONGODB_DATABASE:-Rezumi}
   MONGODB_USER_DATA_COLLECTION: ${MONGODB_USER_DATA_COLLECTION:-user-data}
 
@@ -293,8 +293,6 @@ services:
         condition: service_completed_successfully
       clamav:
         condition: service_healthy
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     read_only: true
     init: true
     cap_drop: ["ALL"]
@@ -322,7 +320,7 @@ services:
       retries: 6
       start_period: 20s
     restart: unless-stopped
-    networks: [backend, host-services]
+    networks: [backend]
 
   worker-scheduler:
     build:
