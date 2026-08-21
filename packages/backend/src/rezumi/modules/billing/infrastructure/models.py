@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Boolean, DateTime, Integer, String, text
+from sqlalchemy import Boolean, DateTime, Integer, String, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -14,11 +14,10 @@ from rezumi.foundation.database.base import Base
 
 class SubscriptionModel(Base):
     __tablename__ = "subscriptions"
+    __table_args__ = (UniqueConstraint("user_id", name="uq_subscriptions_user_id"),)
 
     id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True)
-    user_id: Mapped[UUID] = mapped_column(
-        PG_UUID(as_uuid=True), nullable=False, unique=True, index=True
-    )
+    user_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), nullable=False, index=True)
     tier: Mapped[str] = mapped_column(String(32), nullable=False, server_default=text("'free'"))
     status: Mapped[str] = mapped_column(String(32), nullable=False, server_default=text("'active'"))
     billing_cycle: Mapped[str] = mapped_column(
