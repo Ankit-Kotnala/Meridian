@@ -348,9 +348,7 @@ def test_semantic_import_http_flow_is_typed_idempotent_and_owner_scoped(
     resume = create_autospec(ResumeHealthService, instance=True)
     resume.ensure_reviewed_snapshot_for_import.return_value = snapshot_id
 
-    with _authenticated_client(
-        settings, fake_database, identity, career, resume=resume
-    ) as client:
+    with _authenticated_client(settings, fake_database, identity, career, resume=resume) as client:
         assert client.get("/api/v1/career-profile").status_code == 200
         created = client.post(
             "/api/v1/career-profile/semantic-import-proposals",

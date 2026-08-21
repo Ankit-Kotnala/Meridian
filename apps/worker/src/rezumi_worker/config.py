@@ -506,7 +506,7 @@ class WorkerSettings(BaseSettings):
     )
 
     mongodb_enabled: bool = Field(
-        default=True,
+        default=False,
         validation_alias=AliasChoices("REZUMI_MONGODB_ENABLED", "MONGODB_ENABLED"),
     )
     mongodb_url: str = Field(
