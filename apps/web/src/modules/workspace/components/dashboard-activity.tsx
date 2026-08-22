@@ -39,7 +39,7 @@ function resumeActivity(
       href: `/resume-health/account/report/${encodeURIComponent(resumeHealth.analysisId)}`,
       icon: FileHeart,
       id: "resume-report",
-      label: "Resume report generated",
+      label: "Resume report ready",
       timeLabel: "Recently",
       tone: "success",
     };
@@ -49,7 +49,7 @@ function resumeActivity(
       href: `/resume-health/account/review/${encodeURIComponent(resumeHealth.documentId)}`,
       icon: FileHeart,
       id: "resume-review",
-      label: "Resume ready for field review",
+      label: "Resume ready for your review",
       timeLabel: "Pending",
       tone: "warning",
     };
@@ -59,7 +59,7 @@ function resumeActivity(
       href: "/resume-health/account",
       icon: FileHeart,
       id: "resume-processing",
-      label: "Resume upload processing",
+      label: "Resume upload in progress",
       timeLabel: "In progress",
       tone: "info",
     };
@@ -95,7 +95,7 @@ function buildActivityItems(
       href: "/career-profile",
       icon: Sparkles,
       id: "career-record",
-      label: "Career record updated",
+      label: "Profile updated",
       timeLabel: "Current",
       tone: "primary",
     });
@@ -155,7 +155,7 @@ export function DashboardActivity({
       className="workspace-panel min-w-0"
     >
       <div className="workspace-panel-header">
-        <h2 id="recent-activity-heading">Recent activity</h2>
+        <h2 id="recent-activity-heading">What happened recently</h2>
       </div>
 
       {items.length === 0 ? (
@@ -164,10 +164,10 @@ export function DashboardActivity({
             <CheckCircle2 aria-hidden="true" className="size-4" />
           </span>
           <p className="text-sm font-semibold text-foreground">
-            No recent activity yet
+            Nothing recent yet
           </p>
           <p className="max-w-xs text-xs leading-5 text-muted">
-            Reports, applications, and review events will appear here.
+            Resume reports, applications, and profile updates will show up here.
           </p>
         </div>
       ) : (

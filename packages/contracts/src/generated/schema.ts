@@ -23338,7 +23338,9 @@ export interface operations {
     };
     careerExperiencesList: {
         parameters: {
-            query?: never;
+            query?: {
+                includeProvenance?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: {
@@ -35132,7 +35134,9 @@ export interface operations {
     };
     careerSkillsList: {
         parameters: {
-            query?: never;
+            query?: {
+                includeProvenance?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: {

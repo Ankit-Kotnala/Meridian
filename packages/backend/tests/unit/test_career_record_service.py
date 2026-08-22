@@ -152,7 +152,7 @@ def _semantic_field(
         page=1,
         start_offset=10,
         end_offset=10 + len(value),
-        source_sha256=exact_claim_sha256("fictional reviewed resume"),
+        source_sha256=exact_claim_sha256(value),
         source_excerpt=value,
     )
     return SemanticImportField(
@@ -526,6 +526,8 @@ async def test_reviewed_semantic_import_preserves_field_provenance_and_requires_
 
     assert accepted.entity is not None
     assert accepted.entity.organization == "Example Corp"
+    assert len(memory.achievements) == 1
+    assert next(iter(memory.achievements.values())).delivered == "Built a reviewed workflow."
     assert accepted.entity.start_date == PartialDate(2022, 1)
     assert accepted.entity.is_current
     assert accepted.proposal.status is SemanticImportStatus.ACCEPTED
@@ -1095,6 +1097,92 @@ async def test_achievement_conversion_is_explicit_idempotent_and_preserves_unans
     assert converted.revision.strength is EvidenceStrength.CONFIRMED
     assert "Measurement:" not in (converted.revision.context or "")
     assert (await service.get_achievement(owner, draft.id)).status is AchievementStatus.CONVERTED
+
+
+@pytest.mark.asyncio
+async def test_semantic_import_materializes_resume_bullets_as_achievements_and_evidence() -> None:
+    owner = uuid4()
+    document_id = uuid4()
+    snapshot_id = uuid4()
+    block_id = uuid4()
+    bullet = "Built an owner-reviewed workflow."
+    fields = (
+        _semantic_field("title", "Software Engineer"),
+        _semantic_field("employer", "Example Corp"),
+        SemanticImportField(
+            semantic_field_id=uuid4(),
+            name="achievement",
+            field_type="bullet",
+            value=bullet,
+            review_state=SemanticImportFieldState.CONFIRMED,
+            confidence_basis_points=9_000,
+            date_precision=None,
+            anchors=(
+                SemanticImportAnchor(
+                    block_id=block_id,
+                    page=1,
+                    start_offset=0,
+                    end_offset=len(bullet),
+                    source_sha256=exact_claim_sha256(bullet),
+                    source_excerpt=bullet,
+                ),
+            ),
+        ),
+    )
+    candidate = _semantic_candidate(
+        document_id,
+        snapshot_id,
+        SemanticCandidateKind.EXPERIENCE,
+        fields,
+    )
+    memory = MemoryCareerRecord()
+    sources = FakeResumeSourceQuery()
+    sources.add_semantic(owner, document_id, snapshot_id, (candidate,))
+    sources.add(
+        owner,
+        ValidatedResumeSource(
+            document_id=document_id,
+            snapshot_id=snapshot_id,
+            snapshot_revision=3,
+            schema_version="canonical-resume/1",
+            parser_version="local-parser/1",
+            block_id=block_id,
+            page=1,
+            start_offset=0,
+            end_offset=len(bullet),
+            source_sha256=exact_claim_sha256(bullet),
+            review_excerpt=bullet,
+        ),
+    )
+    service = _service(memory, sources)
+    await service.get_or_create_profile(owner, _context(owner))
+
+    batch = await service.create_semantic_import_proposals(
+        owner,
+        CreateSemanticImportProposals(document_id, snapshot_id),
+        _context(owner),
+    )
+    proposal = batch.proposals[0]
+    values = {field.semantic_field_id: field.value for field in fields}
+    await service.accept_semantic_import_proposal(
+        owner,
+        proposal.id,
+        proposal.version,
+        AcceptSemanticImportProposal(values, "semantic:accept:experience"),
+        _context(owner),
+    )
+
+    assert len(memory.achievements) == 1
+    achievement = next(iter(memory.achievements.values()))
+    assert achievement.delivered == bullet
+    assert achievement.entity_id is not None
+    assert achievement.title.startswith("Example Corp:")
+
+    assert len(memory.evidence) == 1
+    evidence = next(iter(memory.evidence.values()))
+    assert evidence.revision.statement == bullet
+    assert evidence.revision.strength is EvidenceStrength.SUPPORTED
+    assert evidence.entity_ids == (achievement.entity_id,)
 
 
 @pytest.mark.asyncio

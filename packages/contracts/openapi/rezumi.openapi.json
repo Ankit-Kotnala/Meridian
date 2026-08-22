@@ -40914,6 +40914,16 @@
         "operationId": "careerExperiencesList",
         "parameters": [
           {
+            "in": "query",
+            "name": "includeProvenance",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "Includeprovenance",
+              "type": "boolean"
+            }
+          },
+          {
             "in": "cookie",
             "name": "rezumi_session",
             "required": false,
@@ -59514,6 +59524,16 @@
       "get": {
         "operationId": "careerSkillsList",
         "parameters": [
+          {
+            "in": "query",
+            "name": "includeProvenance",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "Includeprovenance",
+              "type": "boolean"
+            }
+          },
           {
             "in": "cookie",
             "name": "rezumi_session",

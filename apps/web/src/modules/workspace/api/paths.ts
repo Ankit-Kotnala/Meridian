@@ -27,11 +27,11 @@ export const workspaceSummaryPaths = {
   }),
   dueReminders: withQuery("/api/v1/networking/reminders/due", { limit: 100 }),
   evidence: withQuery("/api/v1/evidence", { limit: 100 }),
-  experiences: path("/api/v1/experiences"),
+  experiences: withQuery("/api/v1/experiences", { includeProvenance: false }),
   importProposals: path("/api/v1/career-profile/import-proposals"),
   jobs: withQuery("/api/v1/jobs", { limit: 100 }),
   semanticImportProposals: path(
     "/api/v1/career-profile/semantic-import-proposals",
   ),
-  skills: path("/api/v1/skills"),
+  skills: withQuery("/api/v1/skills", { includeProvenance: false }),
 } as const;

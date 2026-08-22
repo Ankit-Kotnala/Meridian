@@ -33,13 +33,15 @@ describe("real workspace dashboard", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: "Welcome to your Rezumi workspace, Alex Morgan.",
+        name: /Add your work history or upload a resume/i,
       }),
     ).toBeVisible();
     expect(
-      screen.getByRole("heading", { name: "No resume data yet" }),
+      screen.getByRole("heading", { name: "No resume on file yet" }),
     ).toBeVisible();
-    expect(screen.getByText(/upload a real PDF or DOCX/i)).toBeVisible();
+    expect(screen.getAllByText(/Upload a PDF or DOCX/i).length).toBeGreaterThan(
+      0,
+    );
     expect(screen.queryByText(/ATS score/i)).not.toBeInTheDocument();
   });
 
@@ -84,9 +86,9 @@ describe("real workspace dashboard", () => {
     );
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Resume Health unavailable",
+      "Could not load resume status",
     );
-    expect(screen.getByText(/No document was changed/i)).toBeVisible();
+    expect(screen.getByText(/Nothing was changed/i)).toBeVisible();
   });
 
   it("shows persisted record counts and marks unavailable sections explicitly", () => {
@@ -106,16 +108,16 @@ describe("real workspace dashboard", () => {
       />,
     );
 
-    const records = screen.getByRole("region", { name: "Your career record" });
+    const records = screen.getByRole("region", { name: "Your profile at a glance" });
     expect(
-      within(records).getByRole("link", { name: /Experiences/ }),
+      within(records).getByRole("link", { name: /Roles/ }),
     ).toHaveTextContent("4");
     expect(
       within(records).getByRole("link", { name: /Evidence/ }),
     ).toHaveTextContent("100+");
     expect(within(records).getByLabelText("Unavailable")).toBeVisible();
     expect(
-      within(records).getByText("Count unavailable right now"),
+      within(records).getByText(/Some counts could not be loaded/),
     ).toBeVisible();
   });
 
@@ -148,7 +150,7 @@ describe("real workspace dashboard", () => {
   it("reports an all-clear review state without inventing activity", () => {
     render(<WorkspaceDashboard displayName="Alex Morgan" onboardingComplete />);
 
-    expect(screen.getByText("Nothing is waiting on you")).toBeVisible();
+    expect(screen.getByText("You're all caught up")).toBeVisible();
   });
 
   it("warns that the review list may be incomplete when a source failed", () => {
@@ -161,7 +163,7 @@ describe("real workspace dashboard", () => {
     );
 
     expect(
-      screen.getByText("No reviewable items could be loaded"),
+      screen.getByText("Could not load your to-do list"),
     ).toBeVisible();
   });
 
@@ -189,7 +191,7 @@ describe("real workspace dashboard", () => {
     );
 
     const pipeline = screen.getByRole("region", {
-      name: "Application pipeline",
+      name: "Your applications",
     });
     expect(
       within(pipeline).getByText(
@@ -236,11 +238,11 @@ describe("real workspace dashboard", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: "Add parsed resume facts to your record",
+        name: "Add your resume details to your profile",
       }),
     ).toBeVisible();
     expect(
-      screen.getByRole("link", { name: /Open career profile/ }),
+      screen.getByRole("link", { name: /View my profile/ }),
     ).toHaveAttribute("href", "/career-profile");
   });
 });
@@ -265,7 +267,7 @@ describe("workspace activation gate", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: "Add your resume to activate your workspace.",
+        name: "Start with your resume or build your profile by hand.",
       }),
     ).toBeVisible();
     expect(
@@ -275,10 +277,10 @@ describe("workspace activation gate", () => {
       screen.getByRole("link", { name: /Build it manually instead/ }),
     ).toHaveAttribute("href", "/career-profile");
     expect(
-      screen.queryByRole("region", { name: "Your career record" }),
+      screen.queryByRole("region", { name: "Your profile at a glance" }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("region", { name: "Application pipeline" }),
+      screen.queryByRole("region", { name: "Your applications" }),
     ).not.toBeInTheDocument();
   });
 
@@ -301,11 +303,11 @@ describe("workspace activation gate", () => {
 
     expect(
       screen.queryByRole("heading", {
-        name: "Add your resume to activate your workspace.",
+        name: "Start with your resume or build your profile by hand.",
       }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("region", { name: "Your career record" }),
+      screen.getByRole("region", { name: "Your profile at a glance" }),
     ).toBeVisible();
   });
 
@@ -327,7 +329,7 @@ describe("workspace activation gate", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Finish your account setup" }),
+      screen.getByRole("heading", { name: "Finish setting up your account" }),
     ).toBeVisible();
   });
 
@@ -336,7 +338,7 @@ describe("workspace activation gate", () => {
 
     expect(
       screen.queryByRole("heading", {
-        name: "Add your resume to activate your workspace.",
+        name: "Start with your resume or build your profile by hand.",
       }),
     ).not.toBeInTheDocument();
   });

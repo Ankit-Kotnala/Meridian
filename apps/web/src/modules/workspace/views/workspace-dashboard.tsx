@@ -32,6 +32,7 @@ import {
   type DashboardResumeHealth,
 } from "../components/dashboard-resume-state";
 import type { DashboardSummary } from "../server/dashboard-summary";
+import { heroSubtitle } from "../lib/dashboard-user-copy";
 
 export type { DashboardResumeHealth };
 
@@ -77,19 +78,19 @@ function nextStepFor(
   if (!onboardingComplete) {
     return {
       description:
-        "Your role and work preferences help Rezumi organize later recommendations without inventing career facts.",
+        "Tell us your target role and preferences so recommendations fit how you actually want to work.",
       href: "/onboarding",
       label: "Continue setup",
-      title: "Finish your account setup",
+      title: "Finish setting up your account",
     };
   }
   if (resumeHealth.kind === "review") {
     return {
       description:
-        "Confirm or correct the extracted fields before they become structured career data or analysis input.",
+        "Check what was pulled from your file and fix anything that looks wrong before it goes on your profile.",
       href: `/resume-health/account/review/${encodeURIComponent(resumeHealth.documentId)}`,
-      label: "Review parsed resume",
-      title: "Check the parsed fields",
+      label: "Review parsed fields",
+      title: "Confirm what we read from your resume",
     };
   }
   if (
@@ -100,19 +101,19 @@ function nextStepFor(
   ) {
     return {
       description:
-        "Open Resume health for the latest server-backed status and any safe recovery action.",
+        "See the latest status on your file and what you can do if something stalled.",
       href: "/resume-health/account",
-      label: "Open resume health",
-      title: "Resolve the current resume state",
+      label: "Check resume status",
+      title: "See what's happening with your resume",
     };
   }
   if (resumeHealth.kind === "importReady") {
     return {
       description:
-        "Your reviewed resume facts are being added to your career record automatically. Open your profile to see experiences, skills, and contact details.",
+        "Your confirmed resume details are being added to your profile. Open it to see roles, skills, and contact info.",
       href: "/career-profile",
-      label: "Open career profile",
-      title: "Populate your career record",
+      label: "View my profile",
+      title: "Your profile is being filled in",
     };
   }
   const experiences = summary.record.experiences;
@@ -123,40 +124,47 @@ function nextStepFor(
   ) {
     return {
       description:
-        "Parsed resume facts should appear in your career record automatically after upload. Refresh this page or open your profile if they have not landed yet.",
+        "Your resume was reviewed but no roles landed yet. Open your profile or refresh — they should appear shortly.",
       href: "/career-profile",
-      label: "Open career profile",
-      title: "Add parsed resume facts to your record",
+      label: "View my profile",
+      title: "Add your resume details to your profile",
     };
   }
   if (experiences.kind === "count" && experiences.value === 0) {
     return {
       description:
-        "Your career record is the source of truth behind every generated document. Add a role to give later outputs something eligible to cite.",
+        "Job matching, tailored documents, and interview prep all start from your work history. Add your first role to begin.",
       href: "/career-profile",
       label: "Add your first role",
-      title: "Start your career record",
+      title: "Build your work history",
     };
   }
   if (resumeHealth.kind === "report") {
     return {
       description:
-        "Review the explainable findings, then choose which changes are worth considering. Nothing is changed automatically.",
+        "See what's strong, what's missing, and which changes are worth making — nothing applies until you choose it.",
       href: `/resume-health/account/report/${encodeURIComponent(resumeHealth.analysisId)}`,
-      label: "Review findings",
-      title: "Review your latest resume report",
+      label: "Open my report",
+      title: "Review your resume findings",
     };
   }
   return {
     description:
-      "A resume is optional, but adding one can accelerate your career record. You will review uncertain parsing before analysis.",
+      "Upload a PDF or DOCX to pull in your experience faster. You'll review anything uncertain before it goes live.",
     href: "/resume-health/account",
     label: "Upload a resume",
-    title: "Add a resume when you are ready",
+    title: "Bring in your experience from a resume",
   };
 }
 
-function HeroIllustration() {
+function HeroIllustration({
+  resumeHealth,
+}: {
+  resumeHealth: DashboardResumeHealth;
+}) {
+  const reportScore =
+    resumeHealth.kind === "report" ? resumeHealth.score : null;
+
   return (
     <div
       aria-hidden="true"
@@ -166,27 +174,24 @@ function HeroIllustration() {
       <div className="relative rounded-2xl border border-white/80 bg-white/95 p-4 shadow-[0_12px_32px_-16px_rgb(10_41_26_/_0.2)]">
         <div className="flex items-center gap-2">
           <FileText className="size-5 text-primary" strokeWidth={1.75} />
-          <span className="text-xs font-semibold text-primary">Resume</span>
+          <span className="text-xs font-semibold text-primary">Your resume</span>
         </div>
         <div className="mt-3 space-y-2">
           <div className="h-1.5 w-full rounded-full bg-primary-soft" />
           <div className="h-1.5 w-4/5 rounded-full bg-primary-soft" />
           <div className="h-1.5 w-3/5 rounded-full bg-primary-soft" />
         </div>
-        <CheckCircle2
-          className="absolute -right-2 -top-2 size-8 text-success"
-          strokeWidth={2}
-        />
+        {reportScore !== null ? (
+          <span className="absolute -right-2 -top-2 grid size-10 place-items-center rounded-full border-2 border-success bg-white text-xs font-bold text-success-strong">
+            {reportScore}
+          </span>
+        ) : (
+          <CheckCircle2
+            className="absolute -right-2 -top-2 size-8 text-success"
+            strokeWidth={2}
+          />
+        )}
       </div>
-      <span className="absolute -left-3 top-5 rounded-[var(--radius-pill)] border border-white/80 bg-white px-2.5 py-1 text-[0.625rem] font-semibold text-primary">
-        Better Resume
-      </span>
-      <span className="absolute -right-2 bottom-11 rounded-[var(--radius-pill)] border border-white/80 bg-white px-2.5 py-1 text-[0.625rem] font-semibold text-accent">
-        More Interviews
-      </span>
-      <span className="absolute bottom-0 left-1 rounded-[var(--radius-pill)] border border-white/80 bg-white px-2.5 py-1 text-[0.625rem] font-semibold text-success">
-        Bigger Dreams
-      </span>
     </div>
   );
 }
@@ -209,13 +214,16 @@ function DashboardHero({
   displayName,
   nextStep,
   resumeHealth,
+  summary,
 }: {
   displayName: string;
   nextStep: NextStep;
   resumeHealth: DashboardResumeHealth;
+  summary: DashboardSummary;
 }) {
   const reportScore =
     resumeHealth.kind === "report" ? resumeHealth.score : null;
+  const insight = heroSubtitle(summary, resumeHealth);
 
   return (
     <div className="workspace-dashboard-top">
@@ -225,11 +233,11 @@ function DashboardHero({
             {greeting()}, {firstName(displayName)} 👋
           </p>
           <h1 className="balanced mt-2 font-display text-[clamp(1.45rem,2.6vw,2.1rem)] font-bold leading-[1.12] tracking-[-0.03em] text-foreground">
-            Welcome to your Rezumi workspace, {displayName}.
+            {insight}
           </h1>
           <p className="balanced mt-2.5 max-w-xl text-sm leading-6 text-muted">
-            One reviewed career record upstream. Everything below is derived
-            from it, and nothing changes without your decision.
+            This is your home base — profile, applications, resume feedback, and
+            what needs your attention, all in one place.
           </p>
           <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Link
@@ -240,7 +248,7 @@ function DashboardHero({
               )}
               href="/resume-health/account"
             >
-              Open Resume Studio
+              My resume
               <ArrowRight aria-hidden="true" className="size-4" />
             </Link>
             <Link
@@ -251,11 +259,11 @@ function DashboardHero({
               )}
               href="/career-profile"
             >
-              View Career Record
+              My profile
             </Link>
           </div>
         </div>
-        <HeroIllustration />
+        <HeroIllustration resumeHealth={resumeHealth} />
       </section>
 
       <section
@@ -265,7 +273,7 @@ function DashboardHero({
         <div>
           <p className="flex items-center gap-1.5 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-muted">
             <Sparkles aria-hidden="true" className="size-3.5 text-primary" />
-            Next best step
+            Your next move
           </p>
           <h2
             className="mt-2 text-[0.9375rem] font-semibold leading-snug text-foreground"
@@ -327,13 +335,19 @@ export function WorkspaceDashboard({
         displayName={displayName}
         nextStep={nextStep}
         resumeHealth={resumeHealth}
+        summary={summary}
       />
 
       {autoImport}
 
-      {activating && <ActivationChain steps={chain} />}
+      <AttentionPanel
+        degraded={summary.attentionDegraded}
+        items={summary.attention}
+      />
 
       <CareerRecordStats record={summary.record} />
+
+      {activating && <ActivationChain steps={chain} />}
 
       <ResumeHelpBanner />
 
@@ -343,7 +357,7 @@ export function WorkspaceDashboard({
           className="workspace-panel min-w-0"
         >
           <div className="workspace-panel-header">
-            <h2 id="resume-state-heading">Latest resume state</h2>
+            <h2 id="resume-state-heading">Your resume</h2>
             <Link className="workspace-panel-link" href="/resume-health/account">
               Open
               <ArrowUpRight aria-hidden="true" className="size-3.5" />
@@ -356,10 +370,6 @@ export function WorkspaceDashboard({
       </div>
 
       <div className="workspace-secondary-zone">
-        <AttentionPanel
-          degraded={summary.attentionDegraded}
-          items={summary.attention}
-        />
         <PipelinePanel pipeline={summary.pipeline} />
       </div>
 

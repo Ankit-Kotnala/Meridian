@@ -92,10 +92,10 @@ export function ResumeState({
             Upload a resume <ArrowRight aria-hidden="true" className="size-4" />
           </Link>
         }
-        title="No resume data yet"
+        title="No resume on file yet"
       >
-        Upload a real PDF or DOCX, review uncertain parsing, and calculate an
-        explainable internal measurement.
+        Upload a PDF or DOCX to pull in your experience. You review anything
+        uncertain before it appears on your profile.
       </StatePanel>
     );
   }
@@ -112,10 +112,10 @@ export function ResumeState({
           </Link>
         }
         badge={<Badge tone="warning">Processing</Badge>}
-        title={`Preparing ${resumeHealth.filename}`}
+        title={`Working on ${resumeHealth.filename}`}
       >
-        The file remains quarantined while the protected worker scans and parses
-        it.
+        Your file is being scanned and parsed. This usually finishes within a
+        minute.
       </StatePanel>
     );
   }
@@ -132,10 +132,10 @@ export function ResumeState({
           </Link>
         }
         badge={<Badge tone="warning">Review required</Badge>}
-        title="Check the parsed fields"
+        title="Confirm what we read from your resume"
       >
-        Rezumi extracted structured information from {resumeHealth.filename}.
-        Confirm or correct it before analysis.
+        We extracted structured details from {resumeHealth.filename}. Check
+        them and fix anything that looks wrong before analysis.
       </StatePanel>
     );
   }
@@ -171,11 +171,11 @@ export function ResumeState({
   if (resumeHealth.kind === "error") {
     return (
       <div className="flex-1 px-4 pb-5 pt-4 sm:px-5">
-        <Alert title="Resume Health unavailable" tone="danger">
-          Your private resume state could not be loaded. No document was
-          changed. Refresh the page or open Resume health to try again.
+        <Alert title="Could not load resume status" tone="danger">
+          We could not reach your resume data. Nothing was changed. Refresh or
+          open your resume page to try again.
           <Link className="text-link mt-3 block" href="/resume-health/account">
-            Open Resume health
+            Open my resume
           </Link>
         </Alert>
       </div>
@@ -194,11 +194,10 @@ export function ResumeState({
           </Link>
         }
         badge={<Badge tone="success">Review complete</Badge>}
-        title="Populating your career record"
+        title="Adding details to your profile"
       >
-        {resumeHealth.filename} was reviewed. Rezumi is adding your confirmed
-        experiences, skills, education, and contact details to your career
-        record automatically.
+        {resumeHealth.filename} was reviewed. Your confirmed roles, skills,
+        education, and contact details are being added to your profile.
       </StatePanel>
     );
   }
@@ -226,7 +225,7 @@ export function ResumeState({
 
           <div className="min-w-0 flex-1 text-center sm:text-left">
             <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
-              <Badge tone="primary">Internal Rezumi measure</Badge>
+              <Badge tone="primary">For your planning only</Badge>
               {bandLabel && (
                 <Badge
                   tone={
@@ -243,7 +242,7 @@ export function ResumeState({
             >
               {resumeHealth.filename}
             </h3>
-            <p className="mt-1 text-xs text-muted">Latest analysed report</p>
+            <p className="mt-1 text-xs text-muted">Latest report</p>
             <p className="mt-3 text-xs leading-5 text-muted">
               {resumeHealth.disclaimer}
             </p>

@@ -65,6 +65,7 @@ from rezumi.modules.career_record.domain import (
     ResumeProvenance,
     SemanticCandidateKind,
     SemanticFieldOrigin,
+    SemanticImportAnchor,
     SemanticImportField,
     SemanticImportFieldState,
     SemanticImportProposal,
@@ -526,6 +527,49 @@ def _semantic_entity_provenance_targets(
         (field_name, value)
         for field_name in targets
         if (value := values.get(field_name)) is not None and value != ""
+    )
+
+
+def _semantic_outcome_field(
+    kind: SemanticCandidateKind,
+    field: SemanticImportField,
+) -> bool:
+    """Return True when a reviewed semantic field should become inbox/evidence rows."""
+
+    if field.field_type != "bullet":
+        return False
+    if field.name == "achievement" and kind in {
+        SemanticCandidateKind.EXPERIENCE,
+        SemanticCandidateKind.PROJECT,
+    }:
+        return True
+    return field.name == "description" and kind is SemanticCandidateKind.PROJECT
+
+
+def _achievement_title_from_statement(statement: str, organization: str | None) -> str:
+    cleaned = " ".join(statement.strip().split())
+    if not cleaned:
+        return "Resume outcome"
+    if organization:
+        return f"{organization}: {cleaned}"[:120]
+    return cleaned[:120]
+
+
+def _normalize_statement(value: str) -> str:
+    return " ".join(value.strip().split())
+
+
+def _resume_locator(
+    proposal: SemanticImportProposal,
+    anchor: SemanticImportAnchor,
+) -> ResumeSourceLocator:
+    return ResumeSourceLocator(
+        document_id=proposal.document_id,
+        snapshot_id=proposal.snapshot_id,
+        block_id=anchor.block_id,
+        page=anchor.page,
+        start_offset=anchor.start_offset,
+        end_offset=anchor.end_offset,
     )
 
 
@@ -1207,6 +1251,22 @@ class CareerRecordService:
                 raise CareerRecordNotFound
             links = await uow.list_entity_skill_links(owner_user_id, entity_id)
         return tuple(link.skill_id for link in links)
+
+    async def list_entity_skill_ids_by_entity(
+        self,
+        owner_user_id: UUID,
+        entity_ids: tuple[UUID, ...],
+    ) -> dict[UUID, tuple[UUID, ...]]:
+        """Return skill links for many entities in one owner-scoped read."""
+
+        if not entity_ids:
+            return {}
+        async with self._uow() as uow:
+            links = await uow.list_entity_skill_links_for_owner(owner_user_id, entity_ids)
+        grouped: dict[UUID, list[UUID]] = {}
+        for link in links:
+            grouped.setdefault(link.entity_id, []).append(link.skill_id)
+        return {entity_id: tuple(grouped.get(entity_id, ())) for entity_id in entity_ids}
 
     async def create_entity(
         self,
@@ -2191,6 +2251,7 @@ class CareerRecordService:
                     command.values,
                     target_record_id,
                     now,
+                    context,
                 )
                 target_record_id = accepted_entity.id
             proposal.target_record_id = target_record_id
@@ -2492,6 +2553,7 @@ class CareerRecordService:
         values: dict[UUID, str],
         target_record_id: UUID | None,
         now: datetime,
+        context: RequestContext,
     ) -> CareerEntity:
         data = _semantic_entity_data(proposal.semantic_kind, proposal.fields, values)
         entity = (
@@ -2569,7 +2631,198 @@ class CareerRecordService:
                         canonical_value=canonical_value,
                     )
                 )
+        await self._materialize_semantic_outcomes(
+            uow,
+            proposal,
+            entity,
+            values,
+            context,
+            now,
+        )
         return entity
+
+    async def _materialize_semantic_outcomes(
+        self,
+        uow: CareerRecordUnitOfWork,
+        proposal: SemanticImportProposal,
+        entity: CareerEntity,
+        values: dict[UUID, str],
+        context: RequestContext,
+        now: datetime,
+    ) -> None:
+        """Turn reviewed resume bullets into achievement drafts and resume evidence."""
+
+        existing_achievements = await uow.list_achievements(
+            proposal.owner_user_id,
+            None,
+            self._policy.max_achievements + 1,
+        )
+        if len(existing_achievements) >= self._policy.max_achievements:
+            return
+
+        existing_evidence = await uow.list_evidence(
+            proposal.owner_user_id,
+            EvidenceFilter(include_archived=True),
+            None,
+            self._policy.max_evidence + 1,
+        )
+        evidence_at_limit = len(existing_evidence) >= self._policy.max_evidence
+
+        for field in proposal.fields:
+            if not _semantic_outcome_field(proposal.semantic_kind, field):
+                continue
+            raw_value = values.get(field.semantic_field_id)
+            if raw_value is None:
+                continue
+            statement = _normalize_statement(raw_value)
+            if not statement:
+                continue
+            if any(
+                item.entity_id == entity.id
+                and _normalize_statement(item.delivered or "") == statement
+                for item in existing_achievements
+            ):
+                continue
+
+            achievement = self._achievement(
+                proposal.owner_user_id,
+                proposal.profile_id,
+                CreateAchievement(
+                    title=_achievement_title_from_statement(statement, entity.organization),
+                    delivered=statement,
+                    entity_id=entity.id,
+                ),
+                now,
+            )
+            await uow.add_achievement(achievement)
+            existing_achievements = (*existing_achievements, achievement)
+            await uow.add_audit(
+                self._audit(
+                    proposal.owner_user_id,
+                    AuditAction.ACHIEVEMENT_CREATED,
+                    "achievement",
+                    achievement.id,
+                    context,
+                    now,
+                    (("achievement_status", achievement.status.value),),
+                )
+            )
+
+            if evidence_at_limit or not field.anchors:
+                continue
+            anchor = field.anchors[0]
+            locator = _resume_locator(proposal, anchor)
+            if any(
+                source.provenance is not None
+                and source.provenance.document_id == locator.document_id
+                and source.provenance.snapshot_id == locator.snapshot_id
+                and source.provenance.block_id == locator.block_id
+                and source.provenance.page == locator.page
+                and source.provenance.start_offset == locator.start_offset
+                and source.provenance.end_offset == locator.end_offset
+                for record in existing_evidence
+                for source in record.sources
+            ):
+                continue
+            try:
+                validated = await self._resolve_source(
+                    proposal.owner_user_id,
+                    locator,
+                    expected_claim=statement,
+                )
+            except CareerRecordSourceUnavailable:
+                continue
+
+            evidence_id = self._ids.new()
+            revision_id = self._ids.new()
+            revision = initial_revision(
+                revision_id=revision_id,
+                owner_user_id=proposal.owner_user_id,
+                evidence_id=evidence_id,
+                evidence_type=EvidenceType.RESUME_STATEMENT,
+                title=validated.review_excerpt[:300],
+                statement=statement,
+                context=None,
+                organization=None,
+                project=None,
+                start_date=None,
+                end_date=None,
+                input_kind=EvidenceInputKind.EXACT_SOURCE_SPAN,
+                exact_span_validated=True,
+                created_at=now,
+            )
+            transition = EvidenceStateTransition(
+                id=self._ids.new(),
+                owner_user_id=proposal.owner_user_id,
+                evidence_id=evidence_id,
+                from_revision_id=None,
+                to_revision_id=revision.id,
+                previous_strength=None,
+                next_strength=revision.strength,
+                authority=EvidenceAuthority.SYSTEM_SOURCE_VALIDATION,
+                reason_code="exact_source_span_validated",
+                actor_user_id=context.actor_user_id,
+                verifier_reference=None,
+                request_id=context.request_id,
+                trace_id=context.trace_id,
+                created_at=now,
+            )
+            source = EvidenceSource(
+                id=self._ids.new(),
+                owner_user_id=proposal.owner_user_id,
+                evidence_revision_id=revision.id,
+                kind=EvidenceSourceKind.RESUME,
+                label="Imported resume source",
+                provenance=validated.provenance(),
+                attachment_id=None,
+                external_url=None,
+                available=True,
+                exact_span_validated=True,
+                created_at=now,
+            )
+            record = EvidenceRecord(
+                item=EvidenceItem(
+                    id=evidence_id,
+                    owner_user_id=proposal.owner_user_id,
+                    lifecycle=EvidenceLifecycle.ACTIVE,
+                    current_revision=1,
+                    version=1,
+                    created_at=now,
+                    updated_at=now,
+                ),
+                revision=revision,
+                revisions=(revision,),
+                transitions=(transition,),
+                sources=(source,),
+                metrics=(),
+                attachments=(),
+                conflicts=(),
+                entity_ids=(entity.id,),
+                skill_ids=(),
+                usage=(),
+            )
+            await uow.add_evidence(record)
+            await uow.add_evidence_entity_link(
+                EvidenceEntityLink(
+                    self._ids.new(),
+                    proposal.owner_user_id,
+                    evidence_id,
+                    entity.id,
+                    now,
+                )
+            )
+            existing_evidence = (*existing_evidence, record)
+            await uow.add_audit(
+                self._audit(
+                    proposal.owner_user_id,
+                    AuditAction.EVIDENCE_CREATED,
+                    "evidence",
+                    evidence_id,
+                    context,
+                    now,
+                    (("next_strength", revision.strength.value),),
+                )
+            )
 
     def _semantic_provenance(
         self,

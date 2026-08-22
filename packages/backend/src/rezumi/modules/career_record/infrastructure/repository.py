@@ -492,6 +492,27 @@ class SqlAlchemyCareerRecordUnitOfWork:
         ).all()
         return [_entity_skill(model) for model in models]
 
+    async def list_entity_skill_links_for_owner(
+        self,
+        owner_user_id: UUID,
+        entity_ids: tuple[UUID, ...] | None = None,
+    ) -> list[EntitySkillLink]:
+        statement = select(CareerEntitySkillModel).where(
+            CareerEntitySkillModel.owner_user_id == owner_user_id
+        )
+        if entity_ids:
+            statement = statement.where(CareerEntitySkillModel.entity_id.in_(entity_ids))
+        models = (
+            await self.session.scalars(
+                statement.order_by(
+                    CareerEntitySkillModel.entity_id,
+                    CareerEntitySkillModel.created_at,
+                    CareerEntitySkillModel.id,
+                )
+            )
+        ).all()
+        return [_entity_skill(model) for model in models]
+
     async def replace_entity_skill_links(
         self,
         owner_user_id: UUID,
