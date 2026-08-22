@@ -1,11 +1,9 @@
 import {
   ArrowRight,
   ArrowUpRight,
-  BadgeCheck,
   CheckCircle2,
   FileText,
   Sparkles,
-  Target,
 } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -25,6 +23,7 @@ import {
   AttentionPanel,
   CareerRecordStats,
   PipelinePanel,
+  ResumeHelpBanner,
   StandingTile,
   TruthLockNote,
 } from "../components/dashboard-sections";
@@ -159,28 +158,49 @@ function nextStepFor(
 
 function HeroIllustration() {
   return (
-    <div aria-hidden="true" className="relative hidden h-full min-h-[10rem] w-full max-w-[14rem] xl:block">
-      <div className="absolute inset-0 rounded-2xl border border-primary/10 bg-white/80 p-4 shadow-[0_8px_24px_-12px_rgb(11_61_46_/_0.15)]">
+    <div
+      aria-hidden="true"
+      className="preview-float relative mx-auto w-full max-w-[15rem] lg:absolute lg:right-8 lg:top-1/2 lg:mx-0 lg:-translate-y-1/2"
+    >
+      <div className="absolute inset-0 rounded-full bg-white/50 blur-2xl" />
+      <div className="relative rounded-2xl border border-white/80 bg-white/95 p-4 shadow-[0_12px_32px_-16px_rgb(10_41_26_/_0.2)]">
         <div className="flex items-center gap-2">
-          <FileText className="size-5 text-primary" />
-          <span className="text-xs font-bold text-primary">Resume</span>
+          <FileText className="size-5 text-primary" strokeWidth={1.75} />
+          <span className="text-xs font-semibold text-primary">Resume</span>
         </div>
         <div className="mt-3 space-y-2">
-          <div className="h-1.5 w-full rounded bg-primary-soft" />
-          <div className="h-1.5 w-4/5 rounded bg-primary-soft" />
-          <div className="h-1.5 w-3/5 rounded bg-primary-soft" />
+          <div className="h-1.5 w-full rounded-full bg-primary-soft" />
+          <div className="h-1.5 w-4/5 rounded-full bg-primary-soft" />
+          <div className="h-1.5 w-3/5 rounded-full bg-primary-soft" />
         </div>
-        <CheckCircle2 className="absolute -right-2 -top-2 size-8 text-success" />
+        <CheckCircle2
+          className="absolute -right-2 -top-2 size-8 text-success"
+          strokeWidth={2}
+        />
       </div>
-      <span className="absolute -left-3 top-6 rounded-full bg-white px-2.5 py-1 text-[0.625rem] font-bold text-primary shadow-sm">
+      <span className="absolute -left-3 top-5 rounded-[var(--radius-pill)] border border-white/80 bg-white px-2.5 py-1 text-[0.625rem] font-semibold text-primary">
         Better Resume
       </span>
-      <span className="absolute -right-1 bottom-8 rounded-full bg-white px-2.5 py-1 text-[0.625rem] font-bold text-accent shadow-sm">
+      <span className="absolute -right-2 bottom-11 rounded-[var(--radius-pill)] border border-white/80 bg-white px-2.5 py-1 text-[0.625rem] font-semibold text-accent">
         More Interviews
       </span>
-      <span className="absolute bottom-0 left-4 rounded-full bg-white px-2.5 py-1 text-[0.625rem] font-bold text-success shadow-sm">
+      <span className="absolute bottom-0 left-1 rounded-[var(--radius-pill)] border border-white/80 bg-white px-2.5 py-1 text-[0.625rem] font-semibold text-success">
         Bigger Dreams
       </span>
+    </div>
+  );
+}
+
+function NextStepScorePreview({ score }: { score: number }) {
+  return (
+    <div
+      aria-hidden="true"
+      className="flex shrink-0 items-center justify-end gap-3"
+    >
+      <ScoreRing label="Resume Health Score" score={score} size="sm" tone="success" />
+      <div className="hidden rounded-[var(--radius-control)] border border-line bg-surface-subtle p-2.5 sm:block">
+        <FileText className="size-5 text-primary" strokeWidth={1.75} />
+      </div>
     </div>
   );
 }
@@ -198,82 +218,79 @@ function DashboardHero({
     resumeHealth.kind === "report" ? resumeHealth.score : null;
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(16rem,0.9fr)]">
-      <section className="workspace-hero px-5 py-6 sm:px-7 sm:py-8">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-primary-strong">
-              {greeting()}, {firstName(displayName)} 👋
-            </p>
-            <h1 className="balanced mt-2 font-display text-[clamp(1.5rem,2.8vw,2.15rem)] font-bold leading-[1.12] tracking-[-0.03em] text-foreground">
-              Welcome to your Rezumi workspace, {displayName}.
-            </h1>
-            <p className="balanced mt-2.5 max-w-xl text-sm leading-6 text-muted">
-              One reviewed career record upstream. Everything below is derived
-              from it, and nothing changes without your decision.
-            </p>
-            <div className="mt-5 flex flex-wrap gap-3">
-              <Link
-                className={cn(buttonStyles.base, buttonStyles.primary)}
-                href="/resume-health/account"
-              >
-                Open Resume Studio
-                <ArrowRight aria-hidden="true" className="size-4" />
-              </Link>
-              <Link
-                className={cn(buttonStyles.base, buttonStyles.secondary)}
-                href="/career-profile"
-              >
-                View Career Record
-              </Link>
-            </div>
+    <div className="workspace-dashboard-top">
+      <section className="workspace-hero px-5 py-6 sm:px-7 sm:py-8 lg:pr-[12rem]">
+        <div className="relative min-w-0">
+          <p className="text-sm font-semibold text-primary">
+            {greeting()}, {firstName(displayName)} 👋
+          </p>
+          <h1 className="balanced mt-2 font-display text-[clamp(1.45rem,2.6vw,2.1rem)] font-bold leading-[1.12] tracking-[-0.03em] text-foreground">
+            Welcome to your Rezumi workspace, {displayName}.
+          </h1>
+          <p className="balanced mt-2.5 max-w-xl text-sm leading-6 text-muted">
+            One reviewed career record upstream. Everything below is derived
+            from it, and nothing changes without your decision.
+          </p>
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <Link
+              className={cn(
+                buttonStyles.base,
+                buttonStyles.primary,
+                "w-full justify-center sm:w-auto",
+              )}
+              href="/resume-health/account"
+            >
+              Open Resume Studio
+              <ArrowRight aria-hidden="true" className="size-4" />
+            </Link>
+            <Link
+              className={cn(
+                buttonStyles.base,
+                buttonStyles.secondary,
+                "w-full justify-center sm:w-auto",
+              )}
+              href="/career-profile"
+            >
+              View Career Record
+            </Link>
           </div>
-          <HeroIllustration />
         </div>
+        <HeroIllustration />
       </section>
 
       <section
         aria-labelledby="next-step-heading"
-        className="workspace-panel flex flex-col justify-between p-5"
+        className="workspace-next-step"
       >
         <div>
-          <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.08em] text-primary-strong">
-            <Sparkles aria-hidden="true" className="size-3.5" />
+          <p className="flex items-center gap-1.5 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-muted">
+            <Sparkles aria-hidden="true" className="size-3.5 text-primary" />
             Next best step
           </p>
           <h2
-            className="mt-2 text-base font-bold text-foreground"
+            className="mt-2 text-[0.9375rem] font-semibold leading-snug text-foreground"
             id="next-step-heading"
           >
             {nextStep.title}
           </h2>
-          <p className="mt-1.5 text-xs leading-5 text-muted">
+          <p className="mt-2 text-xs leading-5 text-muted">
             {nextStep.description}
           </p>
         </div>
 
-        <div className="mt-4 flex items-end justify-between gap-3">
+        <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <Link
             className={cn(
               buttonStyles.base,
               buttonStyles.primary,
-              "justify-center",
+              "w-full justify-center sm:w-auto",
             )}
             href={nextStep.href}
           >
             {nextStep.label}
             <ArrowRight aria-hidden="true" className="size-4" />
           </Link>
-          {reportScore !== null && (
-            <div aria-hidden="true">
-              <ScoreRing
-                label="Resume Health Score"
-                score={reportScore}
-                size="sm"
-                tone="success"
-              />
-            </div>
-          )}
+          {reportScore !== null && <NextStepScorePreview score={reportScore} />}
         </div>
       </section>
     </div>
@@ -305,7 +322,7 @@ export function WorkspaceDashboard({
   const activating = chain.some(({ state }) => state !== "done");
 
   return (
-    <main className="workspace-page space-y-4" id="main-content">
+    <main className="workspace-page space-y-4 sm:space-y-5" id="main-content">
       <DashboardHero
         displayName={displayName}
         nextStep={nextStep}
@@ -318,22 +335,16 @@ export function WorkspaceDashboard({
 
       <CareerRecordStats record={summary.record} />
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.85fr)]">
+      <ResumeHelpBanner />
+
+      <div className="workspace-dashboard-main">
         <section
           aria-labelledby="resume-state-heading"
           className="workspace-panel min-w-0"
         >
-          <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3.5 sm:px-5">
-            <h2
-              className="text-sm font-bold text-foreground"
-              id="resume-state-heading"
-            >
-              Latest resume state
-            </h2>
-            <Link
-              className="inline-flex items-center gap-0.5 text-xs font-bold text-primary-strong hover:underline"
-              href="/resume-health/account"
-            >
+          <div className="workspace-panel-header">
+            <h2 id="resume-state-heading">Latest resume state</h2>
+            <Link className="workspace-panel-link" href="/resume-health/account">
               Open
               <ArrowUpRight aria-hidden="true" className="size-3.5" />
             </Link>
@@ -344,7 +355,7 @@ export function WorkspaceDashboard({
         <DashboardActivity resumeHealth={resumeHealth} summary={summary} />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="workspace-secondary-zone">
         <AttentionPanel
           degraded={summary.attentionDegraded}
           items={summary.attention}

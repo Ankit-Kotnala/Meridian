@@ -11,20 +11,26 @@ type ScoreRingProps = {
 
 const toneColor = {
   primary: "var(--primary)",
-  success: "var(--success)",
+  success: "var(--score-success, var(--success))",
   warning: "var(--warning-visual)",
 } as const;
 
 const sizes = {
-  sm: "size-24",
-  md: "size-32",
-  lg: "size-40",
+  sm: "size-[5.5rem]",
+  md: "size-[7.5rem]",
+  lg: "size-[9.5rem]",
 } as const;
 
 const strokeWidths = {
-  sm: 7,
-  md: 8,
-  lg: 9,
+  sm: 6,
+  md: 7,
+  lg: 8,
+} as const;
+
+const scoreText = {
+  sm: "text-[1.625rem]",
+  md: "text-[2rem]",
+  lg: "text-[2.375rem]",
 } as const;
 
 export function ScoreRing({
@@ -72,20 +78,26 @@ export function ScoreRing({
           strokeWidth={strokeWidth}
         />
       </svg>
-      <div className="absolute text-center">
-        <strong
-          className={cn(
-            "block font-black tracking-[-0.04em] text-foreground",
-            size === "sm" ? "text-2xl" : size === "md" ? "text-3xl" : "text-4xl",
+      <div className="absolute inset-0 grid place-items-center px-2 text-center">
+        <div>
+          <strong
+            className={cn(
+              "block font-bold leading-none tracking-[-0.05em] text-foreground",
+              scoreText[size],
+            )}
+          >
+            {safeScore}
+          </strong>
+          {bandLabel ? (
+            <span className="mt-1 block text-[0.6875rem] font-semibold text-muted-strong">
+              {bandLabel}
+            </span>
+          ) : (
+            <span className="mt-0.5 block text-[0.6875rem] font-semibold text-muted">
+              {suffix}
+            </span>
           )}
-        >
-          {safeScore}
-        </strong>
-        {bandLabel ? (
-          <span className="text-[0.65rem] font-bold text-muted">{bandLabel}</span>
-        ) : (
-          <span className="text-[0.62rem] font-bold text-muted">{suffix}</span>
-        )}
+        </div>
       </div>
     </div>
   );

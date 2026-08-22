@@ -26,7 +26,7 @@ type ActivityItem = {
 
 const toneStyles: Record<ActivityTone, string> = {
   info: "bg-info-soft text-info-strong",
-  primary: "bg-primary-soft text-primary-strong",
+  primary: "bg-primary-soft text-primary",
   success: "bg-success-soft text-success-strong",
   warning: "bg-warning-soft text-warning-strong",
 };
@@ -108,13 +108,8 @@ function ActivityRow({ item }: { item: ActivityItem }) {
   const Icon = item.icon;
   const content = (
     <>
-      <span
-        className={cn(
-          "mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg",
-          toneStyles[item.tone],
-        )}
-      >
-        <Icon aria-hidden="true" className="size-4" />
+      <span className={cn("activity-icon", toneStyles[item.tone])}>
+        <Icon aria-hidden="true" className="size-4" strokeWidth={1.75} />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-semibold leading-5 text-foreground">
@@ -126,26 +121,23 @@ function ActivityRow({ item }: { item: ActivityItem }) {
           </span>
         )}
       </span>
-      <span className="shrink-0 text-xs text-muted">{item.timeLabel}</span>
+      <span className="shrink-0 text-xs font-medium tabular-nums text-muted">
+        {item.timeLabel}
+      </span>
     </>
   );
 
   if (item.href) {
     return (
       <li>
-        <Link
-          className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-primary-soft/35 sm:px-5"
-          href={item.href}
-        >
+        <Link className="activity-row" href={item.href}>
           {content}
         </Link>
       </li>
     );
   }
 
-  return (
-    <li className="flex items-start gap-3 px-4 py-3 sm:px-5">{content}</li>
-  );
+  return <li className="activity-row">{content}</li>;
 }
 
 export function DashboardActivity({
@@ -162,18 +154,13 @@ export function DashboardActivity({
       aria-labelledby="recent-activity-heading"
       className="workspace-panel min-w-0"
     >
-      <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3.5 sm:px-5">
-        <h2
-          className="text-sm font-bold text-foreground"
-          id="recent-activity-heading"
-        >
-          Recent activity
-        </h2>
+      <div className="workspace-panel-header">
+        <h2 id="recent-activity-heading">Recent activity</h2>
       </div>
 
       {items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-2 px-6 py-10 text-center">
-          <span className="grid size-9 place-items-center rounded-full bg-success-soft text-success-strong">
+        <div className="flex flex-col items-center justify-center gap-2 px-6 py-12 text-center">
+          <span className="grid size-10 place-items-center rounded-full bg-success-soft text-success-strong">
             <CheckCircle2 aria-hidden="true" className="size-4" />
           </span>
           <p className="text-sm font-semibold text-foreground">
@@ -184,7 +171,7 @@ export function DashboardActivity({
           </p>
         </div>
       ) : (
-        <ul className="divide-y divide-line/80">
+        <ul className="divide-y divide-line/70">
           {items.map((item) => (
             <ActivityRow item={item} key={item.id} />
           ))}

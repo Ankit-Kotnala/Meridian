@@ -83,17 +83,20 @@ export function AccountResumeHealthView() {
     <main className="workspace-page space-y-5" id="main-content">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold tracking-[-0.03em] text-foreground sm:text-3xl">
+          <h1 className="font-display text-[clamp(1.5rem,2.5vw,1.875rem)] font-semibold tracking-[-0.03em] text-foreground">
             Resume Studio
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-            Upload a real resume, review uncertain parsing, then calculate an
-            explainable internal readiness measurement. No job description is
-            required.
+            Build, analyze, and improve your resume with explainable internal
+            analysis grounded in your reviewed career record.
           </p>
         </div>
         <Link
-          className={cn(buttonStyles.base, buttonStyles.primary, "shrink-0")}
+          className={cn(
+            buttonStyles.base,
+            buttonStyles.primary,
+            "w-full shrink-0 justify-center sm:w-auto",
+          )}
           href="#upload-zone"
         >
           <Upload aria-hidden="true" className="size-4" />
@@ -104,10 +107,8 @@ export function AccountResumeHealthView() {
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(16rem,0.85fr)]">
         <div className="space-y-5">
           <section aria-labelledby="upload-heading" className="workspace-panel">
-            <div className="border-b border-line px-4 py-3.5 sm:px-5">
-              <h2 className="text-sm font-bold text-foreground" id="upload-heading">
-                Upload a resume
-              </h2>
+            <div className="workspace-panel-header">
+              <h2 id="upload-heading">Upload a resume</h2>
             </div>
             <div className="p-4 sm:p-5" id="upload-zone">
               <UploadWorkflow
@@ -143,10 +144,8 @@ export function AccountResumeHealthView() {
           aria-labelledby="documents-heading"
           className="workspace-panel min-w-0"
         >
-          <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3.5 sm:px-5">
-            <h2 className="text-sm font-bold text-foreground" id="documents-heading">
-              Recent resumes
-            </h2>
+          <div className="workspace-panel-header">
+            <h2 id="documents-heading">Recent resumes</h2>
             <Button onClick={() => void load()} variant="ghost">
               <RefreshCcw aria-hidden="true" className="size-4" />
               Refresh

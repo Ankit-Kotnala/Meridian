@@ -5,8 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode, RefObject } from "react";
 
-import { cn } from "@rezumi/ui";
-
 import { corpIdFor } from "@/shared/identity/corp-id";
 import { ThemeToggle } from "@/shared/theme/theme-toggle";
 
@@ -41,7 +39,7 @@ export function WorkspaceTopBar({
   const corpId = corpIdFor(viewer.id);
 
   return (
-    <header className="sticky top-0 z-30 flex min-h-[4.25rem] items-center gap-4 border-b border-line bg-surface px-4 sm:px-6">
+    <header className="sticky top-0 z-30 flex min-h-[4.25rem] flex-wrap items-center gap-3 border-b border-line bg-surface/95 px-4 backdrop-blur-sm sm:gap-4 sm:px-6">
       <div className="flex min-w-0 items-center gap-3 lg:hidden">
         <button
           aria-label="Open application navigation"
@@ -59,15 +57,15 @@ export function WorkspaceTopBar({
         </div>
       </div>
 
-      <div className="hidden min-w-0 flex-1 lg:block">
-        <label className="relative mx-auto block max-w-2xl">
+      <div className="order-last min-w-0 flex-1 basis-full sm:order-none sm:basis-auto">
+        <label className="relative mx-auto block max-w-3xl">
           <span className="sr-only">Search workspace</span>
           <Search
             aria-hidden="true"
-            className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted"
+            className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted"
           />
           <input
-            className="h-11 w-full rounded-[var(--radius-control)] border border-line bg-surface-subtle/60 pl-10 pr-4 text-sm text-foreground placeholder:text-muted focus-visible:border-primary/40 focus-visible:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+            className="workspace-search"
             placeholder="Search anything… (e.g. skills, roles, feedback)"
             type="search"
           />
@@ -79,7 +77,7 @@ export function WorkspaceTopBar({
 
         <button
           aria-label="Notifications"
-          className="grid size-10 place-items-center rounded-[var(--radius-control)] border border-line text-muted-strong transition-colors hover:bg-surface-subtle hover:text-foreground"
+          className="grid size-10 place-items-center rounded-[var(--radius-pill)] border border-line text-muted-strong transition-colors hover:bg-surface-subtle hover:text-foreground"
           type="button"
         >
           <Bell aria-hidden="true" className="size-[1.125rem]" />
@@ -88,7 +86,7 @@ export function WorkspaceTopBar({
         <details className="group relative">
           <summary
             aria-label={`Account menu for ${viewer.displayName}`}
-            className="flex min-h-10 list-none items-center gap-2 rounded-[var(--radius-control)] border border-transparent px-1.5 text-left transition-colors hover:border-line hover:bg-surface-subtle [&::-webkit-details-marker]:hidden"
+            className="flex min-h-10 list-none items-center gap-2 rounded-[var(--radius-pill)] border border-transparent px-1.5 text-left transition-colors hover:border-line hover:bg-surface-subtle [&::-webkit-details-marker]:hidden"
           >
             <span className="sr-only">Account menu</span>
             <span className="grid size-9 place-items-center rounded-full bg-primary text-xs font-bold text-white">

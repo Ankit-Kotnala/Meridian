@@ -3,15 +3,16 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { cn } from "../internal/cn";
 
 export const buttonStyles = {
-  base: "inline-flex min-h-10 items-center justify-center gap-2 rounded-[var(--radius-control)] px-4 text-sm font-bold transition-[background-color,border-color,color] duration-150 aria-disabled:cursor-not-allowed aria-disabled:opacity-60 disabled:cursor-not-allowed disabled:opacity-60",
+  base: "inline-flex min-h-10 items-center justify-center gap-2 px-4 text-sm font-semibold transition-[background-color,border-color,color,box-shadow] duration-200 aria-disabled:cursor-not-allowed aria-disabled:opacity-60 disabled:cursor-not-allowed disabled:opacity-60",
   primary:
-    "border border-primary bg-primary text-white hover:border-primary-strong hover:bg-primary-strong",
+    "rounded-[var(--radius-pill)] border border-primary bg-primary text-white hover:border-primary-strong hover:bg-primary-strong",
   secondary:
-    "border border-line-strong bg-surface text-foreground hover:border-primary/50 hover:bg-primary-soft/50",
-  ghost: "text-muted-strong hover:bg-surface-subtle hover:text-foreground",
-  dark: "bg-navy text-white hover:bg-navy-hover",
+    "rounded-[var(--radius-pill)] border border-line-strong bg-surface text-foreground hover:border-primary/35 hover:bg-primary-soft/60",
+  ghost:
+    "rounded-[var(--radius-control)] text-muted-strong hover:bg-surface-subtle hover:text-foreground",
+  dark: "rounded-[var(--radius-pill)] bg-navy text-white hover:bg-navy-hover",
   danger:
-    "border border-danger bg-danger text-white hover:border-danger-strong hover:bg-danger-strong",
+    "rounded-[var(--radius-pill)] border border-danger bg-danger text-white hover:border-danger-strong hover:bg-danger-strong",
 } as const;
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {

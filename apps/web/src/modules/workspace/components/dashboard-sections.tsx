@@ -49,15 +49,10 @@ function Tile({
       aria-labelledby={labelId}
       className={cn("workspace-panel", className)}
     >
-      <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3.5 sm:px-5">
-        <h2 className="text-sm font-bold text-foreground" id={labelId}>
-          {label}
-        </h2>
+      <div className="workspace-panel-header">
+        <h2 id={labelId}>{label}</h2>
         {action && (
-          <Link
-            className="inline-flex items-center gap-0.5 text-xs font-bold text-primary-strong hover:underline"
-            href={action.href}
-          >
+          <Link className="workspace-panel-link" href={action.href}>
             {action.label}
             <ArrowUpRight aria-hidden="true" className="size-3.5" />
           </Link>
@@ -135,31 +130,23 @@ export function CareerRecordStats({
       aria-labelledby="career-record-heading"
       className="workspace-panel min-w-0"
     >
-      <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3.5 sm:px-5">
-        <h2
-          className="text-sm font-bold text-foreground"
-          id="career-record-heading"
-        >
-          Your career record
-        </h2>
-        <Link
-          className="inline-flex items-center gap-0.5 text-xs font-bold text-primary-strong hover:underline"
-          href="/career-profile"
-        >
+      <div className="workspace-panel-header">
+        <h2 id="career-record-heading">Your career record</h2>
+        <Link className="workspace-panel-link" href="/career-profile">
           Open
           <ArrowUpRight aria-hidden="true" className="size-3.5" />
         </Link>
       </div>
 
-      <ul className="grid grid-cols-2 divide-x divide-line xl:grid-cols-4">
+      <ul className="grid grid-cols-2 divide-x divide-y divide-line sm:grid-cols-4 sm:divide-y-0">
         {RECORD_ROWS.map(({ count, href, icon: Icon, label }) => (
           <li className="min-w-0" key={label}>
-            <Link className="stat-card group h-full" href={href}>
-              <span className="flex items-center gap-2 text-muted">
-                <Icon aria-hidden="true" className="size-4 shrink-0" />
-                <span className="truncate text-xs font-semibold">{label}</span>
+            <Link className="stat-tile group block h-full" href={href}>
+              <span className="stat-tile-icon">
+                <Icon aria-hidden="true" className="size-4" strokeWidth={1.75} />
               </span>
-              <span className="stat-figure text-foreground">
+              <span className="stat-tile-label">{label}</span>
+              <span className="stat-tile-value">
                 <CountValue count={record[count]} />
               </span>
             </Link>
@@ -167,25 +154,34 @@ export function CareerRecordStats({
         ))}
       </ul>
 
-      <div className="workspace-banner flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-        <div className="flex items-center gap-2.5 text-sm text-foreground">
-          <Target aria-hidden="true" className="size-4 shrink-0 text-primary" />
-          <span>Need help with your resume?</span>
-        </div>
-        <Link
-          className={cn(buttonStyles.base, buttonStyles.primary, "shrink-0")}
-          href="/resume-health/account"
-        >
-          Start Resume Review
-        </Link>
-      </div>
-
       {unavailable && (
         <p className="border-t border-line px-4 py-2.5 text-xs leading-5 text-muted sm:px-5">
           Count unavailable right now
         </p>
       )}
     </section>
+  );
+}
+
+export function ResumeHelpBanner() {
+  return (
+    <div className="workspace-help-strip">
+      <div className="flex items-center gap-2.5 text-sm font-medium text-foreground">
+        <Target aria-hidden="true" className="size-4 shrink-0 text-primary" />
+        <span>Need help with your resume?</span>
+      </div>
+      <Link
+        className={cn(
+          buttonStyles.base,
+          buttonStyles.primary,
+          "w-full justify-center sm:w-auto sm:shrink-0",
+        )}
+        href="/resume-health/account"
+      >
+        Start Resume Review
+        <ArrowUpRight aria-hidden="true" className="size-4" />
+      </Link>
+    </div>
   );
 }
 

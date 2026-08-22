@@ -84,6 +84,37 @@ function fixedPoint(value: number): string {
   }).format(value / 100);
 }
 
+function NumberedSuggestionList({
+  findings,
+}: {
+  findings: ResumeFinding[];
+}) {
+  if (findings.length === 0) {
+    return (
+      <p className="text-sm text-muted">
+        No prioritized suggestions were recorded for this report.
+      </p>
+    );
+  }
+
+  return (
+    <ul className="suggestion-list">
+      {findings.slice(0, 4).map((finding) => (
+        <li className="suggestion-item" key={finding.id}>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground">
+              {finding.title}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-muted">
+              {finding.description}
+            </p>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function FindingList({ findings }: { findings: ResumeFinding[] }) {
   if (findings.length === 0) {
     return (
@@ -494,7 +525,14 @@ export function ResumeHealthReportView({
         </Alert>
       )}
 
-      <section className="workspace-panel overflow-hidden">
+      <div
+        className={
+          access === "account"
+            ? "grid gap-5 lg:grid-cols-[minmax(0,1.65fr)_minmax(16rem,0.9fr)]"
+            : undefined
+        }
+      >
+      <section className="workspace-panel min-w-0 overflow-hidden">
         <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-start">
           <div className="flex flex-col items-center">
             {report.score === null ? (
@@ -557,44 +595,132 @@ export function ResumeHealthReportView({
         </div>
 
         {report.components.length > 0 && (
-          <ul className="grid grid-cols-2 divide-x divide-line border-t border-line sm:grid-cols-4">
+          <div className="report-component-grid">
             {report.components.slice(0, 4).map((component) => (
-              <li className="px-4 py-4 text-center sm:px-5" key={component.key}>
-                <p className="text-xs font-semibold text-muted">{component.label}</p>
-                <p className="mt-1 text-xl font-bold tabular-nums text-foreground">
-                  {component.score}
-                  <span className="text-sm font-semibold text-muted">/100</span>
+              <div className="report-component-cell" key={component.key}>
+                <ScoreRing
+                  label={`${component.label} score`}
+                  score={component.score}
+                  size="sm"
+                  tone={
+                    component.score >= 80
+                      ? "success"
+                      : component.score >= 65
+                        ? "warning"
+                        : "primary"
+                  }
+                />
+                <p className="mt-3 text-xs font-semibold text-muted">
+                  {component.label}
                 </p>
-                <div
-                  aria-hidden="true"
-                  className="mx-auto mt-2 h-1 max-w-[5rem] overflow-hidden rounded-full bg-surface-inset"
-                >
-                  <div
-                    className={cn(
-                      "h-full rounded-full",
-                      component.score >= 80
-                        ? "bg-success"
-                        : component.score >= 65
-                          ? "bg-warning-visual"
-                          : "bg-primary",
-                    )}
-                    style={{ width: `${component.score}%` }}
-                  />
-                </div>
-              </li>
+                <p className="mt-1 text-sm font-bold tabular-nums text-foreground">
+                  {component.score}
+                  <span className="text-xs font-semibold text-muted">/100</span>
+                </p>
+                <p className="mt-2 text-[0.6875rem] leading-4 text-muted">
+                  {component.explanation}
+                </p>
+              </div>
             ))}
-          </ul>
+          </div>
+        )}
+
+        {access === "account" && report.components.length > 0 && (
+          <div className="space-y-5 border-t border-line p-4 sm:p-5">
+            {report.components.map((component) => (
+              <div key={`detail-${component.key}`}>
+                <ScoreBar
+                  label={`${component.label} (${component.weight}% weight)`}
+                  score={component.score}
+                  tone={
+                    component.score >= 80
+                      ? "success"
+                      : component.score >= 65
+                        ? "warning"
+                        : "primary"
+                  }
+                />
+                <details className="mt-3 rounded-[var(--radius-control)] border border-line bg-surface-subtle/70 p-3">
+                  <summary className="cursor-pointer rounded-md text-xs font-bold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
+                    How {component.label} was calculated
+                  </summary>
+                  <p className="mt-3 text-xs leading-5 text-muted">
+                    This component contributed exactly{" "}
+                    {fixedPoint(component.rawContributionBasisPoints)} points to
+                    the overall score. Its measured inputs were:
+                  </p>
+                  {component.featureContributions.length > 0 ? (
+                    <dl
+                      aria-label={`${component.label} feature contributions`}
+                      className="mt-3 divide-y divide-line"
+                    >
+                      {component.featureContributions.map((feature) => (
+                        <div
+                          className="grid gap-1 py-2 text-xs sm:grid-cols-[1fr_auto] sm:gap-4"
+                          key={feature.key}
+                        >
+                          <dt className="font-semibold text-foreground">
+                            {feature.label}
+                          </dt>
+                          <dd className="text-muted sm:text-right">
+                            {fixedPoint(feature.rawScoreBasisPoints)}% times{" "}
+                            {fixedPoint(feature.rawWeightBasisPoints)}% ={" "}
+                            {fixedPoint(feature.rawContributionBasisPoints)}{" "}
+                            component points
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  ) : (
+                    <p className="mt-3 text-xs leading-5 text-muted">
+                      Feature contribution details are unavailable for this
+                      component.
+                    </p>
+                  )}
+                </details>
+              </div>
+            ))}
+          </div>
         )}
       </section>
+
+      {access === "account" && (
+        <aside className="workspace-panel min-w-0">
+          <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3.5 sm:px-5">
+            <h2 className="text-sm font-bold text-foreground">
+              Suggested changes
+            </h2>
+          </div>
+          <div className="p-4 sm:p-5">
+            <NumberedSuggestionList findings={quickWins} />
+          </div>
+        </aside>
+      )}
+      </div>
 
       <Tabs
         className="mt-2"
         label="Resume Health report sections"
-        tabs={[
-          { id: "overview", label: "Overview", panel: overviewPanel },
-          { id: "findings", label: "All findings", panel: findingsPanel },
-          { id: "methodology", label: "Methodology", panel: methodologyPanel },
-        ]}
+        tabs={
+          access === "account"
+            ? [
+                { id: "findings", label: "All findings", panel: findingsPanel },
+                {
+                  id: "methodology",
+                  label: "Methodology",
+                  panel: methodologyPanel,
+                },
+              ]
+            : [
+                { id: "overview", label: "Overview", panel: overviewPanel },
+                { id: "findings", label: "All findings", panel: findingsPanel },
+                {
+                  id: "methodology",
+                  label: "Methodology",
+                  panel: methodologyPanel,
+                },
+              ]
+        }
       />
 
       {access === "account" && report && autoImport && (

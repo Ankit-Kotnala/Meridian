@@ -19,6 +19,13 @@ import {
  */
 export function WorkspaceSectionNav() {
   const pathname = usePathname();
+  const hideStudioSubNav =
+    pathname === "/resume-health/account" ||
+    pathname.startsWith("/resume-health/account/report/") ||
+    pathname.startsWith("/resume-health/account/review/") ||
+    pathname.startsWith("/resume-health/account/processing/");
+  if (hideStudioSubNav) return null;
+
   const section = resolveWorkspaceSection(pathname);
   if (!section || section.tools.length < 2) return null;
   const current = resolveWorkspaceTool(pathname, section);

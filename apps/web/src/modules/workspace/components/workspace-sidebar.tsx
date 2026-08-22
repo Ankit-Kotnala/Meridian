@@ -32,11 +32,11 @@ function NavigationLink({
       {...(active ? { "aria-current": "page" as const } : {})}
       {...(collapsed ? { "aria-label": label, title: label } : {})}
       className={cn(
-        "flex min-h-10 items-center rounded-[var(--radius-control)] text-[0.8125rem] font-semibold transition-colors duration-150",
+        "flex min-h-10 items-center rounded-[var(--radius-control)] text-[0.8125rem] font-semibold transition-colors duration-200",
         collapsed ? "justify-center px-2" : "gap-3 px-3",
         active
-          ? "bg-[#e6f4ea] text-[#0b3d2e]"
-          : "text-white/75 hover:bg-white/10 hover:text-white",
+          ? "bg-primary-soft text-primary"
+          : "text-white/78 hover:bg-white/10 hover:text-white",
       )}
       href={href}
       {...(onNavigate ? { onClick: onNavigate } : {})}
@@ -44,6 +44,22 @@ function NavigationLink({
       <Icon aria-hidden="true" className="size-[1.125rem] shrink-0" strokeWidth={1.75} />
       {!collapsed && <span>{label}</span>}
     </Link>
+  );
+}
+
+function PromoWave() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="workspace-promo-wave"
+      preserveAspectRatio="none"
+      viewBox="0 0 400 48"
+    >
+      <path
+        d="M0 32 C80 8, 160 48, 240 24 C320 0, 360 40, 400 28 L400 48 L0 48 Z"
+        fill="rgb(255 255 255 / 0.12)"
+      />
+    </svg>
   );
 }
 
@@ -64,7 +80,7 @@ export function WorkspaceSidebar({
     <div className="flex h-full flex-col bg-navy text-white">
       <div
         className={cn(
-          "flex min-h-16 border-b border-white/10",
+          "flex min-h-16 border-b border-white/8",
           collapsed
             ? "flex-col items-center gap-2 px-2 py-3"
             : "items-center justify-between px-4",
@@ -104,7 +120,7 @@ export function WorkspaceSidebar({
         aria-label="Application navigation"
         className="flex-1 overflow-y-auto px-3 py-4"
       >
-        <ul className="space-y-1">
+        <ul className="space-y-0.5">
           {workspaceSections.map((section) => (
             <li key={section.id}>
               <NavigationLink
@@ -119,13 +135,11 @@ export function WorkspaceSidebar({
       </nav>
 
       {!collapsed && (
-        <div className="px-3 pb-4">
-          <div className="workspace-promo px-4 py-4">
-            <Rocket
-              aria-hidden="true"
-              className="size-5 text-accent-soft"
-            />
-            <p className="mt-2 text-sm font-bold leading-snug text-white">
+        <div className="relative z-[1] px-3 pb-4">
+          <div className="workspace-promo relative z-[1] px-4 py-4">
+            <PromoWave />
+            <Rocket aria-hidden="true" className="relative z-[1] size-5 text-white/90" />
+            <p className="relative z-[1] mt-2 text-sm font-semibold leading-snug text-white">
               Better resumes,
               <br />
               Bigger opportunities.

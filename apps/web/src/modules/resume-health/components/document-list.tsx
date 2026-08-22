@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock3, FileCheck2, FileWarning, MoreHorizontal, Trash2 } from "lucide-react";
+import { Clock3, FileCheck2, FileText, FileWarning, MoreHorizontal, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -62,6 +62,9 @@ function SidebarDocumentRow({
 
   const content = (
     <>
+      <span className="doc-row-icon">
+        <FileText aria-hidden="true" className="size-4" strokeWidth={1.75} />
+      </span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-foreground">
           {document.displayFilename}
@@ -71,11 +74,11 @@ function SidebarDocumentRow({
         </p>
       </div>
       {document.latestAnalysisId ? (
-        <span className="flex shrink-0 items-center gap-1.5">
-          <span className="size-2 rounded-full bg-success" />
-          <span className="text-sm font-bold tabular-nums text-foreground">
-            —
-          </span>
+        <span
+          aria-hidden="true"
+          className="grid size-9 shrink-0 place-items-center rounded-full border-[5px] border-success/25 text-xs font-semibold text-muted"
+        >
+          —
         </span>
       ) : (
         <Badge tone={statusPresentation[document.status].tone}>
@@ -99,7 +102,7 @@ function SidebarDocumentRow({
   if (nextHref) {
     return (
       <Link
-        className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-primary-soft/35 sm:px-5"
+        className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-primary-soft/40 sm:px-5"
         href={nextHref}
       >
         {content}
