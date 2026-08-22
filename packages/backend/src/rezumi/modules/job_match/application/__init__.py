@@ -15,6 +15,8 @@ from .models import (
     PagedResult,
     PrioritizeOpportunity,
     RequestContext,
+    SyncFromSource,
+    SyncFromSourceResult,
     UpdateJob,
 )
 from .ports import (
@@ -52,5 +54,7 @@ __all__ = [
     "PrioritizeOpportunity",
     "RequestContext",
     "RoleContextProvider",
+    "SyncFromSource",
+    "SyncFromSourceResult",
     "UpdateJob",
 ]

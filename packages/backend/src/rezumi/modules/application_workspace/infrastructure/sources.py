@@ -82,6 +82,7 @@ class JobMatchApplicationSnapshotProvider:
             latest_analysis_id=latest_analysis_id,
             source_sha256=record.job.source_sha256.hex(),
             source=record.job.source_kind.value,
+            source_url=record.job.source_url,
             industry=None,
             requirements=tuple(
                 ApplicationRequirementSnapshot(

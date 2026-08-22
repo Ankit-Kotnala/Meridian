@@ -108,6 +108,7 @@ class ApplicationDocumentKind(StrEnum):
     FOLLOW_UP_EMAIL = "follow_up_email"
     INTERVIEW_INTRODUCTION = "interview_introduction"
     ACHIEVEMENT_SUMMARY = "achievement_summary"
+    ASSISTED_APPLY_HANDOFF = "assisted_apply_handoff"
 
 
 class ApplicationDocumentStatus(StrEnum):
@@ -687,6 +688,79 @@ class ApplicationIdempotencyRecord:
         )
         object.__setattr__(self, "target_kind", _text(self.target_kind, "target kind", 80))
         object.__setattr__(self, "response_kind", _text(self.response_kind, "response kind", 80))
+
+
+@dataclass(frozen=True, slots=True)
+class ApplicationProfileLink:
+    label: str
+    url: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "label", _text(self.label, "profile link label", 120))
+        object.__setattr__(self, "url", _text(self.url, "profile link URL", 500))
+        if not self.url.startswith(("https://", "http://")):
+            raise ApplicationWorkspaceValidationError("profile link URL must be HTTP(S)")
+
+
+@dataclass(frozen=True, slots=True)
+class ApplicationProfile:
+    id: UUID
+    owner_user_id: UUID
+    work_authorization: str | None
+    notice_period_days: int | None
+    compensation_min: int | None
+    compensation_max: int | None
+    compensation_currency: str
+    preferred_locations: tuple[str, ...]
+    profile_links: tuple[ApplicationProfileLink, ...]
+    voluntary_disclosures: dict[str, str]
+    version: int
+    created_at: datetime
+    updated_at: datetime
+
+    def __post_init__(self) -> None:
+        _version(self.version)
+        object.__setattr__(
+            self,
+            "work_authorization",
+            _optional_text(self.work_authorization, "work authorization", 500),
+        )
+        if self.notice_period_days is not None and not 0 <= self.notice_period_days <= 730:
+            raise ApplicationWorkspaceValidationError("notice period is out of range")
+        for field_name, value in (
+            ("compensation_min", self.compensation_min),
+            ("compensation_max", self.compensation_max),
+        ):
+            if value is not None and value < 0:
+                raise ApplicationWorkspaceValidationError(f"{field_name} must be non-negative")
+        if (
+            self.compensation_min is not None
+            and self.compensation_max is not None
+            and self.compensation_min > self.compensation_max
+        ):
+            raise ApplicationWorkspaceValidationError(
+                "compensation minimum cannot exceed compensation maximum"
+            )
+        currency = self.compensation_currency.strip().upper()
+        if re.fullmatch(r"[A-Z]{3}", currency) is None:
+            raise ApplicationWorkspaceValidationError("compensation currency must be ISO 4217")
+        object.__setattr__(self, "compensation_currency", currency)
+        normalized_locations: list[str] = []
+        for location in self.preferred_locations:
+            normalized = _text(location, "preferred location", 200)
+            if normalized not in normalized_locations:
+                normalized_locations.append(normalized)
+        object.__setattr__(self, "preferred_locations", tuple(normalized_locations))
+        if len(self.preferred_locations) > 50:
+            raise ApplicationWorkspaceValidationError("preferred locations exceed the supported limit")
+        if len(self.profile_links) > 30:
+            raise ApplicationWorkspaceValidationError("profile links exceed the supported limit")
+        normalized_disclosures: dict[str, str] = {}
+        for key, value in self.voluntary_disclosures.items():
+            if re.fullmatch(r"[a-z0-9_]{3,80}", key) is None:
+                raise ApplicationWorkspaceValidationError("voluntary disclosure key is invalid")
+            normalized_disclosures[key] = _text(value, f"voluntary disclosure {key}", 500)
+        object.__setattr__(self, "voluntary_disclosures", normalized_disclosures)
 
 
 @dataclass(frozen=True, slots=True)

@@ -358,53 +358,59 @@ progress" indefinitely and the account was told to add roles by hand.
 - [!] `make test-integration` and `make test-e2e` not run: no local stack was
   running and Playwright browsers are not installed.
 
-## Phase 11 - Declared-link evidence enrichment (planned)
+## Phase 11 - Declared-link evidence enrichment (in progress)
 
 Goal: a candidate's record reflects what they demonstrably did, from the links
 they already list, so scores stop under-crediting real work.
 
-- [ ] `DeclaredProfileConnector` port in `career_record` with a deterministic
+See also `docs/product-vision-roadmap.md` for the full product vision mapping.
+
+- [x] `DeclaredProfileConnector` port in `career_record` with a deterministic
       local fake; no adapter may require third-party credentials for local dev.
-- [ ] Adapters only for platforms whose terms permit automated reads of a public
-      profile. A user declaring a link does not override those terms.
-- [ ] Reuse the existing hostile-URL controls verbatim: HTTP(S) only, every
-      resolved address and redirect validated, private/link-local/loopback
-      blocked, time and response caps, sanitized content, no script execution.
-- [ ] Fetch results become import proposals carrying source URL, fetch timestamp,
-      and the exact excerpt relied upon. `Supported` on ingest, `Confirmed` only
-      by the user, never `Verified`.
+- [x] GitHub public profile connector (REST API, no login) + enrich API/UI slice
+- [x] Public portfolio HTML connector with SSRF-safe fetch (LinkedIn rejected
+      with user-facing message; GitHub handled by dedicated connector).
+- [ ] Certification-site connectors and additional permitted platforms.
 - [ ] Worker task with ownership, idempotency key, timeout, bounded retry,
       dead-letter behavior, and no logging of fetched page text.
+- [x] Fetch results become achievement drafts + evidence with external URL
+      provenance (user reviews in Achievement Inbox / Evidence Vault).
 - [ ] Persist the Corp ID as an immutable owner-scoped column and move standing
-      to the API so it is computed once rather than per client.
+      to the API so it is computed once rather than per client (ADR 0019 defers
+      until needed; identifier remains derived today).
 
-## Phase 12 - Opportunity supply and assisted apply (planned)
+Verification: `uv run pytest packages/backend/tests/unit/test_declared_profile_enrichment.py`
+— 3 passed (2026-08-23).
 
-- [ ] `JobSourceConnector` port with adapters for published ATS and job-board
-      APIs (Greenhouse, Lever, Ashby, SmartRecruiters, Workable) and Workday
-      tenant career-site endpoints, plus recorded fixtures per adapter.
-- [ ] Ingestion dedupe, freshness, and rate limiting; every response treated as
-      hostile input. No adapter for a platform that prohibits automated
-      collection; wider coverage comes from licensed data, not our own scraping.
-- [ ] `ApplicationProfile` in `application_workspace`: owner-scoped reusable
-      answers for work authorization, notice period, compensation expectation,
-      locations, links, and optional voluntary-disclosure preferences.
-- [ ] Assisted apply: a tailored resume version plus pre-answered standard
-      questions with provenance, delivered as a prefilled handoff link the user
-      submits in their own session, and a copy-ready pack for the rest.
-- [ ] Explicitly out of scope: storing third-party portal passwords, creating
-      accounts on a user's behalf, authenticating as a user to a third party, and
-      any bot-detection or CAPTCHA bypass. Programmatic submission only via OAuth
-      or a documented employer-enabled application API.
+## Phase 12 - Opportunity supply and assisted apply (in progress)
 
-## Phase 13 - Gap-to-learning loop (planned)
+- [~] `JobSourceConnector` port with fake + Greenhouse fixture adapters; Lever,
+      Ashby, SmartRecruiters, Workable, and Workday tenant endpoints remain.
+- [x] Ingestion dedupe via `(owner, source_kind, external_id)` unique index;
+      bounded sync batch size; hostile-input validation on listings.
+- [x] `ApplicationProfile` in `application_workspace` with migration, CRUD API
+      (`GET`/`PUT /api/v1/application-profile`), and unit tests.
+- [~] Assisted apply: `assisted_apply_handoff` pack document when profile
+      exists; frontend Application Profile editor and Opportunities sync UI not
+      yet wired.
+- [x] Explicitly out of scope documented and enforced: no portal passwords,
+      account creation, impersonation, or bot-detection bypass (ADR 0019).
 
-- [ ] Read competency gaps from `role_readiness` and open them as
-      `career_growth` development items of kind `learning` or `certification`.
-- [ ] Completing an item prompts the evidence it produced, closing the loop back
-      into the career record.
-- [ ] No learning recommendation may assert an outcome, a ranking, a hiring
-      probability, or a comparison against other candidates.
+Verification: `uv run pytest packages/backend/tests/unit/test_application_profile.py
+packages/backend/tests/unit/test_job_source_connector.py` — passed (2026-08-23).
+
+## Phase 13 - Gap-to-learning loop (in progress)
+
+- [x] Read competency gaps from `role_readiness` via `RoleReadinessGapSource`
+      and open as `career_growth` development items (`POST
+      /api/v1/career-growth/development-items/from-gap`).
+- [ ] Completing an item prompts the evidence it produced (Growth UI prompt not
+      yet wired end-to-end).
+- [x] Gap titles/descriptions are deterministic; no outcome, ranking, or hiring
+      probability claims.
+
+Verification: `uv run pytest packages/backend/tests/unit/test_gap_to_learning.py`
+— passed (2026-08-23).
 
 ### Open verification and product risks
 

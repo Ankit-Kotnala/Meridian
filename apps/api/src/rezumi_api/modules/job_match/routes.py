@@ -14,6 +14,7 @@ from rezumi.modules.job_match.application import (
     JobMatchService,
     PrioritizeOpportunity,
     RequestContext,
+    SyncFromSource,
     UpdateJob,
 )
 from rezumi.modules.job_match.domain import (
@@ -41,6 +42,8 @@ from rezumi_api.modules.job_match.schemas import (
     JobMatchAnalysisResponse,
     JobPageResponse,
     JobResponse,
+    JobSyncFromSourceRequest,
+    JobSyncFromSourceResponse,
     JobUpdateRequest,
     OpportunityPriorityRequest,
     OpportunityPriorityResponse,
@@ -319,6 +322,36 @@ async def create_opportunity_priority(
     )
     _private(response)
     return opportunity_priority_response(value)
+
+
+@router.post(
+    "/jobs/sync-from-source",
+    response_model=JobSyncFromSourceResponse,
+    status_code=status.HTTP_201_CREATED,
+    operation_id="jobsSyncFromSource",
+    responses=_PROBLEMS,
+)
+async def sync_jobs_from_source(
+    payload: JobSyncFromSourceRequest,
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
+    context: Annotated[RequestContext, Depends(job_match_request_context)],
+    service: Annotated[JobMatchService, Depends(job_match_service)],
+) -> JobSyncFromSourceResponse:
+    result = await service.sync_from_source(
+        principal.user_id,
+        SyncFromSource(
+            platform=payload.platform,
+            query=payload.query,
+            target_role_id=payload.target_role_id,
+        ),
+        context=context,
+    )
+    _private(response)
+    return JobSyncFromSourceResponse(
+        created=[job_response(record) for record in result.created],
+        skipped=result.skipped,
+    )
 
 
 @router.get(

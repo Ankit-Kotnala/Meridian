@@ -67,6 +67,7 @@ _DOCUMENT_KINDS = (
     "follow_up_email",
     "interview_introduction",
     "achievement_summary",
+    "assisted_apply_handoff",
 )
 _DOCUMENT_STATUSES = ("generated", "blocked", "deleted")
 _PACK_STATUSES = ("generated", "blocked")
@@ -88,6 +89,53 @@ _AUDIT_ACTIONS = (
 
 def _values(values: tuple[str, ...]) -> str:
     return ",".join(f"'{value}'" for value in values)
+
+
+class ApplicationProfileModel(Base):
+    __tablename__ = "application_profiles"
+    __table_args__ = (
+        CheckConstraint("version > 0", name="version_positive"),
+        CheckConstraint(
+            "notice_period_days IS NULL OR notice_period_days BETWEEN 0 AND 730",
+            name="notice_period_valid",
+        ),
+        CheckConstraint(
+            "compensation_min IS NULL OR compensation_min >= 0",
+            name="compensation_min_valid",
+        ),
+        CheckConstraint(
+            "compensation_max IS NULL OR compensation_max >= 0",
+            name="compensation_max_valid",
+        ),
+        CheckConstraint(
+            "length(compensation_currency) = 3",
+            name="compensation_currency_length",
+        ),
+        ForeignKeyConstraint(
+            ["owner_user_id"],
+            ["users.id"],
+            name="fk_application_profiles_owner_user_id_users",
+            ondelete="CASCADE",
+        ),
+        UniqueConstraint("owner_user_id", name="uq_application_profiles_owner_user_id"),
+        Index("ix_application_profiles_owner_updated", "owner_user_id", "updated_at"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
+    owner_user_id: Mapped[UUID] = mapped_column(Uuid, nullable=False)
+    work_authorization: Mapped[str | None] = mapped_column(Text)
+    notice_period_days: Mapped[int | None] = mapped_column(Integer)
+    compensation_min: Mapped[int | None] = mapped_column(Integer)
+    compensation_max: Mapped[int | None] = mapped_column(Integer)
+    compensation_currency: Mapped[str] = mapped_column(
+        String(3), nullable=False, server_default=text("'USD'")
+    )
+    preferred_locations: Mapped[list[str]] = mapped_column(JSONB, nullable=False)
+    profile_links: Mapped[list[dict[str, str]]] = mapped_column(JSONB, nullable=False)
+    voluntary_disclosures: Mapped[dict[str, str]] = mapped_column(JSONB, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, server_default=text("1"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class ApplicationRecordModel(Base):

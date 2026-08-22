@@ -219,6 +219,12 @@ class DevelopmentItemCreateRequest(DevelopmentItemMutationRequest):
     pass
 
 
+class DevelopmentItemFromGapCreateRequest(CareerGrowthSchema):
+    gap_kind: str = Field(min_length=3, max_length=80)
+    label: str = Field(min_length=1, max_length=180)
+    role_profile_id: UUID | None = None
+
+
 class DevelopmentItemUpdateRequest(DevelopmentItemMutationRequest):
     status: DevelopmentStatusValue
 

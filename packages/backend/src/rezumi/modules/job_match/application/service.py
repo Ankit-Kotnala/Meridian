@@ -49,6 +49,8 @@ from .models import (
     PagedResult,
     PrioritizeOpportunity,
     RequestContext,
+    SyncFromSource,
+    SyncFromSourceResult,
     UpdateJob,
     page_result,
 )
@@ -60,6 +62,7 @@ from .ports import (
     JobMatchUnitOfWorkFactory,
     RoleContextProvider,
 )
+from .job_source_ports import JobSourceConnectorRegistry, JobSourceListing
 
 _IDEMPOTENCY_KEY = re.compile(r"^[A-Za-z0-9._:-]{8,128}$")
 
@@ -70,12 +73,15 @@ class JobMatchPolicy:
     max_page_size: int = 100
     max_saved_jobs: int = 200
     max_requirements: int = 80
+    max_sync_listings_per_call: int = 25
 
     def __post_init__(self) -> None:
         if not 1 <= self.default_page_size <= self.max_page_size <= 200:
             raise ValueError("job match page limits are invalid")
         if self.max_saved_jobs < 1 or not 1 <= self.max_requirements <= 200:
             raise ValueError("job match collection limits are invalid")
+        if not 1 <= self.max_sync_listings_per_call <= 100:
+            raise ValueError("job match sync limits are invalid")
 
 
 class JobMatchService:
@@ -90,6 +96,7 @@ class JobMatchService:
         career_snapshots: CareerSnapshotProvider,
         role_context: RoleContextProvider,
         importer: JobImportProvider,
+        job_sources: JobSourceConnectorRegistry | None = None,
         policy: JobMatchPolicy | None = None,
     ) -> None:
         self._uow = unit_of_work
@@ -98,6 +105,7 @@ class JobMatchService:
         self._career = career_snapshots
         self._roles = role_context
         self._importer = importer
+        self._job_sources = job_sources
         self._policy = policy or JobMatchPolicy()
 
     async def create_job(
@@ -182,6 +190,129 @@ class JobMatchService:
             context,
             JobAuditAction.JOB_IMPORTED,
         )
+
+    async def sync_from_source(
+        self,
+        owner_user_id: UUID,
+        command: SyncFromSource,
+        *,
+        context: RequestContext,
+    ) -> SyncFromSourceResult:
+        self._authorize(owner_user_id, context)
+        platform = command.platform.strip()
+        query = command.query.strip()
+        if not platform:
+            raise JobMatchValidationError("job source platform is required")
+        if self._job_sources is None:
+            raise JobMatchValidationError("job source sync is unavailable")
+        connector = self._job_sources.resolve(platform)
+        source_kind = _source_kind_for_platform(connector.platform)
+        listings = await connector.fetch_listings(query)
+        limited = listings[: self._policy.max_sync_listings_per_call]
+        created: list[JobRecord] = []
+        skipped = 0
+        now = self._clock.now()
+        async with self._uow() as uow:
+            for listing in limited:
+                _validate_listing(listing)
+                existing = await uow.find_job_by_external(
+                    owner_user_id,
+                    source_kind,
+                    listing.external_id,
+                )
+                if existing is not None:
+                    skipped += 1
+                    continue
+                create = CreateJob(
+                    title=listing.title,
+                    company=listing.company,
+                    location=listing.location,
+                    work_model=command_work_model(listing.source_text),
+                    employment_type=command_employment_type(listing.source_text),
+                    compensation=None,
+                    application_deadline=None,
+                    source_kind=source_kind,
+                    source_url=listing.application_url,
+                    external_id=listing.external_id,
+                    source_text=listing.source_text,
+                    target_role_id=command.target_role_id,
+                )
+                fingerprint = _fingerprint(
+                    "job-sync",
+                    {
+                        "platform": connector.platform,
+                        "externalId": listing.external_id,
+                        "targetRoleId": (
+                            str(command.target_role_id) if command.target_role_id else None
+                        ),
+                    },
+                )
+                idempotency_key = f"sync:{connector.platform}:{listing.external_id}"
+                target_role_title = await self._target_role_title(
+                    owner_user_id,
+                    command.target_role_id,
+                )
+                extracted = extract_job_content(
+                    create.source_text,
+                    max_requirements=self._policy.max_requirements,
+                )
+                job_id = self._ids.new()
+                title = _required_title(create.title, extracted.title)
+                job = JobPosting(
+                    id=job_id,
+                    owner_user_id=owner_user_id,
+                    title=title,
+                    company=create.company or extracted.company,
+                    location=create.location or extracted.location,
+                    work_model=create.work_model,
+                    employment_type=create.employment_type,
+                    compensation=create.compensation,
+                    application_deadline=create.application_deadline,
+                    source_kind=create.source_kind,
+                    source_url=create.source_url,
+                    external_id=create.external_id,
+                    source_text=create.source_text,
+                    source_sha256=_source_sha(create.source_text),
+                    idempotency_key=idempotency_key,
+                    idempotency_fingerprint=fingerprint,
+                    target_role_id=create.target_role_id,
+                    target_role_title=target_role_title,
+                    version=1,
+                    created_at=now,
+                    updated_at=now,
+                )
+                record = JobRecord(
+                    job=job,
+                    requirements=self._requirements(owner_user_id, job_id, extracted.requirements),
+                )
+                current = await uow.list_jobs(
+                    owner_user_id,
+                    JobFilter(),
+                    None,
+                    self._policy.max_saved_jobs + 1,
+                )
+                if len(current) + len(created) >= self._policy.max_saved_jobs:
+                    raise JobMatchConflict("saved job limit reached")
+                await uow.add_job(record)
+                created.append(record)
+            if created:
+                await uow.add_audit(
+                    self._audit(
+                        owner_user_id,
+                        JobAuditAction.JOBS_SYNCED_FROM_SOURCE,
+                        "job_source",
+                        created[0].job.id,
+                        context,
+                        now,
+                        job_id=created[0].job.id,
+                        reason=(
+                            f"platform={connector.platform};"
+                            f"created={len(created)};skipped={skipped}"
+                        ),
+                    )
+                )
+            await uow.commit()
+        return SyncFromSourceResult(created=tuple(created), skipped=skipped)
 
     async def list_jobs(
         self,
@@ -479,6 +610,7 @@ class JobMatchService:
             application_deadline=command.application_deadline,
             source_kind=command.source_kind,
             source_url=command.source_url,
+            external_id=command.external_id,
             source_text=command.source_text,
             source_sha256=_source_sha(command.source_text),
             idempotency_key=idempotency_key,
@@ -785,3 +917,27 @@ def _fingerprint(kind: str, payload: dict[str, object]) -> str:
         separators=(",", ":"),
     ).encode("utf-8")
     return f"sha256:{hashlib.sha256(encoded).hexdigest()}"
+
+
+def _source_kind_for_platform(platform: str) -> JobSourceKind:
+    mapping = {
+        "greenhouse": JobSourceKind.GREENHOUSE,
+        "fake": JobSourceKind.FAKE,
+    }
+    kind = mapping.get(platform.strip().casefold())
+    if kind is None:
+        raise JobMatchValidationError("job source platform is not supported")
+    return kind
+
+
+def _validate_listing(listing: JobSourceListing) -> None:
+    if not listing.external_id.strip():
+        raise JobMatchValidationError("listing external id is invalid")
+    if not listing.title.strip():
+        raise JobMatchValidationError("listing title is invalid")
+    if len(listing.source_text.strip()) < 20:
+        raise JobMatchValidationError("listing source text is invalid")
+    if listing.application_url is not None and not listing.application_url.startswith(
+        ("https://", "http://")
+    ):
+        raise JobMatchValidationError("listing application URL is invalid")

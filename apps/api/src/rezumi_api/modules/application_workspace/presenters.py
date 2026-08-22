@@ -21,6 +21,8 @@ from rezumi.modules.application_workspace.domain import (
     ApplicationEvidencePin,
     ApplicationNote,
     ApplicationPack,
+    ApplicationProfile,
+    ApplicationProfileLink,
     ApplicationRequirementSnapshot,
     ApplicationTask,
 )
@@ -42,6 +44,8 @@ from rezumi_api.modules.application_workspace.schemas import (
     ApplicationPackResponse,
     ApplicationPackSummaryResponse,
     ApplicationPageResponse,
+    ApplicationProfileLinkInput,
+    ApplicationProfileResponse,
     ApplicationRequirementResponse,
     ApplicationResponse,
     ApplicationSummaryResponse,
@@ -344,3 +348,23 @@ def calendar_response(
         for item in entries
     ]
     return ApplicationCalendarResponse(start=start, end=end, data=items)
+
+
+def application_profile_response(profile: ApplicationProfile) -> ApplicationProfileResponse:
+    return ApplicationProfileResponse(
+        id=profile.id,
+        work_authorization=profile.work_authorization,
+        notice_period_days=profile.notice_period_days,
+        compensation_min=profile.compensation_min,
+        compensation_max=profile.compensation_max,
+        compensation_currency=profile.compensation_currency,
+        preferred_locations=list(profile.preferred_locations),
+        profile_links=[
+            ApplicationProfileLinkInput(label=link.label, url=link.url)
+            for link in profile.profile_links
+        ],
+        voluntary_disclosures=dict(profile.voluntary_disclosures),
+        version=profile.version,
+        created_at=profile.created_at,
+        updated_at=profile.updated_at,
+    )

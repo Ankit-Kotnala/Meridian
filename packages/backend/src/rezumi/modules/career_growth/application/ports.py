@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime
 from types import TracebackType
 from typing import Protocol, Self
@@ -37,6 +38,22 @@ class Clock(Protocol):
 
 class IdentifierFactory(Protocol):
     def new(self) -> UUID: ...
+
+
+@dataclass(frozen=True, slots=True)
+class GapSnapshot:
+    gap_kind: str
+    label: str
+    requirement_text: str
+    role_profile_id: UUID | None = None
+
+
+class RoleReadinessGapSource(Protocol):
+    async def list_gaps(
+        self,
+        owner_user_id: UUID,
+        role_profile_id: UUID | None = None,
+    ) -> tuple[GapSnapshot, ...]: ...
 
 
 class CareerGrowthSourceProvider(Protocol):

@@ -149,6 +149,13 @@ class CreateDevelopmentItem:
 
 
 @dataclass(frozen=True, slots=True)
+class CreateDevelopmentItemFromGap:
+    gap_kind: str
+    label: str
+    role_profile_id: UUID | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class UpdateDevelopmentItem:
     kind: DevelopmentKind
     title: str

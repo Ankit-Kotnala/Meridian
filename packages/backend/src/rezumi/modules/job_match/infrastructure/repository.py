@@ -172,6 +172,23 @@ class SqlAlchemyJobMatchUnitOfWork:
             return None
         return JobRecord(job=_job(model), requirements=tuple(await self._requirements(model.id)))
 
+    async def find_job_by_external(
+        self,
+        owner_user_id: UUID,
+        source_kind: JobSourceKind,
+        external_id: str,
+    ) -> JobRecord | None:
+        model = await self.session.scalar(
+            select(JobPostingModel).where(
+                JobPostingModel.owner_user_id == owner_user_id,
+                JobPostingModel.source_kind == source_kind.value,
+                JobPostingModel.external_id == external_id,
+            )
+        )
+        if model is None:
+            return None
+        return JobRecord(job=_job(model), requirements=tuple(await self._requirements(model.id)))
+
     async def add_analysis(self, record: AnalysisRecord) -> None:
         _validate_analysis_ownership(record)
         self.session.add(JobMatchAnalysisModel(**_analysis_values(record.analysis)))
@@ -363,6 +380,7 @@ def _job(model: JobPostingModel) -> JobPosting:
         application_deadline=model.application_deadline,
         source_kind=JobSourceKind(model.source_kind),
         source_url=model.source_url,
+        external_id=model.external_id,
         source_text=model.source_text,
         source_sha256=model.source_sha256,
         idempotency_key=model.idempotency_key,
@@ -386,6 +404,7 @@ def _job_values(job: JobPosting, *, include_identity: bool = True) -> dict[str, 
         "application_deadline": job.application_deadline,
         "source_kind": job.source_kind.value,
         "source_url": job.source_url,
+        "external_id": job.external_id,
         "source_text": job.source_text,
         "source_sha256": job.source_sha256,
         "idempotency_key": job.idempotency_key,

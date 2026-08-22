@@ -21,11 +21,14 @@ from rezumi.modules.application_workspace.application import (
     UnsetType,
     UpdateApplication,
     UpdateApplicationTask,
+    UpsertApplicationProfile,
 )
 from rezumi.modules.application_workspace.domain import (
     ApplicationContact,
     ApplicationEventKind,
+    ApplicationProfileLink,
     ApplicationStage,
+    ApplicationWorkspaceNotFound,
     ApplicationWorkspaceValidationError,
     OutcomeStatus,
     ReferralStatus,
@@ -39,6 +42,7 @@ from rezumi_api.modules.application_workspace.dependencies import (
 )
 from rezumi_api.modules.application_workspace.presenters import (
     application_page_response,
+    application_profile_response,
     application_response,
     calendar_response,
     consistency_response,
@@ -66,6 +70,8 @@ from rezumi_api.modules.application_workspace.schemas import (
     ApplicationPackPageResponse,
     ApplicationPackResponse,
     ApplicationPageResponse,
+    ApplicationProfileResponse,
+    ApplicationProfileUpsertRequest,
     ApplicationResponse,
     ApplicationStageUpdateRequest,
     ApplicationTaskCreateRequest,
@@ -678,6 +684,61 @@ async def get_application_pack_consistency(
     value = await service.get_pack(principal.user_id, pack_id)
     _private(response)
     return consistency_response(value)
+
+
+@router.get(
+    "/application-profile",
+    response_model=ApplicationProfileResponse,
+    operation_id="applicationProfileGet",
+    responses=_PROBLEMS,
+)
+async def get_application_profile(
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(current_principal)],
+    context: Annotated[RequestContext, Depends(application_workspace_request_context)],
+    service: Annotated[ApplicationWorkspaceService, Depends(application_workspace_service)],
+) -> ApplicationProfileResponse:
+    profile = await service.get_application_profile(principal.user_id, context=context)
+    if profile is None:
+        raise ApplicationWorkspaceNotFound
+    _private(response, profile.version)
+    return application_profile_response(profile)
+
+
+@router.put(
+    "/application-profile",
+    response_model=ApplicationProfileResponse,
+    operation_id="applicationProfileUpsert",
+    responses=_PROBLEMS,
+)
+async def upsert_application_profile(
+    payload: ApplicationProfileUpsertRequest,
+    response: Response,
+    idempotency_key: IdempotencyKey,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
+    context: Annotated[RequestContext, Depends(application_workspace_request_context)],
+    service: Annotated[ApplicationWorkspaceService, Depends(application_workspace_service)],
+) -> ApplicationProfileResponse:
+    profile = await service.upsert_application_profile(
+        principal.user_id,
+        UpsertApplicationProfile(
+            work_authorization=payload.work_authorization,
+            notice_period_days=payload.notice_period_days,
+            compensation_min=payload.compensation_min,
+            compensation_max=payload.compensation_max,
+            compensation_currency=payload.compensation_currency,
+            preferred_locations=tuple(payload.preferred_locations),
+            profile_links=tuple(
+                ApplicationProfileLink(label=link.label, url=link.url)
+                for link in payload.profile_links
+            ),
+            voluntary_disclosures=payload.voluntary_disclosures,
+        ),
+        idempotency_key=idempotency_key,
+        context=context,
+    )
+    _private(response, profile.version)
+    return application_profile_response(profile)
 
 
 @router.delete(

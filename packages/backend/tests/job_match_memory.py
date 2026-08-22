@@ -19,6 +19,7 @@ from rezumi.modules.job_match.domain import (
     JobMatchAuditEvent,
     JobPosting,
     JobRequirement,
+    JobSourceKind,
     OpportunityPriorityAnalysis,
     SnapshotEvidence,
     SnapshotSkill,
@@ -138,6 +139,24 @@ class MemoryJobMatch:
             if job.owner_user_id == owner_user_id and job.idempotency_key == idempotency_key:
                 return JobRecord(
                     job=deepcopy(job), requirements=deepcopy(self.requirements[job.id])
+                )
+        return None
+
+    async def find_job_by_external(
+        self,
+        owner_user_id: UUID,
+        source_kind: JobSourceKind,
+        external_id: str,
+    ) -> JobRecord | None:
+        for job in self.jobs.values():
+            if (
+                job.owner_user_id == owner_user_id
+                and job.source_kind is source_kind
+                and job.external_id == external_id
+            ):
+                return JobRecord(
+                    job=deepcopy(job),
+                    requirements=deepcopy(self.requirements[job.id]),
                 )
         return None
 

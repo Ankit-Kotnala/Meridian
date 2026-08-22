@@ -203,6 +203,14 @@ class PersonalFactListResponse(CareerRecordSchema):
     data: list[PersonalFactResponse] = Field(max_length=100)
 
 
+class DeclaredProfileEnrichmentResponse(CareerRecordSchema):
+    platform: str = Field(min_length=1, max_length=40)
+    profile_url: str = Field(min_length=1, max_length=2_048)
+    achievements_created: int = Field(ge=0, le=200)
+    evidence_created: int = Field(ge=0, le=200)
+    skipped_duplicates: int = Field(ge=0, le=200)
+
+
 class ProfileConflictResponse(CareerRecordSchema):
     id: UUID
     field: str

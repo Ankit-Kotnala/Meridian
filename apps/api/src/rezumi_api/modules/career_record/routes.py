@@ -29,6 +29,9 @@ from rezumi.modules.career_record.application import (
     UpdateReminderPreferences,
     UpdateSkill,
 )
+from rezumi.modules.career_record.application.declared_profile_enrichment import (
+    DeclaredProfileEnrichmentService,
+)
 from rezumi.modules.career_record.application.attachment_workflow import (
     AdmitAttachment,
     AttachmentDownloadPurpose,
@@ -71,6 +74,7 @@ from rezumi_api.modules.career_record.dependencies import (
     attachment_workflow_service,
     career_record_service,
     career_request_context,
+    declared_profile_enrichment_service,
 )
 from rezumi_api.modules.career_record.presenters import (
     achievement_response,
@@ -119,6 +123,7 @@ from rezumi_api.modules.career_record.schemas import (
     PageResponse,
     PersonalFactInput,
     PersonalFactListResponse,
+    DeclaredProfileEnrichmentResponse,
     PersonalFactResponse,
     PersonalFactUpdateRequest,
     ProvenanceResponse,
@@ -484,6 +489,32 @@ async def confirm_personal_fact(
     return personal_fact_response(
         fact,
         provenance=await _current_field_provenance_responses(service, principal.user_id, fact.id),
+    )
+
+
+@router.post(
+    "/personal-facts/{fact_id}/enrich",
+    response_model=DeclaredProfileEnrichmentResponse,
+    operation_id="careerPersonalFactEnrich",
+    responses=_PROBLEMS,
+)
+async def enrich_personal_fact_link(
+    fact_id: UUID,
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
+    context: Annotated[RequestContext, Depends(career_request_context)],
+    enrichment: Annotated[
+        DeclaredProfileEnrichmentService, Depends(declared_profile_enrichment_service)
+    ],
+) -> DeclaredProfileEnrichmentResponse:
+    result = await enrichment.enrich_personal_fact(principal.user_id, fact_id, context)
+    _private(response)
+    return DeclaredProfileEnrichmentResponse(
+        platform=result.platform,
+        profile_url=result.profile_url,
+        achievements_created=result.achievements_created,
+        evidence_created=result.evidence_created,
+        skipped_duplicates=result.skipped_duplicates,
     )
 
 

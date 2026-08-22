@@ -33,6 +33,8 @@ from rezumi.modules.application_workspace.domain import (
     ApplicationIdempotencyRecord,
     ApplicationNote,
     ApplicationPack,
+    ApplicationProfile,
+    ApplicationProfileLink,
     ApplicationRecord,
     ApplicationRequirementSnapshot,
     ApplicationRequirementSupport,
@@ -92,6 +94,7 @@ class StaticJobProvider:
             latest_analysis_id=ANALYSIS_ID,
             source_sha256="a" * 64,
             source="referral",
+            source_url="https://example.test/jobs/principal-product-engineer",
             industry="software",
             requirements=(requirement,),
             requirement_support=(
@@ -180,6 +183,7 @@ class MemoryApplicationWorkspace:
         self.documents: dict[UUID, ApplicationDocument] = {}
         self.idempotency: dict[tuple[UUID, str], ApplicationIdempotencyRecord] = {}
         self.audits: list[ApplicationAuditEvent] = []
+        self.profiles: dict[UUID, ApplicationProfile] = {}
 
     def __call__(self) -> MemoryApplicationWorkspace:
         return self
@@ -749,6 +753,18 @@ class MemoryApplicationWorkspace:
 
     async def save_document(self, document: ApplicationDocument) -> None:
         self.documents[document.id] = deepcopy(document)
+
+    async def get_application_profile(
+        self,
+        owner_user_id: UUID,
+    ) -> ApplicationProfile | None:
+        for profile in self.profiles.values():
+            if profile.owner_user_id == owner_user_id:
+                return deepcopy(profile)
+        return None
+
+    async def upsert_application_profile(self, profile: ApplicationProfile) -> None:
+        self.profiles[profile.owner_user_id] = deepcopy(profile)
 
     async def add_idempotency(
         self,
