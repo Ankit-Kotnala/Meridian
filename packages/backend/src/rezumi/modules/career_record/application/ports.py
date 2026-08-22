@@ -212,6 +212,12 @@ class CareerRecordUnitOfWork(Protocol):
         self, owner_user_id: UUID, entity_id: UUID
     ) -> list[EntitySkillLink]: ...
 
+    async def list_entity_skill_links_for_owner(
+        self,
+        owner_user_id: UUID,
+        entity_ids: tuple[UUID, ...] | None = None,
+    ) -> list[EntitySkillLink]: ...
+
     async def replace_entity_skill_links(
         self,
         owner_user_id: UUID,

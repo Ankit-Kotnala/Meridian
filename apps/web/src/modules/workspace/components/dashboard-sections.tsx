@@ -25,6 +25,7 @@ import type {
   DashboardPipelineGroup,
   DashboardRecordCounts,
 } from "../server/dashboard-summary";
+import { recordStatsFootnote } from "../lib/dashboard-user-copy";
 
 /** Shared tile chrome so the bento grid stays visually consistent. */
 function Tile({
@@ -86,28 +87,38 @@ function CountValue({ count }: { count: DashboardCount }) {
 
 const RECORD_ROWS: readonly {
   count: keyof DashboardRecordCounts;
+  hint: string;
   href: string;
   icon: LucideIcon;
   label: string;
 }[] = [
   {
     count: "experiences",
+    hint: "Roles & jobs",
     href: "/career-profile",
     icon: UserRound,
-    label: "Experiences",
+    label: "Roles",
   },
   {
     count: "skills",
+    hint: "Strengths listed",
     href: "/career-profile",
     icon: Sparkles,
     label: "Skills",
   },
-  { count: "evidence", href: "/evidence", icon: Archive, label: "Evidence" },
+  {
+    count: "evidence",
+    hint: "Proof on file",
+    href: "/evidence",
+    icon: Archive,
+    label: "Evidence",
+  },
   {
     count: "achievements",
+    hint: "Drafts & ready",
     href: "/achievement-inbox",
     icon: NotebookPen,
-    label: "Open achievements",
+    label: "Achievements",
   },
 ];
 
@@ -124,6 +135,7 @@ export function CareerRecordStats({
   const unavailable = RECORD_ROWS.some(
     ({ count }) => record[count].kind === "unavailable",
   );
+  const footnote = recordStatsFootnote(record);
 
   return (
     <section
@@ -131,15 +143,15 @@ export function CareerRecordStats({
       className="workspace-panel min-w-0"
     >
       <div className="workspace-panel-header">
-        <h2 id="career-record-heading">Your career record</h2>
+        <h2 id="career-record-heading">Your profile at a glance</h2>
         <Link className="workspace-panel-link" href="/career-profile">
-          Open
+          View all
           <ArrowUpRight aria-hidden="true" className="size-3.5" />
         </Link>
       </div>
 
       <ul className="grid grid-cols-2 divide-x divide-y divide-line sm:grid-cols-4 sm:divide-y-0">
-        {RECORD_ROWS.map(({ count, href, icon: Icon, label }) => (
+        {RECORD_ROWS.map(({ count, hint, href, icon: Icon, label }) => (
           <li className="min-w-0" key={label}>
             <Link className="stat-tile group block h-full" href={href}>
               <span className="stat-tile-icon">
@@ -149,14 +161,19 @@ export function CareerRecordStats({
               <span className="stat-tile-value">
                 <CountValue count={record[count]} />
               </span>
+              <span className="mt-0.5 block text-[0.625rem] font-medium text-muted">
+                {hint}
+              </span>
             </Link>
           </li>
         ))}
       </ul>
 
-      {unavailable && (
+      {(unavailable || footnote) && (
         <p className="border-t border-line px-4 py-2.5 text-xs leading-5 text-muted sm:px-5">
-          Count unavailable right now
+          {unavailable
+            ? "Some counts could not be loaded — try refreshing."
+            : footnote}
         </p>
       )}
     </section>
@@ -168,7 +185,7 @@ export function ResumeHelpBanner() {
     <div className="workspace-help-strip">
       <div className="flex items-center gap-2.5 text-sm font-medium text-foreground">
         <Target aria-hidden="true" className="size-4 shrink-0 text-primary" />
-        <span>Need help with your resume?</span>
+        <span>Want feedback on your resume before you apply?</span>
       </div>
       <Link
         className={cn(
@@ -178,7 +195,7 @@ export function ResumeHelpBanner() {
         )}
         href="/resume-health/account"
       >
-        Start Resume Review
+        Get resume feedback
         <ArrowUpRight aria-hidden="true" className="size-4" />
       </Link>
     </div>
@@ -208,7 +225,7 @@ export function AttentionPanel({
     <Tile
       accent={items.length > 0}
       className="min-w-0"
-      label={`Needs your review${items.length > 0 ? ` · ${items.length}` : ""}`}
+      label={`Needs your attention${items.length > 0 ? ` · ${items.length}` : ""}`}
       labelId="attention-heading"
     >
       {items.length === 0 ? (
@@ -218,13 +235,13 @@ export function AttentionPanel({
           </span>
           <p className="mt-1 text-sm font-semibold text-foreground">
             {degraded
-              ? "No reviewable items could be loaded"
-              : "Nothing is waiting on you"}
+              ? "Could not load your to-do list"
+              : "You're all caught up"}
           </p>
           <p className="max-w-xs text-xs leading-5 text-muted">
             {degraded
-              ? "Part of your account state is temporarily unavailable. Nothing was changed."
-              : "Items appear here when your record, applications, or reminders need a decision."}
+              ? "Part of your account could not be reached. Nothing was changed on your end."
+              : "Deadlines, drafts, and items waiting on you will show up here."}
           </p>
         </div>
       ) : (
@@ -297,7 +314,7 @@ export function PipelinePanel({ pipeline }: { pipeline: DashboardPipeline }) {
     <Tile
       action={{ href: "/applications", label: "Open" }}
       className="min-w-0"
-      label="Application pipeline"
+      label="Your applications"
       labelId="pipeline-heading"
     >
       <div className="flex flex-1 flex-col px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
@@ -383,7 +400,7 @@ export function PipelinePanel({ pipeline }: { pipeline: DashboardPipeline }) {
 
 const STANDING_STEPS: readonly string[] = [
   "Email confirmed",
-  "Career record",
+  "Profile started",
   "Evidence confirmed",
 ];
 
@@ -416,7 +433,7 @@ export function StandingTile({
     <Tile
       action={{ href: "/settings", label: "Card" }}
       className="min-w-0"
-      label="Rezumi Corp ID"
+      label="Your ID"
       labelId="standing-heading"
     >
       <div className="flex flex-1 flex-col px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
@@ -458,8 +475,7 @@ export function StandingTile({
         </ul>
 
         <p className="mt-auto pt-4 text-[0.6875rem] leading-4 text-muted">
-          Records your standing with Rezumi. Not an employer or third-party
-          verification.
+          Your account standing — not an employer or third-party verification.
         </p>
       </div>
     </Tile>
@@ -471,12 +487,12 @@ export function TruthLockNote() {
     <footer className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-line pt-4 text-xs leading-5 text-muted">
       <ShieldCheck aria-hidden="true" className="size-3.5 shrink-0" />
       <span>
-        One career record upstream; resumes, answers, and stories are derived
-        from it. Every measurement here is an internal, explainable
-        signal&mdash;never an employer or applicant-tracking-system score.
+        Your profile is yours — resumes and documents are built from what you
+        confirm. Scores are for your planning only, not employer or ATS
+        ratings.
       </span>
       <Link className="text-link" href="/methodology">
-        Scoring methodology
+        How scoring works
       </Link>
     </footer>
   );

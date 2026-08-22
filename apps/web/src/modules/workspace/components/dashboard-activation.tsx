@@ -66,20 +66,20 @@ export function activationChain(
   })[] = [
     {
       description:
-        "Your file is scanned for malware in a quarantined worker before anything reads it.",
+        "Your file is checked for safety, then read into structured fields you can review.",
       done: resumeHealth.kind !== "empty",
       id: "resume",
-      label: "Resume added and scanned",
+      label: "Resume uploaded",
       ...(resumeHealth.kind === "empty"
         ? { action: { href: "/resume-health/account", label: "Upload" } }
         : {}),
     },
     {
       description:
-        "You confirm or correct the extracted fields. Uncertain parsing never becomes career data on its own.",
+        "You confirm or correct what was extracted. Nothing uncertain goes on your profile without you.",
       done: settled,
       id: "review",
-      label: "Parsed fields reviewed",
+      label: "Fields confirmed",
       ...(resumeHealth.kind === "review"
         ? {
             action: {
@@ -93,10 +93,10 @@ export function activationChain(
     },
     {
       description:
-        "An explainable internal measurement of how well the document reads to machines and recruiters.",
+        "A detailed report on readability, gaps, and improvements you can act on.",
       done: reportReady || resumeHealth.kind === "importReady",
       id: "report",
-      label: "Resume health report ready",
+      label: "Resume report ready",
       ...(resumeHealth.kind === "report"
         ? {
             action: {
@@ -108,22 +108,22 @@ export function activationChain(
           ? {
               action: {
                 href: "/career-profile",
-                label: "Open career profile",
+                label: "View profile",
               },
             }
           : {}),
     },
     {
       description:
-        "Approved facts become experiences, skills, and evidence that later documents are allowed to cite.",
+        "Your roles, skills, and proof live here — the foundation for applications and interview prep.",
       done: hasRecord,
       id: "record",
-      label: "Career record populated",
+      label: "Profile populated",
       ...(hasImports === true
         ? {
             action: {
               href: "/career-profile/imports",
-              label: "Accept facts",
+              label: "Review facts",
             },
           }
         : hasRecord === false
@@ -132,10 +132,10 @@ export function activationChain(
     },
     {
       description:
-        "Compare a real posting against your record to see matched requirements and honest gaps.",
+        "See how you stack up against a real job posting — matches and honest gaps included.",
       done: hasJobs,
       id: "opportunity",
-      label: "First opportunity compared",
+      label: "First job compared",
       ...(hasJobs === false
         ? { action: { href: "/job-match", label: "Add a role posting" } }
         : {}),
@@ -208,13 +208,13 @@ export function ActivationChain({
         <div className="min-w-0">
           <p className="eyebrow flex items-center gap-1.5 !text-primary-strong">
             <Sparkles aria-hidden="true" className="size-3.5" />
-            Activating your workspace
+            Getting started
           </p>
           <h2
             className="mt-1 font-display text-lg font-semibold tracking-[-0.025em] text-foreground"
             id="activation-heading"
           >
-            {complete} of {steps.length} steps complete
+            {complete} of {steps.length} setup steps done
           </h2>
         </div>
 
@@ -236,7 +236,7 @@ export function ActivationChain({
 
       {unknown && (
         <Badge className="mt-3" tone="warning">
-          Some step states could not be loaded
+          Some progress could not be loaded — refresh to update
         </Badge>
       )}
 
@@ -300,27 +300,27 @@ export function ActivationChain({
 const gatePreview = [
   {
     description:
-      "Your PDF or DOCX is scanned for malware in an isolated worker, then parsed into structured fields with the source location of each one.",
+      "Upload a PDF or DOCX. We scan it safely, then pull out your roles, skills, and dates.",
     icon: FileSearch,
-    label: "Screen and parse",
+    label: "Upload & parse",
   },
   {
     description:
-      "You confirm or correct anything the parser was unsure about. Nothing uncertain becomes a career fact without you.",
+      "You review what was extracted and fix anything that looks off. You stay in control.",
     icon: UserRoundCheck,
-    label: "You confirm",
+    label: "You review",
   },
   {
     description:
-      "Approved facts populate your experiences, skills, and evidence, each one traceable back to where it came from.",
+      "Confirmed details become your profile — roles, skills, and evidence you can build on.",
     icon: BadgeCheck,
-    label: "Your record builds",
+    label: "Profile builds",
   },
   {
     description:
-      "Your health report, role comparisons, opportunity tracking, and interview preparation all switch on from that record.",
+      "Job matching, application tracking, resume feedback, and interview prep unlock from there.",
     icon: LockKeyhole,
-    label: "The workspace activates",
+    label: "Tools unlock",
   },
 ] as const;
 
@@ -360,12 +360,11 @@ export function ActivationGate({ displayName }: { displayName: string }) {
               className="balanced mt-2 font-display text-[clamp(1.6rem,2.8vw,2.15rem)] font-semibold leading-[1.14] tracking-[-0.035em] text-foreground"
               id="activation-gate-heading"
             >
-              Add your resume to activate your workspace.
+              Start with your resume or build your profile by hand.
             </h1>
             <p className="balanced mt-3 max-w-xl text-sm leading-6 text-muted sm:text-[0.9375rem]">
-              Rezumi builds everything downstream from one reviewed source of
-              truth. Until a resume or a career record exists, there is nothing
-              honest to show you here.
+              Upload a file to pull in your experience faster, or add roles
+              manually. Either way, you review everything before it goes live.
             </p>
             <div className="mt-6 flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row">
               <Link
@@ -422,9 +421,8 @@ export function ActivationGate({ displayName }: { displayName: string }) {
         </section>
 
         <p className="mt-4 text-center text-xs leading-5 text-muted">
-          Rezumi never invents an employer, title, date, or number. Measurements
-          shown after activation are internal, explainable signals&mdash;never
-          an employer or applicant-tracking-system score.
+          Scores and suggestions are for your own planning — not employer or
+          ATS ratings. You decide what changes.
         </p>
       </div>
     </main>

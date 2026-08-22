@@ -346,7 +346,7 @@ export function AchievementInboxView() {
       const [nextPage, nextExperiences, nextItems, nextReminders] =
         await Promise.all([
           getAchievements(),
-          getExperiences(),
+          getExperiences({ includeProvenance: false }),
           getCareerItems(),
           getReminderPreferences(),
         ]);

@@ -167,10 +167,14 @@ export async function deleteCareerRelationship(
   });
 }
 
-export async function getExperiences(): Promise<Experience[]> {
-  return parseExperiences(
-    await (await query(careerVaultPaths.experiences)).json(),
-  );
+export async function getExperiences(
+  options: { includeProvenance?: boolean } = {},
+): Promise<Experience[]> {
+  const requestPath =
+    options.includeProvenance === false
+      ? withQuery(careerVaultPaths.experiences, { includeProvenance: false })
+      : careerVaultPaths.experiences;
+  return parseExperiences(await (await query(requestPath)).json());
 }
 
 export async function createExperience(
@@ -277,8 +281,14 @@ export async function deleteCareerItem(item: CareerItem): Promise<void> {
   });
 }
 
-export async function getSkills(): Promise<Skill[]> {
-  return parseSkills(await (await query(careerVaultPaths.skills)).json());
+export async function getSkills(
+  options: { includeProvenance?: boolean } = {},
+): Promise<Skill[]> {
+  const requestPath =
+    options.includeProvenance === false
+      ? withQuery(careerVaultPaths.skills, { includeProvenance: false })
+      : careerVaultPaths.skills;
+  return parseSkills(await (await query(requestPath)).json());
 }
 
 export async function createSkill(input: SkillInput): Promise<Skill> {

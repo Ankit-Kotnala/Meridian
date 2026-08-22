@@ -52,6 +52,7 @@ from rezumi.modules.career_record.domain import (
     ProposalStatus,
     ReminderCadence,
     SkillProficiency,
+    TimelineFinding,
 )
 from rezumi.modules.career_record.domain.errors import (
     CareerRecordNotFound,
@@ -275,6 +276,38 @@ async def _accepted_provenance_by_entity(
         cursor = page.next_cursor
         if cursor is None:
             return result
+
+
+async def _experience_list_responses(
+    service: CareerRecordService,
+    owner_user_id: UUID,
+    values: tuple[CareerEntity, ...],
+    *,
+    findings: tuple[TimelineFinding, ...],
+    include_provenance: bool,
+) -> list[ExperienceResponse]:
+    confirmations = await service.list_entity_confirmations(owner_user_id)
+    provenance = (
+        await _accepted_provenance_by_entity(service, owner_user_id)
+        if include_provenance
+        else {}
+    )
+    skill_ids_by_entity = await service.list_entity_skill_ids_by_entity(
+        owner_user_id,
+        tuple(item.id for item in values),
+    )
+    return [
+        experience_response(
+            item,
+            user_confirmed=(
+                item.id in confirmations and confirmations[item.id].state.value == "confirmed"
+            ),
+            findings=findings,
+            skill_ids=skill_ids_by_entity.get(item.id, ()),
+            provenance=provenance.get(item.id, []),
+        )
+        for item in values
+    ]
 
 
 @router.get(
@@ -552,24 +585,18 @@ async def list_experiences(
     principal: Annotated[AuthenticatedPrincipal, Depends(current_principal)],
     context: Annotated[RequestContext, Depends(career_request_context)],
     service: Annotated[CareerRecordService, Depends(career_record_service)],
+    include_provenance: bool = Query(default=True, alias="includeProvenance"),
 ) -> ExperienceListResponse:
     view = await service.get_or_create_profile(principal.user_id, context)
-    provenance = await _accepted_provenance_by_entity(service, principal.user_id)
-    confirmations = await service.list_entity_confirmations(principal.user_id)
     values = tuple(item for item in view.entities if item.kind is CareerEntityKind.EXPERIENCE)
     _private(response)
-    data = [
-        experience_response(
-            item,
-            user_confirmed=(
-                item.id in confirmations and confirmations[item.id].state.value == "confirmed"
-            ),
-            findings=view.findings,
-            skill_ids=await service.list_entity_skill_ids(principal.user_id, item.id),
-            provenance=provenance.get(item.id, []),
-        )
-        for item in values
-    ]
+    data = await _experience_list_responses(
+        service,
+        principal.user_id,
+        values,
+        findings=view.findings,
+        include_provenance=include_provenance,
+    )
     return ExperienceListResponse(
         data=data,
         findings=[timeline_finding_response(item) for item in view.findings],
@@ -728,21 +755,14 @@ async def reorder_experiences(
         context,
     )
     values = tuple(item for item in updated.entities if item.kind is CareerEntityKind.EXPERIENCE)
-    provenance = await _accepted_provenance_by_entity(service, principal.user_id)
-    confirmations = await service.list_entity_confirmations(principal.user_id)
     _private(response, updated.profile.version)
-    data = [
-        experience_response(
-            item,
-            user_confirmed=(
-                item.id in confirmations and confirmations[item.id].state.value == "confirmed"
-            ),
-            findings=updated.findings,
-            skill_ids=await service.list_entity_skill_ids(principal.user_id, item.id),
-            provenance=provenance.get(item.id, []),
-        )
-        for item in values
-    ]
+    data = await _experience_list_responses(
+        service,
+        principal.user_id,
+        values,
+        findings=updated.findings,
+        include_provenance=True,
+    )
     return ExperienceListResponse(
         data=data,
         findings=[timeline_finding_response(item) for item in updated.findings],
@@ -893,13 +913,14 @@ async def list_skills(
     principal: Annotated[AuthenticatedPrincipal, Depends(current_principal)],
     context: Annotated[RequestContext, Depends(career_request_context)],
     service: Annotated[CareerRecordService, Depends(career_record_service)],
+    include_provenance: bool = Query(default=True, alias="includeProvenance"),
 ) -> SkillListResponse:
     await service.get_or_create_profile(principal.user_id, context)
     values = await service.list_skills(principal.user_id)
     confirmations = await service.list_skill_confirmations(principal.user_id)
     _private(response)
-    return SkillListResponse(
-        data=[
+    if include_provenance:
+        data = [
             skill_response(
                 item,
                 user_confirmed=(
@@ -911,7 +932,17 @@ async def list_skills(
             )
             for item in values
         ]
-    )
+    else:
+        data = [
+            skill_response(
+                item,
+                user_confirmed=(
+                    item.id in confirmations and confirmations[item.id].state.value == "confirmed"
+                ),
+            )
+            for item in values
+        ]
+    return SkillListResponse(data=data)
 
 
 @router.post(
@@ -1560,7 +1591,14 @@ async def list_evidence(
         cursor=after,
         limit=limit,
     )
-    data = [await _present_evidence(service, principal.user_id, item.id) for item in page.items]
+    if page.items:
+        presented = await service.get_evidence_batch_with_eligibility(
+            principal.user_id,
+            tuple(item.id for item in page.items),
+        )
+        data = [evidence_response(record, decision) for record, decision in presented]
+    else:
+        data = []
     _private(response)
     return EvidencePageResponse(
         data=data,

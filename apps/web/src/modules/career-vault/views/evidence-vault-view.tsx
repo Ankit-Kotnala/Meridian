@@ -129,12 +129,12 @@ export function EvidenceVaultView() {
         ...(query ? { query } : {}),
         ...(state ? { state } : {}),
       };
-      const [nextPage, nextExperiences, nextSkills] = await Promise.all([
-        getEvidence(filters),
-        getExperiences(),
-        getSkills(),
-      ]);
+      const nextPage = await getEvidence(filters);
       setPage(nextPage);
+      const [nextExperiences, nextSkills] = await Promise.all([
+        getExperiences({ includeProvenance: false }),
+        getSkills({ includeProvenance: false }),
+      ]);
       setExperiences(nextExperiences);
       setSkills(nextSkills);
     } catch (error) {

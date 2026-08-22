@@ -108,7 +108,7 @@ describe("activation chain projection", () => {
     expect(stateOf(steps, "record")).toBe("current");
     expect(steps.find((step) => step.id === "record")?.action).toEqual({
       href: "/career-profile/imports",
-      label: "Accept facts",
+      label: "Review facts",
     });
   });
 
@@ -191,13 +191,13 @@ describe("activation chain rendering", () => {
     );
 
     const region = screen.getByRole("region", {
-      name: /steps complete/,
+      name: /setup steps done/,
     });
     expect(
-      within(region).getByRole("heading", { name: "3 of 5 steps complete" }),
+      within(region).getByRole("heading", { name: "3 of 5 setup steps done" }),
     ).toBeVisible();
     expect(
-      within(region).getByRole("link", { name: /Accept facts/ }),
+      within(region).getByRole("link", { name: /Review facts/ }),
     ).toHaveAttribute("href", "/career-profile/imports");
   });
 
@@ -220,7 +220,7 @@ describe("activation chain rendering", () => {
     );
 
     expect(
-      screen.getByText("Some step states could not be loaded"),
+      screen.getByText(/Some progress could not be loaded/),
     ).toBeVisible();
     expect(screen.getAllByText("Status unavailable").length).toBeGreaterThan(0);
   });

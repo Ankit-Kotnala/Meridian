@@ -259,7 +259,7 @@ describe("dashboard summary", () => {
       href: "/career-profile/imports",
       tone: "warning",
     });
-    expect(item?.description).toContain("2 facts extracted from your resume");
+    expect(item?.description).toContain("2 details from your resume");
   });
 
   it("raises no import review item when nothing is pending", async () => {

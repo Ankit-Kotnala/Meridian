@@ -336,19 +336,19 @@ function attentionItems({
   if (pendingImports.kind === "count" && pendingImports.value > 0) {
     const total = pendingImports.value;
     items.push({
-      description: `${total} ${plural(total, "fact extracted from your resume is", "facts extracted from your resume are")} waiting for your decision. Nothing enters your career record until you accept it.`,
+      description: `${total} ${plural(total, "detail from your resume is", "details from your resume are")} waiting for you to accept or reject.`,
       href: "/career-profile/imports",
       id: "pending-imports",
-      label: "Accept or reject imported resume facts",
+      label: "Review imported resume details",
       tone: "warning",
     });
   }
   if (experiences.conflicts > 0) {
     items.push({
-      description: `Rezumi found ${experiences.conflicts} ${plural(experiences.conflicts, "conflict", "conflicts")} between recorded roles. Resolving them keeps derived documents consistent.`,
+      description: `Your profile has ${experiences.conflicts} ${plural(experiences.conflicts, "date conflict", "date conflicts")} between roles. Fixing them keeps your timeline accurate.`,
       href: "/career-profile",
       id: "profile-conflicts",
-      label: "Resolve career profile conflicts",
+      label: "Fix overlapping role dates",
       tone: "danger",
     });
   }
@@ -383,10 +383,10 @@ function attentionItems({
   }
   if (evidence.notCitable > 0) {
     items.push({
-      description: `${evidence.notCitable} evidence ${plural(evidence.notCitable, "record is", "records are")} inferred or unsupported, so ${plural(evidence.notCitable, "it cannot", "they cannot")} ground a generated claim yet.`,
+      description: `${evidence.notCitable} ${plural(evidence.notCitable, "item needs", "items need")} stronger proof before you can cite ${plural(evidence.notCitable, "it", "them")} in applications.`,
       href: "/evidence",
       id: "evidence-confirmation",
-      label: "Confirm evidence before it is cited",
+      label: "Strengthen your evidence",
       tone: "warning",
     });
   }
@@ -401,28 +401,28 @@ function attentionItems({
   }
   if (achievements.ready > 0) {
     items.push({
-      description: `${achievements.ready} ${plural(achievements.ready, "achievement is", "achievements are")} ready to become structured career evidence.`,
+      description: `${achievements.ready} ${plural(achievements.ready, "achievement is", "achievements are")} ready to add to your profile as structured evidence.`,
       href: "/achievement-inbox",
       id: "achievement-ready",
-      label: "Promote ready achievements",
+      label: "Add ready achievements",
       tone: "info",
     });
   }
   if (dueReminders > 0) {
     items.push({
-      description: `${dueReminders} networking ${plural(dueReminders, "reminder is", "reminders are")} due. Rezumi never sends a message for you.`,
+      description: `${dueReminders} networking ${plural(dueReminders, "follow-up is", "follow-ups are")} due today. You send every message yourself.`,
       href: "/networking",
       id: "networking-reminders",
-      label: "Networking reminders are due",
+      label: "Networking follow-ups due",
       tone: "info",
     });
   }
   if (skills.unconfirmed > 0) {
     items.push({
-      description: `${skills.unconfirmed} ${plural(skills.unconfirmed, "skill has", "skills have")} not been confirmed by you since it was extracted.`,
+      description: `${skills.unconfirmed} ${plural(skills.unconfirmed, "skill was", "skills were")} pulled from your resume and have not been confirmed by you yet.`,
       href: "/career-profile",
       id: "unconfirmed-skills",
-      label: "Confirm extracted skills",
+      label: "Confirm your skills",
       tone: "info",
     });
   }
