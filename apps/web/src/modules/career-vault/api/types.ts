@@ -78,6 +78,25 @@ export type PersonalFact = PersonalFactInput & {
   version: number;
 };
 
+export type DeclaredProfileEnrichmentJobStatus =
+  | "queued"
+  | "running"
+  | "succeeded"
+  | "failed"
+  | "dead_lettered";
+
+export type DeclaredProfileEnrichmentJob = {
+  attempts: number;
+  errorMessage: string | null;
+  jobId: string;
+  maxAttempts: number;
+  personalFactId: string;
+  resultAchievementsCreated: number | null;
+  resultEvidenceCreated: number | null;
+  resultPlatform: string | null;
+  status: DeclaredProfileEnrichmentJobStatus;
+};
+
 export type Experience = {
   concurrentGroupId: string | null;
   conflicts: ProfileConflict[];

@@ -4,7 +4,10 @@ import asyncio
 from uuid import UUID
 
 from celery import Celery  # type: ignore[import-untyped,unused-ignore]
-from rezumi.modules.career_record.application import PROCESS_EVIDENCE_ATTACHMENT_TASK
+from rezumi.modules.career_record.application import (
+    PROCESS_DECLARED_PROFILE_ENRICHMENT_TASK,
+    PROCESS_EVIDENCE_ATTACHMENT_TASK,
+)
 from rezumi.modules.resume_builder.domain import ResumeExportOperation
 from rezumi.modules.resume_health.application import PROCESS_RESUME_TASK
 
@@ -25,6 +28,7 @@ class CeleryJobPublisher:
         queues = {
             PROCESS_RESUME_TASK: "resume-health",
             PROCESS_EVIDENCE_ATTACHMENT_TASK: "career-record",
+            PROCESS_DECLARED_PROFILE_ENRICHMENT_TASK: "career-record",
         }
         queue = queues.get(task_name)
         if queue is None:

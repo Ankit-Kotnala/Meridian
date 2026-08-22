@@ -3,8 +3,11 @@
 from celery import Celery  # type: ignore[import-untyped,unused-ignore]
 from rezumi.modules.career_record.application import (
     CLEANUP_EVIDENCE_ATTACHMENT_OBJECTS_TASK,
+    DISPATCH_DECLARED_PROFILE_ENRICHMENT_OUTBOX_TASK,
     DISPATCH_EVIDENCE_ATTACHMENT_OUTBOX_TASK,
+    PROCESS_DECLARED_PROFILE_ENRICHMENT_TASK,
     PROCESS_EVIDENCE_ATTACHMENT_TASK,
+    RECONCILE_DECLARED_PROFILE_ENRICHMENT_JOBS_TASK,
     RECONCILE_EVIDENCE_ATTACHMENT_JOBS_TASK,
 )
 from rezumi.modules.resume_health.application import (
@@ -91,6 +94,9 @@ def create_celery_app(settings: WorkerSettings | None = None) -> Celery:
             DISPATCH_EVIDENCE_ATTACHMENT_OUTBOX_TASK: {"queue": "maintenance"},
             CLEANUP_EVIDENCE_ATTACHMENT_OBJECTS_TASK: {"queue": "maintenance"},
             RECONCILE_EVIDENCE_ATTACHMENT_JOBS_TASK: {"queue": "maintenance"},
+            PROCESS_DECLARED_PROFILE_ENRICHMENT_TASK: {"queue": "career-record"},
+            DISPATCH_DECLARED_PROFILE_ENRICHMENT_OUTBOX_TASK: {"queue": "maintenance"},
+            RECONCILE_DECLARED_PROFILE_ENRICHMENT_JOBS_TASK: {"queue": "maintenance"},
             PROCESS_RESUME_TASK: {"queue": "resume-health"},
             DISPATCH_OUTBOX_TASK: {"queue": "maintenance"},
             RECONCILE_RESUME_TASK: {"queue": "maintenance"},
@@ -133,6 +139,16 @@ def create_celery_app(settings: WorkerSettings | None = None) -> Celery:
             "reconcile-career-record-attachment-jobs": {
                 "task": RECONCILE_EVIDENCE_ATTACHMENT_JOBS_TASK,
                 "schedule": float(resolved.attachment_job_reconciliation_interval_seconds),
+            },
+            "dispatch-declared-profile-enrichment-outbox": {
+                "task": DISPATCH_DECLARED_PROFILE_ENRICHMENT_OUTBOX_TASK,
+                "schedule": 5.0,
+            },
+            "reconcile-declared-profile-enrichment-jobs": {
+                "task": RECONCILE_DECLARED_PROFILE_ENRICHMENT_JOBS_TASK,
+                "schedule": float(
+                    resolved.declared_profile_enrichment_reconciliation_interval_seconds
+                ),
             },
             "dispatch-resume-health-outbox": {
                 "task": DISPATCH_OUTBOX_TASK,

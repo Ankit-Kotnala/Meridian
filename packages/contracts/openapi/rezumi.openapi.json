@@ -7093,48 +7093,111 @@
         "title": "DeadLetterJobResponse",
         "type": "object"
       },
-      "DeclaredProfileEnrichmentResponse": {
+      "DeclaredProfileEnrichmentJobResponse": {
         "additionalProperties": false,
         "properties": {
-          "achievementsCreated": {
-            "maximum": 200.0,
+          "attempts": {
             "minimum": 0.0,
-            "title": "Achievementscreated",
+            "title": "Attempts",
             "type": "integer"
           },
-          "evidenceCreated": {
-            "maximum": 200.0,
-            "minimum": 0.0,
-            "title": "Evidencecreated",
-            "type": "integer"
-          },
-          "platform": {
-            "maxLength": 40,
-            "minLength": 1,
-            "title": "Platform",
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
             "type": "string"
           },
-          "profileUrl": {
-            "maxLength": 2048,
-            "minLength": 1,
-            "title": "Profileurl",
+          "errorMessage": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errormessage"
+          },
+          "jobId": {
+            "format": "uuid",
+            "title": "Jobid",
             "type": "string"
           },
-          "skippedDuplicates": {
-            "maximum": 200.0,
-            "minimum": 0.0,
-            "title": "Skippedduplicates",
+          "maxAttempts": {
+            "minimum": 1.0,
+            "title": "Maxattempts",
             "type": "integer"
+          },
+          "personalFactId": {
+            "format": "uuid",
+            "title": "Personalfactid",
+            "type": "string"
+          },
+          "resultAchievementsCreated": {
+            "anyOf": [
+              {
+                "maximum": 200.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resultachievementscreated"
+          },
+          "resultEvidenceCreated": {
+            "anyOf": [
+              {
+                "maximum": 200.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resultevidencecreated"
+          },
+          "resultPlatform": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resultplatform"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "dead_lettered"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "title": "Updatedat",
+            "type": "string"
           }
         },
         "required": [
-          "platform",
-          "profileUrl",
-          "achievementsCreated",
-          "evidenceCreated",
-          "skippedDuplicates"
+          "jobId",
+          "personalFactId",
+          "status",
+          "attempts",
+          "maxAttempts",
+          "createdAt",
+          "updatedAt"
         ],
-        "title": "DeclaredProfileEnrichmentResponse",
+        "title": "DeclaredProfileEnrichmentJobResponse",
         "type": "object"
       },
       "DefenseMapEntryResponse": {
@@ -56897,6 +56960,7 @@
     },
     "/api/v1/personal-facts/{fact_id}/enrich": {
       "post": {
+        "description": "Enqueue declared-link enrichment; the worker fetches and materializes it.\n\nReturns immediately with a job to poll rather than running the fetch\ninline, so a slow or unavailable third-party profile page never blocks\nthe request.",
         "operationId": "careerPersonalFactEnrich",
         "parameters": [
           {
@@ -56959,11 +57023,11 @@
           }
         ],
         "responses": {
-          "200": {
+          "202": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DeclaredProfileEnrichmentResponse"
+                  "$ref": "#/components/schemas/DeclaredProfileEnrichmentJobResponse"
                 }
               }
             },
@@ -57041,6 +57105,135 @@
           }
         },
         "summary": "Enrich Personal Fact Link",
+        "tags": [
+          "Career Record"
+        ]
+      }
+    },
+    "/api/v1/personal-facts/{fact_id}/enrich/{job_id}": {
+      "get": {
+        "operationId": "careerPersonalFactEnrichmentJobGet",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fact_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Fact Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "rezumi_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeclaredProfileEnrichmentJobResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Get Declared Profile Enrichment Job",
         "tags": [
           "Career Record"
         ]

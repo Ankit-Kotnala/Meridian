@@ -3025,8 +3025,32 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Enrich Personal Fact Link */
+        /**
+         * Enrich Personal Fact Link
+         * @description Enqueue declared-link enrichment; the worker fetches and materializes it.
+         *
+         *     Returns immediately with a job to poll rather than running the fetch
+         *     inline, so a slow or unavailable third-party profile page never blocks
+         *     the request.
+         */
         post: operations["careerPersonalFactEnrich"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/personal-facts/{fact_id}/enrich/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Declared Profile Enrichment Job */
+        get: operations["careerPersonalFactEnrichmentJobGet"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -6084,18 +6108,45 @@ export interface components {
             /** Userid */
             userId: string;
         };
-        /** DeclaredProfileEnrichmentResponse */
-        DeclaredProfileEnrichmentResponse: {
-            /** Achievementscreated */
-            achievementsCreated: number;
-            /** Evidencecreated */
-            evidenceCreated: number;
-            /** Platform */
-            platform: string;
-            /** Profileurl */
-            profileUrl: string;
-            /** Skippedduplicates */
-            skippedDuplicates: number;
+        /** DeclaredProfileEnrichmentJobResponse */
+        DeclaredProfileEnrichmentJobResponse: {
+            /** Attempts */
+            attempts: number;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Errormessage */
+            errorMessage?: string | null;
+            /**
+             * Jobid
+             * Format: uuid
+             */
+            jobId: string;
+            /** Maxattempts */
+            maxAttempts: number;
+            /**
+             * Personalfactid
+             * Format: uuid
+             */
+            personalFactId: string;
+            /** Resultachievementscreated */
+            resultAchievementsCreated?: number | null;
+            /** Resultevidencecreated */
+            resultEvidenceCreated?: number | null;
+            /** Resultplatform */
+            resultPlatform?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "succeeded" | "failed" | "dead_lettered";
+            /**
+             * Updatedat
+             * Format: date-time
+             */
+            updatedAt: string;
         };
         /** DefenseMapEntryResponse */
         DefenseMapEntryResponse: {
@@ -33394,12 +33445,100 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeclaredProfileEnrichmentJobResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
+    careerPersonalFactEnrichmentJobGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fact_id: string;
+                job_id: string;
+            };
+            cookie?: {
+                rezumi_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeclaredProfileEnrichmentResponse"];
+                    "application/json": components["schemas"]["DeclaredProfileEnrichmentJobResponse"];
                 };
             };
             /** @description Bad Request */

@@ -84,7 +84,15 @@ from rezumi.modules.career_record.application import (
     AttachmentWorkflowService,
     CareerRecordService,
     CleanupBatchResult,
+    DeclaredProfileEnrichmentJobStatus,
+    DeclaredProfileEnrichmentOutboxDispatcher,
+    DeclaredProfileEnrichmentOutboxDispatchResult,
+    DeclaredProfileEnrichmentProcessor,
+    DeclaredProfileEnrichmentReconciliationResult,
     SafeAttachmentError,
+)
+from rezumi.modules.career_record.application.declared_profile_enrichment import (
+    DeclaredProfileEnrichmentService,
 )
 from rezumi.modules.career_record.infrastructure import (
     AttachmentAdmissionBridge,
@@ -105,6 +113,12 @@ from rezumi.modules.career_record.infrastructure import (
 )
 from rezumi.modules.career_record.infrastructure import (
     models as career_record_models,  # noqa: F401
+)
+from rezumi.modules.career_record.infrastructure.declared_profile.registry import (
+    default_declared_profile_registry,
+)
+from rezumi.modules.career_record.infrastructure.declared_profile_job_repository import (
+    SqlAlchemyDeclaredProfileEnrichmentJobUnitOfWorkFactory,
 )
 
 # The worker is a composition root: register identity mappings so the shared
@@ -896,6 +910,76 @@ async def reconcile_stale_attachment_jobs(
             policy=_attachment_policy(settings),
         )
         return await reconciler.reconcile_stale(limit)
+    finally:
+        await database.dispose()
+
+
+def _declared_profile_career_record_service(database: Database) -> CareerRecordService:
+    """Compose only the read/write use cases declared-profile enrichment needs."""
+
+    return CareerRecordService(
+        unit_of_work=SqlAlchemyCareerRecordUnitOfWorkFactory(database),
+        clock=AttachmentSystemClock(),
+        identifiers=CareerRecordUuidFactory(),
+        resume_sources=ResumeHealthSourceQuery(
+            ResumeHealthSourceReader(SqlAlchemyResumeUnitOfWorkFactory(database))
+        ),
+    )
+
+
+async def process_declared_profile_enrichment_job(
+    settings: WorkerSettings,
+    job_id: UUID,
+) -> DeclaredProfileEnrichmentJobStatus:
+    database = _database(settings)
+    try:
+        processor = DeclaredProfileEnrichmentProcessor(
+            unit_of_work=SqlAlchemyDeclaredProfileEnrichmentJobUnitOfWorkFactory(database),
+            clock=AttachmentSystemClock(),
+            ids=CareerRecordUuidFactory(),
+            enrichment=DeclaredProfileEnrichmentService(
+                career_record=_declared_profile_career_record_service(database),
+                connectors=default_declared_profile_registry(),
+            ),
+        )
+        return await processor.process_job(job_id)
+    finally:
+        await database.dispose()
+
+
+async def dispatch_declared_profile_enrichment_outbox(
+    settings: WorkerSettings,
+    application: Celery,
+    limit: int,
+) -> DeclaredProfileEnrichmentOutboxDispatchResult:
+    database = _database(settings)
+    try:
+        dispatcher = DeclaredProfileEnrichmentOutboxDispatcher(
+            unit_of_work=SqlAlchemyDeclaredProfileEnrichmentJobUnitOfWorkFactory(database),
+            publisher=CeleryJobPublisher(application),
+            clock=AttachmentSystemClock(),
+        )
+        return await dispatcher.dispatch_pending(limit)
+    finally:
+        await database.dispose()
+
+
+async def reconcile_stale_declared_profile_enrichment_jobs(
+    settings: WorkerSettings,
+    limit: int,
+) -> DeclaredProfileEnrichmentReconciliationResult:
+    database = _database(settings)
+    try:
+        processor = DeclaredProfileEnrichmentProcessor(
+            unit_of_work=SqlAlchemyDeclaredProfileEnrichmentJobUnitOfWorkFactory(database),
+            clock=AttachmentSystemClock(),
+            ids=CareerRecordUuidFactory(),
+            enrichment=DeclaredProfileEnrichmentService(
+                career_record=_declared_profile_career_record_service(database),
+                connectors=default_declared_profile_registry(),
+            ),
+        )
+        return await processor.reconcile(limit)
     finally:
         await database.dispose()
 

@@ -471,6 +471,131 @@ def test_personal_fact_http_flow_requires_confirmation_and_owner_scope(
         assert client.get("/api/v1/personal-facts").json()["data"] == []
 
 
+class _MemoryDeclaredProfileEnrichmentJobUnitOfWork:
+    def __init__(self, jobs: dict, outbox: dict) -> None:
+        self._jobs = jobs
+        self._outbox = outbox
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *_exc):
+        return None
+
+    async def get_active_job_for_fact(self, owner_user_id, personal_fact_id):
+        for job in self._jobs.values():
+            if (
+                job.owner_user_id == owner_user_id
+                and job.personal_fact_id == personal_fact_id
+                and not job.status.terminal
+            ):
+                return job
+        return None
+
+    async def add_job(self, job) -> None:
+        self._jobs[job.id] = job
+
+    async def get_job(self, owner_user_id, job_id):
+        job = self._jobs.get(job_id)
+        return job if job is not None and job.owner_user_id == owner_user_id else None
+
+    async def get_job_system(self, job_id, *, for_update: bool = False):
+        _ = for_update
+        return self._jobs.get(job_id)
+
+    async def save_job(self, job) -> None:
+        self._jobs[job.id] = job
+
+    async def list_stale_running_jobs(self, stale_before, limit):
+        return []
+
+    async def add_outbox(self, message) -> None:
+        self._outbox[message.id] = message
+
+    async def list_pending_outbox(self, now, limit):
+        return []
+
+    async def save_outbox(self, message) -> None:
+        self._outbox[message.id] = message
+
+    async def commit(self) -> None:
+        return None
+
+
+class _MemoryDeclaredProfileEnrichmentJobUnitOfWorkFactory:
+    def __init__(self) -> None:
+        self.jobs: dict = {}
+        self.outbox: dict = {}
+
+    def __call__(self) -> _MemoryDeclaredProfileEnrichmentJobUnitOfWork:
+        return _MemoryDeclaredProfileEnrichmentJobUnitOfWork(self.jobs, self.outbox)
+
+
+def test_declared_profile_enrichment_enqueue_and_poll_is_owner_scoped(
+    settings: Settings, fake_database: FakeDatabase
+) -> None:
+    from rezumi.modules.career_record.application.declared_profile_jobs import (
+        DeclaredProfileEnrichmentJobService,
+    )
+
+    owner_id = uuid4()
+    identity, career, _state, _ = _services(owner_id)
+    uow_factory = _MemoryDeclaredProfileEnrichmentJobUnitOfWorkFactory()
+    job_service = DeclaredProfileEnrichmentJobService(
+        unit_of_work=uow_factory, clock=FixedClock(), ids=UuidFactory()
+    )
+    resume_health = create_autospec(ResumeHealthService, instance=True)
+    client = TestClient(
+        create_app(
+            settings,
+            database=fake_database,
+            identity=identity,
+            career_record=career,
+            resume_health=resume_health,
+            declared_profile_enrichment_job=job_service,
+        )
+    )
+    client.cookies.set("rezumi_session", "opaque-session")
+    client.cookies.set("rezumi_csrf", "opaque-csrf")
+    with client:
+        created = client.post(
+            "/api/v1/personal-facts",
+            json={
+                "kind": "link",
+                "value": "https://example.test/profile/alex",
+                "label": "Portfolio",
+                "isPrimary": False,
+            },
+            headers=_write_headers(),
+        )
+        assert created.status_code == 201
+        fact_id = created.json()["id"]
+
+        enqueued = client.post(
+            f"/api/v1/personal-facts/{fact_id}/enrich",
+            headers=_write_headers(),
+        )
+        assert enqueued.status_code == 202
+        job_id = enqueued.json()["jobId"]
+        assert enqueued.json()["status"] == "queued"
+
+        # A second enqueue for the same fact returns the same in-flight job.
+        replay = client.post(
+            f"/api/v1/personal-facts/{fact_id}/enrich",
+            headers=_write_headers(),
+        )
+        assert replay.status_code == 202
+        assert replay.json()["jobId"] == job_id
+
+        status_check = client.get(f"/api/v1/personal-facts/{fact_id}/enrich/{job_id}")
+        assert status_check.status_code == 200
+        assert status_check.json()["jobId"] == job_id
+
+        identity.authenticate.return_value = _principal(uuid4())
+        hidden = client.get(f"/api/v1/personal-facts/{fact_id}/enrich/{job_id}")
+        assert hidden.status_code == 404
+
+
 def test_experience_project_relationship_is_explicit_and_owner_scoped(
     settings: Settings, fake_database: FakeDatabase
 ) -> None:

@@ -1,6 +1,9 @@
 """Phase 11 declared-link enrichment tests."""
 
+import json
 from datetime import UTC, datetime
+from io import BytesIO
+from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
@@ -19,14 +22,17 @@ from rezumi.modules.career_record.application.declared_profile_ports import (
     DeclaredProfileUnsupported,
 )
 from rezumi.modules.career_record.domain import PersonalFactKind
-from rezumi.modules.career_record.infrastructure.declared_profile.registry import (
-    DeclaredProfileConnectorRegistry,
+from rezumi.modules.career_record.infrastructure.declared_profile.credly_connector import (
+    CredlyDeclaredProfileConnector,
 )
 from rezumi.modules.career_record.infrastructure.declared_profile.fake_connector import (
     FakeDeclaredProfileConnector,
 )
 from rezumi.modules.career_record.infrastructure.declared_profile.portfolio_connector import (
     PortfolioDeclaredProfileConnector,
+)
+from rezumi.modules.career_record.infrastructure.declared_profile.registry import (
+    DeclaredProfileConnectorRegistry,
 )
 from rezumi.modules.career_record.infrastructure.declared_profile.safe_http import SafeHttpPage
 
@@ -126,4 +132,53 @@ async def test_portfolio_connector_extracts_heading_achievements() -> None:
     assert len(result.achievements) == 2
     assert result.achievements[0].title == "Built API gateway"
     assert "latency" in result.achievements[0].excerpt
+
+
+class _FakeCredlyResponse:
+    def __init__(self, payload: dict) -> None:
+        self._buffer = BytesIO(json.dumps(payload).encode("utf-8"))
+
+    def read(self, _size: int) -> bytes:
+        return self._buffer.read()
+
+    def __enter__(self) -> "_FakeCredlyResponse":
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        return None
+
+
+def test_credly_connector_supports_user_badge_urls() -> None:
+    connector = CredlyDeclaredProfileConnector()
+    assert connector.supports("https://credly.com/users/alex-example")
+    assert not connector.supports("https://credly.com/organizations/acme")
+    assert not connector.supports("https://github.com/alex")
+
+
+@pytest.mark.asyncio
+async def test_credly_connector_extracts_badges_from_public_feed() -> None:
+    connector = CredlyDeclaredProfileConnector()
+    payload = {
+        "data": [
+            {
+                "badge_template": {
+                    "name": "Certified Kubernetes Administrator",
+                    "issuer": {"entities": [{"entity": {"name": "The Linux Foundation"}}]},
+                },
+                "issued_at": "2026-01-15",
+                "public_url": "https://credly.com/badges/abc123",
+            }
+        ]
+    }
+
+    with patch(
+        "rezumi.modules.career_record.infrastructure.declared_profile.credly_connector.urlopen",
+        return_value=_FakeCredlyResponse(payload),
+    ):
+        result = await connector.fetch("https://credly.com/users/alex-example")
+
+    assert result.platform == "credly"
+    assert len(result.achievements) == 1
+    assert result.achievements[0].title == "Certified Kubernetes Administrator"
+    assert "Linux Foundation" in result.achievements[0].statement
 

@@ -315,6 +315,15 @@ class WorkerSettings(BaseSettings):
             "ATTACHMENT_JOB_RECONCILIATION_STALE_SECONDS",
         ),
     )
+    declared_profile_enrichment_reconciliation_interval_seconds: int = Field(
+        default=60,
+        ge=10,
+        le=3_600,
+        validation_alias=AliasChoices(
+            "REZUMI_DECLARED_PROFILE_ENRICHMENT_RECONCILIATION_INTERVAL_SECONDS",
+            "DECLARED_PROFILE_ENRICHMENT_RECONCILIATION_INTERVAL_SECONDS",
+        ),
+    )
     resume_export_lease_seconds: int = Field(
         default=330,
         ge=30,

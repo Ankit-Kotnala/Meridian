@@ -8,8 +8,11 @@ import structlog
 from billiard.exceptions import SoftTimeLimitExceeded  # type: ignore[import-untyped]
 from rezumi.modules.career_record.application import (
     CLEANUP_EVIDENCE_ATTACHMENT_OBJECTS_TASK,
+    DISPATCH_DECLARED_PROFILE_ENRICHMENT_OUTBOX_TASK,
     DISPATCH_EVIDENCE_ATTACHMENT_OUTBOX_TASK,
+    PROCESS_DECLARED_PROFILE_ENRICHMENT_TASK,
     PROCESS_EVIDENCE_ATTACHMENT_TASK,
+    RECONCILE_DECLARED_PROFILE_ENRICHMENT_JOBS_TASK,
     RECONCILE_EVIDENCE_ATTACHMENT_JOBS_TASK,
     AttachmentProcessingOutcome,
     CleanupBatchResult,
@@ -24,12 +27,17 @@ from rezumi_worker.payloads import parse_job_payload
 from rezumi_worker.runtime import (
     cleanup_attachment_objects,
     dispatch_attachment_outbox,
+    dispatch_declared_profile_enrichment_outbox,
     process_attachment_job,
+    process_declared_profile_enrichment_job,
     reconcile_stale_attachment_jobs,
+    reconcile_stale_declared_profile_enrichment_jobs,
     record_attachment_failure,
 )
 from rezumi_worker.tasks.contracts import (
     AttachmentCleanupTaskResult,
+    DeclaredProfileEnrichmentReconciliationTaskResult,
+    DeclaredProfileEnrichmentTaskResult,
     OutboxResult,
     ProcessingTaskResult,
     ReconciliationTaskResult,
@@ -151,6 +159,79 @@ def cleanup_evidence_attachment_objects(
         "failed": result.failed,
         "dead_lettered": result.dead_lettered,
     }
+
+
+@celery_app.task(name=PROCESS_DECLARED_PROFILE_ENRICHMENT_TASK)  # type: ignore[untyped-decorator]
+def process_declared_profile_enrichment(
+    *,
+    job_id: str,
+    trace_id: str,
+) -> DeclaredProfileEnrichmentTaskResult:
+    """Process one declared-link enrichment job using only its durable ID.
+
+    Fetch-level failures are handled inside process_declared_profile_enrichment_job
+    itself (durable per-job retry/dead-letter state, re-dispatched via the
+    outbox). This task only raises RetryableTaskError for infrastructure
+    failures around that call (e.g. the database being briefly unreachable),
+    which SafeTask's own bounded autoretry already covers.
+    """
+    parsed_job_id, parsed_trace_id = parse_job_payload(job_id, trace_id)
+    bind_contextvars(job_id=str(parsed_job_id), trace_id=parsed_trace_id)
+    try:
+        status = asyncio.run(
+            process_declared_profile_enrichment_job(get_settings(), parsed_job_id)
+        )
+    except Exception:
+        logger.error("declared_profile_enrichment_processing_unavailable", job_id=job_id)
+        raise RetryableTaskError("declared_profile_enrichment_processing_unavailable") from None
+    return {"job_id": str(parsed_job_id), "status": status.value}
+
+
+@celery_app.task(name=DISPATCH_DECLARED_PROFILE_ENRICHMENT_OUTBOX_TASK)  # type: ignore[untyped-decorator]
+def dispatch_declared_profile_enrichment_outbox_task(
+    limit: int = MAINTENANCE_LIMIT,
+) -> OutboxResult:
+    """Publish bounded identifier-only declared-profile enrichment jobs."""
+    validated_limit = validate_maintenance_limit(limit)
+    try:
+        result = asyncio.run(
+            dispatch_declared_profile_enrichment_outbox(get_settings(), celery_app, validated_limit)
+        )
+    except Exception as exc:
+        logger.error("declared_profile_enrichment_outbox_dispatch_failed", error=str(exc))
+        return {"published": 0, "failed": 1, "dead_lettered": 0}
+    if result.failed:
+        logger.warning("declared_profile_enrichment_outbox_publish_deferred", failed=result.failed)
+    if result.dead_lettered:
+        logger.error(
+            "declared_profile_enrichment_outbox_publish_dead_lettered",
+            count=result.dead_lettered,
+        )
+    return {
+        "published": result.published,
+        "failed": result.failed,
+        "dead_lettered": result.dead_lettered,
+    }
+
+
+@celery_app.task(name=RECONCILE_DECLARED_PROFILE_ENRICHMENT_JOBS_TASK)  # type: ignore[untyped-decorator]
+def reconcile_declared_profile_enrichment_jobs(
+    limit: int = MAINTENANCE_LIMIT,
+) -> DeclaredProfileEnrichmentReconciliationTaskResult:
+    """Dead-letter declared-profile enrichment jobs stuck running past a crash."""
+    validated_limit = validate_maintenance_limit(limit)
+    try:
+        result = asyncio.run(
+            reconcile_stale_declared_profile_enrichment_jobs(get_settings(), validated_limit)
+        )
+    except Exception:
+        raise RetryableTaskError("declared_profile_enrichment_reconciliation_unavailable") from None
+    if result.dead_lettered:
+        logger.error(
+            "declared_profile_enrichment_jobs_recovery_dead_lettered",
+            count=result.dead_lettered,
+        )
+    return {"dead_lettered": result.dead_lettered}
 
 
 def _record_attachment_runtime_failure(

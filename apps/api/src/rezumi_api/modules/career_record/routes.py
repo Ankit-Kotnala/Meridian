@@ -29,14 +29,15 @@ from rezumi.modules.career_record.application import (
     UpdateReminderPreferences,
     UpdateSkill,
 )
-from rezumi.modules.career_record.application.declared_profile_enrichment import (
-    DeclaredProfileEnrichmentService,
-)
 from rezumi.modules.career_record.application.attachment_workflow import (
     AdmitAttachment,
     AttachmentDownloadPurpose,
     AttachmentRequestContext,
     AttachmentWorkflowService,
+)
+from rezumi.modules.career_record.application.declared_profile_jobs import (
+    DeclaredProfileEnrichmentJobService,
+    DeclaredProfileEnrichmentJobView,
 )
 from rezumi.modules.career_record.domain import (
     CareerEntity,
@@ -74,7 +75,7 @@ from rezumi_api.modules.career_record.dependencies import (
     attachment_workflow_service,
     career_record_service,
     career_request_context,
-    declared_profile_enrichment_service,
+    declared_profile_enrichment_job_service,
 )
 from rezumi_api.modules.career_record.presenters import (
     achievement_response,
@@ -107,6 +108,7 @@ from rezumi_api.modules.career_record.schemas import (
     CareerRelationshipInput,
     CareerRelationshipListResponse,
     CareerRelationshipResponse,
+    DeclaredProfileEnrichmentJobResponse,
     EvidenceConflictResolutionRequest,
     EvidenceInput,
     EvidenceMetricInput,
@@ -123,7 +125,6 @@ from rezumi_api.modules.career_record.schemas import (
     PageResponse,
     PersonalFactInput,
     PersonalFactListResponse,
-    DeclaredProfileEnrichmentResponse,
     PersonalFactResponse,
     PersonalFactUpdateRequest,
     ProvenanceResponse,
@@ -165,6 +166,24 @@ def _private(response: Response, version: int | None = None) -> None:
     response.headers["Cache-Control"] = "no-store"
     if version is not None:
         response.headers["ETag"] = f'"{version}"'
+
+
+def _declared_profile_enrichment_job_response(
+    view: DeclaredProfileEnrichmentJobView,
+) -> DeclaredProfileEnrichmentJobResponse:
+    return DeclaredProfileEnrichmentJobResponse(
+        job_id=view.job_id,
+        personal_fact_id=view.personal_fact_id,
+        status=view.status.value,
+        attempts=view.attempts,
+        max_attempts=view.max_attempts,
+        result_platform=view.result_platform,
+        result_achievements_created=view.result_achievements_created,
+        result_evidence_created=view.result_evidence_created,
+        error_message=view.error_message,
+        created_at=view.created_at,
+        updated_at=view.updated_at,
+    )
 
 
 def _partial_date(value: str | None) -> PartialDate | None:
@@ -494,7 +513,8 @@ async def confirm_personal_fact(
 
 @router.post(
     "/personal-facts/{fact_id}/enrich",
-    response_model=DeclaredProfileEnrichmentResponse,
+    response_model=DeclaredProfileEnrichmentJobResponse,
+    status_code=status.HTTP_202_ACCEPTED,
     operation_id="careerPersonalFactEnrich",
     responses=_PROBLEMS,
 )
@@ -503,19 +523,41 @@ async def enrich_personal_fact_link(
     response: Response,
     principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
     context: Annotated[RequestContext, Depends(career_request_context)],
-    enrichment: Annotated[
-        DeclaredProfileEnrichmentService, Depends(declared_profile_enrichment_service)
+    jobs: Annotated[
+        DeclaredProfileEnrichmentJobService, Depends(declared_profile_enrichment_job_service)
     ],
-) -> DeclaredProfileEnrichmentResponse:
-    result = await enrichment.enrich_personal_fact(principal.user_id, fact_id, context)
+) -> DeclaredProfileEnrichmentJobResponse:
+    """Enqueue declared-link enrichment; the worker fetches and materializes it.
+
+    Returns immediately with a job to poll rather than running the fetch
+    inline, so a slow or unavailable third-party profile page never blocks
+    the request.
+    """
+    view = await jobs.enqueue(principal.user_id, fact_id, context)
     _private(response)
-    return DeclaredProfileEnrichmentResponse(
-        platform=result.platform,
-        profile_url=result.profile_url,
-        achievements_created=result.achievements_created,
-        evidence_created=result.evidence_created,
-        skipped_duplicates=result.skipped_duplicates,
-    )
+    return _declared_profile_enrichment_job_response(view)
+
+
+@router.get(
+    "/personal-facts/{fact_id}/enrich/{job_id}",
+    response_model=DeclaredProfileEnrichmentJobResponse,
+    operation_id="careerPersonalFactEnrichmentJobGet",
+    responses=_PROBLEMS,
+)
+async def get_declared_profile_enrichment_job(
+    fact_id: UUID,
+    job_id: UUID,
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(current_principal)],
+    jobs: Annotated[
+        DeclaredProfileEnrichmentJobService, Depends(declared_profile_enrichment_job_service)
+    ],
+) -> DeclaredProfileEnrichmentJobResponse:
+    view = await jobs.get_job(principal.user_id, job_id)
+    if view.personal_fact_id != fact_id:
+        raise CareerRecordNotFound
+    _private(response)
+    return _declared_profile_enrichment_job_response(view)
 
 
 @router.delete(

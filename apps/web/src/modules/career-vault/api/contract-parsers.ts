@@ -5,6 +5,7 @@ import type {
   AttachmentUploadIntent,
   CareerProfile,
   CareerRelationship,
+  DeclaredProfileEnrichmentJob,
   EvidenceAttachment,
   EvidenceConflict,
   EvidenceHistoryEvent,
@@ -310,6 +311,68 @@ export function parsePersonalFact(value: unknown): PersonalFact {
     updatedAt: nonEmpty(candidate.updatedAt, "personal fact updated date", 80),
     value: nonEmpty(candidate.value, "personal fact value", 2_048),
     version: integer(candidate.version, "personal fact version"),
+  };
+}
+
+const declaredProfileEnrichmentJobStatuses = new Set<
+  DeclaredProfileEnrichmentJob["status"]
+>(["queued", "running", "succeeded", "failed", "dead_lettered"]);
+
+function nullableInteger(
+  value: unknown,
+  label: string,
+  maximum = 2_147_483_647,
+): number | null {
+  return value === null || value === undefined
+    ? null
+    : integer(value, label, maximum);
+}
+
+export function parseDeclaredProfileEnrichmentJob(
+  value: unknown,
+): DeclaredProfileEnrichmentJob {
+  const candidate = record(value, "declared profile enrichment job");
+  const status = nonEmpty(
+    candidate.status,
+    "declared profile enrichment job status",
+    24,
+  );
+  if (!declaredProfileEnrichmentJobStatuses.has(status as never)) {
+    throw new Error("Invalid declared profile enrichment job status response.");
+  }
+  return {
+    attempts: integer(candidate.attempts, "declared profile enrichment attempts"),
+    errorMessage: nullableString(
+      candidate.errorMessage,
+      "declared profile enrichment error message",
+      300,
+    ),
+    jobId: nonEmpty(candidate.jobId, "declared profile enrichment job ID", 100),
+    maxAttempts: integer(
+      candidate.maxAttempts,
+      "declared profile enrichment max attempts",
+    ),
+    personalFactId: nonEmpty(
+      candidate.personalFactId,
+      "declared profile enrichment personal fact ID",
+      100,
+    ),
+    resultAchievementsCreated: nullableInteger(
+      candidate.resultAchievementsCreated,
+      "declared profile enrichment achievements created",
+      200,
+    ),
+    resultEvidenceCreated: nullableInteger(
+      candidate.resultEvidenceCreated,
+      "declared profile enrichment evidence created",
+      200,
+    ),
+    resultPlatform: nullableString(
+      candidate.resultPlatform,
+      "declared profile enrichment platform",
+      40,
+    ),
+    status: status as DeclaredProfileEnrichmentJob["status"],
   };
 }
 
