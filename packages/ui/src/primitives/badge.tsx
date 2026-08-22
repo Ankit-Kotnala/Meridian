@@ -5,11 +5,15 @@ import { cn } from "../internal/cn";
 type BadgeTone = "neutral" | "primary" | "success" | "warning" | "danger";
 
 const tones: Record<BadgeTone, string> = {
-  neutral: "border-line bg-surface-subtle text-muted-strong",
-  primary: "bg-primary-soft text-primary-strong",
-  success: "bg-success-soft text-success-strong",
-  warning: "bg-warning-soft text-warning-strong",
-  danger: "bg-danger-soft text-danger",
+  neutral:
+    "border border-line bg-surface-subtle/80 text-muted-strong",
+  primary:
+    "border border-primary/12 bg-primary-soft text-primary-strong",
+  success:
+    "border border-success/15 bg-success-soft text-success-strong",
+  warning:
+    "border border-warning/18 bg-warning-soft text-warning-strong",
+  danger: "border border-danger/15 bg-danger-soft text-danger-strong",
 };
 
 export function Badge({
@@ -24,7 +28,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex min-h-6 items-center gap-1 rounded-full border border-transparent px-2.5 py-0.5 text-[0.6875rem] font-bold leading-5",
+        "inline-flex min-h-[1.375rem] items-center gap-1 rounded-[var(--radius-pill)] px-2.5 py-0.5 text-[0.6875rem] font-semibold leading-5",
         tones[tone],
         className,
       )}

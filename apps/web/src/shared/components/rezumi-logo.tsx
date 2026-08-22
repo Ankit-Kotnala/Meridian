@@ -1,4 +1,4 @@
-import { Waypoints } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import Link from "next/link";
 
 import { cn } from "@rezumi/ui";
@@ -29,15 +29,15 @@ export function RezumiLogo({
         aria-hidden="true"
         className={cn(
           "grid size-9 shrink-0 place-items-center rounded-[var(--radius-control)]",
-          inverted ? "bg-white/12 text-white" : "bg-primary-soft text-primary",
+          inverted ? "bg-white/10 text-white" : "bg-primary-soft text-primary",
         )}
       >
-        <Waypoints className="size-5" strokeWidth={2.25} />
+        <Sparkles className="size-[1.125rem]" strokeWidth={2} />
       </span>
       {!compact && (
         <span
           className={cn(
-            "text-[1.08rem]",
+            "text-[1.0625rem]",
             inverted ? "text-white" : "text-foreground",
           )}
         >
