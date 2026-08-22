@@ -1,0 +1,20 @@
+{
+  "listings": [
+    {
+      "externalId": "gh-1001",
+      "title": "Senior Platform Engineer",
+      "company": "Example Labs",
+      "location": "Remote - US",
+      "applicationUrl": "https://boards.greenhouse.io/example/jobs/1001",
+      "sourceText": "Senior Platform Engineer at Example Labs\nLocation: Remote - US\n\nBuild reliable platform services with Python and PostgreSQL.\nOwn on-call rotation for internal tooling."
+    },
+    {
+      "externalId": "gh-1002",
+      "title": "Product Manager",
+      "company": "Example Labs",
+      "location": "New York, NY",
+      "applicationUrl": "https://boards.greenhouse.io/example/jobs/1002",
+      "sourceText": "Product Manager at Example Labs\nLocation: New York, NY\n\nPartner with engineering to ship customer-facing workflows.\nTranslate research into scoped delivery plans."
+    }
+  ]
+}

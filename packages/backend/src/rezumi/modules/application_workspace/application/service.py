@@ -27,6 +27,7 @@ from rezumi.modules.application_workspace.domain import (
     ApplicationNote,
     ApplicationPack,
     ApplicationPackStatus,
+    ApplicationProfile,
     ApplicationRecord,
     ApplicationRequirementSnapshot,
     ApplicationRequirementSupport,
@@ -70,6 +71,7 @@ from .models import (
     UnsetType,
     UpdateApplication,
     UpdateApplicationTask,
+    UpsertApplicationProfile,
     event_page_result,
     page_result,
 )
@@ -395,6 +397,84 @@ class ApplicationWorkspaceService:
         if view is None:
             raise ApplicationWorkspaceNotFound
         return view
+
+    async def get_application_profile(
+        self,
+        owner_user_id: UUID,
+        *,
+        context: RequestContext,
+    ) -> ApplicationProfile | None:
+        self._authorize(owner_user_id, context)
+        async with self._uow() as uow:
+            return await uow.get_application_profile(owner_user_id)
+
+    async def upsert_application_profile(
+        self,
+        owner_user_id: UUID,
+        command: UpsertApplicationProfile,
+        *,
+        idempotency_key: str,
+        context: RequestContext,
+    ) -> ApplicationProfile:
+        self._authorize(owner_user_id, context)
+        self._idempotency(idempotency_key)
+        fingerprint = _fingerprint(
+            "application-profile-upsert",
+            {
+                "workAuthorization": command.work_authorization,
+                "noticePeriodDays": command.notice_period_days,
+                "compensationMin": command.compensation_min,
+                "compensationMax": command.compensation_max,
+                "compensationCurrency": command.compensation_currency,
+                "preferredLocations": list(command.preferred_locations),
+                "profileLinks": [
+                    {"label": link.label, "url": link.url} for link in command.profile_links
+                ],
+                "voluntaryDisclosures": command.voluntary_disclosures or {},
+            },
+        )
+        replay = await self._profile_replay(owner_user_id, idempotency_key, fingerprint)
+        if replay is not None:
+            return replay
+        now = self._clock.now()
+        async with self._uow() as uow:
+            existing = await uow.get_application_profile(owner_user_id)
+            profile = ApplicationProfile(
+                id=existing.id if existing is not None else self._ids.new(),
+                owner_user_id=owner_user_id,
+                work_authorization=command.work_authorization,
+                notice_period_days=command.notice_period_days,
+                compensation_min=command.compensation_min,
+                compensation_max=command.compensation_max,
+                compensation_currency=command.compensation_currency,
+                preferred_locations=command.preferred_locations,
+                profile_links=command.profile_links,
+                voluntary_disclosures=command.voluntary_disclosures or {},
+                version=1 if existing is None else existing.version + 1,
+                created_at=existing.created_at if existing is not None else now,
+                updated_at=now,
+            )
+            try:
+                await uow.upsert_application_profile(profile)
+                await uow.add_idempotency(
+                    self._idem(
+                        owner_user_id,
+                        idempotency_key,
+                        fingerprint,
+                        "application_profile",
+                        profile.id,
+                        "application_profile",
+                        profile.id,
+                        now,
+                    )
+                )
+                await uow.commit()
+            except ApplicationWorkspaceIdempotencyConflict:
+                replay = await self._profile_replay(owner_user_id, idempotency_key, fingerprint)
+                if replay is not None:
+                    return replay
+                raise
+        return profile
 
     async def get_interview_context(
         self,
@@ -1176,6 +1256,10 @@ class ApplicationWorkspaceService:
         self._authorize(owner_user_id, context)
         self._idempotency(idempotency_key)
         include_kinds = _pack_kinds(command.include_kinds)
+        async with self._uow() as uow:
+            profile = await uow.get_application_profile(owner_user_id)
+        if profile is not None and ApplicationDocumentKind.ASSISTED_APPLY_HANDOFF not in include_kinds:
+            include_kinds = include_kinds + (ApplicationDocumentKind.ASSISTED_APPLY_HANDOFF,)
         fingerprint = _fingerprint(
             "application-pack-generate",
             {
@@ -1201,6 +1285,10 @@ class ApplicationWorkspaceService:
                 record = summary.application
                 if not record.resume_claims:
                     raise ApplicationWorkspaceConflict("resume version has no grounded claims")
+                job_source_url: str | None = None
+                if profile is not None:
+                    job_snapshot = await self._jobs.snapshot(owner_user_id, record.job_id)
+                    job_source_url = job_snapshot.source_url
                 pack_id = self._ids.new()
                 documents = tuple(
                     self._document(
@@ -1209,8 +1297,11 @@ class ApplicationWorkspaceService:
                         pack_id,
                         kind,
                         now,
+                        profile=profile,
+                        job_source_url=job_source_url,
                     )
                     for kind in include_kinds
+                    if kind != ApplicationDocumentKind.ASSISTED_APPLY_HANDOFF or profile is not None
                 )
                 findings = _dedupe_findings(
                     (
@@ -1350,7 +1441,38 @@ class ApplicationWorkspaceService:
         pack_id: UUID,
         kind: ApplicationDocumentKind,
         created_at: datetime,
+        *,
+        profile: ApplicationProfile | None = None,
+        job_source_url: str | None = None,
     ) -> ApplicationDocument:
+        if kind == ApplicationDocumentKind.ASSISTED_APPLY_HANDOFF:
+            if profile is None:
+                raise ApplicationWorkspaceValidationError(
+                    "assisted apply handoff requires an application profile"
+                )
+            body = _assisted_apply_body(record, profile, job_source_url)
+            title = "Assisted apply handoff"
+            claims: tuple[ApplicationDocumentClaim, ...] = ()
+            findings: tuple[ApplicationConsistencyFinding, ...] = ()
+            consistency = ConsistencyStatus.PASSED
+            return ApplicationDocument(
+                id=self._ids.new(),
+                owner_user_id=owner_user_id,
+                application_id=record.id,
+                pack_id=pack_id,
+                kind=kind,
+                title=title,
+                body=body,
+                source_evidence_ids=(),
+                source_requirement_ids=(),
+                claims=claims,
+                status=ApplicationDocumentStatus.GENERATED,
+                consistency_status=consistency,
+                consistency_findings=findings,
+                content_sha256=_sha(body),
+                created_at=created_at,
+                deleted_at=None,
+            )
         claims = _claims_for_kind(record.resume_claims, kind)
         title = _document_title(kind)
         body = _document_body(record, kind, claims)
@@ -1472,6 +1594,27 @@ class ApplicationWorkspaceService:
         if record.response_id is None:
             raise ApplicationWorkspaceNotFound
         return await self.get_application(owner_user_id, record.response_id)
+
+    async def _profile_replay(
+        self,
+        owner_user_id: UUID,
+        idempotency_key: str,
+        fingerprint: str,
+    ) -> ApplicationProfile | None:
+        record = await self._idempotency_record(
+            owner_user_id,
+            idempotency_key,
+            fingerprint,
+        )
+        if record is None:
+            return None
+        if record.response_id is None:
+            raise ApplicationWorkspaceNotFound
+        async with self._uow() as uow:
+            profile = await uow.get_application_profile(owner_user_id)
+        if profile is None or profile.id != record.response_id:
+            raise ApplicationWorkspaceNotFound
+        return profile
 
     async def _task_replay(
         self,
@@ -1823,7 +1966,53 @@ def _document_title(kind: ApplicationDocumentKind) -> str:
         ApplicationDocumentKind.FOLLOW_UP_EMAIL: "Follow-up email",
         ApplicationDocumentKind.INTERVIEW_INTRODUCTION: "Interview introduction",
         ApplicationDocumentKind.ACHIEVEMENT_SUMMARY: "Selected achievement summary",
+        ApplicationDocumentKind.ASSISTED_APPLY_HANDOFF: "Assisted apply handoff",
     }[kind]
+
+
+def _assisted_apply_body(
+    record: ApplicationRecord,
+    profile: ApplicationProfile,
+    job_source_url: str | None,
+) -> str:
+    application_url = job_source_url or "Application URL not pinned"
+    compensation = "Not provided"
+    if profile.compensation_min is not None or profile.compensation_max is not None:
+        minimum = profile.compensation_min if profile.compensation_min is not None else "open"
+        maximum = profile.compensation_max if profile.compensation_max is not None else "open"
+        compensation = f"{minimum}-{maximum} {profile.compensation_currency}"
+    preferred_locations = (
+        ", ".join(profile.preferred_locations) if profile.preferred_locations else "Not provided"
+    )
+    profile_link_lines = "\n".join(
+        f"- {link.label}: {link.url}" for link in profile.profile_links
+    ) or "- Not provided"
+    disclosure_lines = "\n".join(
+        f"- {key}: {value}" for key, value in profile.voluntary_disclosures.items()
+    ) or "- Not provided"
+    claim_lines = "\n".join(f"- {claim.text}" for claim in record.resume_claims[:6])
+    return "\n".join(
+        [
+            f"# Assisted apply handoff for {record.job_title}",
+            "",
+            f"Application URL: {application_url}",
+            "",
+            "## Pre-filled portal answers",
+            f"- Work authorization: {profile.work_authorization or 'Not provided'}",
+            f"- Notice period (days): {profile.notice_period_days if profile.notice_period_days is not None else 'Not provided'}",
+            f"- Compensation expectation: {compensation}",
+            f"- Preferred locations: {preferred_locations}",
+            "",
+            "## Profile links",
+            profile_link_lines,
+            "",
+            "## Voluntary disclosures",
+            disclosure_lines,
+            "",
+            "## Copy-ready evidence-backed highlights",
+            claim_lines,
+        ]
+    )
 
 
 def _document_body(

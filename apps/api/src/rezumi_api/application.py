@@ -51,6 +51,9 @@ from rezumi.modules.career_growth.infrastructure import (
     CareerRecordGrowthSourceProvider,
     SqlAlchemyCareerGrowthUnitOfWorkFactory,
 )
+from rezumi.modules.career_growth.infrastructure.role_readiness_gap_provider import (
+    RoleReadinessGapProvider,
+)
 from rezumi.modules.career_growth.infrastructure import SystemClock as CareerGrowthClock
 from rezumi.modules.career_growth.infrastructure import (
     UuidIdentifierFactory as CareerGrowthUuidFactory,
@@ -59,6 +62,9 @@ from rezumi.modules.career_record.application import (
     AttachmentLimits,
     AttachmentWorkflowService,
     CareerRecordService,
+)
+from rezumi.modules.career_record.application.declared_profile_enrichment import (
+    DeclaredProfileEnrichmentService,
 )
 from rezumi.modules.career_record.infrastructure import (
     AttachmentAdmissionBridge,
@@ -71,6 +77,9 @@ from rezumi.modules.career_record.infrastructure import (
 )
 from rezumi.modules.career_record.infrastructure import (
     SystemClock as CareerRecordClock,
+)
+from rezumi.modules.career_record.infrastructure.declared_profile.registry import (
+    default_declared_profile_registry,
 )
 from rezumi.modules.change_studio.application import ChangeStudioService, SuggestionProvider
 from rezumi.modules.change_studio.infrastructure import (
@@ -130,6 +139,10 @@ from rezumi.modules.job_match.infrastructure import (
 )
 from rezumi.modules.job_match.infrastructure import (
     UuidIdentifierFactory as JobMatchUuidFactory,
+)
+from rezumi.modules.job_match.infrastructure.job_source.registry import (
+    DefaultJobSourceConnectorRegistry,
+    default_job_source_registry,
 )
 from rezumi.modules.networking.application import NetworkingService
 from rezumi.modules.networking.infrastructure import (
@@ -227,6 +240,7 @@ def create_app(
     resume_dispatcher: OutboxDispatcher | None = None,
     resume_storage: S3ObjectStorage | None = None,
     career_record: CareerRecordService | None = None,
+    declared_profile_enrichment: DeclaredProfileEnrichmentService | None = None,
     attachment_workflow: AttachmentWorkflowService | None = None,
     attachment_storage: AttachmentS3ObjectStorage | None = None,
     role_readiness: RoleReadinessService | None = None,
@@ -262,6 +276,7 @@ def create_app(
         resolved_resume_dispatcher = resume_dispatcher
         resolved_resume_storage = resume_storage
         resolved_career_record = career_record
+        resolved_declared_profile_enrichment = declared_profile_enrichment
         resolved_attachment_workflow = attachment_workflow
         resolved_attachment_storage = attachment_storage
         resolved_role_readiness = role_readiness
@@ -446,6 +461,15 @@ def create_app(
                     attachments=AttachmentAdmissionBridge(resolved_attachment_workflow),
                     verification_authority=None,
                 )
+            if resolved_declared_profile_enrichment is None:
+                if resolved_career_record is None:
+                    raise RuntimeError(
+                        "Declared profile enrichment requires the Career Record boundary"
+                    )
+                resolved_declared_profile_enrichment = DeclaredProfileEnrichmentService(
+                    career_record=resolved_career_record,
+                    connectors=default_declared_profile_registry(),
+                )
             if resolved_role_readiness is None:
                 if resolved_career_record is None:
                     raise RuntimeError(
@@ -469,6 +493,7 @@ def create_app(
                     career_snapshots=CareerRecordJobMatchSnapshotProvider(resolved_career_record),
                     role_context=RoleReadinessRoleContextProvider(resolved_role_readiness),
                     importer=SafeUrlJobImportProvider(),
+                    job_sources=DefaultJobSourceConnectorRegistry(default_job_source_registry()),
                 )
             if resolved_change_studio is None:
                 if resolved_career_record is None or resolved_job_match is None:
@@ -558,11 +583,14 @@ def create_app(
             if resolved_career_growth is None:
                 if resolved_career_record is None:
                     raise RuntimeError("Career Growth requires the Career Record boundary")
+                if resolved_role_readiness is None:
+                    raise RuntimeError("Career Growth gap source requires Role Readiness")
                 resolved_career_growth = CareerGrowthService(
                     unit_of_work=SqlAlchemyCareerGrowthUnitOfWorkFactory(resolved_database),
                     clock=CareerGrowthClock(),
                     identifiers=CareerGrowthUuidFactory(),
                     career_source=CareerRecordGrowthSourceProvider(resolved_career_record),
+                    gap_source=RoleReadinessGapProvider(resolved_role_readiness),
                 )
             if resolved_career_analytics is None:
                 if (
@@ -611,6 +639,9 @@ def create_app(
         application.state.security_store = resolved_security_store
         application.state.resume_health_service = resolved_resume_health
         application.state.career_record_service = resolved_career_record
+        application.state.declared_profile_enrichment_service = (
+            resolved_declared_profile_enrichment
+        )
         application.state.role_readiness_service = resolved_role_readiness
         application.state.job_match_service = resolved_job_match
         application.state.change_studio_service = resolved_change_studio

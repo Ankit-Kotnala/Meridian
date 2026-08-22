@@ -107,6 +107,7 @@ class CreateJob:
     source_kind: JobSourceKind
     source_url: str | None
     source_text: str
+    external_id: str | None = None
     target_role_id: UUID | None = None
 
 
@@ -114,6 +115,19 @@ class CreateJob:
 class ImportJob:
     url: str
     target_role_id: UUID | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class SyncFromSource:
+    platform: str
+    query: str
+    target_role_id: UUID | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class SyncFromSourceResult:
+    created: tuple[JobRecord, ...]
+    skipped: int
 
 
 @dataclass(frozen=True, slots=True)

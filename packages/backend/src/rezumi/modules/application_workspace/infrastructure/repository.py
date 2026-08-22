@@ -42,6 +42,8 @@ from rezumi.modules.application_workspace.domain import (
     ApplicationNote,
     ApplicationPack,
     ApplicationPackStatus,
+    ApplicationProfile,
+    ApplicationProfileLink,
     ApplicationRecord,
     ApplicationRequirementSnapshot,
     ApplicationRequirementSupport,
@@ -62,6 +64,7 @@ from .models import (
     ApplicationIdempotencyModel,
     ApplicationNoteModel,
     ApplicationPackModel,
+    ApplicationProfileModel,
     ApplicationRecordModel,
     ApplicationTaskModel,
 )
@@ -956,6 +959,35 @@ class SqlAlchemyApplicationWorkspaceUnitOfWork:
         )
         return _idempotency(model) if model is not None else None
 
+    async def get_application_profile(
+        self,
+        owner_user_id: UUID,
+    ) -> ApplicationProfile | None:
+        model = await self.session.scalar(
+            select(ApplicationProfileModel).where(
+                ApplicationProfileModel.owner_user_id == owner_user_id,
+            )
+        )
+        return _application_profile(model) if model is not None else None
+
+    async def upsert_application_profile(self, profile: ApplicationProfile) -> None:
+        existing = await self.session.scalar(
+            select(ApplicationProfileModel).where(
+                ApplicationProfileModel.owner_user_id == profile.owner_user_id,
+            )
+        )
+        if existing is None:
+            self.session.add(_application_profile_model(profile))
+        else:
+            await self._execute(
+                update(ApplicationProfileModel)
+                .where(
+                    ApplicationProfileModel.owner_user_id == profile.owner_user_id,
+                )
+                .values(**_application_profile_values(profile, include_identity=False))
+            )
+        await self._flush()
+
     async def add_audit(self, event: ApplicationAuditEvent) -> None:
         self.session.add(_audit_model(event))
         await self._flush()
@@ -1598,6 +1630,56 @@ def _finding(payload: dict[str, Any]) -> ApplicationConsistencyFinding:
         severity=ApplicationConsistencySeverity(str(payload["severity"])),
         message=str(payload["message"]),
         claim_id=UUID(str(claim_id)) if claim_id else None,
+    )
+
+
+def _application_profile_model(profile: ApplicationProfile) -> ApplicationProfileModel:
+    return ApplicationProfileModel(**_application_profile_values(profile))
+
+
+def _application_profile_values(
+    profile: ApplicationProfile,
+    *,
+    include_identity: bool = True,
+) -> dict[str, Any]:
+    values: dict[str, Any] = {
+        "work_authorization": profile.work_authorization,
+        "notice_period_days": profile.notice_period_days,
+        "compensation_min": profile.compensation_min,
+        "compensation_max": profile.compensation_max,
+        "compensation_currency": profile.compensation_currency,
+        "preferred_locations": list(profile.preferred_locations),
+        "profile_links": [
+            {"label": link.label, "url": link.url} for link in profile.profile_links
+        ],
+        "voluntary_disclosures": dict(profile.voluntary_disclosures),
+        "version": profile.version,
+        "created_at": profile.created_at,
+        "updated_at": profile.updated_at,
+    }
+    if include_identity:
+        values.update({"id": profile.id, "owner_user_id": profile.owner_user_id})
+    return values
+
+
+def _application_profile(model: ApplicationProfileModel) -> ApplicationProfile:
+    return ApplicationProfile(
+        id=model.id,
+        owner_user_id=model.owner_user_id,
+        work_authorization=model.work_authorization,
+        notice_period_days=model.notice_period_days,
+        compensation_min=model.compensation_min,
+        compensation_max=model.compensation_max,
+        compensation_currency=model.compensation_currency,
+        preferred_locations=tuple(model.preferred_locations),
+        profile_links=tuple(
+            ApplicationProfileLink(label=str(link["label"]), url=str(link["url"]))
+            for link in model.profile_links
+        ),
+        voluntary_disclosures=dict(model.voluntary_disclosures),
+        version=model.version,
+        created_at=model.created_at,
+        updated_at=model.updated_at,
     )
 
 

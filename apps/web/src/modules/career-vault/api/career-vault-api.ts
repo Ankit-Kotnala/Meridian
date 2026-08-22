@@ -136,6 +136,31 @@ export async function deletePersonalFact(fact: PersonalFact): Promise<void> {
   });
 }
 
+export type PersonalFactEnrichmentResult = {
+  achievementsCreated: number;
+  evidenceCreated: number;
+  platform: string;
+  profileUrl: string;
+  skippedDuplicates: number;
+};
+
+export async function enrichPersonalFactLink(
+  fact: PersonalFact,
+): Promise<PersonalFactEnrichmentResult> {
+  const response = await mutate(careerVaultPaths.personalFactEnrich(fact.id), {
+    headers: headers(undefined, true),
+    method: "POST",
+  });
+  const payload = (await response.json()) as Record<string, unknown>;
+  return {
+    achievementsCreated: Number(payload.achievementsCreated ?? 0),
+    evidenceCreated: Number(payload.evidenceCreated ?? 0),
+    platform: String(payload.platform ?? ""),
+    profileUrl: String(payload.profileUrl ?? ""),
+    skippedDuplicates: Number(payload.skippedDuplicates ?? 0),
+  };
+}
+
 export async function getCareerRelationships(): Promise<CareerRelationship[]> {
   return parseCareerRelationships(
     await (await query(careerVaultPaths.careerRelationships)).json(),

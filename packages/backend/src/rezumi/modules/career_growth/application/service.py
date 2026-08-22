@@ -55,6 +55,7 @@ from .models import (
     CareerReviewView,
     CreateCareerReview,
     CreateDevelopmentItem,
+    CreateDevelopmentItemFromGap,
     CreateGoal,
     CreateMilestone,
     DevelopmentItemView,
@@ -80,7 +81,9 @@ from .ports import (
     CareerGrowthUnitOfWork,
     CareerGrowthUnitOfWorkFactory,
     Clock,
+    GapSnapshot,
     IdentifierFactory,
+    RoleReadinessGapSource,
 )
 
 _IDEMPOTENCY_KEY = re.compile(r"^[A-Za-z0-9._:-]{8,128}$")
@@ -136,12 +139,14 @@ class CareerGrowthService:
         clock: Clock,
         identifiers: IdentifierFactory,
         career_source: CareerGrowthSourceProvider,
+        gap_source: RoleReadinessGapSource | None = None,
         policy: CareerGrowthPolicy | None = None,
     ) -> None:
         self._uow = unit_of_work
         self._clock = clock
         self._ids = identifiers
         self._source = career_source
+        self._gaps = gap_source
         self._policy = policy or CareerGrowthPolicy()
 
     async def create_goal(
@@ -581,6 +586,40 @@ class CareerGrowthService:
                 item=item,
                 evidence_links=_known_current_link_views(links),
             )
+
+    async def create_development_item_from_gap(
+        self,
+        owner_user_id: UUID,
+        command: CreateDevelopmentItemFromGap,
+        idempotency_key: str,
+        context: RequestContext,
+    ) -> DevelopmentItemView:
+        self._authorize(owner_user_id, context)
+        if self._gaps is None:
+            raise CareerGrowthValidationError("gap source is unavailable")
+        gaps = await self._gaps.list_gaps(owner_user_id, command.role_profile_id)
+        selected = next(
+            (
+                gap
+                for gap in gaps
+                if gap.gap_kind == command.gap_kind and gap.label == command.label
+            ),
+            None,
+        )
+        if selected is None:
+            raise CareerGrowthNotFound
+        create = CreateDevelopmentItem(
+            kind=_development_kind_for_gap(selected.gap_kind),
+            title=_development_title_from_gap(selected.label),
+            description=selected.requirement_text,
+            status=DevelopmentStatus.PLANNED,
+        )
+        return await self.create_development_item(
+            owner_user_id,
+            create,
+            idempotency_key,
+            context,
+        )
 
     async def update_development_item(
         self,
@@ -2120,3 +2159,15 @@ def _json_default(value: object) -> object:
     if isinstance(value, Enum):
         return value.value
     raise TypeError(f"unsupported fingerprint value: {type(value).__name__}")
+
+
+def _development_kind_for_gap(gap_kind: str) -> DevelopmentKind:
+    normalized = gap_kind.strip().casefold()
+    if "cert" in normalized:
+        return DevelopmentKind.CERTIFICATION
+    return DevelopmentKind.LEARNING
+
+
+def _development_title_from_gap(label: str) -> str:
+    cleaned = " ".join(label.strip().split())
+    return f"Address readiness gap: {cleaned}"

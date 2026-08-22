@@ -31,6 +31,7 @@ import {
   deleteCareerRelationship,
   deletePersonalFact,
   deleteSkill,
+  enrichPersonalFactLink,
   updateCareerItem,
   updatePersonalFact,
   updateSkill,
@@ -178,6 +179,27 @@ export function CareerDetailsSections({
               error,
               "We couldnâ€™t confirm this contact fact.",
             ),
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function enrichFact(fact: PersonalFact) {
+    setSaving(true);
+    setFailure(undefined);
+    setNotice(undefined);
+    try {
+      const result = await enrichPersonalFactLink(fact);
+      setNotice(
+        `Imported ${result.achievementsCreated} achievement${result.achievementsCreated === 1 ? "" : "s"} and ${result.evidenceCreated} evidence item${result.evidenceCreated === 1 ? "" : "s"} from your ${result.platform} profile. Review them in Achievement Inbox and Evidence Vault.`,
+      );
+    } catch (error) {
+      setFailure(
+        requestErrorMessage(
+          error,
+          "We could not import achievements from this link.",
+        ),
       );
     } finally {
       setSaving(false);
@@ -569,6 +591,16 @@ export function CareerDetailsSections({
                       onClick={() => void confirmFact(fact)}
                     >
                       Confirm current value
+                    </Button>
+                  )}
+                  {fact.kind === "link" && (
+                    <Button
+                      className="mt-4"
+                      disabled={saving}
+                      onClick={() => void enrichFact(fact)}
+                      variant="secondary"
+                    >
+                      Import public achievements from this link
                     </Button>
                   )}
                   {fact.provenance.length > 0 && (

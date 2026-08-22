@@ -18,6 +18,7 @@ from rezumi.modules.application_workspace.domain import (
     ApplicationEventKind,
     ApplicationEvidencePin,
     ApplicationPack,
+    ApplicationProfileLink,
     ApplicationRecord,
     ApplicationRequirementSnapshot,
     ApplicationRequirementSupport,
@@ -220,6 +221,7 @@ class ApplicationJobSnapshot:
     latest_analysis_id: UUID | None
     source_sha256: str
     source: str | None
+    source_url: str | None
     industry: str | None
     requirements: tuple[ApplicationRequirementSnapshot, ...]
     requirement_support: tuple[ApplicationRequirementSupport, ...]
@@ -261,6 +263,33 @@ class ApplicationResumeSnapshot:
     @property
     def evidence_ids(self) -> tuple[UUID, ...]:
         return tuple(dict.fromkeys(reference.evidence_id for reference in self.evidence_references))
+
+
+@dataclass(frozen=True, slots=True)
+class UpsertApplicationProfile:
+    work_authorization: str | None = None
+    notice_period_days: int | None = None
+    compensation_min: int | None = None
+    compensation_max: int | None = None
+    compensation_currency: str = "USD"
+    preferred_locations: tuple[str, ...] = ()
+    profile_links: tuple[ApplicationProfileLink, ...] = ()
+    voluntary_disclosures: dict[str, str] | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ApplicationProfileView:
+    id: UUID
+    work_authorization: str | None
+    notice_period_days: int | None
+    compensation_min: int | None
+    compensation_max: int | None
+    compensation_currency: str
+    preferred_locations: tuple[str, ...]
+    profile_links: tuple[ApplicationProfileLink, ...]
+    voluntary_disclosures: dict[str, str]
+    version: int
+    updated_at: datetime
 
 
 @dataclass(frozen=True, slots=True)

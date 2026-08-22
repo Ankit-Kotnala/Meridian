@@ -10,6 +10,7 @@ from rezumi.modules.career_growth.application import (
     CareerGrowthService,
     CreateCareerReview,
     CreateDevelopmentItem,
+    CreateDevelopmentItemFromGap,
     CreateGoal,
     CreateMilestone,
     RequestContext,
@@ -55,6 +56,7 @@ from .schemas import (
     CareerReviewResponse,
     CareerReviewReviseRequest,
     DevelopmentItemCreateRequest,
+    DevelopmentItemFromGapCreateRequest,
     DevelopmentItemPageResponse,
     DevelopmentItemResponse,
     DevelopmentItemUpdateRequest,
@@ -389,6 +391,35 @@ async def create_development_item(
             status=DevelopmentStatus(payload.status),
             target_date=payload.target_date,
             evidence_ids=tuple(payload.evidence_ids),
+        ),
+        idempotency_key,
+        context,
+    )
+    _private(response, value.item.version)
+    return development_item_response(value)
+
+
+@router.post(
+    "/development-items/from-gap",
+    response_model=DevelopmentItemResponse,
+    status_code=status.HTTP_201_CREATED,
+    operation_id="careerGrowthDevelopmentItemCreateFromGap",
+    responses=_PROBLEMS,
+)
+async def create_development_item_from_gap(
+    payload: DevelopmentItemFromGapCreateRequest,
+    response: Response,
+    idempotency_key: IdempotencyKey,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
+    context: Annotated[RequestContext, Depends(career_growth_request_context)],
+    service: Annotated[CareerGrowthService, Depends(career_growth_service)],
+) -> DevelopmentItemResponse:
+    value = await service.create_development_item_from_gap(
+        principal.user_id,
+        CreateDevelopmentItemFromGap(
+            gap_kind=payload.gap_kind,
+            label=payload.label,
+            role_profile_id=payload.role_profile_id,
         ),
         idempotency_key,
         context,

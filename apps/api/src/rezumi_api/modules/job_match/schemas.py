@@ -34,7 +34,7 @@ class JobMatchSchema(BaseModel):
 PositiveVersion = Annotated[int, Field(strict=True, ge=1, le=2_147_483_647)]
 BasisPoints = Annotated[int, Field(ge=0, le=10_000)]
 DisplayScore = Annotated[int, Field(ge=0, le=100)]
-JobSourceKind = Literal["paste", "url", "manual"]
+JobSourceKind = Literal["paste", "url", "manual", "greenhouse", "fake"]
 WorkModel = Literal["remote", "hybrid", "onsite", "unknown"]
 EmploymentType = Literal["full_time", "part_time", "contract", "internship", "temporary", "unknown"]
 RequirementType = Literal[
@@ -230,3 +230,14 @@ class OpportunityPriorityResponse(JobMatchSchema):
     next_action: str
     scoring_disclaimer: str = SCORING_DISCLAIMER
     created_at: datetime
+
+
+class JobSyncFromSourceRequest(JobMatchSchema):
+    platform: str = Field(min_length=1, max_length=40)
+    query: str = Field(default="", max_length=200)
+    target_role_id: UUID | None = None
+
+
+class JobSyncFromSourceResponse(JobMatchSchema):
+    created: list[JobResponse] = Field(max_length=100)
+    skipped: int = Field(ge=0)

@@ -1,0 +1,12 @@
+{
+  "listings": [
+    {
+      "externalId": "fake-2001",
+      "title": "Staff Backend Engineer",
+      "company": "Fixture Corp",
+      "location": "Remote",
+      "applicationUrl": "https://example.test/jobs/fake-2001",
+      "sourceText": "Staff Backend Engineer at Fixture Corp\nLocation: Remote\n\nDesign owner-scoped services and deterministic scoring pipelines."
+    }
+  ]
+}

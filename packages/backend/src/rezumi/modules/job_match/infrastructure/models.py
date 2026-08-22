@@ -27,7 +27,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from rezumi.foundation.database import Base
 
-_SOURCE_KINDS = ("paste", "url", "manual")
+_SOURCE_KINDS = ("paste", "url", "manual", "greenhouse", "fake")
 _WORK_MODELS = ("remote", "hybrid", "onsite", "unknown")
 _EMPLOYMENT_TYPES = ("full_time", "part_time", "contract", "internship", "temporary", "unknown")
 _REQUIREMENT_TYPES = (
@@ -56,6 +56,7 @@ _AUDIT_ACTIONS = (
     "job_deleted",
     "job_analyzed",
     "opportunity_prioritized",
+    "jobs_synced_from_source",
 )
 
 
@@ -80,6 +81,14 @@ class JobPostingModel(Base):
             "idempotency_key",
             name="uq_job_postings_owner_idempotency",
         ),
+        Index(
+            "ix_job_postings_owner_source_external",
+            "owner_user_id",
+            "source_kind",
+            "external_id",
+            unique=True,
+            postgresql_where=text("external_id IS NOT NULL"),
+        ),
         Index("ix_job_postings_owner_updated", "owner_user_id", "updated_at", "id"),
         Index("ix_job_postings_owner_target_role", "owner_user_id", "target_role_id", "id"),
     )
@@ -97,6 +106,7 @@ class JobPostingModel(Base):
     application_deadline: Mapped[date | None] = mapped_column(Date)
     source_kind: Mapped[str] = mapped_column(String(16), nullable=False)
     source_url: Mapped[str | None] = mapped_column(String(2048))
+    external_id: Mapped[str | None] = mapped_column(String(200))
     source_text: Mapped[str] = mapped_column(Text, nullable=False)
     source_sha256: Mapped[bytes] = mapped_column(LargeBinary(32), nullable=False)
     idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)

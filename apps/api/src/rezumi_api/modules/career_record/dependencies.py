@@ -8,6 +8,9 @@ from rezumi.modules.career_record.application.attachment_workflow import (
     AttachmentRequestContext,
     AttachmentWorkflowService,
 )
+from rezumi.modules.career_record.application.declared_profile_enrichment import (
+    DeclaredProfileEnrichmentService,
+)
 from rezumi.modules.career_record.application.models import RequestContext
 from rezumi.modules.career_record.domain.errors import CareerRecordUnavailable
 from rezumi.modules.identity.domain import AuthenticatedPrincipal
@@ -27,6 +30,13 @@ def attachment_workflow_service(request: Request) -> AttachmentWorkflowService:
     if service is None:
         raise CareerRecordUnavailable
     return cast(AttachmentWorkflowService, service)
+
+
+def declared_profile_enrichment_service(request: Request) -> DeclaredProfileEnrichmentService:
+    service = getattr(request.app.state, "declared_profile_enrichment_service", None)
+    if service is None:
+        raise CareerRecordUnavailable
+    return cast(DeclaredProfileEnrichmentService, service)
 
 
 def career_request_context(

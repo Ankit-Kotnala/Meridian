@@ -1563,7 +1563,8 @@
               "linkedin_connection_note",
               "follow_up_email",
               "interview_introduction",
-              "achievement_summary"
+              "achievement_summary",
+              "assisted_apply_handoff"
             ],
             "title": "Kind",
             "type": "string"
@@ -1925,7 +1926,8 @@
                 "linkedin_connection_note",
                 "follow_up_email",
                 "interview_introduction",
-                "achievement_summary"
+                "achievement_summary",
+                "assisted_apply_handoff"
               ],
               "type": "string"
             },
@@ -2204,6 +2206,227 @@
           "page"
         ],
         "title": "ApplicationPageResponse",
+        "type": "object"
+      },
+      "ApplicationProfileLinkInput": {
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "url": {
+            "maxLength": 500,
+            "minLength": 8,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "url"
+        ],
+        "title": "ApplicationProfileLinkInput",
+        "type": "object"
+      },
+      "ApplicationProfileResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "compensationCurrency": {
+            "maxLength": 3,
+            "minLength": 3,
+            "title": "Compensationcurrency",
+            "type": "string"
+          },
+          "compensationMax": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compensationmax"
+          },
+          "compensationMin": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compensationmin"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "noticePeriodDays": {
+            "anyOf": [
+              {
+                "maximum": 730.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Noticeperioddays"
+          },
+          "preferredLocations": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "Preferredlocations",
+            "type": "array"
+          },
+          "profileLinks": {
+            "items": {
+              "$ref": "#/components/schemas/ApplicationProfileLinkInput"
+            },
+            "maxItems": 30,
+            "title": "Profilelinks",
+            "type": "array"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "title": "Updatedat",
+            "type": "string"
+          },
+          "version": {
+            "maximum": 2147483647.0,
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          },
+          "voluntaryDisclosures": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Voluntarydisclosures",
+            "type": "object"
+          },
+          "workAuthorization": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workauthorization"
+          }
+        },
+        "required": [
+          "id",
+          "compensationCurrency",
+          "version",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "ApplicationProfileResponse",
+        "type": "object"
+      },
+      "ApplicationProfileUpsertRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "compensationCurrency": {
+            "default": "USD",
+            "maxLength": 3,
+            "minLength": 3,
+            "title": "Compensationcurrency",
+            "type": "string"
+          },
+          "compensationMax": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compensationmax"
+          },
+          "compensationMin": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compensationmin"
+          },
+          "noticePeriodDays": {
+            "anyOf": [
+              {
+                "maximum": 730.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Noticeperioddays"
+          },
+          "preferredLocations": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "Preferredlocations",
+            "type": "array"
+          },
+          "profileLinks": {
+            "items": {
+              "$ref": "#/components/schemas/ApplicationProfileLinkInput"
+            },
+            "maxItems": 30,
+            "title": "Profilelinks",
+            "type": "array"
+          },
+          "voluntaryDisclosures": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Voluntarydisclosures",
+            "type": "object"
+          },
+          "workAuthorization": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workauthorization"
+          }
+        },
+        "title": "ApplicationProfileUpsertRequest",
         "type": "object"
       },
       "ApplicationRequirementResponse": {
@@ -6870,6 +7093,50 @@
         "title": "DeadLetterJobResponse",
         "type": "object"
       },
+      "DeclaredProfileEnrichmentResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "achievementsCreated": {
+            "maximum": 200.0,
+            "minimum": 0.0,
+            "title": "Achievementscreated",
+            "type": "integer"
+          },
+          "evidenceCreated": {
+            "maximum": 200.0,
+            "minimum": 0.0,
+            "title": "Evidencecreated",
+            "type": "integer"
+          },
+          "platform": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Platform",
+            "type": "string"
+          },
+          "profileUrl": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Profileurl",
+            "type": "string"
+          },
+          "skippedDuplicates": {
+            "maximum": 200.0,
+            "minimum": 0.0,
+            "title": "Skippedduplicates",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "platform",
+          "profileUrl",
+          "achievementsCreated",
+          "evidenceCreated",
+          "skippedDuplicates"
+        ],
+        "title": "DeclaredProfileEnrichmentResponse",
+        "type": "object"
+      },
       "DefenseMapEntryResponse": {
         "additionalProperties": false,
         "properties": {
@@ -7057,6 +7324,41 @@
           "title"
         ],
         "title": "DevelopmentItemCreateRequest",
+        "type": "object"
+      },
+      "DevelopmentItemFromGapCreateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "gapKind": {
+            "maxLength": 80,
+            "minLength": 3,
+            "title": "Gapkind",
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 180,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "roleProfileId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roleprofileid"
+          }
+        },
+        "required": [
+          "gapKind",
+          "label"
+        ],
+        "title": "DevelopmentItemFromGapCreateRequest",
         "type": "object"
       },
       "DevelopmentItemPageResponse": {
@@ -11086,7 +11388,9 @@
             "enum": [
               "paste",
               "url",
-              "manual"
+              "manual",
+              "greenhouse",
+              "fake"
             ],
             "title": "Sourcekind",
             "type": "string"
@@ -11551,7 +11855,9 @@
             "enum": [
               "paste",
               "url",
-              "manual"
+              "manual",
+              "greenhouse",
+              "fake"
             ],
             "title": "Sourcekind",
             "type": "string"
@@ -11665,10 +11971,70 @@
         "enum": [
           "paste",
           "url",
-          "manual"
+          "manual",
+          "greenhouse",
+          "fake"
         ],
         "title": "JobSourceKind",
         "type": "string"
+      },
+      "JobSyncFromSourceRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "platform": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Platform",
+            "type": "string"
+          },
+          "query": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Query",
+            "type": "string"
+          },
+          "targetRoleId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Targetroleid"
+          }
+        },
+        "required": [
+          "platform"
+        ],
+        "title": "JobSyncFromSourceRequest",
+        "type": "object"
+      },
+      "JobSyncFromSourceResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "created": {
+            "items": {
+              "$ref": "#/components/schemas/JobResponse"
+            },
+            "maxItems": 100,
+            "title": "Created",
+            "type": "array"
+          },
+          "skipped": {
+            "minimum": 0.0,
+            "title": "Skipped",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "created",
+          "skipped"
+        ],
+        "title": "JobSyncFromSourceResponse",
+        "type": "object"
       },
       "JobUpdateRequest": {
         "additionalProperties": false,
@@ -23222,6 +23588,276 @@
         ]
       }
     },
+    "/api/v1/application-profile": {
+      "get": {
+        "operationId": "applicationProfileGet",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "rezumi_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationProfileResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Get Application Profile",
+        "tags": [
+          "Application Workspace"
+        ]
+      },
+      "put": {
+        "operationId": "applicationProfileUpsert",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 8,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "rezumi_csrf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "rezumi_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationProfileUpsertRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationProfileResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Upsert Application Profile",
+        "tags": [
+          "Application Workspace"
+        ]
+      }
+    },
     "/api/v1/applications": {
       "get": {
         "operationId": "applicationsList",
@@ -29453,6 +30089,189 @@
           }
         },
         "summary": "Create Development Item",
+        "tags": [
+          "Career Growth"
+        ]
+      }
+    },
+    "/api/v1/career-growth/development-items/from-gap": {
+      "post": {
+        "operationId": "careerGrowthDevelopmentItemCreateFromGap",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 8,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "rezumi_csrf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "rezumi_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevelopmentItemFromGapCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevelopmentItemResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Create Development Item From Gap",
         "tags": [
           "Career Growth"
         ]
@@ -48226,6 +49045,157 @@
         ]
       }
     },
+    "/api/v1/jobs/sync-from-source": {
+      "post": {
+        "operationId": "jobsSyncFromSource",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "rezumi_csrf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "rezumi_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobSyncFromSourceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobSyncFromSourceResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Sync Jobs From Source",
+        "tags": [
+          "Job Match"
+        ]
+      }
+    },
     "/api/v1/jobs/{job_id}": {
       "delete": {
         "operationId": "jobDelete",
@@ -55920,6 +56890,157 @@
           }
         },
         "summary": "Confirm Personal Fact",
+        "tags": [
+          "Career Record"
+        ]
+      }
+    },
+    "/api/v1/personal-facts/{fact_id}/enrich": {
+      "post": {
+        "operationId": "careerPersonalFactEnrich",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fact_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Fact Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "rezumi_csrf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "rezumi_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeclaredProfileEnrichmentResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Enrich Personal Fact Link",
         "tags": [
           "Career Record"
         ]

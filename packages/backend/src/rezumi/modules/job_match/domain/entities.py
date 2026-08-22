@@ -47,6 +47,8 @@ class JobSourceKind(StrEnum):
     PASTE = "paste"
     URL = "url"
     MANUAL = "manual"
+    GREENHOUSE = "greenhouse"
+    FAKE = "fake"
 
 
 class WorkModel(StrEnum):
@@ -128,6 +130,7 @@ class JobAuditAction(StrEnum):
     JOB_DELETED = "job_deleted"
     JOB_ANALYZED = "job_analyzed"
     OPPORTUNITY_PRIORITIZED = "opportunity_prioritized"
+    JOBS_SYNCED_FROM_SOURCE = "jobs_synced_from_source"
 
 
 @dataclass(slots=True)
@@ -143,6 +146,7 @@ class JobPosting:
     application_deadline: date | None
     source_kind: JobSourceKind
     source_url: str | None
+    external_id: str | None
     source_text: str
     source_sha256: bytes
     idempotency_key: str
@@ -159,6 +163,7 @@ class JobPosting:
         self.location = _optional_text(self.location, "job location", 200)
         self.compensation = _optional_text(self.compensation, "compensation", 200)
         self.source_url = _optional_text(self.source_url, "source URL", 2_048)
+        self.external_id = _optional_text(self.external_id, "external id", 200)
         self.source_text = _text(self.source_text, "source text", 50_000, minimum=20)
         self.idempotency_key = _text(self.idempotency_key, "idempotency key", 128)
         self.idempotency_fingerprint = _text(

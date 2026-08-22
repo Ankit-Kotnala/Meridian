@@ -33,6 +33,7 @@ from .models import (
     UnsetType,
     UpdateApplication,
     UpdateApplicationTask,
+    UpsertApplicationProfile,
 )
 from .ports import (
     ApplicationWorkspaceUnitOfWork,
@@ -87,4 +88,5 @@ __all__ = [
     "UnsetType",
     "UpdateApplication",
     "UpdateApplicationTask",
+    "UpsertApplicationProfile",
 ]

@@ -879,6 +879,13 @@ class CareerRecordService:
             )
             await uow.commit()
 
+    async def get_personal_fact(self, owner_user_id: UUID, fact_id: UUID) -> PersonalFact:
+        async with self._uow() as uow:
+            fact = await uow.get_personal_fact(owner_user_id, fact_id)
+        if fact is None:
+            raise CareerRecordNotFound
+        return fact
+
     async def create_personal_fact(
         self,
         owner_user_id: UUID,

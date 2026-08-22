@@ -75,6 +75,7 @@ ApplicationDocumentKindValue = Literal[
     "follow_up_email",
     "interview_introduction",
     "achievement_summary",
+    "assisted_apply_handoff",
 ]
 ApplicationDocumentStatusValue = Literal["generated", "blocked", "deleted"]
 ApplicationPackStatusValue = Literal["generated", "blocked"]
@@ -473,3 +474,34 @@ class ApplicationCalendarResponse(ApplicationWorkspaceSchema):
     start: date
     end: date
     data: list[ApplicationCalendarItemResponse] = Field(max_length=1_000)
+
+
+class ApplicationProfileLinkInput(ApplicationWorkspaceSchema):
+    label: str = Field(min_length=1, max_length=120)
+    url: str = Field(min_length=8, max_length=500)
+
+
+class ApplicationProfileResponse(ApplicationWorkspaceSchema):
+    id: UUID
+    work_authorization: str | None = None
+    notice_period_days: int | None = Field(default=None, ge=0, le=730)
+    compensation_min: int | None = Field(default=None, ge=0)
+    compensation_max: int | None = Field(default=None, ge=0)
+    compensation_currency: str = Field(min_length=3, max_length=3)
+    preferred_locations: list[str] = Field(default_factory=list, max_length=50)
+    profile_links: list[ApplicationProfileLinkInput] = Field(default_factory=list, max_length=30)
+    voluntary_disclosures: dict[str, str] = Field(default_factory=dict)
+    version: PositiveVersion
+    created_at: datetime
+    updated_at: datetime
+
+
+class ApplicationProfileUpsertRequest(ApplicationWorkspaceSchema):
+    work_authorization: str | None = Field(default=None, max_length=500)
+    notice_period_days: int | None = Field(default=None, ge=0, le=730)
+    compensation_min: int | None = Field(default=None, ge=0)
+    compensation_max: int | None = Field(default=None, ge=0)
+    compensation_currency: str = Field(default="USD", min_length=3, max_length=3)
+    preferred_locations: list[str] = Field(default_factory=list, max_length=50)
+    profile_links: list[ApplicationProfileLinkInput] = Field(default_factory=list, max_length=30)
+    voluntary_disclosures: dict[str, str] = Field(default_factory=dict)

@@ -16,6 +16,7 @@ from rezumi.modules.application_workspace.domain import (
     ApplicationIdempotencyRecord,
     ApplicationNote,
     ApplicationPack,
+    ApplicationProfile,
     ApplicationRecord,
     ApplicationTask,
 )
@@ -258,6 +259,13 @@ class ApplicationWorkspaceUnitOfWork(Protocol):
     async def find_idempotency(
         self, owner_user_id: UUID, idempotency_key: str
     ) -> ApplicationIdempotencyRecord | None: ...
+
+    async def get_application_profile(
+        self,
+        owner_user_id: UUID,
+    ) -> ApplicationProfile | None: ...
+
+    async def upsert_application_profile(self, profile: ApplicationProfile) -> None: ...
 
     async def add_audit(self, event: ApplicationAuditEvent) -> None: ...
 

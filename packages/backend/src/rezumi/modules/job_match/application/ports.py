@@ -11,6 +11,7 @@ from uuid import UUID
 from rezumi.modules.job_match.domain import (
     CareerMatchSnapshot,
     JobMatchAuditEvent,
+    JobSourceKind,
     OpportunityPriorityAnalysis,
 )
 
@@ -63,6 +64,13 @@ class JobMatchUnitOfWork(Protocol):
 
     async def find_job_by_idempotency(
         self, owner_user_id: UUID, idempotency_key: str
+    ) -> JobRecord | None: ...
+
+    async def find_job_by_external(
+        self,
+        owner_user_id: UUID,
+        source_kind: JobSourceKind,
+        external_id: str,
     ) -> JobRecord | None: ...
 
     async def add_analysis(self, record: AnalysisRecord) -> None: ...
