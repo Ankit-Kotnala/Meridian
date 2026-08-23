@@ -85,3 +85,14 @@ class DeclaredProfileEnrichmentTaskResult(TypedDict):
 
 class DeclaredProfileEnrichmentReconciliationTaskResult(TypedDict):
     dead_lettered: int
+
+
+class JobCatalogSourceSyncResult(TypedDict):
+    platform: str
+    fetched: int
+    upserted: int
+    rejected: int
+
+
+class JobCatalogSyncTaskResult(TypedDict):
+    sources: list[JobCatalogSourceSyncResult]

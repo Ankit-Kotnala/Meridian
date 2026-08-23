@@ -2417,6 +2417,52 @@ export interface paths {
         patch: operations["interviewPrepStoryUpdate"];
         trace?: never;
     };
+    "/api/v1/job-catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search Job Catalog
+         * @description Read-only shared listings filtered toward the owner's target role(s).
+         *
+         *     Never writes into the owner's own tracked jobs — see
+         *     ``POST /job-catalog/{platform}/{externalId}/save`` for that explicit step.
+         */
+        get: operations["jobCatalogSearch"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/job-catalog/{platform}/{external_id}/save": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Save Job Catalog Listing
+         * @description Copy one catalog listing into the owner's own tracked jobs, once.
+         *
+         *     Idempotent per (owner, platform, external_id) — saving the same listing
+         *     twice returns the same tracked job rather than creating a duplicate.
+         */
+        post: operations["jobCatalogSave"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/job-match-analyses/{analysis_id}": {
         parameters: {
             query?: never;
@@ -7622,6 +7668,34 @@ export interface components {
         /** JobAcceptedResponse */
         JobAcceptedResponse: {
             job: components["schemas"]["ProcessingJobResponse"];
+        };
+        /** JobCatalogListingResponse */
+        JobCatalogListingResponse: {
+            /** Applicationurl */
+            applicationUrl?: string | null;
+            /** Company */
+            company?: string | null;
+            /** Externalid */
+            externalId: string;
+            /** Location */
+            location?: string | null;
+            /** Platform */
+            platform: string;
+            /** Postedat */
+            postedAt?: string | null;
+            /** Remote */
+            remote?: boolean | null;
+            /** Sourcetext */
+            sourceText: string;
+            /** Title */
+            title: string;
+        };
+        /** JobCatalogSearchResponse */
+        JobCatalogSearchResponse: {
+            /** Listings */
+            listings: components["schemas"]["JobCatalogListingResponse"][];
+            /** Targetroletitles */
+            targetRoleTitles: string[];
         };
         /** JobCreateRequest */
         JobCreateRequest: {
@@ -28152,6 +28226,182 @@ export interface operations {
             };
             /** @description Too Many Requests */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
+    jobCatalogSearch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                rezumi_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobCatalogSearchResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
+    jobCatalogSave: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-CSRF-Token"?: string | null;
+            };
+            path: {
+                external_id: string;
+                platform: string;
+            };
+            cookie?: {
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

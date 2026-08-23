@@ -2,6 +2,9 @@ import type { components } from "@rezumi/contracts";
 
 export type Job = components["schemas"]["JobResponse"];
 export type JobPage = components["schemas"]["JobPageResponse"];
+export type JobCatalogSearch = components["schemas"]["JobCatalogSearchResponse"];
+export type JobCatalogListing =
+  components["schemas"]["JobCatalogListingResponse"];
 export type JobCreateInput = components["schemas"]["JobCreateRequest"];
 export type JobImportInput = components["schemas"]["JobImportRequest"];
 export type JobUpdateInput = components["schemas"]["JobUpdateRequest"];

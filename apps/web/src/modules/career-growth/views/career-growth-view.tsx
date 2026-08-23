@@ -839,7 +839,9 @@ function DevelopmentCard({
         </Button>
       </div>
       {item.description && (
-        <p className="mt-3 text-sm leading-6">{item.description}</p>
+        <p className="mt-3 text-sm leading-6 whitespace-pre-line">
+          {item.description}
+        </p>
       )}
       <div className="mt-3">
         <EvidenceLinks links={item.evidenceLinks} />

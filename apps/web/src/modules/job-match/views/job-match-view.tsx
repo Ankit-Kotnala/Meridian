@@ -39,13 +39,16 @@ import {
   analyzeJob,
   createJob,
   deleteJob,
+  getJobCatalogSuggestions,
   getJobs,
   importJob,
   prioritizeOpportunity,
+  saveJobCatalogListing,
 } from "../api/job-match-api";
 import type {
   EmploymentType,
   Job,
+  JobCatalogSearch,
   JobMatchAnalysis,
   JobSourceKind,
   OpportunityPriority,
@@ -112,6 +115,8 @@ function stateTone(state: string) {
 
 export function JobMatchView() {
   const [jobs, setJobs] = useState<Job[]>();
+  const [suggestions, setSuggestions] = useState<JobCatalogSearch>();
+  const [savingListingKey, setSavingListingKey] = useState<string>();
   const [activeJobId, setActiveJobId] = useState<string>();
   const [activeAnalysis, setActiveAnalysis] = useState<JobMatchAnalysis>();
   const [priority, setPriority] = useState<OpportunityPriority>();
@@ -137,9 +142,44 @@ export function JobMatchView() {
     }
   }, []);
 
+  const loadSuggestions = useCallback(async () => {
+    try {
+      setSuggestions(await getJobCatalogSuggestions());
+    } catch {
+      // Suggestions are a supplementary discovery aid; a failure here must
+      // not block the core saved-jobs workflow above.
+      setSuggestions(undefined);
+    }
+  }, []);
+
   useEffect(() => {
     queueMicrotask(() => void load());
-  }, [load]);
+    queueMicrotask(() => void loadSuggestions());
+  }, [load, loadSuggestions]);
+
+  async function saveSuggestion(listing: JobCatalogSearch["listings"][number]) {
+    const key = `${listing.platform}:${listing.externalId}`;
+    setSavingListingKey(key);
+    setFailure(undefined);
+    setSuccess(undefined);
+    try {
+      const job = await saveJobCatalogListing(listing.platform, listing.externalId);
+      setJobs((current = []) => [
+        job,
+        ...current.filter((item) => item.id !== job.id),
+      ]);
+      setActiveJobId(job.id);
+      setActiveAnalysis(undefined);
+      setPriority(undefined);
+      setSuccess(`${job.title} saved for matching.`);
+    } catch (error) {
+      setFailure(
+        requestErrorMessage(error, "This listing could not be saved."),
+      );
+    } finally {
+      setSavingListingKey(undefined);
+    }
+  }
 
   async function searchJobs(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -350,6 +390,72 @@ export function JobMatchView() {
         <Alert title="Saved" tone="success">
           {success}
         </Alert>
+      )}
+
+      {suggestions && suggestions.listings.length > 0 && (
+        <section
+          aria-labelledby="job-catalog-heading"
+          className="rounded-lg border border-line bg-surface p-4 shadow-sm"
+        >
+          <div className="flex items-center gap-2">
+            <Search aria-hidden="true" className="size-5 text-primary" />
+            <h2
+              className="text-lg font-black text-foreground"
+              id="job-catalog-heading"
+            >
+              Suggested for you
+            </h2>
+          </div>
+          <p className="mt-1 text-sm text-muted">
+            {suggestions.targetRoleTitles.length > 0
+              ? `Matched toward ${suggestions.targetRoleTitles.join(", ")} from published job boards.`
+              : "Recent listings from published job boards. Set a target role in Role Readiness for closer matches."}
+          </p>
+          <ul className="mt-4 grid gap-3 md:grid-cols-2">
+            {suggestions.listings.slice(0, 6).map((listing) => {
+              const key = `${listing.platform}:${listing.externalId}`;
+              return (
+                <li
+                  className="rounded-lg border border-line bg-surface-subtle p-3"
+                  key={key}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-bold text-foreground">
+                        {listing.title}
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted">
+                        {[listing.company, listing.location]
+                          .filter(Boolean)
+                          .join(" / ")}
+                      </p>
+                    </div>
+                    <Badge tone="neutral">{listing.platform}</Badge>
+                  </div>
+                  <div className="mt-3 flex items-center gap-2">
+                    <Button
+                      loading={savingListingKey === key}
+                      onClick={() => void saveSuggestion(listing)}
+                      variant="secondary"
+                    >
+                      Save to my jobs
+                    </Button>
+                    {listing.applicationUrl && (
+                      <a
+                        className="text-xs font-bold text-primary underline"
+                        href={listing.applicationUrl}
+                        rel="noreferrer noopener"
+                        target="_blank"
+                      >
+                        View on {listing.platform}
+                      </a>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       )}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">

@@ -153,6 +153,24 @@ class JobPageResponse(JobMatchSchema):
     page: PageResponse
 
 
+class JobCatalogListingResponse(JobMatchSchema):
+    platform: str = Field(min_length=1, max_length=40)
+    external_id: str = Field(min_length=1, max_length=200)
+    title: str = Field(min_length=1, max_length=300)
+    company: str | None = Field(default=None, max_length=300)
+    location: str | None = Field(default=None, max_length=240)
+    remote: bool | None = None
+    application_url: str | None = Field(default=None, max_length=2_048)
+    source_text: str = Field(max_length=4_000)
+    posted_at: datetime | None = None
+
+
+class JobCatalogSearchResponse(JobMatchSchema):
+    target_role_titles: list[str] = Field(max_length=5)
+    listings: list[JobCatalogListingResponse] = Field(max_length=200)
+    matched_target_role: bool
+
+
 class JobMatchComponentResponse(JobMatchSchema):
     dimension: str
     weight_basis_points: BasisPoints

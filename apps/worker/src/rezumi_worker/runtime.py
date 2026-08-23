@@ -124,6 +124,16 @@ from rezumi.modules.career_record.infrastructure.declared_profile_job_repository
 # The worker is a composition root: register identity mappings so the shared
 # SQLAlchemy metadata can resolve resume-health foreign keys to ``users``.
 from rezumi.modules.identity.infrastructure import models as identity_models  # noqa: F401
+from rezumi.modules.job_match.application.job_catalog_ports import CatalogSyncResult
+from rezumi.modules.job_match.application.job_catalog_sync import JobCatalogSyncService
+from rezumi.modules.job_match.infrastructure.identifiers import SystemClock as JobMatchClock
+from rezumi.modules.job_match.infrastructure.job_catalog.registry import (
+    default_job_catalog_connectors,
+)
+from rezumi.modules.job_match.infrastructure.job_catalog_store import (
+    DisabledJobCatalogStore,
+    MongoJobCatalogStore,
+)
 from rezumi.modules.networking.application import NetworkingService
 from rezumi.modules.networking.application.models import NetworkingApplicationReference
 from rezumi.modules.networking.domain import (
@@ -1188,6 +1198,34 @@ def _parsed_resume_store(settings: WorkerSettings) -> ParsedResumeDocumentStore:
             collection_name=settings.mongodb_user_data_collection,
         )
     )
+
+
+def _job_catalog_store(
+    settings: WorkerSettings,
+) -> DisabledJobCatalogStore | MongoJobCatalogStore:
+    if not settings.mongodb_enabled:
+        return DisabledJobCatalogStore()
+    return MongoJobCatalogStore(
+        MongoOptions(
+            url=settings.mongodb_url,
+            database_name=settings.mongodb_database_name,
+            collection_name=settings.mongodb_job_catalog_collection,
+        )
+    )
+
+
+async def sync_job_catalog(settings: WorkerSettings) -> tuple[CatalogSyncResult, ...]:
+    """Enumerate every configured published job feed into the shared catalog."""
+    store = _job_catalog_store(settings)
+    try:
+        service = JobCatalogSyncService(
+            connectors=default_job_catalog_connectors(),
+            store=store,
+            clock=JobMatchClock(),
+        )
+        return await service.sync_all()
+    finally:
+        await store.dispose()
 
 
 def _database(settings: WorkerSettings) -> Database:

@@ -85,6 +85,7 @@ from .ports import (
     IdentifierFactory,
     RoleReadinessGapSource,
 )
+from .role_roadmap_ports import RoleRoadmapProvider
 
 _IDEMPOTENCY_KEY = re.compile(r"^[A-Za-z0-9._:-]{8,128}$")
 
@@ -140,6 +141,7 @@ class CareerGrowthService:
         identifiers: IdentifierFactory,
         career_source: CareerGrowthSourceProvider,
         gap_source: RoleReadinessGapSource | None = None,
+        role_roadmaps: RoleRoadmapProvider | None = None,
         policy: CareerGrowthPolicy | None = None,
     ) -> None:
         self._uow = unit_of_work
@@ -147,6 +149,7 @@ class CareerGrowthService:
         self._ids = identifiers
         self._source = career_source
         self._gaps = gap_source
+        self._roadmaps = role_roadmaps
         self._policy = policy or CareerGrowthPolicy()
 
     async def create_goal(
@@ -611,7 +614,7 @@ class CareerGrowthService:
         create = CreateDevelopmentItem(
             kind=_development_kind_for_gap(selected.gap_kind),
             title=_development_title_from_gap(selected.label),
-            description=selected.requirement_text,
+            description=await self._gap_description(selected),
             status=DevelopmentStatus.PLANNED,
         )
         return await self.create_development_item(
@@ -620,6 +623,20 @@ class CareerGrowthService:
             idempotency_key,
             context,
         )
+
+    async def _gap_description(self, gap: GapSnapshot) -> str:
+        """Append curated "how to start" guidance when a matching skill exists.
+
+        Never asserts an outcome, ranking, or hiring probability (ADR 0019
+        §5) — this only adds a concrete starting action, the gap's own
+        requirement text always stays the primary description.
+        """
+        if self._roadmaps is None:
+            return gap.requirement_text
+        guidance = await self._roadmaps.find_skill_guidance(gap.label)
+        if guidance is None or not guidance.how_to_start:
+            return gap.requirement_text
+        return f"{gap.requirement_text}\n\nHow to start: {guidance.how_to_start}"
 
     async def update_development_item(
         self,

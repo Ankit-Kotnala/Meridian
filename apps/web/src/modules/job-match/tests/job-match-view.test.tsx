@@ -1,16 +1,23 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { Job, JobMatchAnalysis, OpportunityPriority } from "../api/types";
+import type {
+  Job,
+  JobCatalogSearch,
+  JobMatchAnalysis,
+  OpportunityPriority,
+} from "../api/types";
 import { JobMatchView } from "../views/job-match-view";
 
 const api = vi.hoisted(() => ({
   analyzeJob: vi.fn(),
   createJob: vi.fn(),
   deleteJob: vi.fn(),
+  getJobCatalogSuggestions: vi.fn(),
   getJobs: vi.fn(),
   importJob: vi.fn(),
   prioritizeOpportunity: vi.fn(),
+  saveJobCatalogListing: vi.fn(),
 }));
 
 vi.mock("../api/job-match-api", () => api);
@@ -113,6 +120,18 @@ const priority: OpportunityPriority = {
   scoringDisclaimer: disclaimer,
 };
 
+const catalogListing: JobCatalogSearch["listings"][number] = {
+  applicationUrl: "https://remotive.com/remote-jobs/all-others/example-1",
+  company: "Fixture Co",
+  externalId: "fake-1",
+  location: "Remote",
+  platform: "remotive",
+  postedAt: null,
+  remote: true,
+  sourceText: "Build backend services.",
+  title: "Backend Engineer",
+};
+
 describe("Job Match view", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -123,6 +142,10 @@ describe("Job Match view", () => {
     api.createJob.mockResolvedValue(job);
     api.analyzeJob.mockResolvedValue(analysis);
     api.prioritizeOpportunity.mockResolvedValue(priority);
+    api.getJobCatalogSuggestions.mockResolvedValue({
+      listings: [],
+      targetRoleTitles: [],
+    } satisfies JobCatalogSearch);
   });
 
   it("renders empty job and analysis states without demo data", async () => {
@@ -183,6 +206,34 @@ describe("Job Match view", () => {
       job.id,
       expect.objectContaining({ analysisId: analysis.id, userInterest: 4 }),
     );
+  });
+
+  it("shows catalog suggestions and saves one into tracked jobs", async () => {
+    api.getJobCatalogSuggestions.mockResolvedValue({
+      listings: [catalogListing],
+      targetRoleTitles: ["Backend Engineer"],
+    } satisfies JobCatalogSearch);
+    api.saveJobCatalogListing.mockResolvedValue({
+      ...job,
+      title: "Backend Engineer",
+    });
+
+    render(<JobMatchView />);
+
+    expect(
+      await screen.findByRole("heading", { name: "Suggested for you" }),
+    ).toBeVisible();
+    expect(screen.getByText("Backend Engineer")).toBeVisible();
+    expect(
+      screen.getByText("Matched toward Backend Engineer from published job boards."),
+    ).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Save to my jobs" }));
+
+    expect(
+      await screen.findAllByText("Backend Engineer saved for matching."),
+    ).not.toHaveLength(0);
+    expect(api.saveJobCatalogListing).toHaveBeenCalledWith("remotive", "fake-1");
   });
 
   it("renders a retryable failure state", async () => {

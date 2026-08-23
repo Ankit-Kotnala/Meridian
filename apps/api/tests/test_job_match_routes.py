@@ -179,3 +179,99 @@ def test_job_match_mutation_requires_authenticated_session_and_csrf(
             headers=_write_headers(idempotency="api-job-rejected"),
         )
     assert response.status_code == 401
+
+
+class _MemoryJobCatalogStore:
+    def __init__(self, listings):
+        from datetime import UTC as _UTC
+        from datetime import datetime as _datetime
+
+        self._now = _datetime(2026, 8, 23, tzinfo=_UTC)
+        self.documents = {(listing.platform, listing.external_id): listing for listing in listings}
+
+    async def ping(self) -> None:
+        return None
+
+    async def upsert_listing(self, listing, *, fetched_at) -> None:
+        self.documents[(listing.platform, listing.external_id)] = listing
+
+    async def search(self, *, keywords, limit):
+        if not keywords:
+            return tuple(self.documents.values())[:limit]
+        lowered = {word.casefold() for word in keywords}
+        matches = [
+            listing
+            for listing in self.documents.values()
+            if lowered & set(listing.title.casefold().split())
+        ]
+        return tuple(matches[:limit])
+
+    async def get_listing(self, platform: str, external_id: str):
+        return self.documents.get((platform, external_id))
+
+    async def dispose(self) -> None:
+        return None
+
+
+def test_job_catalog_search_and_save_is_owner_scoped(
+    settings: Settings, fake_database: FakeDatabase
+) -> None:
+    from rezumi.modules.job_match.application.job_catalog_ports import CatalogJobListing
+    from rezumi.modules.job_match.application.job_catalog_query import JobCatalogQueryService
+
+    owner_id = uuid4()
+    identity, job_match = _services(owner_id)
+    listing = CatalogJobListing(
+        platform="fake",
+        external_id="fake-1",
+        title="Software Engineer",
+        company="Fixture Co",
+        location="Remote",
+        remote=True,
+        application_url="https://example.test/jobs/fake-1",
+        source_text="Build backend services.",
+        posted_at=None,
+    )
+    store = _MemoryJobCatalogStore([listing])
+
+    class _StaticTargetRoles:
+        async def target_role_titles(self, owner_user_id):
+            return ("Software Engineer",)
+
+    catalog = JobCatalogQueryService(store=store, target_roles=_StaticTargetRoles())
+
+    with TestClient(
+        create_app(
+            settings,
+            database=fake_database,
+            identity=identity,
+            job_match=job_match,
+            job_catalog_query=catalog,
+        )
+    ) as client:
+        client.cookies.set("rezumi_session", "opaque-session")
+        client.cookies.set("rezumi_csrf", "opaque-csrf")
+
+        search = client.get("/api/v1/job-catalog")
+        assert search.status_code == 200
+        body = search.json()
+        assert body["targetRoleTitles"] == ["Software Engineer"]
+        assert len(body["listings"]) == 1
+        assert body["listings"][0]["externalId"] == "fake-1"
+
+        saved = client.post(
+            "/api/v1/job-catalog/fake/fake-1/save",
+            headers=_write_headers(idempotency="unused-but-required-header-not-sent"),
+        )
+        assert saved.status_code == 201
+        assert saved.json()["sourceUrl"] == "https://example.test/jobs/fake-1"
+
+        # Saving the same listing again is idempotent, not duplicated.
+        saved_again = client.post("/api/v1/job-catalog/fake/fake-1/save", headers=_write_headers())
+        assert saved_again.status_code == 201
+        assert saved_again.json()["id"] == saved.json()["id"]
+
+        missing = client.post(
+            "/api/v1/job-catalog/fake/does-not-exist/save", headers=_write_headers()
+        )
+        assert missing.status_code == 404

@@ -5,6 +5,7 @@ import { apiMutation, apiQuery } from "@/shared/api/browser-request";
 import { jobMatchPaths, withQuery } from "./paths";
 import type {
   Job,
+  JobCatalogSearch,
   JobCreateInput,
   JobImportInput,
   JobMatchAnalysis,
@@ -107,6 +108,22 @@ export async function getAnalysisRequirements(
   return (await (
     await query(jobMatchPaths.analysisRequirements(analysisId))
   ).json()) as RequirementMatchPage;
+}
+
+export async function getJobCatalogSuggestions(): Promise<JobCatalogSearch> {
+  const response = await query(jobMatchPaths.jobCatalog);
+  return (await response.json()) as JobCatalogSearch;
+}
+
+export async function saveJobCatalogListing(
+  platform: string,
+  externalId: string,
+): Promise<Job> {
+  const response = await mutate(
+    jobMatchPaths.jobCatalogSave(platform, externalId),
+    { method: "POST" },
+  );
+  return (await response.json()) as Job;
 }
 
 export async function prioritizeOpportunity(

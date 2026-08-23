@@ -29,6 +29,7 @@ from rezumi_worker.task_names import (
     RECONCILE_CAREER_ANALYTICS_TASK,
     RECONCILE_NETWORKING_REMINDERS_TASK,
     RECONCILE_RESUME_EXPORTS_TASK,
+    SYNC_JOB_CATALOG_TASK,
 )
 
 
@@ -97,6 +98,7 @@ def create_celery_app(settings: WorkerSettings | None = None) -> Celery:
             PROCESS_DECLARED_PROFILE_ENRICHMENT_TASK: {"queue": "career-record"},
             DISPATCH_DECLARED_PROFILE_ENRICHMENT_OUTBOX_TASK: {"queue": "maintenance"},
             RECONCILE_DECLARED_PROFILE_ENRICHMENT_JOBS_TASK: {"queue": "maintenance"},
+            SYNC_JOB_CATALOG_TASK: {"queue": "maintenance"},
             PROCESS_RESUME_TASK: {"queue": "resume-health"},
             DISPATCH_OUTBOX_TASK: {"queue": "maintenance"},
             RECONCILE_RESUME_TASK: {"queue": "maintenance"},
@@ -149,6 +151,10 @@ def create_celery_app(settings: WorkerSettings | None = None) -> Celery:
                 "schedule": float(
                     resolved.declared_profile_enrichment_reconciliation_interval_seconds
                 ),
+            },
+            "sync-job-catalog": {
+                "task": SYNC_JOB_CATALOG_TASK,
+                "schedule": float(resolved.job_catalog_sync_interval_seconds),
             },
             "dispatch-resume-health-outbox": {
                 "task": DISPATCH_OUTBOX_TASK,

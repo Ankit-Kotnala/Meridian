@@ -538,6 +538,36 @@ class WorkerSettings(BaseSettings):
             "MONGODB_USER_DATA_COLLECTION",
         ),
     )
+    mongodb_job_catalog_collection: str = Field(
+        default="job-catalog",
+        min_length=1,
+        max_length=120,
+        validation_alias=AliasChoices(
+            "REZUMI_MONGODB_JOB_CATALOG_COLLECTION",
+            "MONGODB_JOB_CATALOG_COLLECTION",
+        ),
+    )
+    mongodb_role_roadmaps_collection: str = Field(
+        default="role-roadmaps",
+        min_length=1,
+        max_length=120,
+        validation_alias=AliasChoices(
+            "REZUMI_MONGODB_ROLE_ROADMAPS_COLLECTION",
+            "MONGODB_ROLE_ROADMAPS_COLLECTION",
+        ),
+    )
+    job_catalog_sync_interval_seconds: int = Field(
+        # Remotive's stated usage policy caps free-tier callers at ~4 requests
+        # per day; 6h keeps every configured source (not just Remotive) at or
+        # under that, since they all run on the same schedule.
+        default=21_600,
+        ge=3_600,
+        le=86_400,
+        validation_alias=AliasChoices(
+            "REZUMI_JOB_CATALOG_SYNC_INTERVAL_SECONDS",
+            "JOB_CATALOG_SYNC_INTERVAL_SECONDS",
+        ),
+    )
 
     @field_validator("s3_endpoint_url", "s3_public_endpoint_url")
     @classmethod

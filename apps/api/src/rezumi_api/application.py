@@ -8,6 +8,7 @@ import structlog
 from fastapi import FastAPI
 from redis.asyncio import Redis
 from rezumi.foundation.config import DatabaseOptions
+from rezumi.foundation.config.mongodb import MongoOptions
 from rezumi.foundation.database import Database, ReadinessProbe
 from rezumi.foundation.observability import configure_logging
 from rezumi.integrations.email import DisabledEmailSender, SmtpEmailSender, SmtpOptions
@@ -57,6 +58,10 @@ from rezumi.modules.career_growth.infrastructure import (
 )
 from rezumi.modules.career_growth.infrastructure.role_readiness_gap_provider import (
     RoleReadinessGapProvider,
+)
+from rezumi.modules.career_growth.infrastructure.role_roadmap_store import (
+    DisabledRoleRoadmapProvider,
+    MongoRoleRoadmapProvider,
 )
 from rezumi.modules.career_record.application import (
     AttachmentLimits,
@@ -134,6 +139,7 @@ from rezumi.modules.interview_prep.infrastructure import (
     UuidIdentifierFactory as InterviewPrepUuidFactory,
 )
 from rezumi.modules.job_match.application import JobMatchService
+from rezumi.modules.job_match.application.job_catalog_query import JobCatalogQueryService
 from rezumi.modules.job_match.infrastructure import (
     CareerRecordJobMatchSnapshotProvider,
     RoleReadinessRoleContextProvider,
@@ -146,9 +152,16 @@ from rezumi.modules.job_match.infrastructure import (
 from rezumi.modules.job_match.infrastructure import (
     UuidIdentifierFactory as JobMatchUuidFactory,
 )
+from rezumi.modules.job_match.infrastructure.job_catalog_store import (
+    DisabledJobCatalogStore,
+    MongoJobCatalogStore,
+)
 from rezumi.modules.job_match.infrastructure.job_source.registry import (
     DefaultJobSourceConnectorRegistry,
     default_job_source_registry,
+)
+from rezumi.modules.job_match.infrastructure.target_role_provider import (
+    CompositeTargetRoleProvider,
 )
 from rezumi.modules.networking.application import NetworkingService
 from rezumi.modules.networking.infrastructure import (
@@ -252,6 +265,7 @@ def create_app(
     attachment_storage: AttachmentS3ObjectStorage | None = None,
     role_readiness: RoleReadinessService | None = None,
     job_match: JobMatchService | None = None,
+    job_catalog_query: JobCatalogQueryService | None = None,
     change_studio: ChangeStudioService | None = None,
     resume_builder: ResumeBuilderService | None = None,
     application_workspace: ApplicationWorkspaceService | None = None,
@@ -289,12 +303,17 @@ def create_app(
         resolved_attachment_storage = attachment_storage
         resolved_role_readiness = role_readiness
         resolved_job_match = job_match
+        resolved_job_catalog_query = job_catalog_query
+        resolved_job_catalog_store: DisabledJobCatalogStore | MongoJobCatalogStore | None = None
         resolved_change_studio = change_studio
         resolved_resume_builder = resume_builder
         resolved_application_workspace = application_workspace
         resolved_interview_prep = interview_prep
         resolved_networking = networking
         resolved_career_growth = career_growth
+        resolved_role_roadmap_store: (
+            DisabledRoleRoadmapProvider | MongoRoleRoadmapProvider | None
+        ) = None
         resolved_career_analytics = career_analytics
         resolved_billing = billing
         resolved_resume_builder_storage: ResumeExportS3Storage | None = None
@@ -511,6 +530,29 @@ def create_app(
                     importer=SafeUrlJobImportProvider(),
                     job_sources=DefaultJobSourceConnectorRegistry(default_job_source_registry()),
                 )
+            if resolved_job_catalog_query is None:
+                if resolved_role_readiness is None or resolved_career_record is None:
+                    raise RuntimeError(
+                        "Job catalog search requires Career Record and Role Readiness boundaries"
+                    )
+                resolved_job_catalog_store = (
+                    MongoJobCatalogStore(
+                        MongoOptions(
+                            url=resolved_settings.mongodb_url.get_secret_value(),
+                            database_name=resolved_settings.mongodb_database_name,
+                            collection_name=resolved_settings.mongodb_job_catalog_collection,
+                        )
+                    )
+                    if resolved_settings.mongodb_enabled
+                    else DisabledJobCatalogStore()
+                )
+                resolved_job_catalog_query = JobCatalogQueryService(
+                    store=resolved_job_catalog_store,
+                    target_roles=CompositeTargetRoleProvider(
+                        role_readiness=resolved_role_readiness,
+                        career_record=resolved_career_record,
+                    ),
+                )
             if resolved_change_studio is None:
                 if resolved_career_record is None or resolved_job_match is None:
                     raise RuntimeError(
@@ -601,12 +643,24 @@ def create_app(
                     raise RuntimeError("Career Growth requires the Career Record boundary")
                 if resolved_role_readiness is None:
                     raise RuntimeError("Career Growth gap source requires Role Readiness")
+                resolved_role_roadmap_store = (
+                    MongoRoleRoadmapProvider(
+                        MongoOptions(
+                            url=resolved_settings.mongodb_url.get_secret_value(),
+                            database_name=resolved_settings.mongodb_database_name,
+                            collection_name=resolved_settings.mongodb_role_roadmaps_collection,
+                        )
+                    )
+                    if resolved_settings.mongodb_enabled
+                    else DisabledRoleRoadmapProvider()
+                )
                 resolved_career_growth = CareerGrowthService(
                     unit_of_work=SqlAlchemyCareerGrowthUnitOfWorkFactory(resolved_database),
                     clock=CareerGrowthClock(),
                     identifiers=CareerGrowthUuidFactory(),
                     career_source=CareerRecordGrowthSourceProvider(resolved_career_record),
                     gap_source=RoleReadinessGapProvider(resolved_role_readiness),
+                    role_roadmaps=resolved_role_roadmap_store,
                 )
             if resolved_career_analytics is None:
                 if (
@@ -663,6 +717,7 @@ def create_app(
         )
         application.state.role_readiness_service = resolved_role_readiness
         application.state.job_match_service = resolved_job_match
+        application.state.job_catalog_query_service = resolved_job_catalog_query
         application.state.change_studio_service = resolved_change_studio
         application.state.resume_builder_service = resolved_resume_builder
         application.state.application_workspace_service = resolved_application_workspace
@@ -680,6 +735,12 @@ def create_app(
             application.state.readiness_dependencies["email"] = resolved_email_sender
         if resolved_resume_storage is not None:
             application.state.readiness_dependencies["objectStorage"] = resolved_resume_storage
+        if resolved_settings.mongodb_enabled and resolved_job_catalog_store is not None:
+            application.state.readiness_dependencies["jobCatalog"] = resolved_job_catalog_store
+        if resolved_settings.mongodb_enabled and resolved_role_roadmap_store is not None:
+            application.state.readiness_dependencies["roleRoadmaps"] = (
+                resolved_role_roadmap_store
+            )
         logger.info(
             "api_started",
             service=resolved_settings.service_name,
@@ -699,6 +760,10 @@ def create_app(
                 await resolved_attachment_storage.dispose()
             if resolved_resume_builder_storage is not None:
                 await resolved_resume_builder_storage.dispose()
+            if resolved_job_catalog_store is not None:
+                await resolved_job_catalog_store.dispose()
+            if resolved_role_roadmap_store is not None:
+                await resolved_role_roadmap_store.dispose()
             await resolved_database.dispose()
             logger.info("api_stopped", service=resolved_settings.service_name)
 
