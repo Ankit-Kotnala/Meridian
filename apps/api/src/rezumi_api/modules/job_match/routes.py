@@ -38,13 +38,16 @@ from rezumi_api.modules.job_match.dependencies import (
 )
 from rezumi_api.modules.job_match.presenters import (
     analysis_response,
+    job_catalog_browse_response,
     job_catalog_search_response,
     job_page_response,
     job_response,
     opportunity_priority_response,
     requirement_match_page_response,
+    role_preference_response,
 )
 from rezumi_api.modules.job_match.schemas import (
+    JobCatalogBrowseResponse,
     JobCatalogSearchResponse,
     JobCreateRequest,
     JobImportRequest,
@@ -57,6 +60,8 @@ from rezumi_api.modules.job_match.schemas import (
     OpportunityPriorityRequest,
     OpportunityPriorityResponse,
     RequirementMatchPageResponse,
+    RolePreferenceRequest,
+    RolePreferenceResponse,
 )
 
 router = APIRouter(prefix="/api/v1", tags=["Job Match"])
@@ -415,6 +420,69 @@ async def search_job_catalog(
     result = await catalog.search_for_owner(principal.user_id)
     _private(response)
     return job_catalog_search_response(result)
+
+
+@router.get(
+    "/job-catalog/role-preferences",
+    response_model=RolePreferenceResponse,
+    operation_id="jobCatalogRolePreferencesGet",
+    responses=_PROBLEMS,
+)
+async def get_job_catalog_role_preferences(
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(current_principal)],
+    service: Annotated[JobMatchService, Depends(job_match_service)],
+) -> RolePreferenceResponse:
+    role_titles = await service.get_role_preference(principal.user_id)
+    _private(response)
+    return role_preference_response(role_titles)
+
+
+@router.put(
+    "/job-catalog/role-preferences",
+    response_model=RolePreferenceResponse,
+    operation_id="jobCatalogRolePreferencesSet",
+    responses=_PROBLEMS,
+)
+async def set_job_catalog_role_preferences(
+    payload: RolePreferenceRequest,
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
+    context: Annotated[RequestContext, Depends(job_match_request_context)],
+    service: Annotated[JobMatchService, Depends(job_match_service)],
+) -> RolePreferenceResponse:
+    """Replace the owner's job-catalog role filter.
+
+    A PUT of the full desired list is naturally idempotent, so this does not
+    require an Idempotency-Key like the create/import/analyze endpoints.
+    """
+    role_titles = await service.set_role_preference(
+        principal.user_id, tuple(payload.role_titles), context
+    )
+    _private(response)
+    return role_preference_response(role_titles)
+
+
+@router.get(
+    "/job-catalog/search",
+    response_model=JobCatalogBrowseResponse,
+    operation_id="jobCatalogBrowse",
+    responses=_PROBLEMS,
+)
+async def browse_job_catalog(
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(current_principal)],
+    catalog: Annotated[JobCatalogQueryService, Depends(job_catalog_query_service)],
+    q: Annotated[str, Query(max_length=200)] = "",
+    limit: Annotated[int, Query(ge=1, le=100)] = 25,
+    offset: Annotated[int, Query(ge=0, le=5_000)] = 0,
+) -> JobCatalogBrowseResponse:
+    """Free-text search across the whole shared job catalog, independent of role filtering."""
+    listings, has_more = await catalog.browse(query=q, limit=limit, offset=offset)
+    _private(response)
+    return job_catalog_browse_response(
+        listings, has_more=has_more, next_offset=offset + len(listings)
+    )
 
 
 @router.post(

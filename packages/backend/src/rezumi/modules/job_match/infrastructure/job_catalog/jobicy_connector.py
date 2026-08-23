@@ -1,10 +1,11 @@
-"""RemoteOK published job feed connector.
+"""Jobicy published remote-jobs API connector.
 
-RemoteOK's terms require attribution back to the original listing URL
-wherever data from their API is shown — `application_url` is always
-preserved for that purpose. Their public feed also actively rejects requests
-without a descriptive, non-generic User-Agent, so this connector always sends
-one identifying this pipeline and a contact point.
+Jobicy's API response embeds its own usage notice on every call ("Please
+ensure Jobicy is clearly credited with a direct link to the source, and all
+application buttons redirect to the original job URL") — `application_url`
+is always preserved for that purpose. The feed caps a single call at 100
+listings and offers no offset/cursor parameter, so one connector run returns
+its most recent ~100 open listings.
 """
 
 from __future__ import annotations
@@ -25,28 +26,28 @@ from rezumi.modules.job_match.infrastructure.job_catalog._text import (
     plain_text,
 )
 
-_URL = "https://remoteok.com/api"
+_URL = "https://jobicy.com/api/v2/remote-jobs?count=100"
 _TIMEOUT = 10.0
 _MAX_RESPONSE_BYTES = 5_000_000
-_MAX_LISTINGS = 3_000
+_MAX_LISTINGS = 100
 _USER_AGENT = "RezumiJobCatalog/1.0 (+https://rezumi.local; job-catalog sync)"
 
 
-class RemoteOkCatalogConnector:
-    platform = "remoteok"
+class JobicyCatalogConnector:
+    platform = "jobicy"
 
     async def iter_listings(self) -> AsyncIterator[CatalogJobListing]:
         payload = await asyncio.to_thread(self._fetch)
-        if not isinstance(payload, list):
+        jobs = payload.get("jobs") if isinstance(payload, dict) else None
+        if not isinstance(jobs, list):
             return
-        # RemoteOK's first array element is a legal/notice object, not a job.
-        for entry in payload[1 : 1 + _MAX_LISTINGS]:
+        for entry in jobs[:_MAX_LISTINGS]:
             listing = _listing(entry)
             if listing is not None:
                 yield listing
 
     def _fetch(self) -> Any:
-        request = Request(  # noqa: S310 - fixed RemoteOK API host
+        request = Request(  # noqa: S310 - fixed Jobicy API host
             _URL,
             headers={"Accept": "application/json", "User-Agent": _USER_AGENT},
             method="GET",
@@ -55,18 +56,18 @@ class RemoteOkCatalogConnector:
             with urlopen(request, timeout=_TIMEOUT) as response:  # noqa: S310
                 body = response.read(_MAX_RESPONSE_BYTES)
         except (HTTPError, URLError, TimeoutError, OSError, json.JSONDecodeError):
-            return []
+            return {}
         try:
             return json.loads(body.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError):
-            return []
+            return {}
 
 
 def _listing(entry: Any) -> CatalogJobListing | None:
     if not isinstance(entry, dict):
         return None
     external_id = str(entry.get("id") or "").strip()
-    raw_title = str(entry.get("position") or entry.get("title") or "").strip()
+    raw_title = str(entry.get("jobTitle") or "").strip()
     application_url = str(entry.get("url") or "").strip()
     if (
         not external_id
@@ -76,15 +77,21 @@ def _listing(entry: Any) -> CatalogJobListing | None:
     ):
         return None
     title = bounded_title(raw_title)
-    company = bounded_company(str(entry.get("company") or "")) or None
-    location = bounded_location(str(entry.get("location") or "")) or None
-    description = plain_text(str(entry.get("description") or ""))
-    tags = entry.get("tags")
-    tag_text = " ".join(str(tag) for tag in tags) if isinstance(tags, list) else ""
-    source_text = plain_text(" ".join(part for part in (tag_text, description) if part))
-    posted_at = _parse_date(entry.get("date"))
+    company = bounded_company(str(entry.get("companyName") or "")) or None
+    location = bounded_location(str(entry.get("jobGeo") or "")) or None
+    industries = entry.get("jobIndustry")
+    types = entry.get("jobType")
+    industry_text = (
+        " ".join(str(item) for item in industries) if isinstance(industries, list) else ""
+    )
+    type_text = " ".join(str(item) for item in types) if isinstance(types, list) else ""
+    description = plain_text(str(entry.get("jobDescription") or entry.get("jobExcerpt") or ""))
+    source_text = plain_text(
+        " ".join(part for part in (industry_text, type_text, description) if part)
+    )
+    posted_at = _parse_date(entry.get("pubDate"))
     return CatalogJobListing(
-        platform="remoteok",
+        platform="jobicy",
         external_id=external_id,
         title=title,
         company=company,

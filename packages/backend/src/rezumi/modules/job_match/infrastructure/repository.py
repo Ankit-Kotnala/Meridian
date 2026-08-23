@@ -37,6 +37,7 @@ from rezumi.modules.job_match.domain import (
     RequirementMatch,
     RequirementMatchState,
     RequirementType,
+    RolePreference,
     WorkModel,
 )
 
@@ -49,6 +50,7 @@ from .models import (
     OpportunityPriorityModel,
     RequirementEvidenceLinkModel,
     RequirementMatchModel,
+    RolePreferenceModel,
 )
 
 
@@ -264,6 +266,28 @@ class SqlAlchemyJobMatchUnitOfWork:
 
     async def add_audit(self, event: JobMatchAuditEvent) -> None:
         self.session.add(_audit_model(event))
+
+    async def get_role_preference(self, owner_user_id: UUID) -> RolePreference | None:
+        model = await self.session.scalar(
+            select(RolePreferenceModel).where(RolePreferenceModel.owner_user_id == owner_user_id)
+        )
+        return _role_preference(model) if model is not None else None
+
+    async def upsert_role_preference(self, preference: RolePreference) -> None:
+        existing = await self.session.scalar(
+            select(RolePreferenceModel).where(
+                RolePreferenceModel.owner_user_id == preference.owner_user_id
+            )
+        )
+        if existing is None:
+            self.session.add(RolePreferenceModel(**_role_preference_values(preference)))
+        else:
+            await self._execute(
+                update(RolePreferenceModel)
+                .where(RolePreferenceModel.owner_user_id == preference.owner_user_id)
+                .values(**_role_preference_values(preference, include_identity=False))
+            )
+        await self._flush()
 
     async def commit(self) -> None:
         try:
@@ -636,6 +660,32 @@ def _audit_model(event: JobMatchAuditEvent) -> JobMatchAuditEventModel:
         details=[{"key": key, "value": value} for key, value in event.details],
         created_at=event.created_at,
     )
+
+
+def _role_preference(model: RolePreferenceModel) -> RolePreference:
+    return RolePreference(
+        id=model.id,
+        owner_user_id=model.owner_user_id,
+        role_titles=tuple(model.role_titles),
+        version=model.version,
+        created_at=model.created_at,
+        updated_at=model.updated_at,
+    )
+
+
+def _role_preference_values(
+    preference: RolePreference, *, include_identity: bool = True
+) -> dict[str, object]:
+    values: dict[str, object] = {
+        "role_titles": list(preference.role_titles),
+        "version": preference.version,
+        "created_at": preference.created_at,
+        "updated_at": preference.updated_at,
+    }
+    if include_identity:
+        values["id"] = preference.id
+        values["owner_user_id"] = preference.owner_user_id
+    return values
 
 
 def _validate_job_ownership(record: JobRecord) -> None:

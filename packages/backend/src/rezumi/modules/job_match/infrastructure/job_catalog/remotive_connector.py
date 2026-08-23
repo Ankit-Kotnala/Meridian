@@ -31,7 +31,7 @@ from rezumi.modules.job_match.infrastructure.job_catalog._text import (
 _URL = "https://remotive.com/api/remote-jobs"
 _TIMEOUT = 10.0
 _MAX_RESPONSE_BYTES = 5_000_000
-_MAX_LISTINGS = 500
+_MAX_LISTINGS = 3_000
 _USER_AGENT = "RezumiJobCatalog/1.0 (+https://rezumi.local; job-catalog sync)"
 
 

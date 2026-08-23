@@ -140,7 +140,9 @@ describe("workspace navigation model", () => {
       "/career-profile",
       "/evidence",
       "/achievement-inbox",
-      "/role-explorer",
+      // Role Explorer was merged into the Job Match page as a secondary
+      // section (see role-explorer's RoleReadinessSection); /role-explorer
+      // now redirects there rather than being its own nav destination.
       "/job-match",
       "/applications",
       "/resume-health/account",

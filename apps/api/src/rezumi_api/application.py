@@ -531,9 +531,14 @@ def create_app(
                     job_sources=DefaultJobSourceConnectorRegistry(default_job_source_registry()),
                 )
             if resolved_job_catalog_query is None:
-                if resolved_role_readiness is None or resolved_career_record is None:
+                if (
+                    resolved_role_readiness is None
+                    or resolved_career_record is None
+                    or resolved_job_match is None
+                ):
                     raise RuntimeError(
-                        "Job catalog search requires Career Record and Role Readiness boundaries"
+                        "Job catalog search requires Career Record, Role Readiness, and "
+                        "Job Match boundaries"
                     )
                 resolved_job_catalog_store = (
                     MongoJobCatalogStore(
@@ -552,6 +557,7 @@ def create_app(
                         role_readiness=resolved_role_readiness,
                         career_record=resolved_career_record,
                     ),
+                    role_preferences=resolved_job_match,
                 )
             if resolved_change_studio is None:
                 if resolved_career_record is None or resolved_job_match is None:

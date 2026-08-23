@@ -21,8 +21,15 @@ _DEFAULT_LIMIT = 25
 _MAX_TARGET_ROLES = 5
 
 
+_MAX_BROWSE_LIMIT = 100
+
+
 class TargetRoleProvider(Protocol):
     async def target_role_titles(self, owner_user_id: UUID) -> tuple[str, ...]: ...
+
+
+class RolePreferenceProvider(Protocol):
+    async def get_role_preference(self, owner_user_id: UUID) -> tuple[str, ...]: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,6 +37,8 @@ class JobCatalogSearchResult:
     target_role_titles: tuple[str, ...]
     listings: tuple[CatalogJobListing, ...]
     matched_target_role: bool
+    suggested_role_titles: tuple[str, ...] = ()
+    selected_role_titles: tuple[str, ...] = ()
 
 
 class JobCatalogQueryService:
@@ -38,16 +47,26 @@ class JobCatalogQueryService:
         *,
         store: JobCatalogStore,
         target_roles: TargetRoleProvider,
+        role_preferences: RolePreferenceProvider | None = None,
     ) -> None:
         self._store = store
         self._target_roles = target_roles
+        self._role_preferences = role_preferences
 
     async def search_for_owner(
         self, owner_user_id: UUID, *, limit: int = _DEFAULT_LIMIT
     ) -> JobCatalogSearchResult:
-        titles = (await self._target_roles.target_role_titles(owner_user_id))[
+        suggested = (await self._target_roles.target_role_titles(owner_user_id))[
             :_MAX_TARGET_ROLES
         ]
+        selected: tuple[str, ...] = ()
+        if self._role_preferences is not None:
+            selected = (await self._role_preferences.get_role_preference(owner_user_id))[
+                :_MAX_TARGET_ROLES
+            ]
+        # An explicit selection always wins over the auto-suggested role —
+        # the owner opted in/out on purpose.
+        titles = selected or suggested
         keywords = tuple({word for title in titles for word in title.split() if word})
         listings = await self._store.search(keywords=keywords, limit=limit)
         matched = bool(keywords) and bool(listings)
@@ -58,8 +77,25 @@ class JobCatalogQueryService:
             # say so, rather than silently showing nothing.
             listings = await self._store.search(keywords=(), limit=limit)
         return JobCatalogSearchResult(
-            target_role_titles=titles, listings=listings, matched_target_role=matched
+            target_role_titles=titles,
+            listings=listings,
+            matched_target_role=matched,
+            suggested_role_titles=suggested,
+            selected_role_titles=selected,
         )
+
+    async def browse(
+        self, *, query: str, limit: int, offset: int
+    ) -> tuple[tuple[CatalogJobListing, ...], bool]:
+        """Free-text search across the whole catalog, independent of role filtering."""
+
+        bounded_limit = max(1, min(limit, _MAX_BROWSE_LIMIT))
+        keywords = tuple(word for word in query.split() if word)
+        listings = await self._store.search(
+            keywords=keywords, limit=bounded_limit + 1, offset=max(0, offset)
+        )
+        has_more = len(listings) > bounded_limit
+        return listings[:bounded_limit], has_more
 
     async def get_listing(self, platform: str, external_id: str) -> CatalogJobListing | None:
         return await self._store.get_listing(platform, external_id)

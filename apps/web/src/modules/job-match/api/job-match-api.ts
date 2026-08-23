@@ -5,6 +5,7 @@ import { apiMutation, apiQuery } from "@/shared/api/browser-request";
 import { jobMatchPaths, withQuery } from "./paths";
 import type {
   Job,
+  JobCatalogBrowse,
   JobCatalogSearch,
   JobCreateInput,
   JobImportInput,
@@ -15,6 +16,7 @@ import type {
   OpportunityPriority,
   OpportunityPriorityInput,
   RequirementMatchPage,
+  RolePreference,
 } from "./types";
 
 function headers(version?: number, idempotencyKey?: string): HeadersInit {
@@ -124,6 +126,36 @@ export async function saveJobCatalogListing(
     { method: "POST" },
   );
   return (await response.json()) as Job;
+}
+
+export async function getJobCatalogRolePreferences(): Promise<RolePreference> {
+  const response = await query(jobMatchPaths.jobCatalogRolePreferences);
+  return (await response.json()) as RolePreference;
+}
+
+export async function setJobCatalogRolePreferences(
+  roleTitles: string[],
+): Promise<RolePreference> {
+  const response = await mutate(jobMatchPaths.jobCatalogRolePreferences, {
+    body: JSON.stringify({ roleTitles }),
+    method: "PUT",
+  });
+  return (await response.json()) as RolePreference;
+}
+
+export async function browseJobCatalog(filters: {
+  limit?: number;
+  offset?: number;
+  q?: string;
+}): Promise<JobCatalogBrowse> {
+  const response = await query(
+    withQuery(jobMatchPaths.jobCatalogBrowse, {
+      limit: filters.limit,
+      offset: filters.offset,
+      q: filters.q || undefined,
+    }),
+  );
+  return (await response.json()) as JobCatalogBrowse;
 }
 
 export async function prioritizeOpportunity(

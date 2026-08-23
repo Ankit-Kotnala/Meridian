@@ -94,10 +94,7 @@ export const workspaceSections: readonly WorkspaceSection[] = [
     id: "opportunities",
     label: "Opportunities",
     routes: ["/job-match", "/role-explorer"],
-    tools: [
-      { href: "/job-match", icon: Target, label: "Job Match" },
-      { href: "/role-explorer", icon: Target, label: "Role Explorer" },
-    ],
+    tools: [],
   },
   {
     href: "/applications",

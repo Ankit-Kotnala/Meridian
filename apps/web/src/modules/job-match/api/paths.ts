@@ -19,6 +19,8 @@ export const jobMatchPaths = {
     path(`/api/v1/job-match-analyses/${encodeURIComponent(id)}/requirements`),
   importJob: path("/api/v1/jobs/import"),
   jobCatalog: path("/api/v1/job-catalog"),
+  jobCatalogBrowse: path("/api/v1/job-catalog/search"),
+  jobCatalogRolePreferences: path("/api/v1/job-catalog/role-preferences"),
   jobCatalogSave: (platform: string, externalId: string) =>
     path(
       `/api/v1/job-catalog/${encodeURIComponent(platform)}/${encodeURIComponent(externalId)}/save`,

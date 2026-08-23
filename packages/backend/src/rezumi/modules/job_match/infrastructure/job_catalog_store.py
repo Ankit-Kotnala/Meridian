@@ -30,9 +30,9 @@ class DisabledJobCatalogStore:
         return None
 
     async def search(
-        self, *, keywords: tuple[str, ...], limit: int
+        self, *, keywords: tuple[str, ...], limit: int, offset: int = 0
     ) -> tuple[CatalogJobListing, ...]:
-        del keywords, limit
+        del keywords, limit, offset
         return ()
 
     async def get_listing(self, platform: str, external_id: str) -> CatalogJobListing | None:
@@ -94,11 +94,17 @@ class MongoJobCatalogStore:
         )
 
     async def search(
-        self, *, keywords: tuple[str, ...], limit: int
+        self, *, keywords: tuple[str, ...], limit: int, offset: int = 0
     ) -> tuple[CatalogJobListing, ...]:
         bounded_limit = max(1, min(limit, _MAX_SEARCH_LIMIT))
+        bounded_offset = max(0, offset)
         if not keywords:
-            cursor = self._collection.find({}).sort("fetchedAt", -1).limit(bounded_limit)
+            cursor = (
+                self._collection.find({})
+                .sort("fetchedAt", -1)
+                .skip(bounded_offset)
+                .limit(bounded_limit)
+            )
             documents = await self._run(list, cursor)
         else:
             search_text = " ".join(keyword.strip() for keyword in keywords if keyword.strip())
@@ -107,6 +113,7 @@ class MongoJobCatalogStore:
             cursor = (
                 self._collection.find({"$text": {"$search": search_text}})
                 .sort([("score", {"$meta": "textScore"})])
+                .skip(bounded_offset)
                 .limit(bounded_limit)
             )
             documents = await self._run(list, cursor)

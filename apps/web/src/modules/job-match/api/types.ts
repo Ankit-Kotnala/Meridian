@@ -5,6 +5,9 @@ export type JobPage = components["schemas"]["JobPageResponse"];
 export type JobCatalogSearch = components["schemas"]["JobCatalogSearchResponse"];
 export type JobCatalogListing =
   components["schemas"]["JobCatalogListingResponse"];
+export type JobCatalogBrowse =
+  components["schemas"]["JobCatalogBrowseResponse"];
+export type RolePreference = components["schemas"]["RolePreferenceResponse"];
 export type JobCreateInput = components["schemas"]["JobCreateRequest"];
 export type JobImportInput = components["schemas"]["JobImportRequest"];
 export type JobUpdateInput = components["schemas"]["JobUpdateRequest"];

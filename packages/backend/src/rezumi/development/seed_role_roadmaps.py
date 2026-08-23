@@ -27,7 +27,7 @@ from pymongo import MongoClient
 
 from rezumi.foundation.config.mongodb import MongoOptions
 
-ROADMAP_VERSION = "role-roadmaps/2026-08-23.1"
+ROADMAP_VERSION = "role-roadmaps/2026-08-23.2"
 
 # Each skill entry: name (matched against a role_readiness gap label),
 # why (one sentence on why it matters), howToStart (one concrete first step).
@@ -677,6 +677,906 @@ ROLE_ROADMAPS: list[dict[str, Any]] = [
                         "name": "Stakeholder communication",
                         "why": "A technically correct analysis that stakeholders don't understand or trust does not change a decision.",
                         "howToStart": "Present your next finding as a one-slide summary with a clear recommendation before sharing the full analysis.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        "roleSlug": "data-analyst",
+        "title": "Data Analyst",
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "SQL",
+                        "why": "Almost every analysis starts with pulling and shaping data yourself, and SQL is the shared language for that across nearly every company.",
+                        "howToStart": "Write one query a day against a public dataset until joins, group-by, and window functions all feel routine, not intimidating.",
+                    },
+                    {
+                        "name": "Data visualization",
+                        "why": "A correct analysis that's presented in a confusing chart gets ignored; the visualization is often the actual deliverable.",
+                        "howToStart": "Rebuild one chart from a report you admire from scratch, matching its choice of chart type and labeling exactly.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core skills",
+                "skills": [
+                    {
+                        "name": "Statistics for business decisions",
+                        "why": "Knowing whether a difference in the data is real or noise is what separates a defensible recommendation from a guess.",
+                        "howToStart": "Run a basic significance test on one A/B-style comparison you have real data for, and write down what it would take to change your conclusion.",
+                    },
+                    {
+                        "name": "Data storytelling",
+                        "why": "Stakeholders act on the narrative and recommendation, not the raw numbers — analysts who can't frame both get ignored.",
+                        "howToStart": "Turn your next finding into a three-sentence story: what happened, why it matters, what to do about it.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        "roleSlug": "technical-writer",
+        "title": "Technical Writer",
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "Audience analysis",
+                        "why": "The same feature needs a different document for a new user, an integrator, and an on-call engineer — writing for the wrong one wastes everyone's time.",
+                        "howToStart": "Before writing your next doc, write one sentence describing exactly who will read it and what they need to do afterward.",
+                    },
+                    {
+                        "name": "Information architecture",
+                        "why": "Readers scan, not read start-to-end; if they can't find the one section they need, the rest of the document doesn't matter.",
+                        "howToStart": "Outline one existing long document as a heading tree only, then check whether someone could find an answer in under 30 seconds.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core skills",
+                "skills": [
+                    {
+                        "name": "Working with subject-matter experts",
+                        "why": "Technical writers rarely have the deepest knowledge in the room — getting accurate detail out of busy experts efficiently is the core skill.",
+                        "howToStart": "Prepare five specific questions before your next SME interview instead of asking them to 'explain the feature.'",
+                    },
+                    {
+                        "name": "Docs-as-code tooling",
+                        "why": "Most modern documentation lives in the same version control and review workflow as the product code it describes.",
+                        "howToStart": "Move one piece of writing into a Markdown file in a git repo and open a real pull request for it, review comments included.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        "roleSlug": "ux-researcher",
+        "title": "UX Researcher",
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "Research method selection",
+                        "why": "Using the wrong method (a survey when you needed interviews, usability testing when you needed analytics) produces confident, wrong answers.",
+                        "howToStart": "Before your next study, write down the specific decision it needs to inform, then pick the method that decision actually requires.",
+                    },
+                    {
+                        "name": "Interviewing without leading",
+                        "why": "A leading question gets you the answer you expected, not the truth about how someone actually behaves.",
+                        "howToStart": "Record one practice interview and count how many of your questions could be answered with a simple yes or no — rewrite those as open questions.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core skills",
+                "skills": [
+                    {
+                        "name": "Synthesis and affinity mapping",
+                        "why": "Raw interview notes are not insights; turning scattered observations into a small number of clear themes is the actual research output.",
+                        "howToStart": "Take the raw notes from your last five user conversations and group every quote into no more than five themes before writing conclusions.",
+                    },
+                    {
+                        "name": "Research advocacy",
+                        "why": "Findings that never reach the people building the product don't change anything, no matter how rigorous the study was.",
+                        "howToStart": "Turn your next research readout into a one-page summary with the top three findings and a specific recommended action for each.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        "roleSlug": "project-manager",
+        "title": "Project Manager",
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "Scope and timeline planning",
+                        "why": "Most project trouble starts with a scope or deadline nobody actually validated against the real amount of work.",
+                        "howToStart": "Break your next project into tasks small enough that each one is a single day of work or less, then total the estimate before committing to a date.",
+                    },
+                    {
+                        "name": "Risk tracking",
+                        "why": "The risks that sink a project are almost always ones someone saw coming but never wrote down or escalated.",
+                        "howToStart": "Keep a running risk log for your current project and review it in every status meeting, not just when something goes wrong.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core skills",
+                "skills": [
+                    {
+                        "name": "Cross-functional coordination",
+                        "why": "A project manager's real leverage is keeping dependent teams synchronized, not doing the work of any one team.",
+                        "howToStart": "Map every cross-team dependency in your current project on one page before the next milestone, and confirm each owner agrees with it.",
+                    },
+                    {
+                        "name": "Status reporting",
+                        "why": "Stakeholders make better decisions when they get an honest, concise status update instead of a vague 'on track.'",
+                        "howToStart": "Rewrite your next status update to lead with the single biggest risk to the deadline, not the list of completed tasks.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        "roleSlug": "scrum-master",
+        "title": "Scrum Master",
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "Agile ceremony facilitation",
+                        "why": "A standup or retro that runs long or produces no decisions trains the team to stop taking it seriously.",
+                        "howToStart": "Time-box your next retro to 30 minutes and end it with at least one concrete action item assigned to a named person.",
+                    },
+                    {
+                        "name": "Impediment removal",
+                        "why": "The scrum master's actual job is clearing blockers the team can't clear themselves — not just tracking the board.",
+                        "howToStart": "Pick one blocker your team has mentioned twice without resolution and personally own getting it removed this week.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core skills",
+                "skills": [
+                    {
+                        "name": "Team metrics and flow",
+                        "why": "Velocity and cycle time only help if you use them to spot real problems, not as a score to optimize for its own sake.",
+                        "howToStart": "Track your team's cycle time for one sprint and identify the single stage (review, testing, deploy) where work sits longest.",
+                    },
+                    {
+                        "name": "Coaching without authority",
+                        "why": "A scrum master has no direct authority over the team, so influence has to come from trust and clear reasoning, not a title.",
+                        "howToStart": "The next time you disagree with a team decision, ask one clarifying question before offering your own opinion.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        "roleSlug": "solutions-architect",
+        "title": "Solutions Architect",
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "Requirements-to-architecture translation",
+                        "why": "A solutions architect's job is turning a business need into a concrete technical shape a team can actually build.",
+                        "howToStart": "Take one vague business requirement you've seen and write two different technical approaches with the tradeoffs of each.",
+                    },
+                    {
+                        "name": "Integration patterns",
+                        "why": "Most real solutions architecture work is connecting existing systems, not building something from scratch.",
+                        "howToStart": "Diagram how data flows between two systems you use today (batch, event-driven, or synchronous API) and label where it could fail.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core skills",
+                "skills": [
+                    {
+                        "name": "Non-functional requirements",
+                        "why": "Scalability, security, and cost constraints decide whether a design survives contact with production, not just whether it works in a demo.",
+                        "howToStart": "For your next design, write down the expected load and failure tolerance before choosing any technology.",
+                    },
+                    {
+                        "name": "Stakeholder-facing technical communication",
+                        "why": "Architects present to both engineers and executives, and a design nobody outside the room understands won't get approved or built correctly.",
+                        "howToStart": "Explain your current design to someone outside engineering using no acronyms, and note which parts they couldn't follow.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        "roleSlug": "cloud-engineer",
+        "title": "Cloud Engineer",
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "Core cloud services",
+                        "why": "Compute, storage, and networking primitives are what every higher-level cloud service is built from, and debugging requires knowing them.",
+                        "howToStart": "Provision one small workload by hand in a cloud console (not a template) so you see every configuration choice explicitly.",
+                    },
+                    {
+                        "name": "Infrastructure as code",
+                        "why": "Manually configured infrastructure can't be reliably reproduced, reviewed, or rolled back — code can.",
+                        "howToStart": "Recreate the workload you just built by hand using a Terraform or CloudFormation template instead, and destroy/recreate it to prove it's repeatable.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core skills",
+                "skills": [
+                    {
+                        "name": "Cost optimization",
+                        "why": "Cloud bills grow silently, and identifying what's actually driving cost is a distinct skill from provisioning resources.",
+                        "howToStart": "Pull last month's cost breakdown for one project and identify the single largest line item you didn't expect.",
+                    },
+                    {
+                        "name": "Cloud security fundamentals",
+                        "why": "Misconfigured permissions and open resources are the most common real-world cloud incidents, not exotic attacks.",
+                        "howToStart": "Audit one resource's access policy and remove every permission that isn't demonstrably needed.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        "roleSlug": "database-administrator",
+        "title": "Database Administrator",
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "Schema design and normalization",
+                        "why": "A poorly normalized schema causes data integrity problems and slow queries that are expensive to fix after the fact.",
+                        "howToStart": "Take one existing table with repeated or redundant columns and redesign it into a properly normalized schema.",
+                    },
+                    {
+                        "name": "Backup and recovery",
+                        "why": "A backup strategy that's never been tested is not actually a backup strategy — it's an assumption.",
+                        "howToStart": "Restore a real backup to a scratch environment and time how long it takes, before you need to do it under pressure.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core skills",
+                "skills": [
+                    {
+                        "name": "Query performance tuning",
+                        "why": "Most database performance problems come from a handful of slow queries or missing indexes, not the hardware.",
+                        "howToStart": "Find the slowest query in one system you maintain, read its execution plan, and add the index that removes the biggest cost.",
+                    },
+                    {
+                        "name": "Replication and high availability",
+                        "why": "Production databases need to survive a node failure without losing data or going fully offline.",
+                        "howToStart": "Set up basic replication between two database instances in a test environment and simulate a primary failure.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        "roleSlug": "network-engineer",
+        "title": "Network Engineer",
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "TCP/IP and routing fundamentals",
+                        "why": "Every network problem eventually traces back to how packets are routed, and that requires a solid model of the underlying protocols.",
+                        "howToStart": "Trace the full path of one request from your machine to a public server using traceroute and explain each hop.",
+                    },
+                    {
+                        "name": "Network troubleshooting",
+                        "why": "Most network issues are diagnosed by isolating where in the path a failure occurs, not by guessing at the cause.",
+                        "howToStart": "The next time something is 'slow on the network,' use packet capture tools to find exactly where the delay is before touching any configuration.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core skills",
+                "skills": [
+                    {
+                        "name": "Firewall and segmentation design",
+                        "why": "A flat network where every host can reach every other host turns one compromised machine into a full breach.",
+                        "howToStart": "Diagram the network segments in one environment you manage and identify one place a firewall rule is missing or too permissive.",
+                    },
+                    {
+                        "name": "Network monitoring",
+                        "why": "Problems caught by monitoring get fixed before users notice; problems found by user complaints already cost trust.",
+                        "howToStart": "Set up one alert for a network metric (latency, packet loss, or bandwidth) that would have caught your last real incident earlier.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        "roleSlug": "it-support-specialist",
+        "title": "IT Support Specialist",
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "Systematic troubleshooting",
+                        "why": "Guessing at fixes wastes time and often masks the real problem; a repeatable process finds root cause faster.",
+                        "howToStart": "For your next ticket, write down your hypothesis before trying a fix, then confirm whether the fix actually addressed that hypothesis.",
+                    },
+                    {
+                        "name": "Ticket documentation",
+                        "why": "A resolved ticket with no notes helps nobody the next time the same issue happens to someone else.",
+                        "howToStart": "Add a one-line root cause and fix summary to every ticket you close this week, even the quick ones.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core skills",
+                "skills": [
+                    {
+                        "name": "Endpoint and identity management",
+                        "why": "Most support work at scale is managing devices and access consistently, not one-off troubleshooting.",
+                        "howToStart": "Document the full provisioning checklist for a new hire's laptop and accounts, then find one step that's still manual and could be automated.",
+                    },
+                    {
+                        "name": "Customer communication under pressure",
+                        "why": "A frustrated user needs to feel heard before they'll patiently wait through a real fix.",
+                        "howToStart": "Practice acknowledging the impact of an issue in your first response before explaining any technical detail.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        "roleSlug": "sales-engineer",
+        "title": "Sales Engineer",
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "Technical discovery",
+                        "why": "A demo built before understanding the prospect's actual technical environment and constraints usually misses the point that closes the deal.",
+                        "howToStart": "Before your next demo, write down the prospect's specific technical stack and the one problem they need solved, and tailor the demo to just that.",
+                    },
+                    {
+                        "name": "Product demonstration",
+                        "why": "A sales engineer's core deliverable is showing, concretely, how the product solves the prospect's problem — not a generic feature tour.",
+                        "howToStart": "Record yourself giving your standard demo, then cut every part that isn't directly tied to a customer pain point.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core skills",
+                "skills": [
+                    {
+                        "name": "Handling technical objections",
+                        "why": "Deals are frequently lost or won on how credibly technical concerns (security, integration, scale) are addressed.",
+                        "howToStart": "List the five technical objections you hear most often and write a specific, evidence-backed answer for each.",
+                    },
+                    {
+                        "name": "Proof-of-concept design",
+                        "why": "A well-scoped proof of concept proves the exact thing the customer needs proven, and nothing more — a poorly scoped one drags on for months.",
+                        "howToStart": "For your next POC, write the specific success criteria with the customer before any work starts, not after.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        "roleSlug": "customer-success-manager",
+        "title": "Customer Success Manager",
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "Onboarding design",
+                        "why": "A customer's long-term retention is often decided in their first 30 days, not by anything that happens later.",
+                        "howToStart": "Map your current onboarding flow step by step and find the single point where customers most often stall or drop off.",
+                    },
+                    {
+                        "name": "Account health monitoring",
+                        "why": "Churn is easier to prevent when it's spotted from usage and engagement signals weeks before the customer says anything.",
+                        "howToStart": "Pick three usage signals that predict churn for your product and check them for your accounts weekly, not just at renewal time.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core skills",
+                "skills": [
+                    {
+                        "name": "Renewal and expansion conversations",
+                        "why": "Renewals and upsells go smoother when the value delivered has already been made explicit, not argued for at the last minute.",
+                        "howToStart": "Before your next renewal conversation, prepare a one-page summary of the concrete value the customer has already gotten.",
+                    },
+                    {
+                        "name": "Cross-functional escalation",
+                        "why": "A CSM's credibility depends on getting real product or support issues resolved, not just relaying customer complaints.",
+                        "howToStart": "The next time a customer reports a real issue, personally track it to resolution and report back, instead of just forwarding the ticket.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        "roleSlug": "marketing-manager",
+        "title": "Marketing Manager",
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "Positioning and messaging",
+                        "why": "Every campaign, page, and ad depends on a clear answer to who this is for and why it matters — without that, tactics don't compound.",
+                        "howToStart": "Write a one-paragraph positioning statement for your product and test it against three real customers to see if it matches how they describe it.",
+                    },
+                    {
+                        "name": "Campaign planning",
+                        "why": "A campaign without a specific goal and audience produces activity, not results.",
+                        "howToStart": "For your next campaign, write the target audience, single goal, and success metric before choosing any channel or creative.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core skills",
+                "skills": [
+                    {
+                        "name": "Marketing analytics",
+                        "why": "Knowing which channels and campaigns actually drove results is what separates real budget decisions from guesses.",
+                        "howToStart": "Pull the full funnel numbers (impressions to conversion) for your last campaign and identify the stage with the biggest drop-off.",
+                    },
+                    {
+                        "name": "Cross-functional campaign execution",
+                        "why": "Marketing managers coordinate design, content, and sales — a great idea that no one executes on time doesn't ship.",
+                        "howToStart": "Build a simple shared timeline for your next campaign with named owners for every deliverable, not just a list of tasks.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        "roleSlug": "content-strategist",
+        "title": "Content Strategist",
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "Audience and content mapping",
+                        "why": "Content that isn't mapped to a specific audience and stage in their journey tends to be generic and gets ignored.",
+                        "howToStart": "List your three most important audience segments and one specific question or need each has that content could answer.",
+                    },
+                    {
+                        "name": "Editorial planning",
+                        "why": "Consistent, planned content compounds; reactive, one-off content rarely builds an audience.",
+                        "howToStart": "Build a four-week content calendar tied to specific goals, and track what gets published against the plan.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core skills",
+                "skills": [
+                    {
+                        "name": "Content performance measurement",
+                        "why": "Without measurement, content strategy is just opinion about what should work.",
+                        "howToStart": "Pick one published piece and trace its actual engagement and conversion data, then decide whether to do more of that format.",
+                    },
+                    {
+                        "name": "Content governance and consistency",
+                        "why": "As content scales across writers and channels, inconsistent voice and quality erode trust in the brand.",
+                        "howToStart": "Write a one-page style and tone guide from examples of your best existing content, and use it to review the next piece someone else writes.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        "roleSlug": "growth-marketer",
+        "title": "Growth Marketer",
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "Funnel analysis",
+                        "why": "Growth work starts with knowing exactly where in the funnel users drop off, not guessing at which lever to pull.",
+                        "howToStart": "Map your product's full funnel from first visit to activation and quantify the drop-off at each step.",
+                    },
+                    {
+                        "name": "Experiment design",
+                        "why": "Growth ideas that aren't tested with a real experiment just add noise, good or bad, that nobody can attribute correctly.",
+                        "howToStart": "Design one A/B test with a clear hypothesis and success metric before changing anything live.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core skills",
+                "skills": [
+                    {
+                        "name": "Channel-specific acquisition tactics",
+                        "why": "Paid, organic, referral, and lifecycle channels each have different mechanics, and generic tactics rarely transfer between them.",
+                        "howToStart": "Pick one acquisition channel your product doesn't fully use yet and run one small, measurable test in it.",
+                    },
+                    {
+                        "name": "Retention and lifecycle marketing",
+                        "why": "Acquiring users who don't come back is often more expensive than keeping the ones you already have engaged.",
+                        "howToStart": "Identify the point where users typically stop returning and design one lifecycle message aimed specifically at that moment.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        "roleSlug": "seo-specialist",
+        "title": "SEO Specialist",
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "Keyword research",
+                        "why": "Ranking for the wrong keywords, even at position one, brings traffic that doesn't convert.",
+                        "howToStart": "Pick one page you want to rank better and find three keyword variants with real search volume it currently doesn't target.",
+                    },
+                    {
+                        "name": "On-page and technical SEO",
+                        "why": "Content that search engines can't crawl, parse, or trust to load quickly won't rank no matter how good it is.",
+                        "howToStart": "Run a technical audit on one page (title tags, headings, load time, mobile rendering) and fix the single biggest issue you find.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core skills",
+                "skills": [
+                    {
+                        "name": "Link building and authority",
+                        "why": "Search engines weigh how many other trusted sites link to a page, not just its own content quality.",
+                        "howToStart": "Identify one legitimate, relevant site that could plausibly link to your content and reach out with a specific, useful reason to.",
+                    },
+                    {
+                        "name": "SEO analytics and reporting",
+                        "why": "Rankings alone don't prove business value; traffic and conversion from organic search do.",
+                        "howToStart": "Build one report connecting organic traffic to an actual business outcome (signups, revenue) for your top three pages.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        "roleSlug": "financial-analyst",
+        "title": "Financial Analyst",
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "Financial modeling",
+                        "why": "Most financial decisions run through a model, and a model with a wrong assumption baked in silently produces a wrong decision.",
+                        "howToStart": "Build a simple three-statement model for a company you know well and stress-test it by changing one assumption at a time.",
+                    },
+                    {
+                        "name": "Variance analysis",
+                        "why": "Understanding exactly why actuals differed from the forecast is what makes the next forecast more accurate.",
+                        "howToStart": "Take last month's actuals vs. budget for one line item and trace the specific driver behind the variance.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core skills",
+                "skills": [
+                    {
+                        "name": "Business partnering",
+                        "why": "Analysis that never reaches decision-makers in a form they can use doesn't influence the decision.",
+                        "howToStart": "Turn your next analysis into a one-page recommendation memo instead of a raw spreadsheet, and share it with the actual decision-maker.",
+                    },
+                    {
+                        "name": "Valuation methods",
+                        "why": "Comparing investment or business decisions requires a consistent way to value future cash flows against each other.",
+                        "howToStart": "Value one real or hypothetical investment using discounted cash flow and check your result against a market comparable.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        "roleSlug": "accountant",
+        "title": "Accountant",
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "Double-entry bookkeeping",
+                        "why": "Every other accounting skill assumes fluency with how debits and credits keep the books balanced.",
+                        "howToStart": "Record a full month of transactions for a small real or practice business by hand before relying on software to do it for you.",
+                    },
+                    {
+                        "name": "Month-end close process",
+                        "why": "A late or error-prone close delays every downstream report and decision that depends on accurate numbers.",
+                        "howToStart": "Write out every step of your close process with a target completion day, and track which steps consistently run late.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core skills",
+                "skills": [
+                    {
+                        "name": "Reconciliations",
+                        "why": "Discrepancies between internal records and external statements are often the first sign of an error or fraud.",
+                        "howToStart": "Fully reconcile one account you own down to zero difference, documenting every adjusting entry you make and why.",
+                    },
+                    {
+                        "name": "Financial reporting standards",
+                        "why": "Reports that don't follow the applicable standard (GAAP, IFRS) can't be trusted or audited by external parties.",
+                        "howToStart": "Pick one financial statement you prepare and check each line item against the specific standard that governs it.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        "roleSlug": "hr-generalist",
+        "title": "HR Generalist",
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "Employment law basics",
+                        "why": "Even routine HR decisions (leave, discipline, termination) carry legal exposure if the basics aren't understood.",
+                        "howToStart": "Read your jurisdiction's core requirements for one process you handle often (leave, termination) and check your current practice against it.",
+                    },
+                    {
+                        "name": "Employee relations",
+                        "why": "Most day-to-day HR work is handling conflicts and concerns fairly and consistently, not policy writing.",
+                        "howToStart": "Document your standard process for handling one type of employee concern so it's applied the same way every time, regardless of who raises it.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core skills",
+                "skills": [
+                    {
+                        "name": "Performance management systems",
+                        "why": "A performance process that feels arbitrary erodes trust faster than having no formal process at all.",
+                        "howToStart": "Review your current performance review template and remove any criteria that can't be tied to specific, observable behavior.",
+                    },
+                    {
+                        "name": "HR data and reporting",
+                        "why": "Decisions about retention, hiring, and compensation are stronger when backed by actual workforce data, not anecdotes.",
+                        "howToStart": "Pull your team's turnover rate for the last year and identify the one department or tenure band driving most of it.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        "roleSlug": "technical-recruiter",
+        "title": "Technical Recruiter",
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "Technical role and skill literacy",
+                        "why": "A recruiter who can't tell a strong resume from a keyword-stuffed one wastes hiring managers' time on the wrong candidates.",
+                        "howToStart": "Sit with a hiring manager through one technical screen and write down the specific signals they used to say yes or no.",
+                    },
+                    {
+                        "name": "Sourcing strategy",
+                        "why": "For competitive roles, the best candidates usually aren't the ones who applied — they have to be found and approached.",
+                        "howToStart": "Build a search string that surfaces candidates matching your hardest-to-fill role, and reach out to five with a specific, non-generic message.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core skills",
+                "skills": [
+                    {
+                        "name": "Candidate experience management",
+                        "why": "A disorganized or slow process loses strong candidates to competitors regardless of how good the role is.",
+                        "howToStart": "Time your current process from first contact to offer, and fix the single longest gap in that timeline.",
+                    },
+                    {
+                        "name": "Offer negotiation",
+                        "why": "Losing a finalist candidate over an avoidable negotiation misstep is one of the most expensive recruiting mistakes.",
+                        "howToStart": "Before your next offer call, write down the candidate's likely priorities (comp, title, remote) and your actual flexibility on each.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        "roleSlug": "operations-manager",
+        "title": "Operations Manager",
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "Process documentation",
+                        "why": "An undocumented process only works as long as the one person who knows it stays, and it can't be improved systematically.",
+                        "howToStart": "Document one core recurring process end-to-end, then have someone unfamiliar with it try to follow your instructions exactly.",
+                    },
+                    {
+                        "name": "KPI tracking",
+                        "why": "Operations decisions without a small set of tracked metrics tend to react to whatever problem is loudest that week.",
+                        "howToStart": "Pick three metrics that best represent operational health for your team and start tracking them weekly, even manually at first.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core skills",
+                "skills": [
+                    {
+                        "name": "Vendor and resource management",
+                        "why": "Operations managers are often accountable for costs and reliability they don't directly control, which runs through vendor relationships.",
+                        "howToStart": "Review one active vendor contract against actual usage and identify a specific cost or service gap.",
+                    },
+                    {
+                        "name": "Process improvement",
+                        "why": "A process that works today usually breaks as volume grows; improvement is a continuous responsibility, not a one-time project.",
+                        "howToStart": "Find the slowest step in one process you own and redesign just that step, then measure whether it actually got faster.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        "roleSlug": "supply-chain-analyst",
+        "title": "Supply Chain Analyst",
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "Demand forecasting",
+                        "why": "Over- or under-forecasting demand drives most of the excess inventory or stockout problems a supply chain deals with.",
+                        "howToStart": "Build a simple forecast for one product line using historical data and compare it against what actually happened last period.",
+                    },
+                    {
+                        "name": "Inventory management",
+                        "why": "Balancing carrying cost against stockout risk is the central tradeoff of supply chain work, not just tracking quantities.",
+                        "howToStart": "Calculate the reorder point for one SKU based on its actual lead time and demand variability, not a rule of thumb.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core skills",
+                "skills": [
+                    {
+                        "name": "Supplier performance analysis",
+                        "why": "A cheaper supplier that delivers late or inconsistently often costs more overall than a slightly pricier reliable one.",
+                        "howToStart": "Score your top three suppliers on on-time delivery and defect rate using real data from the last quarter, not reputation.",
+                    },
+                    {
+                        "name": "Logistics cost optimization",
+                        "why": "Transportation and warehousing costs are often the largest controllable line item in the supply chain.",
+                        "howToStart": "Break down the shipping cost for one product's full journey and identify the single most expensive leg.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        "roleSlug": "graphic-designer",
+        "title": "Graphic Designer",
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "Typography and layout",
+                        "why": "Weak typography and layout undermine even strong concepts — most viewers notice bad spacing before they notice a clever idea.",
+                        "howToStart": "Redesign one piece of existing marketing material using only better typography and spacing, no new imagery.",
+                    },
+                    {
+                        "name": "Brand system application",
+                        "why": "Most professional design work happens inside an existing brand system, not as a blank-canvas creative exercise.",
+                        "howToStart": "Take one brand's guidelines and design three different assets (social post, flyer, banner) that all clearly belong to the same brand.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core skills",
+                "skills": [
+                    {
+                        "name": "Design critique and iteration",
+                        "why": "First drafts are rarely the final answer; the ability to take specific feedback and iterate is what separates professional output.",
+                        "howToStart": "Share one design for critique before you think it's finished, and revise it based on the two most specific pieces of feedback.",
+                    },
+                    {
+                        "name": "Production-ready file preparation",
+                        "why": "A design that looks great on screen but isn't prepared correctly for print or web causes costly delays and rework.",
+                        "howToStart": "Take one finished design through the full production checklist (color mode, resolution, export formats) for its actual output channel.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        "roleSlug": "ux-writer",
+        "title": "UX Writer",
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "Microcopy and interface writing",
+                        "why": "Button labels, error messages, and empty states are often the only 'content' most users ever read, and bad ones cause real confusion.",
+                        "howToStart": "Rewrite the five worst error messages or button labels in a product you use, focusing on clarity over cleverness.",
+                    },
+                    {
+                        "name": "Voice and tone consistency",
+                        "why": "Inconsistent voice across a product makes it feel unpolished even when the visual design is strong.",
+                        "howToStart": "Audit ten UI strings across one product flow and flag every one that doesn't match the intended voice and tone.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core skills",
+                "skills": [
+                    {
+                        "name": "Content testing",
+                        "why": "Assuming copy is clear because the writer understands it is a common mistake; real users often read it differently.",
+                        "howToStart": "Test two versions of one confusing piece of UI copy with a handful of real users and see which one they understand faster.",
+                    },
+                    {
+                        "name": "Collaborating with design and engineering",
+                        "why": "UX writing decided in isolation often gets overridden or ignored once implementation constraints show up.",
+                        "howToStart": "Join one design review before copy is finalized and flag any place where a technical or layout constraint changes what you can write.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        "roleSlug": "sales-account-executive",
+        "title": "Account Executive",
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "Discovery and qualification",
+                        "why": "Time spent on deals that were never going to close is the single biggest efficiency loss for most sales reps.",
+                        "howToStart": "Write a specific qualification checklist (budget, need, timeline, decision-maker) and apply it honestly to your current pipeline.",
+                    },
+                    {
+                        "name": "Pipeline management",
+                        "why": "A pipeline that isn't accurately staged leads to unreliable forecasts and surprises at quarter end.",
+                        "howToStart": "Review every deal in your pipeline this week and move any deal to the stage it actually belongs in, even if that means downgrading it.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core skills",
+                "skills": [
+                    {
+                        "name": "Negotiation and closing",
+                        "why": "Deals stall or shrink most often when a rep doesn't have a clear plan for handling price pushback or a competing option.",
+                        "howToStart": "Before your next negotiation, decide in advance what you can concede and what you can't, so you're not deciding under pressure.",
+                    },
+                    {
+                        "name": "Forecast accuracy",
+                        "why": "Sales leadership makes hiring, spending, and board-level decisions based on the forecast, so an inflated one causes real downstream damage.",
+                        "howToStart": "Compare your forecast from last quarter to what actually closed, and identify which specific deals you were overconfident about.",
                     },
                 ],
             },

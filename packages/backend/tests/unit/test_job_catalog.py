@@ -23,6 +23,12 @@ from rezumi.modules.job_match.infrastructure.job_catalog.arbeitnow_connector imp
 from rezumi.modules.job_match.infrastructure.job_catalog.fake_connector import (
     FakeCatalogConnector,
 )
+from rezumi.modules.job_match.infrastructure.job_catalog.himalayas_connector import (
+    HimalayasCatalogConnector,
+)
+from rezumi.modules.job_match.infrastructure.job_catalog.jobicy_connector import (
+    JobicyCatalogConnector,
+)
 from rezumi.modules.job_match.infrastructure.job_catalog.registry import (
     default_job_catalog_connectors,
 )
@@ -74,17 +80,17 @@ class _MemoryJobCatalogStore:
         self.documents[(listing.platform, listing.external_id)] = listing
 
     async def search(
-        self, *, keywords: tuple[str, ...], limit: int
+        self, *, keywords: tuple[str, ...], limit: int, offset: int = 0
     ) -> tuple[CatalogJobListing, ...]:
         if not keywords:
-            return tuple(self.documents.values())[:limit]
+            return tuple(self.documents.values())[offset : offset + limit]
         lowered = {word.casefold() for word in keywords}
         matches = [
             listing
             for listing in self.documents.values()
             if lowered & set(listing.title.casefold().split())
         ]
-        return tuple(matches[:limit])
+        return tuple(matches[offset : offset + limit])
 
     async def get_listing(self, platform: str, external_id: str) -> CatalogJobListing | None:
         return self.documents.get((platform, external_id))
@@ -189,12 +195,95 @@ async def test_arbeitnow_connector_stops_when_there_is_no_next_page() -> None:
     assert listings[0].remote is True
 
 
-def test_default_registry_has_three_zero_config_connectors() -> None:
+@pytest.mark.asyncio
+async def test_jobicy_connector_parses_and_rejects_malformed_entries() -> None:
+    connector = JobicyCatalogConnector()
+    payload = {
+        "jobs": [
+            {
+                "id": 101,
+                "jobTitle": "Data Analyst",
+                "companyName": "Acme",
+                "url": "https://jobicy.com/jobs/101-data-analyst",
+                "jobGeo": "USA",
+                "jobIndustry": ["Data Science"],
+                "jobType": ["Full-Time"],
+                "jobDescription": "<p>Analyze <b>data</b>.</p>",
+                "pubDate": "2026-08-20T00:00:00+00:00",
+            },
+            {"id": "", "jobTitle": "Missing id", "url": "https://jobicy.com/jobs/102"},
+            {"id": 103, "jobTitle": "No URL"},
+        ]
+    }
+    with patch(
+        "rezumi.modules.job_match.infrastructure.job_catalog.jobicy_connector.urlopen",
+        return_value=_FakeHttpResponse(payload),
+    ):
+        listings = [listing async for listing in connector.iter_listings()]
+
+    assert len(listings) == 1
+    listing = listings[0]
+    assert listing.platform == "jobicy"
+    assert listing.external_id == "101"
+    assert listing.application_url == "https://jobicy.com/jobs/101-data-analyst"
+    assert "Analyze data" in listing.source_text
+    assert listing.remote is True
+    assert listing.posted_at is not None
+
+
+@pytest.mark.asyncio
+async def test_himalayas_connector_follows_cursor_pagination() -> None:
+    connector = HimalayasCatalogConnector()
+    first_page = {
+        "jobs": [
+            {
+                "guid": "https://himalayas.app/companies/acme/jobs/backend-engineer",
+                "title": "Backend Engineer",
+                "companyName": "Acme",
+                "applicationLink": "https://himalayas.app/companies/acme/jobs/backend-engineer",
+                "locationRestrictions": ["United States"],
+                "categories": ["Engineering"],
+                "description": "Build the platform.",
+                "pubDate": 1_755_648_000,
+            },
+            {"guid": "", "title": "Missing guid"},
+        ],
+        "nextCursor": "cursor-2",
+    }
+    second_page = {
+        "jobs": [
+            {
+                "guid": "https://himalayas.app/companies/acme/jobs/data-scientist",
+                "title": "Data Scientist",
+                "companyName": "Acme",
+                "applicationLink": "https://himalayas.app/companies/acme/jobs/data-scientist",
+                "locationRestrictions": ["Worldwide"],
+                "categories": ["Data"],
+                "description": "Model the data.",
+                "pubDate": 1_755_648_100,
+            },
+        ],
+        "nextCursor": None,
+    }
+    with patch(
+        "rezumi.modules.job_match.infrastructure.job_catalog.himalayas_connector.urlopen",
+        side_effect=[_FakeHttpResponse(first_page), _FakeHttpResponse(second_page)],
+    ):
+        listings = [listing async for listing in connector.iter_listings()]
+
+    assert [listing.title for listing in listings] == ["Backend Engineer", "Data Scientist"]
+    assert all(listing.platform == "himalayas" for listing in listings)
+    assert all(listing.remote is True for listing in listings)
+
+
+def test_default_registry_has_five_zero_config_connectors() -> None:
     connectors = default_job_catalog_connectors()
     assert {connector.platform for connector in connectors} == {
         "remotive",
         "remoteok",
         "arbeitnow",
+        "himalayas",
+        "jobicy",
     }
 
 
@@ -238,8 +327,77 @@ async def test_query_service_matches_by_target_role_keywords() -> None:
     result = await query.search_for_owner(uuid4())
 
     assert result.target_role_titles == ("Software Engineer",)
+    assert result.suggested_role_titles == ("Software Engineer",)
+    assert result.selected_role_titles == ()
     assert len(result.listings) == 1
     assert result.listings[0].title == "Software Engineer"
+
+
+@pytest.mark.asyncio
+async def test_query_service_prefers_explicit_role_preference_over_suggestion() -> None:
+    store = _MemoryJobCatalogStore()
+    sync = JobCatalogSyncService(
+        connectors=(FakeCatalogConnector(),), store=store, clock=FixedClock(NOW)
+    )
+    await sync.sync_all()
+
+    class _StaticTargetRoles:
+        async def target_role_titles(self, owner_user_id):
+            _ = owner_user_id
+            return ("Backend Engineer",)
+
+    class _StaticRolePreference:
+        async def get_role_preference(self, owner_user_id):
+            _ = owner_user_id
+            return ("Software Engineer",)
+
+    query = JobCatalogQueryService(
+        store=store,
+        target_roles=_StaticTargetRoles(),
+        role_preferences=_StaticRolePreference(),
+    )
+    result = await query.search_for_owner(uuid4())
+
+    assert result.suggested_role_titles == ("Backend Engineer",)
+    assert result.selected_role_titles == ("Software Engineer",)
+    assert result.target_role_titles == ("Software Engineer",)
+    assert len(result.listings) == 1
+    assert result.listings[0].title == "Software Engineer"
+
+
+@pytest.mark.asyncio
+async def test_query_service_browse_paginates_with_has_more() -> None:
+    store = _MemoryJobCatalogStore()
+    for index in range(3):
+        await store.upsert_listing(
+            CatalogJobListing(
+                platform="fake",
+                external_id=f"listing-{index}",
+                title=f"Widget Engineer {index}",
+                company="Fixture Co",
+                location=None,
+                remote=True,
+                application_url=None,
+                source_text="Build widgets.",
+                posted_at=None,
+            ),
+            fetched_at=NOW,
+        )
+
+    class _EmptyTargetRoles:
+        async def target_role_titles(self, owner_user_id):
+            _ = owner_user_id
+            return ()
+
+    query = JobCatalogQueryService(store=store, target_roles=_EmptyTargetRoles())
+
+    first_page, first_has_more = await query.browse(query="", limit=2, offset=0)
+    assert len(first_page) == 2
+    assert first_has_more is True
+
+    second_page, second_has_more = await query.browse(query="", limit=2, offset=2)
+    assert len(second_page) == 1
+    assert second_has_more is False
 
 
 # --- Target-role provider -------------------------------------------------------------

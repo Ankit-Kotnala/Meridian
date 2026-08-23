@@ -16,6 +16,7 @@ from rezumi.modules.job_match.application.job_catalog_query import JobCatalogSea
 from rezumi.modules.job_match.domain import RequirementEvidenceLink, RequirementMatch
 
 from rezumi_api.modules.job_match.schemas import (
+    JobCatalogBrowseResponse,
     JobCatalogListingResponse,
     JobCatalogSearchResponse,
     JobMatchAnalysisResponse,
@@ -28,6 +29,7 @@ from rezumi_api.modules.job_match.schemas import (
     RequirementEvidenceResponse,
     RequirementMatchPageResponse,
     RequirementMatchResponse,
+    RolePreferenceResponse,
 )
 
 
@@ -183,4 +185,21 @@ def job_catalog_search_response(result: JobCatalogSearchResult) -> JobCatalogSea
     return JobCatalogSearchResponse(
         target_role_titles=list(result.target_role_titles),
         listings=[job_catalog_listing_response(listing) for listing in result.listings],
+        matched_target_role=result.matched_target_role,
+        suggested_role_titles=list(result.suggested_role_titles),
+        selected_role_titles=list(result.selected_role_titles),
+    )
+
+
+def role_preference_response(role_titles: tuple[str, ...]) -> RolePreferenceResponse:
+    return RolePreferenceResponse(role_titles=list(role_titles))
+
+
+def job_catalog_browse_response(
+    listings: tuple[CatalogJobListing, ...], *, has_more: bool, next_offset: int
+) -> JobCatalogBrowseResponse:
+    return JobCatalogBrowseResponse(
+        listings=[job_catalog_listing_response(listing) for listing in listings],
+        has_more=has_more,
+        next_offset=next_offset,
     )

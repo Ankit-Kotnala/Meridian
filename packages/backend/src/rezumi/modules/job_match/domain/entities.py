@@ -133,6 +133,39 @@ class JobAuditAction(StrEnum):
     JOBS_SYNCED_FROM_SOURCE = "jobs_synced_from_source"
 
 
+_MAX_ROLE_PREFERENCE_TITLES = 20
+
+
+@dataclass(frozen=True, slots=True)
+class RolePreference:
+    """An owner's explicit opt-in/opt-out of role titles used to filter the shared job catalog.
+
+    Free-text, not limited to any curated role taxonomy — an owner must be
+    able to filter toward a role that hasn't been seeded anywhere else in the
+    product. An empty ``role_titles`` means the owner explicitly cleared
+    their selection (the query service then falls back to the auto-suggested
+    role from Role Readiness / Career Record).
+    """
+
+    id: UUID
+    owner_user_id: UUID
+    role_titles: tuple[str, ...]
+    version: int
+    created_at: datetime
+    updated_at: datetime
+
+    def __post_init__(self) -> None:
+        _positive_version(self.version)
+        normalized: list[str] = []
+        for title in self.role_titles:
+            candidate = _text(title, "role title", 200)
+            if candidate not in normalized:
+                normalized.append(candidate)
+        if len(normalized) > _MAX_ROLE_PREFERENCE_TITLES:
+            raise JobMatchValidationError("role preference exceeds the supported limit")
+        object.__setattr__(self, "role_titles", tuple(normalized))
+
+
 @dataclass(slots=True)
 class JobPosting:
     id: UUID

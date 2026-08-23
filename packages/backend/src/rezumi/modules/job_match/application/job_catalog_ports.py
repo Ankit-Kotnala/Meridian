@@ -60,6 +60,7 @@ class JobCatalogStore(Protocol):
         *,
         keywords: tuple[str, ...],
         limit: int,
+        offset: int = 0,
     ) -> tuple[CatalogJobListing, ...]: ...
 
     async def get_listing(

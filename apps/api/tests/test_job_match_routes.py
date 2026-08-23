@@ -195,16 +195,16 @@ class _MemoryJobCatalogStore:
     async def upsert_listing(self, listing, *, fetched_at) -> None:
         self.documents[(listing.platform, listing.external_id)] = listing
 
-    async def search(self, *, keywords, limit):
+    async def search(self, *, keywords, limit, offset=0):
         if not keywords:
-            return tuple(self.documents.values())[:limit]
+            return tuple(self.documents.values())[offset : offset + limit]
         lowered = {word.casefold() for word in keywords}
         matches = [
             listing
             for listing in self.documents.values()
             if lowered & set(listing.title.casefold().split())
         ]
-        return tuple(matches[:limit])
+        return tuple(matches[offset : offset + limit])
 
     async def get_listing(self, platform: str, external_id: str):
         return self.documents.get((platform, external_id))
@@ -275,3 +275,85 @@ def test_job_catalog_search_and_save_is_owner_scoped(
             "/api/v1/job-catalog/fake/does-not-exist/save", headers=_write_headers()
         )
         assert missing.status_code == 404
+
+        browse = client.get("/api/v1/job-catalog/search", params={"limit": 1})
+        assert browse.status_code == 200
+        browse_body = browse.json()
+        assert browse_body["listings"][0]["externalId"] == "fake-1"
+        assert browse_body["hasMore"] is False
+        assert browse_body["nextOffset"] == 1
+
+
+def test_job_catalog_role_preferences_round_trip_and_filter_precedence(
+    settings: Settings, fake_database: FakeDatabase
+) -> None:
+    from rezumi.modules.job_match.application.job_catalog_ports import CatalogJobListing
+    from rezumi.modules.job_match.application.job_catalog_query import JobCatalogQueryService
+
+    owner_id = uuid4()
+    identity, job_match = _services(owner_id)
+    suggested = CatalogJobListing(
+        platform="fake",
+        external_id="suggested-1",
+        title="Software Engineer",
+        company="Fixture Co",
+        location="Remote",
+        remote=True,
+        application_url=None,
+        source_text="Build backend services.",
+        posted_at=None,
+    )
+    selected = CatalogJobListing(
+        platform="fake",
+        external_id="selected-1",
+        title="Product Manager",
+        company="Fixture Co",
+        location="Remote",
+        remote=True,
+        application_url=None,
+        source_text="Own the roadmap.",
+        posted_at=None,
+    )
+    store = _MemoryJobCatalogStore([suggested, selected])
+
+    class _StaticTargetRoles:
+        async def target_role_titles(self, owner_user_id):
+            return ("Software Engineer",)
+
+    catalog = JobCatalogQueryService(
+        store=store, target_roles=_StaticTargetRoles(), role_preferences=job_match
+    )
+
+    with TestClient(
+        create_app(
+            settings,
+            database=fake_database,
+            identity=identity,
+            job_match=job_match,
+            job_catalog_query=catalog,
+        )
+    ) as client:
+        client.cookies.set("rezumi_session", "opaque-session")
+        client.cookies.set("rezumi_csrf", "opaque-csrf")
+
+        initial = client.get("/api/v1/job-catalog/role-preferences")
+        assert initial.status_code == 200
+        assert initial.json()["roleTitles"] == []
+
+        default_search = client.get("/api/v1/job-catalog")
+        assert default_search.json()["selectedRoleTitles"] == []
+        assert default_search.json()["suggestedRoleTitles"] == ["Software Engineer"]
+
+        updated = client.put(
+            "/api/v1/job-catalog/role-preferences",
+            json={"roleTitles": ["Product Manager"]},
+            headers=_write_headers(),
+        )
+        assert updated.status_code == 200
+        assert updated.json()["roleTitles"] == ["Product Manager"]
+
+        filtered_search = client.get("/api/v1/job-catalog")
+        body = filtered_search.json()
+        assert body["selectedRoleTitles"] == ["Product Manager"]
+        assert body["targetRoleTitles"] == ["Product Manager"]
+        assert [listing["externalId"] for listing in body["listings"]] == ["selected-1"]

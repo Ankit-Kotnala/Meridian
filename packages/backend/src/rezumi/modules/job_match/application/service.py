@@ -27,6 +27,7 @@ from rezumi.modules.job_match.domain import (
     OpportunityPriorityInput,
     RequirementEvidenceLink,
     RequirementMatch,
+    RolePreference,
     WorkModel,
     extract_job_content,
     score_job_match,
@@ -570,6 +571,38 @@ class JobMatchService:
             return OpportunityPriorityView(
                 priority=priority, job=job.job, analysis=analysis.analysis
             )
+
+    async def get_role_preference(self, owner_user_id: UUID) -> tuple[str, ...]:
+        """Return the owner's explicit job-catalog role filter, or `()` if unset.
+
+        Also satisfies `job_catalog_query.RolePreferenceProvider` structurally
+        so the query service can resolve it without an extra adapter class.
+        """
+        async with self._uow() as uow:
+            preference = await uow.get_role_preference(owner_user_id)
+        return preference.role_titles if preference is not None else ()
+
+    async def set_role_preference(
+        self,
+        owner_user_id: UUID,
+        role_titles: tuple[str, ...],
+        context: RequestContext,
+    ) -> tuple[str, ...]:
+        self._authorize(owner_user_id, context)
+        now = self._clock.now()
+        async with self._uow() as uow:
+            existing = await uow.get_role_preference(owner_user_id)
+            preference = RolePreference(
+                id=existing.id if existing is not None else self._ids.new(),
+                owner_user_id=owner_user_id,
+                role_titles=role_titles,
+                version=1 if existing is None else existing.version + 1,
+                created_at=existing.created_at if existing is not None else now,
+                updated_at=now,
+            )
+            await uow.upsert_role_preference(preference)
+            await uow.commit()
+        return preference.role_titles
 
     async def get_priority(self, owner_user_id: UUID, priority_id: UUID) -> OpportunityPriorityView:
         async with self._uow() as uow:

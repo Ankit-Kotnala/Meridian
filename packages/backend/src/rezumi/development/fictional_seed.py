@@ -122,7 +122,7 @@ from rezumi.modules.role_readiness.infrastructure.models import SavedRoleModel
 FIXTURE_CREATED_AT = datetime(2026, 7, 1, 9, 0, tzinfo=UTC)
 FIXTURE_EMAIL = "alex.morgan@example.invalid"
 FIXTURE_PASSWORD = "Fictional-Local-Only-2026!"  # noqa: S105 - public local fixture
-EXPECTED_MIGRATION_HEAD = "20260823_0016"
+EXPECTED_MIGRATION_HEAD = "20260823_0017"
 PRODUCT_MANAGER_ROLE_ID = UUID("00000000-0000-4000-8000-000000000411")
 PRODUCT_MANAGER_ROLE_SLUG = "product-manager"
 PRODUCT_MANAGER_TAXONOMY_VERSION = "rezumi-seed-roles/2026-07-19"

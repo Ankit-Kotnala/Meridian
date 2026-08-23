@@ -1,8 +1,13 @@
-"""Arbeitnow published job-board API connector.
+"""Himalayas published remote-jobs API connector.
 
-Arbeitnow's terms require a link back to arbeitnow.com wherever data from
-their API is shown; `application_url` (their own listing URL) is always
-preserved for that purpose.
+Himalayas is a dedicated remote-work job board; every listing embeds an
+"Originally posted on Himalayas" attribution notice, and `application_url`
+(the Himalayas listing page, which itself redirects to the employer) is
+always preserved. The feed supports cursor-based pagination (their own
+documented, preferred alternative to the deprecated offset parameter — see
+the `comments` field returned on every call), which is what makes this
+connector able to pull a genuinely large, varied slice of open listings
+rather than a single fixed-size page.
 """
 
 from __future__ import annotations
@@ -13,6 +18,7 @@ from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 from typing import Any
 from urllib.error import HTTPError, URLError
+from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 from rezumi.modules.job_match.application.job_catalog_ports import CatalogJobListing
@@ -23,7 +29,8 @@ from rezumi.modules.job_match.infrastructure.job_catalog._text import (
     plain_text,
 )
 
-_BASE_URL = "https://www.arbeitnow.com/api/job-board-api"
+_BASE_URL = "https://himalayas.app/jobs/api"
+_PAGE_LIMIT = 100
 _TIMEOUT = 10.0
 _MAX_RESPONSE_BYTES = 5_000_000
 _MAX_PAGES = 30
@@ -31,15 +38,17 @@ _MAX_LISTINGS = 3_000
 _USER_AGENT = "RezumiJobCatalog/1.0 (+https://rezumi.local; job-catalog sync)"
 
 
-class ArbeitnowCatalogConnector:
-    platform = "arbeitnow"
+class HimalayasCatalogConnector:
+    platform = "himalayas"
 
     async def iter_listings(self) -> AsyncIterator[CatalogJobListing]:
         emitted = 0
-        page = 1
-        while page <= _MAX_PAGES and emitted < _MAX_LISTINGS:
-            payload = await asyncio.to_thread(self._fetch, page)
-            entries = payload.get("data") if isinstance(payload, dict) else None
+        page = 0
+        cursor: str | None = None
+        seen_cursors: set[str] = set()
+        while page < _MAX_PAGES and emitted < _MAX_LISTINGS:
+            payload = await asyncio.to_thread(self._fetch, cursor)
+            entries = payload.get("jobs") if isinstance(payload, dict) else None
             if not isinstance(entries, list) or not entries:
                 return
             for entry in entries:
@@ -49,14 +58,19 @@ class ArbeitnowCatalogConnector:
                 if listing is not None:
                     emitted += 1
                     yield listing
-            links = payload.get("links") if isinstance(payload, dict) else None
-            if not isinstance(links, dict) or not links.get("next"):
+            next_cursor = payload.get("nextCursor") if isinstance(payload, dict) else None
+            if not isinstance(next_cursor, str) or not next_cursor or next_cursor in seen_cursors:
                 return
+            seen_cursors.add(next_cursor)
+            cursor = next_cursor
             page += 1
 
-    def _fetch(self, page: int) -> Any:
-        request = Request(  # noqa: S310 - fixed Arbeitnow API host
-            f"{_BASE_URL}?page={page}",
+    def _fetch(self, cursor: str | None) -> Any:
+        url = f"{_BASE_URL}?limit={_PAGE_LIMIT}"
+        if cursor:
+            url = f"{url}&cursor={quote(cursor)}"
+        request = Request(  # noqa: S310 - fixed Himalayas API host
+            url,
             headers={"Accept": "application/json", "User-Agent": _USER_AGENT},
             method="GET",
         )
@@ -74,9 +88,9 @@ class ArbeitnowCatalogConnector:
 def _listing(entry: Any) -> CatalogJobListing | None:
     if not isinstance(entry, dict):
         return None
-    external_id = str(entry.get("slug") or "").strip()
+    external_id = str(entry.get("guid") or "").strip()
     raw_title = str(entry.get("title") or "").strip()
-    application_url = str(entry.get("url") or "").strip()
+    application_url = str(entry.get("applicationLink") or entry.get("guid") or "").strip()
     if (
         not external_id
         or not raw_title
@@ -85,24 +99,27 @@ def _listing(entry: Any) -> CatalogJobListing | None:
     ):
         return None
     title = bounded_title(raw_title)
-    company = bounded_company(str(entry.get("company_name") or "")) or None
-    location = bounded_location(str(entry.get("location") or "")) or None
-    description = plain_text(str(entry.get("description") or ""))
-    tags = entry.get("tags")
-    job_types = entry.get("job_types")
-    tag_text = " ".join(str(tag) for tag in tags) if isinstance(tags, list) else ""
-    type_text = " ".join(str(kind) for kind in job_types) if isinstance(job_types, list) else ""
-    source_text = plain_text(
-        " ".join(part for part in (tag_text, type_text, description) if part)
+    company = bounded_company(str(entry.get("companyName") or "")) or None
+    locations = entry.get("locationRestrictions")
+    location = (
+        bounded_location(", ".join(str(item) for item in locations))
+        if isinstance(locations, list) and locations
+        else None
     )
-    posted_at = _parse_timestamp(entry.get("created_at"))
+    categories = entry.get("categories")
+    category_text = (
+        " ".join(str(item) for item in categories) if isinstance(categories, list) else ""
+    )
+    description = plain_text(str(entry.get("description") or entry.get("excerpt") or ""))
+    source_text = plain_text(" ".join(part for part in (category_text, description) if part))
+    posted_at = _parse_timestamp(entry.get("pubDate"))
     return CatalogJobListing(
-        platform="arbeitnow",
+        platform="himalayas",
         external_id=external_id,
         title=title,
         company=company,
         location=location,
-        remote=bool(entry.get("remote")) if "remote" in entry else None,
+        remote=True,
         application_url=application_url,
         source_text=source_text or title,
         posted_at=posted_at,

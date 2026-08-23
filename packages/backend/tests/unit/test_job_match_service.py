@@ -166,3 +166,32 @@ async def test_opportunity_priority_uses_latest_analysis_and_denies_cross_user()
     assert priority.priority.job_id == job.job.id
     assert priority.priority.analysis_id == analysis.analysis.id
     assert priority.priority.next_action
+
+
+@pytest.mark.asyncio
+async def test_role_preference_upsert_bumps_version_and_is_owner_scoped() -> None:
+    owner = uuid4()
+    other = uuid4()
+    memory = MemoryJobMatch()
+    service, _ = _service(memory)
+
+    assert await service.get_role_preference(owner) == ()
+
+    first = await service.set_role_preference(
+        owner, ("Backend Engineer", "Platform Engineer"), _context(owner)
+    )
+    assert first == ("Backend Engineer", "Platform Engineer")
+    stored = await memory.get_role_preference(owner)
+    assert stored is not None
+    assert stored.version == 1
+
+    second = await service.set_role_preference(owner, ("Staff Engineer",), _context(owner))
+    assert second == ("Staff Engineer",)
+    stored_again = await memory.get_role_preference(owner)
+    assert stored_again is not None
+    assert stored_again.version == 2
+    assert stored_again.id == stored.id
+
+    assert await service.get_role_preference(other) == ()
+    with pytest.raises(JobMatchNotFound):
+        await service.set_role_preference(owner, ("Nope",), _context(other))

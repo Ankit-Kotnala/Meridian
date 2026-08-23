@@ -390,6 +390,23 @@ class OpportunityPriorityModel(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
+class RolePreferenceModel(Base):
+    __tablename__ = "job_catalog_role_preferences"
+    __table_args__ = (
+        CheckConstraint("version > 0", name="version_positive"),
+        UniqueConstraint("owner_user_id", name="uq_job_catalog_role_preferences_owner"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
+    owner_user_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    role_titles: Mapped[list[str]] = mapped_column(JSONB, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, server_default=text("1"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
 class JobMatchAuditEventModel(Base):
     __tablename__ = "job_match_audit_events"
     __table_args__ = (

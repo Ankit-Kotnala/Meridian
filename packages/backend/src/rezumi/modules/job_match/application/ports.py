@@ -13,6 +13,7 @@ from rezumi.modules.job_match.domain import (
     JobMatchAuditEvent,
     JobSourceKind,
     OpportunityPriorityAnalysis,
+    RolePreference,
 )
 
 from .models import AnalysisRecord, ImportedJobSource, JobFilter, JobRecord, PageCursor
@@ -98,6 +99,10 @@ class JobMatchUnitOfWork(Protocol):
     ) -> OpportunityPriorityAnalysis | None: ...
 
     async def add_audit(self, event: JobMatchAuditEvent) -> None: ...
+
+    async def get_role_preference(self, owner_user_id: UUID) -> RolePreference | None: ...
+
+    async def upsert_role_preference(self, preference: RolePreference) -> None: ...
 
     async def commit(self) -> None: ...
 

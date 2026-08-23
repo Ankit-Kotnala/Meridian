@@ -6,6 +6,12 @@ from rezumi.modules.job_match.application.job_catalog_ports import JobCatalogSou
 from rezumi.modules.job_match.infrastructure.job_catalog.arbeitnow_connector import (
     ArbeitnowCatalogConnector,
 )
+from rezumi.modules.job_match.infrastructure.job_catalog.himalayas_connector import (
+    HimalayasCatalogConnector,
+)
+from rezumi.modules.job_match.infrastructure.job_catalog.jobicy_connector import (
+    JobicyCatalogConnector,
+)
 from rezumi.modules.job_match.infrastructure.job_catalog.remoteok_connector import (
     RemoteOkCatalogConnector,
 )
@@ -20,4 +26,6 @@ def default_job_catalog_connectors() -> tuple[JobCatalogSourceConnector, ...]:
         RemotiveCatalogConnector(),
         RemoteOkCatalogConnector(),
         ArbeitnowCatalogConnector(),
+        HimalayasCatalogConnector(),
+        JobicyCatalogConnector(),
     )
