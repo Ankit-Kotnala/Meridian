@@ -29,6 +29,6 @@
     "@rezumi/typescript-config": "workspace:*",
     "openapi-typescript": "7.13.0",
     "typescript": "7.0.2",
-    "vitest": "4.1.10"
+    "vitest": "4.1.11"
   }
 }
