@@ -1,9 +1,5 @@
-import type { Metadata } from "next";
-
-import { RoleExplorerView } from "@/modules/role-explorer";
-
-export const metadata: Metadata = { title: "Role Explorer" };
+import { redirect } from "next/navigation";
 
 export default function RoleExplorerPage() {
-  return <RoleExplorerView />;
+  redirect("/job-match");
 }

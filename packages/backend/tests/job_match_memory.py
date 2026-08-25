@@ -21,6 +21,7 @@ from rezumi.modules.job_match.domain import (
     JobRequirement,
     JobSourceKind,
     OpportunityPriorityAnalysis,
+    RolePreference,
     SnapshotEvidence,
     SnapshotSkill,
 )
@@ -79,6 +80,7 @@ class MemoryJobMatch:
         self.analyses: dict[UUID, AnalysisRecord] = {}
         self.priorities: dict[UUID, OpportunityPriorityAnalysis] = {}
         self.audits: list[JobMatchAuditEvent] = []
+        self.role_preferences: dict[UUID, RolePreference] = {}
 
     def __call__(self) -> MemoryJobMatch:
         return self
@@ -216,6 +218,13 @@ class MemoryJobMatch:
 
     async def add_audit(self, event: JobMatchAuditEvent) -> None:
         self.audits.append(deepcopy(event))
+
+    async def get_role_preference(self, owner_user_id: UUID) -> RolePreference | None:
+        preference = self.role_preferences.get(owner_user_id)
+        return deepcopy(preference) if preference is not None else None
+
+    async def upsert_role_preference(self, preference: RolePreference) -> None:
+        self.role_preferences[preference.owner_user_id] = deepcopy(preference)
 
     async def commit(self) -> None:
         return None

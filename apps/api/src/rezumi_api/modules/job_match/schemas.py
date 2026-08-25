@@ -153,6 +153,52 @@ class JobPageResponse(JobMatchSchema):
     page: PageResponse
 
 
+class JobCatalogListingResponse(JobMatchSchema):
+    platform: str = Field(min_length=1, max_length=40)
+    external_id: str = Field(min_length=1, max_length=200)
+    title: str = Field(min_length=1, max_length=300)
+    company: str | None = Field(default=None, max_length=300)
+    location: str | None = Field(default=None, max_length=240)
+    remote: bool | None = None
+    application_url: str | None = Field(default=None, max_length=2_048)
+    source_text: str = Field(max_length=4_000)
+    posted_at: datetime | None = None
+
+
+class JobCatalogSearchResponse(JobMatchSchema):
+    target_role_titles: list[str] = Field(max_length=5)
+    listings: list[JobCatalogListingResponse] = Field(max_length=200)
+    matched_target_role: bool
+    suggested_role_titles: list[str] = Field(default_factory=list, max_length=5)
+    selected_role_titles: list[str] = Field(default_factory=list, max_length=20)
+
+
+class RolePreferenceRequest(JobMatchSchema):
+    role_titles: list[str] = Field(default_factory=list, max_length=20)
+
+    @field_validator("role_titles")
+    @classmethod
+    def validate_role_titles(cls, value: list[str]) -> list[str]:
+        cleaned: list[str] = []
+        for title in value:
+            normalized = _safe_text(title, required=True)
+            if len(normalized) > 200:
+                raise ValueError("role title must be 200 characters or fewer")
+            if normalized not in cleaned:
+                cleaned.append(normalized)
+        return cleaned
+
+
+class RolePreferenceResponse(JobMatchSchema):
+    role_titles: list[str] = Field(default_factory=list, max_length=20)
+
+
+class JobCatalogBrowseResponse(JobMatchSchema):
+    listings: list[JobCatalogListingResponse] = Field(max_length=100)
+    has_more: bool
+    next_offset: int = Field(ge=0)
+
+
 class JobMatchComponentResponse(JobMatchSchema):
     dimension: str
     weight_basis_points: BasisPoints

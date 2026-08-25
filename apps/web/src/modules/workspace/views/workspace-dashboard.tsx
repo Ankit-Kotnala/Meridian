@@ -22,7 +22,10 @@ import {
 import {
   AttentionPanel,
   CareerRecordStats,
+  GrowthPanel,
+  JobHuntPanel,
   PipelinePanel,
+  PreparePanel,
   ResumeHelpBanner,
   StandingTile,
   TruthLockNote,
@@ -42,7 +45,10 @@ const EMPTY_SUMMARY: DashboardSummary = {
   activation: { jobs: UNAVAILABLE, pendingImports: UNAVAILABLE },
   attention: [],
   attentionDegraded: false,
+  growth: UNAVAILABLE,
+  jobHunt: UNAVAILABLE,
   pipeline: UNAVAILABLE,
+  prepare: UNAVAILABLE,
   record: {
     achievements: UNAVAILABLE,
     evidence: UNAVAILABLE,
@@ -371,6 +377,9 @@ export function WorkspaceDashboard({
 
       <div className="workspace-secondary-zone">
         <PipelinePanel pipeline={summary.pipeline} />
+        <JobHuntPanel jobHunt={summary.jobHunt} />
+        <PreparePanel prepare={summary.prepare} />
+        <GrowthPanel growth={summary.growth} />
       </div>
 
       {corpId && (

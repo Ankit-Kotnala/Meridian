@@ -16,6 +16,7 @@ import {
   parseCareerProfile,
   parseCareerRelationship,
   parseCareerRelationships,
+  parseDeclaredProfileEnrichmentJob,
   parseEvidence,
   parseEvidencePage,
   parseExperience,
@@ -38,6 +39,7 @@ import type {
   CareerProfile,
   CareerProfileUpdate,
   CareerRelationship,
+  DeclaredProfileEnrichmentJob,
   EvidenceFilters,
   EvidenceInput,
   EvidenceItem,
@@ -136,29 +138,24 @@ export async function deletePersonalFact(fact: PersonalFact): Promise<void> {
   });
 }
 
-export type PersonalFactEnrichmentResult = {
-  achievementsCreated: number;
-  evidenceCreated: number;
-  platform: string;
-  profileUrl: string;
-  skippedDuplicates: number;
-};
-
-export async function enrichPersonalFactLink(
+export async function enqueuePersonalFactEnrichment(
   fact: PersonalFact,
-): Promise<PersonalFactEnrichmentResult> {
+): Promise<DeclaredProfileEnrichmentJob> {
   const response = await mutate(careerVaultPaths.personalFactEnrich(fact.id), {
     headers: headers(undefined, true),
     method: "POST",
   });
-  const payload = (await response.json()) as Record<string, unknown>;
-  return {
-    achievementsCreated: Number(payload.achievementsCreated ?? 0),
-    evidenceCreated: Number(payload.evidenceCreated ?? 0),
-    platform: String(payload.platform ?? ""),
-    profileUrl: String(payload.profileUrl ?? ""),
-    skippedDuplicates: Number(payload.skippedDuplicates ?? 0),
-  };
+  return parseDeclaredProfileEnrichmentJob(await response.json());
+}
+
+export async function getPersonalFactEnrichmentJob(
+  fact: PersonalFact,
+  jobId: string,
+): Promise<DeclaredProfileEnrichmentJob> {
+  const response = await query(
+    careerVaultPaths.personalFactEnrichJob(fact.id, jobId),
+  );
+  return parseDeclaredProfileEnrichmentJob(await response.json());
 }
 
 export async function getCareerRelationships(): Promise<CareerRelationship[]> {

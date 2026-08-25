@@ -315,6 +315,15 @@ class WorkerSettings(BaseSettings):
             "ATTACHMENT_JOB_RECONCILIATION_STALE_SECONDS",
         ),
     )
+    declared_profile_enrichment_reconciliation_interval_seconds: int = Field(
+        default=60,
+        ge=10,
+        le=3_600,
+        validation_alias=AliasChoices(
+            "REZUMI_DECLARED_PROFILE_ENRICHMENT_RECONCILIATION_INTERVAL_SECONDS",
+            "DECLARED_PROFILE_ENRICHMENT_RECONCILIATION_INTERVAL_SECONDS",
+        ),
+    )
     resume_export_lease_seconds: int = Field(
         default=330,
         ge=30,
@@ -527,6 +536,36 @@ class WorkerSettings(BaseSettings):
         validation_alias=AliasChoices(
             "REZUMI_MONGODB_USER_DATA_COLLECTION",
             "MONGODB_USER_DATA_COLLECTION",
+        ),
+    )
+    mongodb_job_catalog_collection: str = Field(
+        default="job-catalog",
+        min_length=1,
+        max_length=120,
+        validation_alias=AliasChoices(
+            "REZUMI_MONGODB_JOB_CATALOG_COLLECTION",
+            "MONGODB_JOB_CATALOG_COLLECTION",
+        ),
+    )
+    mongodb_role_roadmaps_collection: str = Field(
+        default="role-roadmaps",
+        min_length=1,
+        max_length=120,
+        validation_alias=AliasChoices(
+            "REZUMI_MONGODB_ROLE_ROADMAPS_COLLECTION",
+            "MONGODB_ROLE_ROADMAPS_COLLECTION",
+        ),
+    )
+    job_catalog_sync_interval_seconds: int = Field(
+        # Remotive's stated usage policy caps free-tier callers at ~4 requests
+        # per day; 6h keeps every configured source (not just Remotive) at or
+        # under that, since they all run on the same schedule.
+        default=21_600,
+        ge=3_600,
+        le=86_400,
+        validation_alias=AliasChoices(
+            "REZUMI_JOB_CATALOG_SYNC_INTERVAL_SECONDS",
+            "JOB_CATALOG_SYNC_INTERVAL_SECONDS",
         ),
     )
 

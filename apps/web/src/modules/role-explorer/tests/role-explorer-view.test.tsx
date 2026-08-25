@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Role, RoleReadiness, SavedRole } from "../api/types";
-import { RoleExplorerView } from "../views/role-explorer-view";
+import { RoleReadinessSection } from "../views/role-explorer-view";
 
 const api = vi.hoisted(() => ({
   analyzeRole: vi.fn(),
@@ -132,7 +132,7 @@ describe("Role Explorer view", () => {
   });
 
   it("renders empty saved-role and readiness states without demo data", async () => {
-    render(<RoleExplorerView />);
+    render(<RoleReadinessSection />);
 
     expect(
       await screen.findByRole("heading", { name: "Matching roles" }),
@@ -147,7 +147,7 @@ describe("Role Explorer view", () => {
   });
 
   it("saves and analyzes a real role target", async () => {
-    render(<RoleExplorerView />);
+    render(<RoleReadinessSection />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Save" }));
     expect(
@@ -164,7 +164,7 @@ describe("Role Explorer view", () => {
 
   it("renders a retryable failure state", async () => {
     api.getRoles.mockRejectedValue(new Error("offline"));
-    render(<RoleExplorerView />);
+    render(<RoleReadinessSection />);
 
     expect(
       await screen.findByRole("heading", { name: "Role Explorer unavailable" }),

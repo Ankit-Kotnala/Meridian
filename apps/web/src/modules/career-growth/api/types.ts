@@ -129,3 +129,11 @@ export type CareerHealthPage = {
 };
 export type CareerHealthComponent =
   components["schemas"]["CareerHealthComponentResponse"];
+
+export type RoleRoadmap = components["schemas"]["RoleRoadmapResponse"];
+export type RoadmapStage = components["schemas"]["RoadmapStageResponse"];
+export type RoadmapSkill = components["schemas"]["RoadmapSkillResponse"];
+export type ConfirmRoadmapInput =
+  components["schemas"]["ConfirmRoadmapRequest"];
+export type ConfirmRoadmapResult =
+  components["schemas"]["ConfirmRoadmapResponse"];

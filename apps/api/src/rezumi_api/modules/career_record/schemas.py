@@ -203,12 +203,18 @@ class PersonalFactListResponse(CareerRecordSchema):
     data: list[PersonalFactResponse] = Field(max_length=100)
 
 
-class DeclaredProfileEnrichmentResponse(CareerRecordSchema):
-    platform: str = Field(min_length=1, max_length=40)
-    profile_url: str = Field(min_length=1, max_length=2_048)
-    achievements_created: int = Field(ge=0, le=200)
-    evidence_created: int = Field(ge=0, le=200)
-    skipped_duplicates: int = Field(ge=0, le=200)
+class DeclaredProfileEnrichmentJobResponse(CareerRecordSchema):
+    job_id: UUID
+    personal_fact_id: UUID
+    status: Literal["queued", "running", "succeeded", "failed", "dead_lettered"]
+    attempts: int = Field(ge=0)
+    max_attempts: int = Field(ge=1)
+    result_platform: str | None = Field(default=None, max_length=40)
+    result_achievements_created: int | None = Field(default=None, ge=0, le=200)
+    result_evidence_created: int | None = Field(default=None, ge=0, le=200)
+    error_message: str | None = Field(default=None, max_length=300)
+    created_at: datetime
+    updated_at: datetime
 
 
 class ProfileConflictResponse(CareerRecordSchema):

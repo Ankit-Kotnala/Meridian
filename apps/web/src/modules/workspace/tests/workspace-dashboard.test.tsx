@@ -11,7 +11,10 @@ function summary(overrides: Partial<DashboardSummary> = {}): DashboardSummary {
     activation: { jobs: unavailable, pendingImports: unavailable },
     attention: [],
     attentionDegraded: false,
+    growth: unavailable,
+    jobHunt: unavailable,
     pipeline: unavailable,
+    prepare: unavailable,
     record: {
       achievements: unavailable,
       evidence: unavailable,

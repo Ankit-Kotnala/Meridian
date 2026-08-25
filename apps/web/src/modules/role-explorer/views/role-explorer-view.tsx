@@ -78,7 +78,8 @@ function savedForRole(savedRoles: SavedRole[], roleId: string) {
   return savedRoles.find((item) => item.role.id === roleId);
 }
 
-export function RoleExplorerView() {
+/** Role readiness scoring, relocated as a secondary section on the merged Opportunities page. */
+export function RoleReadinessSection() {
   const [roles, setRoles] = useState<Role[]>();
   const [savedRoles, setSavedRoles] = useState<SavedRole[]>();
   const [history, setHistory] = useState<RoleReadiness[]>([]);
@@ -262,29 +263,26 @@ export function RoleExplorerView() {
 
   if ((!roles || !savedRoles) && failure) {
     return (
-      <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8" id="main-content">
+      <section aria-labelledby="role-readiness-heading" className="space-y-4">
         <ErrorState
           description={failure}
           onRetry={() => void load()}
           title="Role Explorer unavailable"
         />
-      </main>
+      </section>
     );
   }
 
   if (!roles || !savedRoles) {
     return (
-      <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8" id="main-content">
+      <section aria-labelledby="role-readiness-heading" className="space-y-4">
         <LoadingSkeleton />
-      </main>
+      </section>
     );
   }
 
   return (
-    <main
-      className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8"
-      id="main-content"
-    >
+    <section aria-labelledby="role-readiness-heading" className="space-y-6">
       <div aria-live="polite" className="sr-only">
         {success || failure || ""}
       </div>
@@ -297,6 +295,7 @@ export function RoleExplorerView() {
         }
         description="Compare your demonstrated, evidence-backed capabilities with a reusable target role. This is role readiness—not a job-specific match or an employer score."
         eyebrow="Role Explorer"
+        id="role-readiness-heading"
         title="Role readiness"
       />
 
@@ -654,7 +653,7 @@ export function RoleExplorerView() {
           </div>
         </section>
       )}
-    </main>
+    </section>
   );
 }
 
@@ -789,25 +788,5 @@ function ReadinessPanel({ analysis }: { analysis: RoleReadiness }) {
         </table>
       </div>
     </div>
-  );
-}
-
-export function RoleExplorerLoading() {
-  return (
-    <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8" id="main-content">
-      <LoadingSkeleton />
-    </main>
-  );
-}
-
-export function RoleExplorerRouteError({ reset }: { reset: () => void }) {
-  return (
-    <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8" id="main-content">
-      <ErrorState
-        description="Role readiness could not be displayed. No career record was changed."
-        onRetry={reset}
-        title="Role Explorer unavailable"
-      />
-    </main>
   );
 }

@@ -9,6 +9,7 @@ import {
   Plus,
   RefreshCcw,
   Search,
+  Settings2,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -60,6 +61,7 @@ import {
   humanize,
   outcomeStatuses,
 } from "../components/application-options";
+import { ApplicationProfilePanel } from "../components/application-profile-panel";
 import { CreateApplicationForm } from "../components/create-application-form";
 
 function validView(value: string | null): ApplicationViewMode {
@@ -158,6 +160,7 @@ export function ApplicationsView() {
   const [busyId, setBusyId] = useState<string>();
   const [loadingMore, setLoadingMore] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const visibleListState = listState?.key === listKey ? listState : undefined;
   const applications =
     visibleListState?.status === "success"
@@ -453,6 +456,19 @@ export function ApplicationsView() {
               }}
             />
           )}
+        </div>
+      </details>
+
+      <details
+        className="rounded-card border border-border bg-surface-raised"
+        onToggle={(event) => setProfileOpen(event.currentTarget.open)}
+      >
+        <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-black text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-primary-soft">
+          <Settings2 aria-hidden="true" className="size-4 text-primary" />
+          Application Profile (used by &ldquo;Apply for me&rdquo;)
+        </summary>
+        <div className="border-t border-line p-4">
+          {profileOpen && <ApplicationProfilePanel />}
         </div>
       </details>
 

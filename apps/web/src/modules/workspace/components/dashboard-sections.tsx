@@ -21,8 +21,11 @@ import { Badge, cn, buttonStyles } from "@rezumi/ui";
 import type {
   DashboardAttentionItem,
   DashboardCount,
+  DashboardGrowth,
+  DashboardJobHunt,
   DashboardPipeline,
   DashboardPipelineGroup,
+  DashboardPrepare,
   DashboardRecordCounts,
 } from "../server/dashboard-summary";
 import { recordStatsFootnote } from "../lib/dashboard-user-copy";
@@ -392,6 +395,112 @@ export function PipelinePanel({ pipeline }: { pipeline: DashboardPipeline }) {
               ))}
             </ul>
           </>
+        )}
+      </div>
+    </Tile>
+  );
+}
+
+export function JobHuntPanel({ jobHunt }: { jobHunt: DashboardJobHunt }) {
+  return (
+    <Tile
+      action={{ href: "/job-match", label: "Open" }}
+      className="min-w-0"
+      label="Job Hunt"
+      labelId="job-hunt-heading"
+    >
+      <div className="flex flex-1 flex-col px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
+        {jobHunt.kind === "unavailable" ? (
+          <p className="text-sm leading-6 text-muted">
+            Job listings could not be loaded. No preference was changed.
+          </p>
+        ) : jobHunt.total === 0 ? (
+          <p className="text-sm leading-6 text-muted">
+            No listings match your target role yet. Set or widen your role
+            filter to see suggestions.
+          </p>
+        ) : (
+          <>
+            <div className="flex items-baseline gap-2">
+              <span className="metric-value text-4xl text-foreground">
+                {jobHunt.total}
+                {jobHunt.atLeast ? "+" : ""}
+              </span>
+              <span className="text-xs text-muted">suggested listings</span>
+            </div>
+            {jobHunt.topTitle && (
+              <p className="mt-2 truncate text-sm text-muted-strong">
+                Top match: {jobHunt.topTitle}
+              </p>
+            )}
+          </>
+        )}
+      </div>
+    </Tile>
+  );
+}
+
+export function PreparePanel({ prepare }: { prepare: DashboardPrepare }) {
+  return (
+    <Tile
+      action={{ href: "/interview-prep", label: "Open" }}
+      className="min-w-0"
+      label="Prepare"
+      labelId="prepare-heading"
+    >
+      <div className="flex flex-1 flex-col px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
+        {prepare.kind === "unavailable" ? (
+          <p className="text-sm leading-6 text-muted">
+            Interview prep and networking status could not be loaded.
+          </p>
+        ) : prepare.followUpsDue === 0 ? (
+          <p className="text-sm leading-6 text-muted">
+            No networking follow-ups are due. Interview prep and networking
+            both live here.
+          </p>
+        ) : (
+          <div className="flex items-baseline gap-2">
+            <span className="metric-value text-4xl text-foreground">
+              {prepare.followUpsDue}
+            </span>
+            <span className="text-xs text-muted">
+              networking {prepare.followUpsDue === 1 ? "follow-up" : "follow-ups"}{" "}
+              due
+            </span>
+          </div>
+        )}
+      </div>
+    </Tile>
+  );
+}
+
+export function GrowthPanel({ growth }: { growth: DashboardGrowth }) {
+  return (
+    <Tile
+      action={{ href: "/career-growth", label: "Open" }}
+      className="min-w-0"
+      label="Growth"
+      labelId="growth-heading"
+    >
+      <div className="flex flex-1 flex-col px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
+        {growth.kind === "unavailable" ? (
+          <p className="text-sm leading-6 text-muted">
+            Growth tracking could not be loaded.
+          </p>
+        ) : growth.planned + growth.inProgress === 0 ? (
+          <p className="text-sm leading-6 text-muted">
+            No development items yet. Confirm a roadmap to start tracking
+            growth.
+          </p>
+        ) : (
+          <div className="flex items-baseline gap-2">
+            <span className="metric-value text-4xl text-foreground">
+              {growth.planned + growth.inProgress}
+            </span>
+            <span className="text-xs text-muted">
+              development items · {growth.inProgress} in progress
+            </span>
+          </div>
         )}
       </div>
     </Tile>

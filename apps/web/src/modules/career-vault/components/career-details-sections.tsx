@@ -31,7 +31,8 @@ import {
   deleteCareerRelationship,
   deletePersonalFact,
   deleteSkill,
-  enrichPersonalFactLink,
+  enqueuePersonalFactEnrichment,
+  getPersonalFactEnrichmentJob,
   updateCareerItem,
   updatePersonalFact,
   updateSkill,
@@ -190,10 +191,34 @@ export function CareerDetailsSections({
     setFailure(undefined);
     setNotice(undefined);
     try {
-      const result = await enrichPersonalFactLink(fact);
-      setNotice(
-        `Imported ${result.achievementsCreated} achievement${result.achievementsCreated === 1 ? "" : "s"} and ${result.evidenceCreated} evidence item${result.evidenceCreated === 1 ? "" : "s"} from your ${result.platform} profile. Review them in Achievement Inbox and Evidence Vault.`,
-      );
+      let job = await enqueuePersonalFactEnrichment(fact);
+      let pollCount = 0;
+      const maxPolls = 20;
+      while (job.status === "queued" || job.status === "running") {
+        if (pollCount >= maxPolls) {
+          setNotice(
+            "This import is taking longer than expected and will keep running in the background. Check back in a bit to see the results.",
+          );
+          return;
+        }
+        await new Promise((resolve) =>
+          setTimeout(resolve, Math.min(4_000, 750 + pollCount * 250)),
+        );
+        job = await getPersonalFactEnrichmentJob(fact, job.jobId);
+        pollCount += 1;
+      }
+      if (job.status === "succeeded") {
+        const achievements = job.resultAchievementsCreated ?? 0;
+        const evidence = job.resultEvidenceCreated ?? 0;
+        setNotice(
+          `Imported ${achievements} achievement${achievements === 1 ? "" : "s"} and ${evidence} evidence item${evidence === 1 ? "" : "s"} from your ${job.resultPlatform ?? "linked"} profile. Review them in Achievement Inbox and Evidence Vault.`,
+        );
+      } else {
+        setFailure(
+          job.errorMessage ??
+            "We could not import achievements from this link.",
+        );
+      }
     } catch (error) {
       setFailure(
         requestErrorMessage(

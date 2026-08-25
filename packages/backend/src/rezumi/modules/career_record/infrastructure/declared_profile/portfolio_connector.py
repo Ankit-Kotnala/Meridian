@@ -23,6 +23,7 @@ _KNOWN_PLATFORM_HOSTS = frozenset(
         "bitbucket.org",
         "linkedin.com",
         "lnkd.in",
+        "credly.com",
         "example.test",
     }
 )

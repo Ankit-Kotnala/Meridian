@@ -504,3 +504,46 @@ class CareerHealthSummaryResponse(CareerGrowthSchema):
 class CareerHealthPageResponse(CareerGrowthSchema):
     data: list[CareerHealthSummaryResponse] = Field(max_length=100)
     page: PageResponse
+
+
+class RoadmapSkillResponse(CareerGrowthSchema):
+    name: str
+    why: str
+    how_to_start: str
+    already_demonstrated: bool
+
+
+class RoadmapStageResponse(CareerGrowthSchema):
+    stage: str
+    skills: list[RoadmapSkillResponse] = Field(max_length=50)
+
+
+class RoleRoadmapResponse(CareerGrowthSchema):
+    role_title: str
+    stages: list[RoadmapStageResponse] = Field(max_length=20)
+
+
+class ConfirmRoadmapRequest(CareerGrowthSchema):
+    role_title: str = Field(min_length=1, max_length=300)
+    included_skill_names: list[str] = Field(default_factory=list, max_length=100)
+
+    @field_validator("role_title")
+    @classmethod
+    def validate_role_title(cls, value: str) -> str:
+        return _safe_text(value, required=True)
+
+    @field_validator("included_skill_names")
+    @classmethod
+    def validate_skill_names(cls, value: list[str]) -> list[str]:
+        cleaned = []
+        for name in value:
+            normalized = _safe_text(name, required=True)
+            if len(normalized) > 200:
+                raise ValueError("skill name must be 200 characters or fewer")
+            if normalized not in cleaned:
+                cleaned.append(normalized)
+        return cleaned
+
+
+class ConfirmRoadmapResponse(CareerGrowthSchema):
+    created: list[DevelopmentItemResponse] = Field(max_length=100)

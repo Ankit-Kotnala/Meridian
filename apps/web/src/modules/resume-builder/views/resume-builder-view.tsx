@@ -311,20 +311,17 @@ export function ResumeBuilderView() {
   if (busyKey === "initial") return <ResumeBuilderLoading />;
   if (failure && resumes.length === 0) {
     return (
-      <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8" id="main-content">
+      <div className="space-y-6">
         <ErrorState
           description={failure}
           title="Resume Builder could not load"
         />
-      </main>
+      </div>
     );
   }
 
   return (
-    <main
-      className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8"
-      id="main-content"
-    >
+    <div className="space-y-6">
       <div aria-live="polite" className="sr-only">
         {success || failure || ""}
       </div>
@@ -724,7 +721,7 @@ export function ResumeBuilderView() {
           </aside>
         </div>
       )}
-    </main>
+    </div>
   );
 }
 
@@ -761,11 +758,8 @@ function IconButton({
 
 function ResumeBuilderLoading() {
   return (
-    <main
-      className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8"
-      id="main-content"
-    >
+    <div className="space-y-6">
       <LoadingSkeleton variant="page" />
-    </main>
+    </div>
   );
 }

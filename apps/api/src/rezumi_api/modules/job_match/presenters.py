@@ -11,9 +11,14 @@ from rezumi.modules.job_match.application import (
     OpportunityPriorityView,
     PagedResult,
 )
+from rezumi.modules.job_match.application.job_catalog_ports import CatalogJobListing
+from rezumi.modules.job_match.application.job_catalog_query import JobCatalogSearchResult
 from rezumi.modules.job_match.domain import RequirementEvidenceLink, RequirementMatch
 
 from rezumi_api.modules.job_match.schemas import (
+    JobCatalogBrowseResponse,
+    JobCatalogListingResponse,
+    JobCatalogSearchResponse,
     JobMatchAnalysisResponse,
     JobMatchComponentResponse,
     JobPageResponse,
@@ -24,6 +29,7 @@ from rezumi_api.modules.job_match.schemas import (
     RequirementEvidenceResponse,
     RequirementMatchPageResponse,
     RequirementMatchResponse,
+    RolePreferenceResponse,
 )
 
 
@@ -159,3 +165,41 @@ def _requirement_matches(
         )
         for match in matches
     ]
+
+
+def job_catalog_listing_response(listing: CatalogJobListing) -> JobCatalogListingResponse:
+    return JobCatalogListingResponse(
+        platform=listing.platform,
+        external_id=listing.external_id,
+        title=listing.title,
+        company=listing.company,
+        location=listing.location,
+        remote=listing.remote,
+        application_url=listing.application_url,
+        source_text=listing.source_text,
+        posted_at=listing.posted_at,
+    )
+
+
+def job_catalog_search_response(result: JobCatalogSearchResult) -> JobCatalogSearchResponse:
+    return JobCatalogSearchResponse(
+        target_role_titles=list(result.target_role_titles),
+        listings=[job_catalog_listing_response(listing) for listing in result.listings],
+        matched_target_role=result.matched_target_role,
+        suggested_role_titles=list(result.suggested_role_titles),
+        selected_role_titles=list(result.selected_role_titles),
+    )
+
+
+def role_preference_response(role_titles: tuple[str, ...]) -> RolePreferenceResponse:
+    return RolePreferenceResponse(role_titles=list(role_titles))
+
+
+def job_catalog_browse_response(
+    listings: tuple[CatalogJobListing, ...], *, has_more: bool, next_offset: int
+) -> JobCatalogBrowseResponse:
+    return JobCatalogBrowseResponse(
+        listings=[job_catalog_listing_response(listing) for listing in listings],
+        has_more=has_more,
+        next_offset=next_offset,
+    )

@@ -350,6 +350,7 @@ export function ApplicationDetailView({
                 <ApplicationPacksPanel
                   application={application}
                   onFailure={reportFailure}
+                  onMarkApplied={() => void moveStage(application, "applied")}
                   onPackCountChange={changePackCount}
                   onSuccess={reportSuccess}
                   reloadEpoch={reloadEpoch}

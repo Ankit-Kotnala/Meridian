@@ -12,6 +12,7 @@ from .career_record import (
     reconcile_evidence_attachment_jobs,
 )
 from .health import PING_TASK_NAME, ping
+from .job_match import sync_job_catalog_task
 from .networking import (
     process_networking_local_reminders,
     reconcile_networking_local_reminders,
@@ -47,4 +48,5 @@ __all__ = [
     "reconcile_networking_local_reminders",
     "reconcile_resume_builder_exports",
     "reconcile_resume_health_jobs",
+    "sync_job_catalog_task",
 ]

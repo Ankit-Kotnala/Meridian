@@ -348,6 +348,39 @@ export function CareerProfileView() {
         </Button>
       </header>
 
+      <section
+        aria-labelledby="parsed-summary-heading"
+        className="mb-5 rounded-lg border border-line bg-surface-subtle p-4"
+      >
+        <h2 className="sr-only" id="parsed-summary-heading">
+          What we parsed from your resume
+        </h2>
+        <p className="text-sm text-foreground">
+          We found{" "}
+          <strong className="font-bold">{list.length} experiences</strong>,{" "}
+          <strong className="font-bold">{(skills ?? []).length} skills</strong>
+          , <strong className="font-bold">
+            {(careerItems ?? []).length} career items
+          </strong>
+          , and{" "}
+          <strong className="font-bold">
+            {(personalFacts ?? []).length} facts
+          </strong>{" "}
+          from your resume and profile.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-3 text-sm font-bold">
+          <Link className="text-primary underline" href="/evidence">
+            Open Evidence Vault
+          </Link>
+          <Link className="text-primary underline" href="/achievement-inbox">
+            Achievement Inbox
+          </Link>
+          <Link className="text-primary underline" href="/career-profile/imports">
+            Resume Imports
+          </Link>
+        </div>
+      </section>
+
       {failure && (
         <Alert
           className="mb-5"

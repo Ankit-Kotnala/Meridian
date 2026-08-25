@@ -23,6 +23,8 @@ import type {
   ApplicationPackCreateInput,
   ApplicationPackPage,
   ApplicationPage,
+  ApplicationProfile,
+  ApplicationProfileInput,
   ApplicationSort,
   ApplicationStage,
   ApplicationStageUpdateInput,
@@ -325,6 +327,30 @@ export async function deleteApplicationDocument(
     applicationPaths.applicationDocument(applicationId, documentId),
     { method: "DELETE" },
   );
+}
+
+/** Returns `null` if the owner has never set up an Application Profile yet. */
+export async function getApplicationProfile(): Promise<ApplicationProfile | null> {
+  try {
+    const response = await query(applicationPaths.applicationProfile);
+    return (await response.json()) as ApplicationProfile;
+  } catch (error) {
+    if (error instanceof ApiRequestError && error.failure.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export async function upsertApplicationProfile(
+  input: ApplicationProfileInput,
+): Promise<ApplicationProfile> {
+  const response = await mutate(applicationPaths.applicationProfile, {
+    body: JSON.stringify(input),
+    headers: headers(undefined, crypto.randomUUID()),
+    method: "PUT",
+  });
+  return (await response.json()) as ApplicationProfile;
 }
 
 export { ApiRequestError };

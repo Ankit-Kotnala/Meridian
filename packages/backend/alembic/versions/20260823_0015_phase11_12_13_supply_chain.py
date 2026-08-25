@@ -119,7 +119,11 @@ def upgrade() -> None:
         ["owner_user_id", "updated_at"],
     )
 
-    op.drop_constraint("kind_valid", "application_documents", type_="check")
+    op.drop_constraint(
+        op.f("ck_application_documents_ck_application_documents_kind_valid"),
+        "application_documents",
+        type_="check",
+    )
     op.create_check_constraint(
         "kind_valid",
         "application_documents",
@@ -130,7 +134,11 @@ def upgrade() -> None:
         "job_postings",
         sa.Column("external_id", sa.String(length=200), nullable=True),
     )
-    op.drop_constraint("source_kind_valid", "job_postings", type_="check")
+    op.drop_constraint(
+        op.f("ck_job_postings_ck_job_postings_source_kind_valid"),
+        "job_postings",
+        type_="check",
+    )
     op.create_check_constraint(
         "source_kind_valid",
         "job_postings",

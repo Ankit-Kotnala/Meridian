@@ -17,8 +17,11 @@ from rezumi.modules.job_match.application import (
     SyncFromSource,
     UpdateJob,
 )
+from rezumi.modules.job_match.application.job_catalog_ports import CatalogJobListing
+from rezumi.modules.job_match.application.job_catalog_query import JobCatalogQueryService
 from rezumi.modules.job_match.domain import (
     EmploymentType,
+    JobMatchNotFound,
     JobSourceKind,
     PreferenceFit,
     TailoringEffort,
@@ -28,15 +31,24 @@ from rezumi.modules.job_match.domain import (
 from rezumi_api.conditional_requests import parse_if_match_version
 from rezumi_api.modules.identity.dependencies import current_principal, require_authenticated_csrf
 from rezumi_api.modules.identity.schemas import ProblemResponse
-from rezumi_api.modules.job_match.dependencies import job_match_request_context, job_match_service
+from rezumi_api.modules.job_match.dependencies import (
+    job_catalog_query_service,
+    job_match_request_context,
+    job_match_service,
+)
 from rezumi_api.modules.job_match.presenters import (
     analysis_response,
+    job_catalog_browse_response,
+    job_catalog_search_response,
     job_page_response,
     job_response,
     opportunity_priority_response,
     requirement_match_page_response,
+    role_preference_response,
 )
 from rezumi_api.modules.job_match.schemas import (
+    JobCatalogBrowseResponse,
+    JobCatalogSearchResponse,
     JobCreateRequest,
     JobImportRequest,
     JobMatchAnalysisResponse,
@@ -48,6 +60,8 @@ from rezumi_api.modules.job_match.schemas import (
     OpportunityPriorityRequest,
     OpportunityPriorityResponse,
     RequirementMatchPageResponse,
+    RolePreferenceRequest,
+    RolePreferenceResponse,
 )
 
 router = APIRouter(prefix="/api/v1", tags=["Job Match"])
@@ -73,6 +87,22 @@ def _clean(value: str | None) -> str | None:
         return None
     normalized = value.strip()
     return normalized or None
+
+
+# Job Match's requirement extractor caps a single extracted requirement at
+# 1000 characters. Unstructured third-party prose with no bullet points can
+# extract as one long blob, so the text handed to create_job stays well under
+# that regardless of how the extractor chunks it. The full listing is never
+# lost — source_url still links to it.
+_MAX_CATALOG_SOURCE_TEXT_FOR_SAVE = 900
+
+
+def _job_match_source_text(listing: CatalogJobListing) -> str:
+    text = listing.source_text.strip() or listing.title
+    if len(text) <= _MAX_CATALOG_SOURCE_TEXT_FOR_SAVE:
+        return text
+    truncated = text[:_MAX_CATALOG_SOURCE_TEXT_FOR_SAVE].rsplit(" ", 1)[0]
+    return truncated or text[:_MAX_CATALOG_SOURCE_TEXT_FOR_SAVE]
 
 
 @router.get(
@@ -369,3 +399,134 @@ async def get_opportunity_priority(
     value = await service.get_priority(principal.user_id, priority_id)
     _private(response)
     return opportunity_priority_response(value)
+
+
+@router.get(
+    "/job-catalog",
+    response_model=JobCatalogSearchResponse,
+    operation_id="jobCatalogSearch",
+    responses=_PROBLEMS,
+)
+async def search_job_catalog(
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(current_principal)],
+    catalog: Annotated[JobCatalogQueryService, Depends(job_catalog_query_service)],
+) -> JobCatalogSearchResponse:
+    """Read-only shared listings filtered toward the owner's target role(s).
+
+    Never writes into the owner's own tracked jobs — see
+    ``POST /job-catalog/{platform}/{externalId}/save`` for that explicit step.
+    """
+    result = await catalog.search_for_owner(principal.user_id)
+    _private(response)
+    return job_catalog_search_response(result)
+
+
+@router.get(
+    "/job-catalog/role-preferences",
+    response_model=RolePreferenceResponse,
+    operation_id="jobCatalogRolePreferencesGet",
+    responses=_PROBLEMS,
+)
+async def get_job_catalog_role_preferences(
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(current_principal)],
+    service: Annotated[JobMatchService, Depends(job_match_service)],
+) -> RolePreferenceResponse:
+    role_titles = await service.get_role_preference(principal.user_id)
+    _private(response)
+    return role_preference_response(role_titles)
+
+
+@router.put(
+    "/job-catalog/role-preferences",
+    response_model=RolePreferenceResponse,
+    operation_id="jobCatalogRolePreferencesSet",
+    responses=_PROBLEMS,
+)
+async def set_job_catalog_role_preferences(
+    payload: RolePreferenceRequest,
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
+    context: Annotated[RequestContext, Depends(job_match_request_context)],
+    service: Annotated[JobMatchService, Depends(job_match_service)],
+) -> RolePreferenceResponse:
+    """Replace the owner's job-catalog role filter.
+
+    A PUT of the full desired list is naturally idempotent, so this does not
+    require an Idempotency-Key like the create/import/analyze endpoints.
+    """
+    role_titles = await service.set_role_preference(
+        principal.user_id, tuple(payload.role_titles), context
+    )
+    _private(response)
+    return role_preference_response(role_titles)
+
+
+@router.get(
+    "/job-catalog/search",
+    response_model=JobCatalogBrowseResponse,
+    operation_id="jobCatalogBrowse",
+    responses=_PROBLEMS,
+)
+async def browse_job_catalog(
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(current_principal)],
+    catalog: Annotated[JobCatalogQueryService, Depends(job_catalog_query_service)],
+    q: Annotated[str, Query(max_length=200)] = "",
+    limit: Annotated[int, Query(ge=1, le=100)] = 25,
+    offset: Annotated[int, Query(ge=0, le=5_000)] = 0,
+) -> JobCatalogBrowseResponse:
+    """Free-text search across the whole shared job catalog, independent of role filtering."""
+    listings, has_more = await catalog.browse(query=q, limit=limit, offset=offset)
+    _private(response)
+    return job_catalog_browse_response(
+        listings, has_more=has_more, next_offset=offset + len(listings)
+    )
+
+
+@router.post(
+    "/job-catalog/{platform}/{external_id}/save",
+    response_model=JobResponse,
+    status_code=status.HTTP_201_CREATED,
+    operation_id="jobCatalogSave",
+    responses=_PROBLEMS,
+)
+async def save_job_catalog_listing(
+    platform: str,
+    external_id: str,
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
+    context: Annotated[RequestContext, Depends(job_match_request_context)],
+    catalog: Annotated[JobCatalogQueryService, Depends(job_catalog_query_service)],
+    service: Annotated[JobMatchService, Depends(job_match_service)],
+) -> JobResponse:
+    """Copy one catalog listing into the owner's own tracked jobs, once.
+
+    Idempotent per (owner, platform, external_id) — saving the same listing
+    twice returns the same tracked job rather than creating a duplicate.
+    """
+    listing = await catalog.get_listing(platform, external_id)
+    if listing is None:
+        raise JobMatchNotFound
+    idempotency_key = f"catalog:{platform}:{external_id}"
+    value = await service.create_job(
+        principal.user_id,
+        CreateJob(
+            title=listing.title,
+            company=listing.company,
+            location=listing.location,
+            work_model=WorkModel.REMOTE if listing.remote else WorkModel.UNKNOWN,
+            employment_type=EmploymentType.UNKNOWN,
+            compensation=None,
+            application_deadline=None,
+            source_kind=JobSourceKind.URL,
+            source_url=listing.application_url,
+            source_text=_job_match_source_text(listing),
+            external_id=f"{platform}:{external_id}",
+        ),
+        idempotency_key,
+        context,
+    )
+    _private(response, value.job.version)
+    return job_response(value)

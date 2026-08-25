@@ -17,6 +17,7 @@ from rezumi.modules.career_growth.application import (
     GoalView,
     PagedResult,
     ReviewVersionView,
+    RoleRoadmapView,
 )
 from rezumi.modules.career_growth.domain import (
     CANONICAL_SCORE_DISCLAIMER,
@@ -34,6 +35,7 @@ from .schemas import (
     CareerReviewPageResponse,
     CareerReviewResponse,
     CareerReviewSummaryResponse,
+    ConfirmRoadmapResponse,
     DevelopmentItemPageResponse,
     DevelopmentItemResponse,
     EvidenceLinkResponse,
@@ -48,6 +50,9 @@ from .schemas import (
     PromotionReadinessDisclaimerValue,
     PromotionReadinessResponse,
     ReviewVersionResponse,
+    RoadmapSkillResponse,
+    RoadmapStageResponse,
+    RoleRoadmapResponse,
 )
 
 
@@ -137,6 +142,35 @@ def development_item_response(value: DevelopmentItemView) -> DevelopmentItemResp
         version=item.version,
         created_at=item.created_at,
         updated_at=item.updated_at,
+    )
+
+
+def role_roadmap_response(value: RoleRoadmapView) -> RoleRoadmapResponse:
+    return RoleRoadmapResponse(
+        role_title=value.role_title,
+        stages=[
+            RoadmapStageResponse(
+                stage=stage.stage,
+                skills=[
+                    RoadmapSkillResponse(
+                        name=skill.name,
+                        why=skill.why,
+                        how_to_start=skill.how_to_start,
+                        already_demonstrated=skill.already_demonstrated,
+                    )
+                    for skill in stage.skills
+                ],
+            )
+            for stage in value.stages
+        ],
+    )
+
+
+def confirm_roadmap_response(
+    values: tuple[DevelopmentItemView, ...],
+) -> ConfirmRoadmapResponse:
+    return ConfirmRoadmapResponse(
+        created=[development_item_response(value) for value in values]
     )
 
 

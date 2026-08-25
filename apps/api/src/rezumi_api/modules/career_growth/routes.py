@@ -8,6 +8,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Header, Query, Response, status
 from rezumi.modules.career_growth.application import (
     CareerGrowthService,
+    ConfirmRoadmapSelection,
     CreateCareerReview,
     CreateDevelopmentItem,
     CreateDevelopmentItemFromGap,
@@ -41,11 +42,13 @@ from .presenters import (
     career_health_response,
     career_review_page_response,
     career_review_response,
+    confirm_roadmap_response,
     development_item_page_response,
     development_item_response,
     goal_page_response,
     goal_response,
     milestone_response,
+    role_roadmap_response,
 )
 from .schemas import (
     CareerGrowthInsightsResponse,
@@ -55,6 +58,8 @@ from .schemas import (
     CareerReviewPageResponse,
     CareerReviewResponse,
     CareerReviewReviseRequest,
+    ConfirmRoadmapRequest,
+    ConfirmRoadmapResponse,
     DevelopmentItemCreateRequest,
     DevelopmentItemFromGapCreateRequest,
     DevelopmentItemPageResponse,
@@ -67,6 +72,7 @@ from .schemas import (
     GoalUpdateRequest,
     MilestoneCreateRequest,
     MilestoneUpdateRequest,
+    RoleRoadmapResponse,
 )
 
 router = APIRouter(prefix="/api/v1/career-growth", tags=["Career Growth"])
@@ -426,6 +432,50 @@ async def create_development_item_from_gap(
     )
     _private(response, value.item.version)
     return development_item_response(value)
+
+
+@router.get(
+    "/roadmap",
+    response_model=RoleRoadmapResponse | None,
+    operation_id="careerGrowthRoadmapGet",
+    responses=_PROBLEMS,
+)
+async def get_role_roadmap(
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(current_principal)],
+    context: Annotated[RequestContext, Depends(career_growth_request_context)],
+    service: Annotated[CareerGrowthService, Depends(career_growth_service)],
+) -> RoleRoadmapResponse | None:
+    """`None` when no target role can be resolved yet (no saved role, no experience)."""
+    value = await service.get_role_roadmap(principal.user_id, context)
+    _private(response)
+    return role_roadmap_response(value) if value is not None else None
+
+
+@router.post(
+    "/roadmap/confirm",
+    response_model=ConfirmRoadmapResponse,
+    status_code=status.HTTP_201_CREATED,
+    operation_id="careerGrowthRoadmapConfirm",
+    responses=_PROBLEMS,
+)
+async def confirm_role_roadmap(
+    payload: ConfirmRoadmapRequest,
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
+    context: Annotated[RequestContext, Depends(career_growth_request_context)],
+    service: Annotated[CareerGrowthService, Depends(career_growth_service)],
+) -> ConfirmRoadmapResponse:
+    values = await service.confirm_roadmap_selection(
+        principal.user_id,
+        ConfirmRoadmapSelection(
+            role_title=payload.role_title,
+            included_skill_names=tuple(payload.included_skill_names),
+        ),
+        context,
+    )
+    _private(response)
+    return confirm_roadmap_response(values)
 
 
 @router.get(

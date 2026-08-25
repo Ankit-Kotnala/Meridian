@@ -331,3 +331,29 @@ class CareerGrowthInsights:
     skills: tuple[GrowthSkillSnapshot, ...]
     promotion_readiness: PromotionReadinessReport
     annual_resume_refreshes: tuple[DevelopmentItemView, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class RoadmapSkillView:
+    name: str
+    why: str
+    how_to_start: str
+    already_demonstrated: bool
+
+
+@dataclass(frozen=True, slots=True)
+class RoadmapStageView:
+    stage: str
+    skills: tuple[RoadmapSkillView, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class RoleRoadmapView:
+    role_title: str
+    stages: tuple[RoadmapStageView, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ConfirmRoadmapSelection:
+    role_title: str
+    included_skill_names: tuple[str, ...]

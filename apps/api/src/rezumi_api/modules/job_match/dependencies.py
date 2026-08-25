@@ -7,6 +7,7 @@ from typing import Annotated, cast
 from fastapi import Depends, Request
 from rezumi.modules.identity.domain import AuthenticatedPrincipal
 from rezumi.modules.job_match.application import JobMatchService, RequestContext
+from rezumi.modules.job_match.application.job_catalog_query import JobCatalogQueryService
 from rezumi.modules.job_match.domain import JobMatchUnavailable
 
 from rezumi_api.modules.identity.dependencies import current_principal
@@ -17,6 +18,13 @@ def job_match_service(request: Request) -> JobMatchService:
     if service is None:
         raise JobMatchUnavailable
     return cast(JobMatchService, service)
+
+
+def job_catalog_query_service(request: Request) -> JobCatalogQueryService:
+    service = getattr(request.app.state, "job_catalog_query_service", None)
+    if service is None:
+        raise JobMatchUnavailable
+    return cast(JobCatalogQueryService, service)
 
 
 def job_match_request_context(

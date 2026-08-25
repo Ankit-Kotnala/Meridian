@@ -15,6 +15,8 @@ import type {
   CareerReviewCreateInput,
   CareerReviewPage,
   CareerReviewReviseInput,
+  ConfirmRoadmapInput,
+  ConfirmRoadmapResult,
   DevelopmentItem,
   DevelopmentItemCreateInput,
   DevelopmentItemPage,
@@ -26,6 +28,7 @@ import type {
   GoalUpdateInput,
   MilestoneCreateInput,
   MilestoneUpdateInput,
+  RoleRoadmap,
 } from "./types";
 
 function mutationHeaders({
@@ -308,6 +311,23 @@ export async function deleteCareerHealth(
   await mutate(careerGrowthPaths.careerHealthAnalysis(analysis.id), {
     method: "DELETE",
   });
+}
+
+export async function getRoleRoadmap(
+  signal?: AbortSignal,
+): Promise<RoleRoadmap | null> {
+  const response = await query(careerGrowthPaths.roadmap, signal);
+  return (await response.json()) as RoleRoadmap | null;
+}
+
+export async function confirmRoleRoadmap(
+  input: ConfirmRoadmapInput,
+): Promise<ConfirmRoadmapResult> {
+  const response = await mutate(careerGrowthPaths.roadmapConfirm, {
+    body: JSON.stringify(input),
+    method: "POST",
+  });
+  return (await response.json()) as ConfirmRoadmapResult;
 }
 
 export function isVersionConflict(error: unknown): boolean {

@@ -8,6 +8,9 @@ from rezumi.modules.career_record.application.declared_profile_ports import (
     hostname,
     normalize_declared_profile_url,
 )
+from rezumi.modules.career_record.infrastructure.declared_profile.credly_connector import (
+    CredlyDeclaredProfileConnector,
+)
 from rezumi.modules.career_record.infrastructure.declared_profile.fake_connector import (
     FakeDeclaredProfileConnector,
 )
@@ -48,6 +51,7 @@ def default_declared_profile_registry() -> DeclaredProfileConnectorRegistry:
         (
             FakeDeclaredProfileConnector(),
             GithubDeclaredProfileConnector(),
+            CredlyDeclaredProfileConnector(),
             PortfolioDeclaredProfileConnector(),
         )
     )

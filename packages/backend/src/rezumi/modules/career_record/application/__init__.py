@@ -1,6 +1,6 @@
 """Public Career Record application contract."""
 
-from ..domain import (
+from ..domain import (  # noqa: I001 - declared_profile_jobs must stay last; see comment below
     CareerRecordError,
     CareerRecordNotFound,
     CareerRecordUnavailable,
@@ -94,10 +94,33 @@ from .ports import (
 )
 from .service import CareerRecordPolicy, CareerRecordService
 
+# Imported last: declared_profile_jobs -> declared_profile_enrichment ->
+# infrastructure (package init) -> resume_health.application -> back into this
+# module. CareerRecordService must already be bound above before that chain
+# resolves, or the circular import fails.
+from .declared_profile_jobs import (
+    DISPATCH_DECLARED_PROFILE_ENRICHMENT_OUTBOX_TASK,
+    PROCESS_DECLARED_PROFILE_ENRICHMENT_TASK,
+    RECONCILE_DECLARED_PROFILE_ENRICHMENT_JOBS_TASK,
+    DeclaredProfileEnrichmentJobConflict,
+    DeclaredProfileEnrichmentJobNotFound,
+    DeclaredProfileEnrichmentJobPolicy,
+    DeclaredProfileEnrichmentJobService,
+    DeclaredProfileEnrichmentJobStatus,
+    DeclaredProfileEnrichmentJobView,
+    DeclaredProfileEnrichmentOutboxDispatcher,
+    DeclaredProfileEnrichmentOutboxDispatchResult,
+    DeclaredProfileEnrichmentProcessor,
+    DeclaredProfileEnrichmentReconciliationResult,
+)
+
 __all__ = [
     "CLEANUP_EVIDENCE_ATTACHMENT_OBJECTS_TASK",
+    "DISPATCH_DECLARED_PROFILE_ENRICHMENT_OUTBOX_TASK",
     "DISPATCH_EVIDENCE_ATTACHMENT_OUTBOX_TASK",
+    "PROCESS_DECLARED_PROFILE_ENRICHMENT_TASK",
     "PROCESS_EVIDENCE_ATTACHMENT_TASK",
+    "RECONCILE_DECLARED_PROFILE_ENRICHMENT_JOBS_TASK",
     "RECONCILE_EVIDENCE_ATTACHMENT_JOBS_TASK",
     "AcceptSemanticImportProposal",
     "AdmitAttachment",
@@ -152,6 +175,16 @@ __all__ = [
     "CreatePersonalFact",
     "CreateSemanticImportProposals",
     "CreateSkill",
+    "DeclaredProfileEnrichmentJobConflict",
+    "DeclaredProfileEnrichmentJobNotFound",
+    "DeclaredProfileEnrichmentJobPolicy",
+    "DeclaredProfileEnrichmentJobService",
+    "DeclaredProfileEnrichmentJobStatus",
+    "DeclaredProfileEnrichmentJobView",
+    "DeclaredProfileEnrichmentOutboxDispatchResult",
+    "DeclaredProfileEnrichmentOutboxDispatcher",
+    "DeclaredProfileEnrichmentProcessor",
+    "DeclaredProfileEnrichmentReconciliationResult",
     "EvidenceFilter",
     "EvidenceRecord",
     "EvidenceVerificationAuthority",

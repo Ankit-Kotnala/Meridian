@@ -49,6 +49,8 @@ export const careerGrowthPaths = {
     fillApiPath("/api/v1/career-growth/reviews/{review_id}/versions", {
       review_id: reviewId,
     }),
+  roadmap: "/api/v1/career-growth/roadmap" satisfies StaticPath,
+  roadmapConfirm: "/api/v1/career-growth/roadmap/confirm" satisfies StaticPath,
 } as const;
 
 export function withCareerGrowthQuery(

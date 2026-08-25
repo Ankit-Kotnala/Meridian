@@ -76,3 +76,23 @@ class NetworkingReminderTaskResult(TypedDict):
 class NetworkingReminderRecoveryTaskResult(TypedDict):
     recovered: int
     dead_lettered: int
+
+
+class DeclaredProfileEnrichmentTaskResult(TypedDict):
+    job_id: str
+    status: str
+
+
+class DeclaredProfileEnrichmentReconciliationTaskResult(TypedDict):
+    dead_lettered: int
+
+
+class JobCatalogSourceSyncResult(TypedDict):
+    platform: str
+    fetched: int
+    upserted: int
+    rejected: int
+
+
+class JobCatalogSyncTaskResult(TypedDict):
+    sources: list[JobCatalogSourceSyncResult]

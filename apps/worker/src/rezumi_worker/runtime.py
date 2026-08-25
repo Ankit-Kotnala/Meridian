@@ -84,7 +84,15 @@ from rezumi.modules.career_record.application import (
     AttachmentWorkflowService,
     CareerRecordService,
     CleanupBatchResult,
+    DeclaredProfileEnrichmentJobStatus,
+    DeclaredProfileEnrichmentOutboxDispatcher,
+    DeclaredProfileEnrichmentOutboxDispatchResult,
+    DeclaredProfileEnrichmentProcessor,
+    DeclaredProfileEnrichmentReconciliationResult,
     SafeAttachmentError,
+)
+from rezumi.modules.career_record.application.declared_profile_enrichment import (
+    DeclaredProfileEnrichmentService,
 )
 from rezumi.modules.career_record.infrastructure import (
     AttachmentAdmissionBridge,
@@ -106,10 +114,26 @@ from rezumi.modules.career_record.infrastructure import (
 from rezumi.modules.career_record.infrastructure import (
     models as career_record_models,  # noqa: F401
 )
+from rezumi.modules.career_record.infrastructure.declared_profile.registry import (
+    default_declared_profile_registry,
+)
+from rezumi.modules.career_record.infrastructure.declared_profile_job_repository import (
+    SqlAlchemyDeclaredProfileEnrichmentJobUnitOfWorkFactory,
+)
 
 # The worker is a composition root: register identity mappings so the shared
 # SQLAlchemy metadata can resolve resume-health foreign keys to ``users``.
 from rezumi.modules.identity.infrastructure import models as identity_models  # noqa: F401
+from rezumi.modules.job_match.application.job_catalog_ports import CatalogSyncResult
+from rezumi.modules.job_match.application.job_catalog_sync import JobCatalogSyncService
+from rezumi.modules.job_match.infrastructure.identifiers import SystemClock as JobMatchClock
+from rezumi.modules.job_match.infrastructure.job_catalog.registry import (
+    default_job_catalog_connectors,
+)
+from rezumi.modules.job_match.infrastructure.job_catalog_store import (
+    DisabledJobCatalogStore,
+    MongoJobCatalogStore,
+)
 from rezumi.modules.networking.application import NetworkingService
 from rezumi.modules.networking.application.models import NetworkingApplicationReference
 from rezumi.modules.networking.domain import (
@@ -900,6 +924,76 @@ async def reconcile_stale_attachment_jobs(
         await database.dispose()
 
 
+def _declared_profile_career_record_service(database: Database) -> CareerRecordService:
+    """Compose only the read/write use cases declared-profile enrichment needs."""
+
+    return CareerRecordService(
+        unit_of_work=SqlAlchemyCareerRecordUnitOfWorkFactory(database),
+        clock=AttachmentSystemClock(),
+        identifiers=CareerRecordUuidFactory(),
+        resume_sources=ResumeHealthSourceQuery(
+            ResumeHealthSourceReader(SqlAlchemyResumeUnitOfWorkFactory(database))
+        ),
+    )
+
+
+async def process_declared_profile_enrichment_job(
+    settings: WorkerSettings,
+    job_id: UUID,
+) -> DeclaredProfileEnrichmentJobStatus:
+    database = _database(settings)
+    try:
+        processor = DeclaredProfileEnrichmentProcessor(
+            unit_of_work=SqlAlchemyDeclaredProfileEnrichmentJobUnitOfWorkFactory(database),
+            clock=AttachmentSystemClock(),
+            ids=CareerRecordUuidFactory(),
+            enrichment=DeclaredProfileEnrichmentService(
+                career_record=_declared_profile_career_record_service(database),
+                connectors=default_declared_profile_registry(),
+            ),
+        )
+        return await processor.process_job(job_id)
+    finally:
+        await database.dispose()
+
+
+async def dispatch_declared_profile_enrichment_outbox(
+    settings: WorkerSettings,
+    application: Celery,
+    limit: int,
+) -> DeclaredProfileEnrichmentOutboxDispatchResult:
+    database = _database(settings)
+    try:
+        dispatcher = DeclaredProfileEnrichmentOutboxDispatcher(
+            unit_of_work=SqlAlchemyDeclaredProfileEnrichmentJobUnitOfWorkFactory(database),
+            publisher=CeleryJobPublisher(application),
+            clock=AttachmentSystemClock(),
+        )
+        return await dispatcher.dispatch_pending(limit)
+    finally:
+        await database.dispose()
+
+
+async def reconcile_stale_declared_profile_enrichment_jobs(
+    settings: WorkerSettings,
+    limit: int,
+) -> DeclaredProfileEnrichmentReconciliationResult:
+    database = _database(settings)
+    try:
+        processor = DeclaredProfileEnrichmentProcessor(
+            unit_of_work=SqlAlchemyDeclaredProfileEnrichmentJobUnitOfWorkFactory(database),
+            clock=AttachmentSystemClock(),
+            ids=CareerRecordUuidFactory(),
+            enrichment=DeclaredProfileEnrichmentService(
+                career_record=_declared_profile_career_record_service(database),
+                connectors=default_declared_profile_registry(),
+            ),
+        )
+        return await processor.reconcile(limit)
+    finally:
+        await database.dispose()
+
+
 async def reconcile_stale_resume_jobs(
     settings: WorkerSettings,
     limit: int,
@@ -1104,6 +1198,34 @@ def _parsed_resume_store(settings: WorkerSettings) -> ParsedResumeDocumentStore:
             collection_name=settings.mongodb_user_data_collection,
         )
     )
+
+
+def _job_catalog_store(
+    settings: WorkerSettings,
+) -> DisabledJobCatalogStore | MongoJobCatalogStore:
+    if not settings.mongodb_enabled:
+        return DisabledJobCatalogStore()
+    return MongoJobCatalogStore(
+        MongoOptions(
+            url=settings.mongodb_url,
+            database_name=settings.mongodb_database_name,
+            collection_name=settings.mongodb_job_catalog_collection,
+        )
+    )
+
+
+async def sync_job_catalog(settings: WorkerSettings) -> tuple[CatalogSyncResult, ...]:
+    """Enumerate every configured published job feed into the shared catalog."""
+    store = _job_catalog_store(settings)
+    try:
+        service = JobCatalogSyncService(
+            connectors=default_job_catalog_connectors(),
+            store=store,
+            clock=JobMatchClock(),
+        )
+        return await service.sync_all()
+    finally:
+        await store.dispose()
 
 
 def _database(settings: WorkerSettings) -> Database:

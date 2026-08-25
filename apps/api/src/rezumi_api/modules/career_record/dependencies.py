@@ -11,6 +11,9 @@ from rezumi.modules.career_record.application.attachment_workflow import (
 from rezumi.modules.career_record.application.declared_profile_enrichment import (
     DeclaredProfileEnrichmentService,
 )
+from rezumi.modules.career_record.application.declared_profile_jobs import (
+    DeclaredProfileEnrichmentJobService,
+)
 from rezumi.modules.career_record.application.models import RequestContext
 from rezumi.modules.career_record.domain.errors import CareerRecordUnavailable
 from rezumi.modules.identity.domain import AuthenticatedPrincipal
@@ -37,6 +40,15 @@ def declared_profile_enrichment_service(request: Request) -> DeclaredProfileEnri
     if service is None:
         raise CareerRecordUnavailable
     return cast(DeclaredProfileEnrichmentService, service)
+
+
+def declared_profile_enrichment_job_service(
+    request: Request,
+) -> DeclaredProfileEnrichmentJobService:
+    service = getattr(request.app.state, "declared_profile_enrichment_job_service", None)
+    if service is None:
+        raise CareerRecordUnavailable
+    return cast(DeclaredProfileEnrichmentJobService, service)
 
 
 def career_request_context(

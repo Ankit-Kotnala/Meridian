@@ -18,6 +18,7 @@ from .entities import (
     RequirementMatch,
     RequirementMatchState,
     RequirementType,
+    RolePreference,
     TailoringEffort,
     WorkModel,
 )
@@ -90,6 +91,7 @@ __all__ = [
     "RequirementMatchScore",
     "RequirementMatchState",
     "RequirementType",
+    "RolePreference",
     "SnapshotEntity",
     "SnapshotEvidence",
     "SnapshotSkill",

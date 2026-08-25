@@ -1,5 +1,5 @@
-import { ResumeBuilderView } from "@/modules/resume-builder";
+import { redirect } from "next/navigation";
 
 export default function ResumeBuilderPage() {
-  return <ResumeBuilderView />;
+  redirect("/resume-health/account");
 }

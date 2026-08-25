@@ -15,9 +15,20 @@ function resource(base: string, id: string): GeneratedApiPath {
 
 export const jobMatchPaths = {
   analysis: (id: string) => resource("/api/v1/job-match-analyses", id),
+  applicationPacks: (id: string) =>
+    path(`/api/v1/applications/${encodeURIComponent(id)}/application-packs`),
+  applications: path("/api/v1/applications"),
+  applyResumes: path("/api/v1/resumes"),
   analysisRequirements: (id: string) =>
     path(`/api/v1/job-match-analyses/${encodeURIComponent(id)}/requirements`),
   importJob: path("/api/v1/jobs/import"),
+  jobCatalog: path("/api/v1/job-catalog"),
+  jobCatalogBrowse: path("/api/v1/job-catalog/search"),
+  jobCatalogRolePreferences: path("/api/v1/job-catalog/role-preferences"),
+  jobCatalogSave: (platform: string, externalId: string) =>
+    path(
+      `/api/v1/job-catalog/${encodeURIComponent(platform)}/${encodeURIComponent(externalId)}/save`,
+    ),
   job: (id: string) => resource("/api/v1/jobs", id),
   jobAnalyze: (id: string) =>
     path(`/api/v1/jobs/${encodeURIComponent(id)}/analyze`),

@@ -6085,6 +6085,48 @@
         "title": "ComponentResponse",
         "type": "object"
       },
+      "ConfirmRoadmapRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "includedSkillNames": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Includedskillnames",
+            "type": "array"
+          },
+          "roleTitle": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Roletitle",
+            "type": "string"
+          }
+        },
+        "required": [
+          "roleTitle"
+        ],
+        "title": "ConfirmRoadmapRequest",
+        "type": "object"
+      },
+      "ConfirmRoadmapResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "created": {
+            "items": {
+              "$ref": "#/components/schemas/DevelopmentItemResponse"
+            },
+            "maxItems": 100,
+            "title": "Created",
+            "type": "array"
+          }
+        },
+        "required": [
+          "created"
+        ],
+        "title": "ConfirmRoadmapResponse",
+        "type": "object"
+      },
       "ConfirmSemanticFieldRequest": {
         "additionalProperties": false,
         "properties": {
@@ -7093,48 +7135,111 @@
         "title": "DeadLetterJobResponse",
         "type": "object"
       },
-      "DeclaredProfileEnrichmentResponse": {
+      "DeclaredProfileEnrichmentJobResponse": {
         "additionalProperties": false,
         "properties": {
-          "achievementsCreated": {
-            "maximum": 200.0,
+          "attempts": {
             "minimum": 0.0,
-            "title": "Achievementscreated",
+            "title": "Attempts",
             "type": "integer"
           },
-          "evidenceCreated": {
-            "maximum": 200.0,
-            "minimum": 0.0,
-            "title": "Evidencecreated",
-            "type": "integer"
-          },
-          "platform": {
-            "maxLength": 40,
-            "minLength": 1,
-            "title": "Platform",
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
             "type": "string"
           },
-          "profileUrl": {
-            "maxLength": 2048,
-            "minLength": 1,
-            "title": "Profileurl",
+          "errorMessage": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errormessage"
+          },
+          "jobId": {
+            "format": "uuid",
+            "title": "Jobid",
             "type": "string"
           },
-          "skippedDuplicates": {
-            "maximum": 200.0,
-            "minimum": 0.0,
-            "title": "Skippedduplicates",
+          "maxAttempts": {
+            "minimum": 1.0,
+            "title": "Maxattempts",
             "type": "integer"
+          },
+          "personalFactId": {
+            "format": "uuid",
+            "title": "Personalfactid",
+            "type": "string"
+          },
+          "resultAchievementsCreated": {
+            "anyOf": [
+              {
+                "maximum": 200.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resultachievementscreated"
+          },
+          "resultEvidenceCreated": {
+            "anyOf": [
+              {
+                "maximum": 200.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resultevidencecreated"
+          },
+          "resultPlatform": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resultplatform"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "dead_lettered"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "title": "Updatedat",
+            "type": "string"
           }
         },
         "required": [
-          "platform",
-          "profileUrl",
-          "achievementsCreated",
-          "evidenceCreated",
-          "skippedDuplicates"
+          "jobId",
+          "personalFactId",
+          "status",
+          "attempts",
+          "maxAttempts",
+          "createdAt",
+          "updatedAt"
         ],
-        "title": "DeclaredProfileEnrichmentResponse",
+        "title": "DeclaredProfileEnrichmentJobResponse",
         "type": "object"
       },
       "DefenseMapEntryResponse": {
@@ -11317,6 +11422,178 @@
           "job"
         ],
         "title": "JobAcceptedResponse",
+        "type": "object"
+      },
+      "JobCatalogBrowseResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "hasMore": {
+            "title": "Hasmore",
+            "type": "boolean"
+          },
+          "listings": {
+            "items": {
+              "$ref": "#/components/schemas/JobCatalogListingResponse"
+            },
+            "maxItems": 100,
+            "title": "Listings",
+            "type": "array"
+          },
+          "nextOffset": {
+            "minimum": 0.0,
+            "title": "Nextoffset",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "listings",
+          "hasMore",
+          "nextOffset"
+        ],
+        "title": "JobCatalogBrowseResponse",
+        "type": "object"
+      },
+      "JobCatalogListingResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "applicationUrl": {
+            "anyOf": [
+              {
+                "maxLength": 2048,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applicationurl"
+          },
+          "company": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company"
+          },
+          "externalId": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Externalid",
+            "type": "string"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "maxLength": 240,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "platform": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Platform",
+            "type": "string"
+          },
+          "postedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Postedat"
+          },
+          "remote": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remote"
+          },
+          "sourceText": {
+            "maxLength": 4000,
+            "title": "Sourcetext",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "platform",
+          "externalId",
+          "title",
+          "sourceText"
+        ],
+        "title": "JobCatalogListingResponse",
+        "type": "object"
+      },
+      "JobCatalogSearchResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "listings": {
+            "items": {
+              "$ref": "#/components/schemas/JobCatalogListingResponse"
+            },
+            "maxItems": 200,
+            "title": "Listings",
+            "type": "array"
+          },
+          "matchedTargetRole": {
+            "title": "Matchedtargetrole",
+            "type": "boolean"
+          },
+          "selectedRoleTitles": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Selectedroletitles",
+            "type": "array"
+          },
+          "suggestedRoleTitles": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "title": "Suggestedroletitles",
+            "type": "array"
+          },
+          "targetRoleTitles": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "title": "Targetroletitles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "targetRoleTitles",
+          "listings",
+          "matchedTargetRole"
+        ],
+        "title": "JobCatalogSearchResponse",
         "type": "object"
       },
       "JobCreateRequest": {
@@ -17988,6 +18265,58 @@
         "title": "ReviewVersionResponse",
         "type": "object"
       },
+      "RoadmapSkillResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "alreadyDemonstrated": {
+            "title": "Alreadydemonstrated",
+            "type": "boolean"
+          },
+          "howToStart": {
+            "title": "Howtostart",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "why": {
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "why",
+          "howToStart",
+          "alreadyDemonstrated"
+        ],
+        "title": "RoadmapSkillResponse",
+        "type": "object"
+      },
+      "RoadmapStageResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "skills": {
+            "items": {
+              "$ref": "#/components/schemas/RoadmapSkillResponse"
+            },
+            "maxItems": 50,
+            "title": "Skills",
+            "type": "array"
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "string"
+          }
+        },
+        "required": [
+          "stage",
+          "skills"
+        ],
+        "title": "RoadmapStageResponse",
+        "type": "object"
+      },
       "RoleComparisonEntryResponse": {
         "additionalProperties": false,
         "properties": {
@@ -18177,6 +18506,36 @@
           "page"
         ],
         "title": "RolePageResponse",
+        "type": "object"
+      },
+      "RolePreferenceRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "roleTitles": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Roletitles",
+            "type": "array"
+          }
+        },
+        "title": "RolePreferenceRequest",
+        "type": "object"
+      },
+      "RolePreferenceResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "roleTitles": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Roletitles",
+            "type": "array"
+          }
+        },
+        "title": "RolePreferenceResponse",
         "type": "object"
       },
       "RoleReadinessPageResponse": {
@@ -18456,6 +18815,29 @@
           "competencies"
         ],
         "title": "RoleResponse",
+        "type": "object"
+      },
+      "RoleRoadmapResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "roleTitle": {
+            "title": "Roletitle",
+            "type": "string"
+          },
+          "stages": {
+            "items": {
+              "$ref": "#/components/schemas/RoadmapStageResponse"
+            },
+            "maxItems": 20,
+            "title": "Stages",
+            "type": "array"
+          }
+        },
+        "required": [
+          "roleTitle",
+          "stages"
+        ],
+        "title": "RoleRoadmapResponse",
         "type": "object"
       },
       "RoleSeniority": {
@@ -33353,6 +33735,315 @@
           }
         },
         "summary": "Revise Review",
+        "tags": [
+          "Career Growth"
+        ]
+      }
+    },
+    "/api/v1/career-growth/roadmap": {
+      "get": {
+        "description": "`None` when no target role can be resolved yet (no saved role, no experience).",
+        "operationId": "careerGrowthRoadmapGet",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "rezumi_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/RoleRoadmapResponse"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Careergrowthroadmapget"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Get Role Roadmap",
+        "tags": [
+          "Career Growth"
+        ]
+      }
+    },
+    "/api/v1/career-growth/roadmap/confirm": {
+      "post": {
+        "operationId": "careerGrowthRoadmapConfirm",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "rezumi_csrf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "rezumi_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmRoadmapRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmRoadmapResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Confirm Role Roadmap",
         "tags": [
           "Career Growth"
         ]
@@ -48295,6 +48986,680 @@
         ]
       }
     },
+    "/api/v1/job-catalog": {
+      "get": {
+        "description": "Read-only shared listings filtered toward the owner's target role(s).\n\nNever writes into the owner's own tracked jobs — see\n``POST /job-catalog/{platform}/{externalId}/save`` for that explicit step.",
+        "operationId": "jobCatalogSearch",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "rezumi_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobCatalogSearchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Search Job Catalog",
+        "tags": [
+          "Job Match"
+        ]
+      }
+    },
+    "/api/v1/job-catalog/role-preferences": {
+      "get": {
+        "operationId": "jobCatalogRolePreferencesGet",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "rezumi_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RolePreferenceResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Get Job Catalog Role Preferences",
+        "tags": [
+          "Job Match"
+        ]
+      },
+      "put": {
+        "description": "Replace the owner's job-catalog role filter.\n\nA PUT of the full desired list is naturally idempotent, so this does not\nrequire an Idempotency-Key like the create/import/analyze endpoints.",
+        "operationId": "jobCatalogRolePreferencesSet",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "rezumi_csrf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "rezumi_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RolePreferenceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RolePreferenceResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Set Job Catalog Role Preferences",
+        "tags": [
+          "Job Match"
+        ]
+      }
+    },
+    "/api/v1/job-catalog/search": {
+      "get": {
+        "description": "Free-text search across the whole shared job catalog, independent of role filtering.",
+        "operationId": "jobCatalogBrowse",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 200,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 5000,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "rezumi_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobCatalogBrowseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Browse Job Catalog",
+        "tags": [
+          "Job Match"
+        ]
+      }
+    },
+    "/api/v1/job-catalog/{platform}/{external_id}/save": {
+      "post": {
+        "description": "Copy one catalog listing into the owner's own tracked jobs, once.\n\nIdempotent per (owner, platform, external_id) — saving the same listing\ntwice returns the same tracked job rather than creating a duplicate.",
+        "operationId": "jobCatalogSave",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "platform",
+            "required": true,
+            "schema": {
+              "title": "Platform",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "external_id",
+            "required": true,
+            "schema": {
+              "title": "External Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "rezumi_csrf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "rezumi_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Session"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Save Job Catalog Listing",
+        "tags": [
+          "Job Match"
+        ]
+      }
+    },
     "/api/v1/job-match-analyses/{analysis_id}": {
       "get": {
         "operationId": "jobMatchAnalysisGet",
@@ -56897,6 +58262,7 @@
     },
     "/api/v1/personal-facts/{fact_id}/enrich": {
       "post": {
+        "description": "Enqueue declared-link enrichment; the worker fetches and materializes it.\n\nReturns immediately with a job to poll rather than running the fetch\ninline, so a slow or unavailable third-party profile page never blocks\nthe request.",
         "operationId": "careerPersonalFactEnrich",
         "parameters": [
           {
@@ -56959,11 +58325,11 @@
           }
         ],
         "responses": {
-          "200": {
+          "202": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DeclaredProfileEnrichmentResponse"
+                  "$ref": "#/components/schemas/DeclaredProfileEnrichmentJobResponse"
                 }
               }
             },
@@ -57041,6 +58407,135 @@
           }
         },
         "summary": "Enrich Personal Fact Link",
+        "tags": [
+          "Career Record"
+        ]
+      }
+    },
+    "/api/v1/personal-facts/{fact_id}/enrich/{job_id}": {
+      "get": {
+        "operationId": "careerPersonalFactEnrichmentJobGet",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fact_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Fact Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "rezumi_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeclaredProfileEnrichmentJobResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Get Declared Profile Enrichment Job",
         "tags": [
           "Career Record"
         ]

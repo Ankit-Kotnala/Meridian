@@ -4,7 +4,11 @@ import { apiMutation, apiQuery } from "@/shared/api/browser-request";
 
 import { jobMatchPaths, withQuery } from "./paths";
 import type {
+  ApplicationForJob,
+  ApplyResume,
   Job,
+  JobCatalogBrowse,
+  JobCatalogSearch,
   JobCreateInput,
   JobImportInput,
   JobMatchAnalysis,
@@ -14,6 +18,7 @@ import type {
   OpportunityPriority,
   OpportunityPriorityInput,
   RequirementMatchPage,
+  RolePreference,
 } from "./types";
 
 function headers(version?: number, idempotencyKey?: string): HeadersInit {
@@ -109,6 +114,52 @@ export async function getAnalysisRequirements(
   ).json()) as RequirementMatchPage;
 }
 
+export async function getJobCatalogSuggestions(): Promise<JobCatalogSearch> {
+  const response = await query(jobMatchPaths.jobCatalog);
+  return (await response.json()) as JobCatalogSearch;
+}
+
+export async function saveJobCatalogListing(
+  platform: string,
+  externalId: string,
+): Promise<Job> {
+  const response = await mutate(
+    jobMatchPaths.jobCatalogSave(platform, externalId),
+    { method: "POST" },
+  );
+  return (await response.json()) as Job;
+}
+
+export async function getJobCatalogRolePreferences(): Promise<RolePreference> {
+  const response = await query(jobMatchPaths.jobCatalogRolePreferences);
+  return (await response.json()) as RolePreference;
+}
+
+export async function setJobCatalogRolePreferences(
+  roleTitles: string[],
+): Promise<RolePreference> {
+  const response = await mutate(jobMatchPaths.jobCatalogRolePreferences, {
+    body: JSON.stringify({ roleTitles }),
+    method: "PUT",
+  });
+  return (await response.json()) as RolePreference;
+}
+
+export async function browseJobCatalog(filters: {
+  limit?: number;
+  offset?: number;
+  q?: string;
+}): Promise<JobCatalogBrowse> {
+  const response = await query(
+    withQuery(jobMatchPaths.jobCatalogBrowse, {
+      limit: filters.limit,
+      offset: filters.offset,
+      q: filters.q || undefined,
+    }),
+  );
+  return (await response.json()) as JobCatalogBrowse;
+}
+
 export async function prioritizeOpportunity(
   jobId: string,
   input: OpportunityPriorityInput,
@@ -122,4 +173,38 @@ export async function prioritizeOpportunity(
     },
   );
   return (await response.json()) as OpportunityPriority;
+}
+
+export async function listResumesForApply(): Promise<ApplyResume[]> {
+  const response = await query(jobMatchPaths.applyResumes);
+  const body = (await response.json()) as { items: ApplyResume[] };
+  return body.items;
+}
+
+/** "Apply for me": creates the tracked application, ready for a pack. */
+export async function createApplicationForJob(
+  jobId: string,
+  resumeVersionId: string,
+): Promise<ApplicationForJob> {
+  const response = await mutate(jobMatchPaths.applications, {
+    body: JSON.stringify({
+      jobId,
+      resumeVersionId,
+      stage: "ready_to_apply",
+    }),
+    headers: headers(undefined, crypto.randomUUID()),
+    method: "POST",
+  });
+  return (await response.json()) as ApplicationForJob;
+}
+
+/** Generates the tailored resume + (if an Application Profile exists) the assisted-apply handoff. */
+export async function generateAssistedApplyPack(
+  applicationId: string,
+): Promise<void> {
+  await mutate(jobMatchPaths.applicationPacks(applicationId), {
+    body: JSON.stringify({ includeKinds: ["tailored_resume"] }),
+    headers: headers(undefined, crypto.randomUUID()),
+    method: "POST",
+  });
 }

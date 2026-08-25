@@ -216,6 +216,39 @@ class Settings(BaseSettings):
     ai_circuit_failure_threshold: int = Field(default=3, ge=1, le=20)
     ai_circuit_cooldown_seconds: int = Field(default=60, ge=1, le=3_600)
 
+    mongodb_enabled: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("REZUMI_MONGODB_ENABLED", "MONGODB_ENABLED"),
+    )
+    mongodb_url: SecretStr = Field(
+        default=SecretStr("mongodb://localhost:27017"),
+        validation_alias=AliasChoices("REZUMI_MONGODB_URL", "MONGODB_URL"),
+    )
+    mongodb_database_name: str = Field(
+        default="Rezumi",
+        min_length=1,
+        max_length=63,
+        validation_alias=AliasChoices("REZUMI_MONGODB_DATABASE", "MONGODB_DATABASE"),
+    )
+    mongodb_job_catalog_collection: str = Field(
+        default="job-catalog",
+        min_length=1,
+        max_length=120,
+        validation_alias=AliasChoices(
+            "REZUMI_MONGODB_JOB_CATALOG_COLLECTION",
+            "MONGODB_JOB_CATALOG_COLLECTION",
+        ),
+    )
+    mongodb_role_roadmaps_collection: str = Field(
+        default="role-roadmaps",
+        min_length=1,
+        max_length=120,
+        validation_alias=AliasChoices(
+            "REZUMI_MONGODB_ROLE_ROADMAPS_COLLECTION",
+            "MONGODB_ROLE_ROADMAPS_COLLECTION",
+        ),
+    )
+
     @field_validator("allowed_origins", mode="before")
     @classmethod
     def parse_allowed_origins(cls, value: Any) -> Any:
@@ -303,6 +336,14 @@ class Settings(BaseSettings):
         parsed = urlparse(value.get_secret_value())
         if parsed.scheme not in {"redis", "rediss"} or not parsed.hostname:
             raise ValueError("redis_url must use redis:// or rediss://")
+        return value
+
+    @field_validator("mongodb_url")
+    @classmethod
+    def require_mongodb_url(cls, value: SecretStr) -> SecretStr:
+        parsed = urlparse(value.get_secret_value())
+        if parsed.scheme not in {"mongodb", "mongodb+srv"} or not parsed.hostname:
+            raise ValueError("mongodb_url must use mongodb:// or mongodb+srv://")
         return value
 
     @field_validator("celery_broker_url")

@@ -89,6 +89,10 @@ export const careerVaultPaths = {
     path(`${resource("/api/v1/personal-facts", id)}/confirm`),
   personalFactEnrich: (id: string) =>
     path(`${resource("/api/v1/personal-facts", id)}/enrich`),
+  personalFactEnrichJob: (id: string, jobId: string) =>
+    path(
+      `${resource("/api/v1/personal-facts", id)}/enrich/${encodeURIComponent(jobId)}`,
+    ),
   personalFacts: path("/api/v1/personal-facts"),
 } as const;
 

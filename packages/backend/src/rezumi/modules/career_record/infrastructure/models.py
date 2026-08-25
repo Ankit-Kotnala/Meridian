@@ -1727,3 +1727,89 @@ class CareerAuditEventModel(Base):
     trace_id: Mapped[str] = mapped_column(String(128), nullable=False)
     details: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class DeclaredProfileEnrichmentJobModel(Base):
+    __tablename__ = "declared_profile_enrichment_jobs"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('queued','running','succeeded','failed','dead_lettered')",
+            name="status_valid",
+        ),
+        CheckConstraint(
+            "attempts >= 0 AND max_attempts > 0 AND attempts <= max_attempts",
+            name="attempts_valid",
+        ),
+        CheckConstraint(
+            "(status IN ('succeeded','failed','dead_lettered') AND completed_at IS NOT NULL) OR "
+            "(status IN ('queued','running') AND completed_at IS NULL)",
+            name="completion_state_valid",
+        ),
+        UniqueConstraint(
+            "owner_user_id", "id", name="uq_declared_profile_enrichment_jobs_owner_id"
+        ),
+        Index(
+            "ix_declared_profile_enrichment_jobs_owner_fact_active",
+            "owner_user_id",
+            "personal_fact_id",
+            unique=True,
+            postgresql_where=text("status IN ('queued','running')"),
+        ),
+        {"info": {"introduced_in_revision": "20260823_0016"}},
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
+    owner_user_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    personal_fact_id: Mapped[UUID] = mapped_column(Uuid, nullable=False)
+    trace_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False)
+    max_attempts: Mapped[int] = mapped_column(Integer, nullable=False)
+    next_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    result_platform: Mapped[str | None] = mapped_column(String(40))
+    result_achievements_created: Mapped[int | None] = mapped_column(Integer)
+    result_evidence_created: Mapped[int | None] = mapped_column(Integer)
+    error_message: Mapped[str | None] = mapped_column(String(300))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class DeclaredProfileEnrichmentOutboxModel(Base):
+    __tablename__ = "declared_profile_enrichment_outbox"
+    __table_args__ = (
+        CheckConstraint(
+            "attempts >= 0 AND max_attempts > 0 AND attempts <= max_attempts",
+            name="attempts_valid",
+        ),
+        CheckConstraint(
+            "published_at IS NULL OR dead_lettered_at IS NULL",
+            name="terminal_state_valid",
+        ),
+        UniqueConstraint(
+            "owner_user_id", "id", name="uq_declared_profile_enrichment_outbox_owner_id"
+        ),
+        Index(
+            "ix_declared_profile_enrichment_outbox_due",
+            "next_attempt_at",
+            "id",
+            postgresql_where=text("published_at IS NULL AND dead_lettered_at IS NULL"),
+        ),
+        {"info": {"introduced_in_revision": "20260823_0016"}},
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
+    owner_user_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    job_id: Mapped[UUID] = mapped_column(Uuid, nullable=False)
+    task_name: Mapped[str] = mapped_column(String(160), nullable=False)
+    trace_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False)
+    max_attempts: Mapped[int] = mapped_column(Integer, nullable=False)
+    next_attempt_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    dead_lettered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
