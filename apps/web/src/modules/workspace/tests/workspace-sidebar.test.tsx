@@ -32,10 +32,10 @@ describe("WorkspaceSidebar", () => {
 
     expect(labels).toEqual([
       "Home",
-      "Career Record",
+      "Hall of Fame",
       "Resume Studio",
-      "Opportunities",
-      "Applications",
+      "Job Hunt",
+      "My Applications",
       "Prepare",
       "Growth",
     ]);
@@ -52,12 +52,12 @@ describe("WorkspaceSidebar", () => {
     );
   });
 
-  it("highlights Career Record from an evidence route", () => {
+  it("highlights Hall of Fame from an evidence route", () => {
     navigation.pathname = "/evidence/00000000-0000-4000-8000-000000000001";
 
     render(<WorkspaceSidebar />);
 
-    expect(screen.getByRole("link", { name: "Career Record" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Hall of Fame" })).toHaveAttribute(
       "aria-current",
       "page",
     );
@@ -145,9 +145,11 @@ describe("workspace navigation model", () => {
       // now redirects there rather than being its own nav destination.
       "/job-match",
       "/applications",
+      // Resume Builder and Change Studio were merged into the Resume Studio
+      // page the same way; /resume-builder redirects there, and
+      // /change-studio remains a deep-linkable detail route reached from a
+      // link on the page rather than the nav's own tools list.
       "/resume-health/account",
-      "/resume-builder",
-      "/change-studio",
       "/interview-prep",
       "/networking",
       "/career-growth",
@@ -159,12 +161,12 @@ describe("workspace navigation model", () => {
 
   it("reports the section and tool for the top bar", () => {
     expect(resolveWorkspaceContext("/evidence")).toEqual({
-      group: "Career Record",
+      group: "Hall of Fame",
       label: "Evidence Vault",
     });
     expect(resolveWorkspaceContext("/applications")).toEqual({
-      group: "Applications",
-      label: "Applications",
+      group: "My Applications",
+      label: "My Applications",
     });
     expect(resolveWorkspaceContext("/settings")).toEqual({
       group: "Account",

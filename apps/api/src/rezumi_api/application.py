@@ -56,6 +56,9 @@ from rezumi.modules.career_growth.infrastructure import SystemClock as CareerGro
 from rezumi.modules.career_growth.infrastructure import (
     UuidIdentifierFactory as CareerGrowthUuidFactory,
 )
+from rezumi.modules.career_growth.infrastructure.career_record_skills_provider import (
+    CareerRecordSkillsProvider,
+)
 from rezumi.modules.career_growth.infrastructure.role_readiness_gap_provider import (
     RoleReadinessGapProvider,
 )
@@ -667,6 +670,11 @@ def create_app(
                     career_source=CareerRecordGrowthSourceProvider(resolved_career_record),
                     gap_source=RoleReadinessGapProvider(resolved_role_readiness),
                     role_roadmaps=resolved_role_roadmap_store,
+                    target_roles=CompositeTargetRoleProvider(
+                        role_readiness=resolved_role_readiness,
+                        career_record=resolved_career_record,
+                    ),
+                    skills=CareerRecordSkillsProvider(resolved_career_record),
                 )
             if resolved_career_analytics is None:
                 if (

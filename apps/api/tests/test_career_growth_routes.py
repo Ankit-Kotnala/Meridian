@@ -28,6 +28,9 @@ from rezumi.modules.career_growth.application import (
     PromotionReadinessCheck,
     PromotionReadinessReport,
     ReviewVersionView,
+    RoadmapSkillView,
+    RoadmapStageView,
+    RoleRoadmapView,
 )
 from rezumi.modules.career_growth.domain import (
     CANONICAL_SCORE_DISCLAIMER,
@@ -438,6 +441,23 @@ def _services(
     service.analyze_career_health.return_value = sample.health
     service.get_career_health.return_value = sample.health
     service.delete_career_health.return_value = None
+    service.get_role_roadmap.return_value = RoleRoadmapView(
+        role_title="AI Engineer",
+        stages=(
+            RoadmapStageView(
+                stage="Foundations",
+                skills=(
+                    RoadmapSkillView(
+                        name="Python",
+                        why="Most ML tooling is Python-first.",
+                        how_to_start="Build one small script end to end.",
+                        already_demonstrated=True,
+                    ),
+                ),
+            ),
+        ),
+    )
+    service.confirm_roadmap_selection.return_value = (sample.development,)
     return identity, service
 
 
@@ -868,6 +888,8 @@ def test_career_growth_openapi_exposes_complete_bounded_non_predictive_surface(
         "/api/v1/career-growth/reviews/{review_id}/finalizations",
         "/api/v1/career-growth/career-health/analyses",
         "/api/v1/career-growth/career-health/analyses/{analysis_id}",
+        "/api/v1/career-growth/roadmap",
+        "/api/v1/career-growth/roadmap/confirm",
     }
     serialized = str(document["components"]["schemas"])
     assert "ownerUserId" not in serialized
@@ -879,3 +901,41 @@ def test_career_growth_openapi_exposes_complete_bounded_non_predictive_surface(
     )
     assert "429" in paths["/api/v1/career-growth/goals"]["post"]["responses"]
     assert "413" in paths["/api/v1/career-growth/goals"]["post"]["responses"]
+
+
+def test_career_growth_roadmap_get_and_confirm(
+    settings: Settings,
+    fake_database: FakeDatabase,
+) -> None:
+    sample = _sample()
+    identity, service = _services(sample)
+
+    with _client(settings, fake_database, identity, service) as client:
+        roadmap = client.get("/api/v1/career-growth/roadmap")
+        assert roadmap.status_code == 200
+        body = roadmap.json()
+        assert body["roleTitle"] == "AI Engineer"
+        assert body["stages"][0]["skills"][0]["alreadyDemonstrated"] is True
+
+        confirm = client.post(
+            "/api/v1/career-growth/roadmap/confirm",
+            json={"roleTitle": "AI Engineer", "includedSkillNames": ["Prompt engineering"]},
+            headers=_write_headers(),
+        )
+        assert confirm.status_code == 201
+        assert len(confirm.json()["created"]) == 1
+        service.confirm_roadmap_selection.assert_called_once()
+
+
+def test_career_growth_roadmap_get_returns_null_without_target_role(
+    settings: Settings,
+    fake_database: FakeDatabase,
+) -> None:
+    sample = _sample()
+    identity, service = _services(sample)
+    service.get_role_roadmap.return_value = None
+
+    with _client(settings, fake_database, identity, service) as client:
+        response = client.get("/api/v1/career-growth/roadmap")
+        assert response.status_code == 200
+        assert response.json() is None

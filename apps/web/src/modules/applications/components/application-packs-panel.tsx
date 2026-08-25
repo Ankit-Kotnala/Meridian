@@ -10,6 +10,7 @@ import {
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type FormEvent,
@@ -98,11 +99,13 @@ function mergePacks(
 export function ApplicationPacksPanel({
   application,
   onFailure,
+  onMarkApplied,
   onPackCountChange,
   onSuccess,
   reloadEpoch,
 }: {
   application: ApplicationDetail;
+  onMarkApplied?: () => void;
   onPackCountChange: (delta: number) => void;
   reloadEpoch: number;
 } & NoticeHandlers) {
@@ -121,6 +124,25 @@ export function ApplicationPacksPanel({
   const listRequest = useRef(0);
   const detailRequests = useRef(new Map<string, number>());
   const packIdempotencyKey = useRef<string | undefined>(undefined);
+
+  /**
+   * Most recent generated "assisted apply handoff" document — the deep link
+   * plus pre-filled answers the user opens to submit in their own session
+   * (ADR 0019 §4). Surfaced prominently rather than buried in the generic
+   * document list below, since this is the one document most people came here
+   * for after clicking "Apply for me" on a job.
+   */
+  const latestHandoff = useMemo(() => {
+    for (const summary of packs.items) {
+      const detail = packDetails[summary.id];
+      if (detail?.status !== "success") continue;
+      const document = detail.pack.documents.find(
+        (item) => item.kind === "assisted_apply_handoff" && !item.deletedAt,
+      );
+      if (document) return { document, packId: detail.pack.id };
+    }
+    return null;
+  }, [packDetails, packs.items]);
 
   const loadPacks = useCallback(
     async (cursor?: string) => {
@@ -326,6 +348,38 @@ export function ApplicationPacksPanel({
 
   return (
     <div className="space-y-6">
+      {latestHandoff && application.stage !== "applied" && (
+        <section
+          aria-labelledby="assisted-apply-heading"
+          className="rounded-xl border border-primary/40 bg-primary-soft/40 p-4 shadow-sm sm:p-5"
+        >
+          <div className="flex items-center gap-2">
+            <FileCheck2 aria-hidden="true" className="size-5 text-primary" />
+            <h2
+              className="text-lg font-black text-foreground"
+              id="assisted-apply-heading"
+            >
+              Ready to submit
+            </h2>
+          </div>
+          <p className="mt-2 text-sm text-muted">
+            Rezumi assembled this from your tailored resume and Application
+            Profile. Open the job posting and submit it yourself in your own
+            browser session — Rezumi never submits on your behalf.
+          </p>
+          <div className="mt-3 rounded-xl bg-surface p-4">
+            <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">
+              {latestHandoff.document.body}
+            </p>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button disabled={!onMarkApplied} onClick={() => onMarkApplied?.()}>
+              I applied
+            </Button>
+          </div>
+        </section>
+      )}
+
       <section
         aria-labelledby="generate-pack-heading"
         className="rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-5"

@@ -55,11 +55,26 @@ export type DashboardActivation = {
   pendingImports: DashboardCount;
 };
 
+export type DashboardJobHunt =
+  | { atLeast: boolean; kind: "ready"; total: number; topTitle: string | null }
+  | { kind: "unavailable" };
+
+export type DashboardGrowth =
+  | { inProgress: number; kind: "ready"; planned: number }
+  | { kind: "unavailable" };
+
+export type DashboardPrepare =
+  | { followUpsDue: number; kind: "ready" }
+  | { kind: "unavailable" };
+
 export type DashboardSummary = {
   activation: DashboardActivation;
   attention: readonly DashboardAttentionItem[];
   attentionDegraded: boolean;
+  growth: DashboardGrowth;
+  jobHunt: DashboardJobHunt;
   pipeline: DashboardPipeline;
+  prepare: DashboardPrepare;
   record: DashboardRecordCounts;
 };
 
@@ -69,7 +84,10 @@ const EMPTY_SUMMARY: DashboardSummary = {
   activation: { jobs: UNAVAILABLE, pendingImports: UNAVAILABLE },
   attention: [],
   attentionDegraded: true,
+  growth: UNAVAILABLE,
+  jobHunt: UNAVAILABLE,
   pipeline: UNAVAILABLE,
+  prepare: UNAVAILABLE,
   record: {
     achievements: UNAVAILABLE,
     evidence: UNAVAILABLE,
@@ -314,6 +332,36 @@ function readJobs(payload: Record<string, unknown> | null): DashboardCount {
   return counted(asList(payload.data).length, hasMore(payload));
 }
 
+/** `job-catalog` has no `data`/`page` envelope — it returns `listings` directly. */
+function readJobHunt(payload: Record<string, unknown> | null): DashboardJobHunt {
+  if (!payload) return UNAVAILABLE;
+  const listings = asList(payload.listings).map(asRecord);
+  const top = listings[0];
+  return {
+    atLeast: listings.length >= 25,
+    kind: "ready",
+    topTitle: top ? asText(top.title) || null : null,
+    total: listings.length,
+  };
+}
+
+function readGrowth(payload: Record<string, unknown> | null): DashboardGrowth {
+  if (!payload) return UNAVAILABLE;
+  const statuses = asList(payload.data).map((item) =>
+    asText(asRecord(item)?.status),
+  );
+  return {
+    inProgress: statuses.filter((status) => status === "in_progress").length,
+    kind: "ready",
+    planned: statuses.filter((status) => status === "planned").length,
+  };
+}
+
+function readPrepare(payload: Record<string, unknown> | null): DashboardPrepare {
+  if (!payload) return UNAVAILABLE;
+  return { followUpsDue: asList(payload.data).length, kind: "ready" };
+}
+
 function attentionItems({
   achievements,
   applications,
@@ -442,8 +490,10 @@ export async function dashboardSummary(): Promise<DashboardSummary> {
     const [
       achievementPayload,
       applicationPayload,
+      developmentItemPayload,
       evidencePayload,
       experiencePayload,
+      jobCatalogPayload,
       jobPayload,
       reminderPayload,
       semanticImportPayload,
@@ -452,8 +502,10 @@ export async function dashboardSummary(): Promise<DashboardSummary> {
     ] = await Promise.all([
       readJson(workspaceSummaryPaths.achievements),
       readJson(workspaceSummaryPaths.applications),
+      readJson(workspaceSummaryPaths.developmentItems),
       readJson(workspaceSummaryPaths.evidence),
       readJson(workspaceSummaryPaths.experiences),
+      readJson(workspaceSummaryPaths.jobCatalog),
       readJson(workspaceSummaryPaths.jobs),
       readJson(workspaceSummaryPaths.dueReminders),
       readJson(workspaceSummaryPaths.semanticImportProposals),
@@ -493,7 +545,10 @@ export async function dashboardSummary(): Promise<DashboardSummary> {
         skillPayload,
         typedImportPayload,
       ].some((payload) => payload === null),
+      growth: readGrowth(developmentItemPayload),
+      jobHunt: readJobHunt(jobCatalogPayload),
       pipeline: applications.pipeline,
+      prepare: readPrepare(reminderPayload),
       record: {
         achievements: achievements.count,
         evidence: evidence.count,

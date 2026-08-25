@@ -37,9 +37,12 @@ import { JobCatalogBrowseSection } from "../components/job-catalog-browse-sectio
 import { RoleFilterPicker } from "../components/role-filter-picker";
 import {
   analyzeJob,
+  createApplicationForJob,
   deleteJob,
+  generateAssistedApplyPack,
   getJobCatalogSuggestions,
   getJobs,
+  listResumesForApply,
   prioritizeOpportunity,
   saveJobCatalogListing,
   setJobCatalogRolePreferences,
@@ -237,6 +240,38 @@ export function JobMatchView() {
       setSuccess(`${job.title} removed.`);
     } catch (error) {
       setFailure(requestErrorMessage(error, "The job could not be removed."));
+    } finally {
+      setBusyKey(undefined);
+    }
+  }
+
+  async function applyForMe(job: Job) {
+    setBusyKey(`apply-${job.id}`);
+    setFailure(undefined);
+    setSuccess(undefined);
+    try {
+      const resumes = await listResumesForApply();
+      if (resumes.length === 0) {
+        setFailure(
+          "Build a resume in Resume Studio first — applying needs a tailored resume version.",
+        );
+        return;
+      }
+      const resume = [...resumes].sort((a, b) =>
+        b.updatedAt.localeCompare(a.updatedAt),
+      )[0]!;
+      const application = await createApplicationForJob(
+        job.id,
+        resume.currentVersionId,
+      );
+      await generateAssistedApplyPack(application.id);
+      setSuccess(
+        `${job.title}: application pack ready using "${resume.title}". Open My Applications to review and submit it yourself — Rezumi never submits for you.`,
+      );
+    } catch (error) {
+      setFailure(
+        requestErrorMessage(error, "The application pack could not be prepared."),
+      );
     } finally {
       setBusyKey(undefined);
     }
@@ -502,7 +537,7 @@ export function JobMatchView() {
                         {job.requirements.length} requirements
                       </Badge>
                     </div>
-                    <div className="mt-3 flex gap-2">
+                    <div className="mt-3 flex flex-wrap gap-2">
                       <Button
                         className="flex-1"
                         loading={busyKey === `analyze-${job.id}`}
@@ -514,6 +549,12 @@ export function JobMatchView() {
                           className="size-4"
                         />
                         Analyze
+                      </Button>
+                      <Button
+                        loading={busyKey === `apply-${job.id}`}
+                        onClick={() => void applyForMe(job)}
+                      >
+                        Apply for me
                       </Button>
                       <Button
                         aria-label={`Remove ${job.title}`}

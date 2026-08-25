@@ -15,6 +15,7 @@ function resource(base: string, id: string): GeneratedApiPath {
 
 export const applicationPaths = {
   application: (id: string) => resource("/api/v1/applications", id),
+  applicationProfile: path("/api/v1/application-profile"),
   applicationPacks: (id: string) =>
     path(`/api/v1/applications/${encodeURIComponent(id)}/application-packs`),
   applicationStage: (id: string) =>

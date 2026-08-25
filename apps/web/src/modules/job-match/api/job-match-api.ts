@@ -4,6 +4,8 @@ import { apiMutation, apiQuery } from "@/shared/api/browser-request";
 
 import { jobMatchPaths, withQuery } from "./paths";
 import type {
+  ApplicationForJob,
+  ApplyResume,
   Job,
   JobCatalogBrowse,
   JobCatalogSearch,
@@ -171,4 +173,38 @@ export async function prioritizeOpportunity(
     },
   );
   return (await response.json()) as OpportunityPriority;
+}
+
+export async function listResumesForApply(): Promise<ApplyResume[]> {
+  const response = await query(jobMatchPaths.applyResumes);
+  const body = (await response.json()) as { items: ApplyResume[] };
+  return body.items;
+}
+
+/** "Apply for me": creates the tracked application, ready for a pack. */
+export async function createApplicationForJob(
+  jobId: string,
+  resumeVersionId: string,
+): Promise<ApplicationForJob> {
+  const response = await mutate(jobMatchPaths.applications, {
+    body: JSON.stringify({
+      jobId,
+      resumeVersionId,
+      stage: "ready_to_apply",
+    }),
+    headers: headers(undefined, crypto.randomUUID()),
+    method: "POST",
+  });
+  return (await response.json()) as ApplicationForJob;
+}
+
+/** Generates the tailored resume + (if an Application Profile exists) the assisted-apply handoff. */
+export async function generateAssistedApplyPack(
+  applicationId: string,
+): Promise<void> {
+  await mutate(jobMatchPaths.applicationPacks(applicationId), {
+    body: JSON.stringify({ includeKinds: ["tailored_resume"] }),
+    headers: headers(undefined, crypto.randomUUID()),
+    method: "POST",
+  });
 }

@@ -32,11 +32,13 @@ const api = vi.hoisted(() => ({
   deleteDevelopmentItem: vi.fn(),
   deleteGoal: vi.fn(),
   deleteMilestone: vi.fn(),
+  confirmRoleRoadmap: vi.fn(),
   finalizeCareerReview: vi.fn(),
   getCareerHealth: vi.fn(),
   getCareerReview: vi.fn(),
   getCareerGrowthInsights: vi.fn(),
   getGoal: vi.fn(),
+  getRoleRoadmap: vi.fn(),
   listCareerHealth: vi.fn(),
   listCareerReviews: vi.fn(),
   listDevelopmentItems: vi.fn(),
@@ -243,6 +245,7 @@ describe("Career Growth view", () => {
     api.listCareerReviews.mockResolvedValue(page([review]));
     api.listCareerHealth.mockResolvedValue(page([careerHealth]));
     api.getCareerGrowthInsights.mockResolvedValue(growthInsights);
+    api.getRoleRoadmap.mockResolvedValue(null);
     api.finalizeCareerReview.mockResolvedValue({
       ...review,
       currentVersion: { ...review.currentVersion, status: "finalized" },
@@ -560,5 +563,52 @@ describe("Career Growth view", () => {
       }),
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
+  });
+
+  it("marks already-known roadmap skills and confirms the selection", async () => {
+    api.getRoleRoadmap.mockResolvedValue({
+      roleTitle: "AI Engineer",
+      stages: [
+        {
+          stage: "Foundations",
+          skills: [
+            {
+              name: "Python",
+              why: "Most ML tooling is Python-first.",
+              howToStart: "Build one small script end to end.",
+              alreadyDemonstrated: true,
+            },
+            {
+              name: "Prompt engineering",
+              why: "Directly shapes LLM output quality.",
+              howToStart: "Iterate on one prompt against a fixed test set.",
+              alreadyDemonstrated: false,
+            },
+          ],
+        },
+      ],
+    });
+    api.confirmRoleRoadmap.mockResolvedValue({ created: [developmentItem] });
+
+    render(<CareerGrowthView />);
+
+    expect(await screen.findByText("AI Engineer")).toBeVisible();
+    expect(screen.getByText("Already familiar")).toBeVisible();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirm my roadmap" }),
+    );
+
+    await waitFor(() =>
+      expect(api.confirmRoleRoadmap).toHaveBeenCalledWith(
+        expect.objectContaining({
+          roleTitle: "AI Engineer",
+          includedSkillNames: ["Prompt engineering"],
+        }),
+      ),
+    );
+    expect(
+      await screen.findByText(/development item added to your plan/i),
+    ).toBeVisible();
   });
 });

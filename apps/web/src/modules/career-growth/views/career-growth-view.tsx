@@ -9,6 +9,7 @@ import {
   Plus,
   RefreshCcw,
   ShieldCheck,
+  Target,
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
@@ -37,6 +38,7 @@ import {
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 
+import { RoadmapPanel } from "../components/roadmap-panel";
 import {
   analyzeCareerHealth,
   createCareerReview,
@@ -2600,6 +2602,27 @@ export function CareerGrowthView() {
       )}
 
       <GrowthInsightsPanel insights={data.insights} />
+
+      <section aria-labelledby="roadmap-heading" className="space-y-4">
+        <div className="flex items-center gap-3">
+          <span
+            aria-hidden="true"
+            className="grid size-10 place-items-center rounded-xl bg-primary-soft text-primary"
+          >
+            <Target className="size-5" />
+          </span>
+          <div>
+            <h2 className="text-2xl font-black" id="roadmap-heading">
+              Your roadmap
+            </h2>
+            <p className="text-sm text-muted">
+              A curated skill roadmap for your target role, cross-checked
+              against what you&apos;ve already demonstrated.
+            </p>
+          </div>
+        </div>
+        <RoadmapPanel onConfirmed={() => void load()} />
+      </section>
 
       <CareerHealthPanel
         analyses={data.health}

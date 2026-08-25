@@ -14,9 +14,12 @@ import { JobMatchView } from "../views/job-match-view";
 const api = vi.hoisted(() => ({
   analyzeJob: vi.fn(),
   browseJobCatalog: vi.fn(),
+  createApplicationForJob: vi.fn(),
   deleteJob: vi.fn(),
+  generateAssistedApplyPack: vi.fn(),
   getJobCatalogSuggestions: vi.fn(),
   getJobs: vi.fn(),
+  listResumesForApply: vi.fn(),
   prioritizeOpportunity: vi.fn(),
   saveJobCatalogListing: vi.fn(),
   setJobCatalogRolePreferences: vi.fn(),
@@ -300,6 +303,42 @@ describe("Job Match view", () => {
     expect(
       await screen.findAllByText("Backend Engineer saved for matching."),
     ).not.toHaveLength(0);
+  });
+
+  it("prepares an assisted-apply pack for a saved job", async () => {
+    api.getJobs.mockResolvedValue({
+      data: [job],
+      page: { hasMore: false, limit: 50, nextCursor: null },
+    });
+    api.listResumesForApply.mockResolvedValue([
+      {
+        createdAt: "2026-07-01T12:00:00Z",
+        currentVersion: 2,
+        currentVersionId: "00000000-0000-4000-8000-000000001101",
+        id: "00000000-0000-4000-8000-000000001100",
+        layout: "standard",
+        targetRole: null,
+        template: "modern",
+        title: "Product Manager Resume",
+        updatedAt: "2026-07-20T12:00:00Z",
+        version: 2,
+      },
+    ]);
+    api.createApplicationForJob.mockResolvedValue({ id: "app-1" });
+    api.generateAssistedApplyPack.mockResolvedValue(undefined);
+
+    render(<JobMatchView />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Apply for me" }));
+
+    expect(
+      await screen.findAllByText(/application pack ready using/i),
+    ).not.toHaveLength(0);
+    expect(api.createApplicationForJob).toHaveBeenCalledWith(
+      job.id,
+      "00000000-0000-4000-8000-000000001101",
+    );
+    expect(api.generateAssistedApplyPack).toHaveBeenCalledWith("app-1");
   });
 
   it("renders a retryable failure state", async () => {

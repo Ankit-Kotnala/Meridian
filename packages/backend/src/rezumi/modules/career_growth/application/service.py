@@ -53,6 +53,7 @@ from .models import (
     CareerHealthSummary,
     CareerReviewSummaryView,
     CareerReviewView,
+    ConfirmRoadmapSelection,
     CreateCareerReview,
     CreateDevelopmentItem,
     CreateDevelopmentItemFromGap,
@@ -71,6 +72,9 @@ from .models import (
     ReviewContent,
     ReviewVersionView,
     ReviseCareerReview,
+    RoadmapSkillView,
+    RoadmapStageView,
+    RoleRoadmapView,
     UpdateDevelopmentItem,
     UpdateGoal,
     UpdateMilestone,
@@ -85,7 +89,12 @@ from .ports import (
     IdentifierFactory,
     RoleReadinessGapSource,
 )
-from .role_roadmap_ports import RoleRoadmapProvider
+from .role_roadmap_ports import (
+    RoleRoadmap,
+    RoleRoadmapProvider,
+    SkillsProvider,
+    TargetRoleResolver,
+)
 
 _IDEMPOTENCY_KEY = re.compile(r"^[A-Za-z0-9._:-]{8,128}$")
 
@@ -142,6 +151,8 @@ class CareerGrowthService:
         career_source: CareerGrowthSourceProvider,
         gap_source: RoleReadinessGapSource | None = None,
         role_roadmaps: RoleRoadmapProvider | None = None,
+        target_roles: TargetRoleResolver | None = None,
+        skills: SkillsProvider | None = None,
         policy: CareerGrowthPolicy | None = None,
     ) -> None:
         self._uow = unit_of_work
@@ -150,6 +161,8 @@ class CareerGrowthService:
         self._source = career_source
         self._gaps = gap_source
         self._roadmaps = role_roadmaps
+        self._target_roles = target_roles
+        self._skills = skills
         self._policy = policy or CareerGrowthPolicy()
 
     async def create_goal(
@@ -637,6 +650,82 @@ class CareerGrowthService:
         if guidance is None or not guidance.how_to_start:
             return gap.requirement_text
         return f"{gap.requirement_text}\n\nHow to start: {guidance.how_to_start}"
+
+    async def get_role_roadmap(
+        self, owner_user_id: UUID, context: RequestContext
+    ) -> RoleRoadmapView | None:
+        """Resolve the owner's target role and mark which roadmap skills they
+        already have evidence for, so the UI can pre-select only what's new."""
+        self._authorize(owner_user_id, context)
+        if self._roadmaps is None or self._target_roles is None:
+            return None
+        titles = await self._target_roles.target_role_titles(owner_user_id)
+        if not titles:
+            return None
+        roadmap: RoleRoadmap | None = None
+        for title in titles:
+            roadmap = await self._roadmaps.get_roadmap(title)
+            if roadmap is not None:
+                break
+        if roadmap is None:
+            return None
+        known = await self._skills.list_skill_names(owner_user_id) if self._skills else ()
+        stages = tuple(
+            RoadmapStageView(
+                skills=tuple(
+                    RoadmapSkillView(
+                        already_demonstrated=_skill_already_known(skill.name, known),
+                        how_to_start=skill.how_to_start,
+                        name=skill.name,
+                        why=skill.why,
+                    )
+                    for skill in stage.skills
+                ),
+                stage=stage.stage,
+            )
+            for stage in roadmap.stages
+        )
+        return RoleRoadmapView(role_title=roadmap.title, stages=stages)
+
+    async def confirm_roadmap_selection(
+        self,
+        owner_user_id: UUID,
+        command: ConfirmRoadmapSelection,
+        context: RequestContext,
+    ) -> tuple[DevelopmentItemView, ...]:
+        """Create a planned development item per newly-selected roadmap skill.
+
+        Reuses `create_development_item` (idempotent per skill via a
+        deterministic key) rather than inventing a second status concept —
+        progress tracking is the existing development-item status control.
+        """
+        self._authorize(owner_user_id, context)
+        created: list[DevelopmentItemView] = []
+        for skill_name in command.included_skill_names:
+            cleaned = " ".join(skill_name.strip().split())
+            if not cleaned:
+                continue
+            description = cleaned
+            if self._roadmaps is not None:
+                guidance = await self._roadmaps.find_skill_guidance(cleaned)
+                if guidance is not None and guidance.how_to_start:
+                    description = f"{cleaned}\n\nHow to start: {guidance.how_to_start}"
+            idempotency_key = _roadmap_item_idempotency_key(
+                command.role_title, cleaned
+            )
+            view = await self.create_development_item(
+                owner_user_id,
+                CreateDevelopmentItem(
+                    kind=DevelopmentKind.LEARNING,
+                    title=f"Learn: {cleaned}",
+                    description=description,
+                    status=DevelopmentStatus.PLANNED,
+                ),
+                idempotency_key,
+                context,
+            )
+            created.append(view)
+        return tuple(created)
 
     async def update_development_item(
         self,
@@ -2188,3 +2277,25 @@ def _development_kind_for_gap(gap_kind: str) -> DevelopmentKind:
 def _development_title_from_gap(label: str) -> str:
     cleaned = " ".join(label.strip().split())
     return f"Address readiness gap: {cleaned}"
+
+
+def _normalize_skill_text(value: str) -> str:
+    return " ".join(value.strip().casefold().split())
+
+
+def _skill_already_known(skill_name: str, known_skill_names: tuple[str, ...]) -> bool:
+    target = _normalize_skill_text(skill_name)
+    if not target:
+        return False
+    for known in known_skill_names:
+        candidate = _normalize_skill_text(known)
+        if candidate and (
+            candidate == target or target in candidate or candidate in target
+        ):
+            return True
+    return False
+
+
+def _roadmap_item_idempotency_key(role_title: str, skill_name: str) -> str:
+    payload = f"{role_title.strip().casefold()}|{skill_name.strip().casefold()}"
+    return f"roadmap-{hashlib.sha256(payload.encode('utf-8')).hexdigest()[:48]}"

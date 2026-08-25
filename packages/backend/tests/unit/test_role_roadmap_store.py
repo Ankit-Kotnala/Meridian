@@ -14,6 +14,7 @@ from rezumi.modules.career_growth.infrastructure.role_roadmap_store import (
 _DOCUMENTS = [
     {
         "roleSlug": "devops-sre-engineer",
+        "title": "DevOps / SRE Engineer",
         "stages": [
             {
                 "stage": "Core skills",
@@ -34,6 +35,7 @@ _DOCUMENTS = [
     },
     {
         "roleSlug": "software-engineer",
+        "title": "Software Engineer",
         "stages": [
             {
                 "stage": "Foundations",
@@ -110,5 +112,38 @@ async def test_disabled_provider_always_returns_none() -> None:
     provider = DisabledRoleRoadmapProvider()
 
     assert await provider.find_skill_guidance("Kubernetes") is None
+    assert await provider.get_roadmap("Software Engineer") is None
     await provider.ping()
     await provider.dispose()
+
+
+@pytest.mark.asyncio
+async def test_get_roadmap_matches_by_exact_title() -> None:
+    provider, collection = _provider_with_mocked_collection()
+    collection.find.return_value.limit.return_value = _DOCUMENTS
+
+    roadmap = await provider.get_roadmap("Software Engineer")
+
+    assert roadmap is not None
+    assert roadmap.role_slug == "software-engineer"
+    assert roadmap.stages[0].stage == "Foundations"
+    assert roadmap.stages[0].skills[0].name == "Data structures and algorithms"
+
+
+@pytest.mark.asyncio
+async def test_get_roadmap_matches_by_role_slug() -> None:
+    provider, collection = _provider_with_mocked_collection()
+    collection.find.return_value.limit.return_value = _DOCUMENTS
+
+    roadmap = await provider.get_roadmap("devops-sre-engineer")
+
+    assert roadmap is not None
+    assert roadmap.title == "DevOps / SRE Engineer"
+
+
+@pytest.mark.asyncio
+async def test_get_roadmap_returns_none_when_unmatched() -> None:
+    provider, collection = _provider_with_mocked_collection()
+    collection.find.return_value.limit.return_value = _DOCUMENTS
+
+    assert await provider.get_roadmap("Astronaut") is None

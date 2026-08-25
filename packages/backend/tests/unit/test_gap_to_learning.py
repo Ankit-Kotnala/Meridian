@@ -17,19 +17,52 @@ from rezumi.modules.career_growth.application import (
     CreateDevelopmentItemFromGap,
     RequestContext,
 )
+from rezumi.modules.career_growth.application.models import ConfirmRoadmapSelection
 from rezumi.modules.career_growth.application.ports import GapSnapshot
-from rezumi.modules.career_growth.application.role_roadmap_ports import RoadmapSkillGuidance
+from rezumi.modules.career_growth.application.role_roadmap_ports import (
+    RoadmapSkill,
+    RoadmapSkillGuidance,
+    RoadmapStage,
+    RoleRoadmap,
+)
 from rezumi.modules.career_growth.domain import CareerGrowthNotFound, DevelopmentKind
 
 
 class StaticRoadmapProvider:
-    def __init__(self, guidance: RoadmapSkillGuidance | None) -> None:
+    def __init__(
+        self,
+        guidance: RoadmapSkillGuidance | None,
+        roadmap: RoleRoadmap | None = None,
+    ) -> None:
         self.guidance = guidance
+        self.roadmap = roadmap
         self.requested_labels: list[str] = []
 
     async def find_skill_guidance(self, skill_label: str) -> RoadmapSkillGuidance | None:
         self.requested_labels.append(skill_label)
         return self.guidance
+
+    async def get_roadmap(self, role_title: str) -> RoleRoadmap | None:
+        del role_title
+        return self.roadmap
+
+
+class StaticTargetRoleResolver:
+    def __init__(self, titles: tuple[str, ...]) -> None:
+        self.titles = titles
+
+    async def target_role_titles(self, owner_user_id: UUID) -> tuple[str, ...]:
+        del owner_user_id
+        return self.titles
+
+
+class StaticSkillsProvider:
+    def __init__(self, names: tuple[str, ...]) -> None:
+        self.names = names
+
+    async def list_skill_names(self, owner_user_id: UUID) -> tuple[str, ...]:
+        del owner_user_id
+        return self.names
 
 
 class StaticGapSource:
@@ -208,3 +241,101 @@ async def test_create_development_item_from_gap_requires_matching_gap() -> None:
             "gap-missing-001",
             _context(owner),
         )
+
+
+def _sample_roadmap() -> RoleRoadmap:
+    return RoleRoadmap(
+        role_slug="ai-engineer",
+        title="AI Engineer",
+        stages=(
+            RoadmapStage(
+                stage="Foundations",
+                skills=(
+                    RoadmapSkill(
+                        name="Python",
+                        why="Most ML tooling is Python-first.",
+                        how_to_start="Build one small script end to end.",
+                    ),
+                    RoadmapSkill(
+                        name="Prompt engineering",
+                        why="Directly shapes LLM output quality.",
+                        how_to_start="Iterate on one prompt against a fixed test set.",
+                    ),
+                ),
+            ),
+        ),
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_role_roadmap_marks_already_known_skills() -> None:
+    owner = uuid4()
+    service = CareerGrowthService(
+        unit_of_work=MemoryCareerGrowth(),
+        clock=FixedClock(),
+        identifiers=UuidFactory(),
+        career_source=StaticCareerGrowthSource(),
+        role_roadmaps=StaticRoadmapProvider(None, roadmap=_sample_roadmap()),
+        target_roles=StaticTargetRoleResolver(("AI Engineer",)),
+        skills=StaticSkillsProvider(("Python programming",)),
+    )
+
+    roadmap = await service.get_role_roadmap(owner, _context(owner))
+
+    assert roadmap is not None
+    assert roadmap.role_title == "AI Engineer"
+    skills_by_name = {
+        skill.name: skill for stage in roadmap.stages for skill in stage.skills
+    }
+    assert skills_by_name["Python"].already_demonstrated is True
+    assert skills_by_name["Prompt engineering"].already_demonstrated is False
+
+
+@pytest.mark.asyncio
+async def test_get_role_roadmap_returns_none_without_target_role() -> None:
+    owner = uuid4()
+    service = CareerGrowthService(
+        unit_of_work=MemoryCareerGrowth(),
+        clock=FixedClock(),
+        identifiers=UuidFactory(),
+        career_source=StaticCareerGrowthSource(),
+        role_roadmaps=StaticRoadmapProvider(None, roadmap=_sample_roadmap()),
+        target_roles=StaticTargetRoleResolver(()),
+        skills=StaticSkillsProvider(()),
+    )
+
+    assert await service.get_role_roadmap(owner, _context(owner)) is None
+
+
+@pytest.mark.asyncio
+async def test_confirm_roadmap_selection_creates_planned_items_idempotently() -> None:
+    owner = uuid4()
+    service = CareerGrowthService(
+        unit_of_work=MemoryCareerGrowth(),
+        clock=FixedClock(),
+        identifiers=UuidFactory(),
+        career_source=StaticCareerGrowthSource(),
+        role_roadmaps=StaticRoadmapProvider(
+            RoadmapSkillGuidance(
+                role_slug="ai-engineer",
+                stage="Foundations",
+                skill_name="Prompt engineering",
+                why="Directly shapes LLM output quality.",
+                how_to_start="Iterate on one prompt against a fixed test set.",
+            )
+        ),
+    )
+    selection = ConfirmRoadmapSelection(
+        role_title="AI Engineer",
+        included_skill_names=("Prompt engineering",),
+    )
+
+    created = await service.confirm_roadmap_selection(owner, selection, _context(owner))
+    assert len(created) == 1
+    item = created[0].item
+    assert item.kind == DevelopmentKind.LEARNING
+    assert item.title == "Learn: Prompt engineering"
+    assert "How to start" in (item.description or "")
+
+    replayed = await service.confirm_roadmap_selection(owner, selection, _context(owner))
+    assert replayed[0].item.id == item.id

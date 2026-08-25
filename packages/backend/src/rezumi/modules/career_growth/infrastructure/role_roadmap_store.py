@@ -17,7 +17,12 @@ from pymongo import MongoClient
 from pymongo.errors import PyMongoError
 
 from rezumi.foundation.config.mongodb import MongoOptions
-from rezumi.modules.career_growth.application.role_roadmap_ports import RoadmapSkillGuidance
+from rezumi.modules.career_growth.application.role_roadmap_ports import (
+    RoadmapSkill,
+    RoadmapSkillGuidance,
+    RoadmapStage,
+    RoleRoadmap,
+)
 from rezumi.modules.career_growth.domain.errors import CareerGrowthUnavailable
 
 _MAX_DOCUMENTS = 500
@@ -28,6 +33,10 @@ class DisabledRoleRoadmapProvider:
 
     async def find_skill_guidance(self, skill_label: str) -> RoadmapSkillGuidance | None:
         del skill_label
+        return None
+
+    async def get_roadmap(self, role_title: str) -> RoleRoadmap | None:
+        del role_title
         return None
 
     async def ping(self) -> None:
@@ -82,6 +91,28 @@ class MongoRoleRoadmapProvider:
                         substring_match = guidance
         return substring_match
 
+    async def get_roadmap(self, role_title: str) -> RoleRoadmap | None:
+        target = role_title.strip().casefold()
+        if not target:
+            return None
+        documents = await self._run(
+            list, self._collection.find({}).limit(_MAX_DOCUMENTS)
+        )
+        exact: dict[str, Any] | None = None
+        substring: dict[str, Any] | None = None
+        for document in documents:
+            title = str(document.get("title") or "").casefold()
+            slug = str(document.get("roleSlug") or "").casefold()
+            if not title:
+                continue
+            if title == target or slug == target:
+                exact = document
+                break
+            if substring is None and (target in title or title in target):
+                substring = document
+        chosen = exact or substring
+        return _roadmap(chosen) if chosen is not None else None
+
     async def dispose(self) -> None:
         await self._run(self._client.close)
 
@@ -90,3 +121,24 @@ class MongoRoleRoadmapProvider:
             return await asyncio.to_thread(operation, *args, **kwargs)
         except PyMongoError as exc:
             raise CareerGrowthUnavailable from exc
+
+
+def _roadmap(document: dict[str, Any]) -> RoleRoadmap:
+    stages = []
+    for stage in document.get("stages") or []:
+        skills = tuple(
+            RoadmapSkill(
+                how_to_start=str(skill.get("howToStart") or ""),
+                name=str(skill.get("name") or ""),
+                why=str(skill.get("why") or ""),
+            )
+            for skill in stage.get("skills") or []
+            if skill.get("name")
+        )
+        if skills:
+            stages.append(RoadmapStage(skills=skills, stage=str(stage.get("stage") or "")))
+    return RoleRoadmap(
+        role_slug=str(document.get("roleSlug") or ""),
+        stages=tuple(stages),
+        title=str(document.get("title") or ""),
+    )

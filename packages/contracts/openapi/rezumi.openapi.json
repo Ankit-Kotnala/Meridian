@@ -6085,6 +6085,48 @@
         "title": "ComponentResponse",
         "type": "object"
       },
+      "ConfirmRoadmapRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "includedSkillNames": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Includedskillnames",
+            "type": "array"
+          },
+          "roleTitle": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Roletitle",
+            "type": "string"
+          }
+        },
+        "required": [
+          "roleTitle"
+        ],
+        "title": "ConfirmRoadmapRequest",
+        "type": "object"
+      },
+      "ConfirmRoadmapResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "created": {
+            "items": {
+              "$ref": "#/components/schemas/DevelopmentItemResponse"
+            },
+            "maxItems": 100,
+            "title": "Created",
+            "type": "array"
+          }
+        },
+        "required": [
+          "created"
+        ],
+        "title": "ConfirmRoadmapResponse",
+        "type": "object"
+      },
       "ConfirmSemanticFieldRequest": {
         "additionalProperties": false,
         "properties": {
@@ -18223,6 +18265,58 @@
         "title": "ReviewVersionResponse",
         "type": "object"
       },
+      "RoadmapSkillResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "alreadyDemonstrated": {
+            "title": "Alreadydemonstrated",
+            "type": "boolean"
+          },
+          "howToStart": {
+            "title": "Howtostart",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "why": {
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "why",
+          "howToStart",
+          "alreadyDemonstrated"
+        ],
+        "title": "RoadmapSkillResponse",
+        "type": "object"
+      },
+      "RoadmapStageResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "skills": {
+            "items": {
+              "$ref": "#/components/schemas/RoadmapSkillResponse"
+            },
+            "maxItems": 50,
+            "title": "Skills",
+            "type": "array"
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "string"
+          }
+        },
+        "required": [
+          "stage",
+          "skills"
+        ],
+        "title": "RoadmapStageResponse",
+        "type": "object"
+      },
       "RoleComparisonEntryResponse": {
         "additionalProperties": false,
         "properties": {
@@ -18721,6 +18815,29 @@
           "competencies"
         ],
         "title": "RoleResponse",
+        "type": "object"
+      },
+      "RoleRoadmapResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "roleTitle": {
+            "title": "Roletitle",
+            "type": "string"
+          },
+          "stages": {
+            "items": {
+              "$ref": "#/components/schemas/RoadmapStageResponse"
+            },
+            "maxItems": 20,
+            "title": "Stages",
+            "type": "array"
+          }
+        },
+        "required": [
+          "roleTitle",
+          "stages"
+        ],
+        "title": "RoleRoadmapResponse",
         "type": "object"
       },
       "RoleSeniority": {
@@ -33618,6 +33735,315 @@
           }
         },
         "summary": "Revise Review",
+        "tags": [
+          "Career Growth"
+        ]
+      }
+    },
+    "/api/v1/career-growth/roadmap": {
+      "get": {
+        "description": "`None` when no target role can be resolved yet (no saved role, no experience).",
+        "operationId": "careerGrowthRoadmapGet",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "rezumi_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/RoleRoadmapResponse"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Careergrowthroadmapget"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Get Role Roadmap",
+        "tags": [
+          "Career Growth"
+        ]
+      }
+    },
+    "/api/v1/career-growth/roadmap/confirm": {
+      "post": {
+        "operationId": "careerGrowthRoadmapConfirm",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "rezumi_csrf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "rezumi_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmRoadmapRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmRoadmapResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Confirm Role Roadmap",
         "tags": [
           "Career Growth"
         ]

@@ -44,6 +44,13 @@ export type ApplicationEventCreateInput =
 export type ApplicationPackCreateInput =
   components["schemas"]["ApplicationPackCreateRequest"];
 
+export type ApplicationProfile =
+  components["schemas"]["ApplicationProfileResponse"];
+export type ApplicationProfileInput =
+  components["schemas"]["ApplicationProfileUpsertRequest"];
+export type ApplicationProfileLink =
+  components["schemas"]["ApplicationProfileLinkInput"];
+
 export type SavedJob = components["schemas"]["JobResponse"];
 export type SavedJobPage = components["schemas"]["JobPageResponse"];
 export type SavedResume = components["schemas"]["ResumeResponse"];

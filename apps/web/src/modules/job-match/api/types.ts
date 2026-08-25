@@ -28,3 +28,12 @@ export type PreferenceFit = NonNullable<
 export type TailoringEffort = NonNullable<
   OpportunityPriorityInput["tailoringEffort"]
 >;
+
+/**
+ * Owned here (not imported from the `applications` module) because feature
+ * modules cannot import each other — see `check-web-boundaries.mjs`. These
+ * mirror the same generated wire types application_workspace's own module
+ * uses; only the fetch wrappers are duplicated, not the schema.
+ */
+export type ApplyResume = components["schemas"]["ResumeResponse"];
+export type ApplicationForJob = components["schemas"]["ApplicationResponse"];
