@@ -1103,10 +1103,41 @@ class CareerRecordService:
             item for item in provenance if expected.get(item.field_name) == item.value_sha256
         )
 
+    async def current_field_provenance_with_availability_for_targets(
+        self, owner_user_id: UUID, target_ids: tuple[UUID, ...]
+    ) -> dict[UUID, tuple[tuple[CareerFieldProvenance, bool], ...]]:
+        """Batched `current_field_provenance` + source availability for many targets.
+
+        `field_provenance_source_available` re-derives semantic candidates from
+        the underlying resume snapshot per call — the same cost that made
+        `list_semantic_import_proposals` slow (see
+        `list_semantic_import_proposals_with_availability`). Calling it once
+        per provenance record across every entity/skill/fact in a profile
+        made `GET /career-items` scale with total provenance record count;
+        this shares one candidates-by-(document, snapshot) cache across the
+        whole batch instead.
+        """
+
+        candidates_cache: dict[tuple[UUID, UUID], tuple[ValidatedSemanticCandidate, ...]] = {}
+        result: dict[UUID, tuple[tuple[CareerFieldProvenance, bool], ...]] = {}
+        for target_id in target_ids:
+            values = await self.current_field_provenance(owner_user_id, target_id)
+            entries: list[tuple[CareerFieldProvenance, bool]] = []
+            for value in values:
+                available = await self.field_provenance_source_available(
+                    owner_user_id, value, _candidates_cache=candidates_cache
+                )
+                entries.append((value, available))
+            result[target_id] = tuple(entries)
+        return result
+
     async def field_provenance_source_available(
         self,
         owner_user_id: UUID,
         provenance: CareerFieldProvenance,
+        *,
+        _candidates_cache: dict[tuple[UUID, UUID], tuple[ValidatedSemanticCandidate, ...]]
+        | None = None,
     ) -> bool:
         if provenance.owner_user_id != owner_user_id:
             raise CareerRecordNotFound
@@ -1119,11 +1150,17 @@ class CareerRecordService:
             or provenance.semantic_field_id is None
         ):
             return False
-        candidates = await self._reviewed_semantic_candidates(
-            owner_user_id,
-            provenance.document_id,
-            provenance.snapshot_id,
-        )
+        source_key = (provenance.document_id, provenance.snapshot_id)
+        if _candidates_cache is not None and source_key in _candidates_cache:
+            candidates = _candidates_cache[source_key]
+        else:
+            candidates = await self._reviewed_semantic_candidates(
+                owner_user_id,
+                provenance.document_id,
+                provenance.snapshot_id,
+            )
+            if _candidates_cache is not None:
+                _candidates_cache[source_key] = candidates
         candidate = next(
             (
                 item
@@ -2157,6 +2194,37 @@ class CareerRecordService:
         async with self._uow() as uow:
             proposals = await uow.list_semantic_proposals(owner_user_id)
         return tuple(proposals)
+
+    async def list_semantic_import_proposals_with_availability(
+        self, owner_user_id: UUID
+    ) -> tuple[tuple[SemanticImportProposal, bool], ...]:
+        """List proposals with source availability, computed per document+snapshot.
+
+        `semantic_import_proposal_source_available` re-derives candidates from
+        the underlying resume snapshot per proposal; calling it once per row
+        made the list endpoint's cost grow with the number of proposals
+        (an N+1 that got slower as proposals accumulated). Every proposal
+        sharing a (document_id, snapshot_id) shares the same candidate set,
+        so it only needs to be derived once per unique pair.
+        """
+
+        proposals = await self.list_semantic_import_proposals(owner_user_id)
+        candidates_by_source: dict[tuple[UUID, UUID], tuple[ValidatedSemanticCandidate, ...]] = {}
+        results: list[tuple[SemanticImportProposal, bool]] = []
+        for proposal in proposals:
+            source_key = (proposal.document_id, proposal.snapshot_id)
+            if source_key not in candidates_by_source:
+                candidates_by_source[source_key] = await self._reviewed_semantic_candidates(
+                    owner_user_id, proposal.document_id, proposal.snapshot_id
+                )
+            candidates = candidates_by_source[source_key]
+            available = any(
+                candidate.semantic_entity_id == proposal.semantic_entity_id
+                and candidate.fields == proposal.fields
+                for candidate in candidates
+            )
+            results.append((proposal, available))
+        return tuple(results)
 
     async def semantic_import_proposal_source_available(
         self, owner_user_id: UUID, proposal_id: UUID

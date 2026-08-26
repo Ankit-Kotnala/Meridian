@@ -289,6 +289,33 @@ section as though it were a hiring judgment. Phase 2 Resume Health measures the
 document only. Evidence-backed claim scoring remains downstream of the Phase 3
 evidence graph.
 
+### Declared-profile evidence (GitHub, GitLab, Bitbucket, Stack Overflow,
+### Codeforces, dev.to, Credly, personal portfolios)
+
+Achievements fetched from a user-declared profile link (`career_record`'s
+declared-profile connectors) follow the same rules as any other evidence, plus
+three specific to cross-platform, cross-profession fairness:
+
+- **Absence is never a penalty.** A candidate with no linked coding or
+  portfolio profile scores exactly as if that evidence category didn't
+  exist — it is additive `Supported` evidence, the same tier as any other
+  declared-link achievement, never a required signal a score is docked for
+  missing.
+- **No raw-volume-only metric where a normalized one is available.** For
+  example, the Codeforces connector surfaces problems solved bucketed by
+  difficulty tier rather than one raw total, so the signal reflects range of
+  demonstrated skill rather than hours spent — a metric that otherwise tends
+  to correlate with free time and privilege more than capability.
+- **No cross-profession comparison.** A designer's portfolio and a
+  developer's Codeforces rating are never combined into one
+  directly-comparable score. Each connector's achievements stay
+  profession-neutral, additive evidence.
+
+Every declared-profile achievement enters through the same `Supported`-until-
+the-user-confirms-`Confirmed` evidence flow as anything else in the career
+record (`docs/ai-grounding-policy.md`); none is auto-`Verified` from a public
+page.
+
 ## Role Readiness
 
 Role readiness compares an owner-scoped career snapshot with a versioned general

@@ -212,6 +212,15 @@ describe("Career Profile vertical slice", () => {
     ).toBeVisible();
   });
 
+  it("keeps the profile visible when a supporting collection times out", async () => {
+    api.getCareerItems.mockRejectedValueOnce(new Error("timeout"));
+
+    render(<CareerProfileView />);
+
+    expect(await screen.findByRole("heading", { name: "Career Profile" })).toBeVisible();
+    expect(screen.getByText("Some career profile data is unavailable")).toBeVisible();
+    expect(screen.getByText(/Some career profile data could not be loaded/i)).toBeVisible();
+  });
   it("renders a safe retry state when owned profile loading fails", async () => {
     api.getCareerProfile.mockRejectedValueOnce(new Error("offline"));
     render(<CareerProfileView />);
@@ -377,3 +386,5 @@ describe("Career Profile vertical slice", () => {
     ).toBeDisabled();
   });
 });
+
+

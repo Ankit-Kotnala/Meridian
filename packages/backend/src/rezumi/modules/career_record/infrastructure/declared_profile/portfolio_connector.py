@@ -24,6 +24,10 @@ _KNOWN_PLATFORM_HOSTS = frozenset(
         "linkedin.com",
         "lnkd.in",
         "credly.com",
+        "stackoverflow.com",
+        "codeforces.com",
+        "dev.to",
+        "orcid.org",
         "example.test",
     }
 )

@@ -188,6 +188,27 @@ isolated containers, networks, volumes, images, and browser artifacts.
   expansion-entry, compression-ratio, and forced-timeout inputs. Tests prove the
   parser child is terminated/reaped and its temporary workspace removed. The
   fixtures and manifest are deterministic and contain no user data.
+- **Semantic field-extraction accuracy is now measured, not assumed.**
+  `rezumi.development.eval_resume_parser` runs the deterministic parser
+  against a hand-labeled golden corpus
+  (`rezumi.development.resume_parser_golden_corpus`) and reports per-field
+  precision/recall; `tests/unit/test_resume_parser_accuracy.py` enforces a
+  95% floor so this can't silently regress. As of this corpus (10 cases:
+  comma- and pipe-separated headers, numeric/slash dates, concurrent roles,
+  a career gap, an unusual hyphenated name, education/certification date
+  pairs, compound-slash skills, and one non-English case), measured
+  precision and recall are both 100% — this describes the corpus tested, not
+  a universal accuracy claim; the corpus is a starting set meant to grow as
+  real-world failure modes are found, and the floor should rise with it.
+  Fixing one real, corpus-discovered bug along the way: a certification's
+  date-label line (e.g. "Issued Mar 2022, Expires Mar 2025") no longer leaks
+  the bare word "Issued" into the next unfilled text field
+  (`_DATE_LABEL_WORDS` in `semantic_parser.py`).
+  Non-English coverage is a single Spanish case; broader script/CJK/RTL
+  *content* support (as opposed to the bidirectional-control-character
+  stripping already covered above) and OCR for scanned/image resumes remain
+  explicitly out of scope for this pass — real, separate work, not silently
+  dropped.
 - Integration tests use a migrated real PostgreSQL database for owner-scoped
   repository/job state, private S3-compatible storage for signed upload/promote/
   download/delete lifecycle, and real ClamAV with an isolated dynamically
