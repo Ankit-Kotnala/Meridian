@@ -1,4 +1,3 @@
-import { Sparkles } from "lucide-react";
 import Link from "next/link";
 
 import { cn } from "@rezumi/ui";
@@ -9,6 +8,26 @@ type RezumiLogoProps = {
   className?: string;
   href?: string;
 };
+
+function RezumiMark() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="size-[1.125rem]"
+      fill="none"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M7.5 20V4h5a4 4 0 1 1 0 8h-5m4-3.5 6.5 11.5"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2.25}
+      />
+    </svg>
+  );
+}
 
 export function RezumiLogo({
   compact = false,
@@ -32,7 +51,7 @@ export function RezumiLogo({
           inverted ? "bg-white/10 text-white" : "bg-primary-soft text-primary",
         )}
       >
-        <Sparkles className="size-[1.125rem]" strokeWidth={2} />
+        <RezumiMark />
       </span>
       {!compact && (
         <span

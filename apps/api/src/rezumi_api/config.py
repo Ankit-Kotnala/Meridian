@@ -91,6 +91,9 @@ class Settings(BaseSettings):
     smtp_timeout_seconds: float = Field(default=5.0, gt=0, le=30)
     email_from_address: str = Field(default="no-reply@rezumi.local", max_length=254)
 
+    # ORCID's Public API terms restrict use to non-commercial purposes;
+    # this stays off until Zinnia legal clears a Member API agreement.
+    orcid_connector_enabled: bool = False
     google_oauth_enabled: bool = False
     google_client_id: str | None = Field(default=None, max_length=512)
     google_client_secret: SecretStr | None = None

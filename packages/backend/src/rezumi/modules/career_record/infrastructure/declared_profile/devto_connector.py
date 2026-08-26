@@ -1,0 +1,113 @@
+"""dev.to (Forem) public profile connector using the documented public API."""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import re
+from datetime import UTC, datetime
+from typing import Any
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlsplit
+from urllib.request import Request, urlopen
+
+from rezumi.modules.career_record.application.declared_profile_ports import (
+    DeclaredProfileAchievement,
+    DeclaredProfileFetchFailed,
+    DeclaredProfileFetchResult,
+    hostname,
+    normalize_declared_profile_url,
+)
+
+_DEVTO_USER = re.compile(r"^(?P<user>[A-Za-z0-9][A-Za-z0-9_-]{1,63})/?$")
+_MAX_ARTICLES = 10
+_TIMEOUT = 8.0
+
+
+class DevToDeclaredProfileConnector:
+    """Reads a user's public dev.to profile summary and article activity."""
+
+    platform = "devto"
+
+    def supports(self, url: str) -> bool:
+        normalized = normalize_declared_profile_url(url)
+        if hostname(normalized) != "dev.to":
+            return False
+        path = urlsplit(normalized).path.strip("/")
+        return _DEVTO_USER.match(f"{path}/") is not None
+
+    async def fetch(self, url: str) -> DeclaredProfileFetchResult:
+        normalized = normalize_declared_profile_url(url)
+        path = urlsplit(normalized).path.strip("/")
+        match = _DEVTO_USER.match(f"{path}/")
+        if match is None:
+            raise DeclaredProfileFetchFailed("dev.to profile URL is not supported")
+        username = match.group("user")
+        return await asyncio.to_thread(self._fetch_sync, normalized, username)
+
+    def _fetch_sync(self, profile_url: str, username: str) -> DeclaredProfileFetchResult:
+        user = self._get_json(
+            f"https://dev.to/api/users/by_username?url={username}"
+        )
+        if not isinstance(user, dict) or not user.get("id"):
+            raise DeclaredProfileFetchFailed("dev.to profile was not found")
+
+        name = str(user.get("name") or username).strip()
+        summary = str(user.get("summary") or "").strip()
+
+        articles = self._get_json(
+            f"https://dev.to/api/articles?username={username}&per_page={_MAX_ARTICLES}"
+        )
+        article_list = articles if isinstance(articles, list) else []
+        total_reactions = sum(
+            int(article.get("positive_reactions_count") or 0)
+            for article in article_list
+            if isinstance(article, dict)
+        )
+
+        parts = [summary] if summary else []
+        if article_list:
+            has_more = len(article_list) >= _MAX_ARTICLES
+            parts.append(
+                f"{len(article_list)}{'+' if has_more else ''} public posts, "
+                f"{total_reactions} total reactions."
+            )
+        if not parts:
+            raise DeclaredProfileFetchFailed(
+                "dev.to profile did not expose public achievements"
+            )
+        statement = " ".join(parts)
+
+        return DeclaredProfileFetchResult(
+            platform=self.platform,
+            profile_url=profile_url,
+            fetched_at=datetime.now(tz=UTC),
+            achievements=(
+                DeclaredProfileAchievement(
+                    title=f"{name} on dev.to",
+                    statement=statement,
+                    source_url=profile_url,
+                    excerpt=statement[:500],
+                ),
+            ),
+        )
+
+    def _get_json(self, url: str) -> Any:
+        request = Request(  # noqa: S310 - fixed dev.to API host
+            url,
+            headers={
+                "Accept": "application/json",
+                "User-Agent": "RezumiDeclaredProfile/1.0",
+            },
+            method="GET",
+        )
+        try:
+            with urlopen(request, timeout=_TIMEOUT) as response:  # noqa: S310
+                payload = response.read(500_000)
+        except HTTPError as exc:
+            if exc.code == 404:
+                raise DeclaredProfileFetchFailed("dev.to profile was not found") from exc
+            raise DeclaredProfileFetchFailed("dev.to profile could not be read") from exc
+        except (TimeoutError, URLError, OSError, json.JSONDecodeError) as exc:
+            raise DeclaredProfileFetchFailed("dev.to profile could not be read") from exc
+        return json.loads(payload.decode("utf-8"))

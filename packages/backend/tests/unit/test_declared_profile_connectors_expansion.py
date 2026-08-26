@@ -1,0 +1,345 @@
+"""Unit tests for the new declared-profile connectors (GitLab, Bitbucket,
+Stack Overflow, Codeforces, dev.to, ORCID) and their registry wiring."""
+
+from __future__ import annotations
+
+import json
+from io import BytesIO
+from typing import Any
+from unittest.mock import patch
+
+import pytest
+
+from rezumi.modules.career_record.application.declared_profile_ports import (
+    DeclaredProfileFetchFailed,
+    DeclaredProfileUnsupported,
+)
+from rezumi.modules.career_record.infrastructure.declared_profile.bitbucket_connector import (
+    BitbucketDeclaredProfileConnector,
+)
+from rezumi.modules.career_record.infrastructure.declared_profile.codeforces_connector import (
+    CodeforcesDeclaredProfileConnector,
+)
+from rezumi.modules.career_record.infrastructure.declared_profile.devto_connector import (
+    DevToDeclaredProfileConnector,
+)
+from rezumi.modules.career_record.infrastructure.declared_profile.gitlab_connector import (
+    GitlabDeclaredProfileConnector,
+)
+from rezumi.modules.career_record.infrastructure.declared_profile.orcid_connector import (
+    OrcidDeclaredProfileConnector,
+)
+from rezumi.modules.career_record.infrastructure.declared_profile.portfolio_connector import (
+    PortfolioDeclaredProfileConnector,
+)
+from rezumi.modules.career_record.infrastructure.declared_profile.registry import (
+    default_declared_profile_registry,
+)
+from rezumi.modules.career_record.infrastructure.declared_profile.stackoverflow_connector import (
+    StackOverflowDeclaredProfileConnector,
+)
+
+
+class _FakeJsonResponse:
+    def __init__(self, payload: Any) -> None:
+        self._buffer = BytesIO(json.dumps(payload).encode("utf-8"))
+
+    def read(self, _size: int) -> bytes:
+        return self._buffer.read()
+
+    def __enter__(self) -> _FakeJsonResponse:
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        return None
+
+
+# --- GitLab -------------------------------------------------------------
+
+
+def test_gitlab_connector_supports_user_urls() -> None:
+    connector = GitlabDeclaredProfileConnector()
+    assert connector.supports("https://gitlab.com/alex-example")
+    assert not connector.supports("https://github.com/alex")
+
+
+@pytest.mark.asyncio
+async def test_gitlab_connector_extracts_bio_and_projects() -> None:
+    connector = GitlabDeclaredProfileConnector()
+    responses = [
+        _FakeJsonResponse([{"id": 42, "name": "Alex", "bio": "Platform engineer"}]),
+        _FakeJsonResponse(
+            [
+                {
+                    "name": "infra-tools",
+                    "description": "Deployment tooling",
+                    "star_count": 3,
+                    "web_url": "https://gitlab.com/alex-example/infra-tools",
+                }
+            ]
+        ),
+    ]
+
+    with patch(
+        "rezumi.modules.career_record.infrastructure.declared_profile.gitlab_connector.urlopen",
+        side_effect=responses,
+    ):
+        result = await connector.fetch("https://gitlab.com/alex-example")
+
+    assert result.platform == "gitlab"
+    assert "Platform engineer" in result.achievements[0].statement
+    assert result.achievements[1].title == "infra-tools"
+
+
+@pytest.mark.asyncio
+async def test_gitlab_connector_raises_when_profile_missing() -> None:
+    connector = GitlabDeclaredProfileConnector()
+    with patch(
+        "rezumi.modules.career_record.infrastructure.declared_profile.gitlab_connector.urlopen",
+        return_value=_FakeJsonResponse([]),
+    ), pytest.raises(DeclaredProfileFetchFailed):
+        await connector.fetch("https://gitlab.com/nobody")
+
+
+# --- Bitbucket ------------------------------------------------------------
+
+
+def test_bitbucket_connector_supports_user_urls() -> None:
+    connector = BitbucketDeclaredProfileConnector()
+    assert connector.supports("https://bitbucket.org/alex-example")
+    assert not connector.supports("https://gitlab.com/alex")
+
+
+@pytest.mark.asyncio
+async def test_bitbucket_connector_extracts_repos() -> None:
+    connector = BitbucketDeclaredProfileConnector()
+    responses = [
+        _FakeJsonResponse({"display_name": "Alex Example"}),
+        _FakeJsonResponse(
+            {
+                "values": [
+                    {
+                        "name": "api-service",
+                        "description": "Backend service",
+                        "language": "python",
+                        "links": {"html": {"href": "https://bitbucket.org/alex/api-service"}},
+                    }
+                ],
+                "next": None,
+            }
+        ),
+    ]
+
+    with patch(
+        "rezumi.modules.career_record.infrastructure.declared_profile.bitbucket_connector.urlopen",
+        side_effect=responses,
+    ):
+        result = await connector.fetch("https://bitbucket.org/alex-example")
+
+    assert result.platform == "bitbucket"
+    assert result.achievements[1].title == "api-service"
+    assert "python" in result.achievements[1].statement.casefold()
+
+
+# --- Stack Overflow ---------------------------------------------------------
+
+
+def test_stackoverflow_connector_supports_user_urls() -> None:
+    connector = StackOverflowDeclaredProfileConnector()
+    assert connector.supports("https://stackoverflow.com/users/12345/alex-example")
+    assert not connector.supports("https://stackoverflow.com/questions/1")
+
+
+@pytest.mark.asyncio
+async def test_stackoverflow_connector_includes_attribution() -> None:
+    connector = StackOverflowDeclaredProfileConnector()
+    payload = {
+        "items": [
+            {
+                "display_name": "Alex Example",
+                "reputation": 4321,
+                "badge_counts": {"gold": 1, "silver": 5, "bronze": 12},
+            }
+        ]
+    }
+
+    with patch(
+        "rezumi.modules.career_record.infrastructure.declared_profile."
+        "stackoverflow_connector.urlopen",
+        return_value=_FakeJsonResponse(payload),
+    ):
+        result = await connector.fetch("https://stackoverflow.com/users/12345/alex-example")
+
+    assert result.platform == "stackoverflow"
+    assert "4321 reputation" in result.achievements[0].statement
+    assert "Powered by Stack Exchange" in result.achievements[0].statement
+
+
+# --- Codeforces -------------------------------------------------------------
+
+
+def test_codeforces_connector_supports_profile_urls() -> None:
+    connector = CodeforcesDeclaredProfileConnector()
+    assert connector.supports("https://codeforces.com/profile/alex_example")
+    assert not connector.supports("https://codeforces.com/contest/1")
+
+
+@pytest.mark.asyncio
+async def test_codeforces_connector_buckets_solved_problems_by_tier() -> None:
+    connector = CodeforcesDeclaredProfileConnector()
+    info_payload = {
+        "status": "OK",
+        "result": [{"handle": "alex_example", "rating": 1500, "maxRating": 1600, "rank": "expert"}],
+    }
+    status_payload = {
+        "status": "OK",
+        "result": [
+            {
+                "verdict": "OK",
+                "problem": {"contestId": 1, "index": "A", "rating": 900},
+            },
+            {
+                "verdict": "OK",
+                "problem": {"contestId": 1, "index": "A", "rating": 900},
+            },
+            {
+                "verdict": "WRONG_ANSWER",
+                "problem": {"contestId": 1, "index": "B", "rating": 1300},
+            },
+            {
+                "verdict": "OK",
+                "problem": {"contestId": 2, "index": "C", "rating": 2000},
+            },
+        ],
+    }
+
+    with (
+        patch(
+            "rezumi.modules.career_record.infrastructure.declared_profile."
+            "codeforces_connector.urlopen",
+            side_effect=[
+                _FakeJsonResponse(info_payload),
+                _FakeJsonResponse(status_payload),
+            ],
+        ),
+        patch(
+            "rezumi.modules.career_record.infrastructure.declared_profile."
+            "codeforces_connector.time.sleep",
+        ),
+    ):
+        result = await connector.fetch("https://codeforces.com/profile/alex_example")
+
+    statement = result.achievements[0].statement
+    assert "Rating 1500" in statement
+    # Deduplicated by problem (contestId/index) — the repeated 1-A submission
+    # counts once, and the failed 1-B submission never counts.
+    assert "Easy (1)" in statement
+    assert "Hard (1)" in statement
+    assert "Medium" not in statement
+
+
+# --- dev.to ------------------------------------------------------------
+
+
+def test_devto_connector_supports_user_urls() -> None:
+    connector = DevToDeclaredProfileConnector()
+    assert connector.supports("https://dev.to/alex-example")
+    assert not connector.supports("https://dev.to/alex-example/some-post-slug")
+
+
+@pytest.mark.asyncio
+async def test_devto_connector_extracts_summary_and_reactions() -> None:
+    connector = DevToDeclaredProfileConnector()
+    user_payload = {"id": 1, "name": "Alex Example", "summary": "Writes about backend systems."}
+    articles_payload = [
+        {"positive_reactions_count": 10},
+        {"positive_reactions_count": 5},
+    ]
+
+    with patch(
+        "rezumi.modules.career_record.infrastructure.declared_profile.devto_connector.urlopen",
+        side_effect=[_FakeJsonResponse(user_payload), _FakeJsonResponse(articles_payload)],
+    ):
+        result = await connector.fetch("https://dev.to/alex-example")
+
+    assert result.platform == "devto"
+    assert "backend systems" in result.achievements[0].statement
+    assert "15 total reactions" in result.achievements[0].statement
+
+
+# --- ORCID (built but disabled by default) ----------------------------------
+
+
+def test_orcid_connector_supports_orcid_id_urls() -> None:
+    connector = OrcidDeclaredProfileConnector()
+    assert connector.supports("https://orcid.org/0000-0002-1825-0097")
+    assert not connector.supports("https://orcid.org/not-an-id")
+
+
+@pytest.mark.asyncio
+async def test_orcid_connector_extracts_works() -> None:
+    connector = OrcidDeclaredProfileConnector()
+    payload = {
+        "group": [
+            {
+                "work-summary": [
+                    {
+                        "title": {"title": {"value": "Distributed consensus at scale"}},
+                        "journal-title": {"value": "Journal of Systems"},
+                        "publication-date": {"year": {"value": "2025"}},
+                        "url": None,
+                    }
+                ]
+            }
+        ]
+    }
+
+    with patch(
+        "rezumi.modules.career_record.infrastructure.declared_profile.orcid_connector.urlopen",
+        return_value=_FakeJsonResponse(payload),
+    ):
+        result = await connector.fetch("https://orcid.org/0000-0002-1825-0097")
+
+    assert result.platform == "orcid"
+    assert result.achievements[0].title == "Distributed consensus at scale"
+    assert "Journal of Systems" in result.achievements[0].statement
+
+
+def test_orcid_connector_is_disabled_by_default_in_registry() -> None:
+    registry = default_declared_profile_registry()
+    with pytest.raises(DeclaredProfileUnsupported):
+        registry.resolve("https://orcid.org/0000-0002-1825-0097")
+
+
+def test_orcid_connector_is_available_when_explicitly_enabled() -> None:
+    registry = default_declared_profile_registry(orcid_enabled=True)
+    connector = registry.resolve("https://orcid.org/0000-0002-1825-0097")
+    assert connector.platform == "orcid"
+
+
+# --- Registry / portfolio fallback exclusions -------------------------------
+
+
+def test_portfolio_connector_defers_to_known_api_platform_hosts() -> None:
+    connector = PortfolioDeclaredProfileConnector()
+    for host in (
+        "gitlab.com",
+        "bitbucket.org",
+        "stackoverflow.com",
+        "codeforces.com",
+        "dev.to",
+        "orcid.org",
+    ):
+        assert not connector.supports(f"https://{host}/someone")
+
+
+def test_default_registry_resolves_every_new_platform() -> None:
+    registry = default_declared_profile_registry()
+    assert registry.resolve("https://gitlab.com/alex").platform == "gitlab"
+    assert registry.resolve("https://bitbucket.org/alex").platform == "bitbucket"
+    assert (
+        registry.resolve("https://stackoverflow.com/users/1/alex").platform
+        == "stackoverflow"
+    )
+    assert registry.resolve("https://codeforces.com/profile/alex").platform == "codeforces"
+    assert registry.resolve("https://dev.to/alex").platform == "devto"

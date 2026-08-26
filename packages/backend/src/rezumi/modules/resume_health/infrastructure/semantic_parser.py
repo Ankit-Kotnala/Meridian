@@ -66,6 +66,13 @@ _SUBSECTION_HEADINGS = frozenset(
         "certifications and achievements",
     }
 )
+# Connector words that precede a date on a label-style line ("Issued Mar 2022,
+# Expires Mar 2025"). Once the date itself is matched separately, the bare
+# label word left over must not be treated as a real text-field value (e.g.
+# misfilling a certification's credential_id with the word "Issued").
+_DATE_LABEL_WORDS = frozenset(
+    {"issued", "issue", "expires", "expire", "expiry", "valid", "from", "to", "through", "until"}
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -302,6 +309,8 @@ def _header_candidates(
     for value, start, end in _split_for_names(text, segments, len(pending_text)):
         if not pending_text:
             break
+        if date_matches and value.strip().casefold() in _DATE_LABEL_WORDS:
+            continue
         candidates.append(
             _FieldCandidate(
                 pending_text.pop(0),

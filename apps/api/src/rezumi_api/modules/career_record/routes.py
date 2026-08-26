@@ -271,12 +271,17 @@ async def _current_field_provenance_responses(
 async def _accepted_provenance_by_entity(
     service: CareerRecordService, owner_user_id: UUID
 ) -> dict[UUID, list[ProvenanceResponse]]:
-    result: dict[UUID, list[ProvenanceResponse]] = {}
     current_entities = {entity.id: entity for entity in await service.list_entities(owner_user_id)}
-    for entity_id in current_entities:
-        result[entity_id] = await _current_field_provenance_responses(
-            service, owner_user_id, entity_id
-        )
+    provenance_by_entity = await service.current_field_provenance_with_availability_for_targets(
+        owner_user_id, tuple(current_entities)
+    )
+    result: dict[UUID, list[ProvenanceResponse]] = {
+        entity_id: [
+            field_provenance_response(value, available=available)
+            for value, available in entries
+        ]
+        for entity_id, entries in provenance_by_entity.items()
+    }
     cursor: str | None = None
     while True:
         page = await service.list_import_proposals(
@@ -1225,12 +1230,14 @@ async def list_semantic_import_proposals(
     principal: Annotated[AuthenticatedPrincipal, Depends(current_principal)],
     service: Annotated[CareerRecordService, Depends(career_record_service)],
 ) -> SemanticImportProposalListResponse:
-    proposals = await service.list_semantic_import_proposals(principal.user_id)
+    proposals_with_availability = await service.list_semantic_import_proposals_with_availability(
+        principal.user_id
+    )
     _private(response)
     return SemanticImportProposalListResponse(
         data=[
-            await _present_semantic_proposal(service, principal.user_id, proposal.id)
-            for proposal in proposals
+            semantic_import_proposal_response(proposal, source_available=source_available)
+            for proposal, source_available in proposals_with_availability
         ]
     )
 

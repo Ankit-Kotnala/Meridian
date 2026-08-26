@@ -498,7 +498,9 @@ def create_app(
                     )
                 resolved_declared_profile_enrichment = DeclaredProfileEnrichmentService(
                     career_record=resolved_career_record,
-                    connectors=default_declared_profile_registry(),
+                    connectors=default_declared_profile_registry(
+                        orcid_enabled=resolved_settings.orcid_connector_enabled
+                    ),
                 )
             if resolved_declared_profile_enrichment_job is None:
                 resolved_declared_profile_enrichment_job = DeclaredProfileEnrichmentJobService(
