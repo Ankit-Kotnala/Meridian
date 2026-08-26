@@ -84,31 +84,64 @@ export function CareerProfileView() {
 
   const load = useCallback(async () => {
     setFailure(undefined);
-    try {
-      const [
-        nextProfile,
-        nextExperiences,
-        nextItems,
-        nextSkills,
-        nextPersonalFacts,
-        nextRelationships,
-      ] = await Promise.all([
-        getCareerProfile(),
-        getExperiences(),
-        getCareerItems(),
-        getSkills(),
-        getPersonalFacts(),
-        getCareerRelationships(),
-      ]);
-      setProfile(nextProfile);
-      setExperiences(nextExperiences);
-      setCareerItems(nextItems);
-      setSkills(nextSkills);
-      setPersonalFacts(nextPersonalFacts);
-      setRelationships(nextRelationships);
-    } catch (error) {
+    const [
+      nextProfile,
+      nextExperiences,
+      nextItems,
+      nextSkills,
+      nextPersonalFacts,
+      nextRelationships,
+    ] = await Promise.allSettled([
+      getCareerProfile(),
+      getExperiences(),
+      getCareerItems(),
+      getSkills(),
+      getPersonalFacts(),
+      getCareerRelationships(),
+    ]);
+
+    if (nextProfile.status === "rejected") {
       setFailure(
-        requestErrorMessage(error, "We couldn’t load your career profile."),
+        requestErrorMessage(
+          nextProfile.reason,
+          "We couldn’t load your career profile.",
+        ),
+      );
+      return;
+    }
+
+    setProfile(nextProfile.value);
+    setExperiences(
+      nextExperiences.status === "fulfilled" ? nextExperiences.value : undefined,
+    );
+    setCareerItems(
+      nextItems.status === "fulfilled" ? nextItems.value : undefined,
+    );
+    setSkills(nextSkills.status === "fulfilled" ? nextSkills.value : undefined);
+    setPersonalFacts(
+      nextPersonalFacts.status === "fulfilled"
+        ? nextPersonalFacts.value
+        : undefined,
+    );
+    setRelationships(
+      nextRelationships.status === "fulfilled"
+        ? nextRelationships.value
+        : undefined,
+    );
+
+    const partialFailure = [
+      nextExperiences,
+      nextItems,
+      nextSkills,
+      nextPersonalFacts,
+      nextRelationships,
+    ].find((result) => result.status === "rejected");
+    if (partialFailure?.status === "rejected") {
+      setFailure(
+        requestErrorMessage(
+          partialFailure.reason,
+          "Some career profile data could not be loaded. Reload to try again.",
+        ),
       );
     }
   }, []);
@@ -291,7 +324,7 @@ export function CareerProfileView() {
       </main>
     );
   }
-  if ((!experiences || !profile) && failure) {
+  if (!profile && failure) {
     return (
       <main className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8" id="main-content">
         <ErrorState
@@ -384,7 +417,7 @@ export function CareerProfileView() {
       {failure && (
         <Alert
           className="mb-5"
-          title="Career profile not changed"
+          title="Some career profile data is unavailable"
           tone="danger"
         >
           {failure}
@@ -636,3 +669,4 @@ export function CareerProfileView() {
     </main>
   );
 }
+
