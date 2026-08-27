@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Annotated, Any, Literal, cast
 from uuid import UUID
 
@@ -42,6 +43,7 @@ from rezumi.modules.career_record.application.declared_profile_jobs import (
 from rezumi.modules.career_record.domain import (
     CareerEntity,
     CareerEntityKind,
+    CareerFieldProvenance,
     CareerRelationshipKind,
     ConflictResolution,
     EmploymentType,
@@ -252,36 +254,85 @@ def _matches_accepted_proposal(current: CareerEntity, proposed: CareerEntity) ->
     )
 
 
+_ENTITY_PROVENANCE_LIMIT = 100
+"""Matches the `max_length` on `ExperienceResponse.provenance` /
+`CareerItemResponse.provenance`."""
+
+_COMPACT_PROVENANCE_LIMIT = 20
+"""Matches the `max_length` on `SkillResponse.provenance` /
+`PersonalFactResponse.provenance`."""
+
+
+def _capped_provenance_responses(
+    entries: Sequence[tuple[CareerFieldProvenance, bool]], *, limit: int
+) -> list[ProvenanceResponse]:
+    """Cap + sort (newest first) provenance entries to a response's `max_length`.
+
+    Repeated resume re-imports (or repeated owner attestation of an unchanged
+    field) can accumulate far more provenance rows per field than any schema
+    allows or any UI needs to show. Capping here — rather than letting
+    Pydantic reject the whole response once history grows past the limit —
+    keeps the endpoint working indefinitely. Nothing is deleted from storage,
+    only what gets serialized is capped.
+    """
+
+    return [
+        field_provenance_response(value, available=available)
+        for value, available in sorted(
+            entries, key=lambda entry: entry[0].created_at, reverse=True
+        )[:limit]
+    ]
+
+
 async def _current_field_provenance_responses(
     service: CareerRecordService,
     owner_user_id: UUID,
     target_id: UUID,
+    *,
+    limit: int,
 ) -> list[ProvenanceResponse]:
-    responses: list[ProvenanceResponse] = []
-    for value in await service.current_field_provenance(owner_user_id, target_id):
-        responses.append(
-            field_provenance_response(
-                value,
-                available=await service.field_provenance_source_available(owner_user_id, value),
-            )
-        )
-    return responses
+    values = await service.current_field_provenance(owner_user_id, target_id)
+    entries = [
+        (value, await service.field_provenance_source_available(owner_user_id, value))
+        for value in values
+    ]
+    return _capped_provenance_responses(entries, limit=limit)
+
+
+async def _batched_field_provenance_responses(
+    service: CareerRecordService,
+    owner_user_id: UUID,
+    target_ids: tuple[UUID, ...],
+    *,
+    limit: int,
+) -> dict[UUID, list[ProvenanceResponse]]:
+    """Batched equivalent of `_current_field_provenance_responses` for lists.
+
+    `field_provenance_source_available` re-derives semantic candidates from
+    the underlying resume snapshot per call. Calling
+    `_current_field_provenance_responses` once per item in a list route makes
+    that route's latency scale with the account's total provenance record
+    count (seconds, for accounts with many skills/facts). Fetching everything
+    through `current_field_provenance_with_availability_for_targets` shares
+    one candidates-by-(document, snapshot) cache across the whole batch.
+    """
+
+    provenance_by_target = await service.current_field_provenance_with_availability_for_targets(
+        owner_user_id, target_ids
+    )
+    return {
+        target_id: _capped_provenance_responses(entries, limit=limit)
+        for target_id, entries in provenance_by_target.items()
+    }
 
 
 async def _accepted_provenance_by_entity(
     service: CareerRecordService, owner_user_id: UUID
 ) -> dict[UUID, list[ProvenanceResponse]]:
     current_entities = {entity.id: entity for entity in await service.list_entities(owner_user_id)}
-    provenance_by_entity = await service.current_field_provenance_with_availability_for_targets(
-        owner_user_id, tuple(current_entities)
+    result = await _batched_field_provenance_responses(
+        service, owner_user_id, tuple(current_entities), limit=_ENTITY_PROVENANCE_LIMIT
     )
-    result: dict[UUID, list[ProvenanceResponse]] = {
-        entity_id: [
-            field_provenance_response(value, available=available)
-            for value, available in entries
-        ]
-        for entity_id, entries in provenance_by_entity.items()
-    }
     cursor: str | None = None
     while True:
         page = await service.list_import_proposals(
@@ -298,10 +349,11 @@ async def _accepted_provenance_by_entity(
                 proposal.proposed_entity,
             ):
                 continue
+            bucket = result.setdefault(entity_id, [])
+            if len(bucket) >= _ENTITY_PROVENANCE_LIMIT:
+                continue
             available = await service.import_proposal_source_available(owner_user_id, proposal.id)
-            result.setdefault(entity_id, []).append(
-                provenance_from_proposal(proposal, available=available)
-            )
+            bucket.append(provenance_from_proposal(proposal, available=available))
         cursor = page.next_cursor
         if cursor is None:
             return result
@@ -417,13 +469,17 @@ async def list_personal_facts(
     await service.get_or_create_profile(principal.user_id, context)
     facts = await service.list_personal_facts(principal.user_id)
     _private(response)
+    provenance_by_fact = await _batched_field_provenance_responses(
+        service,
+        principal.user_id,
+        tuple(fact.id for fact in facts),
+        limit=_COMPACT_PROVENANCE_LIMIT,
+    )
     return PersonalFactListResponse(
         data=[
             personal_fact_response(
                 fact,
-                provenance=await _current_field_provenance_responses(
-                    service, principal.user_id, fact.id
-                ),
+                provenance=provenance_by_fact.get(fact.id, []),
             )
             for fact in facts
         ]
@@ -512,7 +568,9 @@ async def confirm_personal_fact(
     _private(response, fact.version)
     return personal_fact_response(
         fact,
-        provenance=await _current_field_provenance_responses(service, principal.user_id, fact.id),
+        provenance=await _current_field_provenance_responses(
+            service, principal.user_id, fact.id, limit=_COMPACT_PROVENANCE_LIMIT
+        ),
     )
 
 
@@ -775,7 +833,9 @@ async def confirm_experience(
         entity,
         user_confirmed=True,
         skill_ids=await service.list_entity_skill_ids(principal.user_id, entity.id),
-        provenance=await _current_field_provenance_responses(service, principal.user_id, entity.id),
+        provenance=await _current_field_provenance_responses(
+            service, principal.user_id, entity.id, limit=_ENTITY_PROVENANCE_LIMIT
+        ),
     )
 
 
@@ -955,7 +1015,9 @@ async def confirm_career_item(
     return career_item_response(
         entity,
         user_confirmed=True,
-        provenance=await _current_field_provenance_responses(service, principal.user_id, entity.id),
+        provenance=await _current_field_provenance_responses(
+            service, principal.user_id, entity.id, limit=_ENTITY_PROVENANCE_LIMIT
+        ),
     )
 
 
@@ -998,15 +1060,19 @@ async def list_skills(
     confirmations = await service.list_skill_confirmations(principal.user_id)
     _private(response)
     if include_provenance:
+        provenance_by_skill = await _batched_field_provenance_responses(
+            service,
+            principal.user_id,
+            tuple(item.id for item in values),
+            limit=_COMPACT_PROVENANCE_LIMIT,
+        )
         data = [
             skill_response(
                 item,
                 user_confirmed=(
                     item.id in confirmations and confirmations[item.id].state.value == "confirmed"
                 ),
-                provenance=await _current_field_provenance_responses(
-                    service, principal.user_id, item.id
-                ),
+                provenance=provenance_by_skill.get(item.id, []),
             )
             for item in values
         ]
@@ -1097,7 +1163,9 @@ async def confirm_skill(
     return skill_response(
         skill,
         user_confirmed=True,
-        provenance=await _current_field_provenance_responses(service, principal.user_id, skill.id),
+        provenance=await _current_field_provenance_responses(
+            service, principal.user_id, skill.id, limit=_COMPACT_PROVENANCE_LIMIT
+        ),
     )
 
 

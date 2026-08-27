@@ -2,10 +2,10 @@
 
 import sys
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import create_autospec
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
 from rezumi.foundation.config import DatabaseOptions
@@ -18,9 +18,12 @@ from rezumi.modules.career_record.application import (
 from rezumi.modules.career_record.domain import (
     CareerEntity,
     CareerEntityKind,
+    CareerFieldProvenance,
+    CareerFieldTarget,
     EmploymentType,
     PartialDate,
     SemanticCandidateKind,
+    SemanticFieldOrigin,
     SemanticImportAnchor,
     SemanticImportField,
     SemanticImportFieldState,
@@ -843,6 +846,72 @@ def test_legacy_import_context_is_removed_after_a_factual_entity_edit() -> None:
         replace(accepted, title="Edited title", version=2),
         accepted,
     )
+
+
+def test_experience_list_caps_provenance_instead_of_failing_validation(
+    settings: Settings, fake_database: FakeDatabase
+) -> None:
+    """A field can accumulate far more than 100 provenance rows across repeated
+    resume re-imports; the response schema caps `provenance` at 100 entries, so
+    the route must cap what it serializes instead of letting Pydantic reject
+    the whole response (regression: this previously surfaced to callers as a
+    misleading generic "Request validation failed" 422)."""
+
+    owner_id = uuid4()
+    identity, career, state, principal = _services(owner_id)
+    with _authenticated_client(settings, fake_database, identity, career) as client:
+        profile = client.get("/api/v1/career-profile")
+        assert profile.status_code == 200
+        profile_id = uuid4()
+
+        experience = client.post(
+            "/api/v1/experiences",
+            json={
+                "employer": "Fictional Products Ltd",
+                "officialTitle": "Product Researcher",
+                "displayTitle": None,
+                "startDate": "2024-04",
+                "endDate": None,
+                "current": True,
+                "location": None,
+                "employmentType": "full_time",
+                "description": "User-provided fictional experience.",
+                "skillIds": [],
+            },
+            headers=_write_headers(idempotency=True),
+        )
+        assert experience.status_code == 201
+        experience_id = experience.json()["id"]
+
+        # `current_field_provenance` only returns rows whose digest matches the
+        # entity's present field value, so every row must digest the same
+        # (unchanged) description to simulate repeated re-attestation/re-import
+        # of one field piling up provenance history.
+        current_description_digest = CareerFieldProvenance.digest_value(
+            "User-provided fictional experience."
+        )
+        for index in range(105):
+            state.field_provenance.append(
+                CareerFieldProvenance(
+                    id=uuid4(),
+                    owner_user_id=owner_id,
+                    profile_id=profile_id,
+                    target=CareerFieldTarget.ENTITY,
+                    target_id=UUID(experience_id),
+                    field_name="description",
+                    value_sha256=current_description_digest,
+                    origin=SemanticFieldOrigin.OWNER_ATTESTATION,
+                    created_at=datetime(2026, 1, 1, tzinfo=UTC) + timedelta(hours=index),
+                )
+            )
+
+        listed = client.get("/api/v1/experiences")
+        assert listed.status_code == 200
+        provenance = listed.json()["data"][0]["provenance"]
+        assert len(provenance) == 100
+
+        items = client.get("/api/v1/career-items")
+        assert items.status_code == 200
 
 
 def test_production_composition_builds_career_and_attachment_services(

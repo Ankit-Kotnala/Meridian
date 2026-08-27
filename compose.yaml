@@ -6,6 +6,8 @@ x-app-environment: &app-environment
   REZUMI_ENVIRONMENT: ${ENVIRONMENT:-development}
   REZUMI_LOG_LEVEL: ${LOG_LEVEL:-INFO}
   REZUMI_DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://rezumi:change-me-local-only@postgres:5432/rezumi}
+  REZUMI_DATABASE_POOL_SIZE: ${REZUMI_DATABASE_POOL_SIZE:-5}
+  REZUMI_DATABASE_MAX_OVERFLOW: ${REZUMI_DATABASE_MAX_OVERFLOW:-10}
   REZUMI_TRUSTED_HOSTS: '["localhost","127.0.0.1","testserver","api"]'
   DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://rezumi:change-me-local-only@postgres:5432/rezumi}
   REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}

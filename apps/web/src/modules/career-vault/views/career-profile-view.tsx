@@ -1,6 +1,14 @@
 "use client";
 
-import { Archive, Award, Plus, RefreshCcw, Settings } from "lucide-react";
+import {
+  Archive,
+  Award,
+  CheckCircle2,
+  Circle,
+  Plus,
+  RefreshCcw,
+  Settings,
+} from "lucide-react";
 import Link from "next/link";
 import {
   useCallback,
@@ -20,7 +28,6 @@ import {
   LoadingSkeleton,
   Tabs,
   TextField,
-  buttonStyles,
   cn,
 } from "@rezumi/ui";
 
@@ -338,6 +345,40 @@ export function CareerProfileView() {
   if (!profile) return null;
 
   const list = experiences ?? [];
+  const skillCount = (skills ?? []).length;
+  const factCount = (personalFacts ?? []).length;
+  const itemCount = (careerItems ?? []).length;
+  const completeness = [
+    {
+      done: Boolean(profile.professionalHeadline),
+      label: "Professional headline",
+      onClick: () => setEditingProfile(true),
+    },
+    {
+      done: Boolean(profile.professionalSummary),
+      label: "Professional summary",
+      onClick: () => setEditingProfile(true),
+    },
+    {
+      done: list.length > 0,
+      label: "At least one experience",
+      onClick: () => {
+        setEditingExperience("new");
+        setExperienceErrors({});
+      },
+    },
+    {
+      done: skillCount > 0,
+      label: "At least one skill",
+      href: "#skills-heading",
+    },
+    {
+      done: factCount > 0,
+      label: "Contact facts",
+      href: "#personal-facts-heading",
+    },
+  ] as const;
+  const completedCount = completeness.filter((item) => item.done).length;
   const listPanel = (
     <div className="py-5">
       <ExperienceList
@@ -382,35 +423,92 @@ export function CareerProfileView() {
       </header>
 
       <section
-        aria-labelledby="parsed-summary-heading"
-        className="mb-5 rounded-lg border border-line bg-surface-subtle p-4"
+        aria-labelledby="completeness-heading"
+        className="mb-5 overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface"
       >
-        <h2 className="sr-only" id="parsed-summary-heading">
-          What we parsed from your resume
-        </h2>
-        <p className="text-sm text-foreground">
-          We found{" "}
-          <strong className="font-bold">{list.length} experiences</strong>,{" "}
-          <strong className="font-bold">{(skills ?? []).length} skills</strong>
-          , <strong className="font-bold">
-            {(careerItems ?? []).length} career items
-          </strong>
-          , and{" "}
-          <strong className="font-bold">
-            {(personalFacts ?? []).length} facts
-          </strong>{" "}
-          from your resume and profile.
-        </p>
-        <div className="mt-3 flex flex-wrap gap-3 text-sm font-bold">
-          <Link className="text-primary underline" href="/evidence">
-            Open Evidence Vault
-          </Link>
-          <Link className="text-primary underline" href="/achievement-inbox">
-            Achievement Inbox
-          </Link>
-          <Link className="text-primary underline" href="/career-profile/imports">
-            Resume Imports
-          </Link>
+        <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_auto]">
+          <div>
+            <h2
+              className="text-sm font-bold text-foreground"
+              id="completeness-heading"
+            >
+              Profile completeness — {completedCount}/{completeness.length}
+            </h2>
+            <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+              {completeness.map((item) => {
+                const Icon = item.done ? CheckCircle2 : Circle;
+                const content = (
+                  <>
+                    <Icon
+                      aria-hidden="true"
+                      className={cn(
+                        "size-4 shrink-0",
+                        item.done ? "text-success" : "text-muted",
+                      )}
+                    />
+                    <span
+                      className={item.done ? "text-foreground" : "text-muted"}
+                    >
+                      {item.label}
+                    </span>
+                  </>
+                );
+                return (
+                  <li key={item.label}>
+                    {item.done ? (
+                      <span className="flex items-center gap-2 text-sm">
+                        {content}
+                      </span>
+                    ) : "href" in item ? (
+                      <a
+                        className="flex items-center gap-2 text-sm font-semibold text-primary-strong hover:underline"
+                        href={item.href}
+                      >
+                        {content}
+                      </a>
+                    ) : (
+                      <button
+                        className="flex items-center gap-2 text-sm font-semibold text-primary-strong hover:underline"
+                        onClick={item.onClick}
+                        type="button"
+                      >
+                        {content}
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+            {itemCount > 0 && (
+              <p className="mt-3 text-xs text-muted">
+                Also on file: {itemCount}{" "}
+                {itemCount === 1 ? "career record" : "career records"}{" "}
+                (education, projects, and more).
+              </p>
+            )}
+          </div>
+          <div className="flex flex-col gap-2 border-t border-line pt-4 text-sm font-semibold sm:min-w-48 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+            <Link
+              className="flex items-center gap-2 text-primary-strong hover:underline"
+              href="/evidence"
+            >
+              <Archive aria-hidden="true" className="size-4" /> Open Evidence
+              Vault
+            </Link>
+            <Link
+              className="flex items-center gap-2 text-primary-strong hover:underline"
+              href="/achievement-inbox"
+            >
+              <Award aria-hidden="true" className="size-4" /> Achievement Inbox
+            </Link>
+            <Link
+              className="flex items-center gap-2 text-primary-strong hover:underline"
+              href="/career-profile/imports"
+            >
+              <RefreshCcw aria-hidden="true" className="size-4" /> Resume
+              Imports
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -439,7 +537,7 @@ export function CareerProfileView() {
         {announcement}
       </p>
 
-      <div className="grid gap-5 lg:grid-cols-[1.15fr_.85fr]">
+      <div className="grid gap-5">
         <Card className="p-5 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -523,43 +621,22 @@ export function CareerProfileView() {
           )}
         </Card>
 
-        <Card className="p-5 sm:p-6">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-extrabold">Account preferences</h2>
-              <p className="mt-1 text-sm leading-6 text-muted">
-                Read-only here; Settings remains the sole authority.
-              </p>
-            </div>
-            <Badge tone="neutral">Account-owned</Badge>
-          </div>
-          <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-1">
-            <div>
-              <dt className="font-bold text-muted">Name</dt>
-              <dd>{profile.accountPreferences.displayName}</dd>
-            </div>
-            <div>
-              <dt className="font-bold text-muted">Target role</dt>
-              <dd>{profile.accountPreferences.targetRole || "Not set"}</dd>
-            </div>
-            <div>
-              <dt className="font-bold text-muted">Location</dt>
-              <dd>
-                {profile.accountPreferences.preferredLocation || "Not set"}
-              </dd>
-            </div>
-            <div>
-              <dt className="font-bold text-muted">Work model</dt>
-              <dd>{profile.accountPreferences.workModel || "Not set"}</dd>
-            </div>
-          </dl>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] border border-line bg-surface-subtle px-4 py-3 text-sm">
+          <p className="text-muted">
+            <span className="font-bold text-foreground">
+              {profile.accountPreferences.displayName}
+            </span>{" "}
+            · {profile.accountPreferences.targetRole || "No target role"} ·{" "}
+            {profile.accountPreferences.preferredLocation || "No location"} ·{" "}
+            {profile.accountPreferences.workModel || "No work model"}
+          </p>
           <Link
-            className={cn(buttonStyles.base, buttonStyles.secondary, "mt-5")}
+            className="flex items-center gap-1.5 font-semibold text-primary-strong hover:underline"
             href="/settings"
           >
             <Settings aria-hidden="true" className="size-4" /> Edit in Settings
           </Link>
-        </Card>
+        </div>
       </div>
 
       {editingExperience && (
@@ -628,32 +705,6 @@ export function CareerProfileView() {
         skills={skills ?? []}
         relationships={relationships ?? []}
       />
-
-      <section
-        className="mt-7 grid overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface sm:grid-cols-2 sm:divide-x sm:divide-line"
-        aria-label="Career evidence actions"
-      >
-        <Link
-          className="p-5 transition-colors hover:bg-primary-soft/35"
-          href="/evidence"
-        >
-          <Archive aria-hidden="true" className="size-5 text-primary" />
-          <h2 className="mt-3 font-extrabold">Open Evidence Vault</h2>
-          <p className="mt-1 text-sm text-muted">
-            Connect sources and inspect factual eligibility.
-          </p>
-        </Link>
-        <Link
-          className="border-t border-line p-5 transition-colors hover:bg-primary-soft/35 sm:border-t-0"
-          href="/achievement-inbox"
-        >
-          <Award aria-hidden="true" className="size-5 text-primary" />
-          <h2 className="mt-3 font-extrabold">Capture an achievement</h2>
-          <p className="mt-1 text-sm text-muted">
-            Save a draft and answer only what you know.
-          </p>
-        </Link>
-      </section>
 
       <ConfirmDialog
         confirmLabel="Delete experience"
