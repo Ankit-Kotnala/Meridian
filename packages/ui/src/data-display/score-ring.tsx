@@ -6,7 +6,7 @@ type ScoreRingProps = {
   score: number;
   suffix?: string;
   tone?: "primary" | "success" | "warning";
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
 };
 
 const toneColor = {
@@ -19,18 +19,21 @@ const sizes = {
   sm: "size-[5.5rem]",
   md: "size-[7.5rem]",
   lg: "size-[9.5rem]",
+  xl: "size-[12.5rem]",
 } as const;
 
 const strokeWidths = {
   sm: 6,
   md: 7,
   lg: 8,
+  xl: 6,
 } as const;
 
 const scoreText = {
   sm: "text-[1.625rem]",
   md: "text-[2rem]",
   lg: "text-[2.375rem]",
+  xl: "text-[3.75rem]",
 } as const;
 
 export function ScoreRing({

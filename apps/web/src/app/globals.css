@@ -559,9 +559,10 @@ textarea {
 }
 
 .suggestion-item {
+  position: relative;
   display: flex;
-  gap: 0.75rem;
-  padding: 0.875rem 0;
+  gap: 0.9375rem;
+  padding: 1.125rem 0;
   border-bottom: 1px solid var(--border);
 }
 
@@ -571,17 +572,118 @@ textarea {
 
 .suggestion-item::before {
   counter-increment: suggestion;
-  content: counter(suggestion);
-  display: grid;
-  width: 1.75rem;
-  height: 1.75rem;
+  content: counter(suggestion, decimal-leading-zero);
   flex-shrink: 0;
-  place-items: center;
+  font-family: var(--font-family-display);
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: color-mix(in srgb, var(--primary) 32%, transparent);
+}
+
+/* ---- Resume Health report: editorial ledger redesign ---- */
+
+.health-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(
+      120% 160% at 100% 0%,
+      color-mix(in srgb, var(--health-tint, var(--primary)) 14%, transparent),
+      transparent 60%
+    ),
+    var(--surface);
+}
+
+.health-hero-rule {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0.25rem;
+  background: var(--health-tint, var(--primary));
+}
+
+.health-verdict {
+  font-family: var(--font-family-display);
+  font-size: clamp(1.375rem, 2.1vw, 1.75rem);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+}
+
+.health-score-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
   border-radius: var(--radius-pill);
-  background: var(--primary-soft);
+  padding: 0.25rem 0.75rem 0.3125rem;
+  font-size: 0.6875rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--health-tint, var(--primary)) 14%, transparent);
+  color: var(--health-tint-strong, var(--primary-strong));
+}
+
+.health-breakdown-row {
+  padding: 1.25rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.health-breakdown-row:first-child {
+  border-top: 0;
+  padding-top: 0.25rem;
+}
+
+.health-breakdown-figure {
+  font-family: var(--font-family-display);
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+.health-finding-card {
+  position: relative;
+  display: flex;
+  gap: 1rem;
+  border-radius: var(--radius-control);
+  background: var(--surface-subtle);
+  padding: 1rem 1.125rem 1rem 1.375rem;
+}
+
+.health-finding-card::before {
+  content: "";
+  position: absolute;
+  inset: 0.5rem auto 0.5rem 0;
+  width: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--health-finding-accent, var(--border-strong));
+}
+
+.health-spec-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.health-spec-row:first-child {
+  border-top: 0;
+}
+
+.health-spec-value {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace;
   font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--primary);
+  color: var(--muted-strong);
+  text-align: right;
+  word-break: break-all;
 }
 
 .stat-figure {
