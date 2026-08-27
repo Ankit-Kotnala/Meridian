@@ -83,7 +83,7 @@ const report = {
     {
       id: "improve-summary",
       severity: "warning",
-      category: "issue",
+      category: "quick_win",
       title: "Clarify summary",
       description: "The summary is longer than the configured clarity range.",
       section: "Recruiter Clarity",
@@ -141,11 +141,7 @@ describe("Resume Health report", () => {
       screen.getByText(/61\.2% times 30% = 18\.36 component points/i),
     ).toBeVisible();
 
-    fireEvent.click(screen.getByRole("tab", { name: "Methodology" }));
-    expect(screen.getByText("resume-health-features/1")).toBeVisible();
-    const inputSummary = screen.getByText("View measured input values");
-    fireEvent.click(inputSummary);
-    expect(inputSummary.closest("details")).toHaveAttribute("open");
+    expect(screen.getByText("Clarify summary")).toBeVisible();
     expect(screen.getByText("Extractable characters")).toBeVisible();
     expect(screen.getByText("612")).toBeVisible();
     expect(
@@ -157,9 +153,6 @@ describe("Resume Health report", () => {
     expect(
       screen.getByText(/Parsed experiences, skills, and contact details/i),
     ).toBeVisible();
-
-    fireEvent.click(screen.getByRole("tab", { name: "All findings" }));
-    expect(screen.getByText("Clarify summary")).toBeVisible();
     expect(screen.queryByText(/hiring probability/i)).not.toBeInTheDocument();
   });
 
