@@ -1,6 +1,6 @@
 "use client";
 
-import { PanelLeftClose, Rocket, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -35,7 +35,7 @@ function NavigationLink({
         "flex min-h-10 items-center rounded-[var(--radius-control)] text-[0.8125rem] font-semibold transition-colors duration-200",
         collapsed ? "justify-center px-2" : "gap-3 px-3",
         active
-          ? "bg-primary-soft text-primary"
+          ? "bg-navy-hover text-white"
           : "text-white/78 hover:bg-white/10 hover:text-white",
       )}
       href={href}
@@ -44,22 +44,6 @@ function NavigationLink({
       <Icon aria-hidden="true" className="size-[1.125rem] shrink-0" strokeWidth={1.75} />
       {!collapsed && <span>{label}</span>}
     </Link>
-  );
-}
-
-function PromoWave() {
-  return (
-    <svg
-      aria-hidden="true"
-      className="workspace-promo-wave"
-      preserveAspectRatio="none"
-      viewBox="0 0 400 48"
-    >
-      <path
-        d="M0 32 C80 8, 160 48, 240 24 C320 0, 360 40, 400 28 L400 48 L0 48 Z"
-        fill="rgb(255 255 255 / 0.12)"
-      />
-    </svg>
   );
 }
 
@@ -80,13 +64,21 @@ export function WorkspaceSidebar({
     <div className="flex h-full flex-col bg-navy text-white">
       <div
         className={cn(
-          "flex min-h-16 border-b border-white/8",
-          collapsed
-            ? "flex-col items-center gap-2 px-2 py-3"
-            : "items-center justify-between px-4",
+          "flex min-h-16 items-center border-b border-white/8",
+          collapsed ? "justify-center px-2 py-3" : "justify-between px-4",
         )}
       >
-        <RezumiLogo compact={collapsed} href="/dashboard" inverted />
+        {collapsed ? (
+          <RezumiLogo compact href="/dashboard" inverted />
+        ) : (
+          <Link
+            aria-label="Meridian home"
+            className="text-lg font-extrabold uppercase tracking-[0.08em] text-white"
+            href="/dashboard"
+          >
+            Meridian
+          </Link>
+        )}
         {onClose && (
           <button
             aria-label="Close application navigation"
@@ -95,23 +87,6 @@ export function WorkspaceSidebar({
             type="button"
           >
             <X aria-hidden="true" className="size-5" />
-          </button>
-        )}
-        {onCollapse && (
-          <button
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="grid size-8 shrink-0 place-items-center rounded-lg text-white/60 transition-colors hover:bg-white/10 hover:text-white"
-            onClick={onCollapse}
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            type="button"
-          >
-            <PanelLeftClose
-              aria-hidden="true"
-              className={cn(
-                "size-[1.15rem] transition",
-                collapsed && "rotate-180",
-              )}
-            />
           </button>
         )}
       </div>
@@ -134,17 +109,27 @@ export function WorkspaceSidebar({
         </ul>
       </nav>
 
-      {!collapsed && (
-        <div className="relative z-[1] px-3 pb-4">
-          <div className="workspace-promo relative z-[1] px-4 py-4">
-            <PromoWave />
-            <Rocket aria-hidden="true" className="relative z-[1] size-5 text-white/90" />
-            <p className="relative z-[1] mt-2 text-sm font-semibold leading-snug text-white">
-              Better resumes,
-              <br />
-              Bigger opportunities.
-            </p>
-          </div>
+      {onCollapse && (
+        <div className={cn("border-t border-white/8 px-3 py-3")}>
+          <button
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className={cn(
+              "flex min-h-10 w-full items-center rounded-[var(--radius-control)] text-[0.8125rem] font-semibold text-white/78 transition-colors duration-200 hover:bg-white/10 hover:text-white",
+              collapsed ? "justify-center px-2" : "gap-3 px-3",
+            )}
+            onClick={onCollapse}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            type="button"
+          >
+            {collapsed ? (
+              <ChevronRight aria-hidden="true" className="size-[1.125rem] shrink-0" />
+            ) : (
+              <>
+                <ChevronLeft aria-hidden="true" className="size-[1.125rem] shrink-0" />
+                <span>Collapse</span>
+              </>
+            )}
+          </button>
         </div>
       )}
     </div>

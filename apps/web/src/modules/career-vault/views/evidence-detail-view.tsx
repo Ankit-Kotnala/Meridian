@@ -606,7 +606,7 @@ export function EvidenceDetailView({ evidenceId }: { evidenceId: string }) {
         <Card className="mt-5 p-5 sm:p-6">
           <h2 className="text-lg font-extrabold">Conflict review</h2>
           <p className="mt-1 text-sm text-muted">
-            Rezumi never silently chooses between contradictory records.
+            Meridian never silently chooses between contradictory records.
           </p>
           <ul className="mt-4 space-y-4">
             {evidence.conflicts.map((conflict) => (

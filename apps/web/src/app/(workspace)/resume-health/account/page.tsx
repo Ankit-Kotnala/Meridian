@@ -7,7 +7,7 @@ import { buttonStyles, cn } from "@rezumi/ui";
 import { AccountResumeHealthView } from "@/modules/resume-health";
 import { ResumeBuilderView } from "@/modules/resume-builder";
 
-export const metadata: Metadata = { title: "Resume Studio" };
+export const metadata: Metadata = { title: "Resumes" };
 
 export default function ResumeStudioPage() {
   return (

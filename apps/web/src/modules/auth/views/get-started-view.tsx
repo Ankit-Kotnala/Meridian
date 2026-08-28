@@ -60,7 +60,7 @@ export function GetStartedView() {
         </div>
 
         <Alert title="Real document state only" tone="info">
-          Rezumi displays a report only after a real document passes admission,
+          Meridian displays a report only after a real document passes admission,
           parsing, explicit review, and deterministic analysis.
         </Alert>
       </div>

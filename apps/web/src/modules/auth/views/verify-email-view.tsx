@@ -87,7 +87,7 @@ export function VerifyEmailView() {
 
   return (
     <AuthPageShell
-      description="Verification links are short-lived and single-use. Rezumi does not expose whether another address has an account."
+      description="Verification links are short-lived and single-use. Meridian does not expose whether another address has an account."
       eyebrow="Email verification"
       title={state === "success" ? "Email verified" : "Verify your email"}
     >

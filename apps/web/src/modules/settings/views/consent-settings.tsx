@@ -30,7 +30,7 @@ const choices: ReadonlyArray<{
     purpose: "modelTraining",
     label: "Allow model training with my content",
     description:
-      "Off by default. Rezumi does not use your content to train models unless you explicitly grant this purpose.",
+      "Off by default. Meridian does not use your content to train models unless you explicitly grant this purpose.",
   },
   {
     purpose: "productAnalytics",

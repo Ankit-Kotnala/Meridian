@@ -49,7 +49,7 @@ import type {
 } from "../api/types";
 
 export const SCORE_DISCLAIMER =
-  "Rezumi scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.";
+  "Meridian scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.";
 
 const scoreBandStyle = {
   strong: {
@@ -99,7 +99,7 @@ function verdictSentence(
   if (band === "Strong") {
     return quickWinCount > 0
       ? `Strong — this reads clearly. ${quickWinCount} small ${quickWinCount === 1 ? "tweak" : "tweaks"} would make it sharper.`
-      : "Strong — this resume reads clearly against Rezumi’s structural checks.";
+      : "Strong — this resume reads clearly against Meridian’s structural checks.";
   }
   if (band === "Developing") {
     return quickWinCount > 0
@@ -457,7 +457,7 @@ export function ResumeHealthReportView({
               <div className="min-w-0">
                 <span className="health-score-tag">
                   <ShieldCheck aria-hidden="true" className="size-3.5" />
-                  Internal Rezumi measure
+                  Internal Meridian measure
                 </span>
                 <p className="health-verdict mt-3 max-w-xl">
                   {verdictSentence(report, quickWins.length)}
@@ -475,7 +475,7 @@ export function ResumeHealthReportView({
                     title="Not enough reliable data"
                     tone="warning"
                   >
-                    Rezumi did not turn missing or uncertain information into
+                    Meridian did not turn missing or uncertain information into
                     a deceptively precise score. Review the warnings and
                     parsed content.
                   </Alert>

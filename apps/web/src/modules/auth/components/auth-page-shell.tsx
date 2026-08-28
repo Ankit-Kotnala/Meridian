@@ -8,7 +8,7 @@ const trustPoints = [
   {
     icon: BadgeCheck,
     title: "Evidence before claims",
-    description: "Rezumi never fills missing career facts with invented prose.",
+    description: "Meridian never fills missing career facts with invented prose.",
   },
   {
     icon: LockKeyhole,

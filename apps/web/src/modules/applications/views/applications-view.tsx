@@ -413,7 +413,7 @@ export function ApplicationsView() {
             Refresh
           </Button>
         }
-        description="Track opportunities, exact resume versions, follow-ups, and evidence-grounded application packs. Rezumi never submits an application on your behalf."
+        description="Track opportunities, exact resume versions, follow-ups, and evidence-grounded application packs. Meridian never submits an application on your behalf."
         eyebrow="Applications"
         title="Keep every application traceable"
       />

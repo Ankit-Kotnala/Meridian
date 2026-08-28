@@ -242,7 +242,7 @@ export function UploadWorkflow({
             value={stage === "uploading" ? progress : null}
           />
           <p className="mt-3 text-xs leading-5 text-muted">
-            Keep this page open until Rezumi confirms the private upload.
+            Keep this page open until Meridian confirms the private upload.
           </p>
         </div>
       )}
@@ -252,7 +252,7 @@ export function UploadWorkflow({
             aria-hidden="true"
             className="mt-0.5 size-4 shrink-0"
           />
-          New files stay quarantined while Rezumi verifies their signature,
+          New files stay quarantined while Meridian verifies their signature,
           limits, and malware status. Uploaded content is never executed.
         </span>
       </Alert>

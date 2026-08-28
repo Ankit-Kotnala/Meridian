@@ -65,7 +65,7 @@ export function credentialSvg({
   const id = escapeXml(corpId);
   const tier = escapeXml(standing.label.toUpperCase());
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${CREDENTIAL_WIDTH}" height="${CREDENTIAL_HEIGHT}" viewBox="0 0 ${CREDENTIAL_WIDTH} ${CREDENTIAL_HEIGHT}" role="img" aria-label="Rezumi Corp ID credential for ${escapeXml(fit(displayName, 30))}">
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${CREDENTIAL_WIDTH}" height="${CREDENTIAL_HEIGHT}" viewBox="0 0 ${CREDENTIAL_WIDTH} ${CREDENTIAL_HEIGHT}" role="img" aria-label="Meridian Corp ID credential for ${escapeXml(fit(displayName, 30))}">
   <defs>
     <linearGradient id="rz-bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#0f2c22"/>
@@ -91,7 +91,7 @@ export function credentialSvg({
   <g transform="translate(58 62)">
     <rect width="52" height="52" rx="15" fill="url(#rz-rail)"/>
     <path d="M15 34 L26 15 L37 34 Z" fill="#0f2c22"/>
-    <text x="70" y="22" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="21" font-weight="700" fill="#eafaf2" letter-spacing="0.5">Rezumi</text>
+    <text x="70" y="22" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="21" font-weight="700" fill="#eafaf2" letter-spacing="0.5">Meridian</text>
     <text x="70" y="44" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#8fd9bd" letter-spacing="2.4">CAREER CREDENTIAL</text>
   </g>
 

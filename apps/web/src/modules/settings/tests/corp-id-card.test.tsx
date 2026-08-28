@@ -43,7 +43,7 @@ describe("Corp ID card", () => {
       <CorpIdCard displayName="Ankit Kotnala" emailVerified userId={USER_ID} />,
     );
 
-    const card = screen.getByRole("region", { name: "Rezumi Corp ID" });
+    const card = screen.getByRole("region", { name: "Meridian Corp ID" });
     // The identifier and the scope limit appear twice by design: once as card
     // text and once inside the downloadable credential artwork.
     expect(
@@ -66,7 +66,7 @@ describe("Corp ID card", () => {
     expect(screen.getByRole("button", { name: /Download PNG/ })).toBeVisible();
     expect(screen.getByRole("button", { name: /Download SVG/ })).toBeVisible();
     expect(
-      screen.getByRole("img", { name: /Rezumi Corp ID credential for/ }),
+      screen.getByRole("img", { name: /Meridian Corp ID credential for/ }),
     ).toBeInTheDocument();
   });
 

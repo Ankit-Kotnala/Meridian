@@ -149,7 +149,7 @@ function AchievementEditor({
         </Button>
       </div>
       <p className="text-sm text-muted">
-        Unanswered prompts remain explicitly “Not answered”; Rezumi never fills
+        Unanswered prompts remain explicitly “Not answered”; Meridian never fills
         missing facts.
       </p>
       <TextField
@@ -751,7 +751,7 @@ export function AchievementInboxView() {
 
       <ConfirmDialog
         confirmLabel="Convert to evidence"
-        description="Rezumi will preserve this draft, create evidence atomically, and compute state and eligibility on the server. Review the resulting evidence before using it."
+        description="Meridian will preserve this draft, create evidence atomically, and compute state and eligibility on the server. Review the resulting evidence before using it."
         loading={loading}
         onConfirm={() => void convert()}
         onOpenChange={(open) => {

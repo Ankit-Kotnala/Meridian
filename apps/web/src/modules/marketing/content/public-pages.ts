@@ -1,7 +1,7 @@
 export const publicPages = {
   product: {
     title: "Product overview",
-    eyebrow: "Rezumi product",
+    eyebrow: "Meridian product",
     intro:
       "One connected operating system for evidence-backed career information, readiness analysis, application materials, and job-search workflow.",
     sections: [
@@ -15,7 +15,7 @@ export const publicPages = {
       ],
       [
         "Outputs you control",
-        "Rezumi can create resumes, application answers, outreach, and interview stories from the same evidence-backed source, with review before material changes.",
+        "Meridian can create resumes, application answers, outreach, and interview stories from the same evidence-backed source, with review before material changes.",
       ],
     ],
   },
@@ -23,7 +23,7 @@ export const publicPages = {
     title: "Features",
     eyebrow: "Connected modules",
     intro:
-      "Rezumi brings resume health, evidence, role exploration, job matching, editing, applications, interviews, networking, and growth into one workflow.",
+      "Meridian brings resume health, evidence, role exploration, job matching, editing, applications, interviews, networking, and growth into one workflow.",
     sections: [
       [
         "Understand",
@@ -40,7 +40,7 @@ export const publicPages = {
     ],
   },
   "how-it-works": {
-    title: "How Rezumi works",
+    title: "How Meridian works",
     eyebrow: "From history to opportunity",
     intro:
       "Bring your career history, correct uncertain parsing, confirm evidence, choose a target, then review every generated change before using it.",
@@ -55,7 +55,7 @@ export const publicPages = {
       ],
       [
         "3. Tailor and verify",
-        "Rezumi maps evidence to requirements, proposes controlled edits, and verifies exported files before download.",
+        "Meridian maps evidence to requirements, proposes controlled edits, and verifies exported files before download.",
       ],
     ],
   },
@@ -75,7 +75,7 @@ export const publicPages = {
       ],
       [
         "What it does not promise",
-        "Rezumi does not know an employer’s ATS score and cannot guarantee interviews or employment outcomes.",
+        "Meridian does not know an employer’s ATS score and cannot guarantee interviews or employment outcomes.",
       ],
     ],
   },
@@ -83,7 +83,7 @@ export const publicPages = {
     title: "Preview availability",
     eyebrow: "Commercial launch not available",
     intro:
-      "Rezumi is a technical product preview. Final prices, entitlements, billing behavior, and support terms will come from reviewed launch configuration rather than marketing placeholders.",
+      "Meridian is a technical product preview. Final prices, entitlements, billing behavior, and support terms will come from reviewed launch configuration rather than marketing placeholders.",
     sections: [
       [
         "Current access",
@@ -103,7 +103,7 @@ export const publicPages = {
     title: "Security and privacy",
     eyebrow: "Sensitive data deserves deliberate controls",
     intro:
-      "Rezumi is designed around tenant isolation, least-data processing, secure uploads, redacted observability, explicit consent, and auditable sensitive actions.",
+      "Meridian is designed around tenant isolation, least-data processing, secure uploads, redacted observability, explicit consent, and auditable sensitive actions.",
     sections: [
       [
         "Data minimization",
@@ -123,7 +123,7 @@ export const publicPages = {
     title: "Scoring methodology",
     eyebrow: "Internal, explainable readiness measures",
     intro:
-      "Rezumi scores are deterministic, versioned combinations of structured features. An LLM never supplies the final numerical score.",
+      "Meridian scores are deterministic, versioned combinations of structured features. An LLM never supplies the final numerical score.",
     sections: [
       [
         "Transparent dimensions",
@@ -143,7 +143,7 @@ export const publicPages = {
     title: "Responsible AI policy",
     eyebrow: "Grounded assistance, never invented careers",
     intro:
-      "Rezumi must not invent employers, dates, titles, metrics, technologies, education, awards, leadership, ownership, or any other career fact.",
+      "Meridian must not invent employers, dates, titles, metrics, technologies, education, awards, leadership, ownership, or any other career fact.",
     sections: [
       [
         "Evidence before generation",
@@ -160,10 +160,10 @@ export const publicPages = {
     ],
   },
   about: {
-    title: "About Rezumi",
+    title: "About Meridian",
     eyebrow: "Career truth before career polish",
     intro:
-      "Rezumi is a product concept for helping people manage the facts, evidence, applications, and growth of a career—not just one resume file.",
+      "Meridian is a product concept for helping people manage the facts, evidence, applications, and growth of a career—not just one resume file.",
     sections: [
       [
         "The premise",
@@ -175,7 +175,7 @@ export const publicPages = {
       ],
       [
         "Current status",
-        "Rezumi includes technical-preview account controls, secure resume upload, parsed-field correction, deterministic Resume Health, and later-phase career workflows. Public examples remain fictional and separate from protected account data.",
+        "Meridian includes technical-preview account controls, secure resume upload, parsed-field correction, deterministic Resume Health, and later-phase career workflows. Public examples remain fictional and separate from protected account data.",
       ],
     ],
   },

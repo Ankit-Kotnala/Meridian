@@ -789,7 +789,7 @@ export function ContactDetailView({ contactId }: { contactId: string }) {
       clearIntent(intent);
       await load();
       setSuccess(
-        "Interaction recorded as local history only. Rezumi did not send anything.",
+        "Interaction recorded as local history only. Meridian did not send anything.",
       );
       formElement.reset();
     } catch (error) {
@@ -1081,7 +1081,7 @@ export function ContactDetailView({ contactId }: { contactId: string }) {
       </header>
 
       <Alert title="Private and local-only" tone="warning">
-        Rezumi stores this record only for the account owner. It does not
+        Meridian stores this record only for the account owner. It does not
         scrape, fetch the profile URL, import contacts, send messages, or
         deliver reminders externally.
       </Alert>
@@ -1650,7 +1650,7 @@ function InteractionsPanel({
         </Alert>
       )}
       <Alert title="History only — nothing is sent" tone="warning">
-        Record an interaction that happened elsewhere. Rezumi stores the summary
+        Record an interaction that happened elsewhere. Meridian stores the summary
         with delivery state “recorded only” and performs no delivery.
       </Alert>
       <form
@@ -1846,7 +1846,7 @@ function ReferralsPanel({
       )}
       <Alert title="Local status only" tone="warning">
         Referral records track your plan or an event that happened elsewhere.
-        Rezumi never sends a referral request.
+        Meridian never sends a referral request.
       </Alert>
       <form
         className="grid gap-4 rounded-xl border border-line bg-surface p-4 sm:grid-cols-2"

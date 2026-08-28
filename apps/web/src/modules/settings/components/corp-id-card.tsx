@@ -83,7 +83,7 @@ export function CorpIdCard({
             id="corp-id-heading"
           >
             <ShieldCheck aria-hidden="true" className="size-3.5" />
-            Rezumi Corp ID
+            Meridian Corp ID
           </h2>
           <p className="mt-2.5 font-display text-2xl font-semibold tabular-nums tracking-[0.02em] text-foreground">
             {corpId}

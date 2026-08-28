@@ -8,6 +8,8 @@ export const buttonStyles = {
     "rounded-[var(--radius-pill)] border border-primary bg-primary text-white hover:border-primary-strong hover:bg-primary-strong",
   secondary:
     "rounded-[var(--radius-pill)] border border-line-strong bg-surface text-foreground hover:border-primary/35 hover:bg-primary-soft/60",
+  outline:
+    "rounded-[var(--radius-pill)] border border-info/40 bg-surface text-info hover:border-info hover:bg-info-soft",
   ghost:
     "rounded-[var(--radius-control)] text-muted-strong hover:bg-surface-subtle hover:text-foreground",
   dark: "rounded-[var(--radius-pill)] bg-navy text-white hover:bg-navy-hover",

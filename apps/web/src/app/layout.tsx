@@ -23,12 +23,12 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
   ),
   title: {
-    default: "Rezumi — Build from career truth",
-    template: "%s · Rezumi",
+    default: "Meridian — Build from career truth",
+    template: "%s · Meridian",
   },
   description:
     "An evidence-backed career operating system for maintaining a structured career record and creating grounded application materials.",
-  applicationName: "Rezumi",
+  applicationName: "Meridian",
   category: "productivity",
   keywords: [
     "career profile",

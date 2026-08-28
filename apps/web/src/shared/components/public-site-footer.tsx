@@ -43,7 +43,7 @@ export function SiteFooter() {
             grounded applications you control.
           </p>
           <p className="mt-6 text-xs leading-5 text-emerald-100/50">
-            Rezumi readiness measurements are not employer or applicant tracking
+            Meridian readiness measurements are not employer or applicant tracking
             system scores and do not guarantee outcomes.
           </p>
         </div>
@@ -74,7 +74,7 @@ export function SiteFooter() {
       </div>
       <div className="border-t border-white/10">
         <div className="site-container flex flex-col gap-2 py-5 text-xs text-emerald-100/50 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} Rezumi. Technical product preview.</p>
+          <p>© {new Date().getFullYear()} Meridian. Technical product preview.</p>
           <p>Career truth before career polish.</p>
         </div>
       </div>

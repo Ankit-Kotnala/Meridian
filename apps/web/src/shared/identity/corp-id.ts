@@ -67,7 +67,7 @@ export function corpIdStanding({
   }
   if (experiences < 1) {
     return {
-      attests: "Rezumi has confirmed control of this email address.",
+      attests: "Meridian has confirmed control of this email address.",
       label: "Registered",
       next: "Add at least one role to your career record.",
       tier: "registered",
@@ -76,7 +76,7 @@ export function corpIdStanding({
   if (confirmedEvidence < 1) {
     return {
       attests:
-        "Rezumi has confirmed this email address and holds a structured career record for this account.",
+        "Meridian has confirmed this email address and holds a structured career record for this account.",
       label: "Profiled",
       next: "Confirm at least one evidence record.",
       tier: "profiled",
@@ -84,7 +84,7 @@ export function corpIdStanding({
   }
   return {
     attests:
-      "Rezumi has confirmed this email address, holds a structured career record, and that record has user-confirmed supporting evidence.",
+      "Meridian has confirmed this email address, holds a structured career record, and that record has user-confirmed supporting evidence.",
     label: "Evidenced",
     tier: "evidenced",
   };
@@ -92,4 +92,4 @@ export function corpIdStanding({
 
 /** The scope limit that must accompany the identifier wherever it is shown. */
 export const CORP_ID_DISCLAIMER =
-  "A Corp ID records your standing with Rezumi and the checks Rezumi performed. It is not an employer credential, a background check, an identity verification by any third party, or a hiring signal.";
+  "A Corp ID records your standing with Meridian and the checks Meridian performed. It is not an employer credential, a background check, an identity verification by any third party, or a hiring signal.";

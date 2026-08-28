@@ -37,7 +37,7 @@ export function RezumiLogo({
 }: RezumiLogoProps) {
   return (
     <Link
-      aria-label="Rezumi home"
+      aria-label="Meridian home"
       className={cn(
         "inline-flex items-center gap-2.5 rounded-lg font-bold tracking-[-0.03em]",
         className,
@@ -60,7 +60,7 @@ export function RezumiLogo({
             inverted ? "text-white" : "text-foreground",
           )}
         >
-          Rezumi
+          Meridian
         </span>
       )}
     </Link>

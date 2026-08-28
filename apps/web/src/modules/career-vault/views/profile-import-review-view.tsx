@@ -125,7 +125,7 @@ export function ProfileImportReviewView({
               Review proposed Career Record facts
             </h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-              Rezumi extracted these suggestions from{" "}
+              Meridian extracted these suggestions from{" "}
               {proposal.sourceDocumentName}. Nothing is applied until you
               explicitly accept this review.
             </p>
@@ -212,7 +212,7 @@ export function ProfileImportReviewView({
                   className="mt-0.5 size-4 shrink-0"
                 />
                 <span>
-                  <strong>Conflict:</strong> {change.conflict}. Rezumi will not
+                  <strong>Conflict:</strong> {change.conflict}. Meridian will not
                   resolve this silently.
                 </span>
               </div>

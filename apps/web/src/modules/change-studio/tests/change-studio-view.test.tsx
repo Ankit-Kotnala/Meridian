@@ -26,7 +26,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("../api/change-studio-api", () => api);
 
 const disclaimer =
-  "Rezumi scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.";
+  "Meridian scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.";
 
 const baseChangeSet: ChangeSet = {
   analysisId: "00000000-0000-4000-8000-000000000604",

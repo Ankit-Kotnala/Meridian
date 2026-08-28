@@ -135,7 +135,7 @@ export function OnboardingView() {
           </>
         }
         eyebrow="Account setup"
-        title="Set up your Rezumi workspace"
+        title="Set up your Meridian workspace"
       />
       <OnboardingProgress current={state.currentStep} />
       {failure && (
@@ -166,7 +166,7 @@ export function OnboardingView() {
                 new FormData(event.currentTarget).get("displayName") ?? "",
               ).trim();
               if (!displayName) {
-                setFailure("Enter the name you want Rezumi to use.");
+                setFailure("Enter the name you want Meridian to use.");
                 return;
               }
               void save({ currentStep: "resume", displayName });

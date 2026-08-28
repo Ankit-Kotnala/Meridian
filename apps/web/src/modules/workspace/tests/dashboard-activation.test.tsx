@@ -17,6 +17,7 @@ function count(value: number) {
 function summary(overrides: Partial<DashboardSummary> = {}): DashboardSummary {
   return {
     activation: { jobs: count(0), pendingImports: count(0) },
+    applications: [],
     attention: [],
     attentionDegraded: false,
     growth: unavailable,
@@ -30,6 +31,7 @@ function summary(overrides: Partial<DashboardSummary> = {}): DashboardSummary {
       experiences: count(0),
       skills: count(0),
     },
+    resumes: count(0),
     ...overrides,
   };
 }

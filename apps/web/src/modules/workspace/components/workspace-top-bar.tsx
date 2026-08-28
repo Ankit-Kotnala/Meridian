@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, ChevronDown, Menu, Search, ShieldCheck } from "lucide-react";
+import { ChevronDown, Menu, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode, RefObject } from "react";
@@ -8,6 +8,8 @@ import type { ReactNode, RefObject } from "react";
 import { corpIdFor } from "@/shared/identity/corp-id";
 import { ThemeToggle } from "@/shared/theme/theme-toggle";
 
+import type { DashboardResumeHealth } from "./dashboard-resume-state";
+import { HeaderResumeScore } from "./header-resume-score";
 import type { WorkspaceViewer } from "./workspace-shell";
 import {
   resolveWorkspaceContext,
@@ -28,14 +30,18 @@ export function WorkspaceTopBar({
   accountActions,
   menuButtonRef,
   onOpenMenu,
+  resumeHealth,
   viewer,
 }: {
   accountActions: ReactNode;
   menuButtonRef: RefObject<HTMLButtonElement | null>;
   onOpenMenu: () => void;
+  resumeHealth: DashboardResumeHealth;
   viewer: WorkspaceViewer;
 }) {
-  const context = resolveWorkspaceContext(usePathname());
+  const pathname = usePathname();
+  const context = resolveWorkspaceContext(pathname);
+  const isHome = pathname === "/dashboard";
   const corpId = corpIdFor(viewer.id);
 
   return (
@@ -50,38 +56,28 @@ export function WorkspaceTopBar({
         >
           <Menu aria-hidden="true" className="size-5" />
         </button>
-        <div className="min-w-0 leading-tight">
-          <p className="truncate text-sm font-bold text-foreground">
-            {context.label}
-          </p>
-        </div>
+        {!isHome && (
+          <div className="min-w-0 leading-tight">
+            <p className="truncate text-sm font-bold text-foreground">
+              {context.label}
+            </p>
+          </div>
+        )}
       </div>
 
-      <div className="order-last min-w-0 flex-1 basis-full sm:order-none sm:basis-auto">
-        <label className="relative mx-auto block max-w-3xl">
-          <span className="sr-only">Search workspace</span>
-          <Search
-            aria-hidden="true"
-            className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted"
-          />
-          <input
-            className="workspace-search"
-            placeholder="Search anything… (e.g. skills, roles, feedback)"
-            type="search"
-          />
-        </label>
-      </div>
+      {isHome && (
+        <div className="min-w-0 leading-tight">
+          <p className="truncate text-base font-bold text-foreground">
+            Home
+          </p>
+          <p className="truncate text-xs text-muted">Your career workspace</p>
+        </div>
+      )}
 
       <div className="ml-auto flex items-center gap-1.5">
-        <ThemeToggle />
+        <HeaderResumeScore resumeHealth={resumeHealth} />
 
-        <button
-          aria-label="Notifications"
-          className="grid size-10 place-items-center rounded-[var(--radius-pill)] border border-line text-muted-strong transition-colors hover:bg-surface-subtle hover:text-foreground"
-          type="button"
-        >
-          <Bell aria-hidden="true" className="size-[1.125rem]" />
-        </button>
+        <ThemeToggle />
 
         <details className="group relative">
           <summary
@@ -113,7 +109,7 @@ export function WorkspaceTopBar({
                 {corpId && (
                   <p className="mt-1 flex items-center gap-1 truncate text-[0.6875rem] font-bold tracking-[0.02em] text-primary-strong">
                     <ShieldCheck aria-hidden="true" className="size-3" />
-                    <span className="sr-only">Rezumi Corp ID: </span>
+                    <span className="sr-only">Meridian Corp ID: </span>
                     {corpId}
                   </p>
                 )}

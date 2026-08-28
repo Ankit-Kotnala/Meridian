@@ -92,7 +92,7 @@ export function LoginView() {
     <AuthPageShell
       description="Use your verified account to open the protected workspace and manage active sessions."
       eyebrow="Welcome back"
-      title="Sign in to Rezumi"
+      title="Sign in to Meridian"
     >
       <form className="space-y-5" noValidate onSubmit={onSubmit}>
         <FormErrorSummary message={failure} />
@@ -153,7 +153,7 @@ export function LoginView() {
           Google
         </Button>
         <p className="text-center text-sm text-muted">
-          New to Rezumi?{" "}
+          New to Meridian?{" "}
           <Link className="font-bold text-primary" href="/register">
             Create an account
           </Link>

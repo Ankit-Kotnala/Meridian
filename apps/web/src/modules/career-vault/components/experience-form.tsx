@@ -111,7 +111,7 @@ export function ExperienceForm({
           hint={
             startIsYearOnly
               ? `The imported record preserves ${initial?.startDate} as year-only. Choose a month to edit this record.`
-              : "Rezumi stores only the month and year you provide."
+              : "Meridian stores only the month and year you provide."
           }
           id="experience-start-date"
           label="Start month"
@@ -179,7 +179,7 @@ export function ExperienceForm({
           >
             Overlapping roles at the same employer are shown as promotions;
             overlapping roles at different employers are shown as concurrent.
-            Rezumi records the relationship without changing your dates or
+            Meridian records the relationship without changing your dates or
             titles.
           </p>
         </div>

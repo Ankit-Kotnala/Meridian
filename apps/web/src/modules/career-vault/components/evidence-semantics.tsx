@@ -18,7 +18,7 @@ const statePresentation: Record<
   }
 > = {
   verified: {
-    description: "Checked through a documented Rezumi verification process.",
+    description: "Checked through a documented Meridian verification process.",
     label: "Verified",
     tone: "success",
   },

@@ -66,12 +66,12 @@ export function RegisterView() {
     <AuthPageShell
       description="Create a private account. We’ll send a verification link before you can enter the protected workspace."
       eyebrow="Create account"
-      title={submitted ? "Check your email" : "Start your Rezumi account"}
+      title={submitted ? "Check your email" : "Start your Meridian account"}
     >
       {submitted ? (
         <div className="space-y-5">
           <Alert title="Verification email requested" tone="success">
-            If the address can receive Rezumi mail, a short-lived verification
+            If the address can receive Meridian mail, a short-lived verification
             link will arrive. This message is the same for existing and new
             accounts.
           </Alert>
@@ -101,7 +101,7 @@ export function RegisterView() {
             label="Name"
             maxLength={100}
             name="displayName"
-            placeholder="The name you want Rezumi to use"
+            placeholder="The name you want Meridian to use"
             required
           />
           <TextField

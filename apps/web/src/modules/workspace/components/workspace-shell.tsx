@@ -7,6 +7,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@rezumi/ui";
 import { ProductMotionProvider } from "@/shared/motion/product-motion-provider";
 
+import type { DashboardResumeHealth } from "./dashboard-resume-state";
 import { WorkspaceSectionNav } from "./workspace-section-nav";
 import { WorkspaceSidebar } from "./workspace-sidebar";
 import { WorkspaceTopBar } from "./workspace-top-bar";
@@ -20,10 +21,12 @@ export type WorkspaceViewer = {
 export function WorkspaceShell({
   accountActions,
   children,
+  resumeHealth,
   viewer,
 }: {
   accountActions: ReactNode;
   children: ReactNode;
+  resumeHealth: DashboardResumeHealth;
   viewer: WorkspaceViewer;
 }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -85,6 +88,7 @@ export function WorkspaceShell({
             accountActions={accountActions}
             menuButtonRef={menuButtonRef}
             onOpenMenu={() => setMobileOpen(true)}
+            resumeHealth={resumeHealth}
             viewer={viewer}
           />
           <WorkspaceSectionNav />

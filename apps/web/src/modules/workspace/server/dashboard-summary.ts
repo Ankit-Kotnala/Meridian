@@ -13,7 +13,10 @@ export type DashboardCount =
   { atLeast: boolean; kind: "count"; value: number } | { kind: "unavailable" };
 
 export type DashboardAttentionItem = {
+  action: string;
+  area: string;
   description: string;
+  due: string;
   href: string;
   id: string;
   label: string;
@@ -67,8 +70,19 @@ export type DashboardPrepare =
   | { followUpsDue: number; kind: "ready" }
   | { kind: "unavailable" };
 
+export type DashboardApplicationRow = {
+  appliedAt: string;
+  company: string | null;
+  id: string;
+  jobTitle: string;
+  nextStep: string;
+  stage: string;
+  stageLabel: string;
+};
+
 export type DashboardSummary = {
   activation: DashboardActivation;
+  applications: readonly DashboardApplicationRow[];
   attention: readonly DashboardAttentionItem[];
   attentionDegraded: boolean;
   growth: DashboardGrowth;
@@ -76,12 +90,14 @@ export type DashboardSummary = {
   pipeline: DashboardPipeline;
   prepare: DashboardPrepare;
   record: DashboardRecordCounts;
+  resumes: DashboardCount;
 };
 
 const UNAVAILABLE = { kind: "unavailable" } as const;
 
 const EMPTY_SUMMARY: DashboardSummary = {
   activation: { jobs: UNAVAILABLE, pendingImports: UNAVAILABLE },
+  applications: [],
   attention: [],
   attentionDegraded: true,
   growth: UNAVAILABLE,
@@ -95,7 +111,64 @@ const EMPTY_SUMMARY: DashboardSummary = {
     experiences: UNAVAILABLE,
     skills: UNAVAILABLE,
   },
+  resumes: UNAVAILABLE,
 };
+
+const STAGE_LABELS: Record<string, string> = {
+  applied: "Applied",
+  assessment: "Assessment",
+  interview: "Interview",
+  offer: "Offer",
+  preparing: "Preparing",
+  ready_to_apply: "Ready to apply",
+  recruiter_screen: "Recruiter screen",
+  rejected: "Rejected",
+  researching: "Researching",
+  saved: "Saved",
+  withdrawn: "Withdrawn",
+};
+
+function stageLabel(stage: string): string {
+  return STAGE_LABELS[stage] ?? stage;
+}
+
+function nextStepFor(
+  stage: string,
+  followUpAt: string,
+  deadline: string,
+): string {
+  if (stage === "rejected") return "Closed — not moving forward";
+  if (stage === "withdrawn") return "Closed — withdrawn";
+  if (stage === "offer") return "Respond to offer";
+  if (followUpAt) return `Follow up ${followUpAt}`;
+  if (deadline) return `Closes ${deadline}`;
+  if (stage === "saved" || stage === "researching") return "Not yet applied";
+  return "Awaiting next update";
+}
+
+function readApplicationRows(
+  payload: Record<string, unknown> | null,
+): readonly DashboardApplicationRow[] {
+  if (!payload) return [];
+  return asList(payload.data)
+    .map(asRecord)
+    .filter((row): row is Record<string, unknown> => row !== null)
+    .slice(0, 6)
+    .map((row) => {
+      const stage = asText(row.stage);
+      const followUpAt = asText(row.followUpAt);
+      const deadline = asText(row.applicationDeadline);
+      return {
+        appliedAt: asText(row.createdAt).slice(0, 10),
+        company: typeof row.company === "string" ? row.company : null,
+        id: asText(row.id),
+        jobTitle: asText(row.jobTitle) || "Untitled role",
+        nextStep: nextStepFor(stage, followUpAt, deadline),
+        stage,
+        stageLabel: stageLabel(stage),
+      };
+    });
+}
 
 const DEADLINE_HORIZON_DAYS = 14;
 
@@ -332,6 +405,12 @@ function readJobs(payload: Record<string, unknown> | null): DashboardCount {
   return counted(asList(payload.data).length, hasMore(payload));
 }
 
+/** `/documents` has no pagination envelope — it returns every owned document. */
+function readResumes(payload: Record<string, unknown> | null): DashboardCount {
+  if (!payload) return UNAVAILABLE;
+  return counted(asList(payload.data).length);
+}
+
 /** `job-catalog` has no `data`/`page` envelope — it returns `listings` directly. */
 function readJobHunt(payload: Record<string, unknown> | null): DashboardJobHunt {
   if (!payload) return UNAVAILABLE;
@@ -384,7 +463,10 @@ function attentionItems({
   if (pendingImports.kind === "count" && pendingImports.value > 0) {
     const total = pendingImports.value;
     items.push({
+      action: "Review",
+      area: "Profile",
       description: `${total} ${plural(total, "detail from your resume is", "details from your resume are")} waiting for you to accept or reject.`,
+      due: "—",
       href: "/career-profile/imports",
       id: "pending-imports",
       label: "Review imported resume details",
@@ -393,17 +475,23 @@ function attentionItems({
   }
   if (experiences.conflicts > 0) {
     items.push({
+      action: "Review",
+      area: "Profile",
       description: `Your profile has ${experiences.conflicts} ${plural(experiences.conflicts, "date conflict", "date conflicts")} between roles. Fixing them keeps your timeline accurate.`,
+      due: "Today",
       href: "/career-profile",
       id: "profile-conflicts",
-      label: "Fix overlapping role dates",
+      label: "Resolve overlapping role dates",
       tone: "danger",
     });
   }
   if (applications.pipeline.kind === "ready") {
     if (applications.deadlinesSoon > 0) {
       items.push({
+        action: "Open",
+        area: "Applications",
         description: `${applications.deadlinesSoon} open ${plural(applications.deadlinesSoon, "application closes", "applications close")} within ${DEADLINE_HORIZON_DAYS} days.`,
+        due: "This week",
         href: "/applications",
         id: "application-deadlines",
         label: "Deadlines approaching",
@@ -412,16 +500,22 @@ function attentionItems({
     }
     if (applications.followUpsDue > 0) {
       items.push({
+        action: "Open",
+        area: "Applications",
         description: `${applications.followUpsDue} ${plural(applications.followUpsDue, "application has", "applications have")} a follow-up date that has already passed.`,
+        due: "Overdue",
         href: "/applications",
         id: "application-follow-ups",
-        label: "Follow-ups are due",
+        label: "Follow up with recruiter",
         tone: "warning",
       });
     }
     if (applications.pipeline.openTasks > 0) {
       items.push({
+        action: "Open",
+        area: "Applications",
         description: `${applications.pipeline.openTasks} open ${plural(applications.pipeline.openTasks, "task is", "tasks are")} tracked across your applications.`,
+        due: "—",
         href: "/applications",
         id: "application-tasks",
         label: "Open application tasks",
@@ -431,7 +525,10 @@ function attentionItems({
   }
   if (evidence.notCitable > 0) {
     items.push({
+      action: "Review",
+      area: "Evidence",
       description: `${evidence.notCitable} ${plural(evidence.notCitable, "item needs", "items need")} stronger proof before you can cite ${plural(evidence.notCitable, "it", "them")} in applications.`,
+      due: "—",
       href: "/evidence",
       id: "evidence-confirmation",
       label: "Strengthen your evidence",
@@ -440,16 +537,22 @@ function attentionItems({
   }
   if (achievements.drafts > 0) {
     items.push({
+      action: "Edit",
+      area: "Resume",
       description: `${achievements.drafts} captured ${plural(achievements.drafts, "achievement is", "achievements are")} still a draft. Finish the details while they are fresh.`,
+      due: "—",
       href: "/achievement-inbox",
       id: "achievement-drafts",
-      label: "Finish achievement drafts",
+      label: "Add metrics to achievement drafts",
       tone: "info",
     });
   }
   if (achievements.ready > 0) {
     items.push({
+      action: "Add",
+      area: "Resume",
       description: `${achievements.ready} ${plural(achievements.ready, "achievement is", "achievements are")} ready to add to your profile as structured evidence.`,
+      due: "—",
       href: "/achievement-inbox",
       id: "achievement-ready",
       label: "Add ready achievements",
@@ -458,7 +561,10 @@ function attentionItems({
   }
   if (dueReminders > 0) {
     items.push({
+      action: "Open",
+      area: "Networking",
       description: `${dueReminders} networking ${plural(dueReminders, "follow-up is", "follow-ups are")} due today. You send every message yourself.`,
+      due: "Today",
       href: "/networking",
       id: "networking-reminders",
       label: "Networking follow-ups due",
@@ -467,7 +573,10 @@ function attentionItems({
   }
   if (skills.unconfirmed > 0) {
     items.push({
+      action: "Confirm",
+      area: "Profile",
       description: `${skills.unconfirmed} ${plural(skills.unconfirmed, "skill was", "skills were")} pulled from your resume and have not been confirmed by you yet.`,
+      due: "—",
       href: "/career-profile",
       id: "unconfirmed-skills",
       label: "Confirm your skills",
@@ -491,6 +600,7 @@ export async function dashboardSummary(): Promise<DashboardSummary> {
       achievementPayload,
       applicationPayload,
       developmentItemPayload,
+      documentPayload,
       evidencePayload,
       experiencePayload,
       jobCatalogPayload,
@@ -503,6 +613,7 @@ export async function dashboardSummary(): Promise<DashboardSummary> {
       readJson(workspaceSummaryPaths.achievements),
       readJson(workspaceSummaryPaths.applications),
       readJson(workspaceSummaryPaths.developmentItems),
+      readJson(workspaceSummaryPaths.documents),
       readJson(workspaceSummaryPaths.evidence),
       readJson(workspaceSummaryPaths.experiences),
       readJson(workspaceSummaryPaths.jobCatalog),
@@ -526,6 +637,7 @@ export async function dashboardSummary(): Promise<DashboardSummary> {
 
     return {
       activation: { jobs: readJobs(jobPayload), pendingImports },
+      applications: readApplicationRows(applicationPayload),
       attention: attentionItems({
         achievements,
         applications,
@@ -556,6 +668,7 @@ export async function dashboardSummary(): Promise<DashboardSummary> {
         experiences: experiences.count,
         skills: skills.count,
       },
+      resumes: readResumes(documentPayload),
     };
   } catch {
     return EMPTY_SUMMARY;

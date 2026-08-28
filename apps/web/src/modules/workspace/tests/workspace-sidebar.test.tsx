@@ -32,11 +32,11 @@ describe("WorkspaceSidebar", () => {
 
     expect(labels).toEqual([
       "Home",
-      "Hall of Fame",
-      "Resume Studio",
-      "Job Hunt",
-      "My Applications",
-      "Prepare",
+      "Profile",
+      "Resumes",
+      "Job search",
+      "Applications",
+      "Interview prep",
       "Growth",
     ]);
   });
@@ -46,18 +46,17 @@ describe("WorkspaceSidebar", () => {
 
     render(<WorkspaceSidebar />);
 
-    expect(screen.getByRole("link", { name: "Prepare" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
+    expect(
+      screen.getByRole("link", { name: "Interview prep" }),
+    ).toHaveAttribute("aria-current", "page");
   });
 
-  it("highlights Hall of Fame from an evidence route", () => {
+  it("highlights Profile from an evidence route", () => {
     navigation.pathname = "/evidence/00000000-0000-4000-8000-000000000001";
 
     render(<WorkspaceSidebar />);
 
-    expect(screen.getByRole("link", { name: "Hall of Fame" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Profile" })).toHaveAttribute(
       "aria-current",
       "page",
     );
@@ -73,7 +72,7 @@ describe("WorkspaceSidebar", () => {
       "page",
     );
     expect(
-      screen.getByRole("link", { name: "Resume Studio" }),
+      screen.getByRole("link", { name: "Resumes" }),
     ).toBeInTheDocument();
   });
 });
@@ -161,12 +160,12 @@ describe("workspace navigation model", () => {
 
   it("reports the section and tool for the top bar", () => {
     expect(resolveWorkspaceContext("/evidence")).toEqual({
-      group: "Hall of Fame",
+      group: "Profile",
       label: "Evidence Vault",
     });
     expect(resolveWorkspaceContext("/applications")).toEqual({
-      group: "My Applications",
-      label: "My Applications",
+      group: "Applications",
+      label: "Applications",
     });
     expect(resolveWorkspaceContext("/settings")).toEqual({
       group: "Account",

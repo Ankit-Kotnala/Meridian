@@ -198,7 +198,7 @@ export function ChangeStudioView() {
           </h2>
           <p className="mt-1 text-sm leading-6 text-muted">
             Use an ID from a real Job Match analysis or a previously saved
-            change set. Rezumi does not create placeholder opportunities.
+            change set. Meridian does not create placeholder opportunities.
           </p>
         </div>
         <form

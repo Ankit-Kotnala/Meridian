@@ -20,7 +20,7 @@ export function validatePassword(password: string): string | undefined {
 
 export function validateDisplayName(name: string): string | undefined {
   const normalized = name.trim();
-  if (!normalized) return "Enter the name you want Rezumi to use.";
+  if (!normalized) return "Enter the name you want Meridian to use.";
   if (normalized.length > 100) return "Use no more than 100 characters.";
   return undefined;
 }

@@ -19,7 +19,7 @@ type DisclosureRow = { key: string; value: string };
  * Answers filled in once and reused by the assisted-apply handoff pack
  * (`ApplicationPacksPanel`'s "Ready to submit" card). Voluntary disclosures
  * (e.g. disability self-identification) are the owner's own opt-in entries —
- * Rezumi never infers or auto-populates them.
+ * Meridian never infers or auto-populates them.
  */
 export function ApplicationProfilePanel() {
   const [loaded, setLoaded] = useState(false);
@@ -157,7 +157,7 @@ export function ApplicationProfilePanel() {
     <form className="space-y-5" onSubmit={(event) => void save(event)}>
       <p className="text-sm text-muted">
         Fill this in once. It answers the questions most job applications ask,
-        so &ldquo;Apply for me&rdquo; on Job Hunt can assemble a
+        so &ldquo;Apply for me&rdquo; on Job search can assemble a
         ready-to-submit pack — you still open it and submit it yourself.
       </p>
 
@@ -282,7 +282,7 @@ export function ApplicationProfilePanel() {
         <p className="mt-1 text-xs text-muted">
           Optional. Some applications ask about disability status, veteran
           status, or similar — add only what you choose to disclose yourself;
-          Rezumi never fills these in for you.
+          Meridian never fills these in for you.
         </p>
         <div className="mt-2 space-y-2">
           {disclosures.map((row, index) => (

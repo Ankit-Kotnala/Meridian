@@ -26,6 +26,7 @@ export const workspaceSummaryPaths = {
     sort: "updated_desc",
   }),
   developmentItems: path("/api/v1/career-growth/development-items"),
+  documents: path("/api/v1/documents"),
   dueReminders: withQuery("/api/v1/networking/reminders/due", { limit: 100 }),
   evidence: withQuery("/api/v1/evidence", { limit: 100 }),
   experiences: withQuery("/api/v1/experiences", { includeProvenance: false }),

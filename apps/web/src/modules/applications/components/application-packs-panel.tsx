@@ -363,9 +363,9 @@ export function ApplicationPacksPanel({
             </h2>
           </div>
           <p className="mt-2 text-sm text-muted">
-            Rezumi assembled this from your tailored resume and Application
+            Meridian assembled this from your tailored resume and Application
             Profile. Open the job posting and submit it yourself in your own
-            browser session — Rezumi never submits on your behalf.
+            browser session — Meridian never submits on your behalf.
           </p>
           <div className="mt-3 rounded-xl bg-surface p-4">
             <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">
@@ -397,7 +397,7 @@ export function ApplicationPacksPanel({
           Select only the drafts you need. Every factual claim must resolve to
           eligible evidence pinned to resume version{" "}
           {application.resumeVersionNumber}. Generated documents are drafts;
-          Rezumi does not submit or send them.
+          Meridian does not submit or send them.
         </p>
         <form
           className="mt-4"

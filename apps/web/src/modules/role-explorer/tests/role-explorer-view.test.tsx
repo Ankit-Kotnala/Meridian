@@ -106,7 +106,7 @@ const analysis: RoleReadiness = {
   role,
   savedRoleId: savedRole.id,
   scoringDisclaimer:
-    "Rezumi scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.",
+    "Meridian scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.",
   summary:
     "Product Manager readiness is based on 1 demonstrated competency and 0 gaps.",
   taxonomyVersion: "rezumi-seed-roles/2026-07-19",

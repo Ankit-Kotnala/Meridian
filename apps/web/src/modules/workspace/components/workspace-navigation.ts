@@ -2,15 +2,16 @@ import {
   Archive,
   BarChart3,
   BookOpenCheck,
-  ClipboardList,
+  Briefcase,
+  Calendar,
   FileDiff,
-  FileHeart,
-  LayoutDashboard,
+  FileText,
+  Home,
   Network,
   NotebookPen,
+  Search,
   Settings,
   ShieldCheck,
-  Target,
   TrendingUp,
   UserRound,
   UserRoundCheck,
@@ -43,7 +44,7 @@ export type WorkspaceSection = {
 export const workspaceSections: readonly WorkspaceSection[] = [
   {
     href: "/dashboard",
-    icon: LayoutDashboard,
+    icon: Home,
     id: "home",
     label: "Home",
     routes: ["/dashboard"],
@@ -53,7 +54,7 @@ export const workspaceSections: readonly WorkspaceSection[] = [
     href: "/career-profile",
     icon: UserRound,
     id: "career-record",
-    label: "Hall of Fame",
+    label: "Profile",
     routes: ["/career-profile", "/evidence", "/achievement-inbox"],
     tools: [
       { href: "/career-profile", icon: UserRound, label: "Profile" },
@@ -72,33 +73,33 @@ export const workspaceSections: readonly WorkspaceSection[] = [
   },
   {
     href: "/resume-health/account",
-    icon: FileHeart,
+    icon: FileText,
     id: "resume-studio",
-    label: "Resume Studio",
+    label: "Resumes",
     routes: ["/resume-health", "/resume-builder", "/change-studio"],
     tools: [],
   },
   {
     href: "/job-match",
-    icon: Target,
+    icon: Search,
     id: "opportunities",
-    label: "Job Hunt",
+    label: "Job search",
     routes: ["/job-match", "/role-explorer"],
     tools: [],
   },
   {
     href: "/applications",
-    icon: ClipboardList,
+    icon: Briefcase,
     id: "applications",
-    label: "My Applications",
+    label: "Applications",
     routes: ["/applications"],
     tools: [],
   },
   {
     href: "/interview-prep",
-    icon: BookOpenCheck,
+    icon: Calendar,
     id: "prepare",
-    label: "Prepare",
+    label: "Interview prep",
     routes: ["/interview-prep", "/networking"],
     tools: [
       {
@@ -180,5 +181,5 @@ export function resolveWorkspaceContext(pathname: string) {
   );
   return utility
     ? { group: "Account", label: utility.label }
-    : { group: "Workspace", label: "Rezumi" };
+    : { group: "Workspace", label: "Meridian" };
 }

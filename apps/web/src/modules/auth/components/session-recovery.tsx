@@ -48,7 +48,7 @@ export function SessionRecovery() {
           Restoring your secure session
         </h1>
         <p aria-live="polite" className="mt-2 text-sm leading-6 text-muted">
-          Rezumi is checking your signed-in session before showing private
+          Meridian is checking your signed-in session before showing private
           account information.
         </p>
       </div>

@@ -25,7 +25,7 @@ const scenarioSteps = [
   },
   {
     description:
-      "Rezumi can propose a change, but the original, reason, evidence, and requirement stay visible.",
+      "Meridian can propose a change, but the original, reason, evidence, and requirement stay visible.",
     icon: GitCompareArrows,
     label: "Review the proposed change",
   },
@@ -49,7 +49,7 @@ export function DashboardOverview() {
             Good morning, Jordan Lee
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
-            Jordan is a fictional persona. This guided view explains how Rezumi
+            Jordan is a fictional persona. This guided view explains how Meridian
             connects career facts, evidence, requirements, and controlled
             outputs without presenting invented performance data.
           </p>
@@ -147,7 +147,7 @@ export function DashboardOverview() {
           </h2>
           <div>
             <p className="text-sm leading-7 text-muted">
-              Rezumi measurements are internal, explainable decision-support
+              Meridian measurements are internal, explainable decision-support
               signals. They are not scores provided by an employer or applicant
               tracking system, hiring probabilities, or outcome guarantees.
             </p>

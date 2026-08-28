@@ -507,7 +507,7 @@ export function InterviewPrepView() {
             Refresh
           </Button>
         }
-        description="Build evidence-linked STAR stories, practice grounded questions, keep private reflections, and review follow-up drafts. Rezumi never sends a message or invents a missing fact."
+        description="Build evidence-linked STAR stories, practice grounded questions, keep private reflections, and review follow-up drafts. Meridian never sends a message or invents a missing fact."
         eyebrow="Create and prepare"
         title="Interview Prep"
       />

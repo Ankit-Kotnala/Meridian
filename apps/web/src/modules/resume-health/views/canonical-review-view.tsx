@@ -604,7 +604,7 @@ export function CanonicalReviewView({
     <div className="space-y-5 py-5">
       {canonical.sections.length === 0 ? (
         <EmptyState
-          description="Rezumi could not identify reliable structured sections. Review the plain text and try a cleaner source document."
+          description="Meridian could not identify reliable structured sections. Review the plain text and try a cleaner source document."
           title="No structured sections found"
         />
       ) : (
@@ -1141,7 +1141,7 @@ export function CanonicalReviewView({
       <header className="mb-6">
         <p className="eyebrow">Parse review</p>
         <h1 className="mt-2 text-2xl font-black tracking-[-0.035em] text-foreground sm:text-3xl">
-          Review what Rezumi extracted
+          Review what Meridian extracted
         </h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
           Check uncertain fields from {document.displayFilename}. Saving creates

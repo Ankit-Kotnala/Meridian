@@ -253,7 +253,7 @@ export function JobMatchView() {
       const resumes = await listResumesForApply();
       if (resumes.length === 0) {
         setFailure(
-          "Build a resume in Resume Studio first — applying needs a tailored resume version.",
+          "Build a resume in Resumes first — applying needs a tailored resume version.",
         );
         return;
       }
@@ -266,7 +266,7 @@ export function JobMatchView() {
       );
       await generateAssistedApplyPack(application.id);
       setSuccess(
-        `${job.title}: application pack ready using "${resume.title}". Open My Applications to review and submit it yourself — Rezumi never submits for you.`,
+        `${job.title}: application pack ready using "${resume.title}". Open Applications to review and submit it yourself — Meridian never submits for you.`,
       );
     } catch (error) {
       setFailure(

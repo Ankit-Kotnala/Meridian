@@ -125,12 +125,12 @@ const outputs = [
 
 const faqs = [
   [
-    "Does Rezumi know an employer's ATS score?",
-    "No. Rezumi uses internal, explainable measurements for specific questions. They are not employer or applicant-tracking-system scores and do not guarantee outcomes.",
+    "Does Meridian know an employer's ATS score?",
+    "No. Meridian uses internal, explainable measurements for specific questions. They are not employer or applicant-tracking-system scores and do not guarantee outcomes.",
   ],
   [
-    "Will Rezumi invent stronger achievements?",
-    "No. If a useful detail is missing, Rezumi asks for it. Unsupported evidence is not generation input, and numbers need confirmed or independently verified support.",
+    "Will Meridian invent stronger achievements?",
+    "No. If a useful detail is missing, Meridian asks for it. Unsupported evidence is not generation input, and numbers need confirmed or independently verified support.",
   ],
   [
     "Do I need a resume to start?",
@@ -138,7 +138,7 @@ const faqs = [
   ],
   [
     "Is this a production service?",
-    "Not yet. Rezumi is a technical product preview. Public legal notices, support channels, and commercial plans remain launch requirements.",
+    "Not yet. Meridian is a technical product preview. Public legal notices, support channels, and commercial plans remain launch requirements.",
   ],
 ] as const;
 
@@ -170,7 +170,7 @@ function ProductWorkspacePreview() {
               <span className="grid size-6 place-items-center rounded-md bg-white/10">
                 <Layers3 aria-hidden="true" className="size-3.5" />
               </span>
-              Rezumi
+              Meridian
             </div>
             <div className="mt-7">
               {["Overview", "Career record", "Evidence", "Opportunities"].map(
@@ -443,7 +443,7 @@ export function LandingPage() {
                   One source of truth. Every workflow downstream.
                 </h2>
                 <p className="mt-5 text-sm leading-7 text-muted">
-                  Rezumi separates facts, evidence, context, and generated
+                  Meridian separates facts, evidence, context, and generated
                   wording so each layer can be inspected without corrupting the
                   others.
                 </p>
@@ -582,7 +582,7 @@ export function LandingPage() {
               </div>
             </div>
             <p className="mx-auto mt-5 max-w-3xl text-center text-xs leading-5 text-muted">
-              Any readiness measurement shown in Rezumi is an internal,
+              Any readiness measurement shown in Meridian is an internal,
               explainable aid. It is not an employer or
               applicant-tracking-system score, hiring probability, or guarantee.
             </p>

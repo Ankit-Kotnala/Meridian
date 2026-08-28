@@ -36,7 +36,6 @@ export default async function DashboardPage() {
       onboardingComplete={complete}
       resumeHealth={resumeHealth}
       summary={summary}
-      userId={user.id}
     />
   );
 }

@@ -54,7 +54,7 @@ export function ProfileSettings() {
       String(form.get(name) ?? "").trim() || null;
     const displayName = String(form.get("displayName") ?? "").trim();
     if (!displayName) {
-      setFailure("Enter the name you want Rezumi to use.");
+      setFailure("Enter the name you want Meridian to use.");
       return;
     }
     setSaving(true);

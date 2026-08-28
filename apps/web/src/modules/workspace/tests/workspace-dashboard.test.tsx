@@ -9,6 +9,7 @@ const unavailable = { kind: "unavailable" } as const;
 function summary(overrides: Partial<DashboardSummary> = {}): DashboardSummary {
   return {
     activation: { jobs: unavailable, pendingImports: unavailable },
+    applications: [],
     attention: [],
     attentionDegraded: false,
     growth: unavailable,
@@ -22,6 +23,7 @@ function summary(overrides: Partial<DashboardSummary> = {}): DashboardSummary {
       experiences: unavailable,
       skills: unavailable,
     },
+    resumes: unavailable,
     ...overrides,
   };
 }
@@ -31,67 +33,11 @@ function count(value: number, atLeast = false) {
 }
 
 describe("real workspace dashboard", () => {
-  it("renders account state and an honest empty resume view without metrics", () => {
+  it("renders stat cards without inventing metrics", () => {
     render(<WorkspaceDashboard displayName="Alex Morgan" onboardingComplete />);
 
-    expect(
-      screen.getByRole("heading", {
-        name: /Add your work history or upload a resume/i,
-      }),
-    ).toBeVisible();
-    expect(
-      screen.getByRole("heading", { name: "No resume on file yet" }),
-    ).toBeVisible();
-    expect(screen.getAllByText(/Upload a PDF or DOCX/i).length).toBeGreaterThan(
-      0,
-    );
-    expect(screen.queryByText(/ATS score/i)).not.toBeInTheDocument();
-  });
-
-  it("renders a persisted report summary without demo metrics", () => {
-    render(
-      <WorkspaceDashboard
-        displayName="Alex Morgan"
-        onboardingComplete
-        resumeHealth={{
-          analysisId: "00000000-0000-4000-8000-000000000030",
-          disclaimer: "Internal measure. Not an employer score.",
-          documentId: "00000000-0000-4000-8000-000000000031",
-          filename: "fictional.pdf",
-          kind: "report",
-          score: 73,
-          scoreBand: "developing",
-          snapshotId: "00000000-0000-4000-8000-000000000032",
-        }}
-      />,
-    );
-    expect(
-      screen.getByRole("img", { name: "Resume Health Score: 73/100" }),
-    ).toBeVisible();
-    expect(
-      screen.getByText("Internal measure. Not an employer score."),
-    ).toBeVisible();
-    expect(
-      screen.getByRole("link", { name: /open full report/i }),
-    ).toHaveAttribute(
-      "href",
-      "/resume-health/account/report/00000000-0000-4000-8000-000000000030",
-    );
-  });
-
-  it("renders an explicit failure state when persisted resume data is unavailable", () => {
-    render(
-      <WorkspaceDashboard
-        displayName="Alex Morgan"
-        onboardingComplete
-        resumeHealth={{ kind: "error" }}
-      />,
-    );
-
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "Could not load resume status",
-    );
-    expect(screen.getByText(/Nothing was changed/i)).toBeVisible();
+    const overview = screen.getByRole("list", { name: "Home overview" });
+    expect(within(overview).getAllByLabelText("Unavailable").length).toBe(4);
   });
 
   it("shows persisted record counts and marks unavailable sections explicitly", () => {
@@ -111,17 +57,13 @@ describe("real workspace dashboard", () => {
       />,
     );
 
-    const records = screen.getByRole("region", { name: "Your profile at a glance" });
+    const overview = screen.getByRole("list", { name: "Home overview" });
     expect(
-      within(records).getByRole("link", { name: /Roles/ }),
+      within(overview).getByText("Roles").closest(".stat-card-tile"),
     ).toHaveTextContent("4");
     expect(
-      within(records).getByRole("link", { name: /Evidence/ }),
-    ).toHaveTextContent("100+");
-    expect(within(records).getByLabelText("Unavailable")).toBeVisible();
-    expect(
-      within(records).getByText(/Some counts could not be loaded/),
-    ).toBeVisible();
+      within(overview).getByText("Skills").closest(".stat-card-tile"),
+    ).toHaveTextContent("—");
   });
 
   it("lists review items that link to the place where the user decides", () => {
@@ -132,7 +74,10 @@ describe("real workspace dashboard", () => {
         summary={summary({
           attention: [
             {
+              action: "Review",
+              area: "Evidence",
               description: "2 evidence records are inferred or unsupported.",
+              due: "—",
               href: "/evidence",
               id: "evidence-confirmation",
               label: "Confirm evidence before it is cited",
@@ -144,9 +89,10 @@ describe("real workspace dashboard", () => {
     );
 
     expect(
-      screen.getByRole("link", {
-        name: /Confirm evidence before it is cited/,
-      }),
+      screen.getByText("Confirm evidence before it is cited"),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Review" }),
     ).toHaveAttribute("href", "/evidence");
   });
 
@@ -194,7 +140,7 @@ describe("real workspace dashboard", () => {
     );
 
     const pipeline = screen.getByRole("region", {
-      name: "Your applications",
+      name: "Application pipeline",
     });
     expect(
       within(pipeline).getByText(
@@ -212,42 +158,6 @@ describe("real workspace dashboard", () => {
     ).toBeVisible();
   });
 
-  it("prioritizes starting the career record when no experience exists yet", () => {
-    render(
-      <WorkspaceDashboard
-        displayName="Alex Morgan"
-        onboardingComplete
-        resumeHealth={{
-          analysisId: "00000000-0000-4000-8000-000000000030",
-          disclaimer: "Internal measure. Not an employer score.",
-          documentId: "00000000-0000-4000-8000-000000000031",
-          filename: "fictional.pdf",
-          kind: "report",
-          score: 73,
-          scoreBand: "developing",
-          snapshotId: "00000000-0000-4000-8000-000000000032",
-        }}
-        summary={summary({
-          record: {
-            achievements: count(0),
-            evidence: count(0),
-            evidenceConfirmed: count(0),
-            experiences: count(0),
-            skills: count(0),
-          },
-        })}
-      />,
-    );
-
-    expect(
-      screen.getByRole("heading", {
-        name: "Add your resume details to your profile",
-      }),
-    ).toBeVisible();
-    expect(
-      screen.getByRole("link", { name: /View my profile/ }),
-    ).toHaveAttribute("href", "/career-profile");
-  });
 });
 
 describe("workspace activation gate", () => {
@@ -280,10 +190,10 @@ describe("workspace activation gate", () => {
       screen.getByRole("link", { name: /Build it manually instead/ }),
     ).toHaveAttribute("href", "/career-profile");
     expect(
-      screen.queryByRole("region", { name: "Your profile at a glance" }),
+      screen.queryByRole("list", { name: "Home overview" }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("region", { name: "Your applications" }),
+      screen.queryByRole("region", { name: "Application pipeline" }),
     ).not.toBeInTheDocument();
   });
 
@@ -310,7 +220,7 @@ describe("workspace activation gate", () => {
       }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("region", { name: "Your profile at a glance" }),
+      screen.getByRole("list", { name: "Home overview" }),
     ).toBeVisible();
   });
 
@@ -332,7 +242,7 @@ describe("workspace activation gate", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Finish setting up your account" }),
+      screen.getByRole("list", { name: "Home overview" }),
     ).toBeVisible();
   });
 

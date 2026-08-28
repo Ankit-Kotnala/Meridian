@@ -84,7 +84,7 @@ export function AccountResumeHealthView() {
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="font-display text-[clamp(1.5rem,2.5vw,1.875rem)] font-semibold tracking-[-0.03em] text-foreground">
-            Resume Studio
+            Resumes
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
             Build, analyze, and improve your resume with explainable internal
@@ -172,7 +172,7 @@ export function AccountResumeHealthView() {
           className="text-base font-bold text-foreground"
           id="benefits-heading"
         >
-          Why use Rezumi Resume Studio?
+          Why use Meridian Resumes?
         </h2>
         <ul className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {BENEFITS.map(({ description, icon: Icon, title }) => (

@@ -155,7 +155,7 @@ export function DashboardActivity({
       className="workspace-panel min-w-0"
     >
       <div className="workspace-panel-header">
-        <h2 id="recent-activity-heading">What happened recently</h2>
+        <h2 id="recent-activity-heading">Recent activity</h2>
       </div>
 
       {items.length === 0 ? (
