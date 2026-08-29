@@ -17,14 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
-        with:
-          version: 11.14.0
-          run_install: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-          cache: pnpm
+          cache: npm
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: "0.11.21"
@@ -32,14 +28,14 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.13"
-      - run: pnpm install --frozen-lockfile
-      - run: uv sync --frozen --package rezumi-api
-      - run: pnpm contracts:check
-      - run: pnpm format:check
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm test
-      - run: pnpm build
+      - run: npm ci
+      - run: uv sync --project backend --frozen --package rezumi-api
+      - run: npm run contracts:check
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run build
 
   api:
     runs-on: ubuntu-latest
@@ -69,25 +65,25 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.13"
-      - run: uv lock --check
-      - run: uv sync --frozen --all-packages --all-groups
-      - run: cd packages/backend && uv run --package rezumi-backend ruff format --check .
-      - run: cd packages/backend && uv run --package rezumi-backend ruff check .
-      - run: cd packages/backend && uv run --package rezumi-backend mypy
-      - run: cd packages/backend && uv run --package rezumi-backend pytest tests/architecture tests/unit
-      - run: cd apps/api && uv run ruff format --check .
-      - run: cd apps/api && uv run ruff check .
-      - run: cd apps/api && uv run mypy
-      - run: cd apps/api && uv run pytest
-      - run: uv run --package rezumi-api ruff format --config apps/api/pyproject.toml --check packages/contracts/scripts/export_openapi.py
-      - run: uv run --package rezumi-api ruff check --config apps/api/pyproject.toml packages/contracts/scripts/export_openapi.py
-      - run: test "$(uv run --package rezumi-backend alembic -c packages/backend/alembic.ini heads | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')" = "20260731_0014 (head)"
-      - run: uv run --package rezumi-backend alembic -c packages/backend/alembic.ini upgrade head
-      - run: uv run --package rezumi-backend alembic -c packages/backend/alembic.ini downgrade 20260724_0009
-      - run: uv run --package rezumi-backend alembic -c packages/backend/alembic.ini upgrade head
-      - run: test "$(uv run --package rezumi-backend alembic -c packages/backend/alembic.ini current | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')" = "20260731_0014 (head)"
-      - run: cd packages/backend && uv run --package rezumi-backend pytest tests/integration
-      - run: uv run --package rezumi-api python -c "from rezumi_api.main import app; assert app.openapi()"
+      - run: uv lock --project backend --check
+      - run: uv sync --project backend --frozen --all-packages --all-groups
+      - run: cd backend/core && uv run --package rezumi-backend ruff format --check .
+      - run: cd backend/core && uv run --package rezumi-backend ruff check .
+      - run: cd backend/core && uv run --package rezumi-backend mypy
+      - run: cd backend/core && uv run --package rezumi-backend pytest tests/architecture tests/unit
+      - run: cd backend/api && uv run ruff format --check .
+      - run: cd backend/api && uv run ruff check .
+      - run: cd backend/api && uv run mypy
+      - run: cd backend/api && uv run pytest
+      - run: uv run --project backend --package rezumi-api ruff format --config backend/api/pyproject.toml --check shared/contracts/scripts/export_openapi.py
+      - run: uv run --project backend --package rezumi-api ruff check --config backend/api/pyproject.toml shared/contracts/scripts/export_openapi.py
+      - run: test "$(uv run --project backend --package rezumi-backend alembic -c backend/core/alembic.ini heads | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')" = "20260731_0014 (head)"
+      - run: uv run --project backend --package rezumi-backend alembic -c backend/core/alembic.ini upgrade head
+      - run: uv run --project backend --package rezumi-backend alembic -c backend/core/alembic.ini downgrade 20260724_0009
+      - run: uv run --project backend --package rezumi-backend alembic -c backend/core/alembic.ini upgrade head
+      - run: test "$(uv run --project backend --package rezumi-backend alembic -c backend/core/alembic.ini current | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')" = "20260731_0014 (head)"
+      - run: cd backend/core && uv run --package rezumi-backend pytest tests/integration
+      - run: uv run --project backend --package rezumi-api python -c "from rezumi_api.main import app; assert app.openapi()"
 
   worker:
     runs-on: ubuntu-latest
@@ -100,29 +96,25 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.13"
-      - run: uv sync --frozen --package rezumi-worker --all-groups
-      - run: cd apps/worker && uv run ruff format --check .
-      - run: cd apps/worker && uv run ruff check .
-      - run: cd apps/worker && uv run mypy
-      - run: cd apps/worker && uv run pytest
-      - run: uv run --package rezumi-worker python -c "from rezumi_worker.app import celery_app; assert celery_app.main == 'rezumi_worker'"
+      - run: uv sync --project backend --frozen --package rezumi-worker --all-groups
+      - run: cd backend/worker && uv run ruff format --check .
+      - run: cd backend/worker && uv run ruff check .
+      - run: cd backend/worker && uv run mypy
+      - run: cd backend/worker && uv run pytest
+      - run: uv run --project backend --package rezumi-worker python -c "from rezumi_worker.app import celery_app; assert celery_app.main == 'rezumi_worker'"
 
   browser-smoke:
     runs-on: ubuntu-latest
     needs: [web-and-contracts]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
-        with:
-          version: 11.14.0
-          run_install: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @rezumi/web exec playwright install --with-deps chromium
-      - run: pnpm test:e2e
+          cache: npm
+      - run: npm ci
+      - run: npm exec --workspace=@rezumi/web -- playwright install --with-deps chromium
+      - run: npm run test:e2e
 
   resume-health-e2e:
     runs-on: ubuntu-latest
@@ -130,14 +122,10 @@ jobs:
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
-        with:
-          version: 11.14.0
-          run_install: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-          cache: pnpm
+          cache: npm
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: "0.11.21"
@@ -146,9 +134,9 @@ jobs:
         with:
           python-version: "3.13"
       - run: cp .env.example .env
-      - run: pnpm install --frozen-lockfile
-      - run: uv sync --frozen --all-packages --all-groups
-      - run: pnpm --filter @rezumi/web exec playwright install --with-deps chromium
+      - run: npm ci
+      - run: uv sync --project backend --frozen --all-packages --all-groups
+      - run: npm exec --workspace=@rezumi/web -- playwright install --with-deps chromium
       - name: Run the isolated authentication and Resume Health journeys
         run: REZUMI_E2E_PHASE=2 sh tests/e2e/run-compose.sh
 
@@ -158,14 +146,10 @@ jobs:
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
-        with:
-          version: 11.14.0
-          run_install: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-          cache: pnpm
+          cache: npm
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: "0.11.21"
@@ -174,9 +158,9 @@ jobs:
         with:
           python-version: "3.13"
       - run: cp .env.example .env
-      - run: pnpm install --frozen-lockfile
-      - run: uv sync --frozen --all-packages --all-groups
-      - run: pnpm --filter @rezumi/web exec playwright install --with-deps chromium
+      - run: npm ci
+      - run: uv sync --project backend --frozen --all-packages --all-groups
+      - run: npm exec --workspace=@rezumi/web -- playwright install --with-deps chromium
       - name: Run the isolated Phase 3 Career Record journey suite
         run: REZUMI_E2E_PHASE=3 sh tests/e2e/run-compose.sh
 
@@ -186,14 +170,10 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
-        with:
-          version: 11.14.0
-          run_install: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-          cache: pnpm
+          cache: npm
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: "0.11.21"
@@ -202,9 +182,9 @@ jobs:
         with:
           python-version: "3.13"
       - run: cp .env.example .env
-      - run: pnpm install --frozen-lockfile
-      - run: uv sync --frozen --all-packages --all-groups
-      - run: pnpm --filter @rezumi/web exec playwright install --with-deps chromium
+      - run: npm ci
+      - run: uv sync --project backend --frozen --all-packages --all-groups
+      - run: npm exec --workspace=@rezumi/web -- playwright install --with-deps chromium
       - name: Run the isolated Phase 4 Role Explorer journey suite
         run: REZUMI_E2E_PHASE=4 sh tests/e2e/run-compose.sh
 
@@ -214,14 +194,10 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
-        with:
-          version: 11.14.0
-          run_install: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-          cache: pnpm
+          cache: npm
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: "0.11.21"
@@ -230,9 +206,9 @@ jobs:
         with:
           python-version: "3.13"
       - run: cp .env.example .env
-      - run: pnpm install --frozen-lockfile
-      - run: uv sync --frozen --all-packages --all-groups
-      - run: pnpm --filter @rezumi/web exec playwright install --with-deps chromium
+      - run: npm ci
+      - run: uv sync --project backend --frozen --all-packages --all-groups
+      - run: npm exec --workspace=@rezumi/web -- playwright install --with-deps chromium
       - name: Run the isolated Phase 5 Job Match journey suite
         run: REZUMI_E2E_PHASE=5 sh tests/e2e/run-compose.sh
 
@@ -242,14 +218,10 @@ jobs:
     timeout-minutes: 50
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
-        with:
-          version: 11.14.0
-          run_install: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-          cache: pnpm
+          cache: npm
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: "0.11.21"
@@ -258,9 +230,9 @@ jobs:
         with:
           python-version: "3.13"
       - run: cp .env.example .env
-      - run: pnpm install --frozen-lockfile
-      - run: uv sync --frozen --all-packages --all-groups
-      - run: pnpm --filter @rezumi/web exec playwright install --with-deps chromium
+      - run: npm ci
+      - run: uv sync --project backend --frozen --all-packages --all-groups
+      - run: npm exec --workspace=@rezumi/web -- playwright install --with-deps chromium
       - name: Run the isolated Phase 6 Change Studio journey suite
         run: REZUMI_E2E_PHASE=6 sh tests/e2e/run-compose.sh
 
@@ -270,14 +242,10 @@ jobs:
     timeout-minutes: 55
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
-        with:
-          version: 11.14.0
-          run_install: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-          cache: pnpm
+          cache: npm
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: "0.11.21"
@@ -286,9 +254,9 @@ jobs:
         with:
           python-version: "3.13"
       - run: cp .env.example .env
-      - run: pnpm install --frozen-lockfile
-      - run: uv sync --frozen --all-packages --all-groups
-      - run: pnpm --filter @rezumi/web exec playwright install --with-deps chromium
+      - run: npm ci
+      - run: uv sync --project backend --frozen --all-packages --all-groups
+      - run: npm exec --workspace=@rezumi/web -- playwright install --with-deps chromium
       - name: Run the isolated Phase 7 Resume Builder journey suite
         run: REZUMI_E2E_PHASE=7 sh tests/e2e/run-compose.sh
 
@@ -298,14 +266,10 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
-        with:
-          version: 11.14.0
-          run_install: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-          cache: pnpm
+          cache: npm
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: "0.11.21"
@@ -314,9 +278,9 @@ jobs:
         with:
           python-version: "3.13"
       - run: cp .env.example .env
-      - run: pnpm install --frozen-lockfile
-      - run: uv sync --frozen --all-packages --all-groups
-      - run: pnpm --filter @rezumi/web exec playwright install --with-deps chromium
+      - run: npm ci
+      - run: uv sync --project backend --frozen --all-packages --all-groups
+      - run: npm exec --workspace=@rezumi/web -- playwright install --with-deps chromium
       - name: Run the isolated Phase 8 Application Workspace journey suite
         run: REZUMI_E2E_PHASE=8 sh tests/e2e/run-compose.sh
 
@@ -326,14 +290,10 @@ jobs:
     timeout-minutes: 70
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
-        with:
-          version: 11.14.0
-          run_install: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-          cache: pnpm
+          cache: npm
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: "0.11.21"
@@ -342,9 +302,9 @@ jobs:
         with:
           python-version: "3.13"
       - run: cp .env.example .env
-      - run: pnpm install --frozen-lockfile
-      - run: uv sync --frozen --all-packages --all-groups
-      - run: pnpm --filter @rezumi/web exec playwright install --with-deps chromium
+      - run: npm ci
+      - run: uv sync --project backend --frozen --all-packages --all-groups
+      - run: npm exec --workspace=@rezumi/web -- playwright install --with-deps chromium
       - name: Run the isolated Phase 9 career workspace journey suite
         run: REZUMI_E2E_PHASE=9 sh tests/e2e/run-compose.sh
 
@@ -357,24 +317,20 @@ jobs:
           docker run --rm --volume "$PWD:/repo:ro"
           ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
           dir /repo --config /repo/.gitleaks.toml --redact --exit-code 1
-      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
-        with:
-          version: 11.14.0
-          run_install: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
-          cache: pnpm
+          cache: npm
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.13"
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: "0.11.21"
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm audit --audit-level high
-      - run: uv sync --frozen --all-packages --all-groups
-      - run: uv run --package rezumi-api --with pip-audit==2.10.1 pip-audit
+      - run: npm ci
+      - run: npm audit --audit-level=high
+      - run: uv sync --project backend --frozen --all-packages --all-groups
+      - run: uv run --project backend --package rezumi-api --with pip-audit==2.10.1 pip-audit
 
   containers:
     runs-on: ubuntu-latest
@@ -382,24 +338,24 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: cp .env.example .env
-      - run: docker compose config --quiet
-      - run: docker compose build api worker web web-edge
+      - run: docker compose -f infra/compose.yaml --project-directory . config --quiet
+      - run: docker compose -f infra/compose.yaml --project-directory . build api worker web web-edge
       - name: Start the Compose platform
         run: |
-          if ! docker compose up --detach --wait --wait-timeout 300; then
-            docker compose ps --all
-            docker compose logs --no-color --tail 200
+          if ! docker compose -f infra/compose.yaml --project-directory . up --detach --wait --wait-timeout 300; then
+            docker compose -f infra/compose.yaml --project-directory . ps --all
+            docker compose -f infra/compose.yaml --project-directory . logs --no-color --tail 200
             exit 1
           fi
       - name: Verify the packaged Phase 10 migration path
         run: |
-          heads=$(docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini heads | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')
+          heads=$(docker compose -f infra/compose.yaml --project-directory . run --rm --no-deps api alembic -c backend/core/alembic.ini heads | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')
           printf '%s\n' "$heads"
           test "$heads" = "20260731_0014 (head)"
-          docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
-          docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini downgrade 20260724_0009
-          docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
-          current=$(docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini current | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')
+          docker compose -f infra/compose.yaml --project-directory . run --rm --no-deps api alembic -c backend/core/alembic.ini upgrade head
+          docker compose -f infra/compose.yaml --project-directory . run --rm --no-deps api alembic -c backend/core/alembic.ini downgrade 20260724_0009
+          docker compose -f infra/compose.yaml --project-directory . run --rm --no-deps api alembic -c backend/core/alembic.ini upgrade head
+          current=$(docker compose -f infra/compose.yaml --project-directory . run --rm --no-deps api alembic -c backend/core/alembic.ini current | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')
           printf '%s\n' "$current"
           test "$current" = "20260731_0014 (head)"
       - name: Probe the running platform
@@ -409,8 +365,8 @@ jobs:
           curl --fail --silent --show-error http://127.0.0.1:8000/ready
           curl --fail --silent --show-error http://127.0.0.1:8000/api/v1/meta
           curl --fail --silent --show-error http://127.0.0.1:8025/api/v1/info
-          docker compose exec -T worker celery --app rezumi_worker.app:celery_app inspect ping --timeout 5
-          scheduler_id=$(docker compose ps --quiet worker-scheduler)
+          docker compose -f infra/compose.yaml --project-directory . exec -T worker celery --app rezumi_worker.app:celery_app inspect ping --timeout 5
+          scheduler_id=$(docker compose -f infra/compose.yaml --project-directory . ps --quiet worker-scheduler)
           test -n "$scheduler_id"
           test "$(docker inspect --format '{{.State.Health.Status}}' "$scheduler_id")" = healthy
       - name: Scan API image for fixable high vulnerabilities
@@ -443,4 +399,4 @@ jobs:
           rezumi-web-edge:latest
           --config /etc/grype.yaml --fail-on high --only-fixed
       - if: always()
-        run: docker compose down --volumes --remove-orphans
+        run: docker compose -f infra/compose.yaml --project-directory . down --volumes --remove-orphans

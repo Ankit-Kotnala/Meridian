@@ -22,15 +22,15 @@ second contract authority and allow silent drift.
 
 Use one root uv workspace containing:
 
-- `apps/api`, the thin FastAPI HTTP delivery and composition application;
-- `apps/worker`, the thin Celery delivery and process application; and
-- `packages/backend`, the shared Python modular-monolith implementation.
+- `backend/api`, the thin FastAPI HTTP delivery and composition application;
+- `backend/worker`, the thin Celery delivery and process application; and
+- `backend/core`, the shared Python modular-monolith implementation.
 
 The workspace has one committed root `uv.lock`. Both deployables depend on
 `rezumi-backend`; the backend imports neither deployable, and the worker never
 imports the API.
 
-In Phase 0, `packages/backend/src/rezumi/foundation` owns only stable shared
+In Phase 0, `backend/core/src/rezumi/foundation` owns only stable shared
 database, migration, configuration, and structured-logging primitives. Alembic
 configuration and revision history live with this package. Product modules use
 `domain`, `application`, `infrastructure`, `api`, `tasks`, and tests when their
@@ -38,14 +38,14 @@ owning phase begins. Provider SDK adapters live under `rezumi.integrations`.
 Empty future module and integration trees are prohibited.
 
 FastAPI OpenAPI is the only wire-contract authority. A normalized OpenAPI artifact
-is committed under `packages/contracts/openapi`, and pinned generation produces
+is committed under `shared/contracts/openapi`, and pinned generation produces
 the TypeScript schema consumed by the package's typed `openapi-fetch` wrapper.
 Generated artifacts are never manually patched. CI must fail when exporting or
 regenerating changes the committed artifacts.
 
 Static architecture tests enforce forbidden backend imports and deployable
 dependency direction. Frontend lint or dependency checks keep route files thin,
-feature behavior under `apps/web/src/modules`, and generic UI in `packages/ui`.
+feature behavior under `frontend/web/src/modules`, and generic UI in `frontend/ui`.
 
 ## Consequences
 

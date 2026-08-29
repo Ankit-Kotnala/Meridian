@@ -1,0 +1,14 @@
+diff --git a/node_modules/@redocly/openapi-core/node_modules/minimatch/minimatch.js b/node_modules/@redocly/openapi-core/node_modules/minimatch/minimatch.js
+index 8545b3a..1dc6bde 100644
+--- a/node_modules/@redocly/openapi-core/node_modules/minimatch/minimatch.js
++++ b/node_modules/@redocly/openapi-core/node_modules/minimatch/minimatch.js
+@@ -16,7 +16,8 @@ minimatch.sep = path.sep
+ 
+ const GLOBSTAR = Symbol('globstar **')
+ minimatch.GLOBSTAR = GLOBSTAR
+-const expand = require('brace-expansion')
++const expansion = require('brace-expansion')
++const expand = expansion.expand || expansion
+ 
+ const plTypes = {
+   '!': { open: '(?:(?!(?:', close: '))[^/]*?)'},

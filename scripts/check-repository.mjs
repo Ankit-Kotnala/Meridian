@@ -2,7 +2,7 @@ import { readdir, readFile, stat } from "node:fs/promises";
 import { relative, resolve, sep } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
-const sourceRoots = ["apps/web/src", "packages/ui/src"];
+const sourceRoots = ["frontend/web/src", "frontend/ui/src"];
 const sourceExtensions = new Set([".js", ".jsx", ".mjs", ".ts", ".tsx"]);
 const forbiddenGenericSegments = new Set([
   "common",
@@ -52,19 +52,19 @@ function importViolations(path, specifier) {
     violations.push("WEB_GLOBAL_BUCKET");
   }
   if (
-    path.startsWith("apps/web/src/modules/") &&
+    path.startsWith("frontend/web/src/modules/") &&
     specifier.startsWith("@/app")
   ) {
     violations.push("MODULE_TO_ROUTE");
   }
   if (
-    path.startsWith("apps/web/src/shared/") &&
+    path.startsWith("frontend/web/src/shared/") &&
     (specifier.startsWith("@/app") || specifier.startsWith("@/modules"))
   ) {
     violations.push("SHARED_TO_PRODUCT");
   }
   if (
-    path.startsWith("packages/ui/src/") &&
+    path.startsWith("frontend/ui/src/") &&
     (specifier === "next" ||
       specifier.startsWith("next/") ||
       specifier.startsWith("@/") ||
@@ -80,17 +80,21 @@ function importViolations(path, specifier) {
 function verifyRuleProbes() {
   const probes = [
     [
-      "apps/web/src/modules/example/view.tsx",
+      "frontend/web/src/modules/example/view.tsx",
       "@/app/dashboard",
       "MODULE_TO_ROUTE",
     ],
     [
-      "apps/web/src/shared/example.ts",
+      "frontend/web/src/shared/example.ts",
       "@/modules/dashboard",
       "SHARED_TO_PRODUCT",
     ],
-    ["packages/ui/src/button.tsx", "next/link", "UI_TO_APPLICATION"],
-    ["apps/web/src/app/page.tsx", "@/components/legacy", "WEB_GLOBAL_BUCKET"],
+    ["frontend/ui/src/button.tsx", "next/link", "UI_TO_APPLICATION"],
+    [
+      "frontend/web/src/app/page.tsx",
+      "@/components/legacy",
+      "WEB_GLOBAL_BUCKET",
+    ],
   ];
   for (const [path, specifier, expected] of probes) {
     if (!importViolations(path, specifier).includes(expected)) {
@@ -102,7 +106,10 @@ function verifyRuleProbes() {
 verifyRuleProbes();
 
 const violations = [];
-for (const directory of ["apps/web/src/components", "apps/web/src/lib"]) {
+for (const directory of [
+  "frontend/web/src/components",
+  "frontend/web/src/lib",
+]) {
   const legacyFiles = (await filesBelow(directory)).filter((path) =>
     sourceExtensions.has(extension(path)),
   );
@@ -138,7 +145,7 @@ for (const sourceRoot of sourceRoots) {
   }
 }
 
-const apiRoot = "apps/api/src/rezumi_api";
+const apiRoot = "backend/api/src/rezumi_api";
 for (const absolute of await filesBelow(apiRoot)) {
   const path = portable(relative(root, absolute));
   const relativeApiPath = path.slice(apiRoot.length + 1);
@@ -161,23 +168,27 @@ const requiredWorkerTaskModules = [
   "resume_health.py",
 ];
 for (const filename of requiredWorkerTaskModules) {
-  const path = resolve(root, "apps/worker/src/rezumi_worker/tasks", filename);
+  const path = resolve(
+    root,
+    "backend/worker/src/rezumi_worker/tasks",
+    filename,
+  );
   try {
     if (!(await stat(path)).isFile()) throw new Error("not a file");
   } catch {
     violations.push(
-      `apps/worker/src/rezumi_worker/tasks/${filename}: required bounded task module is missing`,
+      `backend/worker/src/rezumi_worker/tasks/${filename}: required bounded task module is missing`,
     );
   }
 }
 try {
   if (
     (
-      await stat(resolve(root, "apps/worker/src/rezumi_worker/tasks.py"))
+      await stat(resolve(root, "backend/worker/src/rezumi_worker/tasks.py"))
     ).isFile()
   ) {
     violations.push(
-      "apps/worker/src/rezumi_worker/tasks.py: monolithic task module is forbidden",
+      "backend/worker/src/rezumi_worker/tasks.py: monolithic task module is forbidden",
     );
   }
 } catch {

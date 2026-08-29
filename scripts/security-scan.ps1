@@ -73,16 +73,16 @@ try {
         dir /repo --config /repo/.gitleaks.toml --redact --exit-code 1
     Assert-LastExitCode "Gitleaks"
 
-    pnpm audit --audit-level high
-    Assert-LastExitCode "pnpm audit"
+    npm audit --audit-level=high
+    Assert-LastExitCode "npm audit"
 
-    uv sync --frozen --all-packages --all-groups
+    uv sync --project backend --frozen --all-packages --all-groups
     Assert-LastExitCode "Python workspace dependency sync"
-    uv run --package rezumi-api --with pip-audit==2.10.1 pip-audit
+    uv run --project backend --package rezumi-api --with pip-audit==2.10.1 pip-audit
     Assert-LastExitCode "Python workspace pip-audit"
 
     foreach ($Service in @("api", "worker", "web", "web-edge")) {
-        docker compose build $Service
+        docker compose -f infra/compose.yaml --project-directory . build $Service
         Assert-LastExitCode "Application image build for $Service"
     }
 

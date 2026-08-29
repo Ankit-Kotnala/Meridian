@@ -11,19 +11,19 @@ The emotional goal is real: rejected candidates should see that their experience
 
 ## How your vision maps to the platform
 
-| Your idea | Rezumi approach | Phase | Status |
-| --- | --- | --- | --- |
-| Upload resume; check every detail | Resume Health parse + field review + health report | 2 | **Shipped** |
-| Pull LinkedIn/GitHub/cert links from resume | Parser stores declared links as personal facts | 3 | **Shipped** |
-| Visit those links and import achievements as evidence | Declared-link enrichment (`DeclaredProfileConnector`) | 11 | **In progress** |
-| LinkedIn profile scraping | **Out of scope** — LinkedIn prohibits automated collection (ADR 0019) | — | Rejected |
-| GitHub / public portfolio / cert pages | Public API or permitted HTTP read → user-reviewed proposals | 11 | **In progress** (GitHub + portfolio shipped) |
-| Scrape all jobs on the internet | Published ATS APIs + licensed feeds + paste/URL import | 12 | Planned |
-| Filter jobs to user's target role | Role Readiness + Job Match prioritizer | 4–5 | **Shipped** |
-| Store portal passwords; apply automatically | **Out of scope** — credential breach class + ToS (ADR 0019) | — | Rejected |
-| One-click apply with pre-filled answers | Application Profile + assisted handoff pack | 12 | Planned |
-| Market gap assessment | Role Readiness competency gaps (deterministic) | 4 | **Shipped** |
-| Guided upskilling path | Gap → `career_growth` learning items → evidence loop | 13 | Planned |
+| Your idea                                             | Rezumi approach                                                       | Phase | Status                                       |
+| ----------------------------------------------------- | --------------------------------------------------------------------- | ----- | -------------------------------------------- |
+| Upload resume; check every detail                     | Resume Health parse + field review + health report                    | 2     | **Shipped**                                  |
+| Pull LinkedIn/GitHub/cert links from resume           | Parser stores declared links as personal facts                        | 3     | **Shipped**                                  |
+| Visit those links and import achievements as evidence | Declared-link enrichment (`DeclaredProfileConnector`)                 | 11    | **In progress**                              |
+| LinkedIn profile scraping                             | **Out of scope** — LinkedIn prohibits automated collection (ADR 0019) | —     | Rejected                                     |
+| GitHub / public portfolio / cert pages                | Public API or permitted HTTP read → user-reviewed proposals           | 11    | **In progress** (GitHub + portfolio shipped) |
+| Scrape all jobs on the internet                       | Published ATS APIs + licensed feeds + paste/URL import                | 12    | Planned                                      |
+| Filter jobs to user's target role                     | Role Readiness + Job Match prioritizer                                | 4–5   | **Shipped**                                  |
+| Store portal passwords; apply automatically           | **Out of scope** — credential breach class + ToS (ADR 0019)           | —     | Rejected                                     |
+| One-click apply with pre-filled answers               | Application Profile + assisted handoff pack                           | 12    | Planned                                      |
+| Market gap assessment                                 | Role Readiness competency gaps (deterministic)                        | 4     | **Shipped**                                  |
+| Guided upskilling path                                | Gap → `career_growth` learning items → evidence loop                  | 13    | Planned                                      |
 
 ## Non-negotiable product rules (why we do not auto-scrape LinkedIn or auto-submit)
 
@@ -34,7 +34,7 @@ The emotional goal is real: rejected candidates should see that their experience
 
 ## Implementation phases (execution order)
 
-### Phase 11 — Declared-link evidence enrichment *(current)*
+### Phase 11 — Declared-link evidence enrichment _(current)_
 
 **Goal:** When a resume lists `github.com/you` or a public portfolio, Rezumi reads **only that declared URL**, extracts public achievements, and creates **achievement drafts + evidence** with source URL and excerpt. User confirms before anything is citable.
 

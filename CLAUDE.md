@@ -22,40 +22,41 @@ implemented vs. planned per phase — do not assume a module exists just because
 ## Repository layout
 
 ```text
-apps/
-  web/                 Next.js App Router UI (apps/web/src/app + src/modules/<feature>)
+backend/
   api/                 Thin FastAPI HTTP delivery; adapters under modules/<bounded_context>
+  core/                Shared Python modular monolith (rezumi.foundation + rezumi.modules.<feature>)
   worker/              Thin Celery delivery; task adapters under tasks/<bounded_context>.py
-packages/
-  backend/             Shared Python modular monolith (rezumi.foundation + rezumi.modules.<feature>)
-  contracts/           OpenAPI artifact, generated TS schema, typed openapi-fetch client
+frontend/
+  web/                 Next.js App Router UI (src/app + src/modules/<feature>)
   ui/                  Generic accessible React components (no product/route logic)
   design-tokens/       Shared visual tokens
   eslint-config/       Frontend lint + dependency-boundary rules (check-web-boundaries.mjs)
   typescript-config/   Shared strict TypeScript configuration
   test-fixtures/       Explicitly fictional fixtures only
+shared/
+  contracts/           OpenAPI artifact, generated TS schema, typed openapi-fetch client
 docs/                  Product, architecture, security, API, scoring, ADRs
 infra/                 Local container infrastructure (web-edge BFF, MinIO init)
 scripts/               Cross-platform local dev + phase verification scripts
 ```
 
-One root uv workspace (single lockfile) covers `apps/api`, `apps/worker`, and
-`packages/backend`. Both apps depend on the backend; the backend imports neither
-app, and the worker never imports the API. One root pnpm workspace (Turbo) covers
-the JS packages.
+One uv workspace rooted at `backend/` (single lockfile) covers `backend/api`,
+`backend/worker`, and `backend/core`. Both apps depend on the backend; the
+backend imports neither app, and the worker never imports the API. One root
+npm workspace (Turbo) covers the JS packages.
 
 ### Backend module shape
 
-Each `packages/backend/src/rezumi/modules/<feature>` follows a ports-and-adapters
+Each `backend/core/src/rezumi/modules/<feature>` follows a ports-and-adapters
 layout: `domain` (framework-free entities/rules), `application` (services/ports),
 `infrastructure` (SQLAlchemy repositories, providers implementing those ports),
-plus module-owned `api`/`tasks` where relevant. `apps/api` and `apps/worker` are
+plus module-owned `api`/`tasks` where relevant. `backend/api` and `backend/worker` are
 thin adapters that call into `application` services — they must not contain
 business rules or talk to another module's tables. Cross-module reads go through
 an explicit application service/query/event, never direct table access.
-Executable architecture tests (`packages/backend/tests/architecture`,
-`packages/eslint-config/check-web-boundaries.mjs`) enforce these boundaries —
-run them (`make test`, `pnpm lint`) after moving code across module lines.
+Executable architecture tests (`backend/core/tests/architecture`,
+`frontend/eslint-config/check-web-boundaries.mjs`) enforce these boundaries —
+run them (`make test`, `npm run lint`) after moving code across module lines.
 
 Existing bounded contexts: `identity`, `resume_health`, `career_record`,
 `role_readiness`, `job_match`, `change_studio`, `resume_builder`,
@@ -64,20 +65,20 @@ Existing bounded contexts: `identity`, `resume_health`, `career_record`,
 
 ### Frontend module shape
 
-Next.js route files under `apps/web/src/app` stay thin; product/domain UI and
-state live under `apps/web/src/modules/<feature>`; framework-neutral reusable UI
-lives in `packages/ui`. Feature modules must not deep-import another feature
+Next.js route files under `frontend/web/src/app` stay thin; product/domain UI and
+state live under `frontend/web/src/modules/<feature>`; framework-neutral reusable UI
+lives in `frontend/ui`. Feature modules must not deep-import another feature
 module or import route files, and `src/shared` must not import routes or feature
-modules — enforced by `pnpm architecture:check` (part of `pnpm lint`).
+modules — enforced by `npm run architecture:check` (part of `npm run lint`).
 
 ### Contracts
 
 FastAPI's OpenAPI output is the authoritative wire contract. The normalized
-artifact lives in `packages/contracts/openapi`; the generated TypeScript schema
+artifact lives in `shared/contracts/openapi`; the generated TypeScript schema
 and typed `openapi-fetch` client wrapper are generated from it. Never hand-edit
 generated contract files or add parallel handwritten wire models — regenerate
-instead (`pnpm contracts:generate`) and commit the result in the same change as
-any API schema change. `pnpm contracts:check` / `make contracts-check` fails CI
+instead (`npm run contracts:generate`) and commit the result in the same change as
+any API schema change. `npm run contracts:check` / `make contracts-check` fails CI
 on drift.
 
 ## Commands
@@ -90,14 +91,14 @@ installs pinned JS + Python deps and creates `.env` from `.env.example`.
 
 ```sh
 make dev              # attached: build + start full Compose stack
-pnpm local:up         # detached: build + start full stack, health-checked
-pnpm dev:web          # host Next.js w/ hot reload against backend containers
-pnpm dev:api          # host FastAPI w/ hot reload against dependency containers
-pnpm dev:worker       # host Celery worker against dependency containers
-pnpm local:rebuild:web       # rebuild web + web-edge images after a container-mode edit
-pnpm local:rebuild:backend   # rebuild api/worker/scheduler images
-pnpm local:smoke      # HTTP probes for web/API/Mailpit
-pnpm local:down       # stop containers, preserve volumes
+npm run local:up         # detached: build + start full stack, health-checked
+npm run dev:web          # host Next.js w/ hot reload against backend containers
+npm run dev:api          # host FastAPI w/ hot reload against dependency containers
+npm run dev:worker       # host Celery worker against dependency containers
+npm run local:rebuild:web       # rebuild web + web-edge images after a container-mode edit
+npm run local:rebuild:backend   # rebuild api/worker/scheduler images
+npm run local:smoke      # HTTP probes for web/API/Mailpit
+npm run local:down       # stop containers, preserve volumes
 ```
 
 Host hot-reload (`dev:web`/`dev:api`/`dev:worker`) reflects source edits
@@ -107,34 +108,34 @@ so rebuild the relevant image before testing a container-mode change.
 ### Quality gates (run narrowest first, then before claiming a task complete)
 
 ```sh
-make format-check     # pnpm format:check + ruff format --check (backend/api/worker)
-make lint             # pnpm lint (turbo + web boundary check) + ruff check
-make typecheck        # pnpm typecheck (turbo) + mypy (backend/api/worker)
-make test             # pnpm test (turbo + edge) + pytest (backend arch/unit, api, worker)
+make format-check     # npm run format:check + ruff format --check (backend/api/worker)
+make lint             # npm run lint (turbo + web boundary check) + ruff check
+make typecheck        # npm run typecheck (turbo) + mypy (backend/api/worker)
+make test             # npm run test (turbo + edge) + pytest (backend arch/unit, api, worker)
 make test-integration # docker compose up + alembic upgrade + health probes + celery ping
-make test-e2e         # pnpm test:e2e (Playwright, apps/web/e2e)
-make contracts-check  # uv lock --check + pnpm contracts:check (OpenAPI/TS drift)
+make test-e2e         # npm run test:e2e (Playwright, frontend/web/e2e)
+make contracts-check  # uv lock --project backend --check + npm run contracts:check (OpenAPI/TS drift)
 make verify           # contracts-check + format-check + lint + typecheck + test + build + compose-config + test-integration
 ```
 
 Per-workspace/single-suite commands:
 
 ```sh
-pnpm test:web                                            # apps/web vitest (all)
-pnpm --filter @rezumi/web test -- <pattern>             # vitest, filtered
-pnpm --filter @rezumi/web test:watch                    # vitest watch mode
-pnpm --filter @rezumi/ui test                            # packages/ui vitest
-pnpm test:api                                              # uv run pytest apps/api/tests
-pnpm test:worker                                           # uv run pytest apps/worker/tests
-pnpm test:backend                                          # uv run pytest packages/backend/tests/{architecture,unit}
-cd packages/backend && uv run pytest tests/unit/test_job_match_service.py -k some_case  # single backend test
-cd apps/api && uv run pytest tests/some_test.py::test_name                              # single API test
-pnpm test:e2e -- --grep "some journey"                      # single Playwright spec (from apps/web)
+npm run test:web                                            # frontend/web vitest (all)
+npm run test --workspace=@rezumi/web -- <pattern>          # vitest, filtered
+npm run test:watch --workspace=@rezumi/web                  # vitest watch mode
+npm run test --workspace=@rezumi/ui                          # frontend/ui vitest
+npm run test:api                                              # uv run pytest backend/api/tests
+npm run test:worker                                           # uv run pytest backend/worker/tests
+npm run test:backend                                          # uv run pytest backend/core/tests/{architecture,unit}
+cd backend/core && uv run pytest tests/unit/test_job_match_service.py -k some_case  # single backend test
+cd backend/api && uv run pytest tests/some_test.py::test_name                              # single API test
+npm run test:e2e --workspace=@rezumi/web -- --grep "some journey"  # single Playwright spec
 ```
 
 Backend integration tests (real PostgreSQL/Redis/MinIO/ClamAV) live in
-`packages/backend/tests/integration` and `apps/*/tests` integration marks; they
-require the dependency containers running (`pnpm local:deps`) and fail rather
+`backend/core/tests/integration` and `backend/{api,worker}/tests` integration marks; they
+require the dependency containers running (`npm run local:deps`) and fail rather
 than silently skip when their dependency URLs are absent — do not treat that as
 a passing/quarantined result.
 
@@ -149,11 +150,11 @@ numbered phase relevant to the module you're touching.
 ### Migrations
 
 ```sh
-make migrate          # alembic upgrade head (packages/backend/alembic.ini)
+make migrate          # alembic upgrade head (backend/core/alembic.ini)
 make seed             # migrate + idempotent fictional local seed (Phase 1-9 data)
 ```
 
-Migrations live in `packages/backend/alembic`; keep exactly one Alembic head.
+Migrations live in `backend/core/alembic`; keep exactly one Alembic head.
 New tables must be owner-scoped (see Data/authz rules below) and match
 registered SQLAlchemy metadata — architecture/migration tests catch drift.
 
@@ -191,8 +192,8 @@ registered SQLAlchemy metadata — architecture/migration tests catch drift.
 - **Don't create empty scaffolding** for a future phase (empty module dirs, unused
   Terraform, reserved routes) — only add a directory when its owning phase has
   real implementation/test content.
-- Pinned dependencies are changed through `pnpm`/`uv` with lockfiles committed —
-  don't hand-edit `pnpm-lock.yaml`/`uv.lock`, and avoid preview/prerelease
+- Pinned dependencies are changed through `npm`/`uv` with lockfiles committed —
+  don't hand-edit `package-lock.json`/`uv.lock`, and avoid preview/prerelease
   dependencies without an ADR.
 
 ## Where to look for more detail

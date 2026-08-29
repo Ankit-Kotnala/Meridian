@@ -160,12 +160,12 @@ saved screenshots retain automated review only.
 
 ## Repeatability
 
-`apps/web/scripts/capture-visual-qa.mjs` owns the viewport catalog, route catalog,
+`frontend/web/scripts/capture-visual-qa.mjs` owns the viewport catalog, route catalog,
 authenticated account setup, focus/reflow/error checks, mobile navigation
 interaction, screenshots, and JSON report generation. Example:
 
 ```powershell
-pnpm --filter @rezumi/web exec node scripts/capture-visual-qa.mjs `
+npm exec --workspace=@rezumi/web -- node scripts/capture-visual-qa.mjs `
   --baseUrl=http://localhost:3000 `
   --authenticated=true `
   --mailpitUrl=http://localhost:8025 `

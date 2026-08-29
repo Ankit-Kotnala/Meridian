@@ -11,6 +11,6 @@
 **/uv.lock
 .data
 .pytest_cache
-packages/contracts/src/generated/
-packages/contracts/openapi/
-pnpm-lock.yaml
+shared/contracts/src/generated/
+shared/contracts/openapi/
+package-lock.json

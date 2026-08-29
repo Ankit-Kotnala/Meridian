@@ -42,7 +42,7 @@ function Wait-ComposeServiceHealthy {
     $Deadline = (Get-Date).AddSeconds($TimeoutSeconds)
     $LastStatus = "missing"
     while ((Get-Date) -lt $Deadline) {
-        $Container = docker compose --project-name $ProjectName ps --quiet $Service
+        $Container = docker compose -f infra/compose.yaml --project-directory . --project-name $ProjectName ps --quiet $Service
         Assert-LastExitCode "$Service container lookup"
         if ($Container) {
             $LastStatus = docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' $Container
@@ -306,18 +306,18 @@ foreach ($Entry in $Overrides.GetEnumerator()) {
 $MainSucceeded = $false
 Push-Location $RepositoryRoot
 try {
-    docker compose --project-name $ProjectName config --quiet
+    docker compose -f infra/compose.yaml --project-directory . --project-name $ProjectName config --quiet
     Assert-LastExitCode "Isolated Compose configuration"
     foreach ($Service in @("api", "worker", "web", "web-edge")) {
-        docker compose --project-name $ProjectName build $Service
+        docker compose -f infra/compose.yaml --project-directory . --project-name $ProjectName build $Service
         Assert-LastExitCode "Isolated application image build for $Service"
     }
-    docker compose --project-name $ProjectName up --detach --wait --wait-timeout 900 postgres redis minio mailpit clamav
+    docker compose -f infra/compose.yaml --project-directory . --project-name $ProjectName up --detach --wait --wait-timeout 900 postgres redis minio mailpit clamav
     Assert-LastExitCode "Isolated dependency startup"
     Wait-ComposeServiceHealthy -Service "clamav" -TimeoutSeconds 900 -PollSeconds 10
-    docker compose --project-name $ProjectName up --detach minio-init
+    docker compose -f infra/compose.yaml --project-directory . --project-name $ProjectName up --detach minio-init
     Assert-LastExitCode "Object-storage initializer startup"
-    $InitContainer = docker compose --project-name $ProjectName ps --all --quiet minio-init
+    $InitContainer = docker compose -f infra/compose.yaml --project-directory . --project-name $ProjectName ps --all --quiet minio-init
     Assert-LastExitCode "Object-storage initializer lookup"
     if (-not $InitContainer) {
         throw "Compose did not create the object-storage initializer."
@@ -328,27 +328,27 @@ try {
     }
     if ($ExpectedMigrationHead) {
         $MigrationHeads = @(
-            docker compose --project-name $ProjectName run --rm --no-deps api alembic -c packages/backend/alembic.ini heads
+            docker compose -f infra/compose.yaml --project-directory . --project-name $ProjectName run --rm --no-deps api alembic -c backend/core/alembic.ini heads
         )
         Assert-LastExitCode "Phase $Phase migration-head lookup"
         $MigrationHeads | ForEach-Object { Write-Host $_ }
         Assert-MigrationHeadOutput -Output $MigrationHeads -ExpectedRevision $ExpectedMigrationHead -Step "Phase $Phase migration-head lookup"
     }
-    docker compose --project-name $ProjectName run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
+    docker compose -f infra/compose.yaml --project-directory . --project-name $ProjectName run --rm --no-deps api alembic -c backend/core/alembic.ini upgrade head
     Assert-LastExitCode "Isolated database migration"
-    docker compose --project-name $ProjectName run --rm --no-deps api alembic -c packages/backend/alembic.ini downgrade $RollbackRevision
+    docker compose -f infra/compose.yaml --project-directory . --project-name $ProjectName run --rm --no-deps api alembic -c backend/core/alembic.ini downgrade $RollbackRevision
     Assert-LastExitCode "Phase $Phase database migration rollback"
-    docker compose --project-name $ProjectName run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
+    docker compose -f infra/compose.yaml --project-directory . --project-name $ProjectName run --rm --no-deps api alembic -c backend/core/alembic.ini upgrade head
     Assert-LastExitCode "Phase $Phase database migration forward repair"
     if ($ExpectedMigrationHead) {
         $CurrentMigration = @(
-            docker compose --project-name $ProjectName run --rm --no-deps api alembic -c packages/backend/alembic.ini current
+            docker compose -f infra/compose.yaml --project-directory . --project-name $ProjectName run --rm --no-deps api alembic -c backend/core/alembic.ini current
         )
         Assert-LastExitCode "Phase $Phase current-migration lookup"
         $CurrentMigration | ForEach-Object { Write-Host $_ }
         Assert-MigrationHeadOutput -Output $CurrentMigration -ExpectedRevision $ExpectedMigrationHead -Step "Phase $Phase current-migration lookup"
     }
-    Push-Location "packages/backend"
+    Push-Location "backend/core"
     try {
         uv run --package rezumi-backend pytest tests/integration
         Assert-LastExitCode "PostgreSQL and Redis identity integration tests"
@@ -356,14 +356,14 @@ try {
     finally {
         Pop-Location
     }
-    docker compose --project-name $ProjectName up --detach --wait --wait-timeout 180 --no-deps api worker worker-scheduler web web-edge
+    docker compose -f infra/compose.yaml --project-directory . --project-name $ProjectName up --detach --wait --wait-timeout 180 --no-deps api worker worker-scheduler web web-edge
     Assert-LastExitCode "Isolated application startup"
-    $WorkerContainer = docker compose --project-name $ProjectName ps --quiet worker
+    $WorkerContainer = docker compose -f infra/compose.yaml --project-directory . --project-name $ProjectName ps --quiet worker
     Assert-LastExitCode "Worker container lookup"
     if (-not $WorkerContainer) {
         throw "Compose did not create the document worker."
     }
-    $SchedulerContainer = docker compose --project-name $ProjectName ps --quiet worker-scheduler
+    $SchedulerContainer = docker compose -f infra/compose.yaml --project-directory . --project-name $ProjectName ps --quiet worker-scheduler
     Assert-LastExitCode "Worker scheduler container lookup"
     if (-not $SchedulerContainer) {
         throw "Compose did not create the worker scheduler."
@@ -407,16 +407,16 @@ try {
     if ($AnonymousStatus -ne "403") {
         throw "Private document bucket returned HTTP $AnonymousStatus to an anonymous request."
     }
-    docker compose --project-name $ProjectName stop postgres
+    docker compose -f infra/compose.yaml --project-directory . --project-name $ProjectName stop postgres
     Assert-LastExitCode "PostgreSQL dependency stop"
     $NotReadyStatus = & curl.exe --silent --output NUL --write-out "%{http_code}" "http://127.0.0.1:$($Overrides.API_PORT)/ready"
     Assert-LastExitCode "Readiness failure probe"
     if ($NotReadyStatus -ne "503") {
         throw "API readiness returned HTTP $NotReadyStatus while PostgreSQL was unavailable."
     }
-    docker compose --project-name $ProjectName start postgres
+    docker compose -f infra/compose.yaml --project-directory . --project-name $ProjectName start postgres
     Assert-LastExitCode "PostgreSQL dependency restart"
-    docker compose --project-name $ProjectName up --detach --wait --wait-timeout 120 postgres
+    docker compose -f infra/compose.yaml --project-directory . --project-name $ProjectName up --detach --wait --wait-timeout 120 postgres
     Assert-LastExitCode "PostgreSQL recovery wait"
     $Recovered = $false
     for ($Attempt = 0; $Attempt -lt 30; $Attempt++) {
@@ -430,14 +430,14 @@ try {
     if (-not $Recovered) {
         throw "API readiness did not recover after PostgreSQL restarted."
     }
-    & pnpm --filter "@rezumi/web" exec playwright test @JourneySpecs
+    & npm exec --workspace=@rezumi/web -- playwright test @JourneySpecs
     Assert-LastExitCode "Phase $Phase full-stack browser journeys"
     $MainSucceeded = $true
 }
 finally {
     if (-not $MainSucceeded) {
-        docker compose --project-name $ProjectName ps --all
-        docker compose --project-name $ProjectName logs --no-color --tail 200
+        docker compose -f infra/compose.yaml --project-directory . --project-name $ProjectName ps --all
+        docker compose -f infra/compose.yaml --project-directory . --project-name $ProjectName logs --no-color --tail 200
     }
     if (-not $MainSucceeded -and $KeepFailedStack) {
         Write-Warning (
@@ -447,7 +447,7 @@ finally {
         $CleanupExitCode = 0
     }
     else {
-        docker compose --project-name $ProjectName down --volumes --remove-orphans --rmi local
+        docker compose -f infra/compose.yaml --project-directory . --project-name $ProjectName down --volumes --remove-orphans --rmi local
         $CleanupExitCode = $LASTEXITCODE
     }
     Pop-Location

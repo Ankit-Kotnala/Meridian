@@ -27,33 +27,33 @@ verification requirements below.
 
 ## Architecture boundaries
 
-- `apps/web`: Next.js App Router user experience. It does not access databases,
+- `frontend/web`: Next.js App Router user experience. It does not access databases,
   object storage, or queues directly.
-- `apps/api`: thin FastAPI HTTP delivery application and OpenAPI source of truth.
+- `backend/api`: thin FastAPI HTTP delivery application and OpenAPI source of truth.
   It owns transport validation and composition, not domain rules or persistence
   implementations.
-- `apps/worker`: thin Celery delivery application for isolated asynchronous work.
+- `backend/worker`: thin Celery delivery application for isolated asynchronous work.
   Tasks call backend application use cases and never duplicate business rules or
-  import `apps/api`.
-- `packages/backend`: shared Python modular-monolith implementation. Stable,
+  import `backend/api`.
+- `backend/core`: shared Python modular-monolith implementation. Stable,
   domain-independent database, configuration, migration, and observability
   primitives live in `rezumi.foundation`; product code is added under
   phase-owned `rezumi.modules` and provider SDK adapters under
   `rezumi.integrations` only when those phases begin.
-- `packages/ui`: accessible, presentation-oriented React primitives. It must not
+- `frontend/ui`: accessible, presentation-oriented React primitives. It must not
   depend on application routes or private API implementation details.
-- `packages/contracts`: normalized OpenAPI artifacts, generated TypeScript types,
+- `shared/contracts`: normalized OpenAPI artifacts, generated TypeScript types,
   and a typed `openapi-fetch` client wrapper. FastAPI schemas are authoritative;
   do not create parallel handwritten wire models or hand-edit generated artifacts.
-- `packages/design-tokens`: reusable visual tokens without product behavior.
-- `packages/eslint-config` and `packages/typescript-config`: shared strict build
+- `frontend/design-tokens`: reusable visual tokens without product behavior.
+- `frontend/eslint-config` and `frontend/typescript-config`: shared strict build
   and dependency-boundary configuration without runtime credentials.
-- `packages/test-fixtures`: explicitly fictional, non-sensitive fixtures only.
+- `frontend/test-fixtures`: explicitly fictional, non-sensitive fixtures only.
 - `infra`: local and deployment infrastructure. Production changes require an
   ADR, rollback plan, and protected-environment review.
 
-The root uv workspace and its single lockfile cover `apps/api`, `apps/worker`,
-and `packages/backend`. Both deployable Python applications depend on the backend;
+The uv workspace rooted at `backend/` and its single lockfile cover `backend/api`,
+`backend/worker`, and `backend/core`. Both deployable Python applications depend on the backend;
 the backend imports neither deployable, and the worker never imports the API.
 Within a backend product module, dependency direction is API/task adapter to
 application use case to domain model and port, with infrastructure implementing
@@ -70,8 +70,8 @@ Local development and tests must remain usable without third-party credentials
 through deterministic local or fake adapters.
 
 Next.js route files remain thin. Product behavior and domain-specific UI belong
-under `apps/web/src/modules/<feature>`; reusable framework-neutral UI belongs in
-`packages/ui`. Enforce frontend boundaries with lint/dependency checks. Do not
+under `frontend/web/src/modules/<feature>`; reusable framework-neutral UI belongs in
+`frontend/ui`. Enforce frontend boundaries with lint/dependency checks. Do not
 create generic dumping grounds named `common`, `helpers`, `misc`, `services`, or
 `utils`.
 
@@ -173,5 +173,5 @@ or repository-test scaffolding and do not present reserved paths as implemented
 functionality.
 
 Pinned dependencies are changed intentionally through their owning package tool
-(`pnpm` or `uv`), with lockfiles committed. Prefer conservative compatible stable
+(`npm` or `uv`), with lockfiles committed. Prefer conservative compatible stable
 versions; do not introduce preview dependencies without an approved ADR.

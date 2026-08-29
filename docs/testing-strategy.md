@@ -29,7 +29,7 @@ never runs. A runner reporting zero tests is a configuration failure.
 
 | Layer                  | Purpose                                                                      | Typical tools / boundary                                                             |
 | ---------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Static                 | Formatting, lint, strict types, dependency/config/schema checks              | pnpm scripts, ESLint, TypeScript, Ruff, mypy/pyright as selected, OpenAPI validation |
+| Static                 | Formatting, lint, strict types, dependency/config/schema checks              | npm scripts, ESLint, TypeScript, Ruff, mypy/pyright as selected, OpenAPI validation |
 | Unit                   | Pure domain rules, features, state machines, validators, provider adapters   | Vitest and Pytest; no network/time randomness                                        |
 | Component              | UI states, semantics, focus, keyboard, responsive variants                   | React Testing Library/Vitest, axe-compatible checks, Storybook where valuable        |
 | Contract               | OpenAPI response/request/error/idempotency compatibility and generated types | FastAPI/Pydantic tests, normalized OpenAPI snapshots, typed client compile           |
@@ -95,13 +95,13 @@ Do not mock away the boundary a test is meant to prove.
 
 ### Architecture, migrations, and contracts
 
-- Install `apps/api`, `apps/worker`, and `packages/backend` from one frozen root
+- Install `backend/api`, `backend/worker`, and `backend/core` from one frozen root
   uv workspace and assert both deployables depend on the backend.
 - Run static negative-fixture architecture tests: backend never imports a
   deployable, worker never imports API, deployables do not own persistence, and
   domain/application layers reject framework or provider SDK imports.
 - Run frontend boundary checks that keep route files thin, product behavior under
-  `src/modules`, and generic UI in `packages/ui`.
+  `src/modules`, and generic UI in `frontend/ui`.
 - Export FastAPI OpenAPI deterministically, compare the committed normalized
   artifact, regenerate the TypeScript schema with pinned tooling, compile the
   typed client wrapper, and fail on either form of drift.
@@ -115,9 +115,9 @@ Do not mock away the boundary a test is meant to prove.
 
 ```sh
 make setup
-docker compose config --quiet
+make compose-config
 make dev
-docker compose ps
+make local-status
 make format-check
 make lint
 make typecheck
@@ -205,7 +205,7 @@ isolated containers, networks, volumes, images, and browser artifacts.
   the bare word "Issued" into the next unfilled text field
   (`_DATE_LABEL_WORDS` in `semantic_parser.py`).
   Non-English coverage is a single Spanish case; broader script/CJK/RTL
-  *content* support (as opposed to the bidirectional-control-character
+  _content_ support (as opposed to the bidirectional-control-character
   stripping already covered above) and OCR for scanned/image resumes remain
   explicitly out of scope for this pass — real, separate work, not silently
   dropped.
