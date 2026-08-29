@@ -4,24 +4,24 @@ Set-StrictMode -Version Latest
 $originalConfirmation = $env:REZUMI_ALLOW_LOCAL_SEED
 
 try {
-    docker compose up --detach --wait postgres minio minio-init
+    docker compose -f infra/compose.yaml --project-directory . up --detach --wait postgres minio minio-init
     if ($LASTEXITCODE -ne 0) {
         throw "Local PostgreSQL/MinIO startup failed."
     }
 
-    docker compose build api
+    docker compose -f infra/compose.yaml --project-directory . build api
     if ($LASTEXITCODE -ne 0) {
         throw "API tooling image build failed."
     }
 
-    docker compose run --rm --no-deps api `
-        alembic -c packages/backend/alembic.ini upgrade head
+    docker compose -f infra/compose.yaml --project-directory . run --rm --no-deps api `
+        alembic -c backend/core/alembic.ini upgrade head
     if ($LASTEXITCODE -ne 0) {
         throw "Local database migration failed."
     }
 
     $env:REZUMI_ALLOW_LOCAL_SEED = "fictional-rezumi-local-seed-v1"
-    docker compose --profile tools run --rm --no-deps local-seed
+    docker compose -f infra/compose.yaml --project-directory . --profile tools run --rm --no-deps local-seed
     if ($LASTEXITCODE -ne 0) {
         throw "Fictional local seed failed."
     }

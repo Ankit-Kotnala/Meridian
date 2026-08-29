@@ -8,7 +8,7 @@ status; consult `PLANS.md` for current behavior.
 
 | ADR                                                                              | Decision                                                                                     | Status                                 |
 | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------- |
-| [0001](0001-monorepo-and-runtime-topology.md)                                    | Production-oriented monorepo with web, API, worker, and local data services                  | Accepted; partially superseded by 0007 |
+| [0001](0001-monorepo-and-runtime-topology.md)                                    | Production-oriented monorepo with web, API, worker, and local data services                  | Accepted; partially superseded by 0007, 0020 |
 | [0002](0002-career-profile-and-evidence-as-source-of-truth.md)                   | Career profile and evidence graph are the durable source of truth                            | Accepted                               |
 | [0003](0003-deterministic-versioned-scoring.md)                                  | Final scores are deterministic, versioned, and explainable                                   | Accepted                               |
 | [0004](0004-truth-locked-ai-and-immutable-user-controlled-changes.md)            | AI output is schema-bound, grounded, reviewable, and versioned                               | Accepted                               |
@@ -26,6 +26,7 @@ status; consult `PLANS.md` for current behavior.
 | [0016](0016-phase2-semantic-resume-and-parser-isolation.md)                      | Source-anchored semantic resumes, typed review, and killable parser isolation                | Accepted                               |
 | [0018](0018-phase10-fictional-local-seed.md)                                     | Production-guarded, idempotent fictional local database/object seed                          | Accepted                               |
 | [0019](0019-activation-first-workspace-and-assisted-application-supply-chain.md) | Activation-first workspace, declared-link evidence, published-API job supply, assisted apply | Accepted                               |
+| [0020](0020-npm-workspace-package-manager.md)                                    | npm (not pnpm) as the JavaScript workspace package manager                                   | Accepted; amends 0001                  |
 
 ## Lifecycle
 

@@ -1,5 +1,7 @@
 SHELL := /bin/sh
 
+COMPOSE := docker compose -f infra/compose.yaml --project-directory .
+
 .PHONY: help setup dev dev-web dev-api dev-worker local-up local-backend local-deps local-rebuild local-rebuild-web local-rebuild-backend local-status local-logs local-smoke local-down stop format format-check lint typecheck test test-web test-api test-worker test-backend contracts-check test-integration test-e2e test-e2e-stack-phase1 test-e2e-stack test-e2e-stack-phase3 test-e2e-stack-phase4 test-e2e-stack-phase5 test-e2e-stack-phase6 test-e2e-stack-phase7 test-e2e-stack-phase8 test-e2e-stack-phase9 build security-scan seed migrate sync-job-catalog seed-role-roadmaps reset-db compose-config verify verify-phase1 verify-phase2 verify-phase3 verify-phase4 verify-phase5 verify-phase6 verify-phase7 verify-phase8 verify-phase9
 
 help:
@@ -53,12 +55,12 @@ help:
 setup:
 	@test -f .env || cp .env.example .env
 	corepack enable
-	corepack prepare pnpm@11.14.0 --activate
-	pnpm install --frozen-lockfile
-	uv sync --frozen --all-packages --all-groups
+	corepack prepare npm@11.8.0 --activate
+	npm ci
+	uv sync --project backend --frozen --all-packages --all-groups
 
 dev:
-	docker compose up --build
+	$(COMPOSE) up --build
 
 dev-web:
 	node scripts/local.mjs dev-web
@@ -102,68 +104,68 @@ local-down:
 stop: local-down
 
 format:
-	pnpm format
-	cd packages/backend && uv run --package rezumi-backend ruff format .
-	cd apps/api && uv run ruff format .
-	cd apps/worker && uv run ruff format .
-	uv run --package rezumi-api ruff format --config apps/api/pyproject.toml packages/contracts/scripts/export_openapi.py
+	npm run format
+	cd backend/core && uv run --package rezumi-backend ruff format .
+	cd backend/api && uv run ruff format .
+	cd backend/worker && uv run ruff format .
+	uv run --project backend --package rezumi-api ruff format --config backend/api/pyproject.toml shared/contracts/scripts/export_openapi.py
 
 format-check:
-	pnpm format:check
-	cd packages/backend && uv run --package rezumi-backend ruff format --check .
-	cd apps/api && uv run ruff format --check .
-	cd apps/worker && uv run ruff format --check .
-	uv run --package rezumi-api ruff format --config apps/api/pyproject.toml --check packages/contracts/scripts/export_openapi.py
+	npm run format:check
+	cd backend/core && uv run --package rezumi-backend ruff format --check .
+	cd backend/api && uv run ruff format --check .
+	cd backend/worker && uv run ruff format --check .
+	uv run --project backend --package rezumi-api ruff format --config backend/api/pyproject.toml --check shared/contracts/scripts/export_openapi.py
 
 lint:
-	pnpm lint
-	cd packages/backend && uv run --package rezumi-backend ruff check .
-	cd apps/api && uv run ruff check .
-	cd apps/worker && uv run ruff check .
-	uv run --package rezumi-api ruff check --config apps/api/pyproject.toml packages/contracts/scripts/export_openapi.py
+	npm run lint
+	cd backend/core && uv run --package rezumi-backend ruff check .
+	cd backend/api && uv run ruff check .
+	cd backend/worker && uv run ruff check .
+	uv run --project backend --package rezumi-api ruff check --config backend/api/pyproject.toml shared/contracts/scripts/export_openapi.py
 
 typecheck:
-	pnpm typecheck
-	cd packages/backend && uv run --package rezumi-backend mypy
-	cd apps/api && uv run mypy
-	cd apps/worker && uv run mypy
+	npm run typecheck
+	cd backend/core && uv run --package rezumi-backend mypy
+	cd backend/api && uv run mypy
+	cd backend/worker && uv run mypy
 
 test:
-	pnpm test
-	cd packages/backend && uv run --package rezumi-backend pytest tests/architecture tests/unit
-	cd apps/api && uv run pytest
-	cd apps/worker && uv run pytest
+	npm run test
+	cd backend/core && uv run --package rezumi-backend pytest tests/architecture tests/unit
+	cd backend/api && uv run pytest
+	cd backend/worker && uv run pytest
 
 test-web:
-	pnpm test:web
+	npm run test:web
 
 test-api:
-	pnpm test:api
+	npm run test:api
 
 test-worker:
-	pnpm test:worker
+	npm run test:worker
 
 test-backend:
-	pnpm test:backend
+	npm run test:backend
 
 contracts-check:
-	uv lock --check
-	pnpm contracts:check
+	uv lock --project backend --check
+	npm run contracts:check
 
 test-integration:
-	docker compose up --build --detach --wait --wait-timeout 300
-	docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
-	docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
-	docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini current
+	$(COMPOSE) up --build --detach --wait --wait-timeout 300
+	$(COMPOSE) run --rm --no-deps api alembic -c backend/core/alembic.ini upgrade head
+	$(COMPOSE) run --rm --no-deps api alembic -c backend/core/alembic.ini upgrade head
+	$(COMPOSE) run --rm --no-deps api alembic -c backend/core/alembic.ini current
 	curl --fail --silent --show-error http://localhost:3000/api/health
 	curl --fail --silent --show-error http://localhost:8000/health
 	curl --fail --silent --show-error http://localhost:8000/ready
 	curl --fail --silent --show-error http://localhost:8000/api/v1/meta
 	curl --fail --silent --show-error http://localhost:8025/api/v1/info
-	docker compose exec -T worker celery --app rezumi_worker.app:celery_app inspect ping --timeout 5
+	$(COMPOSE) exec -T worker celery --app rezumi_worker.app:celery_app inspect ping --timeout 5
 
 test-e2e:
-	pnpm test:e2e
+	npm run test:e2e
 
 test-e2e-stack-phase1:
 	REZUMI_E2E_PHASE=1 sh tests/e2e/run-compose.sh
@@ -193,41 +195,41 @@ test-e2e-stack-phase9:
 	REZUMI_E2E_PHASE=9 sh tests/e2e/run-compose.sh
 
 build:
-	pnpm build
-	docker compose build api worker web web-edge
+	npm run build
+	$(COMPOSE) build api worker web web-edge
 
 security-scan:
 	docker run --rm --volume "$(CURDIR):/repo:ro" ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f dir /repo --config /repo/.gitleaks.toml --redact --exit-code 1
-	pnpm audit --audit-level high
-	uv sync --frozen --all-packages --all-groups
-	uv run --package rezumi-api --with pip-audit==2.10.1 pip-audit
-	docker compose build api worker web web-edge
+	npm audit --audit-level=high
+	uv sync --project backend --frozen --all-packages --all-groups
+	uv run --project backend --package rezumi-api --with pip-audit==2.10.1 pip-audit
+	$(COMPOSE) build api worker web web-edge
 	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume rezumi-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d rezumi-api:latest --config /etc/grype.yaml --fail-on high --only-fixed
 	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume rezumi-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d rezumi-worker:latest --config /etc/grype.yaml --fail-on high --only-fixed
 	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume rezumi-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d rezumi-web:latest --config /etc/grype.yaml --fail-on high --only-fixed
 	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume rezumi-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d rezumi-web-edge:latest --config /etc/grype.yaml --fail-on high --only-fixed
 
 seed:
-	docker compose up --detach --wait postgres minio minio-init
-	docker compose build api
-	docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
-	REZUMI_ALLOW_LOCAL_SEED=fictional-rezumi-local-seed-v1 docker compose --profile tools run --rm --no-deps local-seed
+	$(COMPOSE) up --detach --wait postgres minio minio-init
+	$(COMPOSE) build api
+	$(COMPOSE) run --rm --no-deps api alembic -c backend/core/alembic.ini upgrade head
+	REZUMI_ALLOW_LOCAL_SEED=fictional-rezumi-local-seed-v1 $(COMPOSE) --profile tools run --rm --no-deps local-seed
 
 migrate:
-	docker compose run --rm api alembic -c packages/backend/alembic.ini upgrade head
+	$(COMPOSE) run --rm api alembic -c backend/core/alembic.ini upgrade head
 
 sync-job-catalog:
-	docker compose exec worker python3 -m rezumi_worker.scripts.sync_job_catalog_once
+	$(COMPOSE) exec worker python3 -m rezumi_worker.scripts.sync_job_catalog_once
 
 seed-role-roadmaps:
-	docker compose exec worker python3 -m rezumi.development.seed_role_roadmaps
+	$(COMPOSE) exec worker python3 -m rezumi.development.seed_role_roadmaps
 
 reset-db:
-	docker compose down --volumes --remove-orphans
-	docker compose up -d postgres redis minio minio-init
+	$(COMPOSE) down --volumes --remove-orphans
+	$(COMPOSE) up -d postgres redis minio minio-init
 
 compose-config:
-	docker compose config --quiet
+	$(COMPOSE) config --quiet
 
 verify: contracts-check format-check lint typecheck test build compose-config test-integration
 

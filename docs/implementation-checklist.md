@@ -54,22 +54,22 @@ earlier baseline evidence remains historical.
 ### Workspace and applications
 
 - [x] Pin pnpm 11.13.0/Node 24 and verify the root workspace lockfile.
-- [x] Create `apps/web` with Next.js 16.2.11, React 19.2.7, strict TypeScript
+- [x] Create `frontend/web` with Next.js 16.2.11, React 19.2.7, strict TypeScript
       5.9.3, Tailwind 4.3.2, format/lint/type/test/build scripts.
 - [x] Create an accessible initial design system and a conspicuously fictional,
       unauthenticated dashboard preview; do not imply real scoring or persistence.
 - [x] Implement web `GET /api/health` and a container production start path.
 - [x] Create one Python 3.13 root uv workspace and lock containing thin
-      `apps/api`, thin `apps/worker`, and shared `packages/backend` members.
+      `backend/api`, thin `backend/worker`, and shared `backend/core` members.
 - [x] Implement API `GET /health`, `GET /ready`, and `GET /api/v1/meta` with safe
       schemas; readiness checks required dependencies without leaking topology.
 - [x] Keep the Celery 5.6.3 worker thin, preserve task
       `rezumi.worker.health.ping`, and retain its broker-backed health check.
-- [x] Establish real `packages/backend`, generated `packages/contracts`, generic
-      `packages/ui`, `packages/design-tokens`, `packages/eslint-config`,
-      `packages/typescript-config`, and `packages/test-fixtures` boundaries.
+- [x] Establish real `backend/core`, generated `shared/contracts`, generic
+      `frontend/ui`, `frontend/design-tokens`, `frontend/eslint-config`,
+      `frontend/typescript-config`, and `frontend/test-fixtures` boundaries.
 - [x] Move Alembic and shared database/logging primitives to
-      `packages/backend`; preserve revision `20260714_0001` and one migration head.
+      `backend/core`; preserve revision `20260714_0001` and one migration head.
 - [x] Add backend forbidden-import tests and frontend module-boundary checks;
       assert both Python deployables depend on backend and worker never imports API.
 - [x] Commit normalized OpenAPI and generated TypeScript schema artifacts, expose
@@ -525,7 +525,7 @@ predictive.
 
 Dependencies: current merged application baseline and the accepted monorepo ADRs.
 
-- [x] Preserve `apps/web`, `apps/api`, `apps/worker`, and `packages/backend`
+- [x] Preserve `frontend/web`, `backend/api`, `backend/worker`, and `backend/core`
       runtime and dependency boundaries; do not flatten the backend.
 - [x] Co-locate every FastAPI bounded-context adapter below
       `rezumi_api/modules/<bounded_context>` while leaving only concrete

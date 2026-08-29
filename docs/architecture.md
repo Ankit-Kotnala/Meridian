@@ -89,38 +89,38 @@ after authorization and finalized by the API.
 
 | Path                         | Responsibility                                                                        | Must not own                                                           |
 | ---------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `apps/web`                   | Public and authenticated UI, accessibility, query/form state, server/client rendering | Database queries, object credentials, score formulas, grounding policy |
-| `apps/api`                   | Thin HTTP validation, authorization, composition, and OpenAPI delivery                | Domain rules, persistence implementations, worker process behavior     |
-| `apps/worker`                | Thin Celery process and task adapters for isolated async execution                    | HTTP composition or duplicated business rules                          |
-| `packages/backend`           | Shared Python foundation and phase-owned domain/application/infrastructure modules    | Imports from API/worker deployables or generic unowned helpers         |
-| `packages/ui`                | Generic accessible React primitives and reusable presentation components              | Product API calls, domain rules, or route-specific behavior            |
-| `packages/design-tokens`     | Shared colors, typography, spacing, radii, and shadows                                | Product state or feature behavior                                      |
-| `packages/contracts`         | Normalized OpenAPI artifact, generated TypeScript schema, and typed client wrapper    | Handwritten competing wire models, persistence models, or secrets      |
-| `packages/eslint-config`     | Shared frontend lint and dependency-boundary rules                                    | Runtime behavior or credentials                                        |
-| `packages/typescript-config` | Shared strict TypeScript compiler defaults                                            | Runtime behavior or credentials                                        |
-| `packages/test-fixtures`     | Fictional and hostile test assets/metadata                                            | Real user data                                                         |
+| `frontend/web`               | Public and authenticated UI, accessibility, query/form state, server/client rendering | Database queries, object credentials, score formulas, grounding policy |
+| `backend/api`                | Thin HTTP validation, authorization, composition, and OpenAPI delivery                | Domain rules, persistence implementations, worker process behavior     |
+| `backend/worker`             | Thin Celery process and task adapters for isolated async execution                    | HTTP composition or duplicated business rules                          |
+| `backend/core`               | Shared Python foundation and phase-owned domain/application/infrastructure modules    | Imports from API/worker deployables or generic unowned helpers         |
+| `frontend/ui`                | Generic accessible React primitives and reusable presentation components              | Product API calls, domain rules, or route-specific behavior            |
+| `frontend/design-tokens`     | Shared colors, typography, spacing, radii, and shadows                                | Product state or feature behavior                                      |
+| `shared/contracts`           | Normalized OpenAPI artifact, generated TypeScript schema, and typed client wrapper    | Handwritten competing wire models, persistence models, or secrets      |
+| `frontend/eslint-config`     | Shared frontend lint and dependency-boundary rules                                    | Runtime behavior or credentials                                        |
+| `frontend/typescript-config` | Shared strict TypeScript compiler defaults                                            | Runtime behavior or credentials                                        |
+| `frontend/test-fixtures`     | Fictional and hostile test assets/metadata                                            | Real user data                                                         |
 | `infra`                      | Container/deployment definitions and policies                                         | Product logic                                                          |
 
-The root uv workspace contains `apps/api`, `apps/worker`, and
-`packages/backend` with one committed lockfile. Both applications depend on the
+The uv workspace rooted at `backend/` contains `backend/api`, `backend/worker`,
+and `backend/core` with one committed lockfile. Both applications depend on the
 backend. The backend imports neither application, and the worker never imports
-the API. Container build contexts must include the root workspace while runtime
-images remain independently deployable.
+the API. Container build contexts must include the `backend/` workspace while
+runtime images remain independently deployable.
 
 HTTP delivery adapters are co-located by bounded context under
-`apps/api/src/rezumi_api/modules/<bounded_context>`. Routes, schemas,
+`backend/api/src/rezumi_api/modules/<bounded_context>`. Routes, schemas,
 presenters, feature dependencies, and feature-specific problem translation stay
 together. Only concrete cross-cutting composition, configuration, middleware,
 cookie/signal policy, shared problems, and the root router remain at the API
 package root. Celery registration follows the same ownership under
-`apps/worker/src/rezumi_worker/tasks/<bounded_context>.py`; stable task names,
+`backend/worker/src/rezumi_worker/tasks/<bounded_context>.py`; stable task names,
 identifier-only payloads, queues, retry policy, and runtime ports do not depend on
 source-file location. `tasks/contracts.py` owns result-only adapter shapes and
 `tasks/execution.py` owns bounded maintenance validation and delivery fencing.
 Executable repository checks reject a return to flat feature adapters or a
 monolithic task module.
 
-Within `packages/backend/src/rezumi`, stable domain-independent primitives live
+Within `backend/core/src/rezumi`, stable domain-independent primitives live
 under `foundation`. Each product capability is added under `modules/<feature>`
 only in its owning phase, with `domain`, `application`, `infrastructure`, `api`,
 `tasks`, and tests as real behavior requires. Provider SDKs stay under
@@ -136,7 +136,7 @@ This superseding foundation decision is recorded in
 
 | Concern      | Choice                                                          | Notes                                                                           |
 | ------------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| JS workspace | pnpm 11.13.0, Node.js 24                                        | One root lockfile; Corepack pins package-manager behavior                       |
+| JS workspace | npm 11.8.0, Node.js 24                                          | One root lockfile; Corepack pins package-manager behavior                       |
 | Web          | Next.js 16.2.11, React 19.2.7, TypeScript 5.9.3, Tailwind 4.3.2 | App Router; strict types; server components by default where appropriate        |
 | Python       | Python 3.13, uv 0.11.21                                         | One root workspace/lock for API, worker, and shared backend                     |
 | HTTP         | FastAPI 0.138.2, Pydantic                                       | OpenAPI contract and validation boundary                                        |
@@ -510,7 +510,7 @@ own canonical structures.
 
 - Product routes are versioned below `/api/v1`; health probes remain unversioned.
 - OpenAPI generated by the API is authoritative for wire shape. Its normalized,
-  committed artifact lives under `packages/contracts/openapi`; pinned generation
+  committed artifact lives under `shared/contracts/openapi`; pinned generation
   produces the TypeScript schema consumed by a typed `openapi-fetch` wrapper. CI
   rejects export or generation drift. Generated files are reproducible artifacts,
   not parallel handwritten models.
@@ -754,10 +754,10 @@ Every phase retains the repository gates plus architecture-boundary,
 OpenAPI-generation drift, migration, and root-workspace checks:
 
 ```sh
-docker compose config --quiet
+make compose-config
 make setup
 make dev
-docker compose ps
+make local-status
 make format-check
 make lint
 make typecheck

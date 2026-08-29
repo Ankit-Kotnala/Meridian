@@ -5,7 +5,7 @@ $ErrorActionPreference = "Stop"
 
 function Test-PrimaryStackReady {
     try {
-        $RawRows = @(docker compose ps --all --format json)
+        $RawRows = @(docker compose -f infra/compose.yaml --project-directory . ps --all --format json)
         $Rows = @($RawRows | ForEach-Object { $_ | ConvertFrom-Json })
     }
     catch {
@@ -63,7 +63,7 @@ function Restore-PrimaryStack {
 
     $LastExitCode = 1
     for ($Attempt = 1; $Attempt -le $MaxAttempts; $Attempt++) {
-        docker compose up --build --detach --wait --wait-timeout 300
+        docker compose -f infra/compose.yaml --project-directory . up --build --detach --wait --wait-timeout 300
         $LastExitCode = $LASTEXITCODE
         if ($LastExitCode -eq 0 -or (Wait-PrimaryStackReady)) {
             return
@@ -88,7 +88,7 @@ if ($LASTEXITCODE -ne 0) {
 
 $PrimaryStackPaused = $false
 try {
-    docker compose stop --timeout 30
+    docker compose -f infra/compose.yaml --project-directory . stop --timeout 30
     if ($LASTEXITCODE -ne 0) {
         throw "Primary Compose stack pause failed with exit code $LASTEXITCODE."
     }

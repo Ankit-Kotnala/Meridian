@@ -150,7 +150,7 @@ wait_service_healthy() {
   last_status=missing
 
   while [ "$(date +%s)" -lt "$deadline" ]; do
-    container=$(docker compose --project-name "$project_name" ps --quiet "$service")
+    container=$(docker compose -f infra/compose.yaml --project-directory . --project-name "$project_name" ps --quiet "$service")
     if [ -n "$container" ]; then
       last_status=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$container")
       if [ "$last_status" = healthy ]; then
@@ -190,29 +190,29 @@ wait_container_exit_code() {
 run_browser_journeys() {
   case "$verification_phase" in
     1)
-      pnpm --filter @rezumi/web exec playwright test \
+      npm exec --workspace=@rezumi/web -- playwright test \
         e2e/auth-journey.spec.ts
       ;;
     2)
-      pnpm --filter @rezumi/web exec playwright test \
+      npm exec --workspace=@rezumi/web -- playwright test \
         e2e/auth-journey.spec.ts \
         e2e/resume-health-journey.spec.ts
       ;;
     3)
-      pnpm --filter @rezumi/web exec playwright test \
+      npm exec --workspace=@rezumi/web -- playwright test \
         e2e/auth-journey.spec.ts \
         e2e/resume-health-journey.spec.ts \
         e2e/career-record-journey.spec.ts
       ;;
     4)
-      pnpm --filter @rezumi/web exec playwright test \
+      npm exec --workspace=@rezumi/web -- playwright test \
         e2e/auth-journey.spec.ts \
         e2e/resume-health-journey.spec.ts \
         e2e/career-record-journey.spec.ts \
         e2e/role-readiness-journey.spec.ts
       ;;
     5)
-      pnpm --filter @rezumi/web exec playwright test \
+      npm exec --workspace=@rezumi/web -- playwright test \
         e2e/auth-journey.spec.ts \
         e2e/resume-health-journey.spec.ts \
         e2e/career-record-journey.spec.ts \
@@ -220,7 +220,7 @@ run_browser_journeys() {
         e2e/job-match-journey.spec.ts
       ;;
     6)
-      pnpm --filter @rezumi/web exec playwright test \
+      npm exec --workspace=@rezumi/web -- playwright test \
         e2e/auth-journey.spec.ts \
         e2e/resume-health-journey.spec.ts \
         e2e/career-record-journey.spec.ts \
@@ -229,7 +229,7 @@ run_browser_journeys() {
         e2e/change-studio-journey.spec.ts
       ;;
     7)
-      pnpm --filter @rezumi/web exec playwright test \
+      npm exec --workspace=@rezumi/web -- playwright test \
         e2e/auth-journey.spec.ts \
         e2e/resume-health-journey.spec.ts \
         e2e/career-record-journey.spec.ts \
@@ -239,7 +239,7 @@ run_browser_journeys() {
         e2e/resume-builder-journey.spec.ts
       ;;
     8)
-      pnpm --filter @rezumi/web exec playwright test \
+      npm exec --workspace=@rezumi/web -- playwright test \
         e2e/auth-journey.spec.ts \
         e2e/resume-health-journey.spec.ts \
         e2e/career-record-journey.spec.ts \
@@ -250,7 +250,7 @@ run_browser_journeys() {
         e2e/application-workspace-journey.spec.ts
       ;;
     9)
-      pnpm --filter @rezumi/web exec playwright test \
+      npm exec --workspace=@rezumi/web -- playwright test \
         e2e/auth-journey.spec.ts \
         e2e/resume-health-journey.spec.ts \
         e2e/career-record-journey.spec.ts \
@@ -268,10 +268,10 @@ cleanup() {
   status=$?
   trap - EXIT HUP INT TERM
   if [ "$status" -ne 0 ]; then
-    docker compose --project-name "$project_name" ps --all || true
-    docker compose --project-name "$project_name" logs --no-color --tail 200 || true
+    docker compose -f infra/compose.yaml --project-directory . --project-name "$project_name" ps --all || true
+    docker compose -f infra/compose.yaml --project-directory . --project-name "$project_name" logs --no-color --tail 200 || true
   fi
-  if ! docker compose --project-name "$project_name" down --volumes --remove-orphans --rmi local; then
+  if ! docker compose -f infra/compose.yaml --project-directory . --project-name "$project_name" down --volumes --remove-orphans --rmi local; then
     echo "Isolated E2E cleanup failed for Compose project $project_name." >&2
     if [ "$status" -eq 0 ]; then
       status=1
@@ -286,14 +286,14 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 cd "$repository_root"
 
-docker compose --project-name "$project_name" config --quiet
+docker compose -f infra/compose.yaml --project-directory . --project-name "$project_name" config --quiet
 for service in api worker web web-edge; do
-  docker compose --project-name "$project_name" build "$service"
+  docker compose -f infra/compose.yaml --project-directory . --project-name "$project_name" build "$service"
 done
-docker compose --project-name "$project_name" up --detach --wait --wait-timeout 900 postgres redis minio mailpit clamav
+docker compose -f infra/compose.yaml --project-directory . --project-name "$project_name" up --detach --wait --wait-timeout 900 postgres redis minio mailpit clamav
 wait_service_healthy clamav 900 10
-docker compose --project-name "$project_name" up --detach minio-init
-init_container=$(docker compose --project-name "$project_name" ps --all --quiet minio-init)
+docker compose -f infra/compose.yaml --project-directory . --project-name "$project_name" up --detach minio-init
+init_container=$(docker compose -f infra/compose.yaml --project-directory . --project-name "$project_name" ps --all --quiet minio-init)
 if [ -z "$init_container" ]; then
   echo "Compose did not create the object-storage initializer." >&2
   exit 1
@@ -304,26 +304,26 @@ if [ "$init_exit" -ne 0 ]; then
   exit "$init_exit"
 fi
 if [ -n "$expected_migration_head" ]; then
-  migration_heads=$(docker compose --project-name "$project_name" run --rm --no-deps api alembic -c packages/backend/alembic.ini heads)
+  migration_heads=$(docker compose -f infra/compose.yaml --project-directory . --project-name "$project_name" run --rm --no-deps api alembic -c backend/core/alembic.ini heads)
   printf '%s\n' "$migration_heads"
   assert_migration_head_output "$migration_heads" "$expected_migration_head" "Phase $verification_phase migration-head lookup"
 fi
-docker compose --project-name "$project_name" run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
-docker compose --project-name "$project_name" run --rm --no-deps api alembic -c packages/backend/alembic.ini downgrade "$rollback_revision"
-docker compose --project-name "$project_name" run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
+docker compose -f infra/compose.yaml --project-directory . --project-name "$project_name" run --rm --no-deps api alembic -c backend/core/alembic.ini upgrade head
+docker compose -f infra/compose.yaml --project-directory . --project-name "$project_name" run --rm --no-deps api alembic -c backend/core/alembic.ini downgrade "$rollback_revision"
+docker compose -f infra/compose.yaml --project-directory . --project-name "$project_name" run --rm --no-deps api alembic -c backend/core/alembic.ini upgrade head
 if [ -n "$expected_migration_head" ]; then
-  current_migration=$(docker compose --project-name "$project_name" run --rm --no-deps api alembic -c packages/backend/alembic.ini current)
+  current_migration=$(docker compose -f infra/compose.yaml --project-directory . --project-name "$project_name" run --rm --no-deps api alembic -c backend/core/alembic.ini current)
   printf '%s\n' "$current_migration"
   assert_migration_head_output "$current_migration" "$expected_migration_head" "Phase $verification_phase current-migration lookup"
 fi
-(cd packages/backend && uv run --package rezumi-backend pytest tests/integration)
-docker compose --project-name "$project_name" up --detach --wait --wait-timeout 180 --no-deps api worker worker-scheduler web web-edge
-worker_container=$(docker compose --project-name "$project_name" ps --quiet worker)
+(cd backend/core && uv run --package rezumi-backend pytest tests/integration)
+docker compose -f infra/compose.yaml --project-directory . --project-name "$project_name" up --detach --wait --wait-timeout 180 --no-deps api worker worker-scheduler web web-edge
+worker_container=$(docker compose -f infra/compose.yaml --project-directory . --project-name "$project_name" ps --quiet worker)
 if [ -z "$worker_container" ]; then
   echo "Compose did not create the document worker." >&2
   exit 1
 fi
-scheduler_container=$(docker compose --project-name "$project_name" ps --quiet worker-scheduler)
+scheduler_container=$(docker compose -f infra/compose.yaml --project-directory . --project-name "$project_name" ps --quiet worker-scheduler)
 if [ -z "$scheduler_container" ]; then
   echo "Compose did not create the worker scheduler." >&2
   exit 1
@@ -370,14 +370,14 @@ if [ "$anonymous_status" != "403" ]; then
   echo "Private document bucket returned HTTP $anonymous_status to an anonymous request." >&2
   exit 1
 fi
-docker compose --project-name "$project_name" stop postgres
+docker compose -f infra/compose.yaml --project-directory . --project-name "$project_name" stop postgres
 not_ready_status=$(curl --silent --output /dev/null --write-out '%{http_code}' "http://127.0.0.1:${API_PORT}/ready")
 if [ "$not_ready_status" != "503" ]; then
   echo "API readiness returned HTTP $not_ready_status while PostgreSQL was unavailable." >&2
   exit 1
 fi
-docker compose --project-name "$project_name" start postgres
-docker compose --project-name "$project_name" up --detach --wait --wait-timeout 120 postgres
+docker compose -f infra/compose.yaml --project-directory . --project-name "$project_name" start postgres
+docker compose -f infra/compose.yaml --project-directory . --project-name "$project_name" up --detach --wait --wait-timeout 120 postgres
 recovered=false
 attempt=0
 while [ "$attempt" -lt 30 ]; do

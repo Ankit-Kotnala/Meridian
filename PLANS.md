@@ -55,7 +55,7 @@ rules.
       approval patterns, responsive rules, accessibility expectations, and
       current official product-pattern research in
       `docs/product-design-system.md`.
-- [x] Added `apps/web/scripts/capture-visual-qa.mjs` and the complete route/state
+- [x] Added `frontend/web/scripts/capture-visual-qa.mjs` and the complete route/state
       record in `docs/visual-qa-matrix.md`.
 - [x] Captured four representative public workflows at all seven required
       viewports. The 28 committed redesigned captures returned 200 with no page
@@ -74,11 +74,11 @@ rules.
 - `pnpm format:check`: pass.
 - `pnpm lint`: pass.
 - `pnpm typecheck`: pass.
-- `pnpm test`: pass — web 163, UI 12, contracts 3, boundary 4, and edge 2 tests.
+- `pnpm test`: pass â€” web 163, UI 12, contracts 3, boundary 4, and edge 2 tests.
 - Exact Makefile Python format/lint commands: pass.
-- Exact Makefile Python mypy commands: pass — 208 backend, 65 API, and 12 worker
+- Exact Makefile Python mypy commands: pass â€” 208 backend, 65 API, and 12 worker
   source files.
-- Exact Makefile Python test commands: pass — 398 backend architecture/unit,
+- Exact Makefile Python test commands: pass â€” 398 backend architecture/unit,
   145 API, and 84 worker tests.
 - `pnpm build`: pass; 49 routes compiled. The final Docker image build also
   compiled all 49 routes and the stack reached healthy status.
@@ -94,7 +94,7 @@ rules.
 - `pnpm format:check`: pass.
 - `pnpm lint`: pass, including web architecture and repository boundaries.
 - `pnpm typecheck`: pass across all JavaScript/TypeScript packages.
-- `pnpm test`: pass — web 163, UI 12, contracts 3, boundary 4, and edge 2 tests.
+- `pnpm test`: pass â€” web 163, UI 12, contracts 3, boundary 4, and edge 2 tests.
 - `pnpm build`: pass; all 49 Next.js routes compiled in the repository build.
 - Isolated development-server visual QA: 28/28 public captures passed across the
   seven required widths with zero overflow, console error, or page error.
@@ -110,7 +110,7 @@ rules.
 
 - `pnpm format:check`, `pnpm lint`, and `pnpm typecheck`: pass, including strict
   frontend architecture and repository-boundary enforcement.
-- `pnpm test`: pass — web 163, UI 12, contracts 3, boundary 4, and edge 2 tests.
+- `pnpm test`: pass â€” web 163, UI 12, contracts 3, boundary 4, and edge 2 tests.
 - `pnpm build`: pass; the production Next.js build compiled all 49 routes.
 - Production-mode public visual QA: 28/28 captures passed across four routes and
   all seven required widths with zero overflow, console error, page error,
@@ -133,7 +133,7 @@ rules.
 ### Workspace home revamp (2026-08-16)
 
 The authenticated `/dashboard` was rebuilt from a prose walkthrough into a
-data-backed workspace home. `apps/web/src/modules/workspace/server/dashboard-summary.ts`
+data-backed workspace home. `frontend/web/src/modules/workspace/server/dashboard-summary.ts`
 reads only the signed-in account's own read-only endpoints (achievements,
 applications, evidence, experiences, due networking reminders, skills) in
 parallel; each section degrades to an explicit "unavailable" state instead of an
@@ -148,7 +148,7 @@ total the API does not promise. No metric is hardcoded and the canonical interna
 - [x] Route-matched loading skeleton and workspace-width error state.
 - [x] `pnpm format:check`, `pnpm lint` (including web architecture and repository
       boundaries), and `pnpm typecheck`: pass.
-- [x] `pnpm test`: pass — 45 web files/176 tests plus UI, contracts, boundary, and
+- [x] `pnpm test`: pass â€” 45 web files/176 tests plus UI, contracts, boundary, and
       edge suites. 13 of those web tests cover the new summary aggregator and
       dashboard states.
 - [!] `make test-e2e`, `make test-integration`, `pnpm build`, and the Python gates
@@ -345,8 +345,8 @@ progress" indefinitely and the account was told to add roles by hand.
 
 - [x] `pnpm lint`, `pnpm typecheck`, `pnpm test` (51 files / 243 tests), edge
       tests, `ruff check`, `ruff format --check`, `mypy` (227 files), backend
-      `pytest tests/unit tests/architecture` (454), `apps/api` pytest (145),
-      `apps/worker` pytest (89): all pass.
+      `pytest tests/unit tests/architecture` (454), `backend/api` pytest (145),
+      `backend/worker` pytest (89): all pass.
 - [!] `pnpm contracts:check` fails before and after this change: the pinned
   `openapi-typescript@7.13.0` crashes on `typescript@7.0.2`
   (`TypeError: Cannot read properties of undefined (reading 'factory')`).
@@ -379,38 +379,38 @@ See also `docs/product-vision-roadmap.md` for the full product vision mapping.
       to the API so it is computed once rather than per client (ADR 0019 defers
       until needed; identifier remains derived today).
 
-Verification: `uv run pytest packages/backend/tests/unit/test_declared_profile_enrichment.py`
-— 3 passed (2026-08-23).
+Verification: `uv run pytest backend/core/tests/unit/test_declared_profile_enrichment.py`
+â€” 3 passed (2026-08-23).
 
 ## Phase 12 - Opportunity supply and assisted apply (in progress)
 
 - [~] `JobSourceConnector` port with fake + Greenhouse fixture adapters; Lever,
-      Ashby, SmartRecruiters, Workable, and Workday tenant endpoints remain.
+  Ashby, SmartRecruiters, Workable, and Workday tenant endpoints remain.
 - [x] Ingestion dedupe via `(owner, source_kind, external_id)` unique index;
       bounded sync batch size; hostile-input validation on listings.
 - [x] `ApplicationProfile` in `application_workspace` with migration, CRUD API
       (`GET`/`PUT /api/v1/application-profile`), and unit tests.
 - [~] Assisted apply: `assisted_apply_handoff` pack document when profile
-      exists; frontend Application Profile editor and Opportunities sync UI not
-      yet wired.
+  exists; frontend Application Profile editor and Opportunities sync UI not
+  yet wired.
 - [x] Explicitly out of scope documented and enforced: no portal passwords,
       account creation, impersonation, or bot-detection bypass (ADR 0019).
 
-Verification: `uv run pytest packages/backend/tests/unit/test_application_profile.py
-packages/backend/tests/unit/test_job_source_connector.py` — passed (2026-08-23).
+Verification: `uv run pytest backend/core/tests/unit/test_application_profile.py
+backend/core/tests/unit/test_job_source_connector.py` â€” passed (2026-08-23).
 
 ## Phase 13 - Gap-to-learning loop (in progress)
 
 - [x] Read competency gaps from `role_readiness` via `RoleReadinessGapSource`
       and open as `career_growth` development items (`POST
-      /api/v1/career-growth/development-items/from-gap`).
+/api/v1/career-growth/development-items/from-gap`).
 - [ ] Completing an item prompts the evidence it produced (Growth UI prompt not
       yet wired end-to-end).
 - [x] Gap titles/descriptions are deterministic; no outcome, ranking, or hiring
       probability claims.
 
-Verification: `uv run pytest packages/backend/tests/unit/test_gap_to_learning.py`
-— passed (2026-08-23).
+Verification: `uv run pytest backend/core/tests/unit/test_gap_to_learning.py`
+â€” passed (2026-08-23).
 
 ### Open verification and product risks
 
@@ -483,7 +483,7 @@ its expanded local gates pass, and commit `9558f33` passed hosted CI run
 
 ### Architecture-alignment work
 
-- [x] Make `packages/backend` the owner of shared Python foundation code and the
+- [x] Make `backend/core` the owner of shared Python foundation code and the
       preserved Alembic revision graph.
 - [x] Make API and worker thin members of one root uv workspace and lock; forbid
       backend-to-app, worker-to-API, and deployable persistence imports.
@@ -504,9 +504,9 @@ its expanded local gates pass, and commit `9558f33` passed hosted CI run
 - Domain tables and migrations beyond connection/migration infrastructure
 - Upload, malware scanning, parsing, OCR, and resume scoring (Phase 2)
 - Career profile, evidence persistence, and achievement capture (Phase 3)
-- Role/job analysis and all production AI calls (Phases 4–6)
+- Role/job analysis and all production AI calls (Phases 4â€“6)
 - Resume editing/export, application tracking, interview/networking/growth,
-  billing, admin, and production deployment (Phases 7–10)
+  billing, admin, and production deployment (Phases 7â€“10)
 - Real customer testimonials, autonomous job submission, production secrets, and
   production data
 - Browser extension/job capture, empty backend modules or provider integrations,
@@ -523,7 +523,7 @@ placeholder metrics.
 ```text
 Pinned toolchains + root locks + env contract
           |
-          +--> packages/backend --> thin API + thin worker
+          +--> backend/core --> thin API + thin worker
           |           |                    |
           |           +--> Alembic         +--> PostgreSQL/Redis/MinIO readiness
           |
@@ -672,7 +672,7 @@ external secret scanner. The final tree makes consumer typechecks depend on
 dependency builds/typechecks, generates the E2E password per run, removes the
 literal from reachable PR history, and passes both gates.
 
-### Phase 1 closure evidence — 2026-07-26
+### Phase 1 closure evidence â€” 2026-07-26
 
 | Command / gate                         | Result           | Evidence                                                                                                                                                                                                                                                                                                                                                                               |
 | -------------------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -772,7 +772,7 @@ remain evidence for the original generic-block v1 slice only.
 
 - FastAPI remains the OpenAPI authority and thin authorization/validation adapter;
   generated contracts are consumed by the Next.js feature module.
-- `packages/backend/src/rezumi/modules/resume_health` owns framework-free domain
+- `backend/core/src/rezumi/modules/resume_health` owns framework-free domain
   rules and application ports/use cases. SQLAlchemy, S3, ClamAV, and Celery
   adapters point inward; the worker does not import the API.
 - Document text extraction, layout analysis, semantic parsing, OCR, and malware
@@ -852,7 +852,7 @@ rejected it under `--wait`. The scheduler now has a PID/process-specific
 health probe, both E2E runners assert it explicitly, failure paths retain bounded
 diagnostics before cleanup, and the repaired local and hosted gates pass.
 
-### Typed semantic closure verification — 2026-07-25
+### Typed semantic closure verification â€” 2026-07-25
 
 | Command / gate                                             | Status  | Evidence                                                                                                                                                                                                                                                                                                                                                                                                       |
 | ---------------------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1047,7 +1047,7 @@ evidence are listed below.
 | `scripts/verify-phase3.ps1` / `make verify-phase3` | Pass   | `scripts/verify-phase3.ps1` passed locally on 2026-07-19 against the documentation-aligned tree. It ran the full repository gate followed by the isolated Phase 3 migration, integration, runtime, and browser workflow.                                                                                                                                         |
 | Hosted CI                                          | Pass   | Run `29657932938` passed supply-chain, API, web/contracts, worker, browser-smoke, Resume Health E2E, Career Record E2E, and container/image jobs on no-change trigger commit `f752b55`, whose tree is identical to implementation commit `0df8bcf`; GitGuardian also passed on PR #13.                                                                           |
 
-### Resume-ready closure evidence — 2026-07-26
+### Resume-ready closure evidence â€” 2026-07-26
 
 | Command / gate                           | Status | Evidence                                                                                                                                                                                                                                                                                                                                                                                                |
 | ---------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1203,7 +1203,7 @@ Requirement Matrix, and Opportunity Prioritizer vertical slice. It preserves
 Phase 3 evidence authority and Phase 4 role context while adding exact job
 imports, source-spanned requirements, SSRF-hardened URL fetching, deterministic
 Application Readiness, hard-gap visibility, and explainable pursuit priority.
-PR #20 merged the Phase 5–7 stack at `f9807dc` after hosted CI run `30119088488`
+PR #20 merged the Phase 5â€“7 stack at `f9807dc` after hosted CI run `30119088488`
 passed all required jobs.
 
 ### Included
@@ -1278,14 +1278,14 @@ access or third-party credentials.
 | ----------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Pre-edit Phase 4 baseline           | Pass   | `scripts/verify-phase4.ps1` passed on 2026-07-19 on the final documentation-aligned tree.                                                                                                                                                                                                                                                                                               |
 | Backend focused tests               | Pass   | Job Match scoring, service, URL-import provider, migration-shape, and migration-graph tests passed before the full gate (`10 passed`).                                                                                                                                                                                                                                                  |
-| API and web focused tests           | Pass   | `apps/api/tests/test_job_match_routes.py` passed (`2 passed`, one Starlette deprecation warning). `apps/web/src/modules/job-match/tests/job-match-view.test.tsx` passed (`3 passed`).                                                                                                                                                                                                   |
+| API and web focused tests           | Pass   | `backend/api/tests/test_job_match_routes.py` passed (`2 passed`, one Starlette deprecation warning). `frontend/web/src/modules/job-match/tests/job-match-view.test.tsx` passed (`3 passed`).                                                                                                                                                                                            |
 | Generated contracts                 | Pass   | `pnpm contracts:generate` updated the normalized OpenAPI artifact and generated TypeScript schema from FastAPI. `pnpm contracts:check`, contracts build, and the unchanged web typecheck pass; additive response defaults preserve existing client fixtures.                                                                                                                            |
 | Final repository and Phase 5 gates  | Pass   | `scripts/verify-phase5.ps1` passed on 2026-07-19. It runs the native PowerShell equivalent of the Make gate plus the isolated Phase 5 stack: format, uv lock, contract drift, lint, typecheck, JS tests, JS build, Ruff, mypy, backend/API/worker tests, Compose config/build/startup, migrations, runtime probes, integration tests, worker hardening probes, and Playwright journeys. |
 | Phase 5 E2E and integration details | Pass   | Isolated stack migration head was `20260719_0006`; rollback to `20260719_0005` and forward repair passed. Backend integration tests passed (`13 passed`). Playwright ran auth, Resume Health, Career Record, Role Explorer, and Job Match journeys with `6 passed, 4 mobile skips` where product-specific desktop journeys intentionally skip mobile.                                   |
 
 Earlier verification attempts found and fixed two issues caused by the Phase 5
 change: the web Vitest suite could exhaust memory with parallel jsdom workers, so
-`apps/web/vitest.config.mts` now disables file-level parallelism; and the Job
+`frontend/web/vitest.config.mts` now disables file-level parallelism; and the Job
 Match E2E success assertion matched both the screen-reader live region and the
 visible alert, so the test now asserts the accessible status region.
 
@@ -1315,7 +1315,7 @@ truth-locked AI: an authenticated, owner-scoped review workflow that turns
 eligible Career Record evidence plus saved Job Match requirements into
 structured, grounded suggestions. Provider output remains untrusted until strict
 schema validation, deterministic grounding, and explicit user action complete.
-The merged Phase 5–7 stack passed hosted CI run `30119088488` on PR #20.
+The merged Phase 5â€“7 stack passed hosted CI run `30119088488` on PR #20.
 
 ### Included
 
@@ -1385,7 +1385,7 @@ score delta as permission to bypass grounding or user approval.
 | Check                               | Status | Evidence                                                                                                                                                                                                                                                                                                                                                                                                |
 | ----------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Pre-edit Phase 5 baseline           | Pass   | `scripts/verify-phase5.ps1` passed on 2026-07-19 after documentation and contract drift were aligned. Phase 5 migration head `20260719_0006`, rollback to `20260719_0005`, forward repair, backend integration tests, worker hardening probes, and the authenticated Job Match Playwright journey remain the accepted predecessor baseline.                                                             |
-| Focused Change Studio tests         | Pass   | Change Studio backend service, adversarial provider/grounding, migration-shape, migration-graph, API route, repository integration, web component, and focused desktop Playwright tests passed while iterating. The final focused browser rerun passed `apps/web/e2e/change-studio-journey.spec.ts` in 12.1 seconds after the locator was narrowed to avoid repeated evidence text.                     |
+| Focused Change Studio tests         | Pass   | Change Studio backend service, adversarial provider/grounding, migration-shape, migration-graph, API route, repository integration, web component, and focused desktop Playwright tests passed while iterating. The final focused browser rerun passed `frontend/web/e2e/change-studio-journey.spec.ts` in 12.1 seconds after the locator was narrowed to avoid repeated evidence text.                 |
 | Generated contracts                 | Pass   | `pnpm contracts:generate` updated the normalized OpenAPI artifact and generated TypeScript schema from FastAPI. `pnpm contracts:check`, contracts build, and the unchanged web typecheck pass; additive response defaults preserve existing client fixtures.                                                                                                                                            |
 | Final repository and Phase 6 gates  | Pass   | `scripts/verify-phase6.ps1` passed on 2026-07-19. It runs the native PowerShell equivalent of the Make gate plus the isolated Phase 6 stack: format, uv lock, contract drift, lint, typecheck, JS tests, JS build, Ruff, mypy, backend/API/worker tests, Compose config/build/startup, migrations, runtime probes, integration tests, worker hardening probes, and Playwright journeys.                 |
 | Phase 6 E2E and integration details | Pass   | Isolated stack migration head was `20260719_0007`; rollback to `20260719_0006` and forward repair passed. Backend integration tests passed (`14 passed`). Playwright ran auth, Resume Health, Career Record, Role Explorer, Job Match, and Change Studio journeys with `7 passed, 5 mobile skips` where product-specific desktop journeys intentionally skip mobile and shared mobile coverage remains. |
@@ -1517,7 +1517,7 @@ this run.
 | Closure backend and renderer tests  | Pass    | 41 focused backend unit/migration tests pass on the current tree, covering service policy, canonical manifests, real PDF/DOCX Unicode extraction, exact omission/duplicate/order/searchability/hash/grounding failures, page overflow, render/deletion leases, attempt-key fencing, cancellation immediately after an object write, durable orphan cleanup, retry/dead-letter/reconciliation, storage response controls, legacy deletion recovery shape, and the migration graph. |
 | Closure worker and API suites       | Pass    | All 89 worker tests and 145 API tests pass on the current tree. Worker coverage includes typed dispatch, runtime composition/resource disposal, bounded orphan-object reconciliation counts, retry/dead-letter reporting, and scheduler routing.                                                                                                                                                                                                                                  |
 | Closure real integrations           | Pass    | The fresh isolated stack reached `20260726_0013`, downgraded to `20260719_0007`, repaired forward to head, and passed all 42 PostgreSQL/Redis/MinIO/provider/repository integration tests with 9 known SQLAlchemy cycle warnings.                                                                                                                                                                                                                                                 |
-| Current web compatibility           | Blocked | The unchanged web app passes lint, typecheck, all 163 component/unit tests, and a 49-route production build against the additive generated contract. Its browser client does not poll a truthful `202 pending` export to terminal state, and the inherited Job Match expectation contradicts the rendered mandatory-gap action. No `apps/web` file is changed in this PR.                                                                                                         |
+| Current web compatibility           | Blocked | The unchanged web app passes lint, typecheck, all 163 component/unit tests, and a 49-route production build against the additive generated contract. Its browser client does not poll a truthful `202 pending` export to terminal state, and the inherited Job Match expectation contradicts the rendered mandatory-gap action. No `frontend/web` file is changed in this PR.                                                                                                     |
 | Generated contracts                 | Pass    | `pnpm contracts:generate` updated the normalized OpenAPI artifact and generated TypeScript schema from FastAPI. `pnpm contracts:check`, contracts build, and the unchanged web typecheck pass; additive response defaults preserve existing client fixtures.                                                                                                                                                                                                                      |
 | Current host repository gate        | Pass    | The host/platform portion of `scripts/verify-phase7.ps1` passes: Prettier, uv lock, contract drift, JavaScript lint/boundaries/types/tests/build, Python Ruff/mypy/tests, Compose config/images/startup, migrations, runtime probes, and worker ping. Counts include 427 backend, 145 API, 89 worker, 163 web, 12 UI, 3 contract, 4 boundary, and 2 edge tests; Next.js built 49 routes.                                                                                          |
 | Final closure repository/stack gate | Blocked | `scripts/verify-phase7.ps1` exited 1 after its host/platform gate passed because a stale Rezumi test project held port `11025`. After scoped cleanup, the isolated rerun passed head/rollback/repair, 42 integrations, and worker/runtime checks, then ended with 6 browser passes, 6 intentional mobile skips, and 2 unchanged frontend failures described below.                                                                                                                |
@@ -1546,8 +1546,8 @@ The bounded isolated rerun then reached migration head `20260726_0013`,
 downgraded to `20260719_0007`, repaired forward, passed all 42 real integration
 tests, and completed worker/runtime hardening before Playwright. Six browser
 tests passed and six intentional mobile cases skipped; two unchanged frontend
-cases failed. Job Match still expects “Prepare a tailored resume” although the
-correct mandatory-gap state renders “Address mandatory gaps before tailoring.”
+cases failed. Job Match still expects â€œPrepare a tailored resumeâ€ although the
+correct mandatory-gap state renders â€œAddress mandatory gaps before tailoring.â€
 Resume Builder receives a truthful `202 pending` export, and the worker completes
 verification, but the unchanged client does not poll `GET /api/v1/exports/{id}`;
 it retains the initial pending/zero-byte record, keeps Download disabled, and
@@ -1651,7 +1651,7 @@ job at head `645536b`; final evidence-only run `30128304892` also passed at
       transition, or message-sending endpoint or control was added. Generated
       messages remain user-reviewed text.
 
-### Local closeout evidence — 2026-07-24 / implementation `964cd9c`
+### Local closeout evidence â€” 2026-07-24 / implementation `964cd9c`
 
 | Check                           | Status | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1731,7 +1731,7 @@ owner-authorizing application interfaces.
 - [x] Publish the locally and security-verified final tree through hosted CI and
       record the exact revision before claiming the phase complete.
 
-### Local closeout evidence — 2026-07-25 / local and security verified
+### Local closeout evidence â€” 2026-07-25 / local and security verified
 
 | Check                           | Status | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | ------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1820,7 +1820,7 @@ infrastructure, or PR #23 migration correction.
 
 | Check                            | Status | Evidence                                                                                                                                                                                                                                                                                                                                                     |
 | -------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Pure seed policy and graph tests | Pass   | Focused Ruff plus `pytest packages/backend/tests/unit/test_local_seed.py -q` passed all 20 guard, determinism, provenance/hash, loader, migration-pin, create-once, replay, and object-drift tests. Canonical backend mypy passed 214 source files.                                                                                                          |
+| Pure seed policy and graph tests | Pass   | Focused Ruff plus `pytest backend/core/tests/unit/test_local_seed.py -q` passed all 20 guard, determinism, provenance/hash, loader, migration-pin, create-once, replay, and object-drift tests. Canonical backend mypy passed 214 source files.                                                                                                              |
 | Compose and preview tooling      | Pass   | `docker compose --profile tools config --quiet`, fixture package lint/typecheck, and `pnpm fixtures:preview` passed; the preview printed labeled fictional JSON and performed no database/object I/O.                                                                                                                                                        |
 | First PostgreSQL/MinIO execution | Pass   | `scripts/seed-local.ps1` at migration head `20260726_0013` created and verified all 79 rows and both private objects, printed the public fixture password only for the newly created `.invalid` account, and represented Phases 1-9.                                                                                                                         |
 | Same-state replay                | Pass   | A second exact wrapper execution preserved the account, verified all 79 rows and both object byte streams, and reported `0 newly created`.                                                                                                                                                                                                                   |
@@ -1872,23 +1872,23 @@ without inventing those values.
 
 ## Roadmap and phase gates
 
-| Phase                                                       | Outcomes                                                                                                                           | Depends on  | Exit evidence                                                                                          |
-| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------ |
-| Phase 0 — Foundation                                        | Root workspaces, shared backend, thin deployables, generated contracts, local dependencies, health, CI, docs                       | None        | Architecture/contracts/migrations pass; setup/dev healthy; format, lint, types, tests pass             |
-| Phase 1 — Auth, shell, onboarding                           | Registration/verification/login/logout/reset, secure sessions, protected responsive shell, onboarding, dashboard/settings skeleton | Phase 0     | Auth journeys pass; anonymous/cross-user denial tests; accessible shell matches visual direction       |
-| Phase 2 — Upload, parsing, general health                   | Secure PDF/DOCX pipeline, local provider, canonical resume, parse review, deterministic health report, guest/save flows            | Phase 1     | Fixtures parse; malformed uploads fail safely; scores reproduce and explain; correction works          |
-| Phase 3 — Career profile, Evidence Vault, Achievement Inbox | Independent career CRUD, provenance graph, evidence states/attachments, guided capture and conflict checks                         | Phases 1–2  | Ownership/provenance tests; unsupported evidence excluded; user can maintain profile without resume    |
-| Phase 4 — Role Explorer                                     | Role taxonomy/search/save/compare and deterministic evidence-linked readiness                                                      | Phase 3     | Role comparison works without job description; score and gaps explainable                              |
-| Phase 5 — Job Match and prioritizer                         | Safe paste/URL import, source-spanned requirements, match matrix, hard gaps, application priority                                  | Phases 3–4  | SSRF tests; every requirement traceable; each match evidenced or missing/unknown; deterministic scores |
-| Phase 6 — Change Studio and truth-locked AI                 | Provider gateway/fake, structured suggestions, grounding, review/diff actions, immutable versions, questions                       | Phases 3, 5 | Unsupported claims blocked; numbers grounded; user approval and adversarial injection tests pass       |
-| Phase 7 — Resume builder and verified export                | Structured editor, five templates, PDF/DOCX/text, versions, re-parse and verification report                                       | Phases 2, 6 | Searchable exports round-trip critical fields; broken outputs blocked/warned; accessibility passes     |
-| Phase 8 — Application workspace and packs                   | Kanban/table/calendar, tasks/notes/docs, grounded packs, consistency and outcomes                                                  | Phases 5–7  | Records pin exact resume version; pack claims remain consistent; workflows pass                        |
-| Phase 9 — Interview, networking, growth, analytics          | Defense map, STAR stories, interview prep, consent-based CRM, grounded growth insights/reviews, non-causal analytics               | Phases 3, 8 | New generated stories revalidate claim/evidence; privacy/accessibility tests; analytics is non-causal  |
-| Phase 10 — Commercial, admin, hardening, release            | Entitlements/billing, least-privilege admin, deletion/export/audit, limits, load/security, backup/restore, deployment              | Phases 0–9  | No open critical security issues; idempotent webhooks; deletion and restore tested; full CI/build pass |
+| Phase                                                         | Outcomes                                                                                                                           | Depends on   | Exit evidence                                                                                          |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------ |
+| Phase 0 â€” Foundation                                        | Root workspaces, shared backend, thin deployables, generated contracts, local dependencies, health, CI, docs                       | None         | Architecture/contracts/migrations pass; setup/dev healthy; format, lint, types, tests pass             |
+| Phase 1 â€” Auth, shell, onboarding                           | Registration/verification/login/logout/reset, secure sessions, protected responsive shell, onboarding, dashboard/settings skeleton | Phase 0      | Auth journeys pass; anonymous/cross-user denial tests; accessible shell matches visual direction       |
+| Phase 2 â€” Upload, parsing, general health                   | Secure PDF/DOCX pipeline, local provider, canonical resume, parse review, deterministic health report, guest/save flows            | Phase 1      | Fixtures parse; malformed uploads fail safely; scores reproduce and explain; correction works          |
+| Phase 3 â€” Career profile, Evidence Vault, Achievement Inbox | Independent career CRUD, provenance graph, evidence states/attachments, guided capture and conflict checks                         | Phases 1â€“2 | Ownership/provenance tests; unsupported evidence excluded; user can maintain profile without resume    |
+| Phase 4 â€” Role Explorer                                     | Role taxonomy/search/save/compare and deterministic evidence-linked readiness                                                      | Phase 3      | Role comparison works without job description; score and gaps explainable                              |
+| Phase 5 â€” Job Match and prioritizer                         | Safe paste/URL import, source-spanned requirements, match matrix, hard gaps, application priority                                  | Phases 3â€“4 | SSRF tests; every requirement traceable; each match evidenced or missing/unknown; deterministic scores |
+| Phase 6 â€” Change Studio and truth-locked AI                 | Provider gateway/fake, structured suggestions, grounding, review/diff actions, immutable versions, questions                       | Phases 3, 5  | Unsupported claims blocked; numbers grounded; user approval and adversarial injection tests pass       |
+| Phase 7 â€” Resume builder and verified export                | Structured editor, five templates, PDF/DOCX/text, versions, re-parse and verification report                                       | Phases 2, 6  | Searchable exports round-trip critical fields; broken outputs blocked/warned; accessibility passes     |
+| Phase 8 â€” Application workspace and packs                   | Kanban/table/calendar, tasks/notes/docs, grounded packs, consistency and outcomes                                                  | Phases 5â€“7 | Records pin exact resume version; pack claims remain consistent; workflows pass                        |
+| Phase 9 â€” Interview, networking, growth, analytics          | Defense map, STAR stories, interview prep, consent-based CRM, grounded growth insights/reviews, non-causal analytics               | Phases 3, 8  | New generated stories revalidate claim/evidence; privacy/accessibility tests; analytics is non-causal  |
+| Phase 10 â€” Commercial, admin, hardening, release            | Entitlements/billing, least-privilege admin, deletion/export/audit, limits, load/security, backup/restore, deployment              | Phases 0â€“9 | No open critical security issues; idempotent webhooks; deletion and restore tested; full CI/build pass |
 
 Detailed checkboxes live in `docs/implementation-checklist.md`.
 
-## Repository structure normalization — 2026-07-27
+## Repository structure normalization â€” 2026-07-27
 
 Status: implementation and all applicable local verification are complete in an
 isolated `origin/main` worktree. Draft PR #37 publishes code commit `bf8076e`, and
@@ -2005,7 +2005,7 @@ Residual risks and next step:
 - ClamAV is required by the Phase 2 local stack. The processor fails closed and
   retains quarantine during bounded retry when the scanner is unavailable.
   Production scanner/service selection still requires deployment review.
-- “Current stable dependencies” and reproducibility are reconciled by selecting
+- â€œCurrent stable dependenciesâ€ and reproducibility are reconciled by selecting
   conservative stable compatible releases and tracking exact lockfiles.
 - Guest Resume Health uses a keyed-hash opaque, short-lived capability, separate
   CSRF/origin checks, one active intake, and strict retention without weakening
@@ -2023,7 +2023,7 @@ Residual risks and next step:
 | --- | ---------------------------------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
 | R1  | Cross-tenant data exposure through IDOR or object keys           | Medium / Critical   | Ownership-scoped queries, policy tests, private buckets, audit events                                                                                                                                                                   | 1 and every data phase |
 | R2  | Malicious or resource-exhausting documents                       | High / Critical     | Signature/limit checks, scanning, isolated no-network worker, time/memory/CPU caps, hostile fixtures                                                                                                                                    | 2                      |
-| R3  | AI fabricates or is redirected by document instructions          | High / Critical     | Untrusted-content delimiters, strict schemas, evidence ledger, deterministic grounding, adversarial tests                                                                                                                               | 5–6                    |
+| R3  | AI fabricates or is redirected by document instructions          | High / Critical     | Untrusted-content delimiters, strict schemas, evidence ledger, deterministic grounding, adversarial tests                                                                                                                               | 5â€“6                  |
 | R4  | Score or preparation labels mislead users                        | Medium / High       | Canonical disclaimer, deterministic versioned formulas, explanations, no probability language; Career Health and Promotion Readiness remain internal, non-employer signals                                                              | 2, 4, 5, 9             |
 | R5  | PDF/DOCX looks correct but parses badly                          | High / High         | Constrained templates, searchable text, round-trip verification and blocking critical failures                                                                                                                                          | 7                      |
 | R6  | Dependency/toolchain churn breaks the greenfield baseline        | Medium / Medium     | Conservative pins, lockfiles, CI cache keys, scheduled upgrades in small changes                                                                                                                                                        | 0 onward               |
@@ -2031,11 +2031,11 @@ Residual risks and next step:
 | R8  | Sensitive content leaks through logs/telemetry/providers         | Medium / Critical   | Data classification, default redaction, payload-free telemetry, provider minimization and consent                                                                                                                                       | 0 onward               |
 | R9  | Local Compose health hides production gaps                       | High / High         | Separate readiness, production threat review, load/restore/failure tests, protected deploy                                                                                                                                              | 10                     |
 | R10 | Broad roadmap produces unfinished horizontal scaffolding         | High / Medium       | One vertical phase at a time, dependency gates, no completion on placeholders                                                                                                                                                           | Every phase            |
-| R11 | Public demo is mistaken for functional analysis                  | Medium / Medium     | Isolate it at `/demo/dashboard`, retain the fictional-preview label, and keep it free of upload/score claims or account persistence                                                                                                     | 0–1                    |
+| R11 | Public demo is mistaken for functional analysis                  | Medium / Medium     | Isolate it at `/demo/dashboard`, retain the fictional-preview label, and keep it free of upload/score claims or account persistence                                                                                                     | 0â€“1                  |
 | R12 | Retention/deletion becomes inconsistent across stores            | Medium / High       | Data inventory, deletion tombstones/jobs, object/vector/backup policy and tests per entity                                                                                                                                              | 1 onward               |
 | R13 | Generated contracts drift from implemented OpenAPI               | Medium / High       | FastAPI remains authoritative; pin normalized export/client generation and fail CI on either drift                                                                                                                                      | 0 onward               |
 | R14 | Hosted CI and local behavior diverge after architecture changes  | Low / Medium        | Runs 29360385761, 29367040183, 29378312134, 29657932938, 30119088488, 30126993025, and 30128304892 verify the merged predecessor through Phase 8; retain clean contract-output, container, migration, browser, and supply-chain gates   | 0 onward               |
-| R15 | Upstream runtime findings do not all have supported stable fixes | Low / High          | CPython 3.13.14 findings `CVE-2025-15366`, `CVE-2025-15367`, and `CVE-2026-12003` are medium, have fixes only in Python 3.15 prereleases, and are nonblocking under the documented policy; monitor stable releases and refresh promptly | 0–1                    |
+| R15 | Upstream runtime findings do not all have supported stable fixes | Low / High          | CPython 3.13.14 findings `CVE-2025-15366`, `CVE-2025-15367`, and `CVE-2026-12003` are medium, have fixes only in Python 3.15 prereleases, and are nonblocking under the documented policy; monitor stable releases and refresh promptly | 0â€“1                  |
 | R16 | Workspace/migration move regresses runtime or existing databases | Medium / High       | One root lock, preserved revision IDs, fresh/existing upgrade tests, root-context image builds, and direct runtime Alembic verification                                                                                                 | 0                      |
 | R17 | Contact consent is misunderstood or withdrawn data is retained   | Medium / Critical   | Purpose-specific append-only attestations, server-owned/database-allowlisted policy IDs, no scraping/import, terminal withdrawal, irreversible PII/content redaction, bounded local reminders, and cross-owner/redaction tests          | 9                      |
 | R18 | Analytics cohorts or timezones create misleading comparisons     | Medium / High       | Validated IANA zones, versioned cohort/timestamp/suppression definitions, exact cohort reuse, stale-source rejection, small-cohort suppression, and permanent correlation-only language                                                 | 9                      |
@@ -2070,4 +2070,4 @@ merged and no production deployment occurs without explicit later approval.
 
 ## Local stack note
 
-`pnpm local:up` now passes with the web runtime image copying workspace `node_modules` and `@swc/helpers` declared directly in `apps/web/package.json`. Verified on 2026-08-17 when `web`, `web-edge`, `api`, `worker`, and `worker-scheduler` all reported healthy in `docker compose ps`.
+`pnpm local:up` now passes with the web runtime image copying workspace `node_modules` and `@swc/helpers` declared directly in `frontend/web/package.json`. Verified on 2026-08-17 when `web`, `web-edge`, `api`, `worker`, and `worker-scheduler` all reported healthy in `docker compose ps`.

@@ -1,0 +1,16 @@
+{
+  "name": "@rezumi/test-fixtures",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "preview": "tsx src/preview.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@rezumi/typescript-config": "*",
+    "tsx": "4.23.12",
+    "typescript": "5.9.3"
+  }
+}

@@ -64,7 +64,7 @@ require explicit interpretation:
   CSS 4.3.2.
 - Python 3.13 with uv 0.11.21; FastAPI 0.138.2, Pydantic, async
   SQLAlchemy/asyncpg, and Alembic infrastructure in one root workspace and lock.
-- A shared `packages/backend` modular monolith used by thin API and worker
+- A shared `backend/core` modular monolith used by thin API and worker
   applications; stable Phase 0 database, migration, configuration, and logging
   primitives live in its foundation layer.
 - Celery 5.6.3 using Redis for the local broker and result backend.

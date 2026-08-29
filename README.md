@@ -25,23 +25,27 @@ factual is invented, and no material change is applied without explicit review.
 | Backend   | Shared `rezumi-backend` modular monolith (ports & adapters)              |
 | Contracts | FastAPI OpenAPI → generated TypeScript schema + typed client             |
 | Services  | PostgreSQL (pgvector), Redis, MinIO (S3), ClamAV, Mailpit                |
-| Tooling   | pnpm 11 + Turbo (JS), one root uv workspace (Python), Docker Compose     |
+| Tooling   | npm 11 + Turbo (JS), one uv workspace rooted at `backend/` (Python), Docker Compose |
 
 ## Repository map
 
 ```text
-apps/
-  web/        Next.js UI (src/app routes + src/modules/<feature>)
-  api/        Thin FastAPI delivery; adapters under modules/<context>
-  worker/     Thin Celery delivery; task adapters under tasks/
-packages/
-  backend/    Shared Python monolith (rezumi.foundation + rezumi.modules.*)
-  contracts/  OpenAPI artifact, generated schema, typed client
-  ui/         Accessible React primitives
-  design-tokens/, eslint-config/, typescript-config/, test-fixtures/
-docs/         Product, architecture, security, scoring, ADRs
-infra/        Local container infrastructure
-scripts/      Cross-platform dev + verification scripts
+frontend/
+  web/                Next.js UI (src/app routes + src/modules/<feature>)
+  ui/                 Accessible React primitives
+  design-tokens/      Shared visual tokens
+  eslint-config/      Frontend boundary and lint rules
+  typescript-config/  Shared strict TypeScript configs
+  test-fixtures/      Explicitly fictional frontend/demo fixtures
+backend/
+  api/                Thin FastAPI delivery; adapters under modules/<context>
+  worker/             Thin Celery delivery; task adapters under tasks/
+  core/               Shared Python monolith (rezumi.foundation + rezumi.modules.*)
+shared/
+  contracts/          OpenAPI artifact, generated schema, typed client
+docs/                 Product, architecture, security, scoring, ADRs
+infra/                Local container infrastructure
+scripts/              Cross-platform dev + verification scripts
 ```
 
 ## Prerequisites
@@ -63,8 +67,8 @@ Cross-platform / PowerShell:
 
 ```powershell
 .\scripts\setup.ps1
-pnpm local:up         # detached, health-checked
-pnpm local:smoke      # probe web, API, Mailpit
+npm run local:up      # detached, health-checked
+npm run local:smoke   # probe web, API, Mailpit
 ```
 
 Then create an account at `/register`, click the verification link captured in
@@ -105,9 +109,9 @@ All feature routes require an authenticated session unless noted.
 Run the narrowest check while iterating, then the gates before claiming done.
 
 ```sh
-pnpm dev:web / dev:api / dev:worker   # host hot-reload against containers
-pnpm local:up / local:down            # start (health-checked) / stop, keep volumes
-pnpm local:logs -- api                # follow one service
+npm run dev:web / dev:api / dev:worker   # host hot-reload against containers
+npm run local:up / local:down            # start (health-checked) / stop, keep volumes
+npm run local:logs -- api                # follow one service
 
 make format-check                     # prettier + ruff format
 make lint                             # eslint + boundary checks + ruff

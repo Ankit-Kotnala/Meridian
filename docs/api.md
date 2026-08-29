@@ -48,10 +48,10 @@ timezone-specific snapshots without accepting raw career/contact prose. No Phase
 9 route sends a message, imports or scrapes contacts, changes an external system,
 or submits an application.
 
-`packages/contracts` derives its public types and client from the implemented
+`shared/contracts` derives its public types and client from the implemented
 FastAPI OpenAPI document. The normalized artifact under
-`packages/contracts/openapi` and generated files under
-`packages/contracts/src/generated` are committed review artifacts; neither is an
+`shared/contracts/openapi` and generated files under
+`shared/contracts/src/generated` are committed review artifacts; neither is an
 independent contract authority. Problem, pagination, and product schemas are not
 published until corresponding Pydantic models and operations exist. Phase 1
 contract evidence is recorded in `PLANS.md`. Phase 2 through Phase 9 changes

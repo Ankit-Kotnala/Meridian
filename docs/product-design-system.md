@@ -73,7 +73,7 @@ decisions, and one honest next step instead of an array of decorative summaries.
 ## Foundations
 
 The canonical CSS values live in
-`packages/design-tokens/src/tokens.css`. Product code uses semantic token names,
+`frontend/design-tokens/src/tokens.css`. Product code uses semantic token names,
 not raw palette values.
 
 ### Color roles
@@ -169,9 +169,9 @@ shell and short, explicit retention language.
 
 ## Components and ownership
 
-Reusable presentation primitives belong in `packages/ui`. Domain behavior,
+Reusable presentation primitives belong in `frontend/ui`. Domain behavior,
 loading orchestration, API requests, and career-specific rules stay under
-`apps/web/src/modules/<feature>`.
+`frontend/web/src/modules/<feature>`.
 
 Current shared primitives include:
 

@@ -6,7 +6,7 @@ import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
 const docker = process.platform === "win32" ? "docker.exe" : "docker";
-const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+const npm = process.platform === "win32" ? "npm.cmd" : "npm";
 const uv = process.platform === "win32" ? "uv.exe" : "uv";
 
 const dependencyServices = [
@@ -62,7 +62,14 @@ function run(command, args, options = {}) {
 }
 
 function compose(args) {
-  run(docker, ["compose", ...args]);
+  run(docker, [
+    "compose",
+    "-f",
+    "infra/compose.yaml",
+    "--project-directory",
+    ".",
+    ...args,
+  ]);
 }
 
 function readLocalEnvironment() {
@@ -159,7 +166,7 @@ function migrateDatabase() {
     "api",
     "alembic",
     "-c",
-    "packages/backend/alembic.ini",
+    "backend/core/alembic.ini",
     "upgrade",
     "head",
   ]);
@@ -233,7 +240,9 @@ switch (command) {
   case "dev-web":
     stopServices(webServices);
     startServices(backendServices);
-    run(pnpm, ["--filter", "@rezumi/web", "dev"], { env: hostEnvironment() });
+    run(npm, ["run", "dev", "--workspace=@rezumi/web"], {
+      env: hostEnvironment(),
+    });
     break;
   case "dev-api":
     stopServices(["api"]);
@@ -242,6 +251,8 @@ switch (command) {
       uv,
       [
         "run",
+        "--project",
+        "backend",
         "--package",
         "rezumi-api",
         "uvicorn",
@@ -260,6 +271,8 @@ switch (command) {
       uv,
       [
         "run",
+        "--project",
+        "backend",
         "--package",
         "rezumi-worker",
         "celery",

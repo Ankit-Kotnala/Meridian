@@ -34,22 +34,22 @@ function Assert-HttpEndpoint(
     throw "Runtime probe failed for $Endpoint after $Attempts attempts: $LastFailure"
 }
 
-pnpm format:check
+npm run format:check
 Assert-LastExitCode "Prettier check"
-uv lock --check
+uv lock --project backend --check
 Assert-LastExitCode "Python workspace lock check"
-pnpm contracts:check
+npm run contracts:check
 Assert-LastExitCode "Generated contract drift check"
-pnpm lint
+npm run lint
 Assert-LastExitCode "JavaScript lint"
-pnpm typecheck
+npm run typecheck
 Assert-LastExitCode "TypeScript check"
-pnpm test
+npm run test
 Assert-LastExitCode "JavaScript tests"
-pnpm build
+npm run build
 Assert-LastExitCode "JavaScript build"
 
-Push-Location "packages/backend"
+Push-Location "backend/core"
 try {
     uv run --package rezumi-backend ruff format --check .
     Assert-LastExitCode "Backend format check"
@@ -64,7 +64,7 @@ finally {
     Pop-Location
 }
 
-Push-Location "apps/api"
+Push-Location "backend/api"
 try {
     uv run ruff format --check .
     Assert-LastExitCode "API format check"
@@ -79,7 +79,7 @@ finally {
     Pop-Location
 }
 
-Push-Location "apps/worker"
+Push-Location "backend/worker"
 try {
     uv run ruff format --check .
     Assert-LastExitCode "Worker format check"
@@ -94,24 +94,24 @@ finally {
     Pop-Location
 }
 
-uv run --package rezumi-api ruff format --config apps/api/pyproject.toml --check packages/contracts/scripts/export_openapi.py
+uv run --project backend --package rezumi-api ruff format --config backend/api/pyproject.toml --check shared/contracts/scripts/export_openapi.py
 Assert-LastExitCode "OpenAPI exporter format check"
-uv run --package rezumi-api ruff check --config apps/api/pyproject.toml packages/contracts/scripts/export_openapi.py
+uv run --project backend --package rezumi-api ruff check --config backend/api/pyproject.toml shared/contracts/scripts/export_openapi.py
 Assert-LastExitCode "OpenAPI exporter lint"
 
-docker compose config --quiet
+docker compose -f infra/compose.yaml --project-directory . config --quiet
 Assert-LastExitCode "Compose configuration"
 foreach ($Service in @("api", "worker", "web", "web-edge")) {
-    docker compose build $Service
+    docker compose -f infra/compose.yaml --project-directory . build $Service
     Assert-LastExitCode "Application image build for $Service"
 }
-docker compose up --detach --force-recreate --wait --wait-timeout 300
+docker compose -f infra/compose.yaml --project-directory . up --detach --force-recreate --wait --wait-timeout 300
 Assert-LastExitCode "Application stack startup"
-docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
+docker compose -f infra/compose.yaml --project-directory . run --rm --no-deps api alembic -c backend/core/alembic.ini upgrade head
 Assert-LastExitCode "Container migration"
-docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini upgrade head
+docker compose -f infra/compose.yaml --project-directory . run --rm --no-deps api alembic -c backend/core/alembic.ini upgrade head
 Assert-LastExitCode "Idempotent container migration"
-docker compose run --rm --no-deps api alembic -c packages/backend/alembic.ini current
+docker compose -f infra/compose.yaml --project-directory . run --rm --no-deps api alembic -c backend/core/alembic.ini current
 Assert-LastExitCode "Container migration state"
 
 $Endpoints = @(
@@ -125,6 +125,6 @@ foreach ($Endpoint in $Endpoints) {
     Assert-HttpEndpoint -Endpoint $Endpoint
 }
 
-docker compose exec -T worker celery --app rezumi_worker.app:celery_app inspect ping --timeout 5
+docker compose -f infra/compose.yaml --project-directory . exec -T worker celery --app rezumi_worker.app:celery_app inspect ping --timeout 5
 Assert-LastExitCode "Worker broker round trip"
 Write-Host "Rezumi Phase 0 verification passed."

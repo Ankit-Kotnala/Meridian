@@ -290,6 +290,7 @@ document only. Evidence-backed claim scoring remains downstream of the Phase 3
 evidence graph.
 
 ### Declared-profile evidence (GitHub, GitLab, Bitbucket, Stack Overflow,
+
 ### Codeforces, dev.to, Credly, personal portfolios)
 
 Achievements fetched from a user-declared profile link (`career_record`'s
