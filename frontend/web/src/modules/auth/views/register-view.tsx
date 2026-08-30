@@ -84,7 +84,7 @@ export function RegisterView() {
             and can be used only once.
           </div>
           <Link
-            className="inline-flex items-center gap-2 text-sm font-bold text-primary"
+            className="inline-flex items-center gap-2 text-sm font-bold text-info-strong"
             href="/login"
           >
             Continue to sign in{" "}
@@ -143,7 +143,7 @@ export function RegisterView() {
           </Button>
           <p className="text-center text-sm text-muted">
             Already have an account?{" "}
-            <Link className="font-bold text-primary" href="/login">
+            <Link className="font-bold text-info-strong" href="/login">
               Sign in
             </Link>
           </p>

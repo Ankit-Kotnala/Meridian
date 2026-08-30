@@ -891,6 +891,21 @@ textarea {
   background: transparent;
 }
 
+/* Horizontal tab strips stay scrollable on narrow viewports without painting a
+   scrollbar. Setting `overflow-x` alone makes the browser compute
+   `overflow-y: auto` too, and the one-pixel underline overlap on the active tab
+   is enough to add a vertical scrollbar beside the last tab. Clipping with
+   `overflow-y: hidden` would cut that underline instead, so the scrollbars are
+   hidden here. This must stay unlayered to outrank the `*` rule above: Tailwind
+   utilities live in `@layer utilities`, and unlayered styles beat every layer. */
+.scroll-strip {
+  scrollbar-width: none;
+}
+
+.scroll-strip::-webkit-scrollbar {
+  display: none;
+}
+
 @keyframes mobile-nav-enter {
   from {
     opacity: 0;

@@ -16,6 +16,9 @@ import {
  * This is what lets the sidebar stay at seven destinations: the sibling tools a
  * section owns move in here. It renders nothing for single-tool sections, and
  * sits outside `<main>` because it is navigation, not page content.
+ *
+ * `scroll-strip` keeps it horizontally scrollable without painting a scrollbar
+ * beside the last tab - see the rule in globals.css for why that is needed.
  */
 export function WorkspaceSectionNav() {
   const pathname = usePathname();
@@ -34,7 +37,7 @@ export function WorkspaceSectionNav() {
     <div className="border-b border-line bg-surface">
       <nav
         aria-label={`${section.label} sections`}
-        className="mx-auto flex w-full max-w-[var(--content-wide)] gap-6 overflow-x-auto px-[var(--space-page-inline)]"
+        className="mx-auto flex w-full max-w-[var(--content-wide)] gap-6 overflow-x-auto px-[var(--space-page-inline)] scroll-strip"
       >
         {section.tools.map(({ href, label }) => {
           const active = current?.href === href;

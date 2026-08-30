@@ -145,12 +145,17 @@ test("a user saves a job, analyzes exact requirements, and prioritizes it", asyn
 
     await page.goto("/job-match");
     await expect(
-      page.getByRole("heading", { name: "Application readiness" }),
+      page.getByRole("heading", { name: "Suggested for you" }),
     ).toBeVisible();
+    await page.getByRole("tab", { name: "Saved jobs" }).click();
     await expect(
       page.getByRole("heading", { name: "No saved jobs" }),
     ).toBeVisible();
 
+    // KNOWN STALE (pre-dates the job search redesign): the manual job-entry
+    // form asserted below was removed from the product, so this journey has
+    // no way to create the saved job the rest of it analyzes. It needs to be
+    // rewritten around saving a catalog listing instead.
     await page.getByLabel("Job title").fill("Product Manager");
     await page.getByLabel("Company").fill("Example Co");
     await page.getByLabel("Location").fill("Remote");

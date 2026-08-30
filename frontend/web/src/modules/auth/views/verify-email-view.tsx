@@ -101,7 +101,7 @@ export function VerifyEmailView() {
             <Alert title="Your email is verified" tone="success">
               You can now sign in and continue the protected onboarding flow.
             </Alert>
-            <Link className="font-bold text-primary" href="/login">
+            <Link className="font-bold text-info-strong" href="/login">
               Continue to sign in
             </Link>
           </div>
@@ -111,7 +111,7 @@ export function VerifyEmailView() {
               If the address is eligible, a new link will arrive. The same
               response is shown for every address.
             </Alert>
-            <Link className="font-bold text-primary" href="/login">
+            <Link className="font-bold text-info-strong" href="/login">
               Return to sign in
             </Link>
           </div>

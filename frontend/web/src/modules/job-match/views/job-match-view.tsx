@@ -14,29 +14,47 @@ import {
   useMemo,
   useState,
   type FormEvent,
+  type ReactNode,
 } from "react";
 
 import {
   Alert,
   Badge,
   Button,
+  Card,
   EmptyState,
   ErrorState,
   Input,
   LoadingSkeleton,
-  PageHeader,
   ScoreBar,
   Select,
+  Tabs,
   buttonStyles,
   cn,
+  type TabItem,
 } from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 
-import { JobCatalogBrowseSection } from "../components/job-catalog-browse-section";
+import { JobDetailPanel } from "../components/job-detail-panel";
+import { JobFiltersPanel } from "../components/job-filters-panel";
+import { JobListingResults } from "../components/job-listing-results";
+import {
+  emptyJobSearchFilters,
+  filterOptionsFrom,
+  hasActiveFilters,
+  listingMatchesFilters,
+  type JobSearchFilters,
+} from "../components/job-search-filters";
+import {
+  listingKey,
+  selectionFromListing,
+  type JobSelection,
+} from "../components/job-selection";
 import { RoleFilterPicker } from "../components/role-filter-picker";
 import {
   analyzeJob,
+  browseJobCatalog,
   createApplicationForJob,
   deleteJob,
   generateAssistedApplyPack,
@@ -49,6 +67,7 @@ import {
 } from "../api/job-match-api";
 import type {
   Job,
+  JobCatalogListing,
   JobCatalogSearch,
   JobMatchAnalysis,
   JobSourceKind,
@@ -77,6 +96,8 @@ const tailoringEfforts: Array<{ label: string; value: TailoringEffort }> = [
   { label: "High", value: "high" },
 ];
 
+const CATALOG_SEARCH_LIMIT = 50;
+
 function humanize(value: string): string {
   return value
     .split("_")
@@ -97,7 +118,21 @@ function stateTone(state: string) {
   return "neutral" as const;
 }
 
-export function JobMatchView() {
+/** A catalog listing and a saved job describe the same opening on both sides. */
+function sameOpening(listing: JobCatalogListing, job: Job): boolean {
+  const normalize = (value: string | null | undefined) =>
+    (value ?? "").trim().toLowerCase();
+  return (
+    normalize(listing.title) === normalize(job.title) &&
+    normalize(listing.company) === normalize(job.company)
+  );
+}
+
+export function JobMatchView({
+  roleMatchingPanel,
+}: {
+  roleMatchingPanel?: ReactNode;
+}) {
   const [jobs, setJobs] = useState<Job[]>();
   const [suggestions, setSuggestions] = useState<JobCatalogSearch>();
   const [rolePreferenceBusy, setRolePreferenceBusy] = useState(false);
@@ -110,6 +145,16 @@ export function JobMatchView() {
   const [failure, setFailure] = useState<string>();
   const [success, setSuccess] = useState<string>();
   const [busyKey, setBusyKey] = useState<string>();
+  const [tab, setTab] = useState("search");
+  const [filters, setFilters] = useState<JobSearchFilters>(
+    emptyJobSearchFilters,
+  );
+  const [appliedFilters, setAppliedFilters] = useState<JobSearchFilters>(
+    emptyJobSearchFilters,
+  );
+  const [catalogResults, setCatalogResults] = useState<JobCatalogListing[]>();
+  const [filterBusy, setFilterBusy] = useState(false);
+  const [selectedListing, setSelectedListing] = useState<JobCatalogListing>();
 
   const activeJob = useMemo(
     () => jobs?.find((job) => job.id === activeJobId) ?? activeAnalysis?.job,
@@ -142,23 +187,162 @@ export function JobMatchView() {
     queueMicrotask(() => void loadSuggestions());
   }, [load, loadSuggestions]);
 
-  async function saveSuggestion(listing: JobCatalogSearch["listings"][number]) {
-    const key = `${listing.platform}:${listing.externalId}`;
-    setSavingListingKey(key);
+  const serverSearched = catalogResults !== undefined;
+  const sourceListings = useMemo(
+    () => catalogResults ?? suggestions?.listings ?? [],
+    [catalogResults, suggestions?.listings],
+  );
+  // The catalog keyword is answered by the server, so re-testing it in the
+  // browser would drop listings matched on their body text rather than title.
+  const clientFilters = useMemo(
+    () =>
+      serverSearched ? { ...appliedFilters, keyword: "" } : appliedFilters,
+    [appliedFilters, serverSearched],
+  );
+  const visibleListings = useMemo(
+    () =>
+      sourceListings.filter((listing) =>
+        listingMatchesFilters(listing, clientFilters),
+      ),
+    [clientFilters, sourceListings],
+  );
+  const filterOptions = useMemo(
+    () => filterOptionsFrom(sourceListings),
+    [sourceListings],
+  );
+
+  const savedJobFor = useCallback(
+    (listing: JobCatalogListing) =>
+      jobs?.find((job) => sameOpening(listing, job)),
+    [jobs],
+  );
+
+  const savedKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const listing of sourceListings) {
+      if (savedJobFor(listing)) keys.add(listingKey(listing));
+    }
+    return keys;
+  }, [savedJobFor, sourceListings]);
+
+  const refreshAll = useCallback(async () => {
+    await Promise.all([load(), loadSuggestions()]);
+  }, [load, loadSuggestions]);
+
+  const selection: JobSelection | undefined = useMemo(
+    () =>
+      selectedListing
+        ? selectionFromListing(selectedListing, savedJobFor(selectedListing))
+        : undefined,
+    [savedJobFor, selectedListing],
+  );
+
+  const panelAnalysis =
+    selection?.job && activeAnalysis?.job?.id === selection.job.id
+      ? activeAnalysis
+      : undefined;
+  const panelPriority = panelAnalysis ? priority : undefined;
+
+  async function applyFilters() {
+    setAppliedFilters(filters);
+    const keyword = filters.keyword.trim();
+    if (!keyword) {
+      setCatalogResults(undefined);
+      return;
+    }
+    setFilterBusy(true);
     setFailure(undefined);
-    setSuccess(undefined);
+    try {
+      const page = await browseJobCatalog({
+        limit: CATALOG_SEARCH_LIMIT,
+        offset: 0,
+        q: keyword,
+      });
+      setCatalogResults(page.listings);
+    } catch (error) {
+      setFailure(requestErrorMessage(error, "Job search failed."));
+    } finally {
+      setFilterBusy(false);
+    }
+  }
+
+  function clearFilters() {
+    setFilters(emptyJobSearchFilters);
+    setAppliedFilters(emptyJobSearchFilters);
+    setCatalogResults(undefined);
+  }
+
+  function openListing(listing: JobCatalogListing) {
+    setSelectedListing(listing);
+    const saved = savedJobFor(listing);
+    setActiveJobId(saved?.id);
+    setActiveAnalysis(undefined);
+    setPriority(undefined);
+  }
+
+  async function ensureSavedJob(listing: JobCatalogListing): Promise<Job> {
+    const existing = savedJobFor(listing);
+    if (existing) return existing;
+    const key = listingKey(listing);
+    setSavingListingKey(key);
     try {
       const job = await saveJobCatalogListing(
         listing.platform,
         listing.externalId,
       );
       trackSavedJob(job, `${job.title} saved for matching.`);
+      return job;
+    } finally {
+      setSavingListingKey(undefined);
+    }
+  }
+
+  async function saveListing(listing: JobCatalogListing) {
+    setFailure(undefined);
+    setSuccess(undefined);
+    try {
+      await ensureSavedJob(listing);
     } catch (error) {
       setFailure(
         requestErrorMessage(error, "This listing could not be saved."),
       );
+    }
+  }
+
+  async function analyzeListing(listing: JobCatalogListing) {
+    setBusyKey(`analyze-${listingKey(listing)}`);
+    setFailure(undefined);
+    setSuccess(undefined);
+    try {
+      const job = await ensureSavedJob(listing);
+      const analysis = await analyzeJob(job.id);
+      setActiveAnalysis(analysis);
+      setActiveJobId(job.id);
+      setPriority(undefined);
+      setSuccess(`${job.title} match analyzed.`);
+    } catch (error) {
+      setFailure(
+        requestErrorMessage(error, "The job match could not be analyzed."),
+      );
     } finally {
-      setSavingListingKey(undefined);
+      setBusyKey(undefined);
+    }
+  }
+
+  async function applyToListing(listing: JobCatalogListing) {
+    setBusyKey(`apply-${listingKey(listing)}`);
+    try {
+      const job = await ensureSavedJob(listing);
+      await applyForMe(job);
+    } catch (error) {
+      setFailure(
+        requestErrorMessage(
+          error,
+          "The application pack could not be prepared.",
+        ),
+      );
+    } finally {
+      setBusyKey(undefined);
     }
   }
 
@@ -189,8 +373,6 @@ export function JobMatchView() {
       ...current.filter((item) => item.id !== job.id),
     ]);
     setActiveJobId(job.id);
-    setActiveAnalysis(undefined);
-    setPriority(undefined);
     setSuccess(successMessage);
   }
 
@@ -317,7 +499,7 @@ export function JobMatchView() {
 
   if (!jobs && failure) {
     return (
-      <div className="space-y-6">
+      <div className="py-6">
         <ErrorState
           description={failure}
           onRetry={() => void load()}
@@ -329,157 +511,120 @@ export function JobMatchView() {
 
   if (!jobs) {
     return (
-      <div className="space-y-6">
+      <div className="py-6">
         <LoadingSkeleton />
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <div aria-live="polite" className="sr-only">
-        {success || failure || ""}
-      </div>
+  const resultsDescription = serverSearched
+    ? `Matching “${appliedFilters.keyword.trim()}” across every published job board.`
+    : !suggestions || suggestions.targetRoleTitles.length === 0
+      ? "Recent listings from published job boards. Set a target role in Role matching for closer matches."
+      : suggestions.matchedTargetRole
+        ? `Matched toward ${suggestions.targetRoleTitles.join(", ")} from published job boards.`
+        : `No current listings matched ${suggestions.targetRoleTitles.join(", ")} closely, so here are recent listings instead.`;
 
-      <PageHeader
-        actions={
-          <Button onClick={() => void load()} variant="secondary">
+  const searchPanel = (
+    <div className="space-y-4">
+      <RoleFilterPicker
+        action={
+          <Button onClick={() => void refreshAll()} variant="secondary">
             <RefreshCcw aria-hidden="true" className="size-4" />
             Refresh
           </Button>
         }
-        description="Map one saved job’s explicit requirements to eligible career evidence. This job-specific measure is separate from general Resume Health and role readiness."
-        eyebrow="Job Match"
-        title="Application readiness"
+        busy={rolePreferenceBusy}
+        onChange={(next) => void updateRolePreference(next)}
+        selected={suggestions?.selectedRoleTitles ?? []}
+        suggested={suggestions?.suggestedRoleTitles ?? []}
       />
 
-      {failure && (
-        <Alert title="Job Match unavailable" tone="danger">
-          {failure}
-        </Alert>
-      )}
-      {success && (
-        <Alert title="Saved" tone="success">
-          {success}
-        </Alert>
-      )}
+      <div className="grid gap-4 lg:grid-cols-[15rem_minmax(0,1fr)] xl:grid-cols-[15rem_minmax(0,1fr)_25rem]">
+        <JobFiltersPanel
+          busy={filterBusy}
+          filters={filters}
+          locations={filterOptions.locations}
+          onApply={() => void applyFilters()}
+          onChange={setFilters}
+          onClear={clearFilters}
+          platforms={filterOptions.platforms}
+        />
 
-      {suggestions && (
-        <section
-          aria-labelledby="role-filter-heading"
-          className="rounded-lg border border-line bg-surface p-4 shadow-sm"
-        >
-          <h2 className="sr-only" id="role-filter-heading">
-            Role filter
-          </h2>
-          <RoleFilterPicker
-            busy={rolePreferenceBusy}
-            onChange={(next) => void updateRolePreference(next)}
-            selected={suggestions.selectedRoleTitles ?? []}
-            suggested={suggestions.suggestedRoleTitles ?? []}
+        <JobListingResults
+          description={resultsDescription}
+          listings={visibleListings}
+          onOpen={openListing}
+          onSave={(listing) => void saveListing(listing)}
+          savedKeys={savedKeys}
+          savingKey={savingListingKey}
+          selectedKey={selection?.key}
+          totalCount={
+            hasActiveFilters(clientFilters)
+              ? visibleListings.length
+              : sourceListings.length
+          }
+        />
+
+        {selection && selectedListing ? (
+          <JobDetailPanel
+            analysis={panelAnalysis}
+            analyzing={busyKey === `analyze-${selection.key}`}
+            applying={busyKey === `apply-${selection.key}`}
+            onAnalyze={() => void analyzeListing(selectedListing)}
+            onApply={() => void applyToListing(selectedListing)}
+            onClose={() => setSelectedListing(undefined)}
+            onOpenMatrix={() => {
+              if (selection.job) setActiveJobId(selection.job.id);
+              setTab("saved");
+            }}
+            onSave={() => void saveListing(selectedListing)}
+            priority={panelPriority}
+            saving={savingListingKey === selection.key}
+            selection={selection}
           />
-        </section>
-      )}
+        ) : (
+          <Card as="aside" className="hidden xl:block">
+            <div className="p-5">
+              <EmptyState
+                description="Select a job from the list to see its readiness, requirement matrix, and priority."
+                title="No job selected"
+              />
+            </div>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
 
-      {suggestions && suggestions.listings.length > 0 && (
-        <section
-          aria-labelledby="job-catalog-heading"
-          className="rounded-lg border border-line bg-surface p-4 shadow-sm"
-        >
-          <div className="flex items-center gap-2">
-            <Search aria-hidden="true" className="size-5 text-primary" />
-            <h2
-              className="text-lg font-black text-foreground"
-              id="job-catalog-heading"
-            >
-              Suggested for you
-            </h2>
-          </div>
-          <p className="mt-1 text-sm text-muted">
-            {suggestions.targetRoleTitles.length === 0
-              ? "Recent listings from published job boards. Set a target role in Role Readiness for closer matches."
-              : suggestions.matchedTargetRole
-                ? `Matched toward ${suggestions.targetRoleTitles.join(", ")} from published job boards.`
-                : `No current listings matched ${suggestions.targetRoleTitles.join(", ")} closely, so here are recent listings instead.`}
-          </p>
-          <ul className="mt-4 grid gap-3 md:grid-cols-2">
-            {suggestions.listings.slice(0, 6).map((listing) => {
-              const key = `${listing.platform}:${listing.externalId}`;
-              return (
-                <li
-                  className="rounded-lg border border-line bg-surface-subtle p-3"
-                  key={key}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-bold text-foreground">
-                        {listing.title}
-                      </p>
-                      <p className="mt-0.5 text-xs text-muted">
-                        {[listing.company, listing.location]
-                          .filter(Boolean)
-                          .join(" / ")}
-                      </p>
-                    </div>
-                    <Badge tone="neutral">{listing.platform}</Badge>
-                  </div>
-                  <div className="mt-3 flex items-center gap-2">
-                    <Button
-                      loading={savingListingKey === key}
-                      onClick={() => void saveSuggestion(listing)}
-                      variant="secondary"
-                    >
-                      Save to my jobs
-                    </Button>
-                    {listing.applicationUrl && (
-                      <a
-                        className="text-xs font-bold text-primary underline"
-                        href={listing.applicationUrl}
-                        rel="noreferrer noopener"
-                        target="_blank"
-                      >
-                        View on {listing.platform}
-                      </a>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
-
-      <JobCatalogBrowseSection
-        onSaved={(job) =>
-          trackSavedJob(job, `${job.title} saved for matching.`)
-        }
-      />
-
-      <aside aria-labelledby="saved-jobs-heading" className="space-y-4">
+  const savedPanel = (
+    <div className="space-y-6">
+      <section aria-labelledby="saved-jobs-heading" className="space-y-4">
         <form
-          className="rounded-lg border border-line bg-surface p-4 shadow-sm"
+          className="surface-card rounded-[var(--radius-card)] p-4"
           onSubmit={(event) => void searchJobs(event)}
         >
           <h2
-            className="text-lg font-black text-foreground"
+            className="text-base font-semibold tracking-[-0.01em] text-foreground"
             id="saved-jobs-heading"
           >
             Saved jobs
           </h2>
-          <div className="mt-3 grid gap-3">
-            <label className="text-sm font-bold text-foreground">
+          <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_12rem_auto] sm:items-end">
+            <label className="text-xs font-semibold text-muted-strong">
               Search
               <Input
+                className="mt-1.5"
                 maxLength={160}
                 onChange={(event) => setQuery(event.target.value)}
                 type="search"
                 value={query}
               />
             </label>
-            <label className="text-sm font-bold text-foreground">
+            <label className="text-xs font-semibold text-muted-strong">
               Source
               <Select
-                className="mt-1"
+                className="mt-1.5"
                 onChange={(event) =>
                   setSourceKind(event.target.value as JobSourceKind | "")
                 }
@@ -509,14 +654,14 @@ export function JobMatchView() {
             title="No saved jobs"
           />
         ) : (
-          <ul className="space-y-3">
+          <ul className="grid gap-3 md:grid-cols-2">
             {jobs.map((job) => {
               const active = activeJob?.id === job.id;
               return (
                 <li
                   className={cn(
-                    "rounded-lg border bg-surface p-4 shadow-sm",
-                    active ? "border-primary" : "border-line",
+                    "surface-card rounded-[var(--radius-card)] p-4",
+                    active && "ring-1 ring-primary",
                   )}
                   key={job.id}
                 >
@@ -530,7 +675,7 @@ export function JobMatchView() {
                     }}
                     type="button"
                   >
-                    <span className="block text-sm font-black text-foreground">
+                    <span className="block text-sm font-semibold text-foreground">
                       {job.title}
                     </span>
                     <span className="mt-1 block text-xs text-muted">
@@ -578,11 +723,11 @@ export function JobMatchView() {
             })}
           </ul>
         )}
-      </aside>
+      </section>
 
       <section aria-labelledby="analysis-heading" className="space-y-4">
         <h2
-          className="text-lg font-black text-foreground"
+          className="text-base font-semibold tracking-[-0.01em] text-foreground"
           id="analysis-heading"
         >
           Requirement matrix
@@ -593,10 +738,10 @@ export function JobMatchView() {
             title="Choose a job"
           />
         ) : !activeAnalysis ? (
-          <div className="rounded-lg border border-line bg-surface p-5 shadow-sm">
+          <div className="surface-card rounded-[var(--radius-card)] p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <h3 className="text-base font-black text-foreground">
+                <h3 className="text-sm font-semibold text-foreground">
                   {activeJob.title}
                 </h3>
                 <p className="mt-1 text-sm text-muted">
@@ -617,10 +762,10 @@ export function JobMatchView() {
               <ul className="mt-4 grid gap-2 sm:grid-cols-2">
                 {activeJob.requirements.slice(0, 8).map((requirement) => (
                   <li
-                    className="rounded-lg border border-line bg-surface-subtle p-3 text-sm"
+                    className="rounded-[var(--radius-control)] border border-line bg-surface-subtle p-3 text-sm"
                     key={requirement.id}
                   >
-                    <span className="font-bold text-foreground">
+                    <span className="font-semibold text-foreground">
                       {humanize(requirement.importance)}
                     </span>
                     <span className="mt-1 block text-muted">
@@ -633,11 +778,11 @@ export function JobMatchView() {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="rounded-lg border border-line bg-surface p-5 shadow-sm">
+            <div className="surface-card rounded-[var(--radius-card)] p-5">
               <div className="grid gap-4 lg:grid-cols-[14rem_minmax(0,1fr)]">
                 <div>
-                  <p className="text-sm font-bold text-muted">Readiness</p>
-                  <p className="mt-1 text-4xl font-black text-foreground">
+                  <p className="text-sm font-semibold text-muted">Readiness</p>
+                  <p className="mt-1 text-4xl font-semibold text-foreground">
                     {activeAnalysis.displayScore ?? "Needs evidence"}
                     {activeAnalysis.displayScore !== null && (
                       <span className="text-lg text-muted">/100</span>
@@ -709,7 +854,7 @@ export function JobMatchView() {
                   {activeAnalysis.requirements.map((requirement) => (
                     <tr key={requirement.id}>
                       <td className="px-4 py-3 align-top">
-                        <p className="font-bold text-foreground">
+                        <p className="font-semibold text-foreground">
                           {requirement.requirementText}
                         </p>
                         <p className="mt-1 text-xs text-muted">
@@ -722,7 +867,7 @@ export function JobMatchView() {
                           {humanize(requirement.matchState)}
                         </Badge>
                         {requirement.hardGap && (
-                          <p className="mt-2 text-xs font-bold text-warning-strong">
+                          <p className="mt-2 text-xs font-semibold text-warning-strong">
                             Mandatory gap
                           </p>
                         )}
@@ -732,7 +877,7 @@ export function JobMatchView() {
                           <ul className="space-y-2">
                             {requirement.evidence.map((link) => (
                               <li key={link.id}>
-                                <span className="font-bold text-foreground">
+                                <span className="font-semibold text-foreground">
                                   {link.evidenceTitle}
                                 </span>
                                 <span className="block text-xs text-muted">
@@ -761,10 +906,10 @@ export function JobMatchView() {
 
       <section
         aria-labelledby="priority-heading"
-        className="rounded-lg border border-line bg-surface p-5 shadow-sm"
+        className="surface-card rounded-[var(--radius-card)] p-5"
       >
         <h2
-          className="text-lg font-black text-foreground"
+          className="text-base font-semibold tracking-[-0.01em] text-foreground"
           id="priority-heading"
         >
           Opportunity priority
@@ -779,7 +924,7 @@ export function JobMatchView() {
               className="grid gap-3 sm:grid-cols-2"
               onSubmit={(event) => void submitPriority(event)}
             >
-              <label className="text-sm font-bold text-foreground">
+              <label className="text-sm font-semibold text-foreground">
                 Interest
                 <Input
                   defaultValue={4}
@@ -789,7 +934,7 @@ export function JobMatchView() {
                   type="number"
                 />
               </label>
-              <label className="text-sm font-bold text-foreground">
+              <label className="text-sm font-semibold text-foreground">
                 Career direction fit
                 <Input
                   defaultValue={4}
@@ -799,7 +944,7 @@ export function JobMatchView() {
                   type="number"
                 />
               </label>
-              <label className="text-sm font-bold text-foreground">
+              <label className="text-sm font-semibold text-foreground">
                 Compensation fit
                 <Select className="mt-1" name="compensationFit">
                   {preferenceFits.map((item) => (
@@ -809,7 +954,7 @@ export function JobMatchView() {
                   ))}
                 </Select>
               </label>
-              <label className="text-sm font-bold text-foreground">
+              <label className="text-sm font-semibold text-foreground">
                 Location fit
                 <Select className="mt-1" name="locationFit">
                   {preferenceFits.map((item) => (
@@ -819,7 +964,7 @@ export function JobMatchView() {
                   ))}
                 </Select>
               </label>
-              <label className="text-sm font-bold text-foreground">
+              <label className="text-sm font-semibold text-foreground">
                 Work model fit
                 <Select className="mt-1" name="workModelFit">
                   {preferenceFits.map((item) => (
@@ -829,7 +974,7 @@ export function JobMatchView() {
                   ))}
                 </Select>
               </label>
-              <label className="text-sm font-bold text-foreground">
+              <label className="text-sm font-semibold text-foreground">
                 Tailoring effort
                 <Select
                   className="mt-1"
@@ -843,7 +988,7 @@ export function JobMatchView() {
                   ))}
                 </Select>
               </label>
-              <label className="text-sm font-bold text-foreground">
+              <label className="text-sm font-semibold text-foreground">
                 Existing contacts
                 <Input
                   defaultValue={0}
@@ -864,9 +1009,9 @@ export function JobMatchView() {
             {priority ? (
               <div
                 aria-live="polite"
-                className="rounded-lg bg-surface-subtle p-4"
+                className="rounded-[var(--radius-card)] bg-surface-subtle p-4"
               >
-                <p className="text-sm font-bold text-muted">Priority</p>
+                <p className="text-sm font-semibold text-muted">Priority</p>
                 <div className="mt-2 flex items-center gap-3">
                   <Badge
                     tone={
@@ -875,7 +1020,7 @@ export function JobMatchView() {
                   >
                     {humanize(priority.priorityLabel)}
                   </Badge>
-                  <span className="font-black text-foreground">
+                  <span className="font-semibold text-foreground">
                     {Math.round(priority.priorityScoreBasisPoints / 100)}/100
                   </span>
                 </div>
@@ -894,7 +1039,7 @@ export function JobMatchView() {
                 )}
               </div>
             ) : (
-              <div className="rounded-lg bg-surface-subtle p-4 text-sm text-muted">
+              <div className="rounded-[var(--radius-card)] bg-surface-subtle p-4 text-sm text-muted">
                 Priority output appears here after calculation.
               </div>
             )}
@@ -902,6 +1047,57 @@ export function JobMatchView() {
         )}
       </section>
     </div>
+  );
+
+  // Alerts live inside the gutter with the panel rather than above the bar, so
+  // they read as part of the tab the owner is looking at.
+  const panelShell = (content: ReactNode) => (
+    <div className="space-y-4">
+      {failure && (
+        <Alert title="Job Match unavailable" tone="danger">
+          {failure}
+        </Alert>
+      )}
+      {success && (
+        <Alert title="Saved" tone="success">
+          {success}
+        </Alert>
+      )}
+      {content}
+    </div>
+  );
+
+  const tabs: TabItem[] = [
+    { id: "search", label: "Job search", panel: panelShell(searchPanel) },
+    { id: "saved", label: "Saved jobs", panel: panelShell(savedPanel) },
+    {
+      id: "roles",
+      label: "Role matching",
+      panel: panelShell(
+        roleMatchingPanel ?? (
+          <EmptyState
+            description="Role readiness is unavailable on this page."
+            title="Role matching"
+          />
+        ),
+      ),
+    },
+  ];
+
+  return (
+    <>
+      <div aria-live="polite" className="sr-only">
+        {success || failure || ""}
+      </div>
+
+      <Tabs
+        label="Job search sections"
+        onValueChange={setTab}
+        tabs={tabs}
+        value={tab}
+        variant="section"
+      />
+    </>
   );
 }
 
