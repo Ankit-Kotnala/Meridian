@@ -14,6 +14,13 @@ import {
   type WorkspaceSection,
 } from "./workspace-navigation";
 
+/**
+ * Applied inline because `globals.css` sets `* { border-color: var(--border) }`
+ * outside any cascade layer, which beats layered `border-white/12` utilities
+ * and would paint these rules in the light-theme border colour on navy.
+ */
+const railRule = "rgb(255 255 255 / 0.12)";
+
 function NavigationLink({
   collapsed,
   onNavigate,
@@ -32,20 +39,16 @@ function NavigationLink({
       {...(active ? { "aria-current": "page" as const } : {})}
       {...(collapsed ? { "aria-label": label, title: label } : {})}
       className={cn(
-        "flex min-h-10 items-center rounded-[var(--radius-control)] text-[0.8125rem] font-semibold transition-colors duration-200",
+        "flex min-h-9 items-center rounded-[var(--radius-small)] text-[0.8125rem] transition-colors duration-200",
         collapsed ? "justify-center px-2" : "gap-3 px-3",
         active
-          ? "bg-navy-hover text-white"
-          : "text-white/78 hover:bg-white/10 hover:text-white",
+          ? "bg-white/[0.09] font-semibold text-white"
+          : "font-medium text-white/65 hover:bg-white/[0.06] hover:text-white",
       )}
       href={href}
       {...(onNavigate ? { onClick: onNavigate } : {})}
     >
-      <Icon
-        aria-hidden="true"
-        className="size-[1.125rem] shrink-0"
-        strokeWidth={1.75}
-      />
+      <Icon aria-hidden="true" className="size-4 shrink-0" strokeWidth={1.6} />
       {!collapsed && <span>{label}</span>}
     </Link>
   );
@@ -68,16 +71,17 @@ export function WorkspaceSidebar({
     <div className="flex h-full flex-col bg-navy text-white">
       <div
         className={cn(
-          "flex min-h-16 items-center border-b border-white/8",
+          "flex min-h-[var(--topbar-height)] items-center border-b",
           collapsed ? "justify-center px-2 py-3" : "justify-between px-4",
         )}
+        style={{ borderBottomColor: railRule }}
       >
         {collapsed ? (
           <RezumiLogo compact href="/dashboard" inverted />
         ) : (
           <Link
             aria-label="Meridian home"
-            className="text-lg font-extrabold uppercase tracking-[0.08em] text-white"
+            className="font-display text-[0.875rem] font-bold uppercase tracking-[0.16em] text-white"
             href="/dashboard"
           >
             Meridian
@@ -97,7 +101,7 @@ export function WorkspaceSidebar({
 
       <nav
         aria-label="Application navigation"
-        className="flex-1 overflow-y-auto px-3 py-4"
+        className="flex-1 overflow-y-auto px-2.5 py-3"
       >
         <ul className="space-y-0.5">
           {workspaceSections.map((section) => (
@@ -114,11 +118,14 @@ export function WorkspaceSidebar({
       </nav>
 
       {onCollapse && (
-        <div className={cn("border-t border-white/8 px-3 py-3")}>
+        <div
+          className="border-t px-2.5 py-3"
+          style={{ borderTopColor: railRule }}
+        >
           <button
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             className={cn(
-              "flex min-h-10 w-full items-center rounded-[var(--radius-control)] text-[0.8125rem] font-semibold text-white/78 transition-colors duration-200 hover:bg-white/10 hover:text-white",
+              "flex min-h-9 w-full items-center rounded-[var(--radius-small)] text-[0.8125rem] font-medium text-white/55 transition-colors duration-200 hover:bg-white/[0.06] hover:text-white",
               collapsed ? "justify-center px-2" : "gap-3 px-3",
             )}
             onClick={onCollapse}
@@ -126,16 +133,10 @@ export function WorkspaceSidebar({
             type="button"
           >
             {collapsed ? (
-              <ChevronRight
-                aria-hidden="true"
-                className="size-[1.125rem] shrink-0"
-              />
+              <ChevronRight aria-hidden="true" className="size-4 shrink-0" />
             ) : (
               <>
-                <ChevronLeft
-                  aria-hidden="true"
-                  className="size-[1.125rem] shrink-0"
-                />
+                <ChevronLeft aria-hidden="true" className="size-4 shrink-0" />
                 <span>Collapse</span>
               </>
             )}

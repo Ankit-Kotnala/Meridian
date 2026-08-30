@@ -1,8 +1,8 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { Experience } from "../api/types";
-import { CareerTimeline } from "../components/experience-views";
+import { EmploymentTable } from "../components/experience-views";
 
 const yearOnlyExperience: Experience = {
   concurrentGroupId: null,
@@ -29,9 +29,18 @@ const yearOnlyExperience: Experience = {
 
 describe("partial-date rendering", () => {
   it("renders year-only career dates verbatim without inventing January", () => {
-    render(<CareerTimeline experiences={[yearOnlyExperience]} />);
+    render(
+      <EmploymentTable
+        experiences={[yearOnlyExperience]}
+        onConfirm={vi.fn()}
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+        onReorder={vi.fn()}
+      />,
+    );
 
-    expect(screen.getByText(/2020\s+–\s+2024/)).toBeVisible();
+    expect(screen.getByText(/2020/)).toBeVisible();
+    expect(screen.getByText(/2024/)).toBeVisible();
     expect(screen.queryByText(/Jan/)).not.toBeInTheDocument();
   });
 });

@@ -30,10 +30,13 @@ import type {
   DashboardRecordCounts,
 } from "../server/dashboard-summary";
 import { recordStatsFootnote } from "../lib/dashboard-user-copy";
+import type { DashboardResumeHealth } from "./dashboard-resume-state";
+import { ResumeScoreSummary } from "./resume-score-summary";
 
 /** Shared tile chrome so the bento grid stays visually consistent. */
 function Tile({
   action,
+  aside,
   children,
   className,
   label,
@@ -41,6 +44,8 @@ function Tile({
   title,
 }: {
   action?: { href: string; label: string };
+  /** Rendered at the end of the header when the panel has a headline value. */
+  aside?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
   label: string;
@@ -54,6 +59,7 @@ function Tile({
     >
       <div className="workspace-panel-header">
         <h2 id={labelId}>{label}</h2>
+        {aside}
         {action && (
           <Link className="workspace-panel-link" href={action.href}>
             {action.label}
@@ -872,9 +878,11 @@ export function profileCompletenessPercent(
 export function ProfileReadinessPanel({
   pipeline,
   record,
+  resumeHealth,
 }: {
   pipeline: DashboardPipeline;
   record: DashboardRecordCounts;
+  resumeHealth: DashboardResumeHealth;
 }) {
   const completeness = profileCompletenessPercent(record);
 
@@ -896,6 +904,7 @@ export function ProfileReadinessPanel({
 
   return (
     <Tile
+      aside={<ResumeScoreSummary resumeHealth={resumeHealth} />}
       className="min-w-0"
       label="Profile readiness"
       labelId="readiness-heading"

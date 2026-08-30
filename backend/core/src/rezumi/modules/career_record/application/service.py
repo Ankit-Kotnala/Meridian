@@ -357,6 +357,7 @@ def _semantic_entity_data(
                 else None
             ),
             location=first("location"),
+            external_url=first("link"),
             start_date=date_value(start_name),
             end_date=date_value(end_name),
             is_current=is_current,
@@ -369,6 +370,7 @@ def _semantic_entity_data(
             organization=first("institution"),
             description=first("field") if first("field") != degree else None,
             location=first("location"),
+            external_url=first("link"),
             start_date=date_value(start_name),
             end_date=date_value(end_name),
             is_current=is_current,
@@ -491,6 +493,7 @@ def _semantic_entity_provenance_targets(
             "achievement": ("description",),
             "employment_type": ("employment_type",),
             "location": ("location",),
+            "link": ("external_url",),
             "start_date": ("start_date",),
             "end_date": ("is_current",) if data.is_current else ("end_date",),
         }.get(semantic_name, ())
@@ -500,6 +503,7 @@ def _semantic_entity_provenance_targets(
             "field": ("description",) if data.description is not None else ("title",),
             "institution": ("organization",),
             "location": ("location",),
+            "link": ("external_url",),
             "start_date": ("start_date",),
             "end_date": ("is_current",) if data.is_current else ("end_date",),
         }.get(semantic_name, ())

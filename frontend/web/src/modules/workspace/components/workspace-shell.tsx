@@ -7,7 +7,6 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@rezumi/ui";
 import { ProductMotionProvider } from "@/shared/motion/product-motion-provider";
 
-import type { DashboardResumeHealth } from "./dashboard-resume-state";
 import { WorkspaceSectionNav } from "./workspace-section-nav";
 import { WorkspaceSidebar } from "./workspace-sidebar";
 import { WorkspaceTopBar } from "./workspace-top-bar";
@@ -21,12 +20,10 @@ export type WorkspaceViewer = {
 export function WorkspaceShell({
   accountActions,
   children,
-  resumeHealth,
   viewer,
 }: {
   accountActions: ReactNode;
   children: ReactNode;
-  resumeHealth: DashboardResumeHealth;
   viewer: WorkspaceViewer;
 }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -52,9 +49,10 @@ export function WorkspaceShell({
       <div className="min-h-screen bg-background">
         <aside
           className={cn(
-            "fixed inset-y-0 left-0 z-40 hidden border-r border-white/8 transition-[width] duration-200 motion-reduce:transition-none lg:block",
+            "fixed inset-y-0 left-0 z-40 hidden border-r transition-[width] duration-200 motion-reduce:transition-none lg:block",
             collapsed ? "w-[4.25rem]" : "w-[var(--sidebar-width)]",
           )}
+          style={{ borderRightColor: "rgb(255 255 255 / 0.1)" }}
         >
           <WorkspaceSidebar
             collapsed={collapsed}
@@ -88,7 +86,6 @@ export function WorkspaceShell({
             accountActions={accountActions}
             menuButtonRef={menuButtonRef}
             onOpenMenu={() => setMobileOpen(true)}
-            resumeHealth={resumeHealth}
             viewer={viewer}
           />
           <WorkspaceSectionNav />

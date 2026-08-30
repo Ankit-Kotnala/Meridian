@@ -156,18 +156,28 @@ describe("workspace navigation model", () => {
     }
   });
 
-  it("reports the section and tool for the top bar", () => {
-    expect(resolveWorkspaceContext("/evidence")).toEqual({
+  it("reports the section, tool, and orientation copy for the top bar", () => {
+    expect(resolveWorkspaceContext("/evidence")).toMatchObject({
       group: "Profile",
       label: "Evidence Vault",
+      subtitle: "Your career source of truth",
     });
-    expect(resolveWorkspaceContext("/applications")).toEqual({
+    expect(resolveWorkspaceContext("/applications")).toMatchObject({
       group: "Applications",
       label: "Applications",
+      subtitle: "Track every application",
     });
-    expect(resolveWorkspaceContext("/settings")).toEqual({
+    expect(resolveWorkspaceContext("/settings")).toMatchObject({
       group: "Account",
       label: "Settings",
+      subtitle: "Manage your account",
     });
+  });
+
+  it("gives every section an icon and a subtitle for the top bar", () => {
+    for (const section of workspaceSections) {
+      expect(section.subtitle.length).toBeGreaterThan(0);
+      expect(resolveWorkspaceContext(section.href).icon).toBe(section.icon);
+    }
   });
 });

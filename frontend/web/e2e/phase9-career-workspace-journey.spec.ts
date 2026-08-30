@@ -197,18 +197,19 @@ async function createGroundedApplication(
 ): Promise<string> {
   await page.goto("/career-profile");
   await expect(
-    page.getByRole("heading", { name: "Career Profile" }),
+    page.getByRole("heading", { name: "Career profile" }),
   ).toBeVisible();
   await activate(page.getByRole("button", { name: "Add skill" }), keyboard);
   await fill(page.getByLabel("Skill name"), fictional.skill);
   await select(page.getByLabel("Proficiency (optional)"), "advanced");
   await activate(page.getByRole("button", { name: "Save skill" }), keyboard);
   await expect(page.getByText("Skill saved.")).toBeVisible();
-  const skillRecord = page
-    .getByRole("listitem")
-    .filter({ hasText: fictional.skill });
   await activate(
-    skillRecord.getByRole("button", { name: "Confirm", exact: true }),
+    page.getByRole("button", { name: "Ways of Working skill domain" }),
+    keyboard,
+  );
+  await activate(
+    page.getByRole("button", { name: `Confirm ${fictional.skill}` }),
     keyboard,
   );
   await expect(
@@ -218,7 +219,7 @@ async function createGroundedApplication(
   ).toBeVisible();
 
   await activate(
-    page.getByRole("button", { name: "Add experience" }),
+    page.getByRole("button", { name: "Add employment" }),
     keyboard,
   );
   await fill(page.getByLabel("Employer"), fictional.employer);
@@ -229,11 +230,11 @@ async function createGroundedApplication(
     keyboard,
   );
   await activate(
-    page.getByRole("button", { name: "Add experience" }).last(),
+    page.getByRole("button", { name: "Add experience" }),
     keyboard,
   );
   await expect(
-    page.getByText("Experience added to your career profile."),
+    page.getByText("Employment added to your career profile."),
   ).toBeVisible();
 
   await page.goto("/evidence");

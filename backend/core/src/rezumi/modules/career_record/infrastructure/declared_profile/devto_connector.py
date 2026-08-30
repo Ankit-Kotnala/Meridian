@@ -8,18 +8,22 @@ import re
 from datetime import UTC, datetime
 from typing import Any
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
 from rezumi.modules.career_record.application.declared_profile_ports import (
     DeclaredProfileAchievement,
     DeclaredProfileFetchFailed,
     DeclaredProfileFetchResult,
+    host_matches,
     hostname,
     normalize_declared_profile_url,
+    path_segments,
 )
 
-_DEVTO_USER = re.compile(r"^(?P<user>[A-Za-z0-9][A-Za-z0-9_-]{1,63})/?$")
+_DEVTO_USER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{1,63}$")
+_RESERVED_PATHS = frozenset(
+    {"about", "api", "enter", "latest", "search", "settings", "signout", "t", "tags", "top"}
+)
 _MAX_ARTICLES = 10
 _TIMEOUT = 8.0
 
@@ -30,25 +34,17 @@ class DevToDeclaredProfileConnector:
     platform = "devto"
 
     def supports(self, url: str) -> bool:
-        normalized = normalize_declared_profile_url(url)
-        if hostname(normalized) != "dev.to":
-            return False
-        path = urlsplit(normalized).path.strip("/")
-        return _DEVTO_USER.match(f"{path}/") is not None
+        return _username(normalize_declared_profile_url(url)) is not None
 
     async def fetch(self, url: str) -> DeclaredProfileFetchResult:
         normalized = normalize_declared_profile_url(url)
-        path = urlsplit(normalized).path.strip("/")
-        match = _DEVTO_USER.match(f"{path}/")
-        if match is None:
+        username = _username(normalized)
+        if username is None:
             raise DeclaredProfileFetchFailed("dev.to profile URL is not supported")
-        username = match.group("user")
         return await asyncio.to_thread(self._fetch_sync, normalized, username)
 
     def _fetch_sync(self, profile_url: str, username: str) -> DeclaredProfileFetchResult:
-        user = self._get_json(
-            f"https://dev.to/api/users/by_username?url={username}"
-        )
+        user = self._get_json(f"https://dev.to/api/users/by_username?url={username}")
         if not isinstance(user, dict) or not user.get("id"):
             raise DeclaredProfileFetchFailed("dev.to profile was not found")
 
@@ -73,9 +69,7 @@ class DevToDeclaredProfileConnector:
                 f"{total_reactions} total reactions."
             )
         if not parts:
-            raise DeclaredProfileFetchFailed(
-                "dev.to profile did not expose public achievements"
-            )
+            raise DeclaredProfileFetchFailed("dev.to profile did not expose public achievements")
         statement = " ".join(parts)
 
         return DeclaredProfileFetchResult(
@@ -111,3 +105,21 @@ class DevToDeclaredProfileConnector:
         except (TimeoutError, URLError, OSError, json.JSONDecodeError) as exc:
             raise DeclaredProfileFetchFailed("dev.to profile could not be read") from exc
         return json.loads(payload.decode("utf-8"))
+
+
+def _username(url: str) -> str | None:
+    """Return the dev.to author a profile or article URL names.
+
+    Article URLs are "dev.to/<author>/<slug>" — a resume citing a specific
+    post still identifies the author whose public activity is being read.
+    """
+
+    if not host_matches(hostname(url), "dev.to"):
+        return None
+    segments = path_segments(url)
+    if not segments:
+        return None
+    candidate = segments[0]
+    if candidate.casefold() in _RESERVED_PATHS:
+        return None
+    return candidate if _DEVTO_USER.match(candidate) else None

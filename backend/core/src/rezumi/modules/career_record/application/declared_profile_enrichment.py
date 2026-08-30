@@ -25,6 +25,9 @@ from rezumi.modules.career_record.infrastructure.declared_profile.registry impor
     DeclaredProfileConnectorRegistry,
 )
 
+_DEDUPE_PAGE_SIZE = 100
+_MAX_DEDUPE_PAGES = 20
+
 
 @dataclass(frozen=True, slots=True)
 class DeclaredProfileEnrichmentResult:
@@ -45,6 +48,26 @@ class DeclaredProfileEnrichmentService:
         self._career_record = career_record
         self._connectors = connectors
 
+    async def _existing_titles(self, owner_user_id: UUID) -> set[str]:
+        """Every achievement title already on record, not just the first page.
+
+        The duplicate check has to see the whole record: reading one page meant
+        a re-run imported the same profile again for anyone holding more
+        achievements than a page, quietly doubling their evidence.
+        """
+
+        titles: set[str] = set()
+        cursor: str | None = None
+        for _ in range(_MAX_DEDUPE_PAGES):
+            page = await self._career_record.list_achievements(
+                owner_user_id, cursor=cursor, limit=_DEDUPE_PAGE_SIZE
+            )
+            titles.update(item.title.strip().casefold() for item in page.items)
+            cursor = page.next_cursor
+            if cursor is None:
+                break
+        return titles
+
     async def enrich_personal_fact(
         self,
         owner_user_id: UUID,
@@ -61,11 +84,7 @@ class DeclaredProfileEnrichmentService:
         except DeclaredProfileFetchFailed:
             raise
 
-        existing = await self._career_record.list_achievements(owner_user_id, limit=100)
-        existing_titles = {
-            item.title.strip().casefold()
-            for item in existing.items
-        }
+        existing_titles = await self._existing_titles(owner_user_id)
 
         achievements_created = 0
         evidence_created = 0
