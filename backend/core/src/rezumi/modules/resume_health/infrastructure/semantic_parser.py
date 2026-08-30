@@ -28,10 +28,210 @@ _SEMANTIC_NAMESPACE = UUID("d6f8269c-f55b-4717-bdc7-2b552f564820")
 _SOURCE_VALUE_TRIM = frozenset(" \t\r\n|-,;\u2013\u2014")
 _EMAIL = re.compile(r"(?<![\w.+-])[\w.+-]+@[\w-]+(?:\.[\w-]+)+", re.IGNORECASE)
 _PHONE = re.compile(r"(?<!\w)(?:\+?\d[\d().\s-]{6,}\d)(?!\w)")
+# Hosts whose profile links are routinely written into a resume without a
+# scheme ("github.com/alex", "de.linkedin.com/in/alex"). Bare hostnames are
+# only read as links for these, so ordinary prose ("Node.js", "scikit-learn")
+# is never swept up as a URL. Any subdomain of a listed host counts.
+#
+# The list is deliberately domain-wide rather than engineering-only: a resume
+# is as likely to cite a Quant Stack Exchange profile, an SSRN paper, a Credly
+# credential, a Behance portfolio, or a Substack as it is a GitHub account.
+# Whether a link can then be *read* automatically is a separate question,
+# answered by the connector registry - but a link that is never extracted here
+# cannot even be stored, which is the failure this list exists to prevent.
+_LINK_HOSTS = (
+    # Professional networks and hiring
+    "linkedin.com",
+    "lnkd.in",
+    "xing.com",
+    "wellfound.com",
+    "angel.co",
+    "glassdoor.com",
+    "indeed.com",
+    "joinhandshake.com",
+    "polywork.com",
+    "read.cv",
+    "contra.com",
+    "about.me",
+    # Code hosting and engineering
+    "github.com",
+    "github.io",
+    "gitlab.com",
+    "gitlab.io",
+    "bitbucket.org",
+    "codeberg.org",
+    "sourceforge.net",
+    "launchpad.net",
+    "codepen.io",
+    "replit.com",
+    "glitch.com",
+    "observablehq.com",
+    "npmjs.com",
+    "pypi.org",
+    "crates.io",
+    "rubygems.org",
+    "packagist.org",
+    "nuget.org",
+    "hub.docker.com",
+    "devpost.com",
+    # Q&A and community reputation (finance, law, stats, academia, and more)
+    "stackoverflow.com",
+    "stackexchange.com",
+    "serverfault.com",
+    "superuser.com",
+    "askubuntu.com",
+    "mathoverflow.net",
+    "stackapps.com",
+    "quora.com",
+    "reddit.com",
+    # Competitive programming and data science
+    "codeforces.com",
+    "leetcode.com",
+    "hackerrank.com",
+    "hackerearth.com",
+    "topcoder.com",
+    "codechef.com",
+    "kaggle.com",
+    "numer.ai",
+    "huggingface.co",
+    "paperswithcode.com",
+    "wandb.ai",
+    "openml.org",
+    # Research, academia, medicine, economics
+    "orcid.org",
+    "openalex.org",
+    "arxiv.org",
+    "biorxiv.org",
+    "medrxiv.org",
+    "ssrn.com",
+    "pubmed.ncbi.nlm.nih.gov",
+    "ncbi.nlm.nih.gov",
+    "europepmc.org",
+    "semanticscholar.org",
+    "researchgate.net",
+    "academia.edu",
+    "scholar.google.com",
+    "zenodo.org",
+    "figshare.com",
+    "osf.io",
+    "dblp.org",
+    "doi.org",
+    "clinicaltrials.gov",
+    "publons.com",
+    "webofscience.com",
+    "scopus.com",
+    # Credentials, certification, and learning
+    "credly.com",
+    "youracclaim.com",
+    "credential.net",
+    "accredible.com",
+    "badgr.com",
+    "certmetrics.com",
+    "coursera.org",
+    "edx.org",
+    "udacity.com",
+    "udemy.com",
+    "datacamp.com",
+    "pluralsight.com",
+    "learn.microsoft.com",
+    "trailblazer.me",
+    "cloudskillsboost.google",
+    "pmi.org",
+    "isc2.org",
+    "scrum.org",
+    # Design and creative
+    "behance.net",
+    "dribbble.com",
+    "artstation.com",
+    "deviantart.com",
+    "500px.com",
+    "unsplash.com",
+    "figma.com",
+    "myportfolio.com",
+    "cargo.site",
+    "vimeo.com",
+    "layers.to",
+    # Writing, publishing, and thought leadership
+    "medium.com",
+    "substack.com",
+    "beehiiv.com",
+    "hashnode.dev",
+    "dev.to",
+    "ghost.io",
+    "wordpress.com",
+    "blogger.com",
+    "tumblr.com",
+    "muckrack.com",
+    "journoportfolio.com",
+    "clippings.me",
+    "contently.com",
+    "authory.com",
+    "goodreads.com",
+    # Speaking and events
+    "speakerdeck.com",
+    "slideshare.net",
+    "sessionize.com",
+    "papercall.io",
+    "ted.com",
+    "meetup.com",
+    # Regulated professional registers (finance, medicine, law)
+    "brokercheck.finra.org",
+    "adviserinfo.sec.gov",
+    "sec.gov",
+    "npiregistry.cms.hhs.gov",
+    "doximity.com",
+    "avvo.com",
+    "martindale.com",
+    "justia.com",
+    "courtlistener.com",
+    # Finance and markets
+    "seekingalpha.com",
+    "tradingview.com",
+    "morningstar.com",
+    "cfainstitute.org",
+    # Site builders and personal-site hosts
+    "notion.site",
+    "super.site",
+    "carrd.co",
+    "webflow.io",
+    "wixsite.com",
+    "weebly.com",
+    "strikingly.com",
+    "squarespace.com",
+    "framer.website",
+    "netlify.app",
+    "vercel.app",
+    "pages.dev",
+    "surge.sh",
+    "herokuapp.com",
+    "fly.dev",
+    "onrender.com",
+    "streamlit.app",
+    "linktr.ee",
+    "bio.link",
+    # Social
+    "x.com",
+    "twitter.com",
+    "facebook.com",
+    "instagram.com",
+    "threads.net",
+    "tiktok.com",
+    "youtube.com",
+    "youtu.be",
+    "pinterest.com",
+)
 _URL = re.compile(
-    r"(?:(?:https?://|www\.)[^\s|,;]+|(?:linkedin\.com|github\.com)/[^\s|,;]+)",
+    r"(?:https?://|www\.)[^\s|\u2022\u00b7\t]+"
+    r"|(?<![\w.@-])(?:[a-z0-9-]+\.)*(?:"
+    + "|".join(host.replace(".", r"\.") for host in _LINK_HOSTS)
+    + r")/[^\s|\u2022\u00b7\t]*",
     re.IGNORECASE,
 )
+# Sentence punctuation and wrapping brackets a resume puts around a link. Left
+# on the value they break every downstream host/path match, so "(github.com/
+# alex)." is read as an unsupported link instead of a GitHub profile.
+_URL_TRAILING_PUNCTUATION = ".,;:!?*\u2018\u2019\u201c\u201d\"'"
+_URL_CLOSING_BRACKETS = {")": "(", "]": "[", "}": "{", ">": "<"}
 _DATE = re.compile(
     r"\b(?:"
     r"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|"
@@ -140,6 +340,52 @@ class LocalResumeParserProvider:
         )
 
 
+def _url_spans(text: str) -> tuple[tuple[str, int, int], ...]:
+    """Return each link in ``text`` with its exact, punctuation-free offsets.
+
+    Offsets stay exact because they anchor the field back to the source
+    document, so trailing punctuation is dropped by shortening the span rather
+    than by rewriting the value.
+    """
+
+    spans: list[tuple[str, int, int]] = []
+    for match in _URL.finditer(text):
+        start, end = match.start(), match.end()
+        while end > start:
+            last = text[end - 1]
+            opener = _URL_CLOSING_BRACKETS.get(last)
+            if opener is not None:
+                value = text[start:end]
+                if value.count(opener) >= value.count(last):
+                    break
+                end -= 1
+                continue
+            if last in _URL_TRAILING_PUNCTUATION:
+                end -= 1
+                continue
+            break
+        if end - start >= 4:
+            spans.append((text[start:end], start, end))
+    return tuple(spans)
+
+
+def _overlaps(start: int, end: int, spans: tuple[tuple[str, int, int], ...]) -> bool:
+    return any(start < span_end and span_start < end for _, span_start, span_end in spans)
+
+
+def _link_names(kind: SemanticEntityKind) -> tuple[str, ...]:
+    """Record kinds that carry an external link of their own."""
+
+    if kind in {
+        SemanticEntityKind.EXPERIENCE,
+        SemanticEntityKind.EDUCATION,
+        SemanticEntityKind.PROJECT,
+        SemanticEntityKind.CERTIFICATION,
+    }:
+        return ("link",)
+    return ()
+
+
 def _entity_kind(section_kind: SectionKind) -> SemanticEntityKind | None:
     return {
         SectionKind.CONTACT: SemanticEntityKind.CONTACT,
@@ -155,12 +401,14 @@ def _contact_candidates(blocks: tuple[CanonicalBlock, ...]) -> tuple[_FieldCandi
     candidates: list[_FieldCandidate] = []
     name_added = False
     for block in blocks:
+        url_spans = _url_spans(block.text)
         for pattern, name, field_type in (
             (_EMAIL, "email", SemanticFieldType.EMAIL),
             (_PHONE, "phone", SemanticFieldType.PHONE),
-            (_URL, "link", SemanticFieldType.URL),
         ):
             for match in pattern.finditer(block.text):
+                if _overlaps(match.start(), match.end(), url_spans):
+                    continue
                 candidates.append(
                     _FieldCandidate(
                         name,
@@ -172,10 +420,23 @@ def _contact_candidates(blocks: tuple[CanonicalBlock, ...]) -> tuple[_FieldCandi
                         9_500,
                     )
                 )
+        for value, start, end in url_spans:
+            candidates.append(
+                _FieldCandidate(
+                    "link",
+                    SemanticFieldType.URL,
+                    value,
+                    block,
+                    start,
+                    end,
+                    9_500,
+                )
+            )
         if (
             not name_added
             and block.kind is not BlockKind.BULLET
-            and not any(pattern.search(block.text) for pattern in (_EMAIL, _PHONE, _URL))
+            and not url_spans
+            and not any(pattern.search(block.text) for pattern in (_EMAIL, _PHONE))
             and 1 < len(block.text.split()) <= 6
         ):
             candidates.append(
@@ -222,6 +483,7 @@ def _group_candidates(
     candidates: list[_FieldCandidate] = []
     pending_text: list[str] = []
     pending_dates = list(_date_names(kind))
+    pending_links = list(_link_names(kind))
     for index, block in enumerate(blocks):
         if not pending_text:
             pending_text = list(_text_names_for_block(kind, block))
@@ -253,7 +515,7 @@ def _group_candidates(
                     )
                 )
             continue
-        candidates.extend(_header_candidates(block, pending_text, pending_dates))
+        candidates.extend(_header_candidates(block, pending_text, pending_dates, pending_links))
 
     if candidates:
         return tuple(candidates)
@@ -282,11 +544,35 @@ def _header_candidates(
     block: CanonicalBlock,
     pending_text: list[str],
     pending_dates: list[str],
+    pending_links: list[str],
 ) -> list[_FieldCandidate]:
     """Consume the record's still-unfilled names from one header line."""
     text = block.text
     candidates: list[_FieldCandidate] = []
-    date_matches = list(_DATE.finditer(text))
+    # Links are claimed before anything else, so a project or credential URL
+    # lands in a field of its own instead of being cut up as an employer or a
+    # location, and so a year inside a path ("/2024/report") is not read as the
+    # record's date.
+    url_spans = _url_spans(text)
+    for value, start, end in url_spans:
+        if not pending_links:
+            break
+        candidates.append(
+            _FieldCandidate(
+                pending_links.pop(0),
+                SemanticFieldType.URL,
+                value,
+                block,
+                start,
+                end,
+                9_000,
+            )
+        )
+    date_matches = [
+        match
+        for match in _DATE.finditer(text)
+        if not _overlaps(match.start(), match.end(), url_spans)
+    ]
     for match in date_matches:
         if not pending_dates:
             break
@@ -304,7 +590,12 @@ def _header_candidates(
         )
     segments = _source_values(
         text,
-        tuple((match.start(), match.end()) for match in date_matches),
+        tuple(
+            sorted(
+                [(match.start(), match.end()) for match in date_matches]
+                + [(start, end) for _, start, end in url_spans]
+            )
+        ),
     )
     for value, start, end in _split_for_names(text, segments, len(pending_text)):
         if not pending_text:

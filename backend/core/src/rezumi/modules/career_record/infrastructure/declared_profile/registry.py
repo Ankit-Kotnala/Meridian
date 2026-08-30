@@ -1,7 +1,13 @@
 """Resolve declared-profile connectors by URL.
 
-Platforms deliberately NOT connected here, checked and excluded for cause —
-re-verify before ever revisiting any of these:
+Every recognized platform lands in exactly one of three buckets - dedicated
+connector, generic HTML fallback, or an explicit refusal carrying its reason.
+`platform_policy.py` holds the catalogue and the reasoning per domain; this
+module only routes.
+
+Findings behind the engineering exclusions listed there, re-verify before ever
+revisiting any of them:
+- LinkedIn: the User Agreement forbids automated access to profiles.
 - LeetCode: ToS forbids "crawling," "scraping," "spidering"; robots.txt
   disallows /api/ and /graphql for all crawlers; no documented public API.
 - HackerRank: no documented public API; robots.txt disallows /rest/ and
@@ -13,8 +19,14 @@ re-verify before ever revisiting any of these:
 - Behance: Adobe has taken the public API offline (every docs URL 404s).
 - Medium: API deprecated/archived by Medium itself since March 2023.
 - Dribbble: has a public API, but it's OAuth2-authorization-flow only (the
-  profile owner must explicitly authorize a Rezumi OAuth app) — a bigger,
+  profile owner must explicitly authorize a Rezumi OAuth app) - a bigger,
   different-shaped scope than every connector here; deferred, not excluded.
+- ResearchGate: answers unauthenticated requests with 403.
+- Google Scholar: consent- and captcha-walled; terms forbid automated access.
+
+A refusal is a feature, not a gap: the declared link is still stored as
+evidence on the career record, and the user writes the achievement themselves
+rather than being handed scraped navigation chrome as if it were their work.
 """
 
 from __future__ import annotations
@@ -22,7 +34,6 @@ from __future__ import annotations
 from rezumi.modules.career_record.application.declared_profile_ports import (
     DeclaredProfileConnector,
     DeclaredProfileUnsupported,
-    hostname,
     normalize_declared_profile_url,
 )
 from rezumi.modules.career_record.infrastructure.declared_profile.bitbucket_connector import (
@@ -46,17 +57,22 @@ from rezumi.modules.career_record.infrastructure.declared_profile.github_connect
 from rezumi.modules.career_record.infrastructure.declared_profile.gitlab_connector import (
     GitlabDeclaredProfileConnector,
 )
+from rezumi.modules.career_record.infrastructure.declared_profile.openalex_connector import (
+    OpenAlexDeclaredProfileConnector,
+)
 from rezumi.modules.career_record.infrastructure.declared_profile.orcid_connector import (
     OrcidDeclaredProfileConnector,
+)
+from rezumi.modules.career_record.infrastructure.declared_profile.platform_policy import (
+    UNSUPPORTED_LINK_MESSAGE,
+    blocked_platform_reason,
 )
 from rezumi.modules.career_record.infrastructure.declared_profile.portfolio_connector import (
     PortfolioDeclaredProfileConnector,
 )
-from rezumi.modules.career_record.infrastructure.declared_profile.stackoverflow_connector import (
-    StackOverflowDeclaredProfileConnector,
+from rezumi.modules.career_record.infrastructure.declared_profile.stackexchange_connector import (
+    StackExchangeDeclaredProfileConnector,
 )
-
-_LINKEDIN_HOSTS = frozenset({"linkedin.com", "lnkd.in"})
 
 
 class DeclaredProfileConnectorRegistry:
@@ -65,21 +81,13 @@ class DeclaredProfileConnectorRegistry:
 
     def resolve(self, url: str) -> DeclaredProfileConnector:
         normalized = normalize_declared_profile_url(url)
-        host = hostname(normalized)
-        if host in _LINKEDIN_HOSTS:
-            raise DeclaredProfileUnsupported(
-                "LinkedIn does not permit automated profile reads. "
-                "Add achievements manually or use a public GitHub or portfolio link."
-            )
+        reason = blocked_platform_reason(normalized)
+        if reason is not None:
+            raise DeclaredProfileUnsupported(reason)
         for connector in self._connectors:
             if connector.supports(normalized):
                 return connector
-        raise DeclaredProfileUnsupported(
-            "This link type is not supported for automatic enrichment yet. "
-            "GitHub, GitLab, Bitbucket, Stack Overflow, Codeforces, dev.to, "
-            "Credly, public portfolio sites, and example.test fixture links "
-            "are supported."
-        )
+        raise DeclaredProfileUnsupported(UNSUPPORTED_LINK_MESSAGE)
 
 
 def default_declared_profile_registry(
@@ -90,11 +98,19 @@ def default_declared_profile_registry(
         GithubDeclaredProfileConnector(),
         GitlabDeclaredProfileConnector(),
         BitbucketDeclaredProfileConnector(),
-        StackOverflowDeclaredProfileConnector(),
+        StackExchangeDeclaredProfileConnector(),
         CodeforcesDeclaredProfileConnector(),
         DevToDeclaredProfileConnector(),
         CredlyDeclaredProfileConnector(),
     )
     if orcid_enabled:
+        # ORCID is registered ahead of OpenAlex so that, once cleared, an
+        # orcid.org link is read from ORCID itself rather than the CC0 mirror.
         connectors = (*connectors, OrcidDeclaredProfileConnector())
-    return DeclaredProfileConnectorRegistry((*connectors, PortfolioDeclaredProfileConnector()))
+    return DeclaredProfileConnectorRegistry(
+        (
+            *connectors,
+            OpenAlexDeclaredProfileConnector(),
+            PortfolioDeclaredProfileConnector(),
+        )
+    )

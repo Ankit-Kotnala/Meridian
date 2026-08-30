@@ -8,18 +8,19 @@ import re
 from datetime import UTC, datetime
 from typing import Any
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
 from rezumi.modules.career_record.application.declared_profile_ports import (
     DeclaredProfileAchievement,
     DeclaredProfileFetchFailed,
     DeclaredProfileFetchResult,
+    host_matches,
     hostname,
     normalize_declared_profile_url,
+    path_segments,
 )
 
-_CREDLY_USER = re.compile(r"^(?:users|badges)/(?P<slug>[A-Za-z0-9][A-Za-z0-9._-]{0,63})/?$")
+_CREDLY_USER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 _MAX_BADGES = 8
 _TIMEOUT = 8.0
 
@@ -30,19 +31,13 @@ class CredlyDeclaredProfileConnector:
     platform = "credly"
 
     def supports(self, url: str) -> bool:
-        normalized = normalize_declared_profile_url(url)
-        if hostname(normalized) != "credly.com":
-            return False
-        path = urlsplit(normalized).path.strip("/")
-        return _CREDLY_USER.match(f"{path}/") is not None
+        return _user_slug(normalize_declared_profile_url(url)) is not None
 
     async def fetch(self, url: str) -> DeclaredProfileFetchResult:
         normalized = normalize_declared_profile_url(url)
-        path = urlsplit(normalized).path.strip("/")
-        match = _CREDLY_USER.match(f"{path}/")
-        if match is None:
+        slug = _user_slug(normalized)
+        if slug is None:
             raise DeclaredProfileFetchFailed("Credly profile URL is not supported")
-        slug = match.group("slug")
         return await asyncio.to_thread(self._fetch_sync, normalized, slug)
 
     def _fetch_sync(self, profile_url: str, slug: str) -> DeclaredProfileFetchResult:
@@ -107,3 +102,20 @@ class CredlyDeclaredProfileConnector:
         except (TimeoutError, URLError, OSError, json.JSONDecodeError) as exc:
             raise DeclaredProfileFetchFailed("Credly profile could not be read") from exc
         return json.loads(body.decode("utf-8"))
+
+
+def _user_slug(url: str) -> str | None:
+    """Return the Credly account slug a badge-feed URL names.
+
+    Only "/users/<slug>" identifies an account. A single-badge permalink
+    ("/badges/<uuid>") is a different resource with a different feed, and
+    feeding its id to the user badge endpoint reads someone else's page or
+    nothing at all -- it is left unsupported rather than silently mis-fetched.
+    """
+
+    if not host_matches(hostname(url), "credly.com"):
+        return None
+    segments = path_segments(url)
+    if len(segments) < 2 or segments[0].casefold() != "users":
+        return None
+    return segments[1] if _CREDLY_USER.match(segments[1]) else None

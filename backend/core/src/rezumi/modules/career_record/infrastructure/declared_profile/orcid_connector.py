@@ -16,20 +16,19 @@ import re
 from datetime import UTC, datetime
 from typing import Any
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
 from rezumi.modules.career_record.application.declared_profile_ports import (
     DeclaredProfileAchievement,
     DeclaredProfileFetchFailed,
     DeclaredProfileFetchResult,
+    host_matches,
     hostname,
     normalize_declared_profile_url,
+    path_segments,
 )
 
-_ORCID_ID = re.compile(
-    r"^(?P<orcid>\d{4}-\d{4}-\d{4}-\d{3}[\dX])/?$"
-)
+_ORCID_ID = re.compile(r"^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$", re.IGNORECASE)
 _MAX_WORKS = 10
 _TIMEOUT = 8.0
 
@@ -40,19 +39,13 @@ class OrcidDeclaredProfileConnector:
     platform = "orcid"
 
     def supports(self, url: str) -> bool:
-        normalized = normalize_declared_profile_url(url)
-        if hostname(normalized) != "orcid.org":
-            return False
-        path = urlsplit(normalized).path.strip("/")
-        return _ORCID_ID.match(f"{path}/") is not None
+        return _orcid_id(normalize_declared_profile_url(url)) is not None
 
     async def fetch(self, url: str) -> DeclaredProfileFetchResult:
         normalized = normalize_declared_profile_url(url)
-        path = urlsplit(normalized).path.strip("/")
-        match = _ORCID_ID.match(f"{path}/")
-        if match is None:
+        orcid_id = _orcid_id(normalized)
+        if orcid_id is None:
             raise DeclaredProfileFetchFailed("ORCID profile URL is not supported")
-        orcid_id = match.group("orcid")
         return await asyncio.to_thread(self._fetch_sync, normalized, orcid_id)
 
     def _fetch_sync(self, profile_url: str, orcid_id: str) -> DeclaredProfileFetchResult:
@@ -116,3 +109,15 @@ class OrcidDeclaredProfileConnector:
         except (TimeoutError, URLError, OSError, json.JSONDecodeError) as exc:
             raise DeclaredProfileFetchFailed("ORCID profile could not be read") from exc
         return json.loads(payload.decode("utf-8"))
+
+
+def _orcid_id(url: str) -> str | None:
+    """Return the ORCID iD a URL names, in canonical uppercase-checksum form."""
+
+    if not host_matches(hostname(url), "orcid.org"):
+        return None
+    segments = path_segments(url)
+    if not segments:
+        return None
+    candidate = segments[0].upper()
+    return candidate if _ORCID_ID.match(candidate) else None

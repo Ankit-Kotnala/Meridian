@@ -26,18 +26,22 @@ import re
 from datetime import UTC, datetime
 from typing import Any
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
 from rezumi.modules.career_record.application.declared_profile_ports import (
     DeclaredProfileAchievement,
     DeclaredProfileFetchFailed,
     DeclaredProfileFetchResult,
+    host_matches,
     hostname,
     normalize_declared_profile_url,
+    path_segments,
 )
 
-_BITBUCKET_USER = re.compile(r"^(?P<user>[A-Za-z0-9][A-Za-z0-9._-]{0,254})/?$")
+_BITBUCKET_USER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,254}$")
+_RESERVED_PATHS = frozenset(
+    {"account", "dashboard", "product", "repo", "search", "site", "workspace"}
+)
 _MAX_REPOS = 5
 _TIMEOUT = 8.0
 
@@ -48,26 +52,19 @@ class BitbucketDeclaredProfileConnector:
     platform = "bitbucket"
 
     def supports(self, url: str) -> bool:
-        normalized = normalize_declared_profile_url(url)
-        if hostname(normalized) != "bitbucket.org":
-            return False
-        path = urlsplit(normalized).path.strip("/")
-        return _BITBUCKET_USER.match(f"{path}/") is not None
+        return _username(normalize_declared_profile_url(url)) is not None
 
     async def fetch(self, url: str) -> DeclaredProfileFetchResult:
         normalized = normalize_declared_profile_url(url)
-        path = urlsplit(normalized).path.strip("/")
-        match = _BITBUCKET_USER.match(f"{path}/")
-        if match is None:
+        username = _username(normalized)
+        if username is None:
             raise DeclaredProfileFetchFailed("Bitbucket profile URL is not supported")
-        username = match.group("user")
         return await asyncio.to_thread(self._fetch_sync, normalized, username)
 
     def _fetch_sync(self, profile_url: str, username: str) -> DeclaredProfileFetchResult:
         user = self._get_json(f"https://api.bitbucket.org/2.0/users/{username}")
         repos = self._get_json(
-            f"https://api.bitbucket.org/2.0/repositories/{username}"
-            "?pagelen=5&sort=-updated_on"
+            f"https://api.bitbucket.org/2.0/repositories/{username}?pagelen=5&sort=-updated_on"
         )
 
         display_name = str(user.get("display_name") or username).strip()
@@ -114,9 +111,7 @@ class BitbucketDeclaredProfileConnector:
             )
 
         if not achievements:
-            raise DeclaredProfileFetchFailed(
-                "Bitbucket profile did not expose public achievements"
-            )
+            raise DeclaredProfileFetchFailed("Bitbucket profile did not expose public achievements")
 
         return DeclaredProfileFetchResult(
             platform=self.platform,
@@ -144,3 +139,17 @@ class BitbucketDeclaredProfileConnector:
         except (TimeoutError, URLError, OSError, json.JSONDecodeError) as exc:
             raise DeclaredProfileFetchFailed("Bitbucket profile could not be read") from exc
         return json.loads(payload.decode("utf-8"))
+
+
+def _username(url: str) -> str | None:
+    """Return the Bitbucket workspace/account a profile or repo URL names."""
+
+    if not host_matches(hostname(url), "bitbucket.org"):
+        return None
+    segments = path_segments(url)
+    if not segments:
+        return None
+    candidate = segments[0]
+    if candidate.casefold() in _RESERVED_PATHS:
+        return None
+    return candidate if _BITBUCKET_USER.match(candidate) else None

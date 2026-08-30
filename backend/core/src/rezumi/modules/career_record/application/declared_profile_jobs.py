@@ -266,9 +266,7 @@ class DeclaredProfileEnrichmentJobService:
             await uow.commit()
         return _view(job)
 
-    async def get_job(
-        self, owner_user_id: UUID, job_id: UUID
-    ) -> DeclaredProfileEnrichmentJobView:
+    async def get_job(self, owner_user_id: UUID, job_id: UUID) -> DeclaredProfileEnrichmentJobView:
         async with self._uow() as uow:
             job = await uow.get_job(owner_user_id, job_id)
         if job is None:

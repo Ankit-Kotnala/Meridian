@@ -12,7 +12,6 @@ import pytest
 
 from rezumi.modules.career_record.application.declared_profile_ports import (
     DeclaredProfileFetchFailed,
-    DeclaredProfileUnsupported,
 )
 from rezumi.modules.career_record.infrastructure.declared_profile.bitbucket_connector import (
     BitbucketDeclaredProfileConnector,
@@ -35,8 +34,8 @@ from rezumi.modules.career_record.infrastructure.declared_profile.portfolio_conn
 from rezumi.modules.career_record.infrastructure.declared_profile.registry import (
     default_declared_profile_registry,
 )
-from rezumi.modules.career_record.infrastructure.declared_profile.stackoverflow_connector import (
-    StackOverflowDeclaredProfileConnector,
+from rezumi.modules.career_record.infrastructure.declared_profile.stackexchange_connector import (
+    StackExchangeDeclaredProfileConnector,
 )
 
 
@@ -94,10 +93,13 @@ async def test_gitlab_connector_extracts_bio_and_projects() -> None:
 @pytest.mark.asyncio
 async def test_gitlab_connector_raises_when_profile_missing() -> None:
     connector = GitlabDeclaredProfileConnector()
-    with patch(
-        "rezumi.modules.career_record.infrastructure.declared_profile.gitlab_connector.urlopen",
-        return_value=_FakeJsonResponse([]),
-    ), pytest.raises(DeclaredProfileFetchFailed):
+    with (
+        patch(
+            "rezumi.modules.career_record.infrastructure.declared_profile.gitlab_connector.urlopen",
+            return_value=_FakeJsonResponse([]),
+        ),
+        pytest.raises(DeclaredProfileFetchFailed),
+    ):
         await connector.fetch("https://gitlab.com/nobody")
 
 
@@ -145,14 +147,14 @@ async def test_bitbucket_connector_extracts_repos() -> None:
 
 
 def test_stackoverflow_connector_supports_user_urls() -> None:
-    connector = StackOverflowDeclaredProfileConnector()
+    connector = StackExchangeDeclaredProfileConnector()
     assert connector.supports("https://stackoverflow.com/users/12345/alex-example")
     assert not connector.supports("https://stackoverflow.com/questions/1")
 
 
 @pytest.mark.asyncio
 async def test_stackoverflow_connector_includes_attribution() -> None:
-    connector = StackOverflowDeclaredProfileConnector()
+    connector = StackExchangeDeclaredProfileConnector()
     payload = {
         "items": [
             {
@@ -165,7 +167,7 @@ async def test_stackoverflow_connector_includes_attribution() -> None:
 
     with patch(
         "rezumi.modules.career_record.infrastructure.declared_profile."
-        "stackoverflow_connector.urlopen",
+        "stackexchange_connector.urlopen",
         return_value=_FakeJsonResponse(payload),
     ):
         result = await connector.fetch("https://stackoverflow.com/users/12345/alex-example")
@@ -244,7 +246,10 @@ async def test_codeforces_connector_buckets_solved_problems_by_tier() -> None:
 def test_devto_connector_supports_user_urls() -> None:
     connector = DevToDeclaredProfileConnector()
     assert connector.supports("https://dev.to/alex-example")
-    assert not connector.supports("https://dev.to/alex-example/some-post-slug")
+    # An article link still identifies the author whose activity is read.
+    assert connector.supports("https://dev.to/alex-example/some-post-slug")
+    assert not connector.supports("https://dev.to/t/python")
+    assert not connector.supports("https://dev.to/")
 
 
 @pytest.mark.asyncio
@@ -306,9 +311,10 @@ async def test_orcid_connector_extracts_works() -> None:
 
 
 def test_orcid_connector_is_disabled_by_default_in_registry() -> None:
+    """ORCID stays off, but the link still reads - from OpenAlex, under CC0."""
+
     registry = default_declared_profile_registry()
-    with pytest.raises(DeclaredProfileUnsupported):
-        registry.resolve("https://orcid.org/0000-0002-1825-0097")
+    assert registry.resolve("https://orcid.org/0000-0002-1825-0097").platform == "openalex"
 
 
 def test_orcid_connector_is_available_when_explicitly_enabled() -> None:
@@ -337,9 +343,9 @@ def test_default_registry_resolves_every_new_platform() -> None:
     registry = default_declared_profile_registry()
     assert registry.resolve("https://gitlab.com/alex").platform == "gitlab"
     assert registry.resolve("https://bitbucket.org/alex").platform == "bitbucket"
+    assert registry.resolve("https://stackoverflow.com/users/1/alex").platform == "stackexchange"
     assert (
-        registry.resolve("https://stackoverflow.com/users/1/alex").platform
-        == "stackoverflow"
+        registry.resolve("https://quant.stackexchange.com/users/1/alex").platform == "stackexchange"
     )
     assert registry.resolve("https://codeforces.com/profile/alex").platform == "codeforces"
     assert registry.resolve("https://dev.to/alex").platform == "devto"

@@ -8,18 +8,53 @@ import re
 from datetime import UTC, datetime
 from typing import Any
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
 from rezumi.modules.career_record.application.declared_profile_ports import (
     DeclaredProfileAchievement,
     DeclaredProfileFetchFailed,
     DeclaredProfileFetchResult,
+    host_matches,
+    hostname,
     normalize_declared_profile_url,
+    path_segments,
 )
 
-_GITHUB_USER = re.compile(
-    r"^github\.com/(?P<user>[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?)/?$"
+_GITHUB_USER = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$")
+# Site routes that look exactly like a username in a URL path. Treating one as
+# a profile produces a confusing "profile was not found" instead of routing the
+# link to the generic fallback.
+_RESERVED_PATHS = frozenset(
+    {
+        "about",
+        "apps",
+        "collections",
+        "contact",
+        "customer-stories",
+        "dashboard",
+        "enterprise",
+        "events",
+        "explore",
+        "features",
+        "issues",
+        "join",
+        "login",
+        "marketplace",
+        "new",
+        "notifications",
+        "orgs",
+        "organizations",
+        "pricing",
+        "pulls",
+        "readme",
+        "search",
+        "security",
+        "settings",
+        "site",
+        "sponsors",
+        "topics",
+        "trending",
+    }
 )
 _MAX_REPOS = 5
 _TIMEOUT = 8.0
@@ -29,19 +64,13 @@ class GithubDeclaredProfileConnector:
     platform = "github"
 
     def supports(self, url: str) -> bool:
-        normalized = normalize_declared_profile_url(url)
-        path = urlsplit(normalized).path.strip("/")
-        host = (urlsplit(normalized).hostname or "").casefold().removeprefix("www.")
-        if host != "github.com":
-            return False
-        return _GITHUB_USER.match(f"github.com/{path}") is not None
+        return _username(normalize_declared_profile_url(url)) is not None
 
     async def fetch(self, url: str) -> DeclaredProfileFetchResult:
         normalized = normalize_declared_profile_url(url)
-        match = _GITHUB_USER.match(f"github.com/{urlsplit(normalized).path.strip('/')}/")
-        if match is None:
+        username = _username(normalized)
+        if username is None:
             raise DeclaredProfileFetchFailed("GitHub profile URL is not supported")
-        username = match.group("user")
         return await asyncio.to_thread(self._fetch_sync, normalized, username)
 
     def _fetch_sync(self, profile_url: str, username: str) -> DeclaredProfileFetchResult:
@@ -108,6 +137,7 @@ class GithubDeclaredProfileConnector:
             url,
             headers={
                 "Accept": "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2022-11-28",
                 "User-Agent": "RezumiDeclaredProfile/1.0",
             },
             method="GET",
@@ -118,7 +148,33 @@ class GithubDeclaredProfileConnector:
         except HTTPError as exc:
             if exc.code == 404:
                 raise DeclaredProfileFetchFailed("GitHub profile was not found") from exc
+            if exc.code in {403, 429}:
+                raise DeclaredProfileFetchFailed(
+                    "GitHub is rate-limiting public profile reads right now. Try again later."
+                ) from exc
             raise DeclaredProfileFetchFailed("GitHub profile could not be read") from exc
         except (TimeoutError, URLError, OSError, json.JSONDecodeError) as exc:
             raise DeclaredProfileFetchFailed("GitHub profile could not be read") from exc
         return json.loads(payload.decode("utf-8"))
+
+
+def _username(url: str) -> str | None:
+    """Return the account a GitHub URL belongs to, profile or repository.
+
+    Resumes cite the work, not the profile page: "github.com/alex/rezumi" is at
+    least as common as "github.com/alex", and gist links are equally valid
+    evidence of the same account. Both resolve to that account's public
+    profile rather than being rejected as unsupported.
+    """
+
+    # `alex.github.io` is a published site rather than an API-backed profile,
+    # and is left to the portfolio connector: it is not a github.com host.
+    if not host_matches(hostname(url), "github.com"):
+        return None
+    segments = path_segments(url)
+    if not segments:
+        return None
+    candidate = segments[0]
+    if candidate.casefold() in _RESERVED_PATHS:
+        return None
+    return candidate if _GITHUB_USER.match(candidate) else None

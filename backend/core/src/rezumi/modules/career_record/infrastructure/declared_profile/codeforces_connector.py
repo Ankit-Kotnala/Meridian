@@ -16,18 +16,19 @@ import time
 from datetime import UTC, datetime
 from typing import Any
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
 from rezumi.modules.career_record.application.declared_profile_ports import (
     DeclaredProfileAchievement,
     DeclaredProfileFetchFailed,
     DeclaredProfileFetchResult,
+    host_matches,
     hostname,
     normalize_declared_profile_url,
+    path_segments,
 )
 
-_CODEFORCES_HANDLE = re.compile(r"^profile/(?P<handle>[A-Za-z0-9_.-]{1,64})/?$")
+_CODEFORCES_HANDLE = re.compile(r"^[A-Za-z0-9_.-]{1,64}$")
 _TIMEOUT = 8.0
 _MAX_SUBMISSIONS = 1_000
 _TIERS: tuple[tuple[str, int, int], ...] = (
@@ -43,19 +44,13 @@ class CodeforcesDeclaredProfileConnector:
     platform = "codeforces"
 
     def supports(self, url: str) -> bool:
-        normalized = normalize_declared_profile_url(url)
-        if hostname(normalized) != "codeforces.com":
-            return False
-        path = urlsplit(normalized).path.strip("/")
-        return _CODEFORCES_HANDLE.match(f"{path}/") is not None
+        return _handle(normalize_declared_profile_url(url)) is not None
 
     async def fetch(self, url: str) -> DeclaredProfileFetchResult:
         normalized = normalize_declared_profile_url(url)
-        path = urlsplit(normalized).path.strip("/")
-        match = _CODEFORCES_HANDLE.match(f"{path}/")
-        if match is None:
+        handle = _handle(normalized)
+        if handle is None:
             raise DeclaredProfileFetchFailed("Codeforces profile URL is not supported")
-        handle = match.group("handle")
         return await asyncio.to_thread(self._fetch_sync, normalized, handle)
 
     def _fetch_sync(self, profile_url: str, handle: str) -> DeclaredProfileFetchResult:
@@ -157,3 +152,14 @@ class CodeforcesDeclaredProfileConnector:
                 str(decoded.get("comment") or "Codeforces profile could not be read")
             )
         return decoded
+
+
+def _handle(url: str) -> str | None:
+    """Return the Codeforces handle a profile URL names."""
+
+    if not host_matches(hostname(url), "codeforces.com"):
+        return None
+    segments = path_segments(url)
+    if len(segments) < 2 or segments[0].casefold() != "profile":
+        return None
+    return segments[1] if _CODEFORCES_HANDLE.match(segments[1]) else None
