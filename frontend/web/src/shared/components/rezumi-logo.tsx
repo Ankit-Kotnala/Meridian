@@ -13,17 +13,23 @@ function RezumiMark() {
   return (
     <svg
       aria-hidden="true"
-      className="size-[1.125rem]"
+      className="size-full"
       fill="none"
       viewBox="0 0 24 24"
       xmlns="http://www.w3.org/2000/svg"
     >
       <path
-        d="M7.5 20V4h5a4 4 0 1 1 0 8h-5m4-3.5 6.5 11.5"
+        d="M12 2 22 12 12 22 2 12Z"
+        stroke="currentColor"
+        strokeLinejoin="round"
+        strokeWidth={1.5}
+      />
+      <path
+        d="M8 15.5V9l4 4 4-4v6.5"
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth={2.25}
+        strokeWidth={1.5}
       />
     </svg>
   );
@@ -47,8 +53,8 @@ export function RezumiLogo({
       <span
         aria-hidden="true"
         className={cn(
-          "grid size-9 shrink-0 place-items-center rounded-[var(--radius-control)]",
-          inverted ? "bg-white/10 text-white" : "bg-primary-soft text-primary",
+          "grid size-7 shrink-0 place-items-center",
+          inverted ? "text-accent-strong" : "text-accent",
         )}
       >
         <RezumiMark />
@@ -56,7 +62,7 @@ export function RezumiLogo({
       {!compact && (
         <span
           className={cn(
-            "text-[1.0625rem]",
+            "text-sm uppercase tracking-[0.14em]",
             inverted ? "text-white" : "text-foreground",
           )}
         >

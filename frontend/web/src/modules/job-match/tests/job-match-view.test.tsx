@@ -137,9 +137,25 @@ const catalogListing: JobCatalogSearch["listings"][number] = {
   title: "Backend Engineer",
 };
 
+const onsiteListing: JobCatalogSearch["listings"][number] = {
+  applicationUrl: null,
+  company: "Munich GmbH",
+  externalId: "fake-2",
+  location: "Munich, Germany",
+  platform: "arbeitnow",
+  postedAt: null,
+  remote: false,
+  sourceText: "Mission control software.",
+  title: "Senior Platform Engineer",
+};
+
 const emptyRolePreference: RolePreference = { roleTitles: [] };
 
-describe("Job Match view", () => {
+function openTab(name: string) {
+  fireEvent.click(screen.getByRole("tab", { name }));
+}
+
+describe("Job search view", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     api.getJobs.mockResolvedValue({
@@ -163,17 +179,36 @@ describe("Job Match view", () => {
     } satisfies JobCatalogBrowse);
   });
 
-  it("renders empty job states without demo data and without manual job entry", async () => {
+  it("opens on the job search tab with filters, results, and no demo data", async () => {
     render(<JobMatchView />);
+
+    expect(
+      await screen.findByRole("heading", { name: "Suggested for you" }),
+    ).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Filters" })).toBeVisible();
+    expect(
+      screen.getByLabelText("Search by title, company, or keyword"),
+    ).toBeVisible();
+    expect(screen.getByRole("tab", { name: "Job search" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(screen.queryByText(/ATS score/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Save a job posting" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders empty saved-job states without manual job entry", async () => {
+    render(<JobMatchView />);
+
+    await screen.findByRole("heading", { name: "Suggested for you" });
+    openTab("Saved jobs");
 
     expect(
       await screen.findByRole("heading", { name: "No saved jobs" }),
     ).toBeVisible();
     expect(screen.getByRole("heading", { name: "Choose a job" })).toBeVisible();
-    expect(screen.queryByText(/ATS score/i)).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("heading", { name: "Save a job posting" }),
-    ).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Import from URL")).not.toBeInTheDocument();
   });
 
@@ -207,6 +242,7 @@ describe("Job Match view", () => {
         "Matched toward Backend Engineer from published job boards.",
       ),
     ).toBeVisible();
+    expect(screen.getByText("Showing 1–1 of 1 job")).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "Save to my jobs" }));
 
@@ -218,6 +254,7 @@ describe("Job Match view", () => {
       "fake-1",
     );
 
+    openTab("Saved jobs");
     fireEvent.click(screen.getByRole("button", { name: "Analyze match" }));
     expect(
       await screen.findByLabelText("Application readiness: 82 out of 100"),
@@ -235,6 +272,77 @@ describe("Job Match view", () => {
       savedJob.id,
       expect.objectContaining({ analysisId: analysis.id, userInterest: 4 }),
     );
+  });
+
+  it("opens a listing in the detail panel and analyzes it from there", async () => {
+    api.getJobCatalogSuggestions.mockResolvedValue({
+      listings: [catalogListing],
+      matchedTargetRole: true,
+      selectedRoleTitles: [],
+      suggestedRoleTitles: [],
+      targetRoleTitles: ["Backend Engineer"],
+    } satisfies JobCatalogSearch);
+    const savedJob: Job = {
+      ...job,
+      company: "Fixture Co",
+      title: "Backend Engineer",
+    };
+    api.saveJobCatalogListing.mockResolvedValue(savedJob);
+    api.analyzeJob.mockResolvedValue({ ...analysis, job: savedJob });
+
+    render(<JobMatchView />);
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Backend Engineer/ }),
+    );
+
+    const panel = await screen.findByRole("complementary", {
+      name: "Backend Engineer",
+    });
+    expect(panel).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Application readiness" }),
+    ).toBeVisible();
+    // Both evidence and coverage are unknowable until the listing is saved.
+    expect(screen.getAllByText("Save this job first")).toHaveLength(2);
+
+    // Analyzing an unsaved listing saves it first, then analyzes the saved job.
+    fireEvent.click(screen.getByRole("button", { name: "Analyze" }));
+
+    await waitFor(() =>
+      expect(api.analyzeJob).toHaveBeenCalledWith(savedJob.id),
+    );
+    expect(api.saveJobCatalogListing).toHaveBeenCalledWith(
+      "remotive",
+      "fake-1",
+    );
+    expect(await screen.findByText("1 requirement")).toBeVisible();
+  });
+
+  it("narrows results with the work model filter without refetching", async () => {
+    api.getJobCatalogSuggestions.mockResolvedValue({
+      listings: [catalogListing, onsiteListing],
+      matchedTargetRole: true,
+      selectedRoleTitles: [],
+      suggestedRoleTitles: [],
+      targetRoleTitles: ["Engineer"],
+    } satisfies JobCatalogSearch);
+
+    render(<JobMatchView />);
+
+    expect(await screen.findByText("Showing 1–2 of 2 jobs")).toBeVisible();
+
+    fireEvent.change(screen.getByLabelText("Work model"), {
+      target: { value: "onsite" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
+
+    expect(await screen.findByText("Showing 1–1 of 1 job")).toBeVisible();
+    expect(screen.getByText(/Munich GmbH/)).toBeVisible();
+    expect(api.browseJobCatalog).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear all" }));
+    expect(await screen.findByText("Showing 1–2 of 2 jobs")).toBeVisible();
   });
 
   it("lets an owner opt out of a suggested role, persisting the change", async () => {
@@ -269,9 +377,7 @@ describe("Job Match view", () => {
   it("lets an owner add a custom role to the filter", async () => {
     render(<JobMatchView />);
 
-    await screen.findByRole("heading", { name: "No saved jobs" });
-
-    fireEvent.change(screen.getByLabelText("Add a role title"), {
+    fireEvent.change(await screen.findByLabelText("Add a role title"), {
       target: { value: "Staff Data Engineer" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
@@ -281,7 +387,7 @@ describe("Job Match view", () => {
     ]);
   });
 
-  it("searches the full job catalog independent of the role filter", async () => {
+  it("searches the whole catalog from the filters panel", async () => {
     api.browseJobCatalog.mockResolvedValue({
       hasMore: false,
       listings: [catalogListing],
@@ -295,17 +401,18 @@ describe("Job Match view", () => {
     render(<JobMatchView />);
 
     fireEvent.change(
-      await screen.findByLabelText("Search all jobs by keyword"),
-      {
-        target: { value: "backend" },
-      },
+      await screen.findByLabelText("Search by title, company, or keyword"),
+      { target: { value: "backend" } },
     );
-    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
 
     expect(await screen.findByText("Backend Engineer")).toBeVisible();
     expect(api.browseJobCatalog).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 10, offset: 0, q: "backend" }),
+      expect.objectContaining({ limit: 50, offset: 0, q: "backend" }),
     );
+    expect(
+      screen.getByText("Matching “backend” across every published job board."),
+    ).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "Save to my jobs" }));
     expect(
@@ -337,6 +444,9 @@ describe("Job Match view", () => {
 
     render(<JobMatchView />);
 
+    await screen.findByRole("heading", { name: "Suggested for you" });
+    openTab("Saved jobs");
+
     fireEvent.click(
       await screen.findByRole("button", { name: "Apply for me" }),
     );
@@ -349,6 +459,17 @@ describe("Job Match view", () => {
       "00000000-0000-4000-8000-000000001101",
     );
     expect(api.generateAssistedApplyPack).toHaveBeenCalledWith("app-1");
+  });
+
+  it("shows the role matching panel supplied by the route", async () => {
+    render(
+      <JobMatchView roleMatchingPanel={<p>Role readiness lives here</p>} />,
+    );
+
+    await screen.findByRole("heading", { name: "Suggested for you" });
+    openTab("Role matching");
+
+    expect(await screen.findByText("Role readiness lives here")).toBeVisible();
   });
 
   it("renders a retryable failure state", async () => {

@@ -61,7 +61,7 @@ export function ForgotPasswordView() {
             Use only the newest reset email. A successful reset invalidates
             existing sessions.
           </div>
-          <Link className="text-sm font-bold text-primary" href="/login">
+          <Link className="text-sm font-bold text-info-strong" href="/login">
             Return to sign in
           </Link>
         </div>
@@ -90,7 +90,7 @@ export function ForgotPasswordView() {
             Send reset link
           </Button>
           <p className="text-center text-sm">
-            <Link className="font-bold text-primary" href="/login">
+            <Link className="font-bold text-info-strong" href="/login">
               Return to sign in
             </Link>
           </p>

@@ -94,7 +94,7 @@ export function ResetPasswordView() {
             Your previous sessions have been invalidated. Sign in again with the
             new password.
           </Alert>
-          <Link className="font-bold text-primary" href="/login">
+          <Link className="font-bold text-info-strong" href="/login">
             Continue to sign in
           </Link>
         </div>
@@ -104,7 +104,7 @@ export function ResetPasswordView() {
             It may be expired, already used, or incomplete. Request a new link
             without sharing the old one.
           </Alert>
-          <Link className="font-bold text-primary" href="/forgot-password">
+          <Link className="font-bold text-info-strong" href="/forgot-password">
             Request a new reset link
           </Link>
         </div>
