@@ -38,6 +38,8 @@ export type WorkspaceSection = {
   id: string;
   label: string;
   routes: readonly string[];
+  /** One-line orientation shown under the section name in the top bar. */
+  subtitle: string;
   tools: readonly WorkspaceNavigationItem[];
 };
 
@@ -47,6 +49,7 @@ export const workspaceSections: readonly WorkspaceSection[] = [
     icon: Home,
     id: "home",
     label: "Home",
+    subtitle: "Your career workspace",
     routes: ["/dashboard"],
     tools: [],
   },
@@ -55,6 +58,7 @@ export const workspaceSections: readonly WorkspaceSection[] = [
     icon: UserRound,
     id: "career-record",
     label: "Profile",
+    subtitle: "Your career source of truth",
     routes: ["/career-profile", "/evidence", "/achievement-inbox"],
     tools: [
       { href: "/career-profile", icon: UserRound, label: "Profile" },
@@ -76,6 +80,7 @@ export const workspaceSections: readonly WorkspaceSection[] = [
     icon: FileText,
     id: "resume-studio",
     label: "Resumes",
+    subtitle: "Drafts, health, and exports",
     routes: ["/resume-health", "/resume-builder", "/change-studio"],
     tools: [],
   },
@@ -84,6 +89,7 @@ export const workspaceSections: readonly WorkspaceSection[] = [
     icon: Search,
     id: "opportunities",
     label: "Job search",
+    subtitle: "Find and match open roles",
     routes: ["/job-match", "/role-explorer"],
     tools: [],
   },
@@ -92,6 +98,7 @@ export const workspaceSections: readonly WorkspaceSection[] = [
     icon: Briefcase,
     id: "applications",
     label: "Applications",
+    subtitle: "Track every application",
     routes: ["/applications"],
     tools: [],
   },
@@ -100,6 +107,7 @@ export const workspaceSections: readonly WorkspaceSection[] = [
     icon: Calendar,
     id: "prepare",
     label: "Interview prep",
+    subtitle: "Practice and outreach",
     routes: ["/interview-prep", "/networking"],
     tools: [
       {
@@ -115,6 +123,7 @@ export const workspaceSections: readonly WorkspaceSection[] = [
     icon: TrendingUp,
     id: "growth",
     label: "Growth",
+    subtitle: "Plan your next step",
     routes: ["/career-growth", "/analytics"],
     tools: [
       { href: "/career-growth", icon: TrendingUp, label: "Career Growth" },
@@ -173,13 +182,25 @@ export function resolveWorkspaceContext(pathname: string) {
     const tool = resolveWorkspaceTool(pathname, section);
     return {
       group: section.label,
+      icon: section.icon,
       label: tool?.label ?? section.label,
+      subtitle: section.subtitle,
     };
   }
   const utility = workspaceUtilityNavigation.find(({ href }) =>
     isCurrentWorkspacePath(pathname, href),
   );
   return utility
-    ? { group: "Account", label: utility.label }
-    : { group: "Workspace", label: "Meridian" };
+    ? {
+        group: "Account",
+        icon: utility.icon,
+        label: utility.label,
+        subtitle: "Manage your account",
+      }
+    : {
+        group: "Workspace",
+        icon: Home,
+        label: "Meridian",
+        subtitle: "Your career workspace",
+      };
 }

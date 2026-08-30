@@ -87,7 +87,7 @@ test("a user saves, analyzes, and compares evidence-linked target roles", async 
 
     await page.goto("/career-profile");
     await expect(
-      page.getByRole("heading", { name: "Career Profile" }),
+      page.getByRole("heading", { name: "Career profile" }),
     ).toBeVisible();
     await page.getByRole("button", { name: "Add skill" }).click();
     await page.getByLabel("Skill name").fill("User research");
@@ -95,16 +95,16 @@ test("a user saves, analyzes, and compares evidence-linked target roles", async 
     await page.getByRole("button", { name: "Save skill" }).click();
     await expect(page.getByText("Skill saved.")).toBeVisible();
 
-    await page.getByRole("button", { name: "Add experience" }).click();
+    await page.getByRole("button", { name: "Add employment" }).click();
     await page.getByLabel("Employer").fill("Fictional Products Ltd");
     await page.getByLabel("Official title").fill("Product Researcher");
     await page.getByLabel("Start month").fill("2024-04");
     await page
       .getByRole("checkbox", { name: "User research", exact: true })
       .check();
-    await page.getByRole("button", { name: "Add experience" }).last().click();
+    await page.getByRole("button", { name: "Add experience" }).click();
     await expect(
-      page.getByText("Experience added to your career profile."),
+      page.getByText("Employment added to your career profile."),
     ).toBeVisible();
 
     await page.goto("/evidence");

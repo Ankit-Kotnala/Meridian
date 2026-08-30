@@ -49,17 +49,23 @@
   --content-wide: 82rem;
   --content-reading: 45rem;
   --sidebar-width: 15.25rem;
+  /* Shared so the sidebar's wordmark rule lines up with the top bar's bottom
+     border instead of the two drifting apart. */
+  --topbar-height: 4.25rem;
   --motion-fast: 140ms;
   --motion-standard: 240ms;
   --motion-slow: 420ms;
   --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
   --font-family-sans:
-    var(--font-sans-loaded), "Segoe UI Variable Text", "Aptos", "Segoe UI",
-    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    var(--font-sans-loaded), "Plus Jakarta Sans", "Segoe UI Variable Text",
+    "Aptos", "Segoe UI", ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, sans-serif;
+  /* Display type shares the body face; kept as its own token so a future
+     display family only has to change here. */
   --font-family-display:
-    var(--font-display-loaded), "Segoe UI Variable Display", "Aptos Display",
-    "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+    var(--font-sans-loaded), "Plus Jakarta Sans", "Segoe UI Variable Display",
+    "Aptos Display", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
 }
 
 .dark {

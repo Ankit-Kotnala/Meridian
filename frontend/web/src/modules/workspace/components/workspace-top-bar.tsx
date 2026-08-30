@@ -1,6 +1,12 @@
 "use client";
 
-import { ChevronDown, Menu, ShieldCheck } from "lucide-react";
+import {
+  Bell,
+  ChevronDown,
+  CircleQuestionMark,
+  Menu,
+  ShieldCheck,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode, RefObject } from "react";
@@ -8,8 +14,6 @@ import type { ReactNode, RefObject } from "react";
 import { corpIdFor } from "@/shared/identity/corp-id";
 import { ThemeToggle } from "@/shared/theme/theme-toggle";
 
-import type { DashboardResumeHealth } from "./dashboard-resume-state";
-import { HeaderResumeScore } from "./header-resume-score";
 import type { WorkspaceViewer } from "./workspace-shell";
 import {
   resolveWorkspaceContext,
@@ -28,54 +32,84 @@ function initials(name: string): string {
 
 export function WorkspaceTopBar({
   accountActions,
+  hasUnreadNotifications = false,
   menuButtonRef,
   onOpenMenu,
-  resumeHealth,
   viewer,
 }: {
   accountActions: ReactNode;
+  /**
+   * Drives the bell's unread dot. There is no notification feed yet, so this
+   * stays false rather than showing an alert the account cannot act on.
+   */
+  hasUnreadNotifications?: boolean;
   menuButtonRef: RefObject<HTMLButtonElement | null>;
   onOpenMenu: () => void;
-  resumeHealth: DashboardResumeHealth;
   viewer: WorkspaceViewer;
 }) {
   const pathname = usePathname();
   const context = resolveWorkspaceContext(pathname);
-  const isHome = pathname === "/dashboard";
+  const ContextIcon = context.icon;
   const corpId = corpIdFor(viewer.id);
 
   return (
-    <header className="sticky top-0 z-30 flex min-h-[4.25rem] flex-wrap items-center gap-3 border-b border-line bg-surface/95 px-4 backdrop-blur-sm sm:gap-4 sm:px-6">
-      <div className="flex min-w-0 items-center gap-3 lg:hidden">
-        <button
-          aria-label="Open application navigation"
-          className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-control)] border border-line text-foreground"
-          onClick={onOpenMenu}
-          ref={menuButtonRef}
-          type="button"
+    <header className="sticky top-0 z-30 flex min-h-[var(--topbar-height)] items-center gap-3 border-b border-line bg-surface/95 px-4 backdrop-blur-sm sm:gap-4 sm:px-6">
+      <button
+        aria-label="Open application navigation"
+        className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-control)] border border-line text-foreground lg:hidden"
+        onClick={onOpenMenu}
+        ref={menuButtonRef}
+        type="button"
+      >
+        <Menu aria-hidden="true" className="size-5" />
+      </button>
+
+      <div className="flex min-w-0 items-center gap-3">
+        <span
+          aria-hidden="true"
+          className="hidden size-9 shrink-0 place-items-center rounded-[var(--radius-control)] text-foreground sm:grid"
         >
-          <Menu aria-hidden="true" className="size-5" />
-        </button>
-        {!isHome && (
-          <div className="min-w-0 leading-tight">
-            <p className="truncate text-sm font-bold text-foreground">
-              {context.label}
-            </p>
-          </div>
-        )}
+          <ContextIcon className="size-5" strokeWidth={1.75} />
+        </span>
+        <div className="min-w-0 leading-tight">
+          <p className="truncate text-[0.9375rem] font-bold text-foreground">
+            {context.label}
+          </p>
+          <p className="truncate text-xs text-muted">{context.subtitle}</p>
+        </div>
       </div>
 
-      {isHome && (
-        <div className="min-w-0 leading-tight">
-          <p className="truncate text-base font-bold text-foreground">Home</p>
-          <p className="truncate text-xs text-muted">Your career workspace</p>
-        </div>
-      )}
+      <div className="ml-auto flex items-center gap-1">
+        <Link
+          className="flex min-h-10 items-center gap-1.5 rounded-[var(--radius-control)] px-2.5 text-[0.8125rem] font-semibold text-muted-strong transition-colors hover:bg-surface-subtle hover:text-foreground"
+          href="/onboarding"
+        >
+          <CircleQuestionMark aria-hidden="true" className="size-[1.125rem]" />
+          Help
+        </Link>
 
-      <div className="ml-auto flex items-center gap-1.5">
-        <HeaderResumeScore resumeHealth={resumeHealth} />
+        <span aria-hidden="true" className="mx-1.5 h-6 w-px bg-line" />
 
         <ThemeToggle />
+
+        <Link
+          aria-label={
+            hasUnreadNotifications
+              ? "Notification settings, unread notifications"
+              : "Notification settings"
+          }
+          className="relative grid size-10 place-items-center rounded-[var(--radius-control)] text-muted-strong transition-colors hover:bg-surface-subtle hover:text-foreground"
+          href="/settings/notifications"
+          title="Notification settings"
+        >
+          <Bell aria-hidden="true" className="size-[1.125rem]" />
+          {hasUnreadNotifications && (
+            <span
+              aria-hidden="true"
+              className="absolute right-2 top-2 size-2 rounded-full bg-danger ring-2 ring-surface"
+            />
+          )}
+        </Link>
 
         <details className="group relative">
           <summary

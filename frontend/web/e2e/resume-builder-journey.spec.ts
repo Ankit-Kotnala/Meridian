@@ -87,7 +87,7 @@ test("a user builds a grounded resume and verifies a PDF export", async ({
 
     await page.goto("/career-profile");
     await expect(
-      page.getByRole("heading", { name: "Career Profile" }),
+      page.getByRole("heading", { name: "Career profile" }),
     ).toBeVisible();
     await page.getByRole("button", { name: "Add contact fact" }).click();
     await page
@@ -102,7 +102,10 @@ test("a user builds a grounded resume and verifies a PDF export", async ({
         "Contact fact saved. Confirm it separately before downstream use.",
       ),
     ).toBeVisible();
-    await page.getByRole("button", { name: "Confirm current value" }).click();
+    await page
+      .getByRole("button", { name: "More actions for the Name contact fact" })
+      .click();
+    await page.getByRole("menuitem", { name: "Confirm current value" }).click();
     await expect(page.getByText("Contact fact confirmed.")).toBeVisible();
 
     await page.getByRole("button", { name: "Add skill" }).click();
@@ -111,16 +114,16 @@ test("a user builds a grounded resume and verifies a PDF export", async ({
     await page.getByRole("button", { name: "Save skill" }).click();
     await expect(page.getByText("Skill saved.")).toBeVisible();
 
-    await page.getByRole("button", { name: "Add experience" }).click();
+    await page.getByRole("button", { name: "Add employment" }).click();
     await page.getByLabel("Employer").fill("Fictional Products Ltd");
     await page.getByLabel("Official title").fill("Product Researcher");
     await page.getByLabel("Start month").fill("2024-04");
     await page
       .getByRole("checkbox", { name: "Product discovery", exact: true })
       .check();
-    await page.getByRole("button", { name: "Add experience" }).last().click();
+    await page.getByRole("button", { name: "Add experience" }).click();
     await expect(
-      page.getByText("Experience added to your career profile."),
+      page.getByText("Employment added to your career profile."),
     ).toBeVisible();
 
     await page.goto("/evidence");

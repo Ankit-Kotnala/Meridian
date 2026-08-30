@@ -80,6 +80,7 @@ export function WorkspaceDashboard({
 
         <div className="flex flex-col gap-4 sm:gap-5">
           <ProfileReadinessPanel
+            resumeHealth={resumeHealth}
             pipeline={summary.pipeline}
             record={summary.record}
           />

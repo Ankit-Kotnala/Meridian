@@ -87,11 +87,9 @@ test("a user maintains a career record and converts an explicit achievement to e
 
     await page.goto("/career-profile");
     await expect(
-      page.getByRole("heading", { name: "Career Profile" }),
+      page.getByRole("heading", { name: "Career profile" }),
     ).toBeVisible();
-    await expect(page.getByText("Your career timeline is empty")).toBeVisible();
-    await page.getByRole("tab", { name: "List and reorder" }).click();
-    await expect(page.getByText("No employment history yet")).toBeVisible();
+    await expect(page.getByText(/No employment recorded yet/)).toBeVisible();
 
     await page.getByRole("button", { name: "Add skill" }).click();
     await page.getByLabel("Skill name").fill("User research");
@@ -108,16 +106,16 @@ test("a user maintains a career record and converts an explicit achievement to e
     await page.getByRole("button", { name: "Save record" }).click();
     await expect(page.getByText("Career record saved.")).toBeVisible();
 
-    await page.getByRole("button", { name: "Add experience" }).click();
+    await page.getByRole("button", { name: "Add employment" }).click();
     await page.getByLabel("Employer").fill("Fictional Products Ltd");
     await page.getByLabel("Official title").fill("Product Researcher");
     await page.getByLabel("Start month").fill("2024-04");
     await page
       .getByRole("checkbox", { name: "User research", exact: true })
       .check();
-    await page.getByRole("button", { name: "Add experience" }).last().click();
+    await page.getByRole("button", { name: "Add experience" }).click();
     await expect(
-      page.getByText("Experience added to your career profile."),
+      page.getByText("Employment added to your career profile."),
     ).toBeVisible();
 
     await page.goto("/evidence");

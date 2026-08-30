@@ -31,26 +31,25 @@ export function WorkspaceSectionNav() {
   const current = resolveWorkspaceTool(pathname, section);
 
   return (
-    <div className="border-b border-line/80 bg-surface/45 backdrop-blur-sm">
+    <div className="border-b border-line bg-surface">
       <nav
         aria-label={`${section.label} sections`}
-        className="mx-auto flex w-full max-w-[var(--content-wide)] gap-1 overflow-x-auto px-[var(--space-page-inline)] py-2"
+        className="mx-auto flex w-full max-w-[var(--content-wide)] gap-6 overflow-x-auto px-[var(--space-page-inline)]"
       >
-        {section.tools.map(({ href, icon: Icon, label }) => {
+        {section.tools.map(({ href, label }) => {
           const active = current?.href === href;
           return (
             <Link
               {...(active ? { "aria-current": "page" as const } : {})}
               className={cn(
-                "flex min-h-9 shrink-0 items-center gap-2 rounded-[var(--radius-control)] px-3 text-[0.8125rem] font-semibold transition-colors",
+                "-mb-px flex min-h-11 shrink-0 items-center border-b-2 text-[0.8125rem] font-semibold transition-colors",
                 active
-                  ? "bg-primary-soft text-primary-strong shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--primary)_22%,transparent)]"
-                  : "text-muted hover:bg-surface-subtle hover:text-foreground",
+                  ? "border-info text-info"
+                  : "border-transparent text-muted hover:border-line-strong hover:text-foreground",
               )}
               href={href}
               key={href}
             >
-              <Icon aria-hidden="true" className="size-4" />
               {label}
             </Link>
           );

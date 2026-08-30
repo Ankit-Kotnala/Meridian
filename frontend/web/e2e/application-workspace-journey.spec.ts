@@ -193,7 +193,7 @@ test("a user tracks a grounded application and generates a consistent applicatio
     await test.step("create and confirm fictional Career Record evidence", async () => {
       await page.goto("/career-profile");
       await expect(
-        page.getByRole("heading", { name: "Career Profile" }),
+        page.getByRole("heading", { name: "Career profile" }),
       ).toBeVisible();
 
       await clickWhenReady(page.getByRole("button", { name: "Add skill" }));
@@ -206,7 +206,7 @@ test("a user tracks a grounded application and generates a consistent applicatio
       await expect(page.getByText("Skill saved.")).toBeVisible();
 
       await clickWhenReady(
-        page.getByRole("button", { name: "Add experience" }),
+        page.getByRole("button", { name: "Add employment" }),
       );
       await fillWhenReady(
         page.getByLabel("Employer"),
@@ -224,10 +224,10 @@ test("a user tracks a grounded application and generates a consistent applicatio
         }),
       );
       await clickWhenReady(
-        page.getByRole("button", { name: "Add experience" }).last(),
+        page.getByRole("button", { name: "Add experience" }),
       );
       await expect(
-        page.getByText("Experience added to your career profile."),
+        page.getByText("Employment added to your career profile."),
       ).toBeVisible();
 
       await page.goto("/evidence");

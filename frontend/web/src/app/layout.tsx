@@ -1,21 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import { Inter_Tight, Space_Grotesk } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import type { ReactNode } from "react";
 
 import { ThemeScript } from "@/shared/theme/theme-script";
 
 import "./globals.css";
 
-const sans = Inter_Tight({
+/**
+ * One family for body and display type. `--font-family-display` resolves to the
+ * same loaded face (see design-tokens), so a component asking for
+ * `font-display` stays consistent with body copy instead of mixing two faces.
+ */
+const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-sans-loaded",
-});
-
-const display = Space_Grotesk({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-display-loaded",
 });
 
 export const metadata: Metadata = {
@@ -54,11 +53,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
   return (
-    <html
-      className={`${sans.variable} ${display.variable}`}
-      lang="en"
-      suppressHydrationWarning
-    >
+    <html className={jakarta.variable} lang="en" suppressHydrationWarning>
       <head>
         <ThemeScript />
       </head>

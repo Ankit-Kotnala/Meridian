@@ -19,6 +19,7 @@ const api = vi.hoisted(() => ({
   getCareerItems: vi.fn(),
   getCareerProfile: vi.fn(),
   getCareerRelationships: vi.fn(),
+  getEvidence: vi.fn(),
   getExperiences: vi.fn(),
   getPersonalFacts: vi.fn(),
   getProfileImportProposal: vi.fn(),
@@ -41,6 +42,7 @@ vi.mock("../api/career-vault-api", async (importOriginal) => ({
   getCareerItems: api.getCareerItems,
   getCareerProfile: api.getCareerProfile,
   getCareerRelationships: api.getCareerRelationships,
+  getEvidence: api.getEvidence,
   getExperiences: api.getExperiences,
   getPersonalFacts: api.getPersonalFacts,
   getProfileImportProposal: api.getProfileImportProposal,
@@ -143,6 +145,10 @@ describe("Career Profile vertical slice", () => {
     vi.clearAllMocks();
     api.getCareerProfile.mockResolvedValue(profile);
     api.getCareerRelationships.mockResolvedValue([]);
+    api.getEvidence.mockResolvedValue({
+      data: [],
+      page: { hasMore: false, limit: 50, nextCursor: null },
+    });
     api.getExperiences.mockResolvedValue([]);
     api.getPersonalFacts.mockResolvedValue([]);
     api.getCareerItems.mockResolvedValue([]);
@@ -160,21 +166,15 @@ describe("Career Profile vertical slice", () => {
     render(<CareerProfileView />);
 
     expect(
-      await screen.findByRole("heading", { name: "Career Profile" }),
+      await screen.findByRole("heading", { name: "Career profile" }),
     ).toBeVisible();
+    expect(screen.getByText(/No employment recorded yet/)).toBeVisible();
     expect(
-      screen.getByRole("heading", { name: "Your career timeline is empty" }),
+      screen.getByText(/No education, projects, credentials/),
     ).toBeVisible();
-    expect(
-      screen.getByRole("heading", { name: "No typed career records yet" }),
-    ).toBeVisible();
-    expect(
-      screen.getByRole("heading", { name: "No skills added" }),
-    ).toBeVisible();
+    expect(screen.getByText(/No skills added/)).toBeVisible();
 
-    fireEvent.click(
-      screen.getAllByRole("button", { name: "Add experience" }).at(-1)!,
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Add employment" }));
     fireEvent.change(screen.getByLabelText("Employer"), {
       target: { value: "Fictional Co" },
     });
@@ -188,9 +188,7 @@ describe("Career Profile vertical slice", () => {
       target: { value: "full_time" },
     });
     api.getExperiences.mockResolvedValue([savedExperience]);
-    fireEvent.click(
-      screen.getAllByRole("button", { name: "Add experience" }).at(-1)!,
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Add experience" }));
 
     await waitFor(() =>
       expect(api.createExperience).toHaveBeenCalledWith({
@@ -208,7 +206,7 @@ describe("Career Profile vertical slice", () => {
       }),
     );
     expect(
-      await screen.findByText("Experience added to your career profile."),
+      await screen.findByText("Employment added to your career profile."),
     ).toBeVisible();
   });
 
@@ -218,7 +216,7 @@ describe("Career Profile vertical slice", () => {
     render(<CareerProfileView />);
 
     expect(
-      await screen.findByRole("heading", { name: "Career Profile" }),
+      await screen.findByRole("heading", { name: "Career profile" }),
     ).toBeVisible();
     expect(
       screen.getByText("Some career profile data is unavailable"),
@@ -249,9 +247,13 @@ describe("Career Profile vertical slice", () => {
 
     render(<CareerProfileView />);
 
-    await screen.findByRole("heading", { name: "Career Profile" });
-    fireEvent.click(screen.getByRole("tab", { name: "List and reorder" }));
-    expect(screen.getByText("Confirmation needed")).toBeVisible();
+    await screen.findByRole("heading", { name: "Career profile" });
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "View record for Engineer at Fictional Co",
+      }),
+    );
+    expect(screen.getByText("Needs review")).toBeVisible();
     fireEvent.click(
       screen.getByRole("button", { name: "Confirm current facts" }),
     );
@@ -262,7 +264,7 @@ describe("Career Profile vertical slice", () => {
     expect(
       await screen.findByText(/current facts are now eligible/i),
     ).toBeVisible();
-    expect(screen.getByText("User confirmed")).toBeVisible();
+    expect(screen.getByText("Confirmed")).toBeVisible();
   });
 
   it("keeps manually entered contact facts unconfirmed until explicit review", async () => {
@@ -291,7 +293,12 @@ describe("Career Profile vertical slice", () => {
 
     expect(await screen.findByText("alex@example.test")).toBeVisible();
     fireEvent.click(
-      screen.getByRole("button", { name: "Confirm current value" }),
+      screen.getByRole("button", {
+        name: "More actions for the Email contact fact",
+      }),
+    );
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: "Confirm current value" }),
     );
 
     await waitFor(() =>
@@ -330,6 +337,11 @@ describe("Career Profile vertical slice", () => {
     render(<CareerProfileView />);
 
     await screen.findByText("Fictional project");
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "View record for Fictional project",
+      }),
+    );
     fireEvent.change(
       screen.getByRole("combobox", {
         name: "Experience to link to Fictional project",
