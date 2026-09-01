@@ -1,4 +1,4 @@
-"""Adapter that reads a user's confirmed skill names from Career Record.
+"""Adapter that reads evidence-demonstrated skills from Career Record.
 
 Only the application-layer `CareerRecordService` is imported here, never
 `career_record.domain` internals — the same boundary job_match's
@@ -16,6 +16,16 @@ class CareerRecordSkillsProvider:
     def __init__(self, service: CareerRecordService) -> None:
         self._service = service
 
-    async def list_skill_names(self, owner_user_id: UUID) -> tuple[str, ...]:
-        skills = await self._service.list_skills(owner_user_id)
-        return tuple(skill.name for skill in skills if skill.name)
+    async def list_demonstrated_skill_names(self, owner_user_id: UUID) -> tuple[str, ...]:
+        snapshot = await self._service.readiness_snapshot(
+            owner_user_id,
+            evidence_limit=2_000,
+        )
+        demonstrated_skill_ids = {
+            skill_id for evidence in snapshot.evidence for skill_id in evidence.skill_ids
+        }
+        return tuple(
+            skill.name
+            for skill in snapshot.skills
+            if skill.name and skill.id in demonstrated_skill_ids
+        )

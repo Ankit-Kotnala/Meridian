@@ -26,6 +26,10 @@ def _safe_text(value: str, *, required: bool = False) -> str:
     return normalized
 
 
+_VOLUNTARY_DISCLOSURE_KEY = re.compile(r"^[a-z0-9_]{3,80}$")
+MAX_VOLUNTARY_DISCLOSURES = 100
+
+
 class ApplicationWorkspaceSchema(BaseModel):
     model_config = ConfigDict(alias_generator=_camel, populate_by_name=True, extra="forbid")
 
@@ -480,6 +484,19 @@ class ApplicationProfileLinkInput(ApplicationWorkspaceSchema):
     label: str = Field(min_length=1, max_length=120)
     url: str = Field(min_length=8, max_length=500)
 
+    @field_validator("label")
+    @classmethod
+    def validate_label(cls, value: str) -> str:
+        return _safe_text(value, required=True)
+
+    @field_validator("url")
+    @classmethod
+    def validate_url(cls, value: str) -> str:
+        normalized = _safe_text(value, required=True)
+        if not normalized.startswith(("https://", "http://")):
+            raise ValueError("url must use HTTP(S)")
+        return normalized
+
 
 class ApplicationProfileResponse(ApplicationWorkspaceSchema):
     id: UUID
@@ -505,3 +522,23 @@ class ApplicationProfileUpsertRequest(ApplicationWorkspaceSchema):
     preferred_locations: list[str] = Field(default_factory=list, max_length=50)
     profile_links: list[ApplicationProfileLinkInput] = Field(default_factory=list, max_length=30)
     voluntary_disclosures: dict[str, str] = Field(default_factory=dict)
+
+    @field_validator("work_authorization")
+    @classmethod
+    def validate_work_authorization(cls, value: str | None) -> str | None:
+        return None if value is None else (_safe_text(value) or None)
+
+    @field_validator("voluntary_disclosures")
+    @classmethod
+    def validate_voluntary_disclosures(cls, value: dict[str, str]) -> dict[str, str]:
+        if len(value) > MAX_VOLUNTARY_DISCLOSURES:
+            raise ValueError("voluntary disclosures exceed the supported limit")
+        normalized: dict[str, str] = {}
+        for key, raw in value.items():
+            if _VOLUNTARY_DISCLOSURE_KEY.fullmatch(key) is None:
+                raise ValueError("voluntary disclosure key is invalid")
+            text = _safe_text(raw, required=True)
+            if len(text) > 500:
+                raise ValueError("voluntary disclosure value is too long")
+            normalized[key] = text
+        return normalized

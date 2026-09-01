@@ -438,7 +438,7 @@ def test_attachment_runtime_translates_limits_and_disposes_private_resources(
     monkeypatch.setattr(runtime, "Database", FakeDatabase)
     monkeypatch.setattr(runtime, "AttachmentS3ObjectStorage", FakeStorage)
     monkeypatch.setattr(runtime, "AttachmentClamAvScanner", FakeScanner)
-    monkeypatch.setattr(runtime, "BoundedAttachmentExtractor", FakeExtractor)
+    monkeypatch.setattr(runtime, "IsolatedAttachmentExtractor", FakeExtractor)
     settings = WorkerSettings.model_validate(
         {
             "environment": "test",

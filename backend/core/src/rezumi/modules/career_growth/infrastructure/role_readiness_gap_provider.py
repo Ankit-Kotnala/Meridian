@@ -1,12 +1,16 @@
-"""Adapter that reads competency gaps from Role Readiness analyses."""
+"""Adapter that reads competency gaps from Role Readiness analyses.
+
+Only the application-layer `RoleReadinessService` is imported here, never
+`role_readiness.domain` internals. Match states are compared as their wire
+values so this adapter stays on the explicit application contract.
+"""
 
 from __future__ import annotations
 
 from uuid import UUID
 
-from rezumi.modules.career_growth.application.ports import GapSnapshot, RoleReadinessGapSource
+from rezumi.modules.career_growth.application.ports import GapSnapshot
 from rezumi.modules.role_readiness.application import RoleReadinessService
-from rezumi.modules.role_readiness.domain import SkillMatchState
 
 
 class RoleReadinessGapProvider:
@@ -16,7 +20,7 @@ class RoleReadinessGapProvider:
     async def list_gaps(
         self,
         owner_user_id: UUID,
-        role_profile_id: UUID | None,
+        role_profile_id: UUID | None = None,
     ) -> tuple[GapSnapshot, ...]:
         records = await self._service.list_history(
             owner_user_id,
@@ -30,7 +34,7 @@ class RoleReadinessGapProvider:
         for result in latest.competency_results:
             if result.gap_kind is None:
                 continue
-            if result.match_state not in {SkillMatchState.MISSING, SkillMatchState.UNKNOWN}:
+            if result.match_state not in {"missing", "unknown"}:
                 continue
             gaps.append(
                 GapSnapshot(

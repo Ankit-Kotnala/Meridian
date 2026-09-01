@@ -92,9 +92,7 @@ def _listing(entry: Any) -> CatalogJobListing | None:
     job_types = entry.get("job_types")
     tag_text = " ".join(str(tag) for tag in tags) if isinstance(tags, list) else ""
     type_text = " ".join(str(kind) for kind in job_types) if isinstance(job_types, list) else ""
-    source_text = plain_text(
-        " ".join(part for part in (tag_text, type_text, description) if part)
-    )
+    source_text = plain_text(" ".join(part for part in (tag_text, type_text, description) if part))
     posted_at = _parse_timestamp(entry.get("created_at"))
     return CatalogJobListing(
         platform="arbeitnow",

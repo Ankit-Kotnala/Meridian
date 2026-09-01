@@ -6,6 +6,22 @@ from pydantic import ValidationError
 from rezumi_worker.config import WorkerSettings
 
 
+def test_ashby_india_board_names_are_normalized_and_bounded() -> None:
+    settings = WorkerSettings.model_validate({"ashby_india_board_names": " Riveron,office-hours "})
+
+    assert settings.ashby_india_board_names == "riveron,office-hours"
+
+
+def test_greenhouse_global_board_tokens_are_normalized() -> None:
+    settings = WorkerSettings.model_validate(
+        {"greenhouse_global_board_tokens": " Stripe,databricks "}
+    )
+
+    assert settings.greenhouse_global_board_tokens == "stripe,databricks"
+    with pytest.raises(ValidationError, match="Ashby India board names must be unique"):
+        WorkerSettings.model_validate({"ashby_india_board_names": "riveron,RIVERON"})
+
+
 def test_redis_url_is_used_as_broker_and_backend_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("REDIS_URL", "redis://redis.internal:6379/7")
 

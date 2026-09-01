@@ -4,8 +4,12 @@ Each case is deliberately small and focused on one real-world diversity gap
 identified before this corpus existed (see the parser-accuracy plan): plain
 baseline, comma-separated vs. pipe-separated headers, numeric/slash date
 formats, a concurrent-role case, a career-gap case, an unusual/hyphenated
-name, and a non-English (Spanish) case. This is a starting corpus, not an
-exhaustive one — extend it as new real-world failure modes are found.
+name, a non-English (Spanish) case, single-line contact headers, day-precision
+dates, visible bullet markers, multi-line role headers, repeated
+achievements, location vs. field of study, token-classified employer/title
+order, contact location, and locale open-ended dates. This is a starting
+corpus, not an exhaustive one — extend it as new real-world failure modes
+are found.
 """
 
 from __future__ import annotations
@@ -71,11 +75,6 @@ GOLDEN_CORPUS: tuple[GoldenCase, ...] = (
         expected={
             SemanticEntityKind.EXPERIENCE: (
                 {
-                    # The parser's pipe-format convention treats the first
-                    # segment as the employer, not the title — documented
-                    # here as-implemented; see the accuracy report for the
-                    # follow-on note about this being an assumption, not a
-                    # verified convention.
                     "employer": "Acme Corp",
                     "title": "Senior Backend Engineer",
                     "location": "Remote",
@@ -196,7 +195,7 @@ GOLDEN_CORPUS: tuple[GoldenCase, ...] = (
         },
     ),
     GoldenCase(
-        name="education with field and abbreviated-month dates",
+        name="education with location rather than a mislabeled field",
         sections=(
             GoldenSection(
                 kind=SectionKind.EDUCATION,
@@ -214,7 +213,7 @@ GOLDEN_CORPUS: tuple[GoldenCase, ...] = (
                 {
                     "degree": "B.S. in Computer Science",
                     "institution": "University of Texas",
-                    "field": "Austin TX",
+                    "location": "Austin TX",
                     "start_date": "Aug 2013",
                     "end_date": "May 2017",
                 },
@@ -289,6 +288,168 @@ GOLDEN_CORPUS: tuple[GoldenCase, ...] = (
                     "start_date": "2020",
                     "end_date": "Present",
                     "achievement": "Lanzó tres productos nuevos.",
+                },
+            ),
+        },
+    ),
+    GoldenCase(
+        name="single-line contact header",
+        sections=(
+            GoldenSection(
+                kind=SectionKind.CONTACT,
+                blocks=(
+                    (
+                        BlockKind.PARAGRAPH,
+                        "Priya Raman | priya.raman@example.test | +91 98765 43210",
+                    ),
+                ),
+            ),
+        ),
+        expected={
+            SemanticEntityKind.CONTACT: (
+                {
+                    "name": "Priya Raman",
+                    "email": "priya.raman@example.test",
+                    "phone": "+91 98765 43210",
+                },
+            ),
+        },
+    ),
+    GoldenCase(
+        name="multiline consecutive roles with repeated achievements",
+        sections=(
+            GoldenSection(
+                kind=SectionKind.EXPERIENCE,
+                blocks=(
+                    (BlockKind.PARAGRAPH, "Senior Engineer"),
+                    (BlockKind.PARAGRAPH, "Acme Corp"),
+                    (BlockKind.PARAGRAPH, "Jan 2020 - Dec 2022"),
+                    (BlockKind.BULLET, "Built the first platform."),
+                    (BlockKind.BULLET, "Improved deployment safety."),
+                    (BlockKind.PARAGRAPH, "Staff Engineer"),
+                    (BlockKind.PARAGRAPH, "Globex Inc"),
+                    (BlockKind.PARAGRAPH, "Jan 2023 - Present"),
+                    (BlockKind.BULLET, "Scaled the second platform."),
+                ),
+            ),
+        ),
+        expected={
+            SemanticEntityKind.EXPERIENCE: (
+                {
+                    "title": "Senior Engineer",
+                    "employer": "Acme Corp",
+                    "start_date": "Jan 2020",
+                    "end_date": "Dec 2022",
+                    "achievement": (
+                        "Built the first platform.",
+                        "Improved deployment safety.",
+                    ),
+                },
+                {
+                    "title": "Staff Engineer",
+                    "employer": "Globex Inc",
+                    "start_date": "Jan 2023",
+                    "end_date": "Present",
+                    "achievement": "Scaled the second platform.",
+                },
+            ),
+        },
+    ),
+    GoldenCase(
+        name="day-precision dates and visible bullet marker",
+        sections=(
+            GoldenSection(
+                kind=SectionKind.EXPERIENCE,
+                blocks=(
+                    (
+                        BlockKind.PARAGRAPH,
+                        "Engineer, Northwind Labs, Jan. 5, 2020 - 2024-06-30",
+                    ),
+                    (BlockKind.BULLET, "\u2022 Led the migration."),
+                ),
+            ),
+        ),
+        expected={
+            SemanticEntityKind.EXPERIENCE: (
+                {
+                    "title": "Engineer",
+                    "employer": "Northwind Labs",
+                    "start_date": "Jan. 5, 2020",
+                    "end_date": "2024-06-30",
+                    "achievement": "Led the migration.",
+                },
+            ),
+        },
+    ),
+    GoldenCase(
+        name="employer-first comma header classified by token, not position",
+        sections=(
+            GoldenSection(
+                kind=SectionKind.EXPERIENCE,
+                blocks=(
+                    (BlockKind.PARAGRAPH, "Acme Corp, Senior Engineer, Remote"),
+                    (BlockKind.PARAGRAPH, "Jan 2021 - Present"),
+                    (BlockKind.BULLET, "Shipped the billing rewrite."),
+                ),
+            ),
+        ),
+        expected={
+            SemanticEntityKind.EXPERIENCE: (
+                {
+                    "title": "Senior Engineer",
+                    "employer": "Acme Corp",
+                    "location": "Remote",
+                    "start_date": "Jan 2021",
+                    "end_date": "Present",
+                    "achievement": "Shipped the billing rewrite.",
+                },
+            ),
+        },
+    ),
+    GoldenCase(
+        name="contact location on the same line as email",
+        sections=(
+            GoldenSection(
+                kind=SectionKind.CONTACT,
+                blocks=(
+                    (
+                        BlockKind.PARAGRAPH,
+                        "Alex Rivera | alex.rivera@example.test | Portland, OR",
+                    ),
+                ),
+            ),
+        ),
+        expected={
+            SemanticEntityKind.CONTACT: (
+                {
+                    "name": "Alex Rivera",
+                    "email": "alex.rivera@example.test",
+                    "location": "Portland, OR",
+                },
+            ),
+        },
+    ),
+    GoldenCase(
+        name="ambiguous numeric day/month stays a date without pretending a locale",
+        sections=(
+            GoldenSection(
+                kind=SectionKind.EXPERIENCE,
+                blocks=(
+                    (BlockKind.PARAGRAPH, "Analyst, Umbrella LLC, Remote"),
+                    (BlockKind.PARAGRAPH, "03/04/2020 - Presente"),
+                    (BlockKind.BULLET, "Documented the fictional control plane."),
+                ),
+            ),
+        ),
+        expected={
+            SemanticEntityKind.EXPERIENCE: (
+                {
+                    "title": "Analyst",
+                    "employer": "Umbrella LLC",
+                    "location": "Remote",
+                    "start_date": "03/04/2020",
+                    "end_date": "Presente",
+                    "achievement": "Documented the fictional control plane.",
                 },
             ),
         },

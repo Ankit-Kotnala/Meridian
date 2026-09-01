@@ -23,7 +23,7 @@ from rezumi.modules.resume_health.domain import (
 )
 
 SEMANTIC_SCHEMA_VERSION = "canonical-semantics/1.0.0"
-SEMANTIC_PARSER_VERSION = "rezumi-semantic-parser/1.0.0"
+SEMANTIC_PARSER_VERSION = "rezumi-semantic-parser/1.2.0"
 _SEMANTIC_NAMESPACE = UUID("d6f8269c-f55b-4717-bdc7-2b552f564820")
 _SOURCE_VALUE_TRIM = frozenset(" \t\r\n|-,;\u2013\u2014")
 _EMAIL = re.compile(r"(?<![\w.+-])[\w.+-]+@[\w-]+(?:\.[\w-]+)+", re.IGNORECASE)
@@ -232,18 +232,51 @@ _URL = re.compile(
 # alex)." is read as an unsupported link instead of a GitHub profile.
 _URL_TRAILING_PUNCTUATION = ".,;:!?*\u2018\u2019\u201c\u201d\"'"
 _URL_CLOSING_BRACKETS = {")": "(", "]": "[", "}": "{", ">": "<"}
+_MONTH_NAME = (
+    r"(?:"
+    r"January|February|March|April|June|July|August|September|October|November|December|"
+    r"Enero|Febrero|Marzo|Abril|Mayo|Junio|Julio|Agosto|Septiembre|Octubre|Noviembre|"
+    r"Diciembre|Januar|Jänner|Februar|März|Maerz|Juni|Juli|Oktober|Dezember|"
+    r"Janvier|Février|Fevrier|Mars|Avril|Juin|Juillet|Août|Aout|Septembre|Octobre|"
+    r"Novembre|Décembre|Decembre|"
+    r"Janv|Févr|Fevr|Avr|Juil|Déc|"
+    r"Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|"
+    r"Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|"
+    r"Dec(?:ember)?|Ene|Abr|Ago|Dic|Okt|Dez|Mai"
+    r")"
+)
+_OPEN_ENDED_DATES = frozenset(
+    {
+        "present",
+        "current",
+        "presente",
+        "présent",
+        "heute",
+        "aktuell",
+        "aujourd'hui",
+        "now",
+        "ongoing",
+        "actualidad",
+    }
+)
+_OPEN_ENDED_PATTERN = "|".join(
+    re.escape(word) for word in sorted(_OPEN_ENDED_DATES, key=len, reverse=True)
+)
 _DATE = re.compile(
-    r"\b(?:"
-    r"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|"
-    r"Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|"
-    r"Dec(?:ember)?)\s+\d{4}"
+    rf"(?<!\w)(?:"
+    rf"{_MONTH_NAME}\.?\s+\d{{1,2}}(?:st|nd|rd|th)?,?\s+\d{{4}}"
+    rf"|\d{{1,2}}\s+{_MONTH_NAME}\.?,?\s+\d{{4}}"
+    rf"|{_MONTH_NAME}\.?\s+\d{{4}}"
+    r"|\d{4}[/-]\d{1,2}[/-]\d{1,2}"
+    r"|\d{1,2}[/-]\d{1,2}[/-]\d{4}"
     r"|\d{1,2}[/-]\d{4}"
     r"|\d{4}[/-]\d{1,2}"
     r"|\d{4}"
-    r"|Present|Current"
-    r")\b",
+    rf"|{_OPEN_ENDED_PATTERN}"
+    r")(?!\w)",
     re.IGNORECASE,
 )
+_BULLET_MARKER = re.compile(r"^(?:[-*\u00b7\u2022\u25aa\u25cf\u25e6\uf0a7\uf0b7]|\d+[.)])\s+")
 _SPLIT = re.compile(r"\s*(?:\||•|·|\t)\s*")
 # Weak separators are only applied when a record still has unfilled names, so a
 # header line is cut exactly as far as the record requires and no further. The
@@ -273,6 +306,243 @@ _SUBSECTION_HEADINGS = frozenset(
 _DATE_LABEL_WORDS = frozenset(
     {"issued", "issue", "expires", "expire", "expiry", "valid", "from", "to", "through", "until"}
 )
+_GPA_LABEL = re.compile(r"(?i)^(?:cgpa|gpa|grade|percentage|percent|marks?)\b")
+_DEGREE_TOKEN = re.compile(
+    r"(?i)\b(?:b\.?s\.?|b\.?a\.?|m\.?s\.?|m\.?a\.?|m\.?b\.?a\.?|ph\.?d\.?|"
+    r"m\.?c\.?a\.?|ll\.?b\.?|ll\.?m\.?|j\.?d\.?|m\.?d\.?|b\.?tech|m\.?tech|"
+    r"b\.?sc|m\.?sc|bachelors?|masters?|doctorate|associate|diploma|ged)\b"
+)
+_INSTITUTION_TOKEN = re.compile(
+    r"(?i)\b(?:university|universidad|université|universität|universita|"
+    r"college|institute|instituto|school|academy|polytechnic|cdac)\b"
+)
+_TITLE_TOKENS = frozenset(
+    {
+        "intern",
+        "internship",
+        "coop",
+        "contractor",
+        "consultant",
+        "advisor",
+        "adviser",
+        "engineer",
+        "engineering",
+        "developer",
+        "programmer",
+        "architect",
+        "scientist",
+        "analyst",
+        "manager",
+        "director",
+        "lead",
+        "head",
+        "principal",
+        "staff",
+        "senior",
+        "junior",
+        "associate",
+        "officer",
+        "specialist",
+        "designer",
+        "researcher",
+        "founder",
+        "cofounder",
+        "president",
+        "fellow",
+        "professor",
+        "lecturer",
+        "attorney",
+        "counsel",
+        "nurse",
+        "physician",
+        "accountant",
+        "auditor",
+        "teacher",
+        "writer",
+        "editor",
+        "producer",
+        "board",
+        "chair",
+        "volunteer",
+        "gerente",
+        "ingeniero",
+        "desarrollador",
+        "analista",
+        "consultor",
+    }
+)
+_EMPLOYER_TOKENS = frozenset(
+    {
+        "inc",
+        "corp",
+        "corporation",
+        "llc",
+        "ltd",
+        "limited",
+        "gmbh",
+        "plc",
+        "company",
+        "labs",
+        "laboratory",
+        "laboratories",
+        "technologies",
+        "technology",
+        "systems",
+        "solutions",
+        "group",
+        "studio",
+        "studios",
+        "partners",
+        "bank",
+        "hospital",
+        "university",
+        "college",
+        "institute",
+        "school",
+        "foundation",
+        "trust",
+        "nonprofit",
+        "consultancy",
+        "consulting",
+        "services",
+        "industries",
+        "holdings",
+        "financial",
+        "capital",
+        "ventures",
+        "media",
+        "networks",
+        "empresa",
+    }
+)
+_LOCATION_TOKENS = frozenset(
+    {
+        "remote",
+        "hybrid",
+        "onsite",
+        "on-site",
+        "on site",
+        "wfh",
+        "worldwide",
+        "global",
+        "usa",
+        "uk",
+        "u.s.",
+        "u.s.a.",
+        "united states",
+        "united kingdom",
+        "india",
+        "canada",
+        "germany",
+        "france",
+        "spain",
+        "australia",
+        "singapore",
+        "ireland",
+        "netherlands",
+        "switzerland",
+        "sweden",
+        "norway",
+        "denmark",
+        "brazil",
+        "mexico",
+        "japan",
+        "china",
+        "israel",
+        "uae",
+        "london",
+        "paris",
+        "berlin",
+        "madrid",
+        "barcelona",
+        "dublin",
+        "amsterdam",
+        "toronto",
+        "vancouver",
+        "sydney",
+        "melbourne",
+        "bangalore",
+        "bengaluru",
+        "hyderabad",
+        "mumbai",
+        "delhi",
+        "new delhi",
+        "chennai",
+        "pune",
+    }
+)
+_REGION_CODES = frozenset(
+    {
+        "AL",
+        "AK",
+        "AZ",
+        "AR",
+        "CA",
+        "CO",
+        "CT",
+        "DC",
+        "DE",
+        "FL",
+        "GA",
+        "HI",
+        "IA",
+        "ID",
+        "IL",
+        "IN",
+        "KS",
+        "KY",
+        "LA",
+        "MA",
+        "MD",
+        "ME",
+        "MI",
+        "MN",
+        "MO",
+        "MS",
+        "MT",
+        "NC",
+        "ND",
+        "NE",
+        "NH",
+        "NJ",
+        "NM",
+        "NV",
+        "NY",
+        "OH",
+        "OK",
+        "OR",
+        "PA",
+        "RI",
+        "SC",
+        "SD",
+        "TN",
+        "TX",
+        "UT",
+        "VA",
+        "VT",
+        "WA",
+        "WI",
+        "WV",
+        "WY",
+        "AB",
+        "BC",
+        "MB",
+        "NB",
+        "NL",
+        "NS",
+        "NT",
+        "NU",
+        "ON",
+        "PE",
+        "QC",
+        "SK",
+        "YT",
+    }
+)
+_LABELED_LINK = re.compile(
+    r"(?i)\b(?:website|portfolio|blog|homepage|personal site|url)\s*[:\-]\s*(\S+)"
+)
+_LABELED_LOCATION = re.compile(r"(?i)\b(?:location|based in|lives? in)\s*[:\-]\s*(.+)$")
 
 
 @dataclass(frozen=True, slots=True)
@@ -400,14 +670,24 @@ def _entity_kind(section_kind: SectionKind) -> SemanticEntityKind | None:
 def _contact_candidates(blocks: tuple[CanonicalBlock, ...]) -> tuple[_FieldCandidate, ...]:
     candidates: list[_FieldCandidate] = []
     name_added = False
+    location_added = False
     for block in blocks:
-        url_spans = _url_spans(block.text)
+        url_spans = list(_url_spans(block.text))
+        occupied_ranges: list[tuple[int, int]] = [(start, end) for _, start, end in url_spans]
+        for match in _LABELED_LINK.finditer(block.text):
+            value = match.group(1).rstrip(".,;:!?*\"'")
+            start = match.start(1)
+            end = start + len(value)
+            if end - start < 4 or _overlaps(start, end, tuple(url_spans)):
+                continue
+            url_spans.append((value, start, end))
+            occupied_ranges.append((start, end))
         for pattern, name, field_type in (
             (_EMAIL, "email", SemanticFieldType.EMAIL),
             (_PHONE, "phone", SemanticFieldType.PHONE),
         ):
             for match in pattern.finditer(block.text):
-                if _overlaps(match.start(), match.end(), url_spans):
+                if _overlaps(match.start(), match.end(), tuple(url_spans)):
                     continue
                 candidates.append(
                     _FieldCandidate(
@@ -420,6 +700,7 @@ def _contact_candidates(blocks: tuple[CanonicalBlock, ...]) -> tuple[_FieldCandi
                         9_500,
                     )
                 )
+                occupied_ranges.append((match.start(), match.end()))
         for value, start, end in url_spans:
             candidates.append(
                 _FieldCandidate(
@@ -432,26 +713,79 @@ def _contact_candidates(blocks: tuple[CanonicalBlock, ...]) -> tuple[_FieldCandi
                     9_500,
                 )
             )
-        if (
-            not name_added
-            and block.kind is not BlockKind.BULLET
-            and not url_spans
-            and not any(pattern.search(block.text) for pattern in (_EMAIL, _PHONE))
-            and 1 < len(block.text.split()) <= 6
-        ):
-            candidates.append(
-                _FieldCandidate(
-                    "name",
-                    SemanticFieldType.TEXT,
-                    block.text,
-                    block,
-                    0,
-                    len(block.text),
-                    7_500,
+        labeled_location = _LABELED_LOCATION.search(block.text)
+        if labeled_location is not None and not location_added:
+            start = labeled_location.start(1)
+            end = labeled_location.end(1)
+            while start < end and block.text[start] in _SOURCE_VALUE_TRIM:
+                start += 1
+            while end > start and block.text[end - 1] in _SOURCE_VALUE_TRIM:
+                end -= 1
+            value = block.text[start:end]
+            if value:
+                candidates.append(
+                    _FieldCandidate(
+                        "location",
+                        SemanticFieldType.TEXT,
+                        value,
+                        block,
+                        start,
+                        end,
+                        8_500,
+                    )
                 )
-            )
-            name_added = True
+                occupied_ranges.append((start, end))
+                location_added = True
+        leftover = _source_values(block.text, tuple(sorted(occupied_ranges)))
+        if not name_added and block.kind is not BlockKind.BULLET:
+            for value, start, end in leftover:
+                if not _looks_like_contact_name(value) or _looks_like_location(value):
+                    continue
+                candidates.append(
+                    _FieldCandidate(
+                        "name",
+                        SemanticFieldType.TEXT,
+                        value,
+                        block,
+                        start,
+                        end,
+                        7_500 if len(value.split()) > 1 else 7_000,
+                    )
+                )
+                occupied_ranges.append((start, end))
+                name_added = True
+                break
+        if not location_added:
+            for value, start, end in _source_values(block.text, tuple(sorted(occupied_ranges))):
+                if not _looks_like_location(value):
+                    continue
+                candidates.append(
+                    _FieldCandidate(
+                        "location",
+                        SemanticFieldType.TEXT,
+                        value,
+                        block,
+                        start,
+                        end,
+                        8_000,
+                    )
+                )
+                location_added = True
+                break
     return tuple(candidates)
+
+
+def _looks_like_contact_name(value: str) -> bool:
+    tokens = value.split()
+    if (
+        not 1 <= len(tokens) <= 6
+        or len(value) > 80
+        or any(character.isdigit() for character in value)
+    ):
+        return False
+    if any(character in "@:/|\\" for character in value):
+        return False
+    return all(any(character.isalpha() for character in token) for token in tokens)
 
 
 def _group_candidates(
@@ -489,33 +823,19 @@ def _group_candidates(
             pending_text = list(_text_names_for_block(kind, block))
         if block.kind is BlockKind.BULLET:
             name = "achievement" if kind is SemanticEntityKind.EXPERIENCE else "description"
-            candidates.append(
-                _FieldCandidate(
-                    name,
-                    SemanticFieldType.BULLET,
-                    block.text,
-                    block,
-                    0,
-                    len(block.text),
-                    8_500,
-                )
-            )
+            candidate = _bullet_candidate(name, block, 8_500)
+            if candidate is not None:
+                candidates.append(candidate)
             continue
         if _is_wrapped_bullet_continuation(block, blocks, index):
             if kind is SemanticEntityKind.EXPERIENCE:
-                candidates.append(
-                    _FieldCandidate(
-                        "achievement",
-                        SemanticFieldType.BULLET,
-                        block.text,
-                        block,
-                        0,
-                        len(block.text),
-                        8_000,
-                    )
-                )
+                candidate = _bullet_candidate("achievement", block, 8_000)
+                if candidate is not None:
+                    candidates.append(candidate)
             continue
-        candidates.extend(_header_candidates(block, pending_text, pending_dates, pending_links))
+        candidates.extend(
+            _header_candidates(kind, block, pending_text, pending_dates, pending_links)
+        )
 
     if candidates:
         return tuple(candidates)
@@ -541,6 +861,7 @@ def _group_candidates(
 
 
 def _header_candidates(
+    kind: SemanticEntityKind,
     block: CanonicalBlock,
     pending_text: list[str],
     pending_dates: list[str],
@@ -597,14 +918,36 @@ def _header_candidates(
             )
         ),
     )
-    for value, start, end in _split_for_names(text, segments, len(pending_text)):
-        if not pending_text:
+    remaining = list(pending_text)
+    leftover: list[tuple[str, int, int]] = []
+    for value, start, end in _split_for_names(text, segments, len(remaining)):
+        if not remaining:
             break
-        if date_matches and value.strip().casefold() in _DATE_LABEL_WORDS:
+        if _is_ignorable_header_residue(value):
             continue
+        name = _classify_segment(kind, value, remaining)
+        if name is None:
+            leftover.append((value, start, end))
+            continue
+        remaining.remove(name)
         candidates.append(
             _FieldCandidate(
-                pending_text.pop(0),
+                name,
+                SemanticFieldType.TEXT,
+                value,
+                block,
+                start,
+                end,
+                7_500,
+            )
+        )
+    for value, start, end in leftover:
+        if not remaining:
+            break
+        name = remaining.pop(0)
+        candidates.append(
+            _FieldCandidate(
+                name,
                 SemanticFieldType.TEXT,
                 value,
                 block,
@@ -613,6 +956,7 @@ def _header_candidates(
                 7_000,
             )
         )
+    pending_text[:] = remaining
     return candidates
 
 
@@ -670,14 +1014,19 @@ def _entity_block_groups(
         # line. An empty section yields no group and is skipped by the caller.
         return (blocks,) if blocks else ()
     groups: list[list[CanonicalBlock]] = []
-    for block in blocks:
+    for block_index, block in enumerate(blocks):
         if block.kind is BlockKind.BULLET:
             if groups:
                 groups[-1].append(block)
             else:
                 groups.append([block])
             continue
-        starts_record = not groups or _starts_new_record(kind, block, groups[-1])
+        starts_record = not groups or _starts_new_record(
+            kind,
+            block,
+            groups[-1],
+            blocks[block_index + 1 :],
+        )
         if starts_record:
             groups.append([block])
         else:
@@ -689,6 +1038,7 @@ def _starts_new_record(
     kind: SemanticEntityKind,
     block: CanonicalBlock,
     current_group: list[CanonicalBlock],
+    remaining_blocks: tuple[CanonicalBlock, ...],
 ) -> bool:
     if _carries_date(current_group) and _DATE.search(block.text) is not None:
         return True
@@ -697,11 +1047,26 @@ def _starts_new_record(
     text = block.text.lstrip()
     if text and text[0].islower():
         return False
+    if (
+        len(text) <= 96
+        and not text.endswith((".", "!", "?"))
+        and _record_date_ahead(remaining_blocks)
+    ):
+        return True
     if "|" in block.text:
         return True
     if _looks_like_subsection_heading(block.text):
         return True
     return "," in block.text and _DATE.search(block.text) is None
+
+
+def _record_date_ahead(blocks: tuple[CanonicalBlock, ...]) -> bool:
+    for block in blocks[:3]:
+        if block.kind is BlockKind.BULLET:
+            return False
+        if _DATE.search(block.text) is not None:
+            return True
+    return False
 
 
 def _looks_like_subsection_heading(text: str) -> bool:
@@ -784,13 +1149,146 @@ def _date_names(kind: SemanticEntityKind) -> tuple[str, ...]:
 
 
 def _date_precision(value: str) -> DatePrecision:
-    if re.search(r"[A-Za-z]", value) and value.casefold() not in {"present", "current"}:
+    normalized = value.strip()
+    if normalized.casefold().replace("\u2019", "'") in _OPEN_ENDED_DATES:
+        return DatePrecision.UNKNOWN
+    numeric_slash = re.fullmatch(r"(\d{1,2})[/-](\d{1,2})[/-](\d{4})", normalized)
+    if numeric_slash is not None:
+        first = int(numeric_slash.group(1))
+        second = int(numeric_slash.group(2))
+        if first <= 12 and second <= 12:
+            return DatePrecision.UNKNOWN
+        return DatePrecision.DAY
+    if re.fullmatch(
+        rf"(?:{_MONTH_NAME}\.?\s+\d{{1,2}}(?:st|nd|rd|th)?,?\s+\d{{4}}"
+        rf"|\d{{1,2}}\s+{_MONTH_NAME}\.?,?\s+\d{{4}}"
+        r"|\d{4}[/-]\d{1,2}[/-]\d{1,2})",
+        normalized,
+        re.IGNORECASE,
+    ):
+        return DatePrecision.DAY
+    if re.search(r"[A-Za-z]", normalized):
         return DatePrecision.MONTH
-    if re.fullmatch(r"(?:\d{1,2}[/-]\d{4}|\d{4}[/-]\d{1,2})", value):
+    if re.fullmatch(r"(?:\d{1,2}[/-]\d{4}|\d{4}[/-]\d{1,2})", normalized):
         return DatePrecision.MONTH
-    if re.fullmatch(r"\d{4}", value):
+    if re.fullmatch(r"\d{4}", normalized):
         return DatePrecision.YEAR
     return DatePrecision.UNKNOWN
+
+
+def _is_ignorable_header_residue(value: str) -> bool:
+    stripped = value.strip()
+    if stripped.casefold() in _DATE_LABEL_WORDS:
+        return True
+    return _GPA_LABEL.match(stripped) is not None
+
+
+def _classify_segment(
+    kind: SemanticEntityKind,
+    value: str,
+    remaining: list[str],
+) -> str | None:
+    """Return a still-unfilled field name this exact source segment should fill."""
+    remaining_names = set(remaining)
+    if "location" in remaining_names and _looks_like_location(value):
+        return "location"
+    if kind is SemanticEntityKind.EDUCATION:
+        if "degree" in remaining_names and _looks_like_degree(value):
+            return "degree"
+        if "institution" in remaining_names and _looks_like_institution(value):
+            return "institution"
+        if "field" in remaining_names and _looks_like_field(value):
+            return "field"
+    if kind is SemanticEntityKind.EXPERIENCE:
+        title_like = _looks_like_title(value)
+        employer_like = _looks_like_employer(value)
+        if title_like and employer_like:
+            if "title" in remaining_names:
+                return "title"
+            if "employer" in remaining_names:
+                return "employer"
+        if title_like and "title" in remaining_names:
+            return "title"
+        if employer_like and "employer" in remaining_names:
+            return "employer"
+    return None
+
+
+def _looks_like_location(value: str) -> bool:
+    stripped = " ".join(value.split())
+    folded = stripped.casefold()
+    if folded in _LOCATION_TOKENS:
+        return True
+    if "," in stripped:
+        right = stripped.rsplit(",", 1)[-1].strip().rstrip(".")
+        right_folded = right.casefold()
+        if right_folded in _LOCATION_TOKENS:
+            return True
+        if len(right) == 2 and right.upper() in _REGION_CODES:
+            left = stripped.rsplit(",", 1)[0].strip()
+            return bool(left) and not _looks_like_title(left) and not _looks_like_degree(left)
+    parts = stripped.split()
+    if len(parts) >= 2:
+        state = parts[-1].rstrip(".").upper()
+        if state in _REGION_CODES and not _looks_like_title(stripped):
+            place = " ".join(parts[:-1])
+            return bool(place) and not _DEGREE_TOKEN.search(place)
+    return False
+
+
+def _looks_like_degree(value: str) -> bool:
+    return _DEGREE_TOKEN.search(value) is not None
+
+
+def _looks_like_institution(value: str) -> bool:
+    return _INSTITUTION_TOKEN.search(value) is not None
+
+
+def _looks_like_field(value: str) -> bool:
+    stripped = value.strip()
+    if not stripped or _looks_like_location(stripped) or _looks_like_degree(stripped):
+        return False
+    if _looks_like_institution(stripped) or _GPA_LABEL.match(stripped):
+        return False
+    words = stripped.split()
+    return 1 <= len(words) <= 6 and not any(character.isdigit() for character in stripped)
+
+
+def _looks_like_title(value: str) -> bool:
+    tokens = {re.sub(r"[^a-z0-9+]", "", token.casefold()) for token in value.split()}
+    tokens.discard("")
+    return bool(tokens & _TITLE_TOKENS)
+
+
+def _looks_like_employer(value: str) -> bool:
+    tokens = {re.sub(r"[^a-z0-9+]", "", token.casefold()) for token in value.split()}
+    tokens.discard("")
+    return bool(tokens & _EMPLOYER_TOKENS)
+
+
+def _bullet_candidate(
+    name: str,
+    block: CanonicalBlock,
+    confidence_basis_points: int,
+) -> _FieldCandidate | None:
+    marker = _BULLET_MARKER.match(block.text)
+    start = marker.end() if marker is not None else 0
+    end = len(block.text)
+    while start < end and block.text[start].isspace():
+        start += 1
+    while end > start and block.text[end - 1].isspace():
+        end -= 1
+    if start == end:
+        return None
+    return _FieldCandidate(
+        name,
+        SemanticFieldType.BULLET,
+        block.text[start:end],
+        block,
+        start,
+        end,
+        confidence_basis_points,
+    )
 
 
 def _source_values(

@@ -429,6 +429,7 @@ async def test_weak_separators_stop_once_the_record_has_its_names() -> None:
     }
     assert education["degree"] == "B.S. Computer Science"
     assert education["institution"] == "University of Texas at Austin"
+    assert "field" not in education
     assert education["start_date"] == "2013"
     assert education["end_date"] == "2017"
     validate_parser_semantics(resume, semantics, digest)
@@ -512,4 +513,211 @@ async def test_pipe_delimited_education_headers_map_institution_before_degree() 
     assert fields["institution"] == "CDAC Noida"
     assert fields["degree"] == "MCA"
     assert fields["field"] == "Artificial Intelligence"
+    validate_parser_semantics(resume, semantics, digest)
+
+
+@pytest.mark.asyncio
+async def test_contact_name_is_extracted_from_a_single_contact_line() -> None:
+    text = "Priya Raman | priya.raman@example.test | +91 98765 43210 | github.com/priya"
+    section = CanonicalSection(
+        id=uuid4(),
+        kind=SectionKind.CONTACT,
+        title="Contact",
+        confidence_basis_points=9_000,
+        blocks=(_block(text, 0),),
+    )
+    resume = CanonicalResume(
+        schema_version="canonical-resume/2.0.0",
+        sections=(section,),
+        warnings=(),
+    )
+    digest = sha256(b"single-line contact").hexdigest()
+
+    semantics = await LocalResumeParserProvider().parse(uuid4(), resume, digest)
+
+    fields = {field.name: field.value for entity in semantics.entities for field in entity.fields}
+    assert fields["name"] == "Priya Raman"
+    assert fields["email"] == "priya.raman@example.test"
+    assert fields["phone"] == "+91 98765 43210"
+    assert fields["link"] == "github.com/priya"
+    validate_parser_semantics(resume, semantics, digest)
+
+
+@pytest.mark.asyncio
+async def test_day_precision_dates_and_bullet_markers_keep_exact_source_anchors() -> None:
+    header = _block("Engineer, Acme Corp, Jan. 5, 2020 - 2024-06-30", 0)
+    bullet = _block("\u2022 Led the migration.", 60, BlockKind.BULLET)
+    resume = _experience_resume(header, bullet)
+    digest = sha256(b"day dates and bullet marker").hexdigest()
+
+    semantics = await LocalResumeParserProvider().parse(uuid4(), resume, digest)
+
+    fields = [field for entity in semantics.entities for field in entity.fields]
+    start_date = next(field for field in fields if field.name == "start_date")
+    end_date = next(field for field in fields if field.name == "end_date")
+    achievement = next(field for field in fields if field.name == "achievement")
+    assert start_date.value == "Jan. 5, 2020"
+    assert end_date.value == "2024-06-30"
+    assert start_date.date_precision is DatePrecision.DAY
+    assert end_date.date_precision is DatePrecision.DAY
+    assert achievement.value == "Led the migration."
+    assert achievement.anchors[0].start == bullet.spans[0].start + 2
+    validate_parser_semantics(resume, semantics, digest)
+
+
+@pytest.mark.asyncio
+async def test_multiline_role_after_bullets_starts_a_new_experience_record() -> None:
+    resume = _experience_resume(
+        _block("Senior Engineer", 0),
+        _block("Acme Corp", 20),
+        _block("Jan 2020 - Dec 2022", 40),
+        _block("Built the first platform.", 70, BlockKind.BULLET),
+        _block("Staff Engineer", 110),
+        _block("Globex Inc", 130),
+        _block("Jan 2023 - Present", 150),
+        _block("Scaled the second platform.", 180, BlockKind.BULLET),
+    )
+    digest = sha256(b"multiline consecutive roles").hexdigest()
+
+    semantics = await LocalResumeParserProvider().parse(uuid4(), resume, digest)
+
+    experiences = [
+        {field.name: field.value for field in entity.fields if field.name != "achievement"}
+        for entity in semantics.entities
+        if entity.kind is SemanticEntityKind.EXPERIENCE
+    ]
+    achievements = [
+        [field.value for field in entity.fields if field.name == "achievement"]
+        for entity in semantics.entities
+        if entity.kind is SemanticEntityKind.EXPERIENCE
+    ]
+    assert experiences == [
+        {
+            "title": "Senior Engineer",
+            "employer": "Acme Corp",
+            "start_date": "Jan 2020",
+            "end_date": "Dec 2022",
+        },
+        {
+            "title": "Staff Engineer",
+            "employer": "Globex Inc",
+            "start_date": "Jan 2023",
+            "end_date": "Present",
+        },
+    ]
+    assert achievements == [
+        ["Built the first platform."],
+        ["Scaled the second platform."],
+    ]
+    validate_parser_semantics(resume, semantics, digest)
+
+
+@pytest.mark.asyncio
+async def test_education_city_is_location_not_field_of_study() -> None:
+    document_id = uuid4()
+    digest = sha256(b"education location").hexdigest()
+    resume = CanonicalResume(
+        schema_version="canonical-resume/2.0.0",
+        sections=(
+            CanonicalSection(
+                id=uuid4(),
+                kind=SectionKind.EDUCATION,
+                title="Education",
+                confidence_basis_points=9_000,
+                blocks=(
+                    _block("B.S. in Computer Science, University of Texas, Austin TX", 0),
+                    _block("2013 - 2017", 70),
+                ),
+            ),
+        ),
+        warnings=(),
+    )
+
+    semantics = await LocalResumeParserProvider().parse(document_id, resume, digest)
+
+    education = {
+        field.name: field.value
+        for entity in semantics.entities
+        if entity.kind is SemanticEntityKind.EDUCATION
+        for field in entity.fields
+    }
+    assert education["degree"] == "B.S. in Computer Science"
+    assert education["institution"] == "University of Texas"
+    assert education["location"] == "Austin TX"
+    assert "field" not in education
+    validate_parser_semantics(resume, semantics, digest)
+
+
+@pytest.mark.asyncio
+async def test_employer_first_comma_header_does_not_swap_title_and_company() -> None:
+    document_id = uuid4()
+    digest = sha256(b"employer first comma").hexdigest()
+    resume = _experience_resume(
+        _block("Acme Corp, Senior Engineer, Remote", 0),
+        _block("Jan 2021 - Present", 40),
+        _block("Shipped the billing rewrite.", 70, BlockKind.BULLET),
+    )
+
+    semantics = await LocalResumeParserProvider().parse(document_id, resume, digest)
+
+    fields = {
+        field.name: field.value
+        for entity in semantics.entities
+        if entity.kind is SemanticEntityKind.EXPERIENCE
+        for field in entity.fields
+        if field.name != "achievement"
+    }
+    assert fields["title"] == "Senior Engineer"
+    assert fields["employer"] == "Acme Corp"
+    assert fields["location"] == "Remote"
+    validate_parser_semantics(resume, semantics, digest)
+
+
+@pytest.mark.asyncio
+async def test_ambiguous_numeric_date_and_locale_present_stay_unknown_precision() -> None:
+    resume = _experience_resume(
+        _block("Analyst, Umbrella LLC, Remote", 0),
+        _block("03/04/2020 - Presente", 40),
+    )
+    digest = sha256(b"ambiguous dates").hexdigest()
+
+    semantics = await LocalResumeParserProvider().parse(uuid4(), resume, digest)
+
+    dates = {
+        field.name: field
+        for entity in semantics.entities
+        for field in entity.fields
+        if field.field_type is SemanticFieldType.DATE
+    }
+    assert dates["start_date"].value == "03/04/2020"
+    assert dates["end_date"].value == "Presente"
+    assert dates["start_date"].date_precision is DatePrecision.UNKNOWN
+    assert dates["end_date"].date_precision is DatePrecision.UNKNOWN
+    validate_parser_semantics(resume, semantics, digest)
+
+
+@pytest.mark.asyncio
+async def test_contact_line_keeps_city_state_as_location() -> None:
+    text = "Alex Rivera | alex.rivera@example.test | Portland, OR"
+    resume = CanonicalResume(
+        schema_version="canonical-resume/2.0.0",
+        sections=(
+            CanonicalSection(
+                id=uuid4(),
+                kind=SectionKind.CONTACT,
+                title="Contact",
+                confidence_basis_points=9_000,
+                blocks=(_block(text, 0),),
+            ),
+        ),
+        warnings=(),
+    )
+    digest = sha256(b"contact location").hexdigest()
+
+    semantics = await LocalResumeParserProvider().parse(uuid4(), resume, digest)
+
+    fields = {field.name: field.value for entity in semantics.entities for field in entity.fields}
+    assert fields["name"] == "Alex Rivera"
+    assert fields["email"] == "alex.rivera@example.test"
+    assert fields["location"] == "Portland, OR"
     validate_parser_semantics(resume, semantics, digest)

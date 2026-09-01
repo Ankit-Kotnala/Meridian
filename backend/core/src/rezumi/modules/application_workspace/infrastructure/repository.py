@@ -1649,9 +1649,7 @@ def _application_profile_values(
         "compensation_max": profile.compensation_max,
         "compensation_currency": profile.compensation_currency,
         "preferred_locations": list(profile.preferred_locations),
-        "profile_links": [
-            {"label": link.label, "url": link.url} for link in profile.profile_links
-        ],
+        "profile_links": [{"label": link.label, "url": link.url} for link in profile.profile_links],
         "voluntary_disclosures": dict(profile.voluntary_disclosures),
         "version": profile.version,
         "created_at": profile.created_at,

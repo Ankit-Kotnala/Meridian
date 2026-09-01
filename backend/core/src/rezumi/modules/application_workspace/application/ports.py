@@ -273,3 +273,13 @@ class ApplicationWorkspaceUnitOfWork(Protocol):
 
 
 ApplicationWorkspaceUnitOfWorkFactory = Callable[[], ApplicationWorkspaceUnitOfWork]
+
+
+class ApplicationProfileDocumentStore(Protocol):
+    """Owner-scoped copy of the Application Profile for Apply-for-me reuse."""
+
+    async def upsert(self, profile: ApplicationProfile) -> None: ...
+
+    async def ping(self) -> None: ...
+
+    async def dispose(self) -> None: ...

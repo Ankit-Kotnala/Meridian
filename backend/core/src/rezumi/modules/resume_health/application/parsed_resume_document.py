@@ -41,6 +41,7 @@ def build_user_data_document(
         "displayFilename": display_filename,
         "schemaVersion": canonical.schema_version,
         "parserVersion": semantics.parser_version if semantics is not None else None,
+        "semanticReviewState": (semantics.review_state.value if semantics is not None else None),
         "parsedAt": parsed_at.isoformat(),
         "updatedAt": parsed_at.isoformat(),
         **organized,
@@ -83,7 +84,11 @@ def _organize_semantics(entities: tuple[SemanticEntity, ...]) -> dict[str, Any]:
 
 
 def _entity_to_record(entity: SemanticEntity) -> dict[str, Any] | None:
-    record: dict[str, Any] = {"id": str(entity.id)}
+    record: dict[str, Any] = {
+        "id": str(entity.id),
+        "reviewState": entity.review_state.value,
+        "fieldProvenance": [],
+    }
     list_fields: dict[str, list[str]] = {}
     has_values = False
 
@@ -91,6 +96,24 @@ def _entity_to_record(entity: SemanticEntity) -> dict[str, Any] | None:
         if field.review_state is SemanticReviewState.REMOVED:
             continue
         has_values = True
+        record["fieldProvenance"].append(
+            {
+                "fieldId": str(field.id),
+                "name": field.name,
+                "reviewState": field.review_state.value,
+                "confidenceBasisPoints": field.confidence_basis_points,
+                "anchors": [
+                    {
+                        "blockId": str(anchor.block_id),
+                        "page": anchor.page,
+                        "start": anchor.start,
+                        "end": anchor.end,
+                        "sourceSha256": anchor.source_sha256,
+                    }
+                    for anchor in field.anchors
+                ],
+            }
+        )
         if (
             field.field_type is SemanticFieldType.BULLET
             or field.name in {"achievement", "skill"}

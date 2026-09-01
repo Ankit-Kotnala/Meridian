@@ -6,16 +6,14 @@ import {
   ChevronRight,
   LayoutDashboard,
   List,
-  Plus,
   RefreshCcw,
   Search,
-  Settings2,
 } from "lucide-react";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
   type FormEvent,
@@ -24,10 +22,10 @@ import {
 import {
   Alert,
   Button,
+  EmptyState,
   ErrorState,
   Input,
   LoadingSkeleton,
-  PageHeader,
   Select,
   cn,
 } from "@rezumi/ui";
@@ -51,7 +49,6 @@ import type {
 import {
   ApplicationAgenda,
   ApplicationBoard,
-  ApplicationCollectionEmpty,
   ApplicationTable,
 } from "../components/application-collection";
 import {
@@ -61,8 +58,6 @@ import {
   humanize,
   outcomeStatuses,
 } from "../components/application-options";
-import { ApplicationProfilePanel } from "../components/application-profile-panel";
-import { CreateApplicationForm } from "../components/create-application-form";
 
 function validView(value: string | null): ApplicationViewMode {
   return applicationViews.some((item) => item.value === value)
@@ -134,6 +129,12 @@ type ApplicationsLoadState =
     }
   | { key: string; message: string; status: "error" };
 
+const viewIcon = {
+  board: LayoutDashboard,
+  calendar: CalendarDays,
+  table: List,
+} as const;
+
 export function ApplicationsView() {
   const router = useRouter();
   const pathname = usePathname();
@@ -159,8 +160,6 @@ export function ApplicationsView() {
   const [conflict, setConflict] = useState(false);
   const [busyId, setBusyId] = useState<string>();
   const [loadingMore, setLoadingMore] = useState(false);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
   const visibleListState = listState?.key === listKey ? listState : undefined;
   const applications =
     visibleListState?.status === "success"
@@ -231,45 +230,36 @@ export function ApplicationsView() {
     const key = month;
     setCalendarState({ key, status: "pending" });
     try {
-      const result = await getApplicationCalendar(monthWindow(month));
+      const window = monthWindow(month);
+      const calendar = await getApplicationCalendar({
+        end: window.end,
+        start: window.start,
+      });
       if (requestId !== calendarRequest.current) return;
-      setCalendarState({ calendar: result, key, status: "success" });
+      setCalendarState({ calendar, key, status: "success" });
     } catch (error) {
       if (requestId !== calendarRequest.current) return;
       setCalendarState({
         key,
-        message: requestErrorMessage(
-          error,
-          "The application calendar could not be loaded.",
-        ),
+        message: requestErrorMessage(error, "Calendar could not be loaded."),
         status: "error",
       });
     }
   }, [month, view]);
 
   useEffect(() => {
-    let active = true;
-    queueMicrotask(() => {
-      if (active) void load();
-    });
-    return () => {
-      active = false;
-      listRequest.current += 1;
-    };
+    queueMicrotask(() => void load());
   }, [load]);
 
   useEffect(() => {
-    let active = true;
-    queueMicrotask(() => {
-      if (active) void loadCalendar();
-    });
-    return () => {
-      active = false;
-      calendarRequest.current += 1;
-    };
+    queueMicrotask(() => void loadCalendar());
   }, [loadCalendar]);
 
-  function search(event: FormEvent<HTMLFormElement>) {
+  const filtered = Boolean(query || stage || outcome || source || industry);
+  const visibleCalendarState =
+    calendarState?.key === month ? calendarState : undefined;
+
+  async function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     replaceQuery({
@@ -277,6 +267,46 @@ export function ApplicationsView() {
       q: String(form.get("q") ?? "").trim() || undefined,
       source: String(form.get("source") ?? "").trim() || undefined,
     });
+  }
+
+  async function loadMore() {
+    if (!nextCursor) return;
+    const cursor = nextCursor;
+    const requestId = ++listRequest.current;
+    setLoadingMore(true);
+    setActionFailure(undefined);
+    try {
+      const page = await listApplications({
+        cursor,
+        industry,
+        limit: 100,
+        outcome,
+        q: query,
+        sort,
+        source,
+        stage,
+      });
+      if (requestId !== listRequest.current) return;
+      setListState((current) =>
+        current?.key === listKey &&
+        current.status === "success" &&
+        current.nextCursor === cursor
+          ? {
+              applications: [...current.applications, ...page.data],
+              key: listKey,
+              nextCursor: page.page.nextCursor,
+              status: "success",
+            }
+          : current,
+      );
+    } catch (error) {
+      if (requestId !== listRequest.current) return;
+      setActionFailure(
+        requestErrorMessage(error, "More applications could not be loaded."),
+      );
+    } finally {
+      if (requestId === listRequest.current) setLoadingMore(false);
+    }
   }
 
   async function move(
@@ -322,70 +352,17 @@ export function ApplicationsView() {
     }
   }
 
-  async function loadMore() {
-    if (!nextCursor) return;
-    const cursor = nextCursor;
-    const requestId = ++listRequest.current;
-    setLoadingMore(true);
-    setActionFailure(undefined);
-    try {
-      const page = await listApplications({
-        cursor,
-        industry,
-        limit: 100,
-        outcome,
-        q: query,
-        sort,
-        source,
-        stage,
-      });
-      if (requestId !== listRequest.current) return;
-      setListState((current) =>
-        current?.key === listKey &&
-        current.status === "success" &&
-        current.nextCursor === cursor
-          ? {
-              applications: [...current.applications, ...page.data],
-              key: listKey,
-              nextCursor: page.page.nextCursor,
-              status: "success",
-            }
-          : current,
-      );
-    } catch (error) {
-      if (requestId !== listRequest.current) return;
-      setActionFailure(
-        requestErrorMessage(error, "More applications could not be loaded."),
-      );
-    } finally {
-      if (requestId === listRequest.current) setLoadingMore(false);
-    }
-  }
-
-  const filtered = Boolean(query || stage || outcome || source || industry);
-  const visibleCalendarState =
-    view === "calendar" && calendarState?.key === month
-      ? calendarState
-      : undefined;
-  const viewIcon = useMemo(
-    () => ({
-      board: LayoutDashboard,
-      calendar: CalendarDays,
-      table: List,
-    }),
-    [],
-  );
+  const countLabel = applications
+    ? `${applications.length} application${applications.length === 1 ? "" : "s"}`
+    : null;
 
   if (visibleListState?.status === "error") {
     return (
-      <main
-        className="mx-auto max-w-[96rem] p-4 sm:p-6 lg:p-8"
-        id="main-content"
-      >
+      <main className="workspace-page" id="main-content">
         <ErrorState
           description={visibleListState.message}
           onRetry={() => void load()}
-          title="Application Workspace unavailable"
+          title="Applications unavailable"
         />
       </main>
     );
@@ -396,12 +373,28 @@ export function ApplicationsView() {
   }
 
   return (
-    <main
-      className="mx-auto max-w-[96rem] space-y-6 p-4 sm:p-6 lg:p-8"
-      id="main-content"
-    >
-      <PageHeader
-        actions={
+    <main className="workspace-page space-y-6" id="main-content">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-primary">
+            Applications
+          </p>
+          <h1 className="mt-1.5 text-[1.625rem] font-bold tracking-[-0.03em] text-foreground sm:text-[1.75rem]">
+            Track every application
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
+            Applications appear here after you use Apply for me on a saved job.
+            Keep reusable portal answers in Settings. Meridian never submits on
+            your behalf.
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <Link
+            className="inline-flex min-h-11 items-center justify-center rounded-[var(--radius-control)] border border-line bg-surface px-4 text-sm font-semibold text-foreground hover:border-line-strong hover:bg-surface-subtle"
+            href="/settings/application-answers"
+          >
+            Application answers
+          </Link>
           <Button
             onClick={() => {
               void load();
@@ -412,11 +405,8 @@ export function ApplicationsView() {
             <RefreshCcw aria-hidden="true" className="size-4" />
             Refresh
           </Button>
-        }
-        description="Track opportunities, exact resume versions, follow-ups, and evidence-grounded application packs. Meridian never submits an application on your behalf."
-        eyebrow="Applications"
-        title="Keep every application traceable"
-      />
+        </div>
+      </header>
 
       {actionFailure && (
         <Alert
@@ -432,70 +422,35 @@ export function ApplicationsView() {
         </Alert>
       )}
       {success && (
-        <Alert title="Workspace updated" tone="success">
+        <Alert title="Updated" tone="success">
           {success}
         </Alert>
       )}
 
-      <details
-        className="rounded-card border border-border bg-surface-raised"
-        onToggle={(event) => setCreateOpen(event.currentTarget.open)}
-        open={createOpen}
-      >
-        <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-black text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-primary-soft">
-          <Plus aria-hidden="true" className="size-4 text-primary" />
-          Add an application
-        </summary>
-        <div className="border-t border-line p-4">
-          {createOpen && (
-            <CreateApplicationForm
-              onCreated={(application) => {
-                setSuccess(`${application.jobTitle} added to your workspace.`);
-                setCreateOpen(false);
-                void load();
-              }}
-            />
-          )}
-        </div>
-      </details>
-
-      <details
-        className="rounded-card border border-border bg-surface-raised"
-        onToggle={(event) => setProfileOpen(event.currentTarget.open)}
-      >
-        <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-black text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-primary-soft">
-          <Settings2 aria-hidden="true" className="size-4 text-primary" />
-          Application Profile (used by &ldquo;Apply for me&rdquo;)
-        </summary>
-        <div className="border-t border-line p-4">
-          {profileOpen && <ApplicationProfilePanel />}
-        </div>
-      </details>
-
       <section
         aria-label="Application filters"
-        className="rounded-card border border-border bg-surface-raised p-4"
+        className="rounded-[var(--radius-card)] border border-line bg-surface p-4"
       >
         <form
-          className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(14rem,1fr)_11rem_11rem_11rem_11rem_12rem_auto]"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(14rem,1fr)_10rem_10rem_10rem_10rem_11rem_auto]"
           key={routeKey}
           onSubmit={search}
         >
-          <label className="text-sm font-bold text-foreground">
-            Search applications
+          <label className="text-sm font-semibold text-foreground">
+            Search
             <Input
-              className="mt-1"
+              className="mt-1.5"
               defaultValue={query}
               maxLength={160}
               name="q"
-              placeholder="Job, company, location, or resume"
+              placeholder="Job, company, location, or keyword"
               type="search"
             />
           </label>
-          <label className="text-sm font-bold text-foreground">
+          <label className="text-sm font-semibold text-foreground">
             Stage
             <Select
-              className="mt-1"
+              className="mt-1.5"
               onChange={(event) =>
                 replaceQuery({ stage: event.target.value || undefined })
               }
@@ -509,10 +464,10 @@ export function ApplicationsView() {
               ))}
             </Select>
           </label>
-          <label className="text-sm font-bold text-foreground">
+          <label className="text-sm font-semibold text-foreground">
             Outcome
             <Select
-              className="mt-1"
+              className="mt-1.5"
               onChange={(event) =>
                 replaceQuery({ outcome: event.target.value || undefined })
               }
@@ -526,28 +481,28 @@ export function ApplicationsView() {
               ))}
             </Select>
           </label>
-          <label className="text-sm font-bold text-foreground">
+          <label className="text-sm font-semibold text-foreground">
             Source
             <Input
-              className="mt-1"
+              className="mt-1.5"
               defaultValue={source}
               maxLength={120}
               name="source"
             />
           </label>
-          <label className="text-sm font-bold text-foreground">
+          <label className="text-sm font-semibold text-foreground">
             Industry
             <Input
-              className="mt-1"
+              className="mt-1.5"
               defaultValue={industry}
               maxLength={120}
               name="industry"
             />
           </label>
-          <label className="text-sm font-bold text-foreground">
+          <label className="text-sm font-semibold text-foreground">
             Sort
             <Select
-              className="mt-1"
+              className="mt-1.5"
               onChange={(event) => replaceQuery({ sort: event.target.value })}
               value={sort}
             >
@@ -583,17 +538,22 @@ export function ApplicationsView() {
       </section>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div aria-label="Application view" className="flex gap-1" role="group">
+        <div
+          aria-label="Application view"
+          className="inline-flex gap-1 rounded-[var(--radius-control)] border border-line bg-surface p-1"
+          role="group"
+        >
           {applicationViews.map((item) => {
             const Icon = viewIcon[item.value];
+            const active = view === item.value;
             return (
               <button
-                aria-pressed={view === item.value}
+                aria-pressed={active}
                 className={cn(
-                  "flex min-h-11 items-center gap-2 rounded-control border px-3 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-primary-soft",
-                  view === item.value
-                    ? "border-primary bg-primary text-white"
-                    : "border-transparent bg-surface-raised text-muted hover:border-border hover:text-foreground",
+                  "flex min-h-9 items-center gap-2 rounded-[calc(var(--radius-control)-0.125rem)] px-3 text-[0.8125rem] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-primary-soft",
+                  active
+                    ? "bg-primary text-white"
+                    : "text-muted-strong hover:bg-surface-subtle hover:text-foreground",
                 )}
                 key={item.value}
                 onClick={() =>
@@ -609,41 +569,38 @@ export function ApplicationsView() {
             );
           })}
         </div>
-        <p className="text-sm text-muted">
-          {applications.length} application
-          {applications.length === 1 ? "" : "s"}
-        </p>
+        {countLabel && <p className="text-sm text-muted">{countLabel}</p>}
       </div>
 
       {view === "calendar" && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface-raised p-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] border border-line bg-surface p-3">
           <Button
             aria-label="Previous month"
-            onClick={() => replaceQuery({ month: adjacentMonth(month, -1) })}
             className="min-h-9 px-3"
+            onClick={() => replaceQuery({ month: adjacentMonth(month, -1) })}
             variant="secondary"
           >
             <ChevronLeft aria-hidden="true" className="size-4" />
           </Button>
-          <h2 className="text-base font-black text-foreground">
+          <h2 className="text-base font-semibold text-foreground">
             {monthLabel(month)}
           </h2>
           <div className="flex gap-2">
             <Button
+              className="min-h-9 px-3"
               onClick={() =>
                 replaceQuery({
                   month: currentMonth() === month ? undefined : currentMonth(),
                 })
               }
-              className="min-h-9 px-3"
               variant="ghost"
             >
               Today
             </Button>
             <Button
               aria-label="Next month"
-              onClick={() => replaceQuery({ month: adjacentMonth(month, 1) })}
               className="min-h-9 px-3"
+              onClick={() => replaceQuery({ month: adjacentMonth(month, 1) })}
               variant="secondary"
             >
               <ChevronRight aria-hidden="true" className="size-4" />
@@ -653,7 +610,26 @@ export function ApplicationsView() {
       )}
 
       {applications.length === 0 && view !== "calendar" ? (
-        <ApplicationCollectionEmpty filtered={filtered} />
+        <EmptyState
+          action={
+            filtered ? undefined : (
+              <Link
+                className={cn(
+                  "mt-4 inline-flex min-h-10 items-center justify-center rounded-[var(--radius-control)] border border-primary bg-primary px-4 text-sm font-semibold text-white hover:border-primary-strong hover:bg-primary-strong",
+                )}
+                href="/job-match"
+              >
+                Open Job search
+              </Link>
+            )
+          }
+          description={
+            filtered
+              ? "Adjust or clear the current search and filters."
+              : "Save a job in Job search, then use Apply for me. It will show up here to track."
+          }
+          title={filtered ? "No matching applications" : "No applications yet"}
+        />
       ) : view === "table" ? (
         <ApplicationTable
           applications={applications}
@@ -701,7 +677,7 @@ export function ApplicationsView() {
 
 export function ApplicationsLoading() {
   return (
-    <main className="mx-auto max-w-[96rem] p-4 sm:p-6 lg:p-8" id="main-content">
+    <main className="workspace-page" id="main-content">
       <LoadingSkeleton variant="page" />
     </main>
   );
@@ -715,11 +691,11 @@ export function ApplicationsRouteError({
   reset: () => void;
 }) {
   return (
-    <main className="mx-auto max-w-[96rem] p-4 sm:p-6 lg:p-8" id="main-content">
+    <main className="workspace-page" id="main-content">
       <ErrorState
         description={error.message || "Refresh and try again."}
         onRetry={reset}
-        title="Application Workspace unavailable"
+        title="Applications unavailable"
       />
     </main>
   );

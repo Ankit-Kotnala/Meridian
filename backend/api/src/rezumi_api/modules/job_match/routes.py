@@ -18,7 +18,10 @@ from rezumi.modules.job_match.application import (
     UpdateJob,
 )
 from rezumi.modules.job_match.application.job_catalog_ports import CatalogJobListing
-from rezumi.modules.job_match.application.job_catalog_query import JobCatalogQueryService
+from rezumi.modules.job_match.application.job_catalog_query import (
+    JobCatalogQueryService,
+    catalog_save_keys,
+)
 from rezumi.modules.job_match.domain import (
     EmploymentType,
     JobMatchNotFound,
@@ -48,6 +51,7 @@ from rezumi_api.modules.job_match.presenters import (
 )
 from rezumi_api.modules.job_match.schemas import (
     JobCatalogBrowseResponse,
+    JobCatalogSaveRequest,
     JobCatalogSearchResponse,
     JobCreateRequest,
     JobImportRequest,
@@ -103,6 +107,42 @@ def _job_match_source_text(listing: CatalogJobListing) -> str:
         return text
     truncated = text[:_MAX_CATALOG_SOURCE_TEXT_FOR_SAVE].rsplit(" ", 1)[0]
     return truncated or text[:_MAX_CATALOG_SOURCE_TEXT_FOR_SAVE]
+
+
+async def _copy_catalog_listing(
+    platform: str,
+    external_id: str,
+    *,
+    principal: AuthenticatedPrincipal,
+    context: RequestContext,
+    catalog: JobCatalogQueryService,
+    service: JobMatchService,
+    response: Response,
+) -> JobResponse:
+    listing = await catalog.get_listing(platform, external_id)
+    if listing is None:
+        raise JobMatchNotFound
+    idempotency_key, tracked_external_id = catalog_save_keys(platform, external_id)
+    value = await service.create_job(
+        principal.user_id,
+        CreateJob(
+            title=listing.title,
+            company=listing.company,
+            location=listing.location,
+            work_model=WorkModel.REMOTE if listing.remote else WorkModel.UNKNOWN,
+            employment_type=EmploymentType.UNKNOWN,
+            compensation=None,
+            application_deadline=None,
+            source_kind=JobSourceKind.URL,
+            source_url=listing.application_url,
+            source_text=_job_match_source_text(listing),
+            external_id=tracked_external_id,
+        ),
+        idempotency_key,
+        context,
+    )
+    _private(response, value.job.version)
+    return job_response(value)
 
 
 @router.get(
@@ -415,7 +455,7 @@ async def search_job_catalog(
     """Read-only shared listings filtered toward the owner's target role(s).
 
     Never writes into the owner's own tracked jobs — see
-    ``POST /job-catalog/{platform}/{externalId}/save`` for that explicit step.
+    ``POST /job-catalog/save`` for that explicit step.
     """
     result = await catalog.search_for_owner(principal.user_id)
     _private(response)
@@ -486,15 +526,14 @@ async def browse_job_catalog(
 
 
 @router.post(
-    "/job-catalog/{platform}/{external_id}/save",
+    "/job-catalog/save",
     response_model=JobResponse,
     status_code=status.HTTP_201_CREATED,
     operation_id="jobCatalogSave",
     responses=_PROBLEMS,
 )
 async def save_job_catalog_listing(
-    platform: str,
-    external_id: str,
+    payload: JobCatalogSaveRequest,
     response: Response,
     principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
     context: Annotated[RequestContext, Depends(job_match_request_context)],
@@ -505,28 +544,43 @@ async def save_job_catalog_listing(
 
     Idempotent per (owner, platform, external_id) — saving the same listing
     twice returns the same tracked job rather than creating a duplicate.
+    Catalog external ids may be URLs, so this uses a request body instead of
+    putting those values in the path.
     """
-    listing = await catalog.get_listing(platform, external_id)
-    if listing is None:
-        raise JobMatchNotFound
-    idempotency_key = f"catalog:{platform}:{external_id}"
-    value = await service.create_job(
-        principal.user_id,
-        CreateJob(
-            title=listing.title,
-            company=listing.company,
-            location=listing.location,
-            work_model=WorkModel.REMOTE if listing.remote else WorkModel.UNKNOWN,
-            employment_type=EmploymentType.UNKNOWN,
-            compensation=None,
-            application_deadline=None,
-            source_kind=JobSourceKind.URL,
-            source_url=listing.application_url,
-            source_text=_job_match_source_text(listing),
-            external_id=f"{platform}:{external_id}",
-        ),
-        idempotency_key,
-        context,
+    return await _copy_catalog_listing(
+        payload.platform,
+        payload.external_id,
+        principal=principal,
+        context=context,
+        catalog=catalog,
+        service=service,
+        response=response,
     )
-    _private(response, value.job.version)
-    return job_response(value)
+
+
+@router.post(
+    "/job-catalog/{platform}/{external_id}/save",
+    response_model=JobResponse,
+    status_code=status.HTTP_201_CREATED,
+    operation_id="jobCatalogSaveByPath",
+    responses=_PROBLEMS,
+)
+async def save_job_catalog_listing_by_path(
+    platform: str,
+    external_id: str,
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_authenticated_csrf)],
+    context: Annotated[RequestContext, Depends(job_match_request_context)],
+    catalog: Annotated[JobCatalogQueryService, Depends(job_catalog_query_service)],
+    service: Annotated[JobMatchService, Depends(job_match_service)],
+) -> JobResponse:
+    """Compatibility path for simple catalog ids that fit in a single segment."""
+    return await _copy_catalog_listing(
+        platform,
+        external_id,
+        principal=principal,
+        context=context,
+        catalog=catalog,
+        service=service,
+        response=response,
+    )

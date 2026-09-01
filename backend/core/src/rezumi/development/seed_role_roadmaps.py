@@ -27,7 +27,7 @@ from pymongo import MongoClient
 
 from rezumi.foundation.config.mongodb import MongoOptions
 
-ROADMAP_VERSION = "role-roadmaps/2026-08-23.2"
+ROADMAP_VERSION = "role-roadmaps/2026-08-31.3"
 
 # Each skill entry: name (matched against a role_readiness gap label),
 # why (one sentence on why it matters), howToStart (one concrete first step).
@@ -299,8 +299,73 @@ ROLE_ROADMAPS: list[dict[str, Any]] = [
         ],
     },
     {
+        "roleSlug": "ai-engineer",
+        "title": "AI Engineer",
+        "aliases": [
+            "Artificial Intelligence Engineer",
+            "Applied AI Engineer",
+            "Generative AI Engineer",
+            "LLM Engineer",
+            "AI Application Engineer",
+            "AI/ML Engineer",
+        ],
+        "stages": [
+            {
+                "stage": "Foundations",
+                "skills": [
+                    {
+                        "name": "Python for AI applications",
+                        "why": "Production AI work depends on being able to inspect data, integrate model libraries, and build reliable application code.",
+                        "howToStart": "Build one small Python service that validates an input, calls a local or hosted model through a narrow interface, and tests the response shape.",
+                    },
+                    {
+                        "name": "Machine learning and deep learning fundamentals",
+                        "why": "Understanding training, inference, overfitting, embeddings, and evaluation makes model behavior easier to diagnose instead of guess.",
+                        "howToStart": "Train and compare two simple models on one public dataset, documenting the metric, baseline, and most important failure cases.",
+                    },
+                ],
+            },
+            {
+                "stage": "Core systems",
+                "skills": [
+                    {
+                        "name": "LLM application architecture",
+                        "why": "Useful AI products need explicit orchestration, validation, failure handling, and observability around model calls.",
+                        "howToStart": "Diagram one AI feature as input validation, retrieval or context construction, model call, structured validation, and user-visible fallback.",
+                    },
+                    {
+                        "name": "Retrieval-augmented generation",
+                        "why": "Retrieval can ground answers in controlled sources when chunking, search quality, citations, and access boundaries are designed together.",
+                        "howToStart": "Create a small retrieval prototype over documents you may use, then measure whether the retrieved passages actually support each answer.",
+                    },
+                    {
+                        "name": "AI evaluation and test design",
+                        "why": "Model output varies, so a fixed test set and explicit quality, safety, latency, and cost checks are needed before changes can be trusted.",
+                        "howToStart": "Write twenty representative cases for one AI workflow, define pass criteria before testing, and record regressions by failure category.",
+                    },
+                ],
+            },
+            {
+                "stage": "Production practice",
+                "skills": [
+                    {
+                        "name": "Responsible AI and safety controls",
+                        "why": "AI systems must handle unsupported claims, unsafe inputs, privacy boundaries, and human review as product requirements.",
+                        "howToStart": "Threat-model one AI workflow and add a deterministic refusal or review path for its highest-impact unsupported-output risk.",
+                    },
+                    {
+                        "name": "Model serving, monitoring, and cost controls",
+                        "why": "A production AI feature must remain observable and bounded when providers slow down, outputs drift, or usage grows.",
+                        "howToStart": "Instrument one model-backed endpoint with latency, error, token or usage, and validation-result metrics plus a tested fallback.",
+                    },
+                ],
+            },
+        ],
+    },
+    {
         "roleSlug": "ml-engineer",
         "title": "Machine Learning Engineer",
+        "aliases": ["ML Engineer"],
         "stages": [
             {
                 "stage": "Foundations",

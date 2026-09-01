@@ -149,8 +149,6 @@ test("a user tracks a grounded application and generates a consistent applicatio
   const evidenceStatement =
     "User states that they conducted customer discovery interviews and synthesized research findings.";
   const resumeTitle = "Application Product Lead Resume";
-  const applicationDeadline = dateInCurrentMonth(20);
-  const followUpDate = dateInCurrentMonth(15);
   const taskDueDate = dateInCurrentMonth(18);
 
   try {
@@ -163,7 +161,7 @@ test("a user tracks a grounded application and generates a consistent applicatio
         await page.goto("/applications");
         await expect(
           page.getByRole("heading", {
-            name: "Keep every application traceable",
+            name: "Track every application",
           }),
         ).toBeVisible();
 
@@ -172,21 +170,12 @@ test("a user tracks a grounded application and generates a consistent applicatio
         await page.keyboard.press("Enter");
         await expect(page).toHaveURL(/[?&]view=table/);
 
-        const addApplication = page.getByText("Add an application", {
-          exact: true,
+        const openJobSearch = page.getByRole("link", {
+          name: "Open Job search",
         });
-        await focusWhenReady(addApplication);
+        await focusWhenReady(openJobSearch);
         await page.keyboard.press("Enter");
-        await expect(
-          page.getByRole("heading", {
-            name: "Complete the application sources",
-          }),
-        ).toBeVisible();
-
-        const saveJob = page.getByRole("link", { name: "Save a job" });
-        await focusWhenReady(saveJob);
-        await page.keyboard.press("Enter");
-        await expect(page).toHaveURL(/\/job-match$/);
+        await expect(page).toHaveURL(/\/job-match/);
       });
     }
 
@@ -332,75 +321,27 @@ test("a user tracks a grounded application and generates a consistent applicatio
       await expect(page.getByText("Version 1").first()).toBeVisible();
     });
 
-    await test.step("create an application pinned to the saved sources", async () => {
+    await test.step("create an application via Apply for me", async () => {
+      await page.goto("/job-match/saved");
+      await clickWhenReady(
+        page.getByRole("button", { name: "Apply for me" }).first(),
+      );
+      await expect(page.getByRole("status").first()).toContainText(
+        /application pack ready/i,
+      );
+
       await page.goto("/applications");
       await expect(
         page.getByRole("heading", {
-          name: "Keep every application traceable",
+          name: "Track every application",
         }),
       ).toBeVisible();
       await expect(
-        page.getByText(/Rezumi never submits an application on your behalf/i),
+        page.getByText(/Meridian never submits on your behalf/i),
       ).toBeVisible();
-
-      const createPanel = page.locator("details").filter({
-        has: page.getByText("Add an application", { exact: true }),
-      });
-      await expect(createPanel).toHaveCount(1);
-      await clickWhenReady(
-        createPanel.getByText("Add an application", { exact: true }),
-      );
-      await expect(createPanel).toHaveAttribute("open", "", {
-        timeout: actionTimeout,
-      });
-      const savedJobSelect = createPanel.getByRole("combobox", {
-        name: "Saved job",
-        exact: true,
-      });
-      await expect(savedJobSelect).toBeVisible();
-      const resumeSelect = createPanel.getByRole("combobox", {
-        name: "Resume",
-        exact: true,
-      });
-      await expect(resumeSelect).toBeVisible();
-      await selectWhenReady(savedJobSelect, { index: 0 });
-      await selectWhenReady(resumeSelect, { index: 0 });
       await expect(
-        createPanel.getByLabel("Immutable resume version"),
-      ).toBeEnabled();
-      await selectWhenReady(
-        createPanel.getByLabel("Immutable resume version"),
-        { index: 0 },
-      );
-      await selectWhenReady(createPanel.getByLabel("Initial stage"), "saved");
-      await fillWhenReady(
-        createPanel.getByLabel("Application deadline"),
-        applicationDeadline,
-      );
-      await fillWhenReady(
-        createPanel.getByLabel("Follow-up date"),
-        followUpDate,
-      );
-      await fillWhenReady(
-        createPanel.getByLabel("Application source"),
-        "Fictional referral",
-      );
-      await fillWhenReady(
-        createPanel.getByLabel("Industry"),
-        "Fictional software",
-      );
-      await clickWhenReady(
-        createPanel.getByRole("button", { name: "Add application" }),
-      );
-      await expect(page.getByRole("status").first()).toContainText(
-        `${jobTitle} added to your workspace.`,
-      );
-      await expect(createPanel).not.toHaveAttribute("open", "", {
-        timeout: actionTimeout,
-      });
-      await expect(createPanel.getByLabel("Industry")).toBeHidden({
-        timeout: actionTimeout,
-      });
+        page.getByText("Add an application", { exact: true }),
+      ).toHaveCount(0);
     });
 
     await test.step("use board, table, calendar, and the non-drag stage control", async () => {

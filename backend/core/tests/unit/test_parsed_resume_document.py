@@ -83,6 +83,7 @@ def test_build_user_data_document_organizes_semantics_by_section() -> None:
                 ),
             ),
         ),
+        review_state=SemanticReviewState.CONFIRMED,
     )
     canonical = CanonicalResume(
         schema_version="canonical-resume/2.0.0",
@@ -111,7 +112,14 @@ def test_build_user_data_document_organizes_semantics_by_section() -> None:
 
     assert document["resumeId"] == str(resume_id)
     assert document["userId"] == str(owner.user_id)
+    assert document["semanticReviewState"] == "confirmed"
     assert document["contact"]["name"] == "Alex Example"
+    assert document["contact"]["reviewState"] == "confirmed"
+    name_provenance = document["contact"]["fieldProvenance"][0]
+    assert name_provenance["name"] == "name"
+    assert name_provenance["reviewState"] == "confirmed"
+    assert name_provenance["confidenceBasisPoints"] == 9_500
+    assert name_provenance["anchors"][0]["sourceSha256"] == "ab" * 32
     assert document["experience"][0]["employer"] == "Acme Corp"
     assert document["experience"][0]["achievement"] == ["Shipped feature X"]
 
@@ -132,6 +140,7 @@ def test_build_user_data_document_collects_repeated_skill_names() -> None:
                 ),
             ),
         ),
+        review_state=SemanticReviewState.CONFIRMED,
     )
     canonical = CanonicalResume(
         schema_version="canonical-resume/2.0.0",

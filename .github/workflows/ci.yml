@@ -77,11 +77,11 @@ jobs:
       - run: cd backend/api && uv run pytest
       - run: uv run --project backend --package rezumi-api ruff format --config backend/api/pyproject.toml --check shared/contracts/scripts/export_openapi.py
       - run: uv run --project backend --package rezumi-api ruff check --config backend/api/pyproject.toml shared/contracts/scripts/export_openapi.py
-      - run: test "$(uv run --project backend --package rezumi-backend alembic -c backend/core/alembic.ini heads | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')" = "20260731_0014 (head)"
+      - run: test "$(uv run --project backend --package rezumi-backend alembic -c backend/core/alembic.ini heads | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')" = "20260823_0017 (head)"
       - run: uv run --project backend --package rezumi-backend alembic -c backend/core/alembic.ini upgrade head
       - run: uv run --project backend --package rezumi-backend alembic -c backend/core/alembic.ini downgrade 20260724_0009
       - run: uv run --project backend --package rezumi-backend alembic -c backend/core/alembic.ini upgrade head
-      - run: test "$(uv run --project backend --package rezumi-backend alembic -c backend/core/alembic.ini current | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')" = "20260731_0014 (head)"
+      - run: test "$(uv run --project backend --package rezumi-backend alembic -c backend/core/alembic.ini current | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')" = "20260823_0017 (head)"
       - run: cd backend/core && uv run --package rezumi-backend pytest tests/integration
       - run: uv run --project backend --package rezumi-api python -c "from rezumi_api.main import app; assert app.openapi()"
 
@@ -351,13 +351,13 @@ jobs:
         run: |
           heads=$(docker compose -f infra/compose.yaml --project-directory . run --rm --no-deps api alembic -c backend/core/alembic.ini heads | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')
           printf '%s\n' "$heads"
-          test "$heads" = "20260731_0014 (head)"
+          test "$heads" = "20260823_0017 (head)"
           docker compose -f infra/compose.yaml --project-directory . run --rm --no-deps api alembic -c backend/core/alembic.ini upgrade head
           docker compose -f infra/compose.yaml --project-directory . run --rm --no-deps api alembic -c backend/core/alembic.ini downgrade 20260724_0009
           docker compose -f infra/compose.yaml --project-directory . run --rm --no-deps api alembic -c backend/core/alembic.ini upgrade head
           current=$(docker compose -f infra/compose.yaml --project-directory . run --rm --no-deps api alembic -c backend/core/alembic.ini current | sed -n '/^[^[:space:]][^[:space:]]* (head)$/p')
           printf '%s\n' "$current"
-          test "$current" = "20260731_0014 (head)"
+          test "$current" = "20260823_0017 (head)"
       - name: Probe the running platform
         run: |
           curl --fail --silent --show-error http://127.0.0.1:3000/api/health

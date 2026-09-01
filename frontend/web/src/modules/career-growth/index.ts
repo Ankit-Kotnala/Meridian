@@ -4,3 +4,4 @@ export {
   CareerGrowthRouteError,
   CareerGrowthView,
 } from "./views/career-growth-view";
+export { RoadmapPanel } from "./components/roadmap-panel";

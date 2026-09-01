@@ -58,7 +58,7 @@ export function JobFiltersPanel({
             onChange={(event) =>
               onChange({ ...filters, keyword: event.target.value })
             }
-            placeholder="Search by title, company, or keyword"
+            placeholder="Title, company, or keyword"
             type="search"
             value={filters.keyword}
           />

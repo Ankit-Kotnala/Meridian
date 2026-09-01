@@ -11,9 +11,10 @@ Scope: this measures semantic FIELD-extraction accuracy (name, email, job
 title, employer, dates, etc.) given already section/block-classified input —
 the layer with the regex-based extraction rules that decides whether a
 person's information was read correctly. Section detection, multi-column
-layout, and OCR are a different, earlier layer with their own existing tests
+reconstruction, and OCR are a different, earlier layer with their own tests
 (`test_resume_section_detection.py`, `test_resume_document_extractors.py`);
-they are not re-measured here.
+they are not re-measured here. The golden labels are source facts, not
+frozen parser mistakes (a city is a location, not a field of study).
 
 Run:
 
@@ -23,6 +24,7 @@ Run:
 from __future__ import annotations
 
 import asyncio
+from collections import Counter
 from dataclasses import dataclass, field
 from hashlib import sha256
 from uuid import uuid4
@@ -42,6 +44,11 @@ from rezumi.modules.resume_health.infrastructure.semantic_parser import (
 
 _SOURCE_SHA256 = sha256(b"eval-resume-parser-fixture").hexdigest()
 
+type ExpectedFieldValue = str | tuple[str, ...]
+type ExpectedEntity = dict[str, ExpectedFieldValue]
+type ParsedEntity = dict[str, tuple[str, ...]]
+type ParsedResult = dict[SemanticEntityKind, tuple[ParsedEntity, ...]]
+
 
 @dataclass(frozen=True, slots=True)
 class GoldenSection:
@@ -55,11 +62,9 @@ class GoldenCase:
     name: str
     sections: tuple[GoldenSection, ...]
     # Expected entities per kind, in the order the parser should emit them.
-    # Each entity is a dict of {field_name: expected_value}. A field the
-    # parser is expected to leave unset should simply be omitted.
-    expected: dict[SemanticEntityKind, tuple[dict[str, str], ...]] = field(
-        default_factory=dict
-    )
+    # Repeated fields use a tuple of expected values; a field the parser is
+    # expected to leave unset is omitted.
+    expected: dict[SemanticEntityKind, tuple[ExpectedEntity, ...]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
@@ -112,10 +117,10 @@ def _resume(sections: tuple[GoldenSection, ...]) -> CanonicalResume:
     )
 
 
-async def _parse(case: GoldenCase) -> dict[SemanticEntityKind, tuple[dict[str, str], ...]]:
+async def _parse(case: GoldenCase) -> ParsedResult:
     resume = _resume(case.sections)
     semantics = await LocalResumeParserProvider().parse(uuid4(), resume, _SOURCE_SHA256)
-    actual: dict[SemanticEntityKind, list[dict[str, str]]] = {}
+    actual: dict[SemanticEntityKind, list[ParsedEntity]] = {}
     for entity in semantics.entities:
         # SKILL entities hold one repeated "name" field per skill in the
         # list, not one field per name — expand each into its own
@@ -123,17 +128,20 @@ async def _parse(case: GoldenCase) -> dict[SemanticEntityKind, tuple[dict[str, s
         # silently collapse all but the last skill under one key.
         if entity.kind is SemanticEntityKind.SKILL:
             for skill_field in entity.fields:
-                actual.setdefault(entity.kind, []).append({skill_field.name: skill_field.value})
+                actual.setdefault(entity.kind, []).append({skill_field.name: (skill_field.value,)})
             continue
+        fields: dict[str, list[str]] = {}
+        for semantic_field in entity.fields:
+            fields.setdefault(semantic_field.name, []).append(semantic_field.value)
         actual.setdefault(entity.kind, []).append(
-            {field.name: field.value for field in entity.fields}
+            {name: tuple(values) for name, values in fields.items()}
         )
     return {kind: tuple(entities) for kind, entities in actual.items()}
 
 
 def _score_case(
     case: GoldenCase,
-    actual: dict[SemanticEntityKind, tuple[dict[str, str], ...]],
+    actual: ParsedResult,
 ) -> dict[str, FieldTally]:
     """Per-field tallies, keyed `"{entity_kind}.{field_name}"`.
 
@@ -162,15 +170,25 @@ def _score_case(
             for name in field_names:
                 key = f"{kind.value}.{name}"
                 expected_value = expected_fields.get(name)
-                actual_value = actual_fields.get(name)
-                if expected_value is None and actual_value is not None:
-                    bump(key, unexpected=1)
-                elif expected_value is not None and actual_value is None:
-                    bump(key, missing=1)
-                elif expected_value == actual_value:
-                    bump(key, correct=1)
-                else:
-                    bump(key, wrong=1)
+                expected_values = (
+                    ()
+                    if expected_value is None
+                    else ((expected_value,) if isinstance(expected_value, str) else expected_value)
+                )
+                actual_values = actual_fields.get(name, ())
+                expected_counts = Counter(expected_values)
+                actual_counts = Counter(actual_values)
+                correct = sum((expected_counts & actual_counts).values())
+                unmatched_expected = len(expected_values) - correct
+                unmatched_actual = len(actual_values) - correct
+                wrong = min(unmatched_expected, unmatched_actual)
+                bump(
+                    key,
+                    correct=correct,
+                    wrong=wrong,
+                    missing=unmatched_expected - wrong,
+                    unexpected=unmatched_actual - wrong,
+                )
     return tallies
 
 

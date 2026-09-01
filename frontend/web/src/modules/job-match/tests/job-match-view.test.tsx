@@ -27,6 +27,14 @@ const api = vi.hoisted(() => ({
 
 vi.mock("../api/job-match-api", () => api);
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}));
+
 const disclaimer =
   "Meridian scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.";
 
@@ -151,10 +159,6 @@ const onsiteListing: JobCatalogSearch["listings"][number] = {
 
 const emptyRolePreference: RolePreference = { roleTitles: [] };
 
-function openTab(name: string) {
-  fireEvent.click(screen.getByRole("tab", { name }));
-}
-
 describe("Job search view", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -179,8 +183,8 @@ describe("Job search view", () => {
     } satisfies JobCatalogBrowse);
   });
 
-  it("opens on the job search tab with filters, results, and no demo data", async () => {
-    render(<JobMatchView />);
+  it("opens on the job search section with filters, results, and no demo data", async () => {
+    render(<JobMatchView section="search" />);
 
     expect(
       await screen.findByRole("heading", { name: "Suggested for you" }),
@@ -189,10 +193,6 @@ describe("Job search view", () => {
     expect(
       screen.getByLabelText("Search by title, company, or keyword"),
     ).toBeVisible();
-    expect(screen.getByRole("tab", { name: "Job search" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
     expect(screen.queryByText(/ATS score/i)).not.toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: "Save a job posting" }),
@@ -200,10 +200,7 @@ describe("Job search view", () => {
   });
 
   it("renders empty saved-job states without manual job entry", async () => {
-    render(<JobMatchView />);
-
-    await screen.findByRole("heading", { name: "Suggested for you" });
-    openTab("Saved jobs");
+    render(<JobMatchView section="saved" />);
 
     expect(
       await screen.findByRole("heading", { name: "No saved jobs" }),
@@ -229,7 +226,7 @@ describe("Job search view", () => {
         "Backend Engineer match is based on 1 strong requirement match and 0 gaps.",
     });
 
-    render(<JobMatchView />);
+    const { rerender } = render(<JobMatchView section="search" />);
 
     expect(
       await screen.findByRole("heading", { name: "Suggested for you" }),
@@ -254,7 +251,7 @@ describe("Job search view", () => {
       "fake-1",
     );
 
-    openTab("Saved jobs");
+    rerender(<JobMatchView section="saved" />);
     fireEvent.click(screen.getByRole("button", { name: "Analyze match" }));
     expect(
       await screen.findByLabelText("Application readiness: 82 out of 100"),
@@ -272,6 +269,35 @@ describe("Job search view", () => {
       savedJob.id,
       expect.objectContaining({ analysisId: analysis.id, userInterest: 4 }),
     );
+  });
+
+  it("keeps catalog results visible when saving a listing fails", async () => {
+    api.getJobCatalogSuggestions.mockResolvedValue({
+      listings: [catalogListing],
+      matchedTargetRole: true,
+      selectedRoleTitles: [],
+      suggestedRoleTitles: [],
+      targetRoleTitles: ["Backend Engineer"],
+    } satisfies JobCatalogSearch);
+    api.saveJobCatalogListing.mockRejectedValue(
+      new Error("The requested API path is invalid."),
+    );
+
+    render(<JobMatchView section="search" />);
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Save to my jobs" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Request failed",
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "This listing could not be saved.",
+    );
+    expect(
+      screen.getByRole("heading", { name: "Suggested for you" }),
+    ).toBeVisible();
   });
 
   it("opens a listing in the detail panel and analyzes it from there", async () => {
@@ -442,10 +468,7 @@ describe("Job search view", () => {
     api.createApplicationForJob.mockResolvedValue({ id: "app-1" });
     api.generateAssistedApplyPack.mockResolvedValue(undefined);
 
-    render(<JobMatchView />);
-
-    await screen.findByRole("heading", { name: "Suggested for you" });
-    openTab("Saved jobs");
+    render(<JobMatchView section="saved" />);
 
     fireEvent.click(
       await screen.findByRole("button", { name: "Apply for me" }),
@@ -463,11 +486,11 @@ describe("Job search view", () => {
 
   it("shows the role matching panel supplied by the route", async () => {
     render(
-      <JobMatchView roleMatchingPanel={<p>Role readiness lives here</p>} />,
+      <JobMatchView
+        roleMatchingPanel={<p>Role readiness lives here</p>}
+        section="roles"
+      />,
     );
-
-    await screen.findByRole("heading", { name: "Suggested for you" });
-    openTab("Role matching");
 
     expect(await screen.findByText("Role readiness lives here")).toBeVisible();
   });

@@ -43,6 +43,7 @@ from rezumi.modules.resume_health.domain import (
     ObjectCleanupPurpose,
     OwnerScope,
     ResumeMediaType,
+    SemanticReviewState,
     SourceDocument,
     UploadStatus,
 )
@@ -2012,3 +2013,43 @@ async def test_semantic_review_creates_owned_immutable_successor_snapshot() -> N
             ResumeRequestContext("request", "trace"),
             confirm_no_changes=True,
         )
+
+
+@pytest.mark.asyncio
+async def test_account_parse_requires_explicit_semantic_review_before_import() -> None:
+    factory, storage, _, service, processor = _runtime()
+    owner = OwnerScope(user_id=uuid4())
+    finalized = await _ready_pdf(factory, storage, service, processor, owner)
+    context = ResumeRequestContext("request", "trace")
+
+    parsed = await service.get_canonical_resume(owner, finalized.document_id)
+
+    assert parsed.resume.semantics is not None
+    assert parsed.resume.semantics.review_state is SemanticReviewState.UNREVIEWED
+    assert all(
+        field.review_state is SemanticReviewState.UNREVIEWED
+        for entity in parsed.resume.semantics.entities
+        for field in entity.fields
+    )
+    with pytest.raises(ResumeStateConflict):
+        await service.ensure_reviewed_snapshot_for_import(
+            owner,
+            finalized.document_id,
+            context,
+        )
+
+    reviewed = await service.review_canonical_semantics(
+        owner,
+        finalized.document_id,
+        parsed.revision,
+        (),
+        context,
+        confirm_no_changes=True,
+    )
+
+    assert reviewed.resume.semantics is not None
+    assert reviewed.resume.semantics.review_state is SemanticReviewState.CONFIRMED
+    assert (
+        await service.ensure_reviewed_snapshot_for_import(owner, finalized.document_id, context)
+        == reviewed.id
+    )

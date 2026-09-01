@@ -669,7 +669,9 @@ class CareerGrowthService:
                 break
         if roadmap is None:
             return None
-        known = await self._skills.list_skill_names(owner_user_id) if self._skills else ()
+        known = (
+            await self._skills.list_demonstrated_skill_names(owner_user_id) if self._skills else ()
+        )
         stages = tuple(
             RoadmapStageView(
                 skills=tuple(
@@ -710,9 +712,7 @@ class CareerGrowthService:
                 guidance = await self._roadmaps.find_skill_guidance(cleaned)
                 if guidance is not None and guidance.how_to_start:
                     description = f"{cleaned}\n\nHow to start: {guidance.how_to_start}"
-            idempotency_key = _roadmap_item_idempotency_key(
-                command.role_title, cleaned
-            )
+            idempotency_key = _roadmap_item_idempotency_key(command.role_title, cleaned)
             view = await self.create_development_item(
                 owner_user_id,
                 CreateDevelopmentItem(
@@ -2289,9 +2289,7 @@ def _skill_already_known(skill_name: str, known_skill_names: tuple[str, ...]) ->
         return False
     for known in known_skill_names:
         candidate = _normalize_skill_text(known)
-        if candidate and (
-            candidate == target or target in candidate or candidate in target
-        ):
+        if candidate and (candidate == target or target in candidate or candidate in target):
             return True
     return False
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 from io import BytesIO
+from types import SimpleNamespace
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -20,8 +21,16 @@ from rezumi.modules.job_match.application.job_catalog_sync import JobCatalogSync
 from rezumi.modules.job_match.infrastructure.job_catalog.arbeitnow_connector import (
     ArbeitnowCatalogConnector,
 )
+from rezumi.modules.job_match.infrastructure.job_catalog.ashby_connector import (
+    AshbyIndiaCatalogConnector,
+    AshbyIndiaCatalogOptions,
+)
 from rezumi.modules.job_match.infrastructure.job_catalog.fake_connector import (
     FakeCatalogConnector,
+)
+from rezumi.modules.job_match.infrastructure.job_catalog.greenhouse_connector import (
+    GreenhouseIndiaCatalogConnector,
+    GreenhouseIndiaCatalogOptions,
 )
 from rezumi.modules.job_match.infrastructure.job_catalog.himalayas_connector import (
     HimalayasCatalogConnector,
@@ -100,6 +109,108 @@ class _MemoryJobCatalogStore:
 
 
 # --- Connectors -------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_greenhouse_india_connector_filters_configured_public_boards() -> None:
+    connector = GreenhouseIndiaCatalogConnector(
+        GreenhouseIndiaCatalogOptions(board_tokens=("highradius",))
+    )
+    payload = {
+        "jobs": [
+            {
+                "id": 123,
+                "title": "Platform Engineer",
+                "absolute_url": "https://boards.greenhouse.io/highradius/jobs/123",
+                "location": {"name": "Hyderabad, Telangana, India"},
+                "content": "<p>Build <b>reliable</b> systems.</p>",
+                "updated_at": "2026-08-20T00:00:00Z",
+            },
+            {
+                "id": 124,
+                "title": "US-only Engineer",
+                "absolute_url": "https://boards.greenhouse.io/highradius/jobs/124",
+                "location": {"name": "Austin, Texas, United States"},
+            },
+        ]
+    }
+    with patch(
+        "rezumi.modules.job_match.infrastructure.job_catalog.greenhouse_connector.urlopen",
+        return_value=_FakeHttpResponse(payload),
+    ):
+        listings = [listing async for listing in connector.iter_listings()]
+
+    assert len(listings) == 1
+    listing = listings[0]
+    assert listing.platform == "greenhouse"
+    assert listing.external_id == "highradius:123"
+    assert listing.location == "Hyderabad, Telangana, India"
+    assert "Build reliable systems" in listing.source_text
+    assert listing.posted_at is not None
+
+
+@pytest.mark.asyncio
+async def test_greenhouse_global_connector_keeps_non_india_roles() -> None:
+    connector = GreenhouseIndiaCatalogConnector(
+        GreenhouseIndiaCatalogOptions(board_tokens=("stripe",), include_global=True)
+    )
+    payload = {
+        "jobs": [
+            {
+                "id": 125,
+                "title": "Platform Engineer",
+                "absolute_url": "https://boards.greenhouse.io/stripe/jobs/125",
+                "location": {"name": "Seattle, Washington, United States"},
+                "content": "<p>Build global systems.</p>",
+                "updated_at": "2026-08-20T00:00:00Z",
+            }
+        ]
+    }
+    with patch(
+        "rezumi.modules.job_match.infrastructure.job_catalog.greenhouse_connector.urlopen",
+        return_value=_FakeHttpResponse(payload),
+    ):
+        listings = [listing async for listing in connector.iter_listings()]
+
+    assert len(listings) == 1
+    assert listings[0].location == "Seattle, Washington, United States"
+
+
+@pytest.mark.asyncio
+async def test_ashby_india_connector_filters_configured_public_boards() -> None:
+    connector = AshbyIndiaCatalogConnector(AshbyIndiaCatalogOptions(board_names=("riveron",)))
+    payload = {
+        "jobs": [
+            {
+                "id": "india-1",
+                "title": "Data Engineer",
+                "applyUrl": "https://jobs.ashbyhq.com/riveron/india-1/application",
+                "location": "Pune, India",
+                "isRemote": False,
+                "descriptionPlain": "Build reliable data products.",
+                "publishedAt": "2026-08-20T00:00:00Z",
+            },
+            {
+                "id": "us-1",
+                "title": "US-only Engineer",
+                "applyUrl": "https://jobs.ashbyhq.com/riveron/us-1/application",
+                "location": "Austin, Texas, United States",
+            },
+        ]
+    }
+    with patch(
+        "rezumi.modules.job_match.infrastructure.job_catalog.ashby_connector.urlopen",
+        return_value=_FakeHttpResponse(payload),
+    ):
+        listings = [listing async for listing in connector.iter_listings()]
+
+    assert len(listings) == 1
+    listing = listings[0]
+    assert listing.platform == "ashby"
+    assert listing.external_id == "riveron:india-1"
+    assert listing.location == "Pune, India"
+    assert "Build reliable data products" in listing.source_text
+    assert listing.posted_at is not None
 
 
 @pytest.mark.asyncio
@@ -274,6 +385,22 @@ async def test_himalayas_connector_follows_cursor_pagination() -> None:
     assert [listing.title for listing in listings] == ["Backend Engineer", "Data Scientist"]
     assert all(listing.platform == "himalayas" for listing in listings)
     assert all(listing.remote is True for listing in listings)
+
+
+def test_catalog_save_keys_hash_url_ids_that_are_not_legal_idempotency_keys() -> None:
+    from rezumi.modules.job_match.application.job_catalog_query import catalog_save_keys
+
+    short_key, short_tracked = catalog_save_keys("fake", "fake-1")
+    assert short_key == "catalog:fake:fake-1"
+    assert short_tracked == "fake:fake-1"
+
+    listing_id = "https://himalayas.app/companies/acme/jobs/backend-engineer"
+    hashed_key, tracked = catalog_save_keys("himalayas", listing_id)
+    assert hashed_key.startswith("catalog:")
+    assert "/" not in hashed_key
+    assert len(hashed_key) <= 128
+    assert tracked.startswith("himalayas:")
+    assert len(tracked) <= 200
 
 
 def test_default_registry_has_five_zero_config_connectors() -> None:
@@ -474,3 +601,82 @@ async def test_target_role_provider_falls_back_to_current_experience_title() -> 
     titles = await provider.target_role_titles(owner)
 
     assert titles == ("Staff Data Engineer",)
+
+
+@pytest.mark.asyncio
+async def test_target_role_provider_prefers_resume_target_role() -> None:
+    owner = uuid4()
+
+    class ResumeSource:
+        async def list_resumes(self, owner_user_id):
+            assert owner_user_id == owner
+            return SimpleNamespace(
+                items=(
+                    SimpleNamespace(
+                        resume=SimpleNamespace(target_role=None),
+                        current_version=SimpleNamespace(target_role="AI Engineer"),
+                    ),
+                )
+            )
+
+    provider = CompositeTargetRoleProvider(
+        role_readiness=object(),  # type: ignore[arg-type]
+        career_record=object(),  # type: ignore[arg-type]
+        resume_builder=ResumeSource(),  # type: ignore[arg-type]
+    )
+
+    assert await provider.target_role_titles(owner) == ("AI Engineer",)
+
+
+@pytest.mark.asyncio
+async def test_target_role_provider_uses_resume_current_experience_when_target_is_empty() -> None:
+    owner = uuid4()
+
+    class ResumeSource:
+        async def list_resumes(self, owner_user_id):
+            assert owner_user_id == owner
+            return SimpleNamespace(
+                items=(
+                    SimpleNamespace(
+                        resume=SimpleNamespace(target_role=None),
+                        current_version=SimpleNamespace(
+                            target_role=None,
+                            entities=(
+                                SimpleNamespace(
+                                    kind="experience",
+                                    is_current=True,
+                                    display_title="AI Engineer",
+                                    official_title="Machine Learning Engineer",
+                                    title="Engineer",
+                                ),
+                            ),
+                        ),
+                    ),
+                )
+            )
+
+    provider = CompositeTargetRoleProvider(
+        role_readiness=object(),  # type: ignore[arg-type]
+        career_record=object(),  # type: ignore[arg-type]
+        resume_builder=ResumeSource(),  # type: ignore[arg-type]
+    )
+
+    assert await provider.target_role_titles(owner) == ("AI Engineer",)
+
+
+@pytest.mark.asyncio
+async def test_target_role_provider_prefers_career_profile_target_role() -> None:
+    owner = uuid4()
+
+    class IdentitySource:
+        async def get_target_role_preference(self, owner_user_id):
+            assert owner_user_id == owner
+            return "Software Engineer"
+
+    provider = CompositeTargetRoleProvider(
+        role_readiness=object(),  # type: ignore[arg-type]
+        career_record=object(),  # type: ignore[arg-type]
+        identity=IdentitySource(),  # type: ignore[arg-type]
+    )
+
+    assert await provider.target_role_titles(owner) == ("Software Engineer",)

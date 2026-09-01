@@ -284,6 +284,65 @@ def test_job_catalog_search_and_save_is_owner_scoped(
         assert browse_body["nextOffset"] == 1
 
 
+def test_job_catalog_save_accepts_url_external_ids_in_the_request_body(
+    settings: Settings, fake_database: FakeDatabase
+) -> None:
+    from rezumi.modules.job_match.application.job_catalog_ports import CatalogJobListing
+    from rezumi.modules.job_match.application.job_catalog_query import JobCatalogQueryService
+
+    owner_id = uuid4()
+    identity, job_match = _services(owner_id)
+    listing_id = "https://himalayas.app/companies/acme/jobs/backend-engineer"
+    listing = CatalogJobListing(
+        platform="himalayas",
+        external_id=listing_id,
+        title="Backend Engineer",
+        company="Acme",
+        location="Remote",
+        remote=True,
+        application_url=listing_id,
+        source_text="Build backend services for the platform.",
+        posted_at=None,
+    )
+    store = _MemoryJobCatalogStore([listing])
+
+    class _StaticTargetRoles:
+        async def target_role_titles(self, owner_user_id):
+            return ("Software Engineer",)
+
+    catalog = JobCatalogQueryService(store=store, target_roles=_StaticTargetRoles())
+
+    with TestClient(
+        create_app(
+            settings,
+            database=fake_database,
+            identity=identity,
+            job_match=job_match,
+            job_catalog_query=catalog,
+        )
+    ) as client:
+        client.cookies.set("rezumi_session", "opaque-session")
+        client.cookies.set("rezumi_csrf", "opaque-csrf")
+
+        saved = client.post(
+            "/api/v1/job-catalog/save",
+            headers=_write_headers(),
+            json={"platform": "himalayas", "externalId": listing_id},
+        )
+        assert saved.status_code == 201, saved.text
+        body = saved.json()
+        assert body["title"] == "Backend Engineer"
+        assert body["sourceUrl"] == listing_id
+
+        saved_again = client.post(
+            "/api/v1/job-catalog/save",
+            headers=_write_headers(),
+            json={"platform": "himalayas", "externalId": listing_id},
+        )
+        assert saved_again.status_code == 201
+        assert saved_again.json()["id"] == body["id"]
+
+
 def test_job_catalog_role_preferences_round_trip_and_filter_precedence(
     settings: Settings, fake_database: FakeDatabase
 ) -> None:

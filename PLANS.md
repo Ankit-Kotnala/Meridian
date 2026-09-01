@@ -1,6 +1,6 @@
 # Rezumi implementation plan
 
-Last updated: 2026-07-27
+Last updated: 2026-09-01
 Plan owner: engineering  
 Current status: **Phase 1/3 observed-onboarding, Settings, and resume-ready Career
 Record closure is locally verified; hosted evidence is pending explicit
@@ -11,7 +11,8 @@ PR #21. Phase 7 durable verified-export closure and Phase 10A's guarded fictiona
 local seed are merged. The product-wide UX redesign is locally implemented and
 visually verified without changing backend phase completion. Commercial,
 tenancy, privacy, administration, security/cost, infrastructure, and final
-release-hardening work remains open**
+release-hardening work remains open. A 2026-09-01 Job catalog save/BFF path
+repair is locally implemented; it does not reopen a phase.**
 
 ## Status legend
 
@@ -21,6 +22,16 @@ release-hardening work remains open**
 - `[!]` blocked; the blocker and evidence must be recorded
 
 No phase is complete until every exit gate passes. A skipped check is not a pass.
+
+## Job catalog save path repair (2026-09-01)
+
+Saving a Himalayas (or other URL-keyed) catalog listing from Job search returned
+BFF `400` "The requested API path is invalid." Next.js decodes `%2F` inside the
+catch-all proxy, and the previous BFF rejected any segment containing `/`. Catalog
+save now uses `POST /api/v1/job-catalog/save` with `{ platform, externalId }` in
+the body; the BFF re-encodes decoded slashes in a single segment; catalog URL ids
+are hashed into legal Job Match idempotency / tracked-external-id values. This
+does not change phase completion.
 
 ## Product-wide UX redesign verification (2026-07-27)
 
@@ -384,17 +395,41 @@ Verification: `uv run pytest backend/core/tests/unit/test_declared_profile_enric
 
 ## Phase 12 - Opportunity supply and assisted apply (in progress)
 
-- [~] `JobSourceConnector` port with fake + Greenhouse fixture adapters; Lever,
-  Ashby, SmartRecruiters, Workable, and Workday tenant endpoints remain.
+- [~] `JobSourceConnector` port with fake + Greenhouse + Ashby fixture adapters;
+  Lever, SmartRecruiters, Workable, and Workday tenant endpoints remain.
 - [x] Ingestion dedupe via `(owner, source_kind, external_id)` unique index;
       bounded sync batch size; hostile-input validation on listings.
 - [x] `ApplicationProfile` in `application_workspace` with migration, CRUD API
       (`GET`/`PUT /api/v1/application-profile`), and unit tests.
-- [~] Assisted apply: `assisted_apply_handoff` pack document when profile
-  exists; frontend Application Profile editor and Opportunities sync UI not
-  yet wired.
+- [x] Assisted apply: `assisted_apply_handoff` pack document when profile
+      exists. Settings hosts a structured Application answers questionnaire
+      (standard ATS/EEO questions; employer sites are not scraped) and the
+      owner-scoped upsert dual-writes MongoDB when that store is enabled.
 - [x] Explicitly out of scope documented and enforced: no portal passwords,
       account creation, impersonation, or bot-detection bypass (ADR 0019).
+- [~] Shared catalog Greenhouse connector reads only the configured public India
+  employer-board allowlist. The initial five verified boards inserted 98
+  India-located listings on 2026-08-31. The shared catalog Ashby connector reads
+  only a configured public India employer-board allowlist; its initial Riveron,
+  Office Hours, and Emergence boards inserted 31 India-located listings on
+  2026-08-31. The verified global Greenhouse allowlist now contains 122 public
+  employer boards and includes roles outside India. The latest 44-board expansion
+  fetched and upserted 5,744 current listings (190 India-located) with zero
+  rejects. A refresh of the existing published feeds added another 511 current
+  listings, moving the measured catalog from 19,066 total (972 India-located) to
+  25,321 total (1,170 India-located). Provider totals are Arbeitnow 5,131, Ashby
+  31, Greenhouse 16,553, Himalayas 3,004, Jobicy 381, Remote OK 198, and Remotive 23. A representative repeat fetched and upserted all four CircleCI listings
+  with zero rejects while the catalog stayed at 25,321; the duplicate
+  `(platform, externalId)` aggregate remained zero. Focused core connector tests
+  (15) and worker configuration tests (18), plus focused Ruff lint and format
+  checks, passed.
+  Full repository gates remain blocked in this shared worktree: `make` is
+  unavailable on Windows; the previously recorded unrelated frontend format and
+  typecheck failures were not reclassified by this backend/configuration update.
+
+  The 30,000-listing objective remains open by 4,679 listings. Continue with
+  bounded verification of additional employer-owned public ATS boards before
+  expanding the allowlist; do not infer that a guessed tenant token is valid.
 
 Verification: `uv run pytest backend/core/tests/unit/test_application_profile.py
 backend/core/tests/unit/test_job_source_connector.py` â€” passed (2026-08-23).
@@ -404,6 +439,7 @@ backend/core/tests/unit/test_job_source_connector.py` â€” passed (2026-08-2
 - [x] Read competency gaps from `role_readiness` via `RoleReadinessGapSource`
       and open as `career_growth` development items (`POST
 /api/v1/career-growth/development-items/from-gap`).
+- [x] Runtime role-roadmap personalization now resolves the Career Profile target-role preference first, then resume target/current-experience, saved readiness, professional headline, and Career Record experience before matching curated aliases/seniority, and marks skills demonstrated only from confirmed, eligible Career Record evidence. Interview Prep composes the roadmap panel with loading, empty, retry, selection, and Growth-plan handoff states. Mongo was reseeded with 41 curated roadmaps (including AI Engineer, version role-roadmaps/2026-08-31.3); focused Career Growth tests (22) and focused web tests (13) passed. The web TypeScript gate passes; the full npm run lint --workspace=@rezumi/web gate remains blocked outside this surface by two existing react-hooks/set-state-in-effect errors in applications-view.tsx and one unused-variable warning in job-match/layout.tsx.
 - [ ] Completing an item prompts the evidence it produced (Growth UI prompt not
       yet wired end-to-end).
 - [x] Gap titles/descriptions are deterministic; no outcome, ranking, or hiring
@@ -865,7 +901,14 @@ diagnostics before cleanup, and the repaired local and hosted gates pass.
 ### Known limitations and deferred work
 
 - OCR is an explicit port but no provider is enabled; image-only PDFs produce a
-  parser warning and insufficient-data report rather than invented text.
+  parser warning and insufficient-data report rather than invented text. The
+  worker wires `DisabledOcrProvider` so that path is explicit.
+- Two-column PDFs are reconstructed from glyph positions (left column, then
+  right) when the page is a confident two-column layout. `reading_order_uncertain`
+  is reserved for layouts that could not be reconstructed. Repeating PDF
+  headers/footers that appear on two or more pages in the top/bottom band are
+  excluded. JavaScript/Launch/embedded-file PDFs and DOCX embeddings/ActiveX/
+  external relationships fail closed before parse.
 - The deterministic fictional corpus now covers one- and two-column PDF, DOCX,
   image-only PDF, header/footer exclusion, table-heavy content, locale/date
   precision, concurrent roles, unusual fonts, bidirectional controls, and long
@@ -877,7 +920,11 @@ diagnostics before cleanup, and the repaired local and hosted gates pass.
   blocks, and artifact size. Layout-aware DOCX page enforcement requires a later
   rendering provider.
 - The local semantic parser is deliberately conservative and deterministic. It
-  marks uncertainty for human review instead of inventing facts; richer
+  classifies title/employer/institution/location from the source tokens rather
+  than assuming comma vs pipe order, keeps `03/04/2020` as a date with unknown
+  precision instead of inventing a locale, and maps internships, volunteering,
+  languages, awards, and publications onto existing career kinds. It marks
+  remaining uncertainty for human review instead of inventing facts; richer
   provider-backed inference remains behind the parser port and must satisfy the
   same schema and grounding rules.
 - Resume Health is job-independent document analysis. It does not create the
@@ -1078,9 +1125,10 @@ Earlier exact attempts are retained as failure evidence rather than relabeled:
   Production evidence can be Confirmed or Supported but not Verified; owner
   confirmation is intentionally not relabeled as independent verification.
 - Evidence attachments accept PDF and DOCX only and use the local ClamAV and
-  bounded parser adapters. OCR is disabled, DOCX has no authoritative rendered
-  page count, and parser timeouts still use `asyncio.to_thread` rather than a
-  killable per-file subprocess. These are not production-sandbox guarantees.
+  bounded parser adapters. The worker now runs attachment extraction in a
+  killable child process (same isolation shape as resume parsing). OCR is
+  disabled and DOCX has no authoritative rendered page count. These are not
+  production-sandbox guarantees.
 - Phase 3 records an external HTTP(S) URL only as provenance metadata; it does not
   fetch the URL. SSRF-hardened job import belongs to Phase 5.
 - The Phase 3 attachment intent is kept in the mounted page, not durable browser

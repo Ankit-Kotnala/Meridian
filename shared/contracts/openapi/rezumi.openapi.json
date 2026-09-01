@@ -11481,7 +11481,7 @@
             "title": "Company"
           },
           "externalId": {
-            "maxLength": 200,
+            "maxLength": 2048,
             "minLength": 1,
             "title": "Externalid",
             "type": "string"
@@ -11546,6 +11546,29 @@
           "sourceText"
         ],
         "title": "JobCatalogListingResponse",
+        "type": "object"
+      },
+      "JobCatalogSaveRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "externalId": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Externalid",
+            "type": "string"
+          },
+          "platform": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Platform",
+            "type": "string"
+          }
+        },
+        "required": [
+          "platform",
+          "externalId"
+        ],
+        "title": "JobCatalogSaveRequest",
         "type": "object"
       },
       "JobCatalogSearchResponse": {
@@ -48988,7 +49011,7 @@
     },
     "/api/v1/job-catalog": {
       "get": {
-        "description": "Read-only shared listings filtered toward the owner's target role(s).\n\nNever writes into the owner's own tracked jobs — see\n``POST /job-catalog/{platform}/{externalId}/save`` for that explicit step.",
+        "description": "Read-only shared listings filtered toward the owner's target role(s).\n\nNever writes into the owner's own tracked jobs — see\n``POST /job-catalog/save`` for that explicit step.",
         "operationId": "jobCatalogSearch",
         "parameters": [
           {
@@ -49355,6 +49378,158 @@
         ]
       }
     },
+    "/api/v1/job-catalog/save": {
+      "post": {
+        "description": "Copy one catalog listing into the owner's own tracked jobs, once.\n\nIdempotent per (owner, platform, external_id) — saving the same listing\ntwice returns the same tracked job rather than creating a duplicate.\nCatalog external ids may be URLs, so this uses a request body instead of\nputting those values in the path.",
+        "operationId": "jobCatalogSave",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "rezumi_csrf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Csrf"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "rezumi_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobCatalogSaveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Save Job Catalog Listing",
+        "tags": [
+          "Job Match"
+        ]
+      }
+    },
     "/api/v1/job-catalog/search": {
       "get": {
         "description": "Free-text search across the whole shared job catalog, independent of role filtering.",
@@ -49502,8 +49677,8 @@
     },
     "/api/v1/job-catalog/{platform}/{external_id}/save": {
       "post": {
-        "description": "Copy one catalog listing into the owner's own tracked jobs, once.\n\nIdempotent per (owner, platform, external_id) — saving the same listing\ntwice returns the same tracked job rather than creating a duplicate.",
-        "operationId": "jobCatalogSave",
+        "description": "Compatibility path for simple catalog ids that fit in a single segment.",
+        "operationId": "jobCatalogSaveByPath",
         "parameters": [
           {
             "in": "path",
@@ -49654,7 +49829,7 @@
             "description": "Service Unavailable"
           }
         },
-        "summary": "Save Job Catalog Listing",
+        "summary": "Save Job Catalog Listing By Path",
         "tags": [
           "Job Match"
         ]

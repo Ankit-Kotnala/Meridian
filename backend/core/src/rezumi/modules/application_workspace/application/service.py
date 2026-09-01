@@ -76,6 +76,7 @@ from .models import (
     page_result,
 )
 from .ports import (
+    ApplicationProfileDocumentStore,
     ApplicationWorkspaceUnitOfWorkFactory,
     Clock,
     EvidenceSnapshotProvider,
@@ -141,6 +142,17 @@ class ApplicationWorkspacePolicy:
             raise ValueError("application workspace analytics page limits are invalid")
 
 
+class _NullApplicationProfileDocumentStore:
+    async def upsert(self, profile: ApplicationProfile) -> None:
+        del profile
+
+    async def ping(self) -> None:
+        return None
+
+    async def dispose(self) -> None:
+        return None
+
+
 class ApplicationWorkspaceService:
     """Owner-scoped Phase 8 application workflows with immutable input pins."""
 
@@ -154,6 +166,7 @@ class ApplicationWorkspaceService:
         resumes: ResumeVersionSnapshotProvider,
         evidence: EvidenceSnapshotProvider,
         policy: ApplicationWorkspacePolicy | None = None,
+        document_store: ApplicationProfileDocumentStore | None = None,
     ) -> None:
         self._uow = unit_of_work
         self._clock = clock
@@ -162,6 +175,7 @@ class ApplicationWorkspaceService:
         self._resumes = resumes
         self._evidence = evidence
         self._policy = policy or ApplicationWorkspacePolicy()
+        self._documents = document_store or _NullApplicationProfileDocumentStore()
 
     async def list_applications(
         self,
@@ -435,6 +449,7 @@ class ApplicationWorkspaceService:
         )
         replay = await self._profile_replay(owner_user_id, idempotency_key, fingerprint)
         if replay is not None:
+            await self._persist_profile_document(replay)
             return replay
         now = self._clock.now()
         async with self._uow() as uow:
@@ -472,9 +487,19 @@ class ApplicationWorkspaceService:
             except ApplicationWorkspaceIdempotencyConflict:
                 replay = await self._profile_replay(owner_user_id, idempotency_key, fingerprint)
                 if replay is not None:
+                    await self._persist_profile_document(replay)
                     return replay
                 raise
+        await self._persist_profile_document(profile)
         return profile
+
+    async def _persist_profile_document(self, profile: ApplicationProfile) -> None:
+        try:
+            await self._documents.upsert(profile)
+        except ApplicationWorkspaceUnavailable:
+            raise
+        except Exception as exc:
+            raise ApplicationWorkspaceUnavailable from exc
 
     async def get_interview_context(
         self,
@@ -1258,8 +1283,11 @@ class ApplicationWorkspaceService:
         include_kinds = _pack_kinds(command.include_kinds)
         async with self._uow() as uow:
             profile = await uow.get_application_profile(owner_user_id)
-        if profile is not None and ApplicationDocumentKind.ASSISTED_APPLY_HANDOFF not in include_kinds:
-            include_kinds = include_kinds + (ApplicationDocumentKind.ASSISTED_APPLY_HANDOFF,)
+        if (
+            profile is not None
+            and ApplicationDocumentKind.ASSISTED_APPLY_HANDOFF not in include_kinds
+        ):
+            include_kinds = (*include_kinds, ApplicationDocumentKind.ASSISTED_APPLY_HANDOFF)
         fingerprint = _fingerprint(
             "application-pack-generate",
             {
@@ -1970,6 +1998,9 @@ def _document_title(kind: ApplicationDocumentKind) -> str:
     }[kind]
 
 
+_HANDOFF_EXCLUDED_DISCLOSURES = frozenset({"questionnaire_ack"})
+
+
 def _assisted_apply_body(
     record: ApplicationRecord,
     profile: ApplicationProfile,
@@ -1984,13 +2015,24 @@ def _assisted_apply_body(
     preferred_locations = (
         ", ".join(profile.preferred_locations) if profile.preferred_locations else "Not provided"
     )
-    profile_link_lines = "\n".join(
-        f"- {link.label}: {link.url}" for link in profile.profile_links
-    ) or "- Not provided"
-    disclosure_lines = "\n".join(
-        f"- {key}: {value}" for key, value in profile.voluntary_disclosures.items()
-    ) or "- Not provided"
+    profile_link_lines = (
+        "\n".join(f"- {link.label}: {link.url}" for link in profile.profile_links)
+        or "- Not provided"
+    )
+    disclosure_lines = (
+        "\n".join(
+            f"- {key.replace('_', ' ')}: {value}"
+            for key, value in profile.voluntary_disclosures.items()
+            if key not in _HANDOFF_EXCLUDED_DISCLOSURES
+        )
+        or "- Not provided"
+    )
     claim_lines = "\n".join(f"- {claim.text}" for claim in record.resume_claims[:6])
+    notice = (
+        str(profile.notice_period_days)
+        if profile.notice_period_days is not None
+        else "Not provided"
+    )
     return "\n".join(
         [
             f"# Assisted apply handoff for {record.job_title}",
@@ -1999,7 +2041,7 @@ def _assisted_apply_body(
             "",
             "## Pre-filled portal answers",
             f"- Work authorization: {profile.work_authorization or 'Not provided'}",
-            f"- Notice period (days): {profile.notice_period_days if profile.notice_period_days is not None else 'Not provided'}",
+            f"- Notice period (days): {notice}",
             f"- Compensation expectation: {compensation}",
             f"- Preferred locations: {preferred_locations}",
             "",

@@ -2,14 +2,10 @@
 
 import {
   Activity,
-  BookOpenCheck,
-  CalendarCheck,
-  Flag,
   History,
   Plus,
   RefreshCcw,
   ShieldCheck,
-  Target,
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
@@ -32,13 +28,15 @@ import {
   ErrorState,
   Input,
   LoadingSkeleton,
-  PageHeader,
+  Progress,
+  ScoreRing,
   Select,
 } from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 
 import { RoadmapPanel } from "../components/roadmap-panel";
+import { GrowthInsightsPanel } from "../components/growth-insights-panel";
 import {
   analyzeCareerHealth,
   createCareerReview,
@@ -118,7 +116,7 @@ type ConfirmAction =
     };
 
 const fieldClass =
-  "min-h-28 w-full rounded-xl border border-line bg-surface px-3.5 py-3 text-sm text-foreground shadow-sm outline-none placeholder:text-muted hover:border-line-strong focus:border-primary focus:ring-3 focus:ring-primary-soft disabled:cursor-not-allowed disabled:bg-surface-subtle";
+  "min-h-28 w-full rounded-[var(--radius-control)] border border-line-strong bg-surface px-3.5 py-3 text-sm text-foreground outline-none placeholder:text-muted hover:border-primary/70 focus:border-primary focus:ring-3 focus:ring-primary-soft disabled:cursor-not-allowed disabled:bg-surface-subtle";
 
 const goalStatuses = ["active", "paused", "completed", "cancelled"] as const;
 const milestoneStatuses = [
@@ -275,10 +273,32 @@ function payloadSignature(value: unknown): string {
 
 function Field({ children, label }: { children: ReactNode; label: string }) {
   return (
-    <label className="grid gap-1.5 text-sm font-bold text-foreground">
+    <label className="grid gap-1.5 text-sm font-semibold text-foreground">
       <span>{label}</span>
       {children}
     </label>
+  );
+}
+
+function SectionIntro({
+  description,
+  id,
+  title,
+}: {
+  description: string;
+  id: string;
+  title: string;
+}) {
+  return (
+    <div>
+      <h2
+        className="text-lg font-semibold tracking-[-0.02em] text-foreground"
+        id={id}
+      >
+        {title}
+      </h2>
+      <p className="mt-1 text-sm leading-6 text-muted">{description}</p>
+    </div>
   );
 }
 
@@ -327,7 +347,7 @@ function EvidenceField({
 }) {
   return (
     <label
-      className="grid gap-1.5 text-sm font-bold text-foreground"
+      className="grid gap-1.5 text-sm font-semibold text-foreground"
       htmlFor={id}
     >
       Evidence IDs
@@ -375,8 +395,8 @@ function GoalCreateForm({
   }
 
   return (
-    <details className="rounded-2xl border border-dashed border-primary/35 bg-primary-soft/20 p-4">
-      <summary className="cursor-pointer font-extrabold text-primary">
+    <details className="rounded-[var(--radius-card)] border border-line bg-surface p-4">
+      <summary className="cursor-pointer text-sm font-semibold text-foreground">
         Add a career goal
       </summary>
       <form
@@ -427,11 +447,13 @@ function GoalSummaryCard({
   onLoad: (goalId: string) => Promise<void>;
 }) {
   return (
-    <article className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-5">
+    <article className="rounded-[var(--radius-card)] border border-line bg-surface p-4 sm:p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-lg font-black">{goal.title}</h3>
+            <h3 className="text-lg font-semibold tracking-[-0.02em]">
+              {goal.title}
+            </h3>
             <Badge tone={toneForStatus(goal.status)}>
               {humanize(goal.status)}
             </Badge>
@@ -509,11 +531,13 @@ function GoalCard({
   }
 
   return (
-    <article className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-5">
+    <article className="rounded-[var(--radius-card)] border border-line bg-surface p-4 sm:p-5">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-lg font-black">{goal.title}</h3>
+            <h3 className="text-lg font-semibold tracking-[-0.02em]">
+              {goal.title}
+            </h3>
             <Badge tone={toneForStatus(goal.status)}>
               {humanize(goal.status)}
             </Badge>
@@ -543,7 +567,7 @@ function GoalCard({
       </div>
 
       <details className="mt-5 rounded-xl border border-line p-4">
-        <summary className="cursor-pointer text-sm font-extrabold">
+        <summary className="cursor-pointer text-sm font-semibold">
           Edit goal
         </summary>
         <form
@@ -601,7 +625,7 @@ function GoalCard({
 
       <section className="mt-6" aria-labelledby={`milestones-${goal.id}`}>
         <div className="flex items-center justify-between gap-3">
-          <h4 className="font-black" id={`milestones-${goal.id}`}>
+          <h4 className="font-semibold" id={`milestones-${goal.id}`}>
             Milestones
           </h4>
           <span className="text-xs text-muted">
@@ -689,7 +713,7 @@ function GoalCard({
           </ul>
         )}
         <details className="mt-3 rounded-xl border border-dashed border-line p-4">
-          <summary className="cursor-pointer text-sm font-extrabold">
+          <summary className="cursor-pointer text-sm font-semibold">
             Add milestone
           </summary>
           <form
@@ -753,8 +777,8 @@ function DevelopmentCreateForm({
   }
 
   return (
-    <details className="rounded-2xl border border-dashed border-primary/35 bg-primary-soft/20 p-4">
-      <summary className="cursor-pointer font-extrabold text-primary">
+    <details className="rounded-[var(--radius-card)] border border-line bg-surface p-4">
+      <summary className="cursor-pointer text-sm font-semibold text-foreground">
         Add a development plan item
       </summary>
       <form
@@ -818,11 +842,11 @@ function DevelopmentCard({
   ) => Promise<void>;
 }) {
   return (
-    <article className="rounded-2xl border border-line bg-surface p-4 shadow-sm">
+    <article className="rounded-[var(--radius-card)] border border-line bg-surface p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-black">{item.title}</h3>
+            <h3 className="font-semibold">{item.title}</h3>
             <Badge tone={toneForStatus(item.status)}>
               {humanize(item.status)}
             </Badge>
@@ -849,7 +873,7 @@ function DevelopmentCard({
         <EvidenceLinks links={item.evidenceLinks} />
       </div>
       <details className="mt-4 rounded-xl border border-line p-3">
-        <summary className="cursor-pointer text-sm font-extrabold">
+        <summary className="cursor-pointer text-sm font-semibold">
           Update plan item
         </summary>
         <form
@@ -999,8 +1023,8 @@ function ReviewCreateForm({
   onCreate: (input: CareerReviewCreateInput) => Promise<boolean>;
 }) {
   return (
-    <details className="rounded-2xl border border-dashed border-primary/35 bg-primary-soft/20 p-4">
-      <summary className="cursor-pointer font-extrabold text-primary">
+    <details className="rounded-[var(--radius-card)] border border-line bg-surface p-4">
+      <summary className="cursor-pointer text-sm font-semibold text-foreground">
         Start a career review
       </summary>
       <form
@@ -1056,11 +1080,13 @@ function ReviewSummaryCard({
   review: CareerReviewSummary;
 }) {
   return (
-    <article className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-5">
+    <article className="rounded-[var(--radius-card)] border border-line bg-surface p-4 sm:p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-lg font-black">{review.currentTitle}</h3>
+            <h3 className="text-lg font-semibold tracking-[-0.02em]">
+              {review.currentTitle}
+            </h3>
             <Badge tone={toneForStatus(review.latestStatus)}>
               {humanize(review.latestStatus)}
             </Badge>
@@ -1105,11 +1131,13 @@ function ReviewCard({
 }) {
   const current = review.currentVersion;
   return (
-    <article className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-5">
+    <article className="rounded-[var(--radius-card)] border border-line bg-surface p-4 sm:p-5">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-lg font-black">{current.title}</h3>
+            <h3 className="text-lg font-semibold tracking-[-0.02em]">
+              {current.title}
+            </h3>
             <Badge tone={toneForStatus(review.latestStatus)}>
               {humanize(review.latestStatus)}
             </Badge>
@@ -1138,19 +1166,19 @@ function ReviewCard({
         <p className="text-sm leading-6">{current.summary}</p>
         <dl className="mt-4 grid gap-4 text-sm lg:grid-cols-3">
           <div>
-            <dt className="font-extrabold">Achievements</dt>
+            <dt className="font-semibold">Achievements</dt>
             <dd className="mt-1 whitespace-pre-wrap text-muted">
               {current.achievements || "Not recorded"}
             </dd>
           </div>
           <div>
-            <dt className="font-extrabold">Growth areas</dt>
+            <dt className="font-semibold">Growth areas</dt>
             <dd className="mt-1 whitespace-pre-wrap text-muted">
               {current.growthAreas || "Not recorded"}
             </dd>
           </div>
           <div>
-            <dt className="font-extrabold">Next focus</dt>
+            <dt className="font-semibold">Next focus</dt>
             <dd className="mt-1 whitespace-pre-wrap text-muted">
               {current.nextFocus || "Not recorded"}
             </dd>
@@ -1162,7 +1190,7 @@ function ReviewCard({
       </div>
 
       <details className="mt-4 rounded-xl border border-line p-4">
-        <summary className="cursor-pointer text-sm font-extrabold">
+        <summary className="cursor-pointer text-sm font-semibold">
           Create a new revision
         </summary>
         <p className="mt-2 text-xs leading-5 text-muted">
@@ -1210,7 +1238,7 @@ function ReviewCard({
       </details>
 
       <details className="mt-4 rounded-xl border border-line p-4">
-        <summary className="cursor-pointer text-sm font-extrabold">
+        <summary className="cursor-pointer text-sm font-semibold">
           Immutable history ({review.history.length})
         </summary>
         <ol className="mt-4 grid gap-3">
@@ -1252,7 +1280,7 @@ function FormulaSnapshot({ snapshot }: { snapshot: Record<string, unknown> }) {
     <dl className="grid gap-3 sm:grid-cols-2">
       {entries.map(([key, value]) => (
         <div className="rounded-xl bg-surface-subtle p-3" key={key}>
-          <dt className="text-xs font-extrabold uppercase tracking-wide text-muted">
+          <dt className="text-xs font-semibold uppercase tracking-wide text-muted">
             {humanize(key)}
           </dt>
           <dd className="mt-1 break-words text-sm">
@@ -1288,10 +1316,10 @@ function CareerHealthPanel({
     <Card className="p-5 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-primary">
+          <p className="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-primary">
             Career Health
           </p>
-          <h2 className="mt-1 text-2xl font-black tracking-tight">
+          <h2 className="mt-1 text-lg font-semibold tracking-[-0.02em]">
             A transparent maintenance signal
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
@@ -1320,35 +1348,50 @@ function CareerHealthPanel({
         <div className="mt-6 space-y-5">
           <section
             aria-labelledby="career-health-score"
-            className="rounded-2xl border border-line bg-surface-subtle p-5"
+            className="rounded-[var(--radius-card)] border border-line bg-surface-subtle p-5"
           >
-            {latest.status === "complete" && latest.displayScore !== null ? (
-              <>
-                <p className="text-sm font-bold text-muted">Career Health</p>
-                <div className="mt-1 flex flex-wrap items-end gap-3">
-                  <h3
-                    className="text-5xl font-black tracking-tight"
-                    id="career-health-score"
-                  >
-                    {latest.displayScore}
-                    <span className="text-xl text-muted">/100</span>
-                  </h3>
-                  <Badge
-                    tone={
-                      latest.label === "well_maintained"
-                        ? "success"
-                        : latest.label === "needs_attention"
-                          ? "warning"
-                          : "primary"
-                    }
-                  >
-                    {humanize(latest.label)}
-                  </Badge>
+            {latest.status === "complete" &&
+            typeof latest.displayScore === "number" ? (
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-8">
+                <ScoreRing
+                  bandLabel={humanize(latest.label)}
+                  label="Career Health"
+                  score={latest.displayScore}
+                  tone={
+                    latest.label === "well_maintained"
+                      ? "success"
+                      : latest.label === "needs_attention"
+                        ? "warning"
+                        : "primary"
+                  }
+                />
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-muted">Career Health</p>
+                  <div className="mt-1 flex flex-wrap items-end gap-3">
+                    <h3
+                      className="text-4xl font-semibold tracking-tight"
+                      id="career-health-score"
+                    >
+                      {latest.displayScore}
+                      <span className="text-xl text-muted">/100</span>
+                    </h3>
+                    <Badge
+                      tone={
+                        latest.label === "well_maintained"
+                          ? "success"
+                          : latest.label === "needs_attention"
+                            ? "warning"
+                            : "primary"
+                      }
+                    >
+                      {humanize(latest.label)}
+                    </Badge>
+                  </div>
                 </div>
-              </>
+              </div>
             ) : (
               <>
-                <h3 className="text-xl font-black" id="career-health-score">
+                <h3 className="text-xl font-semibold" id="career-health-score">
                   Insufficient data
                 </h3>
                 <p className="mt-2 text-sm text-muted">
@@ -1392,11 +1435,33 @@ function CareerHealthPanel({
             <>
               <section aria-labelledby="career-health-components">
                 <h3
-                  className="text-lg font-black"
+                  className="text-lg font-semibold tracking-[-0.02em]"
                   id="career-health-components"
                 >
                   Component calculation
                 </h3>
+                <ul className="mt-4 grid gap-3">
+                  {latestDetail.components.map((component) => (
+                    <li key={component.id}>
+                      {component.applicable &&
+                      component.scoreBasisPoints !== null ? (
+                        <Progress
+                          label={`${humanize(component.dimension)} · weight ${basisPoints(component.configuredWeightBasisPoints)}`}
+                          value={Math.round(component.scoreBasisPoints / 100)}
+                        />
+                      ) : (
+                        <p className="text-sm font-semibold text-foreground">
+                          {humanize(component.dimension)} · not applicable
+                        </p>
+                      )}
+                      <p className="mt-1 text-xs leading-5 text-muted">
+                        {component.applicable
+                          ? component.explanation
+                          : "Not applicable for this snapshot."}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
                 <div className="data-region table-scroll mt-3">
                   <table className="min-w-full divide-y divide-line text-left text-sm">
                     <caption className="sr-only">
@@ -1450,7 +1515,7 @@ function CareerHealthPanel({
               </section>
 
               <details className="rounded-xl border border-line p-4">
-                <summary className="cursor-pointer font-extrabold">
+                <summary className="cursor-pointer font-semibold">
                   Formula snapshot
                 </summary>
                 <p className="mt-2 text-xs leading-5 text-muted">
@@ -1463,7 +1528,10 @@ function CareerHealthPanel({
               </details>
 
               <section aria-labelledby="career-health-findings">
-                <h3 className="text-lg font-black" id="career-health-findings">
+                <h3
+                  className="text-lg font-semibold tracking-[-0.02em]"
+                  id="career-health-findings"
+                >
                   Findings
                 </h3>
                 {latestDetail.findings.length === 0 ? (
@@ -1496,7 +1564,7 @@ function CareerHealthPanel({
           )}
 
           <details className="rounded-xl border border-line p-4">
-            <summary className="cursor-pointer font-extrabold">
+            <summary className="cursor-pointer font-semibold">
               Snapshot history ({analyses.length})
             </summary>
             <ul className="mt-3 grid gap-2">
@@ -1539,265 +1607,6 @@ function CareerHealthPanel({
         </div>
       )}
     </Card>
-  );
-}
-
-function GrowthInsightsPanel({ insights }: { insights: CareerGrowthInsights }) {
-  const promotion = insights.promotionReadiness;
-  return (
-    <section className="space-y-5" aria-labelledby="growth-insights-heading">
-      <div className="flex items-center gap-3">
-        <span
-          aria-hidden="true"
-          className="grid size-10 place-items-center rounded-xl bg-primary-soft text-primary"
-        >
-          <ShieldCheck className="size-5" />
-        </span>
-        <div>
-          <h2 className="text-2xl font-black" id="growth-insights-heading">
-            Achievement and promotion preparation
-          </h2>
-          <p className="text-sm text-muted">
-            Live, owner-authorized views derived from currently eligible Career
-            Record evidence.
-          </p>
-        </div>
-      </div>
-
-      <Card className="p-5 sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-primary">
-              Promotion Readiness
-            </p>
-            <h3 className="mt-1 text-xl font-black">
-              Evidence-backed preparation checklist
-            </h3>
-          </div>
-          <Badge
-            tone={
-              promotion.status === "review_ready"
-                ? "success"
-                : promotion.status === "insufficient_evidence"
-                  ? "warning"
-                  : "primary"
-            }
-          >
-            {humanize(promotion.status)}
-          </Badge>
-        </div>
-        <p
-          className="mt-3 max-w-4xl text-xs font-semibold leading-5 text-muted"
-          data-testid="promotion-readiness-disclaimer"
-        >
-          {promotion.disclaimer}
-        </p>
-        <div className="data-region table-scroll mt-5">
-          <table className="min-w-full divide-y divide-line text-left text-sm">
-            <caption className="sr-only">
-              Promotion preparation checks, evidence state, and next action
-            </caption>
-            <thead className="bg-surface-subtle text-xs uppercase tracking-wide text-muted">
-              <tr>
-                <th className="px-4 py-3" scope="col">
-                  Preparation signal
-                </th>
-                <th className="px-4 py-3" scope="col">
-                  State
-                </th>
-                <th className="px-4 py-3" scope="col">
-                  Explanation
-                </th>
-                <th className="px-4 py-3" scope="col">
-                  Evidence
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {promotion.checks.map((check) => (
-                <tr key={check.code}>
-                  <th className="px-4 py-3 font-bold" scope="row">
-                    {check.label}
-                  </th>
-                  <td className="px-4 py-3">
-                    <Badge
-                      tone={
-                        check.status === "supported"
-                          ? "success"
-                          : check.status === "needs_evidence"
-                            ? "warning"
-                            : "neutral"
-                      }
-                    >
-                      {humanize(check.status)}
-                    </Badge>
-                  </td>
-                  <td className="min-w-72 px-4 py-3 text-muted">
-                    {check.explanation}
-                  </td>
-                  <td className="px-4 py-3">
-                    {check.evidenceCount === 0
-                      ? "None linked"
-                      : `${check.evidenceCount} eligible`}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-
-      <div className="grid gap-5 xl:grid-cols-2">
-        <Card className="p-5">
-          <h3 className="text-lg font-black">Achievement history</h3>
-          <p className="mt-1 text-sm text-muted">
-            Exact eligible Evidence Vault revisions, newest first.
-          </p>
-          {insights.achievements.length === 0 ? (
-            <EmptyState
-              className="mt-4"
-              description="Confirm supported achievements in the Evidence Vault to build this history."
-              title="No eligible achievements yet"
-            />
-          ) : (
-            <ol className="mt-4 grid gap-3">
-              {insights.achievements.map((item) => (
-                <li
-                  className="rounded-xl border border-line bg-surface-subtle p-4"
-                  key={item.evidenceRevisionId}
-                >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge tone="success">{humanize(item.strength)}</Badge>
-                    <Badge>{humanize(item.evidenceType)}</Badge>
-                    <span className="text-xs text-muted">
-                      Revision {item.revisionNumber} ·{" "}
-                      {formattedDateTime(item.revisedAt)}
-                    </span>
-                  </div>
-                  <h4 className="mt-2 font-black">{item.title}</h4>
-                  <p className="mt-1 text-sm leading-6">{item.statement}</p>
-                  <Link
-                    className="mt-3 inline-flex text-sm font-bold text-primary hover:underline"
-                    href={`/evidence/${item.evidenceId}`}
-                  >
-                    Review exact evidence
-                  </Link>
-                </li>
-              ))}
-            </ol>
-          )}
-        </Card>
-
-        <Card className="p-5">
-          <h3 className="text-lg font-black">Skill-evidence dashboard</h3>
-          <p className="mt-1 text-sm text-muted">
-            A skill is demonstrated here only when current eligible evidence is
-            linked.
-          </p>
-          {insights.skills.length === 0 ? (
-            <EmptyState
-              className="mt-4"
-              description="Add skills to your Career Profile and connect eligible evidence."
-              title="No documented skills yet"
-            />
-          ) : (
-            <div className="data-region table-scroll mt-4">
-              <table className="min-w-full divide-y divide-line text-left text-sm">
-                <caption className="sr-only">
-                  Documented skills and their eligible evidence coverage
-                </caption>
-                <thead className="bg-surface-subtle text-xs uppercase tracking-wide text-muted">
-                  <tr>
-                    <th className="px-4 py-3" scope="col">
-                      Skill
-                    </th>
-                    <th className="px-4 py-3" scope="col">
-                      Evidence
-                    </th>
-                    <th className="px-4 py-3" scope="col">
-                      Latest
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line">
-                  {insights.skills.map((skill) => (
-                    <tr key={skill.skillId}>
-                      <th className="px-4 py-3" scope="row">
-                        <span className="font-bold">{skill.name}</span>
-                        <span className="block text-xs font-normal text-muted">
-                          {skill.category ?? "Uncategorized"} ·{" "}
-                          {skill.proficiency
-                            ? humanize(skill.proficiency)
-                            : "Proficiency not set"}
-                        </span>
-                      </th>
-                      <td className="px-4 py-3">
-                        {skill.evidenceCount === 0 ? (
-                          <Badge tone="warning">Not demonstrated</Badge>
-                        ) : (
-                          <Badge tone="success">
-                            {skill.evidenceCount} eligible
-                          </Badge>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-muted">
-                        {skill.latestEvidenceAt
-                          ? formattedDateTime(skill.latestEvidenceAt)
-                          : "No eligible evidence"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </Card>
-      </div>
-
-      <Card className="p-5">
-        <h3 className="text-lg font-black">Annual resume refresh workflow</h3>
-        <p className="mt-1 text-sm text-muted">
-          Create an Annual resume refresh development item, move it through the
-          explicit status controls, and link eligible evidence before marking it
-          complete.
-        </p>
-        {insights.annualResumeRefreshes.length === 0 ? (
-          <EmptyState
-            className="mt-4"
-            description="Use the Development plan form below and choose Annual resume refresh."
-            title="No annual refresh scheduled"
-          />
-        ) : (
-          <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-            {insights.annualResumeRefreshes.map((item) => (
-              <li
-                className="rounded-xl border border-line bg-surface-subtle p-4"
-                key={item.id}
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-black">{item.title}</span>
-                  <Badge
-                    tone={
-                      item.status === "completed"
-                        ? "success"
-                        : item.status === "cancelled"
-                          ? "neutral"
-                          : "primary"
-                    }
-                  >
-                    {humanize(item.status)}
-                  </Badge>
-                </div>
-                <p className="mt-2 text-xs text-muted">
-                  Target {formattedDate(item.targetDate)} ·{" "}
-                  {item.evidenceLinks.length} eligible evidence link(s)
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
-    </section>
   );
 }
 
@@ -2535,7 +2344,7 @@ export function CareerGrowthView() {
 
   if (!data && loadFailure && !loading) {
     return (
-      <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8" id="main-content">
+      <main className="workspace-page" id="main-content">
         <ErrorState
           description={loadFailure}
           onRetry={() => void load()}
@@ -2550,21 +2359,30 @@ export function CareerGrowthView() {
   const confirmationCopy = confirmation(confirmAction);
 
   return (
-    <main
-      className="mx-auto max-w-7xl space-y-8 p-4 sm:p-6 lg:p-8"
-      id="main-content"
-    >
-      <PageHeader
-        actions={
-          <Button onClick={() => void load()} variant="secondary">
-            <RefreshCcw aria-hidden="true" className="size-4" />
-            Reload data
-          </Button>
-        }
-        description="Plan goals, record milestone progress, attach revision-specific evidence, preserve review history, and inspect every Career Health input."
-        eyebrow="Long-term growth"
-        title="Career Growth"
-      />
+    <main className="workspace-page space-y-8" id="main-content">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-primary">
+            Growth
+          </p>
+          <h1 className="mt-1.5 text-[1.625rem] font-bold tracking-[-0.03em] text-foreground sm:text-[1.75rem]">
+            Career Growth
+          </h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+            See where eligible evidence covers your documented skills and the
+            curated path for your target role. Career Health is an internal
+            maintenance signal, not an employer or labor-market score.
+          </p>
+        </div>
+        <Button
+          className="shrink-0"
+          onClick={() => void load()}
+          variant="secondary"
+        >
+          <RefreshCcw aria-hidden="true" className="size-4" />
+          Refresh
+        </Button>
+      </header>
 
       {loadFailure && (
         <Alert title="Reload failed" tone="danger">
@@ -2604,23 +2422,11 @@ export function CareerGrowthView() {
       <GrowthInsightsPanel insights={data.insights} />
 
       <section aria-labelledby="roadmap-heading" className="space-y-4">
-        <div className="flex items-center gap-3">
-          <span
-            aria-hidden="true"
-            className="grid size-10 place-items-center rounded-xl bg-primary-soft text-primary"
-          >
-            <Target className="size-5" />
-          </span>
-          <div>
-            <h2 className="text-2xl font-black" id="roadmap-heading">
-              Your roadmap
-            </h2>
-            <p className="text-sm text-muted">
-              A curated skill roadmap for your target role, cross-checked
-              against what you&apos;ve already demonstrated.
-            </p>
-          </div>
-        </div>
+        <SectionIntro
+          description="A staged skill path for your target role, cross-checked against what you’ve already demonstrated. Hover or open a stop for the why and a first step."
+          id="roadmap-heading"
+          title="Your roadmap"
+        />
         <RoadmapPanel onConfirmed={() => void load()} />
       </section>
 
@@ -2647,23 +2453,11 @@ export function CareerGrowthView() {
       )}
 
       <section className="space-y-4" aria-labelledby="career-goals-heading">
-        <div className="flex items-center gap-3">
-          <span
-            aria-hidden="true"
-            className="grid size-10 place-items-center rounded-xl bg-primary-soft text-primary"
-          >
-            <Flag className="size-5" />
-          </span>
-          <div>
-            <h2 className="text-2xl font-black" id="career-goals-heading">
-              Goals and milestones
-            </h2>
-            <p className="text-sm text-muted">
-              Every update is explicit; milestones always have a non-drag status
-              control.
-            </p>
-          </div>
-        </div>
+        <SectionIntro
+          description="Every update is explicit. Milestones always have a non-drag status control."
+          id="career-goals-heading"
+          title="Goals and milestones"
+        />
         <GoalCreateForm busy={busyKeys.has("goal-new")} onCreate={addGoal} />
         {data.goals.length === 0 ? (
           <EmptyState
@@ -2717,23 +2511,11 @@ export function CareerGrowthView() {
       </section>
 
       <section className="space-y-4" aria-labelledby="development-heading">
-        <div className="flex items-center gap-3">
-          <span
-            aria-hidden="true"
-            className="grid size-10 place-items-center rounded-xl bg-primary-soft text-primary"
-          >
-            <BookOpenCheck className="size-5" />
-          </span>
-          <div>
-            <h2 className="text-2xl font-black" id="development-heading">
-              Development plan
-            </h2>
-            <p className="text-sm text-muted">
-              Track learning, credentials, reviews, promotion work, and internal
-              mobility, including an evidence-backed annual resume refresh.
-            </p>
-          </div>
-        </div>
+        <SectionIntro
+          description="Track learning, credentials, reviews, promotion work, and an evidence-backed annual resume refresh."
+          id="development-heading"
+          title="Development plan"
+        />
         <DevelopmentCreateForm
           busy={busyKeys.has("development-new")}
           onCreate={addDevelopment}
@@ -2776,23 +2558,11 @@ export function CareerGrowthView() {
       </section>
 
       <section className="space-y-4" aria-labelledby="reviews-heading">
-        <div className="flex items-center gap-3">
-          <span
-            aria-hidden="true"
-            className="grid size-10 place-items-center rounded-xl bg-primary-soft text-primary"
-          >
-            <CalendarCheck className="size-5" />
-          </span>
-          <div>
-            <h2 className="text-2xl font-black" id="reviews-heading">
-              Career reviews
-            </h2>
-            <p className="text-sm text-muted">
-              Finalized versions remain immutable; revisions explain what
-              changed and preserve the complete history.
-            </p>
-          </div>
-        </div>
+        <SectionIntro
+          description="Finalized versions stay immutable. Revisions explain what changed and keep the full history."
+          id="reviews-heading"
+          title="Career reviews"
+        />
         <ReviewCreateForm
           busy={busyKeys.has("review-new")}
           onCreate={addReview}
@@ -2852,7 +2622,7 @@ export function CareerGrowthView() {
         )}
       </section>
 
-      <aside className="rounded-2xl border border-line bg-surface-subtle p-5 text-sm leading-6 text-muted">
+      <aside className="rounded-[var(--radius-card)] border border-line bg-surface p-4 text-sm leading-6 text-muted">
         <div className="flex items-start gap-3">
           <History aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
           <p>
@@ -2885,7 +2655,7 @@ export function CareerGrowthView() {
 
 export function CareerGrowthLoading() {
   return (
-    <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8" id="main-content">
+    <main className="workspace-page" id="main-content">
       <LoadingSkeleton />
     </main>
   );
@@ -2893,7 +2663,7 @@ export function CareerGrowthLoading() {
 
 export function CareerGrowthRouteError({ reset }: { reset: () => void }) {
   return (
-    <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8" id="main-content">
+    <main className="workspace-page" id="main-content">
       <ErrorState
         description="The Career Growth route could not be rendered. Your records were not changed."
         onRetry={reset}

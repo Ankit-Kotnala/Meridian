@@ -48,7 +48,7 @@ export function WorkspaceSectionNav() {
                 "-mb-px flex min-h-11 shrink-0 items-center border-b-2 text-[0.8125rem] font-semibold transition-colors",
                 active
                   ? "border-info text-info"
-                  : "border-transparent text-muted hover:border-line-strong hover:text-foreground",
+                  : "border-transparent text-foreground hover:border-line-strong hover:text-muted-strong",
               )}
               href={href}
               key={href}

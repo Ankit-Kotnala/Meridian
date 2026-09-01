@@ -90,18 +90,17 @@ export function Tabs({
             aria-controls={`${prefix}-panel-${tab.id}`}
             aria-selected={selected}
             className={cn(
-              "shrink-0 border-b-2 transition-colors",
+              "shrink-0 transition-colors",
               isSection
-                ? "-mb-px flex min-h-11 items-center text-[0.8125rem] font-semibold"
-                : "min-h-11 px-0.5 text-sm font-bold",
+                ? "flex min-h-11 items-center text-[0.8125rem] font-semibold"
+                : "min-h-11 border-b-2 px-0.5 text-sm font-bold",
               selected
                 ? isSection
-                  ? "border-info text-info"
+                  ? "text-info"
                   : "border-primary text-primary"
-                : cn(
-                    "border-transparent text-muted hover:text-foreground",
-                    isSection && "hover:border-line-strong",
-                  ),
+                : isSection
+                  ? "text-foreground hover:text-muted-strong"
+                  : "border-transparent text-muted hover:text-foreground",
             )}
             id={`${prefix}-tab-${tab.id}`}
             key={tab.id}

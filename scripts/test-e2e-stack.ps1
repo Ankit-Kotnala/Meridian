@@ -83,7 +83,7 @@ $ExpectedMigrationHead = if ($env:REZUMI_EXPECTED_MIGRATION_HEAD) {
     $env:REZUMI_EXPECTED_MIGRATION_HEAD
 }
 else {
-    "20260731_0014"
+    "20260823_0017"
 }
 
 if ($Phase -eq 9) {

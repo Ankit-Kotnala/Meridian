@@ -106,6 +106,25 @@ describe("WorkspaceSectionNav", () => {
     );
   });
 
+  it("exposes Job search sibling tools", () => {
+    navigation.pathname = "/job-match/saved";
+
+    render(<WorkspaceSectionNav />);
+
+    expect(screen.getByRole("link", { name: "Job search" })).toHaveAttribute(
+      "href",
+      "/job-match",
+    );
+    expect(screen.getByRole("link", { name: "Saved jobs" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByRole("link", { name: "Role matching" })).toHaveAttribute(
+      "href",
+      "/job-match/roles",
+    );
+  });
+
   it("renders nothing for a single-tool section", () => {
     navigation.pathname = "/applications";
 
@@ -137,10 +156,10 @@ describe("workspace navigation model", () => {
       "/career-profile",
       "/evidence",
       "/achievement-inbox",
-      // Role Explorer was merged into the Job Match page as a secondary
-      // section (see role-explorer's RoleReadinessSection); /role-explorer
-      // now redirects there rather than being its own nav destination.
+      // Role Explorer was merged into Job search Role matching.
       "/job-match",
+      "/job-match/saved",
+      "/job-match/roles",
       "/applications",
       // Resume Builder and Change Studio were merged into the Resume Studio
       // page the same way; /resume-builder redirects there, and

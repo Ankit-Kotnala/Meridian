@@ -333,50 +333,24 @@ async function createGroundedApplication(
     }),
   ).toBeVisible();
 
-  await page.goto("/applications");
-  await expect(
-    page.getByRole("heading", {
-      name: "Keep every application traceable",
-    }),
-  ).toBeVisible();
-  const createPanel = page.locator("details").filter({
-    has: page.getByText("Add an application", { exact: true }),
-  });
-  await expect(createPanel).toHaveCount(1);
+  await page.goto("/job-match/saved");
   await activate(
-    createPanel.getByText("Add an application", { exact: true }),
-    keyboard,
-  );
-  await expect(createPanel).toHaveAttribute("open", "");
-  await select(
-    createPanel.getByRole("combobox", { name: "Saved job", exact: true }),
-    { index: 0 },
-  );
-  await select(
-    createPanel.getByRole("combobox", { name: "Resume", exact: true }),
-    { index: 0 },
-  );
-  await expect(
-    createPanel.getByLabel("Immutable resume version"),
-  ).toBeEnabled();
-  await select(createPanel.getByLabel("Immutable resume version"), {
-    index: 0,
-  });
-  await select(createPanel.getByLabel("Initial stage"), "applied");
-  await fill(createPanel.getByLabel("Application deadline"), dateOffset(30));
-  await fill(createPanel.getByLabel("Follow-up date"), dateOffset(14));
-  await fill(
-    createPanel.getByLabel("Application source"),
-    fictional.applicationSource,
-  );
-  await fill(createPanel.getByLabel("Industry"), "Fictional product software");
-  await activate(
-    createPanel.getByRole("button", { name: "Add application" }),
+    page.getByRole("button", { name: "Apply for me" }).first(),
     keyboard,
   );
   await expect(page.getByRole("status").first()).toContainText(
-    `${fictional.jobTitle} added to your workspace.`,
+    /application pack ready/i,
   );
+
+  await page.goto("/applications");
+  await expect(
+    page.getByRole("heading", {
+      name: "Track every application",
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Add an application", { exact: true }),
+  ).toHaveCount(0);
   return evidenceId;
 }
 

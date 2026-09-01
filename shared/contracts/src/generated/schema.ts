@@ -2466,7 +2466,7 @@ export interface paths {
          * @description Read-only shared listings filtered toward the owner's target role(s).
          *
          *     Never writes into the owner's own tracked jobs — see
-         *     ``POST /job-catalog/{platform}/{externalId}/save`` for that explicit step.
+         *     ``POST /job-catalog/save`` for that explicit step.
          */
         get: operations["jobCatalogSearch"];
         put?: never;
@@ -2487,13 +2487,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Save Job Catalog Listing
-         * @description Copy one catalog listing into the owner's own tracked jobs, once.
-         *
-         *     Idempotent per (owner, platform, external_id) — saving the same listing
-         *     twice returns the same tracked job rather than creating a duplicate.
+         * Save Job Catalog Listing By Path
+         * @description Compatibility path for simple catalog ids that fit in a single segment.
          */
-        post: operations["jobCatalogSave"];
+        post: operations["jobCatalogSaveByPath"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2518,6 +2515,31 @@ export interface paths {
          */
         put: operations["jobCatalogRolePreferencesSet"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/job-catalog/save": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Save Job Catalog Listing
+         * @description Copy one catalog listing into the owner's own tracked jobs, once.
+         *
+         *     Idempotent per (owner, platform, external_id) — saving the same listing
+         *     twice returns the same tracked job rather than creating a duplicate.
+         *     Catalog external ids may be URLs, so this uses a request body instead of
+         *     putting those values in the path.
+         */
+        post: operations["jobCatalogSave"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7791,6 +7813,13 @@ export interface components {
             sourceText: string;
             /** Title */
             title: string;
+        };
+        /** JobCatalogSaveRequest */
+        JobCatalogSaveRequest: {
+            /** Externalid */
+            externalId: string;
+            /** Platform */
+            platform: string;
         };
         /** JobCatalogSearchResponse */
         JobCatalogSearchResponse: {
@@ -28685,7 +28714,7 @@ export interface operations {
             };
         };
     };
-    jobCatalogSave: {
+    jobCatalogSaveByPath: {
         parameters: {
             query?: never;
             header?: {
@@ -28886,6 +28915,98 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RolePreferenceResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
+    jobCatalogSave: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-CSRF-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                rezumi_csrf?: string | null;
+                rezumi_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JobCatalogSaveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobResponse"];
                 };
             };
             /** @description Bad Request */

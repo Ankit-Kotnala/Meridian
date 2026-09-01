@@ -2,6 +2,7 @@
 
 import {
   BellRing,
+  ClipboardList,
   CreditCard,
   KeyRound,
   Laptop,
@@ -30,6 +31,11 @@ type SettingsNavItem = {
 
 const items: SettingsNavItem[] = [
   { href: "/settings", icon: UserRound, label: "Profile and account" },
+  {
+    href: "/settings/application-answers",
+    icon: ClipboardList,
+    label: "Application answers",
+  },
   { href: "/settings/security", icon: KeyRound, label: "Security" },
   { href: "/settings/sessions", icon: Laptop, label: "Sessions" },
   { href: "/settings/notifications", icon: BellRing, label: "Notifications" },
@@ -68,9 +74,9 @@ export function SettingsNavigation() {
   return (
     <nav
       aria-label="Settings navigation"
-      className="overflow-x-auto border-b border-line lg:sticky lg:top-21 lg:overflow-visible lg:border-b-0"
+      className="overflow-x-auto rounded-[var(--radius-card)] border border-line bg-surface lg:overflow-visible"
     >
-      <ul className="flex min-w-max gap-1 lg:block lg:min-w-0 lg:space-y-0.5">
+      <ul className="flex min-w-max gap-1 p-2 lg:block lg:min-w-0 lg:space-y-1">
         {visibleItems.map(({ href, icon: Icon, label }) => {
           const active = pathname === href;
           return (
@@ -78,14 +84,24 @@ export function SettingsNavigation() {
               <Link
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex min-h-11 items-center gap-2 border-b-2 px-3 text-sm font-semibold lg:border-b-0 lg:border-l-2",
+                  "flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-sm font-semibold",
                   active
-                    ? "border-primary bg-primary-soft/55 text-primary-strong"
-                    : "border-transparent text-muted hover:bg-surface-subtle hover:text-foreground",
+                    ? "bg-primary-soft/70 text-primary-strong"
+                    : "text-muted hover:bg-surface-subtle hover:text-foreground",
                 )}
                 href={href}
               >
-                <Icon aria-hidden="true" className="size-4" /> {label}
+                <span
+                  className={cn(
+                    "grid size-8 shrink-0 place-items-center rounded-lg",
+                    active
+                      ? "bg-primary text-white"
+                      : "bg-surface-subtle text-muted-strong",
+                  )}
+                >
+                  <Icon aria-hidden="true" className="size-4" />
+                </span>
+                {label}
               </Link>
             </li>
           );

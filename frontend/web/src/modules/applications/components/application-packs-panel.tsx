@@ -7,6 +7,7 @@ import {
   ShieldCheck,
   Trash2,
 } from "lucide-react";
+import Link from "next/link";
 import {
   useCallback,
   useEffect,
@@ -365,7 +366,15 @@ export function ApplicationPacksPanel({
           <p className="mt-2 text-sm text-muted">
             Meridian assembled this from your tailored resume and Application
             Profile. Open the job posting and submit it yourself in your own
-            browser session — Meridian never submits on your behalf.
+            browser session — Meridian never submits on your behalf. Update
+            reused portal answers in{" "}
+            <Link
+              className="font-semibold text-primary underline-offset-2 hover:underline"
+              href="/settings/application-answers"
+            >
+              Application answers
+            </Link>
+            .
           </p>
           <div className="mt-3 rounded-xl bg-surface p-4">
             <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">
@@ -397,7 +406,15 @@ export function ApplicationPacksPanel({
           Select only the drafts you need. Every factual claim must resolve to
           eligible evidence pinned to resume version{" "}
           {application.resumeVersionNumber}. Generated documents are drafts;
-          Meridian does not submit or send them.
+          Meridian does not submit or send them. Disability, veteran, and other
+          portal answers come from{" "}
+          <Link
+            className="font-semibold text-primary underline-offset-2 hover:underline"
+            href="/settings/application-answers"
+          >
+            Application answers
+          </Link>
+          .
         </p>
         <form
           className="mt-4"

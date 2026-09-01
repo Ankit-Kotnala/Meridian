@@ -33,6 +33,7 @@ def _job(source_text: str) -> JobPosting:
         application_deadline=None,
         source_kind=JobSourceKind.PASTE,
         source_url=None,
+        external_id=None,
         source_text=source_text,
         source_sha256=sha256(source_text.encode("utf-8")).digest(),
         idempotency_key="job-create-test-key",

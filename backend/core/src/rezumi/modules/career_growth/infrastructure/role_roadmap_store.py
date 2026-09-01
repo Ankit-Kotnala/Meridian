@@ -11,6 +11,7 @@ skill gap is frequently relevant across more than one role.
 from __future__ import annotations
 
 import asyncio
+import re
 from typing import Any
 
 from pymongo import MongoClient
@@ -60,9 +61,7 @@ class MongoRoleRoadmapProvider:
         await self._run(self._client.admin.command, "ping")
 
     async def find_skill_guidance(self, skill_label: str) -> RoadmapSkillGuidance | None:
-        documents = await self._run(
-            list, self._collection.find({}).limit(_MAX_DOCUMENTS)
-        )
+        documents = await self._run(list, self._collection.find({}).limit(_MAX_DOCUMENTS))
         target = skill_label.strip().casefold()
         if not target:
             return None
@@ -92,25 +91,11 @@ class MongoRoleRoadmapProvider:
         return substring_match
 
     async def get_roadmap(self, role_title: str) -> RoleRoadmap | None:
-        target = role_title.strip().casefold()
+        target = _normalize_role_label(role_title)
         if not target:
             return None
-        documents = await self._run(
-            list, self._collection.find({}).limit(_MAX_DOCUMENTS)
-        )
-        exact: dict[str, Any] | None = None
-        substring: dict[str, Any] | None = None
-        for document in documents:
-            title = str(document.get("title") or "").casefold()
-            slug = str(document.get("roleSlug") or "").casefold()
-            if not title:
-                continue
-            if title == target or slug == target:
-                exact = document
-                break
-            if substring is None and (target in title or title in target):
-                substring = document
-        chosen = exact or substring
+        documents = await self._run(list, self._collection.find({}).limit(_MAX_DOCUMENTS))
+        chosen = _best_roadmap_match(documents, target)
         return _roadmap(chosen) if chosen is not None else None
 
     async def dispose(self) -> None:
@@ -121,6 +106,89 @@ class MongoRoleRoadmapProvider:
             return await asyncio.to_thread(operation, *args, **kwargs)
         except PyMongoError as exc:
             raise CareerGrowthUnavailable from exc
+
+
+_SENIORITY_TOKENS = {
+    "associate",
+    "chief",
+    "head",
+    "intern",
+    "junior",
+    "jr",
+    "lead",
+    "principal",
+    "senior",
+    "sr",
+    "staff",
+}
+_LEVEL_TOKENS = {"i", "ii", "iii", "iv", "v"}
+
+
+def _best_roadmap_match(
+    documents: list[dict[str, Any]],
+    target: str,
+) -> dict[str, Any] | None:
+    best_document: dict[str, Any] | None = None
+    best_score = (0, 0, 0)
+    target_without_seniority = _without_seniority(target)
+    for document in sorted(
+        documents,
+        key=lambda item: str(item.get("roleSlug") or ""),
+    ):
+        for label in _document_labels(document):
+            normalized = _normalize_role_label(label)
+            if not normalized:
+                continue
+            score = (0, 0, 0)
+            if normalized == target:
+                score = (3, len(normalized.split()), len(normalized))
+            elif (
+                target_without_seniority
+                and _without_seniority(normalized) == target_without_seniority
+            ):
+                score = (2, len(normalized.split()), len(normalized))
+            elif _contains_role_phrase(target, normalized) or _contains_role_phrase(
+                normalized, target
+            ):
+                score = (1, len(normalized.split()), len(normalized))
+            if score > best_score:
+                best_document = document
+                best_score = score
+    return best_document
+
+
+def _document_labels(document: dict[str, Any]) -> tuple[str, ...]:
+    aliases = document.get("aliases")
+    safe_aliases = aliases if isinstance(aliases, list) else ()
+    return (
+        str(document.get("title") or ""),
+        str(document.get("roleSlug") or ""),
+        *(str(alias) for alias in safe_aliases if isinstance(alias, str)),
+    )
+
+
+def _normalize_role_label(value: str) -> str:
+    return " ".join(re.sub(r"[^a-z0-9]+", " ", value.casefold()).split())
+
+
+def _without_seniority(value: str) -> str:
+    return " ".join(
+        token
+        for token in value.split()
+        if token not in _SENIORITY_TOKENS and token not in _LEVEL_TOKENS
+    )
+
+
+def _contains_role_phrase(longer: str, shorter: str) -> bool:
+    longer_tokens = longer.split()
+    shorter_tokens = shorter.split()
+    if len(shorter_tokens) < 2 or len(shorter_tokens) >= len(longer_tokens):
+        return False
+    width = len(shorter_tokens)
+    return any(
+        longer_tokens[start : start + width] == shorter_tokens
+        for start in range(len(longer_tokens) - width + 1)
+    )
 
 
 def _roadmap(document: dict[str, Any]) -> RoleRoadmap:

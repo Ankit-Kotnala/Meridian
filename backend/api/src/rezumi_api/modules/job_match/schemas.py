@@ -155,7 +155,7 @@ class JobPageResponse(JobMatchSchema):
 
 class JobCatalogListingResponse(JobMatchSchema):
     platform: str = Field(min_length=1, max_length=40)
-    external_id: str = Field(min_length=1, max_length=200)
+    external_id: str = Field(min_length=1, max_length=2_048)
     title: str = Field(min_length=1, max_length=300)
     company: str | None = Field(default=None, max_length=300)
     location: str | None = Field(default=None, max_length=240)
@@ -171,6 +171,16 @@ class JobCatalogSearchResponse(JobMatchSchema):
     matched_target_role: bool
     suggested_role_titles: list[str] = Field(default_factory=list, max_length=5)
     selected_role_titles: list[str] = Field(default_factory=list, max_length=20)
+
+
+class JobCatalogSaveRequest(JobMatchSchema):
+    platform: str = Field(min_length=1, max_length=40)
+    external_id: str = Field(min_length=1, max_length=2_048)
+
+    @field_validator("platform", "external_id")
+    @classmethod
+    def validate_catalog_save_ids(cls, value: str) -> str:
+        return _safe_text(value, required=True)
 
 
 class RolePreferenceRequest(JobMatchSchema):

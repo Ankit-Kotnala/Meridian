@@ -25,10 +25,7 @@ export const jobMatchPaths = {
   jobCatalog: path("/api/v1/job-catalog"),
   jobCatalogBrowse: path("/api/v1/job-catalog/search"),
   jobCatalogRolePreferences: path("/api/v1/job-catalog/role-preferences"),
-  jobCatalogSave: (platform: string, externalId: string) =>
-    path(
-      `/api/v1/job-catalog/${encodeURIComponent(platform)}/${encodeURIComponent(externalId)}/save`,
-    ),
+  jobCatalogSave: path("/api/v1/job-catalog/save"),
   job: (id: string) => resource("/api/v1/jobs", id),
   jobAnalyze: (id: string) =>
     path(`/api/v1/jobs/${encodeURIComponent(id)}/analyze`),

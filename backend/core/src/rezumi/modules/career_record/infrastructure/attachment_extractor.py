@@ -18,7 +18,7 @@ from rezumi.modules.career_record.application.attachment_workflow import (
     UnsafeAttachment,
 )
 
-ATTACHMENT_PARSER_VERSION = "rezumi-attachment-parser/1.0.0"
+ATTACHMENT_PARSER_VERSION = "rezumi-attachment-parser/1.1.0"
 
 
 class BoundedAttachmentExtractor:
@@ -29,22 +29,31 @@ class BoundedAttachmentExtractor:
     ) -> AttachmentExtractionSummary:
         try:
             return await asyncio.wait_for(
-                asyncio.to_thread(self._extract, path, media_type, limits),
+                asyncio.to_thread(extract_attachment_document, path, media_type, limits),
                 limits.processing_timeout_seconds,
             )
         except TimeoutError as exc:
             raise RuntimeError("attachment extraction timed out") from exc
 
-    def _extract(
-        self, path: Path, media_type: AttachmentMediaType, limits: AttachmentLimits
-    ) -> AttachmentExtractionSummary:
-        if not path.is_file() or path.is_symlink() or path.stat().st_size > limits.max_upload_bytes:
-            _unsafe()
-        if media_type is AttachmentMediaType.PDF:
-            return _pdf_summary(path, limits)
-        if media_type is AttachmentMediaType.DOCX:
-            return _docx_summary(path, limits)
+
+def extract_attachment_document(
+    path: Path,
+    media_type: AttachmentMediaType | str,
+    limits: AttachmentLimits,
+) -> AttachmentExtractionSummary:
+    """Run bounded attachment validation inside the caller's isolation boundary."""
+    resolved_type = (
+        media_type
+        if isinstance(media_type, AttachmentMediaType)
+        else AttachmentMediaType(media_type)
+    )
+    if not path.is_file() or path.is_symlink() or path.stat().st_size > limits.max_upload_bytes:
         _unsafe()
+    if resolved_type is AttachmentMediaType.PDF:
+        return _pdf_summary(path, limits)
+    if resolved_type is AttachmentMediaType.DOCX:
+        return _docx_summary(path, limits)
+    _unsafe()
 
 
 def _pdf_summary(path: Path, limits: AttachmentLimits) -> AttachmentExtractionSummary:

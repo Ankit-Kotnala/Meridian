@@ -169,9 +169,7 @@ def role_roadmap_response(value: RoleRoadmapView) -> RoleRoadmapResponse:
 def confirm_roadmap_response(
     values: tuple[DevelopmentItemView, ...],
 ) -> ConfirmRoadmapResponse:
-    return ConfirmRoadmapResponse(
-        created=[development_item_response(value) for value in values]
-    )
+    return ConfirmRoadmapResponse(created=[development_item_response(value) for value in values])
 
 
 def development_item_page_response(

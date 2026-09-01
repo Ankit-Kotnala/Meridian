@@ -6,21 +6,21 @@ manually reconstructing service dependencies or changing directories.
 
 ## Where to make a change
 
-| Change                                          | Primary location                                                   | Focused check                               |
-| ----------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------- |
-| Page, route shell, or metadata                  | `frontend/web/src/app`                                             | `npm run test:web`                             |
-| Product UI and state                            | `frontend/web/src/modules/<feature>`                               | `npm run test:web`                             |
-| Reusable accessible UI                          | `frontend/ui/src`                                                  | `npm run test --workspace=@rezumi/ui`          |
+| Change                                          | Primary location                                                   | Focused check                                     |
+| ----------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------- |
+| Page, route shell, or metadata                  | `frontend/web/src/app`                                             | `npm run test:web`                                |
+| Product UI and state                            | `frontend/web/src/modules/<feature>`                               | `npm run test:web`                                |
+| Reusable accessible UI                          | `frontend/ui/src`                                                  | `npm run test --workspace=@rezumi/ui`             |
 | Visual tokens                                   | `frontend/design-tokens`                                           | `npm run build --workspace=@rezumi/design-tokens` |
-| HTTP route, schema, presenter, or dependency    | `backend/api/src/rezumi_api/modules/<bounded_context>`             | `npm run test:api`                             |
-| Cross-cutting HTTP composition or middleware    | `backend/api/src/rezumi_api`                                       | `npm run test:api`                             |
-| Business rules and use cases                    | `backend/core/src/rezumi/modules/<bounded_context>`                | `npm run test:backend`                         |
-| Database/provider adapter for a bounded context | `backend/core/src/rezumi/modules/<bounded_context>/infrastructure` | backend unit and integration tests          |
-| Celery task adapter                             | `backend/worker/src/rezumi_worker/tasks/<bounded_context>.py`      | `npm run test:worker`                          |
-| Worker runtime composition                      | `backend/worker/src/rezumi_worker/runtime.py`                      | `npm run test:worker`                          |
-| OpenAPI wire contract                           | FastAPI schemas, then generated `shared/contracts` artifacts       | `npm run contracts:check`                      |
-| Local/deployment infrastructure                 | `infra/compose.yaml` and `infra`                                   | `make compose-config`                       |
-| Cross-service browser behavior                  | `frontend/web/e2e` and `tests/e2e`                                 | the applicable isolated E2E runner          |
+| HTTP route, schema, presenter, or dependency    | `backend/api/src/rezumi_api/modules/<bounded_context>`             | `npm run test:api`                                |
+| Cross-cutting HTTP composition or middleware    | `backend/api/src/rezumi_api`                                       | `npm run test:api`                                |
+| Business rules and use cases                    | `backend/core/src/rezumi/modules/<bounded_context>`                | `npm run test:backend`                            |
+| Database/provider adapter for a bounded context | `backend/core/src/rezumi/modules/<bounded_context>/infrastructure` | backend unit and integration tests                |
+| Celery task adapter                             | `backend/worker/src/rezumi_worker/tasks/<bounded_context>.py`      | `npm run test:worker`                             |
+| Worker runtime composition                      | `backend/worker/src/rezumi_worker/runtime.py`                      | `npm run test:worker`                             |
+| OpenAPI wire contract                           | FastAPI schemas, then generated `shared/contracts` artifacts       | `npm run contracts:check`                         |
+| Local/deployment infrastructure                 | `infra/compose.yaml` and `infra`                                   | `make compose-config`                             |
+| Cross-service browser behavior                  | `frontend/web/e2e` and `tests/e2e`                                 | the applicable isolated E2E runner                |
 
 Keep Next.js route files thin, keep API and Celery files as delivery adapters, and
 put domain behavior in `backend/core`. Do not move persistence or queue access
@@ -43,8 +43,8 @@ Redis, MinIO, and ClamAV volumes.
 
 ## Choose the fastest workflow
 
-| Goal                                      | Command                    | What runs                                               |
-| ----------------------------------------- | -------------------------- | ------------------------------------------------------- |
+| Goal                                      | Command                       | What runs                                               |
+| ----------------------------------------- | ----------------------------- | ------------------------------------------------------- |
 | Run the complete product                  | `npm run local:up`            | Full Docker stack, detached and health-checked          |
 | Work only on the UI                       | `npm run dev:web`             | Backend in Docker; Next.js on the host with hot reload  |
 | Work on API delivery/backend use cases    | `npm run dev:api`             | Dependencies in Docker; FastAPI on the host with reload |
@@ -110,6 +110,29 @@ make test
 Use `make test-integration` when API, worker, persistence, Compose, or contracts
 change. Use the applicable isolated E2E runner when a browser workflow changes.
 A skipped or unavailable required gate is a blocker, not a pass.
+
+## India employer-board catalog
+
+The worker reads only the documented public Greenhouse Job Board API and Ashby
+job-board API for explicit comma-separated allowlists. `GREENHOUSE_INDIA_BOARD_TOKENS`
+retains only India-located roles; `GREENHOUSE_GLOBAL_BOARD_TOKENS` retains all
+locations; and `ASHBY_INDIA_BOARD_NAMES` retains India-located roles. The global
+Greenhouse feed deliberately uses the lightweight published listing index, so it
+can keep large boards within its response limit; each listing preserves the
+original employer application URL for candidate click-through. The worker does
+not log in, follow application forms, or bypass rate limits.
+
+Keep the list to verified public, employer-authorized boards. After changing it,
+rebuild the backend and run the idempotent sync:
+
+```powershell
+npm run local:rebuild:backend
+docker compose -f infra/compose.yaml exec -T worker python -m rezumi_worker.scripts.sync_job_catalog_once
+```
+
+A 30–50k India catalog still requires a licensed provider or a substantially
+curated set of authorized employer feeds; public ATS APIs do not provide a
+global company directory.
 
 ## API and worker layout
 

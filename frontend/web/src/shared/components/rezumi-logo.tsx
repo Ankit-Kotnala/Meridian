@@ -3,33 +3,53 @@ import Link from "next/link";
 import { cn } from "@rezumi/ui";
 
 type RezumiLogoProps = {
+  /** Icon only — used in compact chrome such as a collapsed sidebar. */
   compact?: boolean;
   inverted?: boolean;
   className?: string;
   href?: string;
 };
 
-function RezumiMark() {
+/**
+ * Geometric Meridian mark (viewBox 0 0 100 100):
+ * nested downward Vs between vertical legs. Diagonal endpoints are inset along
+ * each stroke so butt caps sit inside the legs instead of forming corner horns.
+ * Legs are painted last to keep the joins clean.
+ */
+export function RezumiMark({ className }: { className?: string }) {
   return (
     <svg
       aria-hidden="true"
-      className="size-full"
+      className={cn("size-full", className)}
       fill="none"
-      viewBox="0 0 24 24"
+      viewBox="0 0 100 100"
       xmlns="http://www.w3.org/2000/svg"
     >
       <path
-        d="M12 2 22 12 12 22 2 12Z"
+        d="M18 10 50 50 82 10"
         stroke="currentColor"
-        strokeLinejoin="round"
-        strokeWidth={1.5}
+        strokeLinecap="butt"
+        strokeLinejoin="miter"
+        strokeWidth={8}
       />
       <path
-        d="M8 15.5V9l4 4 4-4v6.5"
+        d="M18 54 50 90 82 54"
         stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={1.5}
+        strokeLinecap="butt"
+        strokeLinejoin="miter"
+        strokeWidth={8}
+      />
+      <path
+        d="M14 6v88"
+        stroke="currentColor"
+        strokeLinecap="butt"
+        strokeWidth={8}
+      />
+      <path
+        d="M86 6v88"
+        stroke="currentColor"
+        strokeLinecap="butt"
+        strokeWidth={8}
       />
     </svg>
   );
@@ -53,8 +73,8 @@ export function RezumiLogo({
       <span
         aria-hidden="true"
         className={cn(
-          "grid size-7 shrink-0 place-items-center",
-          inverted ? "text-accent-strong" : "text-accent",
+          "grid size-7 shrink-0 place-items-center overflow-hidden",
+          inverted ? "text-[#aee2d9]" : "text-accent",
         )}
       >
         <RezumiMark />
@@ -62,7 +82,7 @@ export function RezumiLogo({
       {!compact && (
         <span
           className={cn(
-            "text-sm uppercase tracking-[0.14em]",
+            "text-sm uppercase tracking-[0.16em]",
             inverted ? "text-white" : "text-foreground",
           )}
         >

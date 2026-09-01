@@ -123,10 +123,10 @@ export async function saveJobCatalogListing(
   platform: string,
   externalId: string,
 ): Promise<Job> {
-  const response = await mutate(
-    jobMatchPaths.jobCatalogSave(platform, externalId),
-    { method: "POST" },
-  );
+  const response = await mutate(jobMatchPaths.jobCatalogSave, {
+    body: JSON.stringify({ platform, externalId }),
+    method: "POST",
+  });
   return (await response.json()) as Job;
 }
 

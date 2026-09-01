@@ -6,6 +6,14 @@ from rezumi.modules.job_match.application.job_catalog_ports import JobCatalogSou
 from rezumi.modules.job_match.infrastructure.job_catalog.arbeitnow_connector import (
     ArbeitnowCatalogConnector,
 )
+from rezumi.modules.job_match.infrastructure.job_catalog.ashby_connector import (
+    AshbyIndiaCatalogConnector,
+    AshbyIndiaCatalogOptions,
+)
+from rezumi.modules.job_match.infrastructure.job_catalog.greenhouse_connector import (
+    GreenhouseIndiaCatalogConnector,
+    GreenhouseIndiaCatalogOptions,
+)
 from rezumi.modules.job_match.infrastructure.job_catalog.himalayas_connector import (
     HimalayasCatalogConnector,
 )
@@ -20,12 +28,24 @@ from rezumi.modules.job_match.infrastructure.job_catalog.remotive_connector impo
 )
 
 
-def default_job_catalog_connectors() -> tuple[JobCatalogSourceConnector, ...]:
-    """Multi-employer, no-auth published feeds — no per-company config needed."""
-    return (
+def default_job_catalog_connectors(
+    *,
+    greenhouse_india_options: GreenhouseIndiaCatalogOptions | None = None,
+    greenhouse_global_options: GreenhouseIndiaCatalogOptions | None = None,
+    ashby_india_options: AshbyIndiaCatalogOptions | None = None,
+) -> tuple[JobCatalogSourceConnector, ...]:
+    """Published feeds and explicitly configured public India employer boards."""
+    connectors: tuple[JobCatalogSourceConnector, ...] = (
         RemotiveCatalogConnector(),
         RemoteOkCatalogConnector(),
         ArbeitnowCatalogConnector(),
         HimalayasCatalogConnector(),
         JobicyCatalogConnector(),
     )
+    if greenhouse_india_options is not None:
+        connectors += (GreenhouseIndiaCatalogConnector(greenhouse_india_options),)
+    if greenhouse_global_options is not None:
+        connectors += (GreenhouseIndiaCatalogConnector(greenhouse_global_options),)
+    if ashby_india_options is not None:
+        connectors += (AshbyIndiaCatalogConnector(ashby_india_options),)
+    return connectors

@@ -329,7 +329,7 @@ def test_current_migration_head_matches_registered_metadata(
     monkeypatch.setenv("REZUMI_ENVIRONMENT", "test")
     config = _alembic_config()
 
-    assert ScriptDirectory.from_config(config).get_heads() == ["20260731_0014"]
+    assert ScriptDirectory.from_config(config).get_heads() == ["20260823_0017"]
     command.check(config)
 
 

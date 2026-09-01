@@ -22,6 +22,7 @@ import { Badge, buttonStyles, cn } from "@rezumi/ui";
 import { BackToTop } from "@/shared/components/back-to-top";
 import { SiteFooter } from "@/shared/components/public-site-footer";
 import { SiteHeader } from "@/shared/components/public-site-header";
+import { RezumiMark } from "@/shared/components/rezumi-logo";
 import { ProductMotionProvider } from "@/shared/motion/product-motion-provider";
 import { Reveal } from "@/shared/motion/reveal";
 
@@ -167,8 +168,8 @@ function ProductWorkspacePreview() {
         <div className="grid min-h-[28rem] grid-cols-1 sm:grid-cols-[9rem_minmax(0,1fr)]">
           <div className="hidden bg-navy px-3 py-5 text-white sm:block">
             <div className="flex items-center gap-2 px-2 text-xs font-bold">
-              <span className="grid size-6 place-items-center rounded-md bg-white/10">
-                <Layers3 aria-hidden="true" className="size-3.5" />
+              <span className="grid size-6 place-items-center text-[#8fd4c8]">
+                <RezumiMark />
               </span>
               Meridian
             </div>

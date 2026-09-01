@@ -23,9 +23,7 @@ class DisabledJobCatalogStore:
     async def ping(self) -> None:
         return None
 
-    async def upsert_listing(
-        self, listing: CatalogJobListing, *, fetched_at: datetime
-    ) -> None:
+    async def upsert_listing(self, listing: CatalogJobListing, *, fetched_at: datetime) -> None:
         del listing, fetched_at
         return None
 
@@ -57,9 +55,7 @@ class MongoJobCatalogStore:
 
     @staticmethod
     def _ensure_indexes(collection: Collection[Any]) -> None:
-        collection.create_index(
-            [("platform", ASCENDING), ("externalId", ASCENDING)], unique=True
-        )
+        collection.create_index([("platform", ASCENDING), ("externalId", ASCENDING)], unique=True)
         collection.create_index(
             [("title", TEXT), ("company", TEXT), ("sourceText", TEXT)],
             name="job_catalog_text_search",
@@ -68,9 +64,7 @@ class MongoJobCatalogStore:
     async def ping(self) -> None:
         await self._run(self._client.admin.command, "ping")
 
-    async def upsert_listing(
-        self, listing: CatalogJobListing, *, fetched_at: datetime
-    ) -> None:
+    async def upsert_listing(self, listing: CatalogJobListing, *, fetched_at: datetime) -> None:
         document = {
             "platform": listing.platform,
             "externalId": listing.external_id,

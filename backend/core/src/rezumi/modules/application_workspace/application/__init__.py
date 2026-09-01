@@ -36,6 +36,7 @@ from .models import (
     UpsertApplicationProfile,
 )
 from .ports import (
+    ApplicationProfileDocumentStore,
     ApplicationWorkspaceUnitOfWork,
     ApplicationWorkspaceUnitOfWorkFactory,
     Clock,
@@ -61,6 +62,7 @@ __all__ = [
     "ApplicationJobSnapshot",
     "ApplicationMilestones",
     "ApplicationPackView",
+    "ApplicationProfileDocumentStore",
     "ApplicationReference",
     "ApplicationResumeSnapshot",
     "ApplicationSourceClaim",
