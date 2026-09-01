@@ -100,7 +100,7 @@ from rezumi.modules.career_record.infrastructure import (
     AttachmentClamAvScanner,
     AttachmentS3ObjectStorage,
     AttachmentS3Options,
-    BoundedAttachmentExtractor,
+    IsolatedAttachmentExtractor,
     ResumeHealthSourceQuery,
     SqlAlchemyAttachmentUnitOfWorkFactory,
     SqlAlchemyCareerRecordUnitOfWorkFactory,
@@ -127,6 +127,12 @@ from rezumi.modules.identity.infrastructure import models as identity_models  # 
 from rezumi.modules.job_match.application.job_catalog_ports import CatalogSyncResult
 from rezumi.modules.job_match.application.job_catalog_sync import JobCatalogSyncService
 from rezumi.modules.job_match.infrastructure.identifiers import SystemClock as JobMatchClock
+from rezumi.modules.job_match.infrastructure.job_catalog.ashby_connector import (
+    AshbyIndiaCatalogOptions,
+)
+from rezumi.modules.job_match.infrastructure.job_catalog.greenhouse_connector import (
+    GreenhouseIndiaCatalogOptions,
+)
 from rezumi.modules.job_match.infrastructure.job_catalog.registry import (
     default_job_catalog_connectors,
 )
@@ -194,6 +200,7 @@ from rezumi.modules.resume_health.application.ports import ParsedResumeDocumentS
 from rezumi.modules.resume_health.infrastructure import (
     ClamAvOptions,
     ClamAvScanner,
+    DisabledOcrProvider,
     DisabledParsedResumeDocumentStore,
     IsolatedDocumentExtractor,
     LocalResumeParserProvider,
@@ -298,7 +305,7 @@ class _AttachmentStorageResources:
 @dataclass(slots=True)
 class _AttachmentRuntimeResources(_AttachmentStorageResources):
     scanner: AttachmentClamAvScanner
-    extractor: BoundedAttachmentExtractor
+    extractor: IsolatedAttachmentExtractor
     limits: AttachmentLimits
 
 
@@ -449,7 +456,7 @@ async def _attachment_runtime_resources(
                     timeout_seconds=settings.clamav_timeout_seconds,
                 )
             ),
-            extractor=BoundedAttachmentExtractor(),
+            extractor=IsolatedAttachmentExtractor(),
             limits=_attachment_limits(settings),
         )
 
@@ -1181,6 +1188,7 @@ def _processor(resources: _RuntimeResources, settings: WorkerSettings) -> Resume
         scanner=resources.scanner,
         extractor=resources.extractor,
         semantic_parser=LocalResumeParserProvider(),
+        ocr=DisabledOcrProvider(),
         limits=resources.limits,
         career_record=_career_record_service(resources.database, settings),
         parsed_resume_store=resources.parsed_resume_store,
@@ -1217,9 +1225,33 @@ def _job_catalog_store(
 async def sync_job_catalog(settings: WorkerSettings) -> tuple[CatalogSyncResult, ...]:
     """Enumerate every configured published job feed into the shared catalog."""
     store = _job_catalog_store(settings)
+    board_tokens = tuple(
+        token for token in settings.greenhouse_india_board_tokens.split(",") if token
+    )
+    greenhouse_india_options = (
+        GreenhouseIndiaCatalogOptions(board_tokens=board_tokens) if board_tokens else None
+    )
+    global_board_tokens = tuple(
+        token for token in settings.greenhouse_global_board_tokens.split(",") if token
+    )
+    greenhouse_global_options = (
+        GreenhouseIndiaCatalogOptions(
+            board_tokens=global_board_tokens,
+            include_global=True,
+            include_content=False,
+        )
+        if global_board_tokens
+        else None
+    )
+    board_names = tuple(name for name in settings.ashby_india_board_names.split(",") if name)
+    ashby_india_options = AshbyIndiaCatalogOptions(board_names=board_names) if board_names else None
     try:
         service = JobCatalogSyncService(
-            connectors=default_job_catalog_connectors(),
+            connectors=default_job_catalog_connectors(
+                greenhouse_india_options=greenhouse_india_options,
+                greenhouse_global_options=greenhouse_global_options,
+                ashby_india_options=ashby_india_options,
+            ),
             store=store,
             clock=JobMatchClock(),
         )

@@ -178,9 +178,7 @@ def process_declared_profile_enrichment(
     parsed_job_id, parsed_trace_id = parse_job_payload(job_id, trace_id)
     bind_contextvars(job_id=str(parsed_job_id), trace_id=parsed_trace_id)
     try:
-        status = asyncio.run(
-            process_declared_profile_enrichment_job(get_settings(), parsed_job_id)
-        )
+        status = asyncio.run(process_declared_profile_enrichment_job(get_settings(), parsed_job_id))
     except Exception:
         logger.error("declared_profile_enrichment_processing_unavailable", job_id=job_id)
         raise RetryableTaskError("declared_profile_enrichment_processing_unavailable") from None

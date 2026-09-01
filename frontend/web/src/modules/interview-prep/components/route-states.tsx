@@ -4,11 +4,7 @@ import { ErrorState, LoadingSkeleton } from "@rezumi/ui";
 
 function InterviewRouteLoading({ label }: { label: string }) {
   return (
-    <main
-      aria-busy="true"
-      className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8"
-      id="main-content"
-    >
+    <main aria-busy="true" className="workspace-page" id="main-content">
       <h1 className="sr-only">{label}</h1>
       <LoadingSkeleton />
     </main>
@@ -25,7 +21,7 @@ function InterviewRouteError({
   title: string;
 }) {
   return (
-    <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8" id="main-content">
+    <main className="workspace-page" id="main-content">
       <ErrorState description={description} onRetry={reset} title={title} />
     </main>
   );

@@ -17,14 +17,14 @@ factual is invented, and no material change is applied without explicit review.
 
 ## Stack
 
-| Layer     | Technology                                                               |
-| --------- | ------------------------------------------------------------------------ |
-| Web       | Next.js 16 (App Router), React 19, TypeScript 5.9 strict, Tailwind CSS 4 |
-| API       | Python 3.13, FastAPI, Pydantic, async SQLAlchemy + asyncpg               |
-| Worker    | Celery with a Redis broker/result backend                                |
-| Backend   | Shared `rezumi-backend` modular monolith (ports & adapters)              |
-| Contracts | FastAPI OpenAPI → generated TypeScript schema + typed client             |
-| Services  | PostgreSQL (pgvector), Redis, MinIO (S3), ClamAV, Mailpit                |
+| Layer     | Technology                                                                          |
+| --------- | ----------------------------------------------------------------------------------- |
+| Web       | Next.js 16 (App Router), React 19, TypeScript 5.9 strict, Tailwind CSS 4            |
+| API       | Python 3.13, FastAPI, Pydantic, async SQLAlchemy + asyncpg                          |
+| Worker    | Celery with a Redis broker/result backend                                           |
+| Backend   | Shared `rezumi-backend` modular monolith (ports & adapters)                         |
+| Contracts | FastAPI OpenAPI → generated TypeScript schema + typed client                        |
+| Services  | PostgreSQL (pgvector), Redis, MinIO (S3), ClamAV, Mailpit                           |
 | Tooling   | npm 11 + Turbo (JS), one uv workspace rooted at `backend/` (Python), Docker Compose |
 
 ## Repository map

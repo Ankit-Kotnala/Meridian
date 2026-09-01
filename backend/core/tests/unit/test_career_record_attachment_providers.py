@@ -165,3 +165,38 @@ async def test_bounded_extractor_returns_counts_only_and_rejects_wrong_bytes(
             AttachmentLimits(temp_root=tmp_path.resolve()),
         )
     assert raised.value.code is SafeAttachmentError.INVALID_DOCUMENT_STRUCTURE
+
+
+@pytest.mark.asyncio
+async def test_isolated_attachment_extractor_returns_counts_and_kills_timeout(
+    tmp_path: Path,
+) -> None:
+    from rezumi.modules.career_record.infrastructure.isolated_attachment_extractor import (
+        IsolatedAttachmentExtractor,
+    )
+
+    path = tmp_path / "evidence.docx"
+    document = Document()
+    document.add_heading("Fictional Evidence", level=1)
+    document.add_paragraph("A deliberately fictional supporting statement.")
+    document.save(path)
+    limits = AttachmentLimits(temp_root=tmp_path.resolve())
+    extractor = IsolatedAttachmentExtractor()
+
+    result = await extractor.extract(path, AttachmentMediaType.DOCX, limits)
+
+    assert result.format_valid
+    assert result.extracted_blocks == 2
+    assert not hasattr(result, "plain_text")
+    assert not list(tmp_path.glob("attachment-parser-*"))
+
+    with pytest.raises(TimeoutError, match="attachment extraction timed out"):
+        await extractor.extract(
+            path,
+            AttachmentMediaType.DOCX,
+            AttachmentLimits(
+                temp_root=tmp_path.resolve(),
+                processing_timeout_seconds=0.000_001,
+            ),
+        )
+    assert not list(tmp_path.glob("attachment-parser-*"))

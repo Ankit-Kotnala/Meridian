@@ -556,6 +556,15 @@ class WorkerSettings(BaseSettings):
             "MONGODB_ROLE_ROADMAPS_COLLECTION",
         ),
     )
+    mongodb_application_profile_collection: str = Field(
+        default="application-profiles",
+        min_length=1,
+        max_length=120,
+        validation_alias=AliasChoices(
+            "REZUMI_MONGODB_APPLICATION_PROFILE_COLLECTION",
+            "MONGODB_APPLICATION_PROFILE_COLLECTION",
+        ),
+    )
     job_catalog_sync_interval_seconds: int = Field(
         # Remotive's stated usage policy caps free-tier callers at ~4 requests
         # per day; 6h keeps every configured source (not just Remotive) at or
@@ -568,6 +577,73 @@ class WorkerSettings(BaseSettings):
             "JOB_CATALOG_SYNC_INTERVAL_SECONDS",
         ),
     )
+
+    greenhouse_india_board_tokens: str = Field(
+        default="cialfo,highradius,knowbe4,skillzinc,mixpanel",
+        max_length=25_000,
+        validation_alias=AliasChoices(
+            "REZUMI_GREENHOUSE_INDIA_BOARD_TOKENS", "GREENHOUSE_INDIA_BOARD_TOKENS"
+        ),
+    )
+
+    @field_validator("greenhouse_india_board_tokens")
+    @classmethod
+    def normalize_greenhouse_india_board_tokens(cls, value: str) -> str:
+        tokens = tuple(token.strip().casefold() for token in value.split(",") if token.strip())
+        if len(tokens) > 250:
+            raise ValueError("at most 250 Greenhouse India board tokens are allowed")
+        if len(set(tokens)) != len(tokens):
+            raise ValueError("Greenhouse India board tokens must be unique")
+        return ",".join(tokens)
+
+    greenhouse_global_board_tokens: str = Field(
+        default=(
+            "abnormalsecurity,airbnb,airtable,braze,brex,checkr,chime,cockroachlabs,"
+            "collibra,coinbase,cloudflare,contentful,coursera,databricks,dropbox,duolingo,"
+            "elastic,everlaw,figma,flexport,glossier,gusto,hellofresh,instacart,intercom,"
+            "liveperson,lyft,marqeta,netlify,newrelic,nuro,okta,onetrust,opentable,pantheon,"
+            "pinterest,postman,prolific,qualtrics,reddit,relativity,revolut,robinhood,rubrik,"
+            "scaleai,stripe,appdirect,blend,celonis,coreweave,cultureamp,dremio,epicgames,"
+            "fanduel,fivetran,klaviyo,launchdarkly,lattice,mongodb,pagerduty,pandadoc,pendo,"
+            "ripple,samsara,seatgeek,securityscorecard,squarespace,sumup,toast,truelayer,"
+            "twilio,udemy,unqork,upwork,vercel,via,workato,zscaler,6sense,affirm,algolia,"
+            "alphasense,amplitude,andurilindustries,anthropic,applovin,asana,betterment,"
+            "billcom,bitgo,bloomreach,boxinc,calendly,carta,circleci,commercetools,cribl,"
+            "datadog,faire,fastly,freenome,gitlab,gongio,hightouch,honeycomb,humaninterest,"
+            "khanacademy,nextdoor,roku,sproutsocial,stackadapt,sumologic,taboola,typeform,"
+            "udacity,webflow,weave,wizinc,axonius,branch,buildkite,dataiku"
+        ),
+        max_length=25_000,
+        validation_alias=AliasChoices(
+            "REZUMI_GREENHOUSE_GLOBAL_BOARD_TOKENS", "GREENHOUSE_GLOBAL_BOARD_TOKENS"
+        ),
+    )
+
+    @field_validator("greenhouse_global_board_tokens")
+    @classmethod
+    def normalize_greenhouse_global_board_tokens(cls, value: str) -> str:
+        tokens = tuple(token.strip().casefold() for token in value.split(",") if token.strip())
+        if len(tokens) > 250:
+            raise ValueError("at most 250 Greenhouse global board tokens are allowed")
+        if len(set(tokens)) != len(tokens):
+            raise ValueError("Greenhouse global board tokens must be unique")
+        return ",".join(tokens)
+
+    ashby_india_board_names: str = Field(
+        default="riveron,office-hours,emergence",
+        max_length=25_000,
+        validation_alias=AliasChoices("REZUMI_ASHBY_INDIA_BOARD_NAMES", "ASHBY_INDIA_BOARD_NAMES"),
+    )
+
+    @field_validator("ashby_india_board_names")
+    @classmethod
+    def normalize_ashby_india_board_names(cls, value: str) -> str:
+        names = tuple(name.strip().casefold() for name in value.split(",") if name.strip())
+        if len(names) > 250:
+            raise ValueError("at most 250 Ashby India board names are allowed")
+        if len(set(names)) != len(names):
+            raise ValueError("Ashby India board names must be unique")
+        return ",".join(names)
 
     @field_validator("s3_endpoint_url", "s3_public_endpoint_url")
     @classmethod

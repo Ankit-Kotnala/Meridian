@@ -8,4 +8,5 @@ export {
   ApplicationsRouteError,
   ApplicationsView,
 } from "./views/applications-view";
+export { ApplicationProfilePanel } from "./components/application-profile-panel";
 export { isApplicationId } from "./validation/application-id";

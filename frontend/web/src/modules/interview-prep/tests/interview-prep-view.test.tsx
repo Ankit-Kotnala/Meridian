@@ -107,6 +107,14 @@ const story: StarStory = {
 };
 
 describe("Interview Prep view", () => {
+  function renderView() {
+    return render(
+      <InterviewPrepView
+        roadmapPanel={<div data-testid="roadmap-panel">Role roadmap</div>}
+      />,
+    );
+  }
+
   beforeEach(() => {
     vi.clearAllMocks();
     api.listInterviewApplications.mockResolvedValue({
@@ -126,7 +134,7 @@ describe("Interview Prep view", () => {
   });
 
   it("shows defensibility warnings and saves a story with exact claim mappings", async () => {
-    render(<InterviewPrepView />);
+    renderView();
 
     fireEvent.change(await screen.findByLabelText("Application context"), {
       target: { value: application.id },
@@ -191,7 +199,27 @@ describe("Interview Prep view", () => {
   });
 
   it("renders explicit empty states without fictional practice data", async () => {
-    render(<InterviewPrepView />);
+    renderView();
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Prepare with a plan built around you",
+      }),
+    ).toBeVisible();
+    expect(await screen.findByTestId("roadmap-panel")).toBeVisible();
+    expect(
+      await screen.findByRole("heading", { name: "Choose an application" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("heading", { name: "No STAR stories yet" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "No interview sessions" }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Application context"), {
+      target: { value: application.id },
+    });
 
     expect(
       await screen.findByRole("heading", { name: "No STAR stories yet" }),

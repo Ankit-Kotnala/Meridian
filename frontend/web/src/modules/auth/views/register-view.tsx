@@ -6,9 +6,14 @@ import { useState, type FormEvent } from "react";
 
 import { Alert, Button, TextField } from "@rezumi/ui";
 
-import { authErrorMessage, registerAccount } from "../api/auth-api";
+import {
+  authErrorMessage,
+  googleAuthorizationUrl,
+  registerAccount,
+} from "../api/auth-api";
 import { AuthPageShell } from "../components/auth-page-shell";
 import { FormErrorSummary } from "../components/form-error-summary";
+import { GoogleMark } from "../components/google-mark";
 import { PasswordField } from "../components/password-field";
 import {
   validateDisplayName,
@@ -21,6 +26,7 @@ export function RegisterView() {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [failure, setFailure] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -62,6 +68,12 @@ export function RegisterView() {
     }
   }
 
+  function onGoogle() {
+    setGoogleSubmitting(true);
+    setFailure(undefined);
+    window.location.assign(googleAuthorizationUrl("/dashboard"));
+  }
+
   return (
     <AuthPageShell
       description="Create a private account. We’ll send a verification link before you can enter the protected workspace."
@@ -92,11 +104,12 @@ export function RegisterView() {
           </Link>
         </div>
       ) : (
-        <form className="space-y-5" noValidate onSubmit={onSubmit}>
+        <form className="space-y-4" noValidate onSubmit={onSubmit}>
           <FormErrorSummary message={failure} />
           <TextField
             autoComplete="name"
             error={errors.displayName}
+            className="min-h-11"
             id="displayName"
             label="Name"
             maxLength={100}
@@ -108,6 +121,7 @@ export function RegisterView() {
             autoCapitalize="none"
             autoComplete="email"
             error={errors.email}
+            className="min-h-11"
             id="email"
             inputMode="email"
             label="Email address"
@@ -120,6 +134,7 @@ export function RegisterView() {
           <PasswordField
             autoComplete="new-password"
             error={errors.password}
+            className="min-h-11"
             hint="Use 12–128 characters. A password manager is recommended."
             id="password"
             label="Password"
@@ -134,14 +149,31 @@ export function RegisterView() {
             until you grant them in Settings.
           </p>
           <Button
-            className="w-full"
+            className="w-full min-h-11 rounded-lg text-[0.9375rem]"
             loading={submitting}
             loadingLabel="Creating account…"
             type="submit"
           >
             Create account
           </Button>
-          <p className="text-center text-sm text-muted">
+          <div className="flex items-center gap-3" aria-hidden="true">
+            <span className="h-px flex-1 bg-line" />
+            <span className="text-[0.6875rem] font-bold uppercase tracking-[0.2em] text-muted">
+              or
+            </span>
+            <span className="h-px flex-1 bg-line" />
+          </div>
+          <Button
+            className="w-full min-h-11 rounded-lg border-line-strong bg-white text-[0.9375rem] shadow-none hover:border-foreground/25 hover:bg-surface-subtle/60"
+            loading={googleSubmitting}
+            loadingLabel="Opening Google..."
+            onClick={onGoogle}
+            type="button"
+            variant="secondary"
+          >
+            <GoogleMark /> Continue with Google
+          </Button>
+          <p className="pt-1 text-center text-sm text-muted">
             Already have an account?{" "}
             <Link className="font-bold text-info-strong" href="/login">
               Sign in

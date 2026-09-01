@@ -394,7 +394,7 @@ class RolePreferenceModel(Base):
     __tablename__ = "job_catalog_role_preferences"
     __table_args__ = (
         CheckConstraint("version > 0", name="version_positive"),
-        UniqueConstraint("owner_user_id", name="uq_job_catalog_role_preferences_owner"),
+        UniqueConstraint("owner_user_id", name="uq_job_catalog_role_preferences_owner_user_id"),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)

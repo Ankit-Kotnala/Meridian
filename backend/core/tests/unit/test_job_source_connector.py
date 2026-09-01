@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -40,7 +40,7 @@ class _EmptyImporter:
         raise NotImplementedError(url)
 
 
-def _context(owner=uuid4()) -> RequestContext:
+def _context(owner: UUID) -> RequestContext:
     return RequestContext(owner, "request-job-source", "trace-job-source")
 
 

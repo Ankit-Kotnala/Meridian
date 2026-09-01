@@ -2774,7 +2774,7 @@ class CareerRecordService:
                 now,
             )
             await uow.add_achievement(achievement)
-            existing_achievements = (*existing_achievements, achievement)
+            existing_achievements.append(achievement)
             await uow.add_audit(
                 self._audit(
                     proposal.owner_user_id,
@@ -2890,7 +2890,7 @@ class CareerRecordService:
                     now,
                 )
             )
-            existing_evidence = (*existing_evidence, record)
+            existing_evidence.append(record)
             await uow.add_audit(
                 self._audit(
                     proposal.owner_user_id,

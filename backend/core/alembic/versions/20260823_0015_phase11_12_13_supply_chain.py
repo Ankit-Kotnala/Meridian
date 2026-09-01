@@ -35,6 +35,38 @@ _DOCUMENT_KINDS = (
 )
 
 _SOURCE_KINDS = ("paste", "url", "manual", "greenhouse", "fake")
+_AUDIT_ACTIONS = (
+    "job_imported",
+    "job_created",
+    "job_updated",
+    "job_deleted",
+    "job_analyzed",
+    "opportunity_prioritized",
+    "jobs_synced_from_source",
+)
+_PHASE5_SOURCE_KINDS = ("paste", "url", "manual")
+_PHASE5_AUDIT_ACTIONS = (
+    "job_imported",
+    "job_created",
+    "job_updated",
+    "job_deleted",
+    "job_analyzed",
+    "opportunity_prioritized",
+)
+_PHASE8_DOCUMENT_KINDS = (
+    "tailored_resume",
+    "cover_letter",
+    "professional_bio",
+    "interest_answer",
+    "fit_answer",
+    "recruiter_message",
+    "hiring_manager_message",
+    "referral_request",
+    "linkedin_connection_note",
+    "follow_up_email",
+    "interview_introduction",
+    "achievement_summary",
+)
 
 
 def _values(values: tuple[str, ...]) -> str:
@@ -52,7 +84,7 @@ def upgrade() -> None:
         sa.Column("compensation_max", sa.Integer(), nullable=True),
         sa.Column(
             "compensation_currency",
-            sa.CHAR(length=3),
+            sa.String(length=3),
             nullable=False,
             server_default=sa.text("'USD'"),
         ),
@@ -60,32 +92,27 @@ def upgrade() -> None:
             "preferred_locations",
             postgresql.JSONB(astext_type=sa.Text()),
             nullable=False,
-            server_default=sa.text("'[]'::jsonb"),
         ),
         sa.Column(
             "profile_links",
             postgresql.JSONB(astext_type=sa.Text()),
             nullable=False,
-            server_default=sa.text("'[]'::jsonb"),
         ),
         sa.Column(
             "voluntary_disclosures",
             postgresql.JSONB(astext_type=sa.Text()),
             nullable=False,
-            server_default=sa.text("'{}'::jsonb"),
         ),
         sa.Column("version", sa.Integer(), nullable=False, server_default=sa.text("1")),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
             nullable=False,
-            server_default=sa.text("now()"),
         ),
         sa.Column(
             "updated_at",
             sa.DateTime(timezone=True),
             nullable=False,
-            server_default=sa.text("now()"),
         ),
         sa.CheckConstraint("version > 0", name="ck_application_profiles_version_positive"),
         sa.CheckConstraint(
@@ -120,12 +147,12 @@ def upgrade() -> None:
     )
 
     op.drop_constraint(
-        op.f("ck_application_documents_ck_application_documents_kind_valid"),
+        "ck_application_documents_kind_valid",
         "application_documents",
         type_="check",
     )
     op.create_check_constraint(
-        "kind_valid",
+        "ck_application_documents_kind_valid",
         "application_documents",
         f"kind IN ({_values(_DOCUMENT_KINDS)})",
     )
@@ -135,12 +162,12 @@ def upgrade() -> None:
         sa.Column("external_id", sa.String(length=200), nullable=True),
     )
     op.drop_constraint(
-        op.f("ck_job_postings_ck_job_postings_source_kind_valid"),
+        "ck_job_postings_source_kind_valid",
         "job_postings",
         type_="check",
     )
     op.create_check_constraint(
-        "source_kind_valid",
+        "ck_job_postings_source_kind_valid",
         "job_postings",
         f"source_kind IN ({_values(_SOURCE_KINDS)})",
     )
@@ -152,29 +179,50 @@ def upgrade() -> None:
         postgresql_where=sa.text("external_id IS NOT NULL"),
     )
 
+    op.drop_constraint(
+        "ck_job_match_audit_events_action_valid",
+        "job_match_audit_events",
+        type_="check",
+    )
+    op.create_check_constraint(
+        "ck_job_match_audit_events_action_valid",
+        "job_match_audit_events",
+        f"action IN ({_values(_AUDIT_ACTIONS)})",
+    )
+
 
 def downgrade() -> None:
+    op.drop_constraint(
+        "ck_job_match_audit_events_action_valid",
+        "job_match_audit_events",
+        type_="check",
+    )
+    op.create_check_constraint(
+        "ck_job_match_audit_events_action_valid",
+        "job_match_audit_events",
+        f"action IN ({_values(_PHASE5_AUDIT_ACTIONS)})",
+    )
+
     op.drop_index(
         "ix_job_postings_owner_source_external",
         table_name="job_postings",
         postgresql_where=sa.text("external_id IS NOT NULL"),
     )
-    op.drop_constraint("source_kind_valid", "job_postings", type_="check")
+    op.drop_constraint("ck_job_postings_source_kind_valid", "job_postings", type_="check")
     op.create_check_constraint(
-        "source_kind_valid",
+        "ck_job_postings_source_kind_valid",
         "job_postings",
-        "source_kind IN ('paste','url','manual')",
+        f"source_kind IN ({_values(_PHASE5_SOURCE_KINDS)})",
     )
     op.drop_column("job_postings", "external_id")
 
-    op.drop_constraint("kind_valid", "application_documents", type_="check")
+    op.drop_constraint(
+        "ck_application_documents_kind_valid", "application_documents", type_="check"
+    )
     op.create_check_constraint(
-        "kind_valid",
+        "ck_application_documents_kind_valid",
         "application_documents",
-        "kind IN ('tailored_resume','cover_letter','professional_bio','interest_answer',"
-        "'fit_answer','recruiter_message','hiring_manager_message','referral_request',"
-        "'linkedin_connection_note','follow_up_email','interview_introduction',"
-        "'achievement_summary')",
+        f"kind IN ({_values(_PHASE8_DOCUMENT_KINDS)})",
     )
 
     op.drop_index("ix_application_profiles_owner_updated", table_name="application_profiles")

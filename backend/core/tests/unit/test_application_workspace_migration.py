@@ -135,9 +135,10 @@ def test_phase8_migration_matches_registered_orm_schema() -> None:
 
     expected = _phase_tables()
     captured_names = set(capture.metadata.tables) - {"users", "resume_versions"}
-    assert captured_names == set(expected)
+    assert captured_names == set(expected) - {"application_profiles"}
 
-    for name, table in expected.items():
+    for name in captured_names:
+        table = expected[name]
         migrated = capture.metadata.tables[name]
         assert tuple(table.c.keys()) == tuple(migrated.c.keys()), name
         for column in table.c:
@@ -177,6 +178,13 @@ def test_phase8_database_allowlists_match_domain_enums() -> None:
     for constant_name, enum_type in expected.items():
         domain_values = tuple(member.value for member in enum_type)
         assert getattr(models, constant_name) == domain_values
+        if constant_name == "_DOCUMENT_KINDS":
+            assert getattr(revision, constant_name) == tuple(
+                member.value
+                for member in enum_type
+                if member is not ApplicationDocumentKind.ASSISTED_APPLY_HANDOFF
+            )
+            continue
         assert getattr(revision, constant_name) == domain_values
 
 

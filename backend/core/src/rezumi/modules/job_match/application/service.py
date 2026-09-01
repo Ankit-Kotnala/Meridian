@@ -38,6 +38,7 @@ from rezumi.modules.job_match.domain.scoring import (
     JobMatchScore,
 )
 
+from .job_source_ports import JobSourceConnectorRegistry, JobSourceListing
 from .models import (
     AnalysisRecord,
     CreateJob,
@@ -63,7 +64,6 @@ from .ports import (
     JobMatchUnitOfWorkFactory,
     RoleContextProvider,
 )
-from .job_source_ports import JobSourceConnectorRegistry, JobSourceListing
 
 _IDEMPOTENCY_KEY = re.compile(r"^[A-Za-z0-9._:-]{8,128}$")
 
@@ -831,7 +831,7 @@ class JobMatchService:
         target_id: UUID,
         context: RequestContext,
         created_at: datetime,
-        **details: UUID | None,
+        **details: UUID | str | int | None,
     ) -> JobMatchAuditEvent:
         return JobMatchAuditEvent(
             id=self._ids.new(),

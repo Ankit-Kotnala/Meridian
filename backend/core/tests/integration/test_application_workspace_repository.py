@@ -94,6 +94,7 @@ class _JobProvider:
             latest_analysis_id=None,
             source_sha256="a" * 64,
             source="referral",
+            source_url=None,
             industry="software",
             requirements=(requirement,),
             requirement_support=(),

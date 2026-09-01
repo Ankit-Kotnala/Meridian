@@ -46,6 +46,7 @@ async def test_job_snapshot_pins_only_analysis_for_exact_current_job_version() -
         application_deadline=None,
         source_sha256=bytes.fromhex("a" * 64),
         source_kind=SimpleNamespace(value="manual"),
+        source_url=None,
     )
     requirement = SimpleNamespace(
         id=_REQUIREMENT_ID,

@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  BarChart3,
-  CalendarRange,
-  Clock3,
-  Database,
-  RefreshCcw,
-  ShieldCheck,
-  TrendingUp,
-} from "lucide-react";
+import { Clock3, RefreshCcw, ShieldCheck } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -28,7 +20,6 @@ import {
   ErrorState,
   Input,
   LoadingSkeleton,
-  PageHeader,
   Select,
 } from "@rezumi/ui";
 
@@ -233,27 +224,14 @@ function freshnessTone(
   return "neutral";
 }
 
-function SectionHeading({
-  children,
-  icon,
-  id,
-}: {
-  children: ReactNode;
-  icon: ReactNode;
-  id: string;
-}) {
+function SectionHeading({ children, id }: { children: ReactNode; id: string }) {
   return (
-    <div className="flex items-center gap-3">
-      <span
-        aria-hidden="true"
-        className="grid size-9 place-items-center rounded-xl bg-primary-soft text-primary"
-      >
-        {icon}
-      </span>
-      <h2 className="text-xl font-black" id={id}>
-        {children}
-      </h2>
-    </div>
+    <h2
+      className="text-lg font-semibold tracking-[-0.02em] text-foreground"
+      id={id}
+    >
+      {children}
+    </h2>
   );
 }
 
@@ -531,12 +509,7 @@ function ReportContent({ report }: { report: AnalyticsReport }) {
   return (
     <div className="space-y-8">
       <section aria-labelledby="analytics-counts">
-        <SectionHeading
-          icon={<BarChart3 className="size-4" />}
-          id="analytics-counts"
-        >
-          Observed activity
-        </SectionHeading>
+        <SectionHeading id="analytics-counts">Observed activity</SectionHeading>
         <p className="mt-2 text-sm leading-6 text-muted">
           Counts and rates cover only the selected window. A rate with fewer
           than five eligible observations is hidden.
@@ -548,10 +521,7 @@ function ReportContent({ report }: { report: AnalyticsReport }) {
       </section>
 
       <section aria-labelledby="analytics-breakdowns">
-        <SectionHeading
-          icon={<Database className="size-4" />}
-          id="analytics-breakdowns"
-        >
+        <SectionHeading id="analytics-breakdowns">
           Top dimensions
         </SectionHeading>
         <p className="mt-2 text-sm leading-6 text-muted">
@@ -563,10 +533,7 @@ function ReportContent({ report }: { report: AnalyticsReport }) {
 
       {payload.requirementCoverageTrend.length > 0 && (
         <section aria-labelledby="analytics-coverage-trend">
-          <SectionHeading
-            icon={<TrendingUp className="size-4" />}
-            id="analytics-coverage-trend"
-          >
+          <SectionHeading id="analytics-coverage-trend">
             Requirement coverage trend
           </SectionHeading>
           <p className="mt-2 text-sm leading-6 text-muted">
@@ -579,10 +546,7 @@ function ReportContent({ report }: { report: AnalyticsReport }) {
 
       {payload.outcomesByResumeVersion.length > 0 && (
         <section aria-labelledby="analytics-resume-outcomes">
-          <SectionHeading
-            icon={<Database className="size-4" />}
-            id="analytics-resume-outcomes"
-          >
+          <SectionHeading id="analytics-resume-outcomes">
             Outcomes by immutable resume version
           </SectionHeading>
           <p className="mt-2 text-sm leading-6 text-muted">
@@ -594,12 +558,7 @@ function ReportContent({ report }: { report: AnalyticsReport }) {
       )}
 
       <section aria-labelledby="analytics-time">
-        <SectionHeading
-          icon={<CalendarRange className="size-4" />}
-          id="analytics-time"
-        >
-          Activity over time
-        </SectionHeading>
+        <SectionHeading id="analytics-time">Activity over time</SectionHeading>
         {payload.timeBuckets.length === 0 ? (
           <p className="mt-3 text-sm text-muted">
             No time-bucket activity in this window.
@@ -659,10 +618,7 @@ function ReportContent({ report }: { report: AnalyticsReport }) {
       </section>
 
       <section aria-labelledby="analytics-readiness">
-        <SectionHeading
-          icon={<TrendingUp className="size-4" />}
-          id="analytics-readiness"
-        >
+        <SectionHeading id="analytics-readiness">
           Readiness history
         </SectionHeading>
         <p className="mt-2 max-w-3xl text-xs font-semibold leading-5 text-muted">
@@ -732,7 +688,7 @@ function Watermarks({ report }: { report: AnalyticsReport }) {
   );
   return (
     <details className="rounded-xl border border-line p-4">
-      <summary className="cursor-pointer font-extrabold">
+      <summary className="cursor-pointer text-sm font-semibold">
         Source completeness watermarks ({values.length})
       </summary>
       <p className="mt-2 text-xs leading-5 text-muted">
@@ -800,7 +756,7 @@ function MetricSemantics({ report }: { report: AnalyticsReport }) {
   );
   return (
     <details className="rounded-xl border border-line p-4">
-      <summary className="cursor-pointer font-extrabold">
+      <summary className="cursor-pointer text-sm font-semibold">
         Metric, cohort, and timestamp definitions
       </summary>
       <p className="mt-3 text-sm leading-6">
@@ -1151,15 +1107,20 @@ export function AnalyticsView() {
     refresh?.status === "retry_wait";
 
   return (
-    <main
-      className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8"
-      id="main-content"
-    >
-      <PageHeader
-        description="Purpose-limited snapshots summarize your own workspace. Complete source watermarks and visible small-cohort suppression keep every report auditable."
-        eyebrow="Long-term growth"
-        title="Career Analytics"
-      />
+    <main className="workspace-page space-y-6" id="main-content">
+      <header>
+        <p className="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-primary">
+          Analytics
+        </p>
+        <h1 className="mt-1.5 text-[1.625rem] font-bold tracking-[-0.03em] text-foreground sm:text-[1.75rem]">
+          Career Analytics
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
+          Purpose-limited snapshots summarize your own workspace. Complete
+          source watermarks and visible small-cohort suppression keep every
+          report auditable.
+        </p>
+      </header>
 
       <Alert title="Interpretation boundary" tone="info">
         <div className="flex items-start gap-3">
@@ -1170,12 +1131,15 @@ export function AnalyticsView() {
         </div>
       </Alert>
 
-      <Card className="p-5">
+      <section
+        aria-label="Analytics window"
+        className="rounded-[var(--radius-card)] border border-line bg-surface p-4"
+      >
         <form
-          className="grid gap-4 md:grid-cols-[minmax(12rem,1fr)_minmax(10rem,1fr)_minmax(10rem,1fr)_auto]"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(12rem,1fr)_minmax(10rem,1fr)_minmax(10rem,1fr)_auto]"
           onSubmit={applyFilters}
         >
-          <label className="grid gap-1.5 text-sm font-bold">
+          <label className="grid gap-1.5 text-sm font-semibold">
             View
             <Select
               onChange={(event) =>
@@ -1193,7 +1157,7 @@ export function AnalyticsView() {
               ))}
             </Select>
           </label>
-          <label className="grid gap-1.5 text-sm font-bold">
+          <label className="grid gap-1.5 text-sm font-semibold">
             Window start
             <Input
               max={filters.windowEnd}
@@ -1208,7 +1172,7 @@ export function AnalyticsView() {
               value={filters.windowStart}
             />
           </label>
-          <label className="grid gap-1.5 text-sm font-bold">
+          <label className="grid gap-1.5 text-sm font-semibold">
             Window end
             <Input
               min={filters.windowStart}
@@ -1227,7 +1191,7 @@ export function AnalyticsView() {
             Apply window
           </Button>
         </form>
-      </Card>
+      </section>
 
       {success && (
         <Alert title="Refresh status" tone="success">
@@ -1262,7 +1226,7 @@ export function AnalyticsView() {
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-2xl font-black">
+                  <h2 className="text-lg font-semibold tracking-[-0.02em]">
                     {humanize(report.scope)} report
                   </h2>
                   <Badge tone={freshnessTone(report.freshness)}>
@@ -1317,7 +1281,7 @@ export function AnalyticsView() {
         </>
       ) : null}
 
-      <aside className="rounded-2xl border border-line bg-surface-subtle p-5 text-sm leading-6 text-muted">
+      <aside className="rounded-[var(--radius-card)] border border-line bg-surface p-4 text-sm leading-6 text-muted">
         <div className="flex items-start gap-3">
           <Clock3 aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
           <p>
@@ -1336,7 +1300,7 @@ export function AnalyticsLoading({ embedded = false }: { embedded?: boolean }) {
   const content = <LoadingSkeleton />;
   if (embedded) return content;
   return (
-    <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8" id="main-content">
+    <main className="workspace-page" id="main-content">
       {content}
     </main>
   );
@@ -1344,7 +1308,7 @@ export function AnalyticsLoading({ embedded = false }: { embedded?: boolean }) {
 
 export function AnalyticsRouteError({ reset }: { reset: () => void }) {
   return (
-    <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8" id="main-content">
+    <main className="workspace-page" id="main-content">
       <ErrorState
         description="The Career Analytics route could not be rendered. No source data or stored report was changed."
         onRetry={reset}

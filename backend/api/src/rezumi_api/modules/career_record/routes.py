@@ -369,9 +369,7 @@ async def _experience_list_responses(
 ) -> list[ExperienceResponse]:
     confirmations = await service.list_entity_confirmations(owner_user_id)
     provenance = (
-        await _accepted_provenance_by_entity(service, owner_user_id)
-        if include_provenance
-        else {}
+        await _accepted_provenance_by_entity(service, owner_user_id) if include_provenance else {}
     )
     skill_ids_by_entity = await service.list_entity_skill_ids_by_entity(
         owner_user_id,

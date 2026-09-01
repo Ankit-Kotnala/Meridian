@@ -8,6 +8,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -28,10 +29,8 @@ import {
   LoadingSkeleton,
   ScoreBar,
   Select,
-  Tabs,
   buttonStyles,
   cn,
-  type TabItem,
 } from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
@@ -128,11 +127,16 @@ function sameOpening(listing: JobCatalogListing, job: Job): boolean {
   );
 }
 
+export type JobMatchSection = "search" | "saved" | "roles";
+
 export function JobMatchView({
   roleMatchingPanel,
+  section = "search",
 }: {
   roleMatchingPanel?: ReactNode;
+  section?: JobMatchSection;
 }) {
+  const router = useRouter();
   const [jobs, setJobs] = useState<Job[]>();
   const [suggestions, setSuggestions] = useState<JobCatalogSearch>();
   const [rolePreferenceBusy, setRolePreferenceBusy] = useState(false);
@@ -145,7 +149,6 @@ export function JobMatchView({
   const [failure, setFailure] = useState<string>();
   const [success, setSuccess] = useState<string>();
   const [busyKey, setBusyKey] = useState<string>();
-  const [tab, setTab] = useState("search");
   const [filters, setFilters] = useState<JobSearchFilters>(
     emptyJobSearchFilters,
   );
@@ -540,7 +543,7 @@ export function JobMatchView({
         suggested={suggestions?.suggestedRoleTitles ?? []}
       />
 
-      <div className="grid gap-4 lg:grid-cols-[15rem_minmax(0,1fr)] xl:grid-cols-[15rem_minmax(0,1fr)_25rem]">
+      <div className="grid gap-4 lg:grid-cols-[minmax(16.5rem,18rem)_minmax(0,1fr)] xl:grid-cols-[minmax(16.5rem,18rem)_minmax(0,1fr)_25rem]">
         <JobFiltersPanel
           busy={filterBusy}
           filters={filters}
@@ -576,7 +579,7 @@ export function JobMatchView({
             onClose={() => setSelectedListing(undefined)}
             onOpenMatrix={() => {
               if (selection.job) setActiveJobId(selection.job.id);
-              setTab("saved");
+              router.push("/job-match/saved");
             }}
             onSave={() => void saveListing(selectedListing)}
             priority={panelPriority}
@@ -1052,9 +1055,9 @@ export function JobMatchView({
   // Alerts live inside the gutter with the panel rather than above the bar, so
   // they read as part of the tab the owner is looking at.
   const panelShell = (content: ReactNode) => (
-    <div className="space-y-4">
+    <div className="workspace-page space-y-4">
       {failure && (
-        <Alert title="Job Match unavailable" tone="danger">
+        <Alert title="Request failed" tone="danger">
           {failure}
         </Alert>
       )}
@@ -1067,36 +1070,26 @@ export function JobMatchView({
     </div>
   );
 
-  const tabs: TabItem[] = [
-    { id: "search", label: "Job search", panel: panelShell(searchPanel) },
-    { id: "saved", label: "Saved jobs", panel: panelShell(savedPanel) },
-    {
-      id: "roles",
-      label: "Role matching",
-      panel: panelShell(
-        roleMatchingPanel ?? (
-          <EmptyState
-            description="Role readiness is unavailable on this page."
-            title="Role matching"
-          />
-        ),
-      ),
-    },
-  ];
+  const panel =
+    section === "saved"
+      ? panelShell(savedPanel)
+      : section === "roles"
+        ? panelShell(
+            roleMatchingPanel ?? (
+              <EmptyState
+                description="Role readiness is unavailable on this page."
+                title="Role matching"
+              />
+            ),
+          )
+        : panelShell(searchPanel);
 
   return (
     <>
       <div aria-live="polite" className="sr-only">
         {success || failure || ""}
       </div>
-
-      <Tabs
-        label="Job search sections"
-        onValueChange={setTab}
-        tabs={tabs}
-        value={tab}
-        variant="section"
-      />
+      {panel}
     </>
   );
 }

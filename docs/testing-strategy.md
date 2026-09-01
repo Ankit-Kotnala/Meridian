@@ -29,7 +29,7 @@ never runs. A runner reporting zero tests is a configuration failure.
 
 | Layer                  | Purpose                                                                      | Typical tools / boundary                                                             |
 | ---------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Static                 | Formatting, lint, strict types, dependency/config/schema checks              | npm scripts, ESLint, TypeScript, Ruff, mypy/pyright as selected, OpenAPI validation |
+| Static                 | Formatting, lint, strict types, dependency/config/schema checks              | npm scripts, ESLint, TypeScript, Ruff, mypy/pyright as selected, OpenAPI validation  |
 | Unit                   | Pure domain rules, features, state machines, validators, provider adapters   | Vitest and Pytest; no network/time randomness                                        |
 | Component              | UI states, semantics, focus, keyboard, responsive variants                   | React Testing Library/Vitest, axe-compatible checks, Storybook where valuable        |
 | Contract               | OpenAPI response/request/error/idempotency compatibility and generated types | FastAPI/Pydantic tests, normalized OpenAPI snapshots, typed client compile           |

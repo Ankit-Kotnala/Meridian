@@ -91,7 +91,19 @@ export const workspaceSections: readonly WorkspaceSection[] = [
     label: "Job search",
     subtitle: "Find and match open roles",
     routes: ["/job-match", "/role-explorer"],
-    tools: [],
+    tools: [
+      { href: "/job-match", icon: Search, label: "Job search" },
+      {
+        href: "/job-match/saved",
+        icon: Briefcase,
+        label: "Saved jobs",
+      },
+      {
+        href: "/job-match/roles",
+        icon: UserRoundCheck,
+        label: "Role matching",
+      },
+    ],
   },
   {
     href: "/applications",
@@ -126,7 +138,7 @@ export const workspaceSections: readonly WorkspaceSection[] = [
     subtitle: "Plan your next step",
     routes: ["/career-growth", "/analytics"],
     tools: [
-      { href: "/career-growth", icon: TrendingUp, label: "Career Growth" },
+      { href: "/career-growth", icon: TrendingUp, label: "Growth" },
       { href: "/analytics", icon: BarChart3, label: "Analytics" },
     ],
   },

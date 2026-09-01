@@ -251,6 +251,15 @@ class Settings(BaseSettings):
             "MONGODB_ROLE_ROADMAPS_COLLECTION",
         ),
     )
+    mongodb_application_profile_collection: str = Field(
+        default="application-profiles",
+        min_length=1,
+        max_length=120,
+        validation_alias=AliasChoices(
+            "REZUMI_MONGODB_APPLICATION_PROFILE_COLLECTION",
+            "MONGODB_APPLICATION_PROFILE_COLLECTION",
+        ),
+    )
 
     @field_validator("allowed_origins", mode="before")
     @classmethod

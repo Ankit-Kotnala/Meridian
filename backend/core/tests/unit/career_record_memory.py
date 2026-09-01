@@ -370,11 +370,7 @@ class MemoryCareerRecord:
         owner_user_id: UUID,
         entity_ids: tuple[UUID, ...] | None = None,
     ) -> list[EntitySkillLink]:
-        links = [
-            link
-            for link in self.entity_skill_links
-            if link.owner_user_id == owner_user_id
-        ]
+        links = [link for link in self.entity_skill_links if link.owner_user_id == owner_user_id]
         if entity_ids:
             allowed = set(entity_ids)
             links = [link for link in links if link.entity_id in allowed]

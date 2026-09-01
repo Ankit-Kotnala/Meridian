@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
-export default function RoleExplorerPage() {
-  redirect("/job-match");
+export default function RoleExplorerRedirectPage() {
+  redirect("/job-match/roles");
 }

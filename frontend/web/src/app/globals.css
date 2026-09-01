@@ -107,6 +107,20 @@ textarea {
   text-transform: uppercase;
 }
 
+.auth-display {
+  font-family:
+    var(--font-auth-display), "Source Serif 4", ui-serif, Georgia, serif;
+}
+
+.auth-eyebrow {
+  color: var(--primary);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
 .balanced {
   text-wrap: balance;
 }

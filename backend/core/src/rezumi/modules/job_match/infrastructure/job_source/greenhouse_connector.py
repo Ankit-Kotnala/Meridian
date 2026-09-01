@@ -28,9 +28,7 @@ class GreenhouseJobSourceConnector:
         listings = payload.get("listings")
         if not isinstance(listings, list):
             raise JobMatchValidationError("fixture listings payload is invalid")
-        validated = tuple(
-            _validate_listing(item) for item in listings if isinstance(item, dict)
-        )
+        validated = tuple(_validate_listing(item) for item in listings if isinstance(item, dict))
         if not normalized:
             return validated
         return tuple(

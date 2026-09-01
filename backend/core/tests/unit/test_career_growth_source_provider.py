@@ -12,6 +12,9 @@ import pytest
 from rezumi.modules.career_growth.infrastructure.career_record_provider import (
     CareerRecordGrowthSourceProvider,
 )
+from rezumi.modules.career_growth.infrastructure.career_record_skills_provider import (
+    CareerRecordSkillsProvider,
+)
 from rezumi.modules.career_record.domain import EvidenceStrength, EvidenceType
 
 OWNER_ID = UUID("00000000-0000-4000-8000-000000009801")
@@ -111,3 +114,31 @@ async def test_achievement_history_excludes_other_eligible_evidence_types() -> N
         NOTE_ID,
     }
     assert result.skills[0].evidence_ids == (NOTE_ID, ACHIEVEMENT_ID)
+
+
+class _CareerRecordSkillsSource:
+    async def readiness_snapshot(
+        self,
+        owner_user_id: UUID,
+        *,
+        evidence_limit: int,
+    ) -> SimpleNamespace:
+        assert owner_user_id == OWNER_ID
+        assert evidence_limit == 2_000
+        unsupported_skill_id = UUID("00000000-0000-4000-8000-000000009805")
+        return SimpleNamespace(
+            skills=(
+                SimpleNamespace(id=SKILL_ID, name="Python"),
+                SimpleNamespace(id=unsupported_skill_id, name="Prompt engineering"),
+            ),
+            evidence=(SimpleNamespace(skill_ids=(SKILL_ID,)),),
+        )
+
+
+@pytest.mark.asyncio
+async def test_roadmap_skill_provider_requires_eligible_linked_evidence() -> None:
+    provider = CareerRecordSkillsProvider(_CareerRecordSkillsSource())  # type: ignore[arg-type]
+
+    names = await provider.list_demonstrated_skill_names(OWNER_ID)
+
+    assert names == ("Python",)

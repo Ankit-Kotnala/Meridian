@@ -160,20 +160,30 @@ function safeProblem(status: number, title: string, detail: string): Response {
   );
 }
 
-function proxyPath(segments: string[]): string | undefined {
-  if (
-    segments.length === 0 ||
-    segments.some(
-      (segment) =>
-        !segment ||
-        segment === "." ||
-        segment === ".." ||
-        segment.includes("/"),
-    )
-  ) {
+function proxySegment(segment: string): string | undefined {
+  let decoded = segment;
+  try {
+    decoded = decodeURIComponent(segment);
+  } catch {
     return undefined;
   }
-  return `/api/v1/${segments.map(encodeURIComponent).join("/")}`;
+  if (!decoded || decoded === "." || decoded === "..") {
+    return undefined;
+  }
+  return encodeURIComponent(decoded);
+}
+
+function proxyPath(segments: string[] | undefined): string | undefined {
+  if (!Array.isArray(segments) || segments.length === 0) {
+    return undefined;
+  }
+  const encoded: string[] = [];
+  for (const segment of segments) {
+    const next = proxySegment(segment);
+    if (next === undefined) return undefined;
+    encoded.push(next);
+  }
+  return `/api/v1/${encoded.join("/")}`;
 }
 
 export async function proxyApiRequest(

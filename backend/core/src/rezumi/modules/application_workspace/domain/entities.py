@@ -16,6 +16,7 @@ MAX_RESUME_CLAIMS = 12 * 24
 MAX_EVIDENCE_LINKS_PER_CLAIM = 20
 MAX_RESUME_EVIDENCE_PINS = 200
 MAX_APPLICATION_DOCUMENT_BODY_LENGTH = 131_000
+MAX_VOLUNTARY_DISCLOSURES = 100
 DELETED_DOCUMENT_TEXT = "[deleted]"
 
 
@@ -752,14 +753,22 @@ class ApplicationProfile:
                 normalized_locations.append(normalized)
         object.__setattr__(self, "preferred_locations", tuple(normalized_locations))
         if len(self.preferred_locations) > 50:
-            raise ApplicationWorkspaceValidationError("preferred locations exceed the supported limit")
+            raise ApplicationWorkspaceValidationError(
+                "preferred locations exceed the supported limit"
+            )
         if len(self.profile_links) > 30:
             raise ApplicationWorkspaceValidationError("profile links exceed the supported limit")
         normalized_disclosures: dict[str, str] = {}
-        for key, value in self.voluntary_disclosures.items():
-            if re.fullmatch(r"[a-z0-9_]{3,80}", key) is None:
+        for disclosure_key, disclosure_value in self.voluntary_disclosures.items():
+            if re.fullmatch(r"[a-z0-9_]{3,80}", disclosure_key) is None:
                 raise ApplicationWorkspaceValidationError("voluntary disclosure key is invalid")
-            normalized_disclosures[key] = _text(value, f"voluntary disclosure {key}", 500)
+            normalized_disclosures[disclosure_key] = _text(
+                disclosure_value, f"voluntary disclosure {disclosure_key}", 500
+            )
+        if len(normalized_disclosures) > MAX_VOLUNTARY_DISCLOSURES:
+            raise ApplicationWorkspaceValidationError(
+                "voluntary disclosures exceed the supported limit"
+            )
         object.__setattr__(self, "voluntary_disclosures", normalized_disclosures)
 
 

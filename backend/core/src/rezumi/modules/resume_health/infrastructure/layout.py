@@ -11,7 +11,7 @@ from rezumi.modules.resume_health.application.models import (
     ExtractionResult,
 )
 
-LAYOUT_ANALYZER_VERSION = "rezumi-layout-analyzer/1.0.0"
+LAYOUT_ANALYZER_VERSION = "rezumi-layout-analyzer/1.1.0"
 
 
 class LocalLayoutAnalyzer:
@@ -38,7 +38,10 @@ def analyze_local_layout(extraction: ExtractionResult) -> ExtractionResult:
     warnings.extend(
         signal_warnings[signal] for signal in extraction.layout_signals if signal in signal_warnings
     )
-    if "multi_column_candidate" in extraction.layout_signals:
+    if (
+        "multi_column_candidate" in extraction.layout_signals
+        and "multi_column_reconstructed" not in extraction.layout_signals
+    ):
         warnings.append("reading_order_uncertain")
     blocks = extraction.reading_order
     table_count = sum(block.kind == "table" for block in blocks)

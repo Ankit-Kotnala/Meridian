@@ -99,4 +99,49 @@ describe("API proxy", () => {
     expect(response.status).toBe(400);
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it("re-encodes decoded slashes in a single path segment", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const listingId =
+      "https://himalayas.app/companies/acme/jobs/backend-engineer";
+    const response = await proxyApiRequest(
+      new Request(
+        `http://localhost:3000/api/v1/job-catalog/himalayas/${encodeURIComponent(listingId)}/save`,
+        { method: "POST" },
+      ),
+      context(["job-catalog", "himalayas", listingId, "save"]),
+    );
+
+    expect(response.status).toBe(200);
+    const [destination] = fetchMock.mock.calls[0] as [URL];
+    expect(destination.pathname).toBe(
+      `/api/v1/job-catalog/himalayas/${encodeURIComponent(listingId)}/save`,
+    );
+  });
+
+  it("does not double-encode an already-encoded slash segment", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+    const listingId =
+      "https://himalayas.app/companies/acme/jobs/backend-engineer";
+
+    await proxyApiRequest(
+      new Request("http://localhost:3000/api/v1/job-catalog/save", {
+        method: "POST",
+      }),
+      context([
+        "job-catalog",
+        "himalayas",
+        encodeURIComponent(listingId),
+        "save",
+      ]),
+    );
+
+    const [destination] = fetchMock.mock.calls[0] as [URL];
+    expect(destination.pathname).toBe(
+      `/api/v1/job-catalog/himalayas/${encodeURIComponent(listingId)}/save`,
+    );
+  });
 });

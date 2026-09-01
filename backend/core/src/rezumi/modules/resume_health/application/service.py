@@ -61,7 +61,6 @@ from rezumi.modules.resume_health.application.ports import (
 )
 from rezumi.modules.resume_health.application.semantic_review import (
     apply_semantic_review,
-    auto_confirm_parsed_semantics,
 )
 from rezumi.modules.resume_health.application.semantic_validation import (
     validate_parser_semantics,
@@ -142,6 +141,8 @@ _SECTION_NAMES: dict[str, SectionKind] = {
     "about me": SectionKind.SUMMARY,
     "objective": SectionKind.SUMMARY,
     "career objective": SectionKind.SUMMARY,
+    "resumen": SectionKind.SUMMARY,
+    "objetivo": SectionKind.SUMMARY,
     "experience": SectionKind.EXPERIENCE,
     "work experience": SectionKind.EXPERIENCE,
     "working experience": SectionKind.EXPERIENCE,
@@ -153,11 +154,29 @@ _SECTION_NAMES: dict[str, SectionKind] = {
     "work history": SectionKind.EXPERIENCE,
     "career history": SectionKind.EXPERIENCE,
     "professional background": SectionKind.EXPERIENCE,
+    "internships": SectionKind.EXPERIENCE,
+    "internship": SectionKind.EXPERIENCE,
+    "internship experience": SectionKind.EXPERIENCE,
+    "intern experience": SectionKind.EXPERIENCE,
+    "volunteer": SectionKind.EXPERIENCE,
+    "volunteering": SectionKind.EXPERIENCE,
+    "volunteer experience": SectionKind.EXPERIENCE,
+    "volunteer work": SectionKind.EXPERIENCE,
+    "community service": SectionKind.EXPERIENCE,
+    "experiencia": SectionKind.EXPERIENCE,
+    "experiencia laboral": SectionKind.EXPERIENCE,
+    "experiencia profesional": SectionKind.EXPERIENCE,
+    "voluntariado": SectionKind.EXPERIENCE,
     "education": SectionKind.EDUCATION,
     "education and training": SectionKind.EDUCATION,
     "academic background": SectionKind.EDUCATION,
     "academic qualifications": SectionKind.EDUCATION,
     "qualifications": SectionKind.EDUCATION,
+    "académico": SectionKind.EDUCATION,
+    "educación": SectionKind.EDUCATION,
+    "educacion": SectionKind.EDUCATION,
+    "formación": SectionKind.EDUCATION,
+    "formacion": SectionKind.EDUCATION,
     "skills": SectionKind.SKILLS,
     "technical skills": SectionKind.SKILLS,
     "core skills": SectionKind.SKILLS,
@@ -168,10 +187,26 @@ _SECTION_NAMES: dict[str, SectionKind] = {
     "technologies": SectionKind.SKILLS,
     "technical proficiencies": SectionKind.SKILLS,
     "tools and technologies": SectionKind.SKILLS,
+    "languages": SectionKind.SKILLS,
+    "language skills": SectionKind.SKILLS,
+    "spoken languages": SectionKind.SKILLS,
+    "habilidades": SectionKind.SKILLS,
+    "competencias": SectionKind.SKILLS,
+    "idiomas": SectionKind.SKILLS,
     "projects": SectionKind.PROJECTS,
     "key projects": SectionKind.PROJECTS,
     "selected projects": SectionKind.PROJECTS,
     "personal projects": SectionKind.PROJECTS,
+    "academic projects": SectionKind.PROJECTS,
+    "open source": SectionKind.PROJECTS,
+    "open-source": SectionKind.PROJECTS,
+    "open source projects": SectionKind.PROJECTS,
+    "open-source projects": SectionKind.PROJECTS,
+    "publications": SectionKind.PROJECTS,
+    "papers": SectionKind.PROJECTS,
+    "research projects": SectionKind.PROJECTS,
+    "proyectos": SectionKind.PROJECTS,
+    "publicaciones": SectionKind.PROJECTS,
     "certifications": SectionKind.CERTIFICATIONS,
     "certification": SectionKind.CERTIFICATIONS,
     "certifications and licenses": SectionKind.CERTIFICATIONS,
@@ -181,11 +216,24 @@ _SECTION_NAMES: dict[str, SectionKind] = {
     "certifications and achievements": SectionKind.CERTIFICATIONS,
     "certifications achievements": SectionKind.CERTIFICATIONS,
     "achievements": SectionKind.CERTIFICATIONS,
+    "awards": SectionKind.CERTIFICATIONS,
+    "honors": SectionKind.CERTIFICATIONS,
+    "honours": SectionKind.CERTIFICATIONS,
+    "awards and honors": SectionKind.CERTIFICATIONS,
+    "awards and honours": SectionKind.CERTIFICATIONS,
+    "awards honors": SectionKind.CERTIFICATIONS,
+    "licenses": SectionKind.CERTIFICATIONS,
+    "certificaciones": SectionKind.CERTIFICATIONS,
+    "premios": SectionKind.CERTIFICATIONS,
     "selected ai projects": SectionKind.PROJECTS,
     "ai projects": SectionKind.PROJECTS,
     "contact": SectionKind.CONTACT,
     "contact information": SectionKind.CONTACT,
     "contact details": SectionKind.CONTACT,
+    "contacto": SectionKind.CONTACT,
+    "references": SectionKind.OTHER,
+    "interests": SectionKind.OTHER,
+    "hobbies": SectionKind.OTHER,
 }
 # Section headings are frequently decorated ("— EXPERIENCE —", "▌Work History")
 # or joined with an ampersand. Normalizing decoration away lets one vocabulary
@@ -824,60 +872,17 @@ class ResumeHealthService:
         document_id: UUID,
         context: ResumeRequestContext,
     ) -> UUID:
-        """Auto-confirm parsed semantics when import is requested before manual review."""
+        """Return an explicitly reviewed snapshot eligible for Career Record import."""
 
+        del context
         latest = await self._source_reader.get_canonical_resume(scope, document_id)
         semantics = latest.resume.semantics
-        if semantics is None:
-            raise ResumeStateConflict
-        if semantics.review_state in {
+        if semantics is None or semantics.review_state not in {
             SemanticReviewState.CONFIRMED,
             SemanticReviewState.CORRECTED,
         }:
-            return latest.id
-        reviewed_semantics = auto_confirm_parsed_semantics(semantics)
-        now = self._clock.now()
-        async with self._uow() as uow:
-            await uow.lock_intake_admission(scope)
-            document = await uow.get_document(scope, document_id, for_update=True)
-            current = await uow.get_latest_snapshot(scope, document_id, for_update=True)
-            if document is None or current is None:
-                raise ResumeResourceNotFound
-            if document.status != DocumentStatus.READY:
-                raise ResumeStateConflict
-            if current.revision >= self._policy.max_canonical_revisions:
-                raise ResumeStateConflict
-            reviewed_resume = replace(current.resume, semantics=reviewed_semantics)
-            snapshot = CanonicalSnapshot(
-                id=uuid4(),
-                document_id=document.id,
-                owner=scope,
-                revision=current.revision + 1,
-                resume=reviewed_resume,
-                plain_text_sha256=current.plain_text_sha256,
-                parser_version=current.parser_version,
-                based_on_snapshot_id=current.id,
-                corrected_by_user=False,
-                created_at=now,
-            )
-            document.version += 1
-            document.updated_at = now
-            await uow.add_snapshot(snapshot)
-            await uow.save_document(document)
-            await uow.add_audit(
-                _audit(
-                    scope,
-                    "canonical_resume.auto_confirmed",
-                    "succeeded",
-                    "document",
-                    document.id,
-                    context,
-                    now,
-                    {"revision": str(snapshot.revision)},
-                )
-            )
-            await uow.commit()
-        return snapshot.id
+            raise ResumeStateConflict
+        return latest.id
 
     async def get_job(self, scope: OwnerScope, job_id: UUID) -> ProcessingJobView:
         async with self._uow() as uow:
@@ -1481,10 +1486,6 @@ class ResumeHealthProcessor:
                 validate_parser_semantics(canonical, semantics, digest.hex())
             except ValueError as exc:
                 raise UnsafeDocument("semantic_parser_invalid_output") from exc
-            owner_user_id = document.owner.user_id
-            if owner_user_id is not None:
-                with suppress(ResumeStateConflict):
-                    semantics = auto_confirm_parsed_semantics(semantics)
             canonical = replace(
                 canonical,
                 schema_version="canonical-resume/2.0.0",

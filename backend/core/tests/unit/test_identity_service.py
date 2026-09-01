@@ -269,6 +269,7 @@ async def test_onboarding_concurrency_and_consent_history_are_owner_scoped() -> 
     )
     assert updated.version == initial.version + 1
     assert updated.target_role == "Product Manager"
+    assert await harness.service.get_target_role_preference(principal.user_id) == "Product Manager"
     with pytest.raises(VersionConflict):
         await harness.service.update_onboarding(
             principal,

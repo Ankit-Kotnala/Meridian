@@ -34,7 +34,6 @@ from rezumi.modules.application_workspace.domain import (
     ApplicationNote,
     ApplicationPack,
     ApplicationProfile,
-    ApplicationProfileLink,
     ApplicationRecord,
     ApplicationRequirementSnapshot,
     ApplicationRequirementSupport,

@@ -19,7 +19,9 @@ from rezumi.modules.application_workspace.application import (
 )
 from rezumi.modules.application_workspace.infrastructure import (
     CareerRecordApplicationEvidenceSnapshotProvider,
+    DisabledApplicationProfileDocumentStore,
     JobMatchApplicationSnapshotProvider,
+    MongoApplicationProfileDocumentStore,
     ResumeBuilderVersionSnapshotProvider,
     SqlAlchemyApplicationWorkspaceUnitOfWorkFactory,
 )
@@ -311,6 +313,9 @@ def create_app(
         resolved_change_studio = change_studio
         resolved_resume_builder = resume_builder
         resolved_application_workspace = application_workspace
+        resolved_application_profile_store: (
+            DisabledApplicationProfileDocumentStore | MongoApplicationProfileDocumentStore | None
+        ) = None
         resolved_interview_prep = interview_prep
         resolved_networking = networking
         resolved_career_growth = career_growth
@@ -561,6 +566,8 @@ def create_app(
                     target_roles=CompositeTargetRoleProvider(
                         role_readiness=resolved_role_readiness,
                         career_record=resolved_career_record,
+                        identity=resolved_identity,
+                        resume_builder=resolved_resume_builder,
                     ),
                     role_preferences=resolved_job_match,
                 )
@@ -614,6 +621,19 @@ def create_app(
                         "Application Workspace requires Career Record, Job Match, "
                         "and Resume Builder boundaries"
                     )
+                resolved_application_profile_store = (
+                    MongoApplicationProfileDocumentStore(
+                        MongoOptions(
+                            url=resolved_settings.mongodb_url.get_secret_value(),
+                            database_name=resolved_settings.mongodb_database_name,
+                            collection_name=(
+                                resolved_settings.mongodb_application_profile_collection
+                            ),
+                        )
+                    )
+                    if resolved_settings.mongodb_enabled
+                    else DisabledApplicationProfileDocumentStore()
+                )
                 resolved_application_workspace = ApplicationWorkspaceService(
                     unit_of_work=cast(
                         ApplicationWorkspaceUnitOfWorkFactory,
@@ -626,6 +646,7 @@ def create_app(
                     evidence=CareerRecordApplicationEvidenceSnapshotProvider(
                         resolved_career_record
                     ),
+                    document_store=resolved_application_profile_store,
                 )
             if resolved_interview_prep is None:
                 if resolved_application_workspace is None:
@@ -675,6 +696,8 @@ def create_app(
                     target_roles=CompositeTargetRoleProvider(
                         role_readiness=resolved_role_readiness,
                         career_record=resolved_career_record,
+                        identity=resolved_identity,
+                        resume_builder=resolved_resume_builder,
                     ),
                     skills=CareerRecordSkillsProvider(resolved_career_record),
                 )
@@ -725,9 +748,7 @@ def create_app(
         application.state.security_store = resolved_security_store
         application.state.resume_health_service = resolved_resume_health
         application.state.career_record_service = resolved_career_record
-        application.state.declared_profile_enrichment_service = (
-            resolved_declared_profile_enrichment
-        )
+        application.state.declared_profile_enrichment_service = resolved_declared_profile_enrichment
         application.state.declared_profile_enrichment_job_service = (
             resolved_declared_profile_enrichment_job
         )
@@ -754,8 +775,10 @@ def create_app(
         if resolved_settings.mongodb_enabled and resolved_job_catalog_store is not None:
             application.state.readiness_dependencies["jobCatalog"] = resolved_job_catalog_store
         if resolved_settings.mongodb_enabled and resolved_role_roadmap_store is not None:
-            application.state.readiness_dependencies["roleRoadmaps"] = (
-                resolved_role_roadmap_store
+            application.state.readiness_dependencies["roleRoadmaps"] = resolved_role_roadmap_store
+        if resolved_settings.mongodb_enabled and resolved_application_profile_store is not None:
+            application.state.readiness_dependencies["applicationProfiles"] = (
+                resolved_application_profile_store
             )
         logger.info(
             "api_started",
@@ -780,6 +803,8 @@ def create_app(
                 await resolved_job_catalog_store.dispose()
             if resolved_role_roadmap_store is not None:
                 await resolved_role_roadmap_store.dispose()
+            if resolved_application_profile_store is not None:
+                await resolved_application_profile_store.dispose()
             await resolved_database.dispose()
             logger.info("api_stopped", service=resolved_settings.service_name)
 

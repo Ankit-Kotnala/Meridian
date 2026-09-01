@@ -16,10 +16,7 @@ from rezumi.modules.resume_health.application import (
     RemoveSemanticField,
     SemanticFieldReclassification,
 )
-from rezumi.modules.resume_health.application.semantic_review import (
-    apply_semantic_review,
-    auto_confirm_parsed_semantics,
-)
+from rezumi.modules.resume_health.application.semantic_review import apply_semantic_review
 from rezumi.modules.resume_health.domain import (
     BlockKind,
     CanonicalBlock,
@@ -197,27 +194,6 @@ async def test_explicit_no_change_confirmation_is_exclusive() -> None:
         for entity in confirmed.entities
         for field in entity.fields
     )
-
-
-def test_auto_confirm_parsed_semantics_confirms_unreviewed_fields() -> None:
-    semantics = CanonicalSemantics(
-        schema_version="canonical-semantics/1.0.0",
-        parser_version="local-semantic/1",
-        entities=(
-            SemanticEntity(
-                id=uuid4(),
-                kind=SemanticEntityKind.SKILL,
-                review_state=SemanticReviewState.UNREVIEWED,
-                fields=(_skill_field(review_state=SemanticReviewState.UNREVIEWED),),
-            ),
-        ),
-        review_state=SemanticReviewState.UNREVIEWED,
-    )
-
-    confirmed = auto_confirm_parsed_semantics(semantics)
-
-    assert confirmed.review_state is SemanticReviewState.CONFIRMED
-    assert confirmed.entities[0].fields[0].review_state is SemanticReviewState.CONFIRMED
 
 
 def test_confirm_no_changes_is_idempotent_when_already_confirmed() -> None:

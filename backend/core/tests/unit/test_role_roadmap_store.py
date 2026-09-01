@@ -6,6 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from rezumi.development.seed_role_roadmaps import ROADMAP_VERSION, ROLE_ROADMAPS
 from rezumi.modules.career_growth.infrastructure.role_roadmap_store import (
     DisabledRoleRoadmapProvider,
     MongoRoleRoadmapProvider,
@@ -44,6 +45,23 @@ _DOCUMENTS = [
                         "name": "Data structures and algorithms",
                         "why": "Core to most engineering work.",
                         "howToStart": "Re-implement one structure a week.",
+                    }
+                ],
+            }
+        ],
+    },
+    {
+        "roleSlug": "ai-engineer",
+        "title": "AI Engineer",
+        "aliases": ["Artificial Intelligence Engineer", "Generative AI Engineer"],
+        "stages": [
+            {
+                "stage": "Core systems",
+                "skills": [
+                    {
+                        "name": "AI evaluation and test design",
+                        "why": "Variable model output needs explicit evaluation.",
+                        "howToStart": "Create a fixed test set.",
                     }
                 ],
             }
@@ -147,3 +165,43 @@ async def test_get_roadmap_returns_none_when_unmatched() -> None:
     collection.find.return_value.limit.return_value = _DOCUMENTS
 
     assert await provider.get_roadmap("Astronaut") is None
+
+
+@pytest.mark.asyncio
+async def test_get_roadmap_matches_alias_with_seniority_modifier() -> None:
+    provider, collection = _provider_with_mocked_collection()
+    collection.find.return_value.limit.return_value = list(reversed(_DOCUMENTS))
+
+    roadmap = await provider.get_roadmap("Senior Generative AI Engineer")
+
+    assert roadmap is not None
+    assert roadmap.role_slug == "ai-engineer"
+    assert roadmap.title == "AI Engineer"
+
+
+def test_curated_seed_contains_versioned_ai_engineer_roadmap() -> None:
+    roadmap = next(item for item in ROLE_ROADMAPS if item["roleSlug"] == "ai-engineer")
+
+    assert ROADMAP_VERSION == "role-roadmaps/2026-08-31.3"
+    assert roadmap["title"] == "AI Engineer"
+    assert "Generative AI Engineer" in roadmap["aliases"]
+    assert len(roadmap["stages"]) == 3
+
+
+@pytest.mark.asyncio
+async def test_get_roadmap_matches_exact_alias() -> None:
+    provider, collection = _provider_with_mocked_collection()
+    collection.find.return_value.limit.return_value = _DOCUMENTS
+
+    roadmap = await provider.get_roadmap("Artificial Intelligence Engineer")
+
+    assert roadmap is not None
+    assert roadmap.role_slug == "ai-engineer"
+
+
+@pytest.mark.asyncio
+async def test_get_roadmap_does_not_match_one_word_substring() -> None:
+    provider, collection = _provider_with_mocked_collection()
+    collection.find.return_value.limit.return_value = _DOCUMENTS
+
+    assert await provider.get_roadmap("Engineer") is None

@@ -600,6 +600,13 @@ class IdentityService:
             raise AuthenticationRequired
         return self._current_user(user, profile)
 
+    async def get_target_role_preference(self, owner_user_id: UUID) -> str | None:
+        """Return the owner-scoped target role for internal application composition."""
+
+        async with self._uow() as uow:
+            profile = await uow.get_profile(owner_user_id)
+        return profile.target_role if profile is not None else None
+
     async def update_current_user(
         self,
         principal: AuthenticatedPrincipal,

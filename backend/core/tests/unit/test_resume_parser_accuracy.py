@@ -2,7 +2,7 @@
 
 This is the enforced number, not a promise of universal accuracy — see
 `rezumi.development.eval_resume_parser`'s module docstring for scope. The
-golden corpus is a starting set (10 cases as of writing); extend it as new
+golden corpus is a starting set (16 cases as of writing); extend it as new
 real-world failure modes are found, and raise the floor as it improves.
 """
 
@@ -24,8 +24,7 @@ async def test_semantic_parser_meets_the_measured_accuracy_floor() -> None:
 
     assert precision is not None and recall is not None, report.render()
     assert precision >= _MIN_PRECISION, (
-        f"Precision regressed to {precision:.1%} (floor {_MIN_PRECISION:.0%}).\n"
-        + report.render()
+        f"Precision regressed to {precision:.1%} (floor {_MIN_PRECISION:.0%}).\n" + report.render()
     )
     assert recall >= _MIN_RECALL, (
         f"Recall regressed to {recall:.1%} (floor {_MIN_RECALL:.0%}).\n" + report.render()

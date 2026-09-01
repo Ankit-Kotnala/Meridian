@@ -60,7 +60,7 @@ class StaticSkillsProvider:
     def __init__(self, names: tuple[str, ...]) -> None:
         self.names = names
 
-    async def list_skill_names(self, owner_user_id: UUID) -> tuple[str, ...]:
+    async def list_demonstrated_skill_names(self, owner_user_id: UUID) -> tuple[str, ...]:
         del owner_user_id
         return self.names
 
@@ -284,9 +284,7 @@ async def test_get_role_roadmap_marks_already_known_skills() -> None:
 
     assert roadmap is not None
     assert roadmap.role_title == "AI Engineer"
-    skills_by_name = {
-        skill.name: skill for stage in roadmap.stages for skill in stage.skills
-    }
+    skills_by_name = {skill.name: skill for stage in roadmap.stages for skill in stage.skills}
     assert skills_by_name["Python"].already_demonstrated is True
     assert skills_by_name["Prompt engineering"].already_demonstrated is False
 

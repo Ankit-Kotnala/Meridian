@@ -76,17 +76,7 @@ export function WorkspaceSidebar({
         )}
         style={{ borderBottomColor: railRule }}
       >
-        {collapsed ? (
-          <RezumiLogo compact href="/dashboard" inverted />
-        ) : (
-          <Link
-            aria-label="Meridian home"
-            className="font-display text-[0.875rem] font-bold uppercase tracking-[0.16em] text-white"
-            href="/dashboard"
-          >
-            Meridian
-          </Link>
-        )}
+        <RezumiLogo compact={collapsed} href="/dashboard" inverted />
         {onClose && (
           <button
             aria-label="Close application navigation"

@@ -181,4 +181,3 @@ async def test_credly_connector_extracts_badges_from_public_feed() -> None:
     assert len(result.achievements) == 1
     assert result.achievements[0].title == "Certified Kubernetes Administrator"
     assert "Linux Foundation" in result.achievements[0].statement
-

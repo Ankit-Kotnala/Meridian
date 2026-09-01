@@ -296,7 +296,7 @@ describe("Career Growth view", () => {
     api.listDevelopmentItems.mockResolvedValueOnce(page([]));
     api.listCareerReviews.mockResolvedValueOnce(page([]));
     api.listCareerHealth.mockResolvedValueOnce(page([]));
-    fireEvent.click(screen.getByRole("button", { name: "Reload data" }));
+    fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
 
     expect(
       await screen.findByRole("heading", { name: "No career goals yet" }),
@@ -533,7 +533,7 @@ describe("Career Growth view", () => {
       });
 
     render(<CareerGrowthView />);
-    const reload = await screen.findByRole("button", { name: "Reload data" });
+    const reload = await screen.findByRole("button", { name: "Refresh" });
 
     act(() => {
       reload.click();
@@ -592,10 +592,16 @@ describe("Career Growth view", () => {
 
     render(<CareerGrowthView />);
 
-    expect(await screen.findByText("AI Engineer")).toBeVisible();
-    expect(screen.getByText("Already familiar")).toBeVisible();
+    expect(
+      await screen.findByRole("heading", { name: "Your path to AI Engineer" }),
+    ).toBeVisible();
+    expect(screen.getAllByText("Evidence found").length).toBeGreaterThanOrEqual(
+      2,
+    );
 
-    fireEvent.click(screen.getByRole("button", { name: "Confirm my roadmap" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Add selected to growth plan" }),
+    );
 
     await waitFor(() =>
       expect(api.confirmRoleRoadmap).toHaveBeenCalledWith(

@@ -858,7 +858,7 @@ def test_experience_list_caps_provenance_instead_of_failing_validation(
     misleading generic "Request validation failed" 422)."""
 
     owner_id = uuid4()
-    identity, career, state, principal = _services(owner_id)
+    identity, career, state, _principal = _services(owner_id)
     with _authenticated_client(settings, fake_database, identity, career) as client:
         profile = client.get("/api/v1/career-profile")
         assert profile.status_code == 200

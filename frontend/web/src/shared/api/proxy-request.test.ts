@@ -98,4 +98,31 @@ describe("API proxy request forwarding", () => {
     expect(response.status).toBe(503);
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it("forwards a decoded slash inside one catalog-id segment", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+    const listingId =
+      "https://himalayas.app/companies/acme/jobs/backend-engineer";
+
+    const response = await proxyApiRequest(
+      new Request(
+        "http://localhost/api/v1/job-catalog/himalayas/listing/save",
+        {
+          method: "POST",
+        },
+      ),
+      {
+        params: Promise.resolve({
+          path: ["job-catalog", "himalayas", listingId, "save"],
+        }),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    const [destination] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(destination.pathname).toBe(
+      `/api/v1/job-catalog/himalayas/${encodeURIComponent(listingId)}/save`,
+    );
+  });
 });

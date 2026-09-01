@@ -10,9 +10,8 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
-
 from alembic import op
+from sqlalchemy.dialects import postgresql
 
 revision: str = "20260823_0017"
 down_revision: str | None = "20260823_0016"
@@ -29,7 +28,7 @@ def upgrade() -> None:
         sa.Column("version", sa.Integer(), nullable=False, server_default=sa.text("1")),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
-        sa.CheckConstraint("version > 0", name="version_positive"),
+        sa.CheckConstraint("version > 0", name="ck_job_catalog_role_preferences_version_positive"),
         sa.ForeignKeyConstraint(
             ["owner_user_id"],
             ["users.id"],
@@ -37,9 +36,7 @@ def upgrade() -> None:
             ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("id", name="pk_job_catalog_role_preferences"),
-        sa.UniqueConstraint(
-            "owner_user_id", name="uq_job_catalog_role_preferences_owner_user_id"
-        ),
+        sa.UniqueConstraint("owner_user_id", name="uq_job_catalog_role_preferences_owner_user_id"),
     )
 
 

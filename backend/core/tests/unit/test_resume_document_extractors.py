@@ -98,8 +98,37 @@ async def test_clean_docx_extracts_text_blocks_and_spans(tmp_path: Path) -> None
 
     assert "fictional service" in result.plain_text
     assert result.reading_order
+    assert any(
+        block.kind == "bullet" and "fictional service" in block.text
+        for block in result.reading_order
+    )
     assert all(block.spans and block.spans[0].page == 1 for block in result.reading_order)
     assert not result.image_only
+
+
+@pytest.mark.asyncio
+async def test_docx_paragraphs_and_tables_keep_source_order(tmp_path: Path) -> None:
+    path = tmp_path / "interleaved.docx"
+    document = Document()
+    document.add_paragraph("Before table")
+    table = document.add_table(rows=1, cols=2)
+    table.cell(0, 0).text = "Middle role"
+    table.cell(0, 1).text = "2024"
+    document.add_paragraph("After table")
+    document.save(path)
+
+    result = await LocalDocumentExtractor().extract(
+        path,
+        ResumeMediaType.DOCX.value,
+        DocumentLimits(),
+    )
+
+    assert [block.text for block in result.reading_order] == [
+        "Before table",
+        "Middle role | 2024",
+        "After table",
+    ]
+    assert result.plain_text.splitlines() == [block.text for block in result.reading_order]
 
 
 @pytest.mark.asyncio
@@ -210,7 +239,12 @@ async def test_committed_adversarial_layout_corpus_has_expected_safe_signals() -
         DocumentLimits(),
     )
 
-    assert {"multi_column_layout", "reading_order_uncertain"} <= set(two_column.warnings)
+    assert "multi_column_layout" in two_column.warnings
+    assert "reading_order_uncertain" not in two_column.warnings
+    assert two_column.plain_text.index("EXPERIENCE") < two_column.plain_text.index("SKILLS")
+    assert two_column.plain_text.index("Engineer | Fictional Alpha") < two_column.plain_text.index(
+        "Python, product strategy"
+    )
     assert {
         "bidirectional_controls_removed",
         "header_footer_excluded",
@@ -305,7 +339,7 @@ async def test_isolated_extractor_returns_validated_child_result(tmp_path: Path)
     )
 
     assert "ALEX RIVERA" in result.plain_text
-    assert result.parser_version == ("rezumi-local-parser/1.0.0+rezumi-layout-analyzer/1.0.0")
+    assert result.parser_version == ("rezumi-local-parser/1.2.0+rezumi-layout-analyzer/1.1.0")
     assert not list(tmp_path.glob("parser-*"))
 
 
@@ -327,3 +361,113 @@ async def test_isolated_extractor_kills_timed_out_child_and_cleans_workspace(
         )
 
     assert not list(tmp_path.glob("parser-*"))
+
+
+def _pdf_pages(*streams: str) -> bytes:
+    encoded = [value.encode("ascii") for value in streams]
+    page_count = len(encoded)
+    page_ids = list(range(3, 3 + page_count))
+    font_id = 3 + page_count
+    content_ids = list(range(font_id + 1, font_id + 1 + page_count))
+    kids = " ".join(f"{page_id} 0 R" for page_id in page_ids)
+    objects: list[bytes] = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        f"<< /Type /Pages /Kids [{kids}] /Count {page_count} >>".encode("ascii"),
+    ]
+    for content_id in content_ids:
+        objects.append(
+            (
+                f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
+                f"/Resources << /Font << /F1 {font_id} 0 R >> >> "
+                f"/Contents {content_id} 0 R >>"
+            ).encode("ascii")
+        )
+    objects.append(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
+    for stream in encoded:
+        objects.append(
+            b"<< /Length "
+            + str(len(stream)).encode("ascii")
+            + b" >>\nstream\n"
+            + stream
+            + b"\nendstream"
+        )
+    output = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+    offsets = [0]
+    for number, body in enumerate(objects, start=1):
+        offsets.append(len(output))
+        output.extend(f"{number} 0 obj\n".encode("ascii"))
+        output.extend(body)
+        output.extend(b"\nendobj\n")
+    xref = len(output)
+    output.extend(f"xref\n0 {len(objects) + 1}\n".encode("ascii"))
+    output.extend(b"0000000000 65535 f \n")
+    for offset in offsets[1:]:
+        output.extend(f"{offset:010d} 00000 n \n".encode("ascii"))
+    output.extend(
+        (f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n").encode(
+            "ascii"
+        )
+    )
+    return bytes(output)
+
+
+@pytest.mark.asyncio
+async def test_row_wise_two_column_pdf_is_read_left_column_then_right(tmp_path: Path) -> None:
+    path = tmp_path / "interleaved-columns.pdf"
+    path.write_bytes(
+        _pdf_pages(
+            "BT\n/F1 10 Tf\n40 760 Td\n(LEFT-A) Tj\nET\n"
+            "BT\n/F1 10 Tf\n320 760 Td\n(RIGHT-A) Tj\nET\n"
+            "BT\n/F1 10 Tf\n40 740 Td\n(LEFT-B) Tj\nET\n"
+            "BT\n/F1 10 Tf\n320 740 Td\n(RIGHT-B) Tj\nET"
+        )
+    )
+
+    result = await LocalDocumentExtractor().extract(
+        path, ResumeMediaType.PDF.value, DocumentLimits()
+    )
+
+    assert result.plain_text.splitlines() == ["LEFT-A", "LEFT-B", "RIGHT-A", "RIGHT-B"]
+    assert "multi_column_layout" in result.warnings
+    assert "reading_order_uncertain" not in result.warnings
+
+
+@pytest.mark.asyncio
+async def test_repeating_pdf_header_is_excluded_from_career_text(tmp_path: Path) -> None:
+    path = tmp_path / "running-header.pdf"
+    path.write_bytes(
+        _pdf_pages(
+            "BT\n/F1 10 Tf\n48 770 Td\n(CONFIDENTIAL) Tj\n0 -40 Td\n(ALPHA BODY) Tj\nET",
+            "BT\n/F1 10 Tf\n48 770 Td\n(CONFIDENTIAL) Tj\n0 -40 Td\n(BETA BODY) Tj\nET",
+        )
+    )
+
+    result = await LocalDocumentExtractor().extract(
+        path, ResumeMediaType.PDF.value, DocumentLimits()
+    )
+
+    assert "ALPHA BODY" in result.plain_text
+    assert "BETA BODY" in result.plain_text
+    assert "CONFIDENTIAL" not in result.plain_text
+    assert "header_footer_excluded" in result.warnings
+
+
+@pytest.mark.asyncio
+async def test_pdf_javascript_and_docx_embeddings_fail_closed(tmp_path: Path) -> None:
+    pdf_path = tmp_path / "active.pdf"
+    pdf_path.write_bytes((FIXTURES / "fictional-resume.pdf").read_bytes() + b"\n/JavaScript\n")
+    with pytest.raises(UnsafeDocument, match="active_content_rejected"):
+        await LocalDocumentExtractor().extract(
+            pdf_path, ResumeMediaType.PDF.value, DocumentLimits()
+        )
+
+    docx_path = tmp_path / "embedded.docx"
+    document = Document()
+    document.add_paragraph("Fictional evidence")
+    document.save(docx_path)
+    with ZipFile(docx_path, "a") as archive:
+        archive.writestr("word/embeddings/oleObject1.bin", b"x")
+    with pytest.raises(UnsafeDocument, match="embedded_object_rejected"):
+        await LocalDocumentExtractor().extract(
+            docx_path, ResumeMediaType.DOCX.value, DocumentLimits()
+        )

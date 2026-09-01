@@ -1,6 +1,7 @@
 "use client";
 
-import { RefreshCcw } from "lucide-react";
+import { ClipboardList, RefreshCcw, UserRound } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import {
@@ -100,22 +101,52 @@ export function ProfileSettings() {
     );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <CorpIdCard
         displayName={profile.displayName}
         emailVerified={profile.emailVerified}
         userId={profile.id}
       />
-      <Card className="p-5 sm:p-7">
-        <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-extrabold text-foreground">
-              Profile and account
+
+      <Card className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <div className="flex min-w-0 items-start gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">
+            <ClipboardList aria-hidden="true" className="size-5" />
+          </span>
+          <div className="min-w-0">
+            <h2 className="text-base font-extrabold text-foreground">
+              Application answers
             </h2>
             <p className="mt-1 text-sm leading-6 text-muted">
-              Manage presentation and future filtering preferences. Employment
-              facts are not stored here.
+              Disability, veteran status, work authorization, EEO self-ID, and
+              the other portal questions Apply for me needs. Stored per account;
+              never inferred from your resume.
             </p>
+          </div>
+        </div>
+        <Link
+          className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-[var(--radius-control)] border border-primary bg-primary px-4 text-sm font-semibold text-white hover:border-primary-strong hover:bg-primary-strong"
+          href="/settings/application-answers"
+        >
+          Open questionnaire
+        </Link>
+      </Card>
+
+      <Card className="p-5 sm:p-7">
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-3 border-b border-line pb-5">
+          <div className="flex items-start gap-3">
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
+              <UserRound aria-hidden="true" className="size-5" />
+            </span>
+            <div>
+              <h2 className="text-lg font-extrabold text-foreground">
+                How Meridian addresses you
+              </h2>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">
+                Presentation and filtering preferences only. Titles, dates, and
+                employers belong on the Career Record — not here.
+              </p>
+            </div>
           </div>
           <Badge tone={profile.emailVerified ? "success" : "warning"}>
             {profile.emailVerified ? "Email verified" : "Verification required"}
@@ -135,110 +166,144 @@ export function ProfileSettings() {
             Your current account preferences are up to date.
           </Alert>
         )}
-        <form className="space-y-5" onSubmit={onSubmit}>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <TextField
-              defaultValue={profile.displayName}
-              id="displayName"
-              label="Name"
-              maxLength={100}
-              name="displayName"
-              required
-            />
-            <TextField
-              disabled
-              id="accountEmail"
-              label="Verified email"
-              value={profile.email}
-            />
-            <TextField
-              defaultValue={profile.targetRole ?? ""}
-              id="targetRole"
-              label="Target role (optional)"
-              maxLength={160}
-              name="targetRole"
-            />
-            <TextField
-              defaultValue={profile.preferredLocation ?? ""}
-              id="preferredLocation"
-              label="Preferred location (optional)"
-              maxLength={160}
-              name="preferredLocation"
-            />
-            <div className="space-y-2">
-              <FieldLabel htmlFor="workModel">Work model (optional)</FieldLabel>
-              <Select
-                defaultValue={profile.workModel ?? ""}
-                id="workModel"
-                name="workModel"
-              >
-                <option value="">No preference</option>
-                <option value="onsite">On-site</option>
-                <option value="hybrid">Hybrid</option>
-                <option value="remote">Remote</option>
-                <option value="flexible">Flexible</option>
-              </Select>
+        <form className="space-y-8" onSubmit={onSubmit}>
+          <section className="space-y-4" aria-labelledby="account-identity">
+            <h3
+              className="text-sm font-extrabold text-foreground"
+              id="account-identity"
+            >
+              Account
+            </h3>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <TextField
+                defaultValue={profile.displayName}
+                id="displayName"
+                label="Name"
+                maxLength={100}
+                name="displayName"
+                required
+              />
+              <TextField
+                disabled
+                id="accountEmail"
+                label="Verified email"
+                value={profile.email}
+              />
             </div>
-            <div className="space-y-2">
-              <FieldLabel htmlFor="seniority">Seniority (optional)</FieldLabel>
-              <Select
-                defaultValue={profile.seniority ?? ""}
-                id="seniority"
-                name="seniority"
-              >
-                <option value="">No preference</option>
-                <option value="entry">Entry</option>
-                <option value="mid">Mid-level</option>
-                <option value="senior">Senior</option>
-                <option value="lead">Lead</option>
-                <option value="executive">Executive</option>
-              </Select>
+          </section>
+          <section className="space-y-4" aria-labelledby="career-preferences">
+            <h3
+              className="text-sm font-extrabold text-foreground"
+              id="career-preferences"
+            >
+              Search preferences
+            </h3>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <TextField
+                defaultValue={profile.targetRole ?? ""}
+                id="targetRole"
+                label="Target role (optional)"
+                maxLength={160}
+                name="targetRole"
+              />
+              <TextField
+                defaultValue={profile.preferredLocation ?? ""}
+                id="preferredLocation"
+                label="Preferred location (optional)"
+                maxLength={160}
+                name="preferredLocation"
+              />
+              <div className="space-y-2">
+                <FieldLabel htmlFor="workModel">
+                  Work model (optional)
+                </FieldLabel>
+                <Select
+                  defaultValue={profile.workModel ?? ""}
+                  id="workModel"
+                  name="workModel"
+                >
+                  <option value="">No preference</option>
+                  <option value="onsite">On-site</option>
+                  <option value="hybrid">Hybrid</option>
+                  <option value="remote">Remote</option>
+                  <option value="flexible">Flexible</option>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <FieldLabel htmlFor="seniority">
+                  Seniority (optional)
+                </FieldLabel>
+                <Select
+                  defaultValue={profile.seniority ?? ""}
+                  id="seniority"
+                  name="seniority"
+                >
+                  <option value="">No preference</option>
+                  <option value="entry">Entry</option>
+                  <option value="mid">Mid-level</option>
+                  <option value="senior">Senior</option>
+                  <option value="lead">Lead</option>
+                  <option value="executive">Executive</option>
+                </Select>
+              </div>
+              <TextField
+                defaultValue={profile.industry ?? ""}
+                id="industry"
+                label="Industry (optional)"
+                maxLength={120}
+                name="industry"
+              />
             </div>
-            <TextField
-              defaultValue={profile.industry ?? ""}
-              id="industry"
-              label="Industry (optional)"
-              maxLength={120}
-              name="industry"
-            />
-            <TextField
-              defaultValue={profile.language}
-              id="language"
-              label="Language"
-              maxLength={35}
-              name="language"
-              required
-            />
-            <TextField
-              defaultValue={profile.locale}
-              id="locale"
-              label="Locale"
-              maxLength={35}
-              name="locale"
-              required
-            />
-            <TextField
-              defaultValue={profile.timezone}
-              id="timezone"
-              label="Time zone"
-              maxLength={64}
-              name="timezone"
-              required
-            />
-            <div className="space-y-2 sm:col-span-2">
-              <FieldLabel htmlFor="writingStyle">Writing preference</FieldLabel>
-              <Select
-                defaultValue={profile.writingStyle}
-                id="writingStyle"
-                name="writingStyle"
-              >
-                <option value="concise">Concise</option>
-                <option value="balanced">Balanced</option>
-                <option value="detailed">Detailed</option>
-              </Select>
+          </section>
+          <section className="space-y-4" aria-labelledby="locale-preferences">
+            <h3
+              className="text-sm font-extrabold text-foreground"
+              id="locale-preferences"
+            >
+              Language and locale
+            </h3>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <TextField
+                defaultValue={profile.language}
+                id="language"
+                label="Language"
+                maxLength={35}
+                name="language"
+                required
+              />
+              <TextField
+                defaultValue={profile.locale}
+                id="locale"
+                label="Locale"
+                maxLength={35}
+                name="locale"
+                required
+              />
+              <TextField
+                defaultValue={profile.timezone}
+                id="timezone"
+                label="Time zone"
+                maxLength={64}
+                name="timezone"
+                required
+              />
+              <div className="space-y-2">
+                <FieldLabel htmlFor="writingStyle">
+                  Writing preference
+                </FieldLabel>
+                <Select
+                  defaultValue={profile.writingStyle}
+                  id="writingStyle"
+                  name="writingStyle"
+                >
+                  <option value="concise">Concise</option>
+                  <option value="balanced">Balanced</option>
+                  <option value="detailed">Detailed</option>
+                </Select>
+              </div>
             </div>
-          </div>
-          <div className="flex justify-end">
+          </section>
+          <div className="flex justify-end border-t border-line pt-5">
             <Button
               loading={saving}
               loadingLabel="Saving profile…"

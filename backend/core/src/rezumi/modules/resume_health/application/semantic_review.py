@@ -29,18 +29,6 @@ from rezumi.modules.resume_health.domain import (
 from rezumi.modules.resume_health.domain.errors import ResumeStateConflict
 
 
-def auto_confirm_parsed_semantics(semantics: CanonicalSemantics) -> CanonicalSemantics:
-    """Trust parser output for first-pass career record population.
-
-    Parsed resume fields start UNREVIEWED. Account uploads auto-confirm them so
-    experiences, skills, and contact facts can land in the career record without
-    a separate manual review step. Users can still correct values later.
-    """
-    if not semantics.entities:
-        raise ResumeStateConflict
-    return apply_semantic_review(semantics, (), confirm_no_changes=True)
-
-
 def apply_semantic_review(
     semantics: CanonicalSemantics,
     operations: tuple[SemanticReviewOperation, ...],

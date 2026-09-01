@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import type { ComponentType } from "react";
+
 import {
   ArrowUpCircle,
   Bookmark,
@@ -10,7 +13,6 @@ import {
   TriangleAlert,
   X,
 } from "lucide-react";
-import type { ComponentType } from "react";
 
 import { Badge, Button, Card, cn } from "@rezumi/ui";
 
@@ -157,6 +159,16 @@ export function JobDetailPanel({
             </a>
           )}
         </div>
+        <p className="mt-3 text-xs leading-5 text-muted">
+          Apply for me copies your{" "}
+          <Link
+            className="font-semibold text-primary underline-offset-2 hover:underline"
+            href="/settings/application-answers"
+          >
+            Application answers
+          </Link>{" "}
+          into a handoff pack. You still submit the application yourself.
+        </p>
       </div>
 
       <div className="border-t border-line px-5 py-4">

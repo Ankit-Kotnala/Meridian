@@ -121,6 +121,28 @@ def test_selected_projects_heading_splits_from_experience() -> None:
     assert kinds == [SectionKind.EXPERIENCE, SectionKind.PROJECTS]
 
 
+def test_internship_volunteer_language_and_award_headings_use_existing_kinds() -> None:
+    kinds = _kinds(
+        _extraction(
+            ("paragraph", "Internships"),
+            ("paragraph", "Software Intern, Northwind Financial"),
+            ("paragraph", "Volunteer Experience"),
+            ("paragraph", "Tutor, Fictional Library"),
+            ("paragraph", "Languages"),
+            ("paragraph", "Spanish, French"),
+            ("paragraph", "Awards"),
+            ("paragraph", "Dean's List, Fictional University"),
+        )
+    )
+
+    assert kinds == [
+        SectionKind.EXPERIENCE,
+        SectionKind.EXPERIENCE,
+        SectionKind.SKILLS,
+        SectionKind.CERTIFICATIONS,
+    ]
+
+
 def test_wrapped_bullet_lines_merge_into_one_block() -> None:
     canonical = _canonicalize(
         uuid4(),

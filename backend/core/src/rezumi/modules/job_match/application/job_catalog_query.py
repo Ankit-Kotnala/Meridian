@@ -8,6 +8,8 @@ importing role_readiness/career_record internals directly here.
 
 from __future__ import annotations
 
+import hashlib
+import re
 from dataclasses import dataclass
 from typing import Protocol
 from uuid import UUID
@@ -19,9 +21,30 @@ from rezumi.modules.job_match.application.job_catalog_ports import (
 
 _DEFAULT_LIMIT = 25
 _MAX_TARGET_ROLES = 5
-
-
 _MAX_BROWSE_LIMIT = 100
+_MAX_TRACKED_EXTERNAL_ID = 200
+# Keep in lockstep with JobMatchService idempotency keys: `/` is not allowed.
+_IDEMPOTENCY_KEY = re.compile(r"^[A-Za-z0-9._:-]{8,128}$")
+
+
+def catalog_save_keys(platform: str, external_id: str) -> tuple[str, str]:
+    """Return (idempotency_key, tracked_external_id) for copying a catalog listing.
+
+    Himalayas listings use HTTPS URLs as external ids. Those values are valid
+    catalog keys but are not valid Job Match idempotency keys and can exceed
+    the 200-character job ``external_id`` column.
+    """
+    raw_idempotency = f"catalog:{platform}:{external_id}"
+    if _IDEMPOTENCY_KEY.fullmatch(raw_idempotency) is None:
+        digest = hashlib.sha256(raw_idempotency.encode("utf-8")).hexdigest()
+        idempotency_key = f"catalog:{digest}"
+    else:
+        idempotency_key = raw_idempotency
+    tracked = f"{platform}:{external_id}"
+    if len(tracked) > _MAX_TRACKED_EXTERNAL_ID:
+        digest = hashlib.sha256(tracked.encode("utf-8")).hexdigest()
+        tracked = f"{platform}:{digest}"
+    return idempotency_key, tracked
 
 
 class TargetRoleProvider(Protocol):
@@ -56,9 +79,7 @@ class JobCatalogQueryService:
     async def search_for_owner(
         self, owner_user_id: UUID, *, limit: int = _DEFAULT_LIMIT
     ) -> JobCatalogSearchResult:
-        suggested = (await self._target_roles.target_role_titles(owner_user_id))[
-            :_MAX_TARGET_ROLES
-        ]
+        suggested = (await self._target_roles.target_role_titles(owner_user_id))[:_MAX_TARGET_ROLES]
         selected: tuple[str, ...] = ()
         if self._role_preferences is not None:
             selected = (await self._role_preferences.get_role_preference(owner_user_id))[

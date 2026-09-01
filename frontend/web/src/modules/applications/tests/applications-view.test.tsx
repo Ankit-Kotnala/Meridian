@@ -34,18 +34,6 @@ vi.mock("../api/applications-api", () => ({
   ...api,
 }));
 
-vi.mock("../components/create-application-form", () => ({
-  CreateApplicationForm: ({
-    onCreated,
-  }: {
-    onCreated: (application: ApplicationDetail) => void;
-  }) => (
-    <button onClick={() => onCreated(detail)} type="button">
-      Complete application creation
-    </button>
-  ),
-}));
-
 const application: Application = {
   applicationDeadline: "2026-08-01",
   company: "Example Co",
@@ -136,7 +124,7 @@ describe("Application Workspace list", () => {
       await screen.findByRole("heading", { name: "Product Engineer" }),
     ).toBeVisible();
     expect(
-      screen.getByText(/Meridian never submits an application on your behalf/i),
+      screen.getByText(/Meridian never submits on your behalf/i),
     ).toBeVisible();
 
     fireEvent.change(
@@ -162,7 +150,7 @@ describe("Application Workspace list", () => {
     render(<ApplicationsView />);
     await screen.findByRole("heading", { name: "Product Engineer" });
 
-    fireEvent.change(screen.getByLabelText("Search applications"), {
+    fireEvent.change(screen.getByLabelText("Search"), {
       target: { value: "engineer" },
     });
     fireEvent.change(screen.getByLabelText("Source"), {
@@ -186,32 +174,26 @@ describe("Application Workspace list", () => {
     );
   });
 
-  it("collapses the creation panel after an application is added", async () => {
+  it("points empty state toward Job search Apply for me", async () => {
+    api.listApplications.mockResolvedValue({
+      data: [],
+      page: { hasMore: false, limit: 100, nextCursor: null },
+    });
     render(<ApplicationsView />);
-    await screen.findByRole("heading", { name: "Product Engineer" });
 
-    const summary = screen.getByText("Add an application", { exact: true });
-    fireEvent.click(summary);
-    const details = summary.closest("details");
-    if (!details) throw new Error("Application details control was not found.");
-    expect(details).toHaveAttribute("open");
-    fireEvent(details, new Event("toggle"));
-    fireEvent.click(
-      await screen.findByRole("button", {
-        name: "Complete application creation",
-      }),
-    );
-
-    await waitFor(() =>
-      expect(
-        screen
-          .getByText("Add an application", { exact: true })
-          .closest("details"),
-      ).not.toHaveAttribute("open"),
-    );
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Product Engineer added to your workspace.",
-    );
+    expect(
+      await screen.findByRole("heading", { name: "No applications yet" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Open Job search" }),
+    ).toHaveAttribute("href", "/job-match");
+    expect(
+      screen.getByRole("link", { name: "Application answers" }),
+    ).toHaveAttribute("href", "/settings/application-answers");
+    expect(
+      screen.queryByText("Add an application", { exact: true }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Application Profile/i)).not.toBeInTheDocument();
   });
 
   it("renders a retryable initial failure", async () => {
@@ -220,7 +202,7 @@ describe("Application Workspace list", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "Application Workspace unavailable",
+        name: "Applications unavailable",
       }),
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
@@ -375,7 +357,7 @@ describe("Application Workspace list", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "Application Workspace unavailable",
+        name: "Applications unavailable",
       }),
     ).toBeVisible();
     expect(
