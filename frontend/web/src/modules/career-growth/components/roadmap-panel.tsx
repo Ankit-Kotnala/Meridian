@@ -1,6 +1,13 @@
 "use client";
 
-import { ArrowRight, ChevronDown, RefreshCcw, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  ChevronDown,
+  RefreshCcw,
+  Sparkles,
+  Target,
+} from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 
@@ -19,6 +26,27 @@ import { requestErrorMessage } from "@/shared/api/browser-request";
 
 import { confirmRoleRoadmap, getRoleRoadmap } from "../api/career-growth-api";
 import type { RoadmapSkill, RoleRoadmap } from "../api/types";
+
+const STAGE_ACCENTS = [
+  {
+    bar: "bg-primary",
+    chip: "bg-primary-soft text-primary",
+    node: "border-primary/35 hover:border-primary/60",
+    ring: "ring-primary/25",
+  },
+  {
+    bar: "bg-success",
+    chip: "bg-success-soft text-success",
+    node: "border-success/35 hover:border-success/60",
+    ring: "ring-success/25",
+  },
+  {
+    bar: "bg-warning-visual",
+    chip: "bg-warning-soft text-warning",
+    node: "border-warning-visual/40 hover:border-warning-visual/70",
+    ring: "ring-warning-visual/25",
+  },
+] as const;
 
 /**
  * "Your roadmap": resolves the owner's target role, shows the curated skill
@@ -103,13 +131,14 @@ export function RoadmapPanel({ onConfirmed }: { onConfirmed?: () => void }) {
       demonstrated: skills.filter((skill) => skill.alreadyDemonstrated).length,
       focus: skills.filter((skill) => !skill.alreadyDemonstrated).length,
       stages: roadmap?.stages.length ?? 0,
+      total: skills.length,
     };
   }, [roadmap]);
 
   if (loading) {
     return (
       <div aria-label="Loading personalized roadmap" role="status">
-        <LoadingSkeleton className="min-h-56 p-4" />
+        <LoadingSkeleton className="min-h-72 p-4" />
       </div>
     );
   }
@@ -145,59 +174,57 @@ export function RoadmapPanel({ onConfirmed }: { onConfirmed?: () => void }) {
   }
 
   return (
-    <div className="surface-card rounded-[var(--radius-card)]">
-      <div className="border-b border-line bg-surface-subtle p-5 sm:p-6">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+    <div className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface shadow-[var(--shadow-sm)]">
+      <div className="relative border-b border-line bg-gradient-to-br from-primary-soft/80 via-surface to-surface px-5 py-6 sm:px-6 sm:py-7">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-[0.45] [background-image:radial-gradient(var(--border-strong)_1px,transparent_1px)] [background-size:18px_18px]"
+        />
+        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
             <Badge tone="primary">Personalized at runtime</Badge>
-            <h3 className="mt-3 text-xl font-semibold tracking-[-0.025em] text-foreground sm:text-2xl">
+            <h3 className="mt-3 text-2xl font-bold tracking-[-0.03em] text-foreground sm:text-[1.75rem]">
               Your path to {roadmap.roleTitle}
             </h3>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-              Follow the stages in order. Hover a stop or activate its name to
-              see why it matters and a concrete first step. A suggested focus
-              means we did not find a current evidence signal, not that you do
-              not have the skill.
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
+              Follow the staged map from foundations to advanced topics. Open a
+              skill to see why it matters and a concrete first step.
             </p>
-            <ol className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold text-foreground">
-              {roadmap.stages.map((stage, stageIndex) => (
-                <li className="flex items-center gap-2" key={stage.stage}>
-                  {stageIndex > 0 && (
-                    <ArrowRight
-                      aria-hidden="true"
-                      className="size-3.5 text-primary/70"
-                    />
-                  )}
-                  <a
-                    className="rounded-[var(--radius-small)] text-primary underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-                    href={`#roadmap-stage-${stageIndex}`}
-                  >
-                    {stage.stage}
-                  </a>
-                </li>
-              ))}
-            </ol>
+            <nav aria-label="Roadmap stages" className="mt-4">
+              <ol className="flex flex-wrap items-center gap-2">
+                {roadmap.stages.map((stage, stageIndex) => {
+                  const accent = STAGE_ACCENTS[stageIndex % STAGE_ACCENTS.length];
+                  return (
+                    <li className="flex items-center gap-2" key={stage.stage}>
+                      {stageIndex > 0 && (
+                        <ArrowRight
+                          aria-hidden="true"
+                          className="size-3.5 shrink-0 text-muted"
+                        />
+                      )}
+                      <a
+                        className={cn(
+                          "rounded-full px-3 py-1 text-xs font-semibold tracking-[-0.01em] underline-offset-4 transition-colors hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+                          accent.chip,
+                        )}
+                        href={`#roadmap-stage-${stageIndex}`}
+                      >
+                        {stage.stage}
+                      </a>
+                    </li>
+                  );
+                })}
+              </ol>
+            </nav>
           </div>
-          <dl className="grid shrink-0 grid-cols-2 gap-2 sm:min-w-64">
-            <div className="rounded-[var(--radius-control)] border border-line bg-surface p-3">
-              <dt className="text-[0.6875rem] font-bold uppercase tracking-[0.1em] text-muted">
-                Evidence found
-              </dt>
-              <dd className="mt-1 text-2xl font-semibold text-foreground">
-                {summary.demonstrated}
-              </dd>
-            </div>
-            <div className="rounded-[var(--radius-control)] border border-line bg-surface p-3">
-              <dt className="text-[0.6875rem] font-bold uppercase tracking-[0.1em] text-muted">
-                Focus areas
-              </dt>
-              <dd className="mt-1 text-2xl font-semibold text-foreground">
-                {summary.focus}
-              </dd>
-            </div>
+          <dl className="flex flex-wrap gap-2 lg:justify-end">
+            <StatChip label="Skills mapped" value={summary.total} />
+            <StatChip label="Evidence found" value={summary.demonstrated} />
+            <StatChip label="Focus areas" value={summary.focus} />
           </dl>
         </div>
       </div>
+
       <div className="p-5 sm:p-6">
         {(failure || success) && (
           <div className="mb-5 space-y-3">
@@ -213,70 +240,45 @@ export function RoadmapPanel({ onConfirmed }: { onConfirmed?: () => void }) {
             )}
           </div>
         )}
-        <p className="mb-5 text-sm text-muted">
-          Roadmap for{" "}
-          <strong className="font-bold text-foreground">
-            {roadmap.roleTitle}
-          </strong>
-          . Skills with evidence are unmarked by default — check them back in if
-          you still want to work through them, or uncheck anything else you
-          would rather skip.
-        </p>
-        <ol className="relative">
-          <span
+
+        <div
+          className="relative overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface-subtle/60 p-4 sm:p-5"
+          role="list"
+        >
+          <div
             aria-hidden="true"
-            className="absolute bottom-8 left-4 top-4 w-px bg-gradient-to-b from-primary via-primary/45 to-border-strong sm:left-5"
+            className="pointer-events-none absolute inset-0 opacity-30 [background-image:radial-gradient(var(--border-strong)_1px,transparent_1px)] [background-size:20px_20px]"
           />
-          {roadmap.stages.map((stage, stageIndex) => (
-            <li
-              className="relative grid grid-cols-[2rem_minmax(0,1fr)] gap-3 pb-8 last:pb-0 sm:grid-cols-[2.5rem_minmax(0,1fr)] sm:gap-5"
-              key={stage.stage}
-            >
-              <div className="relative z-10 flex justify-center">
-                <span className="flex size-8 items-center justify-center rounded-full border-2 border-primary bg-surface text-sm font-semibold tabular-nums text-primary shadow-[0_0_0_4px_var(--surface)] sm:size-10 sm:text-base">
-                  <span className="sr-only">Stage </span>
-                  {stageIndex + 1}
-                </span>
-              </div>
-              <section className="min-w-0 pt-0.5 sm:pt-1.5">
-                <p className="text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-primary">
-                  Stage {stageIndex + 1} of {summary.stages}
-                </p>
-                <h4
-                  className="mt-1 text-base font-semibold tracking-[-0.02em] text-foreground"
-                  id={`roadmap-stage-${stageIndex}`}
-                >
-                  {stage.stage}
-                </h4>
-                <ol className="mt-4 space-y-3">
-                  {stage.skills.map((skill, skillIndex) => (
-                    <RoadmapStop
-                      expanded={openSkill === skill.name}
-                      key={skill.name}
-                      offset={skillIndex % 2 === 1}
-                      onToggle={() => toggle(skill.name)}
-                      onToggleDetails={() =>
-                        setOpenSkill((current) =>
-                          current === skill.name ? undefined : skill.name,
-                        )
-                      }
-                      selected={selected.has(skill.name)}
-                      skill={skill}
-                    />
-                  ))}
-                </ol>
-              </section>
-            </li>
-          ))}
-        </ol>
-        <div className="mt-2 flex flex-col gap-3 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative flex flex-col gap-6 lg:flex-row lg:items-stretch lg:gap-4">
+            {roadmap.stages.map((stage, stageIndex) => (
+              <RoadmapStageLane
+                accent={STAGE_ACCENTS[stageIndex % STAGE_ACCENTS.length]}
+                expandedSkill={openSkill}
+                key={stage.stage}
+                onToggleDetails={(name) =>
+                  setOpenSkill((current) =>
+                    current === name ? undefined : name,
+                  )
+                }
+                onToggleSkill={toggle}
+                selected={selected}
+                stage={stage}
+                stageIndex={stageIndex}
+                stageTotal={summary.stages}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-5 flex flex-col gap-3 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-between">
           <p className="flex items-start gap-2 text-sm text-muted">
             <Sparkles
               aria-hidden="true"
               className="mt-0.5 size-4 shrink-0 text-primary"
             />
             {selected.size} {selected.size === 1 ? "skill" : "skills"} selected
-            for your development plan.
+            for your development plan. Skills with evidence are unchecked by
+            default.
           </p>
           <div className="flex flex-col-reverse gap-2 sm:flex-row">
             <Button disabled={busy} onClick={() => void load()} variant="ghost">
@@ -298,72 +300,152 @@ export function RoadmapPanel({ onConfirmed }: { onConfirmed?: () => void }) {
   );
 }
 
+function StatChip({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-full border border-line bg-surface px-3 py-1.5 shadow-[var(--shadow-sm)]">
+      <dt className="text-[0.625rem] font-bold uppercase tracking-[0.1em] text-muted">
+        {label}
+      </dt>
+      <dd className="text-lg font-semibold tabular-nums leading-tight text-foreground">
+        {value}
+      </dd>
+    </div>
+  );
+}
+
+function RoadmapStageLane({
+  accent,
+  expandedSkill,
+  onToggleDetails,
+  onToggleSkill,
+  selected,
+  stage,
+  stageIndex,
+  stageTotal,
+}: {
+  accent: (typeof STAGE_ACCENTS)[number];
+  expandedSkill: string | undefined;
+  onToggleDetails: (name: string) => void;
+  onToggleSkill: (name: string) => void;
+  selected: ReadonlySet<string>;
+  stage: RoleRoadmap["stages"][number];
+  stageIndex: number;
+  stageTotal: number;
+}) {
+  return (
+  <section
+    aria-labelledby={`roadmap-stage-${stageIndex}`}
+    className="relative flex min-w-0 flex-1 flex-col"
+    role="listitem"
+  >
+    {stageIndex < stageTotal - 1 && (
+      <div
+        aria-hidden="true"
+        className="absolute top-10 right-0 hidden h-px w-4 translate-x-full bg-gradient-to-r from-border-strong to-transparent lg:block"
+      />
+    )}
+    <div className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface shadow-[var(--shadow-sm)]">
+      <div className={cn("h-1.5 w-full", accent.bar)} />
+      <header className="border-b border-line px-4 py-3">
+        <p className="text-[0.625rem] font-bold uppercase tracking-[0.14em] text-muted">
+          Stage {stageIndex + 1} of {stageTotal}
+        </p>
+        <h4
+          className="mt-1 text-base font-semibold tracking-[-0.02em] text-foreground"
+          id={`roadmap-stage-${stageIndex}`}
+        >
+          {stage.stage}
+        </h4>
+      </header>
+      <ol className="space-y-2 p-3">
+        {stage.skills.map((skill, skillIndex) => (
+          <RoadmapSkillNode
+            accent={accent}
+            expanded={expandedSkill === skill.name}
+            key={skill.name}
+            onToggle={() => onToggleSkill(skill.name)}
+            onToggleDetails={() => onToggleDetails(skill.name)}
+            selected={selected.has(skill.name)}
+            showConnector={skillIndex < stage.skills.length - 1}
+            skill={skill}
+          />
+        ))}
+      </ol>
+    </div>
+  </section>
+  );
+}
+
 function canHoverRevealDetails() {
   return Boolean(
     window.matchMedia?.("(hover: hover) and (pointer: fine)").matches,
   );
 }
 
-function RoadmapStop({
+function RoadmapSkillNode({
+  accent,
   expanded,
-  offset,
   onToggle,
   onToggleDetails,
   selected,
+  showConnector,
   skill,
 }: {
+  accent: (typeof STAGE_ACCENTS)[number];
   expanded: boolean;
-  offset: boolean;
   onToggle: () => void;
   onToggleDetails: () => void;
   selected: boolean;
+  showConnector: boolean;
   skill: RoadmapSkill;
 }) {
   const detailId = useId();
   const [hovered, setHovered] = useState(false);
   const showDetails = expanded || hovered;
+  const demonstrated = skill.alreadyDemonstrated;
 
   return (
     <li
-      className={cn("min-w-0", offset && "sm:ml-8 lg:ml-12")}
+      className="relative"
       onMouseEnter={() => {
         if (canHoverRevealDetails()) setHovered(true);
       }}
       onMouseLeave={() => setHovered(false)}
     >
-      <div
-        className={cn(
-          "relative rounded-[var(--radius-control)] border bg-surface p-3.5 transition-[border-color,background-color] duration-200 motion-reduce:transition-none",
-          selected
-            ? "border-primary bg-primary-soft/30"
-            : "border-line hover:border-primary/40",
-        )}
-      >
+      {showConnector && (
         <span
           aria-hidden="true"
-          className={cn(
-            "pointer-events-none absolute top-6 right-full h-px bg-border-strong",
-            offset
-              ? "w-[1.75rem] sm:w-[4.5rem] lg:w-[5.5rem]"
-              : "w-[1.75rem] sm:w-[2.5rem]",
-          )}
+          className="absolute left-5 top-full h-2 w-px bg-border-strong"
         />
-        <div className="flex items-start gap-3">
+      )}
+      <div
+        className={cn(
+          "relative rounded-[var(--radius-control)] border-2 bg-surface transition-[border-color,box-shadow,transform] duration-200 motion-reduce:transition-none",
+          accent.node,
+          selected && cn("border-primary shadow-md ring-4", accent.ring),
+          !selected && demonstrated && "opacity-90",
+        )}
+      >
+        <div className="flex items-start gap-2 p-3">
           <span
             aria-hidden="true"
             className={cn(
-              "mt-1.5 size-2.5 shrink-0 rounded-full border-2",
-              skill.alreadyDemonstrated
-                ? "border-success bg-success"
-                : "border-warning bg-warning-visual",
+              "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full",
+              demonstrated ? "bg-success-soft text-success" : "bg-warning-soft text-warning",
             )}
-          />
+          >
+            {demonstrated ? (
+              <CheckCircle2 className="size-4" />
+            ) : (
+              <Target className="size-4" />
+            )}
+          </span>
           <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start justify-between gap-2">
               <button
                 aria-controls={detailId}
                 aria-expanded={showDetails}
-                className="inline-flex min-w-0 items-start gap-1.5 rounded-[var(--radius-small)] text-left text-sm font-semibold tracking-[-0.01em] text-foreground hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                className="inline-flex min-w-0 items-start gap-1 rounded-[var(--radius-small)] text-left text-sm font-semibold tracking-[-0.01em] text-foreground hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                 onClick={onToggleDetails}
                 type="button"
               >
@@ -387,9 +469,9 @@ function RoadmapStop({
             </div>
             <Badge
               className="mt-2"
-              tone={skill.alreadyDemonstrated ? "success" : "warning"}
+              tone={demonstrated ? "success" : "warning"}
             >
-              {skill.alreadyDemonstrated ? "Evidence found" : "Suggested focus"}
+              {demonstrated ? "Evidence found" : "Suggested focus"}
             </Badge>
             <div
               className={cn(
@@ -402,7 +484,7 @@ function RoadmapStop({
               <div className="min-h-0 overflow-hidden">
                 <p className="mt-3 text-sm leading-6 text-muted">{skill.why}</p>
                 {skill.howToStart ? (
-                  <p className="mt-3 rounded-md bg-surface-subtle px-3 py-2 text-xs leading-5 text-muted-strong">
+                  <p className="mt-3 rounded-md border border-line bg-surface-subtle px-3 py-2 text-xs leading-5 text-muted-strong">
                     <strong className="font-semibold text-foreground">
                       Start here:
                     </strong>{" "}
