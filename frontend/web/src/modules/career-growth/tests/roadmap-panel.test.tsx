@@ -51,9 +51,7 @@ describe("RoadmapPanel", () => {
     ).toHaveAttribute("href", "#roadmap-stage-0");
     expect(screen.getAllByText("Evidence found")).toHaveLength(2);
     expect(screen.getByText("Suggested focus")).toBeVisible();
-    for (const label of screen.getAllByText("Start here:")) {
-      expect(label).not.toBeVisible();
-    }
+    expect(screen.queryByText("Start here:")).not.toBeInTheDocument();
 
     const evaluationStop = screen.getByRole("button", {
       name: "Model evaluation",
@@ -70,36 +68,25 @@ describe("RoadmapPanel", () => {
       screen.getByText("Explain one evaluated model from your Career Record."),
     ).toBeVisible();
     expect(
-      screen.getByText("Production roles require safe inference delivery."),
-    ).not.toBeVisible();
+      screen.queryByText("Production roles require safe inference delivery."),
+    ).not.toBeInTheDocument();
   });
 
-  it("reveals a stop on hover when the pointer can hover", async () => {
-    const originalMatchMedia = window.matchMedia;
-    window.matchMedia = vi.fn().mockReturnValue({
-      addEventListener: vi.fn(),
-      matches: true,
-      media: "(hover: hover) and (pointer: fine)",
-      removeEventListener: vi.fn(),
-    }) as unknown as typeof window.matchMedia;
-    try {
-      render(<RoadmapPanel />);
-      const evaluationStop = await screen.findByRole("button", {
-        name: "Model evaluation",
-      });
+  it("reveals a stop on click without expanding other stops", async () => {
+    render(<RoadmapPanel />);
+    const evaluationStop = await screen.findByRole("button", {
+      name: "Model evaluation",
+    });
 
-      fireEvent.mouseEnter(evaluationStop.closest("li")!);
+    fireEvent.click(evaluationStop);
 
-      expect(evaluationStop).toHaveAttribute("aria-expanded", "true");
-      expect(
-        screen.getByText("Reliable systems need measurable model quality."),
-      ).toBeVisible();
-      expect(
-        screen.getByText("Production roles require safe inference delivery."),
-      ).not.toBeVisible();
-    } finally {
-      window.matchMedia = originalMatchMedia;
-    }
+    expect(evaluationStop).toHaveAttribute("aria-expanded", "true");
+    expect(
+      screen.getByText("Reliable systems need measurable model quality."),
+    ).toBeVisible();
+    expect(
+      screen.queryByText("Production roles require safe inference delivery."),
+    ).not.toBeInTheDocument();
   });
 
   it("confirms only the selected development-plan skills", async () => {
