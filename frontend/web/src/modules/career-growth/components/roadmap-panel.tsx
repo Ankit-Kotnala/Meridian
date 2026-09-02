@@ -48,6 +48,13 @@ const STAGE_ACCENTS = [
   },
 ] as const;
 
+type StageAccent = (typeof STAGE_ACCENTS)[number];
+
+function stageAccent(stageIndex: number): StageAccent {
+  const accent = STAGE_ACCENTS[stageIndex % STAGE_ACCENTS.length];
+  return accent ?? STAGE_ACCENTS[0];
+}
+
 /**
  * "Your roadmap": resolves the owner's target role, shows the curated skill
  * path for it, and marks skills they already have evidence for so they can
@@ -193,7 +200,7 @@ export function RoadmapPanel({ onConfirmed }: { onConfirmed?: () => void }) {
             <nav aria-label="Roadmap stages" className="mt-4">
               <ol className="flex flex-wrap items-center gap-2">
                 {roadmap.stages.map((stage, stageIndex) => {
-                  const accent = STAGE_ACCENTS[stageIndex % STAGE_ACCENTS.length];
+                  const accent = stageAccent(stageIndex);
                   return (
                     <li className="flex items-center gap-2" key={stage.stage}>
                       {stageIndex > 0 && (
@@ -252,7 +259,7 @@ export function RoadmapPanel({ onConfirmed }: { onConfirmed?: () => void }) {
           <div className="relative flex flex-col gap-6 lg:flex-row lg:items-stretch lg:gap-4">
             {roadmap.stages.map((stage, stageIndex) => (
               <RoadmapStageLane
-                accent={STAGE_ACCENTS[stageIndex % STAGE_ACCENTS.length]}
+                accent={stageAccent(stageIndex)}
                 expandedSkill={openSkill}
                 key={stage.stage}
                 onToggleDetails={(name) =>
@@ -323,7 +330,7 @@ function RoadmapStageLane({
   stageIndex,
   stageTotal,
 }: {
-  accent: (typeof STAGE_ACCENTS)[number];
+  accent: StageAccent;
   expandedSkill: string | undefined;
   onToggleDetails: (name: string) => void;
   onToggleSkill: (name: string) => void;
@@ -391,7 +398,7 @@ function RoadmapSkillNode({
   showConnector,
   skill,
 }: {
-  accent: (typeof STAGE_ACCENTS)[number];
+  accent: StageAccent;
   expanded: boolean;
   onToggle: () => void;
   onToggleDetails: () => void;
