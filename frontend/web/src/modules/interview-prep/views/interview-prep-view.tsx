@@ -4,6 +4,8 @@ import {
   BookOpenCheck,
   CalendarPlus,
   ChevronRight,
+  Compass,
+  FlaskConical,
   RefreshCcw,
   ShieldCheck,
 } from "lucide-react";
@@ -32,6 +34,9 @@ import {
   buttonStyles,
   cn,
 } from "@rezumi/ui";
+
+import { RoadmapPanel } from "@/modules/career-growth";
+import type { RoadmapSkill } from "@/modules/career-growth/api/types";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 
@@ -174,11 +179,14 @@ type CollectionState =
 export function InterviewPrepView({
   roadmapPanel,
 }: {
-  roadmapPanel: ReactNode;
+  roadmapPanel?: ReactNode;
 }) {
   const [state, setState] = useState<CollectionState>({ status: "loading" });
   const [applicationId, setApplicationId] = useState("");
   const [storyStatus, setStoryStatus] = useState<StoryStatus | "">("");
+  const [activeTab, setActiveTab] = useState<"journey" | "practice">("journey");
+  const [practiceSkillHint, setPracticeSkillHint] = useState<string>();
+  const practiceLabRef = useRef<HTMLDivElement>(null);
   const [defenseMap, setDefenseMap] = useState<DefenseMap>();
   const [defenseFailure, setDefenseFailure] = useState<string>();
   const [actionFailure, setActionFailure] = useState<string>();
@@ -298,6 +306,39 @@ export function InterviewPrepView({
         : undefined,
     [applicationId, state],
   );
+
+  const practiceCounts = useMemo(() => {
+    if (state.status !== "ready") {
+      return { sessions: 0, stories: 0 };
+    }
+    return {
+      sessions: state.sessions.length,
+      stories: state.stories.length,
+    };
+  }, [state]);
+
+  const openPracticeLab = useCallback((skill?: RoadmapSkill) => {
+    setActiveTab("practice");
+    setPracticeSkillHint(skill?.name);
+    if (!applicationId && state.status === "ready" && state.applications[0]) {
+      setApplicationId(state.applications[0].id);
+    }
+    queueMicrotask(() => {
+      practiceLabRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }, [applicationId, state]);
+
+  const journeyPanel =
+    roadmapPanel ??
+    (
+      <RoadmapPanel
+        mode="interview"
+        onPracticeSkill={(skill) => openPracticeLab(skill)}
+      />
+    );
 
   async function loadMore(kind: "applications" | "sessions" | "stories") {
     if (state.status !== "ready") return;
@@ -503,43 +544,69 @@ export function InterviewPrepView({
   }
 
   return (
-    <main className="workspace-page space-y-8" id="main-content">
-      <header className="relative overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface px-5 py-6 sm:px-7 sm:py-7">
+    <main className="workspace-page space-y-6" id="main-content">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-primary">
+            Interview Prep
+          </p>
+          <h1 className="mt-1 font-[family-name:var(--font-family-display)] text-xl font-semibold tracking-[-0.03em] text-foreground sm:text-2xl">
+            Your interview command center
+          </h1>
+        </div>
         <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_80%_at_0%_0%,color-mix(in_srgb,var(--primary)_10%,transparent),transparent_55%)]"
-        />
-        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div className="min-w-0 max-w-3xl">
-            <p className="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-primary">
-              Interview Prep
-            </p>
-            <h1 className="mt-2 font-[family-name:var(--font-family-display)] text-[1.75rem] font-semibold tracking-[-0.03em] text-foreground sm:text-[2rem] sm:leading-tight">
-              Practice from a roadmap built around you
-            </h1>
-            <p className="mt-3 text-sm leading-6 text-muted">
-              Map the skills your target role expects, then turn eligible
-              evidence into defensible STAR stories and focused sessions.
-              Meridian never sends a message or invents a missing fact.
-            </p>
-          </div>
-          <Button
-            className="shrink-0"
-            onClick={() => void load()}
-            variant="secondary"
+          className="flex flex-wrap gap-2"
+          role="tablist"
+          aria-label="Interview prep views"
+        >
+          <button
+            aria-selected={activeTab === "journey"}
+            className={cn(
+              "inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+              activeTab === "journey"
+                ? "border-primary bg-primary text-white"
+                : "border-line bg-surface text-muted-strong hover:border-primary/30 hover:text-foreground",
+            )}
+            onClick={() => setActiveTab("journey")}
+            role="tab"
+            type="button"
           >
+            <Compass aria-hidden="true" className="size-4" />
+            Skill journey
+          </button>
+          <button
+            aria-selected={activeTab === "practice"}
+            className={cn(
+              "inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+              activeTab === "practice"
+                ? "border-primary bg-primary text-white"
+                : "border-line bg-surface text-muted-strong hover:border-primary/30 hover:text-foreground",
+            )}
+            onClick={() => setActiveTab("practice")}
+            role="tab"
+            type="button"
+          >
+            <FlaskConical aria-hidden="true" className="size-4" />
+            Practice lab
+            {practiceCounts.stories + practiceCounts.sessions > 0 ? (
+              <Badge
+                className={cn(
+                  activeTab === "practice"
+                    ? "border-white/20 bg-white/15 text-white"
+                    : "",
+                )}
+                tone="neutral"
+              >
+                {practiceCounts.stories + practiceCounts.sessions}
+              </Badge>
+            ) : null}
+          </button>
+          <Button onClick={() => void load()} variant="ghost">
             <RefreshCcw aria-hidden="true" className="size-4" />
-            Refresh practice
+            Refresh
           </Button>
         </div>
-      </header>
-
-      <section aria-labelledby="personalized-roadmap-heading">
-        <h2 className="sr-only" id="personalized-roadmap-heading">
-          Personalized interview roadmap
-        </h2>
-        {roadmapPanel}
-      </section>
+      </div>
 
       {actionFailure && (
         <Alert title="Action failed" tone="danger">
@@ -552,24 +619,46 @@ export function InterviewPrepView({
         </Alert>
       )}
 
-      <section
-        aria-labelledby="application-practice-heading"
-        className="space-y-5"
-      >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
-            <h2
-              className="text-base font-semibold tracking-[-0.02em] text-foreground"
-              id="application-practice-heading"
-            >
-              Application-linked practice
-            </h2>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">
-              Optional — pick an application when you want STAR stories and
-              interview sessions grounded in that job&apos;s claims. Your roadmap
-              above works without this.
-            </p>
-          </div>
+      {activeTab === "journey" ? (
+        <section aria-labelledby="personalized-roadmap-heading">
+          <h2 className="sr-only" id="personalized-roadmap-heading">
+            Personalized interview roadmap
+          </h2>
+          {journeyPanel}
+        </section>
+      ) : (
+        <section
+          aria-labelledby="application-practice-heading"
+          className="space-y-5"
+          ref={practiceLabRef}
+        >
+        <div className="relative overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface p-5 sm:p-6">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_100%_0%,color-mix(in_srgb,var(--primary)_8%,transparent),transparent_50%)]"
+          />
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0">
+              <h2
+                className="text-lg font-semibold tracking-[-0.02em] text-foreground"
+                id="application-practice-heading"
+              >
+                Practice lab
+              </h2>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">
+                Turn roadmap skills into defensible STAR stories and private
+                interview sessions. Every claim stays pinned to eligible
+                evidence — Meridian never invents a missing fact.
+              </p>
+              {practiceSkillHint ? (
+                <p className="mt-3 rounded-[var(--radius-control)] border border-primary/20 bg-primary-soft/60 px-3 py-2 text-sm text-foreground">
+                  <strong className="font-semibold">From your roadmap:</strong>{" "}
+                  practice evidence for{" "}
+                  <span className="font-semibold">{practiceSkillHint}</span> in
+                  a STAR story below.
+                </p>
+              ) : null}
+            </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <label
               className="min-w-[14rem] text-sm font-semibold text-foreground"
@@ -619,9 +708,10 @@ export function InterviewPrepView({
               </label>
             ) : null}
           </div>
+          </div>
         </div>
 
-        {state.applicationCursor && (
+        {state.applicationCursor ? (
           <Button
             className="min-h-9 px-3"
             disabled={isIntentActive("more-applications")}
@@ -630,7 +720,7 @@ export function InterviewPrepView({
           >
             Load more applications
           </Button>
-        )}
+        ) : null}
 
         {state.applications.length === 0 ? (
           <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-line bg-surface-subtle/80 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -948,7 +1038,8 @@ export function InterviewPrepView({
             interview sessions for that role.
           </p>
         ) : null}
-      </section>
+        </section>
+      )}
     </main>
   );
 }

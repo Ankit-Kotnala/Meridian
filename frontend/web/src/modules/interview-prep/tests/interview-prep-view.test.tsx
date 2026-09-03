@@ -136,6 +136,9 @@ describe("Interview Prep view", () => {
   it("shows defensibility warnings and saves a story with exact claim mappings", async () => {
     renderView();
 
+    fireEvent.click(
+      await screen.findByRole("tab", { name: /Practice lab/i }),
+    );
     fireEvent.change(await screen.findByLabelText("Application"), {
       target: { value: application.id },
     });
@@ -143,7 +146,7 @@ describe("Interview Prep view", () => {
       await screen.findByText(/Strong claim lacks a ready defensible story\./),
     ).toBeVisible();
     expect(
-      screen.getByText(/never sends a message or invents a missing fact/i),
+      screen.getByText(/never invents a missing fact/i),
     ).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "Add STAR story" }));
@@ -203,19 +206,18 @@ describe("Interview Prep view", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "Practice from a roadmap built around you",
+        name: "Your interview command center",
       }),
     ).toBeVisible();
+    expect(
+      await screen.findByRole("tab", { name: /Skill journey/i }),
+    ).toHaveAttribute("aria-selected", "true");
     expect(await screen.findByTestId("roadmap-panel")).toBeVisible();
+
+    fireEvent.click(screen.getByRole("tab", { name: /Practice lab/i }));
+
     expect(
-      await screen.findByRole("heading", {
-        name: "Application-linked practice",
-      }),
-    ).toBeVisible();
-    expect(
-      screen.getByText(
-        /Select an application to open the defense map, STAR stories, and interview sessions/i,
-      ),
+      await screen.findByRole("heading", { name: "Practice lab" }),
     ).toBeVisible();
     expect(
       screen.queryByRole("heading", { name: "No STAR stories yet" }),

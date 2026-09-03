@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 
-import { RoadmapPanel } from "@/modules/career-growth";
 import { InterviewPrepView } from "@/modules/interview-prep";
 
 export const metadata: Metadata = { title: "Interview Prep" };
 
 export default function InterviewPrepPage() {
-  return <InterviewPrepView roadmapPanel={<RoadmapPanel />} />;
+  return <InterviewPrepView />;
 }
