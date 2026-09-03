@@ -5,7 +5,6 @@ import {
   CalendarPlus,
   ChevronRight,
   RefreshCcw,
-  Route,
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
@@ -31,6 +30,7 @@ import {
   LoadingSkeleton,
   Select,
   buttonStyles,
+  cn,
 } from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
@@ -503,54 +503,41 @@ export function InterviewPrepView({
   }
 
   return (
-    <main className="workspace-page space-y-7" id="main-content">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <p className="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-primary">
-            Interview Prep
-          </p>
-          <h1 className="mt-1.5 text-[1.625rem] font-bold tracking-[-0.03em] text-foreground sm:text-[1.75rem]">
-            Prepare with a plan built around you
-          </h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-            Start with the skills your target role calls for, then turn your
-            evidence into defensible stories and focused practice sessions.
-            Meridian never sends a message or invents a missing fact.
-          </p>
-        </div>
-        <Button
-          className="shrink-0"
-          onClick={() => void load()}
-          variant="secondary"
-        >
-          <RefreshCcw aria-hidden="true" className="size-4" />
-          Refresh practice
-        </Button>
-      </header>
-
-      <section
-        aria-labelledby="personalized-roadmap-heading"
-        className="space-y-4"
-      >
-        <div className="flex items-start gap-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
-            <Route aria-hidden="true" className="size-5" />
-          </span>
-          <div>
-            <h2
-              className="text-lg font-semibold tracking-[-0.02em] text-foreground"
-              id="personalized-roadmap-heading"
-            >
-              Personalized interview roadmap
-            </h2>
-            <p className="mt-1 max-w-3xl text-sm leading-6 text-muted">
-              Follow the staged path for your target role. Hover a stop or open
-              it to see why it matters and a first practice step. Resume and
-              Career Record evidence marks what is already demonstrated versus
-              what still deserves attention.
+    <main className="workspace-page space-y-8" id="main-content">
+      <header className="relative overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface px-5 py-6 sm:px-7 sm:py-7">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_80%_at_0%_0%,color-mix(in_srgb,var(--primary)_10%,transparent),transparent_55%)]"
+        />
+        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0 max-w-3xl">
+            <p className="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-primary">
+              Interview Prep
+            </p>
+            <h1 className="mt-2 font-[family-name:var(--font-family-display)] text-[1.75rem] font-semibold tracking-[-0.03em] text-foreground sm:text-[2rem] sm:leading-tight">
+              Practice from a roadmap built around you
+            </h1>
+            <p className="mt-3 text-sm leading-6 text-muted">
+              Map the skills your target role expects, then turn eligible
+              evidence into defensible STAR stories and focused sessions.
+              Meridian never sends a message or invents a missing fact.
             </p>
           </div>
+          <Button
+            className="shrink-0"
+            onClick={() => void load()}
+            variant="secondary"
+          >
+            <RefreshCcw aria-hidden="true" className="size-4" />
+            Refresh practice
+          </Button>
         </div>
+      </header>
+
+      <section aria-labelledby="personalized-roadmap-heading">
+        <h2 className="sr-only" id="personalized-roadmap-heading">
+          Personalized interview roadmap
+        </h2>
         {roadmapPanel}
       </section>
 
@@ -566,54 +553,77 @@ export function InterviewPrepView({
       )}
 
       <section
-        aria-label="Interview filters"
-        className="rounded-[var(--radius-card)] border border-line bg-surface p-4"
+        aria-labelledby="application-practice-heading"
+        className="space-y-5"
       >
-        <div className="grid gap-3 md:grid-cols-[minmax(0,2fr)_minmax(12rem,1fr)]">
-          <label
-            className="text-sm font-semibold text-foreground"
-            htmlFor="interview-application"
-          >
-            Application context
-            <Select
-              className="mt-1.5"
-              id="interview-application"
-              onChange={(event) => setApplicationId(event.target.value)}
-              value={applicationId}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <h2
+              className="text-base font-semibold tracking-[-0.02em] text-foreground"
+              id="application-practice-heading"
             >
-              <option value="">Choose an application</option>
-              {state.applications.map((application) => (
-                <option key={application.id} value={application.id}>
-                  {applicationLabel(application)}
-                </option>
-              ))}
-            </Select>
-          </label>
-          <label
-            className="text-sm font-semibold text-foreground"
-            htmlFor="story-status-filter"
-          >
-            Story status
-            <Select
-              className="mt-1.5"
-              id="story-status-filter"
-              onChange={(event) =>
-                setStoryStatus(event.target.value as StoryStatus | "")
-              }
-              value={storyStatus}
+              Application-linked practice
+            </h2>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">
+              Optional — pick an application when you want STAR stories and
+              interview sessions grounded in that job&apos;s claims. Your roadmap
+              above works without this.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <label
+              className="min-w-[14rem] text-sm font-semibold text-foreground"
+              htmlFor="interview-application"
             >
-              <option value="">All story statuses</option>
-              {storyStatuses.map((status) => (
-                <option key={status} value={status}>
-                  {humanize(status)}
+              Application
+              <Select
+                className="mt-1.5"
+                disabled={state.applications.length === 0}
+                id="interview-application"
+                onChange={(event) => setApplicationId(event.target.value)}
+                value={applicationId}
+              >
+                <option value="">
+                  {state.applications.length === 0
+                    ? "No applications yet"
+                    : "Choose an application"}
                 </option>
-              ))}
-            </Select>
-          </label>
+                {state.applications.map((application) => (
+                  <option key={application.id} value={application.id}>
+                    {applicationLabel(application)}
+                  </option>
+                ))}
+              </Select>
+            </label>
+            {applicationId ? (
+              <label
+                className="min-w-[12rem] text-sm font-semibold text-foreground"
+                htmlFor="story-status-filter"
+              >
+                Story status
+                <Select
+                  className="mt-1.5"
+                  id="story-status-filter"
+                  onChange={(event) =>
+                    setStoryStatus(event.target.value as StoryStatus | "")
+                  }
+                  value={storyStatus}
+                >
+                  <option value="">All story statuses</option>
+                  {storyStatuses.map((status) => (
+                    <option key={status} value={status}>
+                      {humanize(status)}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+            ) : null}
+          </div>
         </div>
+
         {state.applicationCursor && (
           <Button
-            className="mt-3 min-h-9 px-3"
+            className="min-h-9 px-3"
             disabled={isIntentActive("more-applications")}
             onClick={() => void loadMore("applications")}
             variant="ghost"
@@ -621,33 +631,23 @@ export function InterviewPrepView({
             Load more applications
           </Button>
         )}
-      </section>
 
-      {!applicationId ? (
-        <EmptyState
-          action={
-            state.applications.length === 0 ? (
-              <Link
-                className={`${buttonStyles.base} ${buttonStyles.primary} mt-4`}
-                href="/applications"
-              >
-                Open Applications
-              </Link>
-            ) : undefined
-          }
-          description={
-            state.applications.length === 0
-              ? "Applications appear after you use Apply for me on a saved job. Choose one here to ground stories and sessions in its claims."
-              : "Select an application above. Only its bounded claim, requirement, and evidence pins are used."
-          }
-          title={
-            state.applications.length === 0
-              ? "No applications yet"
-              : "Choose an application"
-          }
-        />
-      ) : (
-        <>
+        {state.applications.length === 0 ? (
+          <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-line bg-surface-subtle/80 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm leading-6 text-muted">
+              Applications appear after you use Apply for me on a saved job.
+            </p>
+            <Link
+              className={cn(buttonStyles.base, buttonStyles.secondary, "shrink-0")}
+              href="/applications"
+            >
+              Open Applications
+            </Link>
+          </div>
+        ) : null}
+
+        {applicationId ? (
+          <div className="space-y-8">
           <section aria-labelledby="defense-map-heading" className="space-y-4">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
@@ -941,8 +941,14 @@ export function InterviewPrepView({
               </Button>
             )}
           </section>
-        </>
-      )}
+          </div>
+        ) : state.applications.length > 0 ? (
+          <p className="text-sm text-muted">
+            Select an application to open the defense map, STAR stories, and
+            interview sessions for that role.
+          </p>
+        ) : null}
+      </section>
     </main>
   );
 }

@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RoadmapPanel } from "../components/roadmap-panel";
 
@@ -33,14 +33,34 @@ const roadmap = {
   ],
 };
 
+function mockPrefersHover() {
+  const originalMatchMedia = window.matchMedia;
+  window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+    addEventListener: vi.fn(),
+    matches: query.includes("hover"),
+    media: query,
+    removeEventListener: vi.fn(),
+  })) as unknown as typeof window.matchMedia;
+  return () => {
+    window.matchMedia = originalMatchMedia;
+  };
+}
+
 describe("RoadmapPanel", () => {
+  let restoreMatchMedia: (() => void) | undefined;
+
   beforeEach(() => {
+    restoreMatchMedia = mockPrefersHover();
     vi.clearAllMocks();
     api.getRoleRoadmap.mockResolvedValue(roadmap);
     api.confirmRoleRoadmap.mockResolvedValue({ created: [{}] });
   });
 
-  it("renders a compact staged path and reveals stop details on demand", async () => {
+  afterEach(() => {
+    restoreMatchMedia?.();
+  });
+
+  it("renders a compact staged path and reveals stop details on hover", async () => {
     render(<RoadmapPanel />);
 
     expect(
@@ -49,21 +69,21 @@ describe("RoadmapPanel", () => {
     expect(
       screen.getByRole("link", { name: "Production foundations" }),
     ).toHaveAttribute("href", "#roadmap-stage-0");
-    expect(screen.getAllByText("Evidence found")).toHaveLength(2);
+    expect(screen.getAllByText("Evidence found")).toHaveLength(1);
     expect(screen.getByText("Suggested focus")).toBeVisible();
     expect(screen.queryByText("Start here:")).not.toBeInTheDocument();
 
-    const evaluationStop = screen.getByRole("button", {
-      name: "Model evaluation",
+    const evaluationNode = (
+      await screen.findByText("Model evaluation")
+    ).closest("[data-roadmap-node]")!;
+
+    fireEvent.mouseEnter(evaluationNode);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Reliable systems need measurable model quality."),
+      ).toBeVisible();
     });
-    expect(evaluationStop).toHaveAttribute("aria-expanded", "false");
-
-    fireEvent.click(evaluationStop);
-
-    expect(evaluationStop).toHaveAttribute("aria-expanded", "true");
-    expect(
-      screen.getByText("Reliable systems need measurable model quality."),
-    ).toBeVisible();
     expect(
       screen.getByText("Explain one evaluated model from your Career Record."),
     ).toBeVisible();
@@ -72,21 +92,26 @@ describe("RoadmapPanel", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("reveals a stop on click without expanding other stops", async () => {
+  it("hides stop details when hover ends", async () => {
     render(<RoadmapPanel />);
-    const evaluationStop = await screen.findByRole("button", {
-      name: "Model evaluation",
+
+    const evaluationNode = (
+      await screen.findByText("Model evaluation")
+    ).closest("[data-roadmap-node]")!;
+
+    fireEvent.mouseEnter(evaluationNode);
+    await waitFor(() => {
+      expect(
+        screen.getByText("Reliable systems need measurable model quality."),
+      ).toBeVisible();
     });
 
-    fireEvent.click(evaluationStop);
-
-    expect(evaluationStop).toHaveAttribute("aria-expanded", "true");
-    expect(
-      screen.getByText("Reliable systems need measurable model quality."),
-    ).toBeVisible();
-    expect(
-      screen.queryByText("Production roles require safe inference delivery."),
-    ).not.toBeInTheDocument();
+    fireEvent.mouseLeave(evaluationNode);
+    await waitFor(() => {
+      expect(
+        screen.queryByText("Reliable systems need measurable model quality."),
+      ).not.toBeInTheDocument();
+    });
   });
 
   it("confirms only the selected development-plan skills", async () => {
