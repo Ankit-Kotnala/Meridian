@@ -136,7 +136,7 @@ describe("Interview Prep view", () => {
   it("shows defensibility warnings and saves a story with exact claim mappings", async () => {
     renderView();
 
-    fireEvent.change(await screen.findByLabelText("Application context"), {
+    fireEvent.change(await screen.findByLabelText("Application"), {
       target: { value: application.id },
     });
     expect(
@@ -203,12 +203,19 @@ describe("Interview Prep view", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "Prepare with a plan built around you",
+        name: "Practice from a roadmap built around you",
       }),
     ).toBeVisible();
     expect(await screen.findByTestId("roadmap-panel")).toBeVisible();
     expect(
-      await screen.findByRole("heading", { name: "Choose an application" }),
+      await screen.findByRole("heading", {
+        name: "Application-linked practice",
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        /Select an application to open the defense map, STAR stories, and interview sessions/i,
+      ),
     ).toBeVisible();
     expect(
       screen.queryByRole("heading", { name: "No STAR stories yet" }),
@@ -217,7 +224,7 @@ describe("Interview Prep view", () => {
       screen.queryByRole("heading", { name: "No interview sessions" }),
     ).not.toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("Application context"), {
+    fireEvent.change(screen.getByLabelText("Application"), {
       target: { value: application.id },
     });
 
