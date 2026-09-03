@@ -67,14 +67,14 @@ describe("RoadmapPanel", () => {
       await screen.findByRole("heading", { name: "Your path to AI Engineer" }),
     ).toBeVisible();
     expect(
-      screen.getByRole("link", { name: "Production foundations" }),
+      screen.getByRole("link", { name: /Production foundations/i }),
     ).toHaveAttribute("href", "#roadmap-stage-0");
     expect(screen.getAllByText("Evidence found")).toHaveLength(1);
     expect(screen.getByText("Suggested focus")).toBeVisible();
     expect(screen.queryByText("Start here:")).not.toBeInTheDocument();
 
     const evaluationNode = (
-      await screen.findByText("Model evaluation")
+      await screen.findByRole("heading", { name: "Model evaluation" })
     ).closest("[data-roadmap-node]")!;
 
     fireEvent.mouseEnter(evaluationNode);
@@ -96,7 +96,7 @@ describe("RoadmapPanel", () => {
     render(<RoadmapPanel />);
 
     const evaluationNode = (
-      await screen.findByText("Model evaluation")
+      await screen.findByRole("heading", { name: "Model evaluation" })
     ).closest("[data-roadmap-node]")!;
 
     fireEvent.mouseEnter(evaluationNode);
