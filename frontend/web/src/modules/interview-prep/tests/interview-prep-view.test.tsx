@@ -206,7 +206,7 @@ describe("Interview Prep view", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "Your interview command center",
+        name: "Interview readiness workspace",
       }),
     ).toBeVisible();
     expect(

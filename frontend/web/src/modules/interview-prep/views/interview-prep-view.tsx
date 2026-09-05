@@ -4,8 +4,6 @@ import {
   BookOpenCheck,
   CalendarPlus,
   ChevronRight,
-  Compass,
-  FlaskConical,
   RefreshCcw,
   ShieldCheck,
 } from "lucide-react";
@@ -30,7 +28,10 @@ import {
   ErrorState,
   Input,
   LoadingSkeleton,
+  PageHeader,
+  SectionHeader,
   Select,
+  Tabs,
   buttonStyles,
   cn,
 } from "@rezumi/ui";
@@ -196,8 +197,8 @@ export function InterviewPrepView({
     end: endIntentActivity,
     isActive: isIntentActive,
   } = useIntentActivity();
-  const [showStoryForm, setShowStoryForm] = useState(false);
-  const [showSessionForm, setShowSessionForm] = useState(false);
+  const [storyFormOpen, setStoryFormOpen] = useState(false);
+  const [sessionFormOpen, setSessionFormOpen] = useState(false);
   const loadEpoch = useRef(0);
   const loadController = useRef<AbortController | null>(null);
   const defenseEpoch = useRef(0);
@@ -466,7 +467,7 @@ export function InterviewPrepView({
       setSuccess(
         `${story.title} saved with exact claim and evidence revision pins.`,
       );
-      setShowStoryForm(false);
+      setStoryFormOpen(false);
       formElement.reset();
       await loadDefense();
     } catch (error) {
@@ -509,7 +510,7 @@ export function InterviewPrepView({
           : current,
       );
       setSuccess(`${session.title} created from an immutable bounded context.`);
-      setShowSessionForm(false);
+      setSessionFormOpen(false);
       formElement.reset();
     } catch (error) {
       setActionFailure(
@@ -545,68 +546,17 @@ export function InterviewPrepView({
 
   return (
     <main className="workspace-page space-y-6" id="main-content">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <p className="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-primary">
-            Interview Prep
-          </p>
-          <h1 className="mt-1 font-[family-name:var(--font-family-display)] text-xl font-semibold tracking-[-0.03em] text-foreground sm:text-2xl">
-            Your interview command center
-          </h1>
-        </div>
-        <div
-          className="flex flex-wrap gap-2"
-          role="tablist"
-          aria-label="Interview prep views"
-        >
-          <button
-            aria-selected={activeTab === "journey"}
-            className={cn(
-              "inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
-              activeTab === "journey"
-                ? "border-primary bg-primary text-white"
-                : "border-line bg-surface text-muted-strong hover:border-primary/30 hover:text-foreground",
-            )}
-            onClick={() => setActiveTab("journey")}
-            role="tab"
-            type="button"
-          >
-            <Compass aria-hidden="true" className="size-4" />
-            Skill journey
-          </button>
-          <button
-            aria-selected={activeTab === "practice"}
-            className={cn(
-              "inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
-              activeTab === "practice"
-                ? "border-primary bg-primary text-white"
-                : "border-line bg-surface text-muted-strong hover:border-primary/30 hover:text-foreground",
-            )}
-            onClick={() => setActiveTab("practice")}
-            role="tab"
-            type="button"
-          >
-            <FlaskConical aria-hidden="true" className="size-4" />
-            Practice lab
-            {practiceCounts.stories + practiceCounts.sessions > 0 ? (
-              <Badge
-                className={cn(
-                  activeTab === "practice"
-                    ? "border-white/20 bg-white/15 text-white"
-                    : "",
-                )}
-                tone="neutral"
-              >
-                {practiceCounts.stories + practiceCounts.sessions}
-              </Badge>
-            ) : null}
-          </button>
-          <Button onClick={() => void load()} variant="ghost">
+      <PageHeader
+        actions={
+          <Button onClick={() => void load()} variant="secondary">
             <RefreshCcw aria-hidden="true" className="size-4" />
             Refresh
           </Button>
-        </div>
-      </div>
+        }
+        description="Evidence-backed skill development for your target role, plus optional STAR stories and practice sessions grounded in application claims."
+        eyebrow="Interview Prep"
+        title="Interview readiness workspace"
+      />
 
       {actionFailure && (
         <Alert title="Action failed" tone="danger">
@@ -619,451 +569,534 @@ export function InterviewPrepView({
         </Alert>
       )}
 
-      {activeTab === "journey" ? (
-        <section aria-labelledby="personalized-roadmap-heading">
-          <h2 className="sr-only" id="personalized-roadmap-heading">
-            Personalized interview roadmap
-          </h2>
-          {journeyPanel}
-        </section>
-      ) : (
-        <section
-          aria-labelledby="application-practice-heading"
-          className="space-y-5"
-          ref={practiceLabRef}
-        >
-        <div className="relative overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface p-5 sm:p-6">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_100%_0%,color-mix(in_srgb,var(--primary)_8%,transparent),transparent_50%)]"
-          />
-          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div className="min-w-0">
-              <h2
-                className="text-lg font-semibold tracking-[-0.02em] text-foreground"
-                id="application-practice-heading"
-              >
-                Practice lab
-              </h2>
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">
-                Turn roadmap skills into defensible STAR stories and private
-                interview sessions. Every claim stays pinned to eligible
-                evidence — Meridian never invents a missing fact.
-              </p>
-              {practiceSkillHint ? (
-                <p className="mt-3 rounded-[var(--radius-control)] border border-primary/20 bg-primary-soft/60 px-3 py-2 text-sm text-foreground">
-                  <strong className="font-semibold">From your roadmap:</strong>{" "}
-                  practice evidence for{" "}
-                  <span className="font-semibold">{practiceSkillHint}</span> in
-                  a STAR story below.
-                </p>
-              ) : null}
-            </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <label
-              className="min-w-[14rem] text-sm font-semibold text-foreground"
-              htmlFor="interview-application"
-            >
-              Application
-              <Select
-                className="mt-1.5"
-                disabled={state.applications.length === 0}
-                id="interview-application"
-                onChange={(event) => setApplicationId(event.target.value)}
-                value={applicationId}
-              >
-                <option value="">
-                  {state.applications.length === 0
-                    ? "No applications yet"
-                    : "Choose an application"}
-                </option>
-                {state.applications.map((application) => (
-                  <option key={application.id} value={application.id}>
-                    {applicationLabel(application)}
-                  </option>
-                ))}
-              </Select>
-            </label>
-            {applicationId ? (
-              <label
-                className="min-w-[12rem] text-sm font-semibold text-foreground"
-                htmlFor="story-status-filter"
-              >
-                Story status
-                <Select
-                  className="mt-1.5"
-                  id="story-status-filter"
-                  onChange={(event) =>
-                    setStoryStatus(event.target.value as StoryStatus | "")
-                  }
-                  value={storyStatus}
-                >
-                  <option value="">All story statuses</option>
-                  {storyStatuses.map((status) => (
-                    <option key={status} value={status}>
-                      {humanize(status)}
-                    </option>
-                  ))}
-                </Select>
-              </label>
-            ) : null}
-          </div>
-          </div>
-        </div>
-
-        {state.applicationCursor ? (
-          <Button
-            className="min-h-9 px-3"
-            disabled={isIntentActive("more-applications")}
-            onClick={() => void loadMore("applications")}
-            variant="ghost"
-          >
-            Load more applications
-          </Button>
-        ) : null}
-
-        {state.applications.length === 0 ? (
-          <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-line bg-surface-subtle/80 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm leading-6 text-muted">
-              Applications appear after you use Apply for me on a saved job.
-            </p>
-            <Link
-              className={cn(buttonStyles.base, buttonStyles.secondary, "shrink-0")}
-              href="/applications"
-            >
-              Open Applications
-            </Link>
-          </div>
-        ) : null}
-
-        {applicationId ? (
-          <div className="space-y-8">
-          <section aria-labelledby="defense-map-heading" className="space-y-4">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <h2
-                  className="text-lg font-semibold tracking-[-0.02em] text-foreground"
-                  id="defense-map-heading"
-                >
-                  Resume Defense Map
+      <Tabs
+        label="Interview prep workspace"
+        onValueChange={(id) => setActiveTab(id as "journey" | "practice")}
+        value={activeTab}
+        variant="section"
+        tabs={[
+          {
+            id: "journey",
+            label: "Skill journey",
+            panel: (
+              <section aria-labelledby="personalized-roadmap-heading">
+                <h2 className="sr-only" id="personalized-roadmap-heading">
+                  Personalized interview roadmap
                 </h2>
-                <p className="mt-1 text-sm leading-6 text-muted">
-                  Exact immutable claims
-                  {selectedApplication
-                    ? ` for ${applicationLabel(selectedApplication)}`
-                    : ""}
-                  .
-                </p>
-              </div>
-              <Button
-                disabled={!defenseMap}
-                onClick={() => setShowStoryForm((open) => !open)}
+                {journeyPanel}
+              </section>
+            ),
+          },
+          {
+            id: "practice",
+            label: `Practice lab (${practiceCounts.stories + practiceCounts.sessions})`,
+            panel: (
+              <section
+                aria-labelledby="application-practice-heading"
+                className="space-y-6"
+                ref={practiceLabRef}
               >
-                <BookOpenCheck aria-hidden="true" className="size-4" />
-                {showStoryForm ? "Close story form" : "Add STAR story"}
-              </Button>
-            </div>
-
-            {defenseFailure && (
-              <ErrorState
-                description={defenseFailure}
-                onRetry={() => void loadDefense()}
-                title="Defense map unavailable"
-              />
-            )}
-            {!defenseMap && !defenseFailure && (
-              <LoadingSkeleton className="py-2" />
-            )}
-            {defenseMap && (
-              <>
-                <p className="text-sm text-muted">
-                  <span className="font-semibold text-foreground">
-                    {defenseMap.defendedCount}
-                  </span>{" "}
-                  defended ·{" "}
-                  <span className="font-semibold text-foreground">
-                    {defenseMap.partialCount}
-                  </span>{" "}
-                  partial ·{" "}
-                  <span className="font-semibold text-foreground">
-                    {defenseMap.undefendedCount}
-                  </span>{" "}
-                  undefended
-                  {defenseMap.strongClaimWarningCount > 0
-                    ? ` · ${defenseMap.strongClaimWarningCount} strong-claim warning${
-                        defenseMap.strongClaimWarningCount === 1 ? "" : "s"
-                      }`
-                    : ""}
-                </p>
-                {defenseMap.entries.length === 0 ? (
-                  <EmptyState
-                    description="This application has no eligible pinned claims to defend."
-                    title="No defensible claims"
-                  />
-                ) : (
-                  <ul className="grid gap-3 lg:grid-cols-2">
-                    {defenseMap.entries.map((entry) => (
-                      <li
-                        className="rounded-[var(--radius-card)] border border-line bg-surface p-4"
-                        key={entry.claimId}
+                <div className="surface-card rounded-[var(--radius-card)] p-5 sm:p-6">
+                  <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+                    <div className="min-w-0 max-w-2xl">
+                      <p className="eyebrow">Application practice</p>
+                      <h2
+                        className="mt-2 font-display text-xl font-semibold tracking-[-0.02em] text-foreground sm:text-2xl"
+                        id="application-practice-heading"
                       >
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge tone={toneForDefense(entry.status)}>
-                            {humanize(entry.status)}
-                          </Badge>
-                          {entry.strong && (
-                            <Badge tone="warning">Strong claim</Badge>
-                          )}
-                          <span className="text-xs font-semibold text-muted">
-                            {entry.evidenceRevisionIds.length} exact evidence{" "}
-                            {entry.evidenceRevisionIds.length === 1
-                              ? "revision"
-                              : "revisions"}
-                          </span>
-                        </div>
-                        <p className="mt-3 text-sm leading-6 text-foreground">
-                          {entry.claimText}
-                        </p>
-                        {entry.warning && (
-                          <p className="mt-3 text-sm font-semibold text-danger">
-                            Warning: {entry.warning}
+                        Practice lab
+                      </h2>
+                      <p className="mt-2 text-sm leading-6 text-muted">
+                        Turn roadmap skills into defensible STAR stories and
+                        private interview sessions. Every claim stays pinned to
+                        eligible evidence — Meridian never invents a missing
+                        fact.
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                      <label
+                        className="min-w-[14rem] text-sm font-semibold text-foreground"
+                        htmlFor="interview-application"
+                      >
+                        Application
+                        <Select
+                          className="mt-1.5"
+                          disabled={state.applications.length === 0}
+                          id="interview-application"
+                          onChange={(event) =>
+                            setApplicationId(event.target.value)
+                          }
+                          value={applicationId}
+                        >
+                          <option value="">
+                            {state.applications.length === 0
+                              ? "No applications yet"
+                              : "Choose an application"}
+                          </option>
+                          {state.applications.map((application) => (
+                            <option key={application.id} value={application.id}>
+                              {applicationLabel(application)}
+                            </option>
+                          ))}
+                        </Select>
+                      </label>
+                      {applicationId ? (
+                        <label
+                          className="min-w-[12rem] text-sm font-semibold text-foreground"
+                          htmlFor="story-status-filter"
+                        >
+                          Story status
+                          <Select
+                            className="mt-1.5"
+                            id="story-status-filter"
+                            onChange={(event) =>
+                              setStoryStatus(
+                                event.target.value as StoryStatus | "",
+                              )
+                            }
+                            value={storyStatus}
+                          >
+                            <option value="">All story statuses</option>
+                            {storyStatuses.map((status) => (
+                              <option key={status} value={status}>
+                                {humanize(status)}
+                              </option>
+                            ))}
+                          </Select>
+                        </label>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  {practiceSkillHint ? (
+                    <div className="mt-5 overflow-hidden rounded-[var(--radius-control)] border border-primary/20 border-l-4 border-l-primary bg-primary-soft/50 px-4 py-3">
+                      <p className="text-sm leading-6 text-foreground">
+                        <strong className="font-semibold">From your roadmap:</strong>{" "}
+                        practice evidence for{" "}
+                        <span className="font-semibold">{practiceSkillHint}</span>{" "}
+                        in a STAR story below.
+                      </p>
+                    </div>
+                  ) : null}
+
+                  {state.applicationCursor ? (
+                    <div className="mt-4">
+                      <Button
+                        className="min-h-9 px-3"
+                        disabled={isIntentActive("more-applications")}
+                        onClick={() => void loadMore("applications")}
+                        variant="ghost"
+                      >
+                        Load more applications
+                      </Button>
+                    </div>
+                  ) : null}
+                </div>
+
+                {state.applications.length === 0 ? (
+                  <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-line bg-surface-subtle/80 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-sm leading-6 text-muted">
+                      Applications appear after you use Apply for me on a saved
+                      job.
+                    </p>
+                    <Link
+                      className={cn(
+                        buttonStyles.base,
+                        buttonStyles.secondary,
+                        "shrink-0",
+                      )}
+                      href="/applications"
+                    >
+                      Open Applications
+                    </Link>
+                  </div>
+                ) : null}
+
+                {applicationId && selectedApplication ? (
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <PracticeStat
+                      label="STAR stories"
+                      value={practiceCounts.stories}
+                    />
+                    <PracticeStat
+                      label="Sessions"
+                      value={practiceCounts.sessions}
+                    />
+                    <PracticeStat
+                      label="Defended claims"
+                      value={defenseMap?.defendedCount ?? "—"}
+                    />
+                    <PracticeStat
+                      label="Needs defense"
+                      value={
+                        defenseMap
+                          ? defenseMap.partialCount + defenseMap.undefendedCount
+                          : "—"
+                      }
+                    />
+                  </div>
+                ) : null}
+
+                {applicationId ? (
+                  <div className="space-y-8">
+                    <section
+                      aria-labelledby="defense-map-heading"
+                      className="workspace-panel p-4 sm:p-5"
+                    >
+                      <SectionHeader
+                        actions={
+                          <Button
+                            disabled={!defenseMap}
+                            onClick={() => setStoryFormOpen(true)}
+                          >
+                            <BookOpenCheck aria-hidden="true" className="size-4" />
+                            Add STAR story
+                          </Button>
+                        }
+                        description={
+                          selectedApplication
+                            ? `Exact immutable claims for ${applicationLabel(selectedApplication)}.`
+                            : "Exact immutable claims for this application."
+                        }
+                        id="defense-map-heading"
+                        title="Resume defense map"
+                      />
+
+                      {defenseFailure && (
+                        <ErrorState
+                          description={defenseFailure}
+                          onRetry={() => void loadDefense()}
+                          title="Defense map unavailable"
+                        />
+                      )}
+                      {!defenseMap && !defenseFailure && (
+                        <LoadingSkeleton className="py-2" />
+                      )}
+                      {defenseMap && (
+                        <>
+                          <p className="mb-4 text-sm text-muted">
+                            <span className="font-semibold text-foreground">
+                              {defenseMap.defendedCount}
+                            </span>{" "}
+                            defended ·{" "}
+                            <span className="font-semibold text-foreground">
+                              {defenseMap.partialCount}
+                            </span>{" "}
+                            partial ·{" "}
+                            <span className="font-semibold text-foreground">
+                              {defenseMap.undefendedCount}
+                            </span>{" "}
+                            undefended
+                            {defenseMap.strongClaimWarningCount > 0
+                              ? ` · ${defenseMap.strongClaimWarningCount} strong-claim warning${
+                                  defenseMap.strongClaimWarningCount === 1
+                                    ? ""
+                                    : "s"
+                                }`
+                              : ""}
                           </p>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </>
-            )}
-          </section>
+                          {defenseMap.entries.length === 0 ? (
+                            <EmptyState
+                              description="This application has no eligible pinned claims to defend."
+                              title="No defensible claims"
+                            />
+                          ) : (
+                            <ul className="grid gap-3 lg:grid-cols-2">
+                              {defenseMap.entries.map((entry) => (
+                                <li
+                                  className="rounded-[var(--radius-control)] border border-line bg-surface p-4"
+                                  key={entry.claimId}
+                                >
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <Badge tone={toneForDefense(entry.status)}>
+                                      {humanize(entry.status)}
+                                    </Badge>
+                                    {entry.strong && (
+                                      <Badge tone="warning">Strong claim</Badge>
+                                    )}
+                                    <span className="text-xs font-semibold text-muted">
+                                      {entry.evidenceRevisionIds.length} exact
+                                      evidence{" "}
+                                      {entry.evidenceRevisionIds.length === 1
+                                        ? "revision"
+                                        : "revisions"}
+                                    </span>
+                                  </div>
+                                  <p className="mt-3 text-sm leading-6 text-foreground">
+                                    {entry.claimText}
+                                  </p>
+                                  {entry.warning && (
+                                    <p className="mt-3 text-sm font-semibold text-danger">
+                                      Warning: {entry.warning}
+                                    </p>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </>
+                      )}
 
-          {showStoryForm && defenseMap && (
-            <StoryCreateForm
-              busy={isIntentActive("create-story")}
-              defenseMap={defenseMap}
-              onSubmit={submitStory}
-            />
-          )}
+                      {storyFormOpen && defenseMap ? (
+                        <details className="mt-5" open>
+                          <summary className="sr-only">
+                            Add an evidence-linked STAR story
+                          </summary>
+                          <StoryCreateForm
+                            busy={isIntentActive("create-story")}
+                            defenseMap={defenseMap}
+                            onClose={() => setStoryFormOpen(false)}
+                            onSubmit={submitStory}
+                          />
+                        </details>
+                      ) : null}
+                    </section>
 
-          <section
-            aria-labelledby="story-library-heading"
-            className="space-y-4"
-          >
-            <div>
-              <h2
-                className="text-lg font-semibold tracking-[-0.02em] text-foreground"
-                id="story-library-heading"
-              >
-                STAR stories
-              </h2>
-              <p className="mt-1 text-sm leading-6 text-muted">
-                Confidence is your own preparedness assessment, not an employer
-                score.
-              </p>
-            </div>
-            {state.stories.length === 0 ? (
-              <EmptyState
-                action={
-                  <Button
-                    disabled={!defenseMap}
-                    onClick={() => setShowStoryForm(true)}
-                  >
-                    Add a story
-                  </Button>
-                }
-                description="Create a structured story from exact eligible application claims and evidence revisions."
-                title="No STAR stories yet"
-              />
-            ) : (
-              <ul className="grid gap-3 lg:grid-cols-2">
-                {state.stories.map((story) => (
-                  <li
-                    className="rounded-[var(--radius-card)] border border-line bg-surface p-4"
-                    key={story.id}
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge tone={toneForStory(story.status)}>
-                        {humanize(story.status)}
-                      </Badge>
-                      <Badge tone="neutral">
-                        Confidence {story.confidence} of 5
-                      </Badge>
-                      <Badge
-                        tone={
-                          story.groundingStatus === "current"
-                            ? "success"
-                            : story.groundingStatus === "needs_review"
-                              ? "warning"
-                              : "neutral"
-                        }
-                      >
-                        {story.groundingStatus === "current"
-                          ? "Evidence current"
-                          : humanize(story.groundingStatus)}
-                      </Badge>
-                      <span className="text-xs font-semibold text-muted">
-                        {story.claimCount} pinned{" "}
-                        {story.claimCount === 1 ? "claim" : "claims"}
-                      </span>
-                    </div>
-                    <h3 className="mt-3 font-semibold text-foreground">
-                      {story.title}
-                    </h3>
-                    {story.groundingWarning && (
-                      <p className="mt-2 text-sm font-semibold leading-6 text-warning-strong">
-                        {story.groundingWarning}
-                      </p>
-                    )}
-                    <Link
-                      className={`${buttonStyles.base} ${buttonStyles.ghost} mt-3 -ml-3`}
-                      href={`/interview-prep/stories/${story.id}`}
+                    <section
+                      aria-labelledby="story-library-heading"
+                      className="workspace-panel p-4 sm:p-5"
                     >
-                      Review story
-                      <ChevronRight aria-hidden="true" className="size-4" />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {state.storyCursor && (
-              <Button
-                disabled={isIntentActive("more-stories")}
-                onClick={() => void loadMore("stories")}
-                variant="secondary"
-              >
-                Load more stories
-              </Button>
-            )}
-          </section>
+                      <SectionHeader
+                        description="Confidence is your own preparedness assessment, not an employer score."
+                        id="story-library-heading"
+                        title="STAR stories"
+                      />
+                      {state.stories.length === 0 ? (
+                        <EmptyState
+                          action={
+                            <Button
+                              disabled={!defenseMap}
+                              onClick={() => setStoryFormOpen(true)}
+                            >
+                              Add a story
+                            </Button>
+                          }
+                          description="Create a structured story from exact eligible application claims and evidence revisions."
+                          title="No STAR stories yet"
+                        />
+                      ) : (
+                        <ul className="grid gap-3 lg:grid-cols-2">
+                          {state.stories.map((story) => (
+                            <li
+                              className="rounded-[var(--radius-control)] border border-line bg-surface p-4"
+                              key={story.id}
+                            >
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Badge tone={toneForStory(story.status)}>
+                                  {humanize(story.status)}
+                                </Badge>
+                                <Badge tone="neutral">
+                                  Confidence {story.confidence} of 5
+                                </Badge>
+                                <Badge
+                                  tone={
+                                    story.groundingStatus === "current"
+                                      ? "success"
+                                      : story.groundingStatus === "needs_review"
+                                        ? "warning"
+                                        : "neutral"
+                                  }
+                                >
+                                  {story.groundingStatus === "current"
+                                    ? "Evidence current"
+                                    : humanize(story.groundingStatus)}
+                                </Badge>
+                                <span className="text-xs font-semibold text-muted">
+                                  {story.claimCount} pinned{" "}
+                                  {story.claimCount === 1 ? "claim" : "claims"}
+                                </span>
+                              </div>
+                              <h3 className="mt-3 font-semibold text-foreground">
+                                {story.title}
+                              </h3>
+                              {story.groundingWarning && (
+                                <p className="mt-2 text-sm font-semibold leading-6 text-warning-strong">
+                                  {story.groundingWarning}
+                                </p>
+                              )}
+                              <Link
+                                className={`${buttonStyles.base} ${buttonStyles.ghost} mt-3 -ml-3`}
+                                href={`/interview-prep/stories/${story.id}`}
+                              >
+                                Review story
+                                <ChevronRight aria-hidden="true" className="size-4" />
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {state.storyCursor && (
+                        <Button
+                          className="mt-4"
+                          disabled={isIntentActive("more-stories")}
+                          onClick={() => void loadMore("stories")}
+                          variant="secondary"
+                        >
+                          Load more stories
+                        </Button>
+                      )}
+                    </section>
 
-          <section aria-labelledby="sessions-heading" className="space-y-4">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <h2
-                  className="text-lg font-semibold tracking-[-0.02em] text-foreground"
-                  id="sessions-heading"
-                >
-                  Interview sessions
-                </h2>
-                <p className="mt-1 text-sm leading-6 text-muted">
-                  Questions and notes stay private inside this workspace.
-                </p>
-              </div>
-              <Button
-                onClick={() => setShowSessionForm((open) => !open)}
-                variant="secondary"
-              >
-                <CalendarPlus aria-hidden="true" className="size-4" />
-                {showSessionForm ? "Close session form" : "Create session"}
-              </Button>
-            </div>
-            {showSessionForm && (
-              <SessionCreateForm
-                busy={isIntentActive("create-session")}
-                onSubmit={submitSession}
-              />
-            )}
-            {state.sessions.length === 0 ? (
-              <EmptyState
-                description="Create a session to snapshot bounded role, requirement, claim, and evidence context."
-                title="No interview sessions"
-              />
-            ) : (
-              <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {state.sessions.map((session) => (
-                  <li
-                    className="rounded-[var(--radius-card)] border border-line bg-surface p-4"
-                    key={session.id}
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge tone="primary">{humanize(session.kind)}</Badge>
-                      <Badge
-                        tone={
-                          session.groundingStatus === "current"
-                            ? "success"
-                            : session.groundingStatus === "needs_review"
-                              ? "warning"
-                              : "neutral"
-                        }
-                      >
-                        {session.groundingStatus === "current"
-                          ? "Evidence current"
-                          : humanize(session.groundingStatus)}
-                      </Badge>
-                      <span className="text-xs font-semibold text-muted">
-                        {dateTime(session.scheduledAt)}
-                      </span>
-                    </div>
-                    <h3 className="mt-3 font-semibold text-foreground">
-                      {session.title}
-                    </h3>
-                    <p className="mt-1 text-sm text-muted">
-                      {session.jobTitle}
-                      {session.company ? ` at ${session.company}` : ""}
-                    </p>
-                    {session.groundingWarning && (
-                      <p className="mt-2 text-sm font-semibold text-warning-strong">
-                        {session.groundingWarning}
-                      </p>
-                    )}
-                    <p className="mt-3 text-xs font-semibold text-muted">
-                      {session.questionCount} questions · {session.noteCount}{" "}
-                      private notes · {session.followUpDraftCount} drafts
-                    </p>
-                    <Link
-                      className={`${buttonStyles.base} ${buttonStyles.ghost} mt-3 -ml-3`}
-                      href={`/interview-prep/sessions/${session.id}`}
+                    <section
+                      aria-labelledby="sessions-heading"
+                      className="workspace-panel p-4 sm:p-5"
                     >
-                      Open session
-                      <ChevronRight aria-hidden="true" className="size-4" />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {state.sessionCursor && (
-              <Button
-                disabled={isIntentActive("more-sessions")}
-                onClick={() => void loadMore("sessions")}
-                variant="secondary"
-              >
-                Load more sessions
-              </Button>
-            )}
-          </section>
-          </div>
-        ) : state.applications.length > 0 ? (
-          <p className="text-sm text-muted">
-            Select an application to open the defense map, STAR stories, and
-            interview sessions for that role.
-          </p>
-        ) : null}
-        </section>
-      )}
+                      <SectionHeader
+                        actions={
+                          <Button
+                            onClick={() => setSessionFormOpen(true)}
+                            variant="secondary"
+                          >
+                            <CalendarPlus aria-hidden="true" className="size-4" />
+                            Create session
+                          </Button>
+                        }
+                        description="Questions and notes stay private inside this workspace."
+                        id="sessions-heading"
+                        title="Interview sessions"
+                      />
+                      {sessionFormOpen ? (
+                        <details className="mb-5" open>
+                          <summary className="sr-only">
+                            Create a private interview session
+                          </summary>
+                          <SessionCreateForm
+                            busy={isIntentActive("create-session")}
+                            onClose={() => setSessionFormOpen(false)}
+                            onSubmit={submitSession}
+                          />
+                        </details>
+                      ) : null}
+                      {state.sessions.length === 0 ? (
+                        <EmptyState
+                          description="Create a session to snapshot bounded role, requirement, claim, and evidence context."
+                          title="No interview sessions"
+                        />
+                      ) : (
+                        <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                          {state.sessions.map((session) => (
+                            <li
+                              className="rounded-[var(--radius-control)] border border-line bg-surface p-4"
+                              key={session.id}
+                            >
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Badge tone="primary">
+                                  {humanize(session.kind)}
+                                </Badge>
+                                <Badge
+                                  tone={
+                                    session.groundingStatus === "current"
+                                      ? "success"
+                                      : session.groundingStatus === "needs_review"
+                                        ? "warning"
+                                        : "neutral"
+                                  }
+                                >
+                                  {session.groundingStatus === "current"
+                                    ? "Evidence current"
+                                    : humanize(session.groundingStatus)}
+                                </Badge>
+                                <span className="text-xs font-semibold text-muted">
+                                  {dateTime(session.scheduledAt)}
+                                </span>
+                              </div>
+                              <h3 className="mt-3 font-semibold text-foreground">
+                                {session.title}
+                              </h3>
+                              <p className="mt-1 text-sm text-muted">
+                                {session.jobTitle}
+                                {session.company ? ` at ${session.company}` : ""}
+                              </p>
+                              {session.groundingWarning && (
+                                <p className="mt-2 text-sm font-semibold text-warning-strong">
+                                  {session.groundingWarning}
+                                </p>
+                              )}
+                              <p className="mt-3 text-xs font-semibold text-muted">
+                                {session.questionCount} questions ·{" "}
+                                {session.noteCount} private notes ·{" "}
+                                {session.followUpDraftCount} drafts
+                              </p>
+                              <Link
+                                className={`${buttonStyles.base} ${buttonStyles.ghost} mt-3 -ml-3`}
+                                href={`/interview-prep/sessions/${session.id}`}
+                              >
+                                Open session
+                                <ChevronRight aria-hidden="true" className="size-4" />
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {state.sessionCursor && (
+                        <Button
+                          className="mt-4"
+                          disabled={isIntentActive("more-sessions")}
+                          onClick={() => void loadMore("sessions")}
+                          variant="secondary"
+                        >
+                          Load more sessions
+                        </Button>
+                      )}
+                    </section>
+                  </div>
+                ) : state.applications.length > 0 ? (
+                  <div className="rounded-[var(--radius-card)] border border-dashed border-line bg-surface-subtle/50 px-5 py-8 text-center">
+                    <p className="text-sm leading-6 text-muted">
+                      Select an application to open the defense map, STAR
+                      stories, and interview sessions for that role.
+                    </p>
+                  </div>
+                ) : null}
+              </section>
+            ),
+          },
+        ]}
+      />
     </main>
+  );
+}
+
+function PracticeStat({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3">
+      <p className="text-[0.625rem] font-bold uppercase tracking-[0.1em] text-muted">
+        {label}
+      </p>
+      <p className="mt-1 text-2xl font-semibold tabular-nums leading-none text-foreground">
+        {value}
+      </p>
+    </div>
   );
 }
 
 function StoryCreateForm({
   busy,
   defenseMap,
+  onClose,
   onSubmit,
 }: {
   busy: boolean;
   defenseMap: DefenseMap;
+  onClose: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   return (
     <Card className="p-4 sm:p-5">
       <form className="space-y-5" onSubmit={onSubmit}>
-        <div>
-          <h2 className="text-lg font-semibold tracking-[-0.02em] text-foreground">
-            Add an evidence-linked STAR story
-          </h2>
-          <p className="mt-1 text-sm text-muted">
-            Selected claims resolve to their exact eligible evidence revision
-            numbers and hashes. Missing facts must stay out of the story.
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold tracking-[-0.02em] text-foreground">
+              Add an evidence-linked STAR story
+            </h2>
+            <p className="mt-1 text-sm text-muted">
+              Selected claims resolve to their exact eligible evidence revision
+              numbers and hashes. Missing facts must stay out of the story.
+            </p>
+          </div>
+          <Button onClick={onClose} type="button" variant="ghost">
+            Close
+          </Button>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <LabeledInput
@@ -1167,14 +1200,29 @@ function StoryCreateForm({
 
 function SessionCreateForm({
   busy,
+  onClose,
   onSubmit,
 }: {
   busy: boolean;
+  onClose: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   return (
     <Card className="p-4 sm:p-5">
       <form className="grid gap-4 sm:grid-cols-2" onSubmit={onSubmit}>
+        <div className="sm:col-span-2 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold tracking-[-0.02em] text-foreground">
+              Create interview session
+            </h2>
+            <p className="mt-1 text-sm text-muted">
+              Snapshot bounded role, requirement, claim, and evidence context.
+            </p>
+          </div>
+          <Button onClick={onClose} type="button" variant="ghost">
+            Close
+          </Button>
+        </div>
         <LabeledInput
           id="session-title"
           label="Session title"

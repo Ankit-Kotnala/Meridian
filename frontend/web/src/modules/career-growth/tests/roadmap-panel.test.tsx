@@ -64,14 +64,14 @@ describe("RoadmapPanel", () => {
     render(<RoadmapPanel />);
 
     expect(
-      await screen.findByRole("heading", { name: "Your path to AI Engineer" }),
+      await screen.findByRole("heading", { name: "Path to AI Engineer" }),
     ).toBeVisible();
     expect(
       screen.getByRole("link", { name: /Production foundations/i }),
     ).toHaveAttribute("href", "#roadmap-stage-0");
-    expect(screen.getAllByText("Evidence found")).toHaveLength(1);
-    expect(screen.getByText("Suggested focus")).toBeVisible();
-    expect(screen.queryByText("Start here:")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Evidence documented")).toHaveLength(1);
+    expect(screen.getByText("Development priority")).toBeVisible();
+    expect(screen.queryByText("Recommended action:")).not.toBeInTheDocument();
 
     const evaluationNode = (
       await screen.findByRole("heading", { name: "Model evaluation" })
@@ -118,7 +118,7 @@ describe("RoadmapPanel", () => {
     const onConfirmed = vi.fn();
     render(<RoadmapPanel onConfirmed={onConfirmed} />);
 
-    await screen.findByRole("heading", { name: "Your path to AI Engineer" });
+    await screen.findByRole("heading", { name: "Path to AI Engineer" });
 
     const choices = screen.getAllByRole("checkbox");
     expect(choices[0]).not.toBeChecked();
@@ -150,5 +150,37 @@ describe("RoadmapPanel", () => {
     expect(
       screen.getByRole("link", { name: "Review your resume role" }),
     ).toHaveAttribute("href", "/career-profile");
+  });
+
+  it("renders an interview flowchart and opens the next skill in the practice lab", async () => {
+    const onPracticeSkill = vi.fn();
+    render(
+      <RoadmapPanel mode="interview" onPracticeSkill={onPracticeSkill} />,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Path to AI Engineer" }),
+    ).toBeVisible();
+    expect(screen.getByText(/skills evidenced/)).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: /Production foundations/i }),
+    ).toHaveAttribute("href", "#roadmap-stage-0");
+    expect(screen.getByText("Priority focus")).toBeVisible();
+    expect(screen.getByText(/Skill 2 of 2/)).toBeVisible();
+    expect(screen.getByText("Recommended action:")).toBeVisible();
+    expect(
+      screen.getByText("Deploy a bounded inference service."),
+    ).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Open practice lab" }));
+    expect(onPracticeSkill).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "Model serving" }),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Model evaluation" }));
+    expect(await screen.findByText(/Skill 1 of 2/)).toBeVisible();
+    expect(
+      screen.getByText("Reliable systems need measurable model quality."),
+    ).toBeVisible();
   });
 });
