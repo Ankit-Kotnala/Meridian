@@ -161,7 +161,7 @@ describe("RoadmapPanel", () => {
     expect(
       await screen.findByRole("heading", { name: "Path to AI Engineer" }),
     ).toBeVisible();
-    expect(screen.getByText(/skills evidenced/)).toBeVisible();
+    expect(screen.getByText("1 of 2 skills evidenced")).toBeVisible();
     expect(
       screen.getByRole("link", { name: /Production foundations/i }),
     ).toHaveAttribute("href", "#roadmap-stage-0");

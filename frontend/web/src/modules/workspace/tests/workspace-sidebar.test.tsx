@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { WorkspaceSectionNav } from "../components/workspace-section-nav";
 import { WorkspaceSidebar } from "../components/workspace-sidebar";
 import {
+  interviewPrepWorkspaceTools,
   resolveWorkspaceContext,
   workspaceSections,
 } from "../components/workspace-navigation";
@@ -76,8 +77,35 @@ describe("WorkspaceSidebar", () => {
 });
 
 describe("WorkspaceSectionNav", () => {
-  it("exposes the sibling tools a section owns", () => {
+  it("uses the interview prep workspace tools on the main page", () => {
     navigation.pathname = "/interview-prep";
+
+    render(<WorkspaceSectionNav />);
+
+    expect(
+      screen.getByRole("link", { name: "Skill journey" }),
+    ).toHaveAttribute("href", "/interview-prep");
+    expect(screen.getByRole("link", { name: /Practice lab/i })).toHaveAttribute(
+      "href",
+      "/interview-prep/practice-lab",
+    );
+    expect(
+      screen.getByRole("link", { name: "Skill journey" }),
+    ).toHaveAttribute("aria-current", "page");
+  });
+
+  it("highlights Practice lab on the practice route", () => {
+    navigation.pathname = "/interview-prep/practice-lab";
+
+    render(<WorkspaceSectionNav />);
+
+    expect(
+      screen.getByRole("link", { name: /Practice lab/i }),
+    ).toHaveAttribute("aria-current", "page");
+  });
+
+  it("exposes prepare-section tools from nested interview prep routes", () => {
+    navigation.pathname = "/interview-prep/stories/story-id";
 
     render(<WorkspaceSectionNav />);
 
@@ -148,6 +176,9 @@ describe("workspace navigation model", () => {
       workspaceSections.flatMap((section) => [
         section.href,
         ...section.tools.map(({ href }) => href),
+        ...(section.id === "prepare"
+          ? interviewPrepWorkspaceTools.map(({ href }) => href)
+          : []),
       ]),
     );
 
@@ -167,6 +198,7 @@ describe("workspace navigation model", () => {
       // link on the page rather than the nav's own tools list.
       "/resume-health/account",
       "/interview-prep",
+      "/interview-prep/practice-lab",
       "/networking",
       "/career-growth",
       "/analytics",

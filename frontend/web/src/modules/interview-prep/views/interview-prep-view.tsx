@@ -8,6 +8,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -31,7 +32,6 @@ import {
   PageHeader,
   SectionHeader,
   Select,
-  Tabs,
   buttonStyles,
   cn,
 } from "@rezumi/ui";
@@ -40,6 +40,7 @@ import { RoadmapPanel } from "@/modules/career-growth";
 import type { RoadmapSkill } from "@/modules/career-growth/api/types";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
+import { useInterviewPrepWorkspaceMetrics } from "@/shared/workspace/interview-prep-workspace-metrics";
 
 import {
   createSession,
@@ -61,6 +62,8 @@ import type {
   StoryStatus,
 } from "../api/types";
 import { useIntentActivity } from "../state/use-intent-activity";
+
+export type InterviewPrepSection = "journey" | "practice";
 
 const storyStatuses: readonly StoryStatus[] = ["draft", "ready", "archived"];
 const sessionKinds: readonly InterviewSessionKind[] = [
@@ -179,15 +182,17 @@ type CollectionState =
 
 export function InterviewPrepView({
   roadmapPanel,
+  section = "journey",
 }: {
   roadmapPanel?: ReactNode;
+  section?: InterviewPrepSection;
 }) {
+  const router = useRouter();
+  const metrics = useInterviewPrepWorkspaceMetrics();
   const [state, setState] = useState<CollectionState>({ status: "loading" });
   const [applicationId, setApplicationId] = useState("");
   const [storyStatus, setStoryStatus] = useState<StoryStatus | "">("");
-  const [activeTab, setActiveTab] = useState<"journey" | "practice">("journey");
   const [practiceSkillHint, setPracticeSkillHint] = useState<string>();
-  const practiceLabRef = useRef<HTMLDivElement>(null);
   const [defenseMap, setDefenseMap] = useState<DefenseMap>();
   const [defenseFailure, setDefenseFailure] = useState<string>();
   const [actionFailure, setActionFailure] = useState<string>();
@@ -318,19 +323,19 @@ export function InterviewPrepView({
     };
   }, [state]);
 
+  const setPracticeLabCount = metrics?.setPracticeLabCount;
+
+  useEffect(() => {
+    setPracticeLabCount?.(practiceCounts.stories + practiceCounts.sessions);
+  }, [practiceCounts.sessions, practiceCounts.stories, setPracticeLabCount]);
+
   const openPracticeLab = useCallback((skill?: RoadmapSkill) => {
-    setActiveTab("practice");
     setPracticeSkillHint(skill?.name);
     if (!applicationId && state.status === "ready" && state.applications[0]) {
       setApplicationId(state.applications[0].id);
     }
-    queueMicrotask(() => {
-      practiceLabRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    });
-  }, [applicationId, state]);
+    router.push("/interview-prep/practice-lab");
+  }, [applicationId, router, state]);
 
   const journeyPanel =
     roadmapPanel ??
@@ -569,33 +574,18 @@ export function InterviewPrepView({
         </Alert>
       )}
 
-      <Tabs
-        label="Interview prep workspace"
-        onValueChange={(id) => setActiveTab(id as "journey" | "practice")}
-        value={activeTab}
-        variant="section"
-        tabs={[
-          {
-            id: "journey",
-            label: "Skill journey",
-            panel: (
-              <section aria-labelledby="personalized-roadmap-heading">
-                <h2 className="sr-only" id="personalized-roadmap-heading">
-                  Personalized interview roadmap
-                </h2>
-                {journeyPanel}
-              </section>
-            ),
-          },
-          {
-            id: "practice",
-            label: `Practice lab (${practiceCounts.stories + practiceCounts.sessions})`,
-            panel: (
-              <section
-                aria-labelledby="application-practice-heading"
-                className="space-y-6"
-                ref={practiceLabRef}
-              >
+      {section === "journey" ? (
+        <section aria-labelledby="personalized-roadmap-heading">
+          <h2 className="sr-only" id="personalized-roadmap-heading">
+            Personalized interview roadmap
+          </h2>
+          {journeyPanel}
+        </section>
+      ) : (
+        <section
+          aria-labelledby="application-practice-heading"
+          className="space-y-6"
+        >
                 <div className="surface-card rounded-[var(--radius-card)] p-5 sm:p-6">
                   <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
                     <div className="min-w-0 max-w-2xl">
@@ -1048,11 +1038,8 @@ export function InterviewPrepView({
                     </p>
                   </div>
                 ) : null}
-              </section>
-            ),
-          },
-        ]}
-      />
+        </section>
+      )}
     </main>
   );
 }

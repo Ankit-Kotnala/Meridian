@@ -1,8 +1,18 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { InterviewPrepWorkspaceMetricsProvider } from "@/shared/workspace/interview-prep-workspace-metrics";
+
 import type { ApplicationSummary, DefenseMap, StarStory } from "../api/types";
 import { InterviewPrepView } from "../views/interview-prep-view";
+
+const router = vi.hoisted(() => ({
+  push: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => router,
+}));
 
 const api = vi.hoisted(() => ({
   createSession: vi.fn(),
@@ -107,11 +117,14 @@ const story: StarStory = {
 };
 
 describe("Interview Prep view", () => {
-  function renderView() {
+  function renderView(section: "journey" | "practice" = "journey") {
     return render(
-      <InterviewPrepView
-        roadmapPanel={<div data-testid="roadmap-panel">Role roadmap</div>}
-      />,
+      <InterviewPrepWorkspaceMetricsProvider>
+        <InterviewPrepView
+          roadmapPanel={<div data-testid="roadmap-panel">Role roadmap</div>}
+          section={section}
+        />
+      </InterviewPrepWorkspaceMetricsProvider>,
     );
   }
 
@@ -134,11 +147,8 @@ describe("Interview Prep view", () => {
   });
 
   it("shows defensibility warnings and saves a story with exact claim mappings", async () => {
-    renderView();
+    renderView("practice");
 
-    fireEvent.click(
-      await screen.findByRole("tab", { name: /Practice lab/i }),
-    );
     fireEvent.change(await screen.findByLabelText("Application"), {
       target: { value: application.id },
     });
@@ -202,19 +212,16 @@ describe("Interview Prep view", () => {
   });
 
   it("renders explicit empty states without fictional practice data", async () => {
-    renderView();
+    renderView("journey");
 
     expect(
       await screen.findByRole("heading", {
         name: "Interview readiness workspace",
       }),
     ).toBeVisible();
-    expect(
-      await screen.findByRole("tab", { name: /Skill journey/i }),
-    ).toHaveAttribute("aria-selected", "true");
     expect(await screen.findByTestId("roadmap-panel")).toBeVisible();
 
-    fireEvent.click(screen.getByRole("tab", { name: /Practice lab/i }));
+    renderView("practice");
 
     expect(
       await screen.findByRole("heading", { name: "Practice lab" }),
