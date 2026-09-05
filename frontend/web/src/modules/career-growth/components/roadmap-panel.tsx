@@ -3,11 +3,9 @@
 import {
   ArrowRight,
   CheckCircle2,
-  Circle,
-  Compass,
   RefreshCcw,
   Sparkles,
-  Target,
+  Star,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -41,9 +39,12 @@ const STAGE_THEMES = [
     dotRing: "ring-primary/25",
     stageBar: "border-primary/20 bg-primary-soft/80",
     card: "border-primary/12 hover:border-primary/30",
-    cardHover: "hover:shadow-[0_12px_32px_color-mix(in_srgb,var(--primary)_14%,transparent)]",
+    cardHover:
+      "hover:shadow-[0_12px_32px_color-mix(in_srgb,var(--primary)_14%,transparent)]",
     accent: "text-primary",
-    spine: "bg-primary/35",
+    navActive: "border-primary bg-primary-soft text-primary",
+    navIdle:
+      "border-line bg-surface text-muted-strong hover:border-primary/25 hover:text-foreground",
   },
   {
     chip: "bg-success-soft text-success border-success/15",
@@ -51,9 +52,12 @@ const STAGE_THEMES = [
     dotRing: "ring-success/25",
     stageBar: "border-success/20 bg-success-soft/80",
     card: "border-success/12 hover:border-success/30",
-    cardHover: "hover:shadow-[0_12px_32px_color-mix(in_srgb,var(--success)_14%,transparent)]",
+    cardHover:
+      "hover:shadow-[0_12px_32px_color-mix(in_srgb,var(--success)_14%,transparent)]",
     accent: "text-success",
-    spine: "bg-success/35",
+    navActive: "border-success bg-success-soft text-success",
+    navIdle:
+      "border-line bg-surface text-muted-strong hover:border-success/25 hover:text-foreground",
   },
   {
     chip: "bg-warning-soft text-warning border-warning-visual/15",
@@ -61,9 +65,12 @@ const STAGE_THEMES = [
     dotRing: "ring-warning-visual/25",
     stageBar: "border-warning-visual/20 bg-warning-soft/80",
     card: "border-warning-visual/12 hover:border-warning-visual/35",
-    cardHover: "hover:shadow-[0_12px_32px_color-mix(in_srgb,var(--warning-visual)_14%,transparent)]",
+    cardHover:
+      "hover:shadow-[0_12px_32px_color-mix(in_srgb,var(--warning-visual)_14%,transparent)]",
     accent: "text-warning",
-    spine: "bg-warning-visual/35",
+    navActive: "border-warning-visual bg-warning-soft text-warning",
+    navIdle:
+      "border-line bg-surface text-muted-strong hover:border-warning-visual/25 hover:text-foreground",
   },
 ] as const;
 
@@ -259,12 +266,48 @@ export function RoadmapPanel({
     );
   }
 
+  if (mode === "interview") {
+    return (
+      <div className="space-y-5">
+        <InterviewPathSummary
+          demonstrated={summary.demonstrated}
+          progress={summary.progress}
+          roleTitle={roadmap.roleTitle}
+          stages={roadmap.stages}
+          total={summary.total}
+        />
+
+        {(failure || success) && (
+          <div className="space-y-3">
+            {failure && (
+              <Alert title="Roadmap selection not saved" tone="danger">
+                {failure}
+              </Alert>
+            )}
+            {success && (
+              <Alert title="Development plan updated" tone="success">
+                <p role="status">{success}</p>
+              </Alert>
+            )}
+          </div>
+        )}
+
+        <InterviewJourney
+          onToggleSkill={toggle}
+          selected={selected}
+          stages={roadmap.stages}
+          stageTotal={summary.stages}
+          {...(onPracticeSkill ? { onPracticeSkill } : {})}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface shadow-[var(--shadow-md)]">
       <RoadmapHero
         demonstrated={summary.demonstrated}
         focus={summary.focus}
-        mode={mode}
         progress={summary.progress}
         roleTitle={roadmap.roleTitle}
         stages={roadmap.stages}
@@ -287,13 +330,11 @@ export function RoadmapPanel({
           </div>
         )}
 
-        <RoadmapJourney
-          mode={mode}
+        <GrowthJourney
           onToggleSkill={toggle}
           selected={selected}
           stages={roadmap.stages}
           stageTotal={summary.stages}
-          {...(onPracticeSkill ? { onPracticeSkill } : {})}
         />
 
         <div className="mt-8 flex flex-col gap-4 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
@@ -306,10 +347,7 @@ export function RoadmapPanel({
               <strong className="font-semibold text-foreground">
                 {selected.size}
               </strong>{" "}
-              {selected.size === 1 ? "skill" : "skills"}{" "}
-              {mode === "interview"
-                ? "marked for interview prep."
-                : "queued for your plan."}
+              {selected.size === 1 ? "skill" : "skills"} queued for your plan.
               Evidence-backed skills stay unchecked by default.
             </span>
           </p>
@@ -318,26 +356,14 @@ export function RoadmapPanel({
               <RefreshCcw aria-hidden="true" className="size-4" />
               Recheck evidence
             </Button>
-            {mode === "growth" ? (
-              <Button
-                disabled={selected.size === 0}
-                loading={busy}
-                onClick={() => void confirm()}
-              >
-                Add selected to growth plan
-                <ArrowRight aria-hidden="true" className="size-4" />
-              </Button>
-            ) : (
-              <Button
-                disabled={selected.size === 0}
-                loading={busy}
-                onClick={() => void confirm()}
-                variant="secondary"
-              >
-                Save to growth plan
-                <ArrowRight aria-hidden="true" className="size-4" />
-              </Button>
-            )}
+            <Button
+              disabled={selected.size === 0}
+              loading={busy}
+              onClick={() => void confirm()}
+            >
+              Add selected to growth plan
+              <ArrowRight aria-hidden="true" className="size-4" />
+            </Button>
           </div>
         </div>
       </div>
@@ -345,10 +371,387 @@ export function RoadmapPanel({
   );
 }
 
+function InterviewPathSummary({
+  demonstrated,
+  progress,
+  roleTitle,
+  stages,
+  total,
+}: {
+  demonstrated: number;
+  progress: number;
+  roleTitle: string;
+  stages: RoleRoadmap["stages"];
+  total: number;
+}) {
+  return (
+    <section
+      aria-labelledby="interview-path-heading"
+      className="rounded-[var(--radius-card)] border border-line bg-surface px-5 py-5 sm:px-6 sm:py-6"
+    >
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h3
+            className="font-display text-xl font-semibold tracking-[-0.02em] text-foreground sm:text-[1.375rem]"
+            id="interview-path-heading"
+          >
+            Path to {roleTitle}
+          </h3>
+          <p className="mt-1 text-sm text-muted">
+            <span className="font-semibold tabular-nums text-foreground">
+              {demonstrated} of {total}
+            </span>{" "}
+            {total === 1 ? "skill" : "skills"} evidenced
+          </p>
+        </div>
+        <nav aria-label="Roadmap stages">
+          <ol className="flex flex-wrap gap-2 sm:justify-end">
+            {stages.map((stage, stageIndex) => {
+              const theme = stageTheme(stageIndex);
+              const stageDemonstrated = stage.skills.filter(
+                (skill) => skill.alreadyDemonstrated,
+              ).length;
+              return (
+                <li key={stage.stage}>
+                  <a
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+                      theme.chip,
+                    )}
+                    href={`#roadmap-stage-${stageIndex}`}
+                  >
+                    {stage.stage}
+                    <span className="tabular-nums opacity-80">
+                      {stageDemonstrated}/{stage.skills.length}
+                    </span>
+                  </a>
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
+      </div>
+
+      <div className="mt-5">
+        <div className="flex items-center justify-between gap-3 text-xs font-semibold text-muted">
+          <span>Evidence coverage</span>
+          <span className="tabular-nums text-foreground">{progress}%</span>
+        </div>
+        <div
+          aria-hidden="true"
+          className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--score-track)]"
+        >
+          <div
+            className="h-full rounded-full bg-primary transition-[width] duration-500 motion-reduce:transition-none"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <p className="mt-2 text-xs leading-5 text-muted">
+          {EVIDENCE_COVERAGE_DISCLAIMER}
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function InterviewJourney({
+  onPracticeSkill,
+  onToggleSkill,
+  selected,
+  stages,
+  stageTotal,
+}: {
+  onPracticeSkill?: (skill: RoadmapSkill) => void;
+  onToggleSkill: (name: string) => void;
+  selected: ReadonlySet<string>;
+  stages: RoleRoadmap["stages"];
+  stageTotal: number;
+}) {
+  const nodes = buildRoadmapPath(stages);
+  const nextFocus = findNextFocusSkill(nodes);
+  const [activeSkillName, setActiveSkillName] = useState(
+    () => nextFocus?.skill.name ?? nodes[0]?.skill.name ?? "",
+  );
+
+  const activeNode =
+    nodes.find((node) => node.skill.name === activeSkillName) ?? nodes[0];
+
+  function selectSkill(name: string) {
+    setActiveSkillName(name);
+  }
+
+  function jumpToSkillOnMap(globalIndex: number) {
+    const target = document.getElementById(`roadmap-skill-${globalIndex}`);
+    target?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  function openSkillDetail(name: string) {
+    selectSkill(name);
+    queueMicrotask(() => {
+      document
+        .getElementById("interview-skill-detail")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface">
+        <div className="overflow-x-auto">
+          <div
+            className="min-w-[52rem]"
+            style={{
+              display: "grid",
+              gridTemplateColumns: `repeat(${Math.max(nodes.length, 1)}, minmax(0, 1fr))`,
+            }}
+          >
+            {stages.map((stage, stageIndex) => {
+              const theme = stageTheme(stageIndex);
+              const count = stage.skills.length;
+              return (
+                <div
+                  className={cn(
+                    "border-b border-line px-3 py-2.5 text-center",
+                    theme.stageBar,
+                  )}
+                  id={`roadmap-stage-${stageIndex}`}
+                  key={stage.stage}
+                  style={{ gridColumn: `span ${count}` }}
+                >
+                  <p className="text-[0.625rem] font-bold uppercase tracking-[0.14em] text-muted">
+                    <span className="sr-only">
+                      Stage {stageIndex + 1} of {stageTotal}:{" "}
+                    </span>
+                    {stage.stage}
+                    <span className="ml-1 font-semibold tracking-normal text-muted">
+                      ({count} {count === 1 ? "skill" : "skills"})
+                    </span>
+                  </p>
+                </div>
+              );
+            })}
+
+            {nodes.map((node, index) => {
+              const isActive = activeNode?.skill.name === node.skill.name;
+              const demonstrated = node.skill.alreadyDemonstrated;
+              return (
+                <div
+                  className="relative flex h-16 items-center justify-center"
+                  key={`${node.skill.name}-marker`}
+                >
+                  {index > 0 ? (
+                    <span
+                      aria-hidden="true"
+                      className="absolute inset-y-0 left-0 right-1/2 flex items-center pr-4"
+                    >
+                      <span className="h-px w-full bg-line-strong" />
+                    </span>
+                  ) : null}
+                  {index < nodes.length - 1 ? (
+                    <span
+                      aria-hidden="true"
+                      className="absolute inset-y-0 left-1/2 right-0 flex items-center pl-4"
+                    >
+                      <span className="h-px flex-1 bg-line-strong" />
+                      <ArrowRight className="-mr-1.5 size-3.5 shrink-0 text-muted" />
+                    </span>
+                  ) : null}
+                  <span
+                    className={cn(
+                      "relative z-10 flex size-8 items-center justify-center rounded-full border-2 text-xs font-bold tabular-nums",
+                      demonstrated
+                        ? "border-success bg-success text-white"
+                        : isActive
+                          ? "border-primary bg-primary text-white"
+                          : "border-foreground/80 bg-surface text-foreground",
+                    )}
+                  >
+                    {demonstrated ? (
+                      <CheckCircle2 aria-hidden="true" className="size-4" />
+                    ) : (
+                      node.globalIndex + 1
+                    )}
+                  </span>
+                </div>
+              );
+            })}
+
+            {nodes.map((node) => (
+              <div className="px-2 pb-4 pt-1" key={`${node.skill.name}-card`}>
+                <InterviewSkillCard
+                  active={activeNode?.skill.name === node.skill.name}
+                  onOpen={() => openSkillDetail(node.skill.name)}
+                  onSelect={() => selectSkill(node.skill.name)}
+                  onToggleSkill={() => onToggleSkill(node.skill.name)}
+                  selected={selected.has(node.skill.name)}
+                  skill={node.skill}
+                  step={node.globalIndex + 1}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {activeNode ? (
+        <InterviewSkillDetail
+          isPriorityFocus={nextFocus?.skill.name === activeNode.skill.name}
+          node={activeNode}
+          onPractice={() => onPracticeSkill?.(activeNode.skill)}
+          onShowOnMap={() => jumpToSkillOnMap(activeNode.globalIndex)}
+          showPracticeAction={Boolean(onPracticeSkill)}
+          skillTotal={nodes.length}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function InterviewSkillCard({
+  active,
+  onOpen,
+  onSelect,
+  onToggleSkill,
+  selected,
+  skill,
+  step,
+}: {
+  active: boolean;
+  onOpen: () => void;
+  onSelect: () => void;
+  onToggleSkill: () => void;
+  selected: boolean;
+  skill: RoadmapSkill;
+  step: number;
+}) {
+  const demonstrated = skill.alreadyDemonstrated;
+
+  return (
+    <div
+      className={cn(
+        "flex h-full flex-col rounded-[var(--radius-card)] border bg-surface p-3.5 transition-[border-color,box-shadow] duration-200 motion-reduce:transition-none",
+        active
+          ? "border-primary shadow-[0_0_0_1px_var(--primary)]"
+          : "border-line hover:border-line-strong",
+      )}
+      data-roadmap-node=""
+      id={`roadmap-skill-${step - 1}`}
+    >
+      <div className="flex items-start gap-2">
+        <input
+          aria-label={`Include ${skill.name} in your development plan`}
+          checked={selected}
+          className="mt-0.5 size-4 shrink-0 accent-primary"
+          onChange={onToggleSkill}
+          type="checkbox"
+        />
+        <button
+          className="min-w-0 flex-1 text-left"
+          onClick={onSelect}
+          type="button"
+        >
+          <h4 className="text-sm font-semibold leading-snug tracking-[-0.02em] text-foreground">
+            {skill.name}
+          </h4>
+        </button>
+      </div>
+      <button
+        className="mt-3 flex flex-wrap gap-1.5 text-left"
+        onClick={onSelect}
+        type="button"
+      >
+        <Badge tone={demonstrated ? "success" : "warning"}>
+          {demonstrated ? "Evidence documented" : "Development priority"}
+        </Badge>
+        {selected ? <Badge tone="primary">Selected for plan</Badge> : null}
+      </button>
+      <button
+        className="mt-auto inline-flex items-center gap-1 pt-3 text-sm font-semibold text-primary hover:text-primary-strong"
+        onClick={onOpen}
+        type="button"
+      >
+        Open
+        <ArrowRight aria-hidden="true" className="size-3.5" />
+      </button>
+    </div>
+  );
+}
+
+function InterviewSkillDetail({
+  isPriorityFocus,
+  node,
+  onPractice,
+  onShowOnMap,
+  showPracticeAction,
+  skillTotal,
+}: {
+  isPriorityFocus: boolean;
+  node: RoadmapPathNode;
+  onPractice: () => void;
+  onShowOnMap: () => void;
+  showPracticeAction: boolean;
+  skillTotal: number;
+}) {
+  const { skill, globalIndex, stageName } = node;
+
+  return (
+    <article
+      aria-labelledby={`interview-skill-${globalIndex}-title`}
+      className="rounded-[var(--radius-card)] border border-line bg-surface px-5 py-5 sm:px-6 sm:py-6"
+      id="interview-skill-detail"
+    >
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 max-w-3xl">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            {isPriorityFocus ? (
+              <Badge tone="primary">
+                <Star aria-hidden="true" className="size-3 fill-current" />
+                Priority focus
+              </Badge>
+            ) : null}
+            <p className="text-xs font-semibold text-muted">
+              Skill {globalIndex + 1} of {skillTotal}
+              <span aria-hidden="true"> • </span>
+              {stageName}
+            </p>
+          </div>
+          <h4
+            className="mt-3 font-display text-xl font-semibold tracking-[-0.02em] text-foreground sm:text-2xl"
+            id={`interview-skill-${globalIndex}-title`}
+          >
+            {skill.name}
+          </h4>
+          <p className="mt-2 text-sm leading-7 text-muted">{skill.why}</p>
+          {skill.howToStart ? (
+            <div className="mt-4 rounded-[var(--radius-control)] border border-line bg-surface-subtle px-4 py-3">
+              <p className="text-sm leading-6 text-muted-strong">
+                <strong className="font-semibold text-foreground">
+                  Recommended action:
+                </strong>{" "}
+                {skill.howToStart}
+              </p>
+            </div>
+          ) : null}
+        </div>
+        <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col">
+          {showPracticeAction ? (
+            <Button onClick={onPractice}>
+              Open practice lab
+              <ArrowRight aria-hidden="true" className="size-4" />
+            </Button>
+          ) : null}
+          <Button onClick={onShowOnMap} variant="secondary">
+            View on roadmap
+          </Button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 function RoadmapHero({
   demonstrated,
   focus,
-  mode,
   progress,
   roleTitle,
   stages,
@@ -356,7 +759,6 @@ function RoadmapHero({
 }: {
   demonstrated: number;
   focus: number;
-  mode: "growth" | "interview";
   progress: number;
   roleTitle: string;
   stages: RoleRoadmap["stages"];
@@ -376,17 +778,14 @@ function RoadmapHero({
       <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0 max-w-2xl">
           <p className="text-[0.6875rem] font-bold uppercase tracking-[0.16em] text-white/65">
-            {mode === "interview"
-              ? "Interview readiness path"
-              : "Your learning roadmap"}
+            Role skill roadmap
           </p>
-          <h3 className="mt-2 font-[family-name:var(--font-family-display)] text-2xl font-semibold tracking-[-0.03em] sm:text-[2rem] sm:leading-tight">
-            Your path to {roleTitle}
+          <h3 className="mt-2 font-display text-2xl font-semibold tracking-[-0.03em] sm:text-[2rem] sm:leading-tight">
+            Path to {roleTitle}
           </h3>
           <p className="mt-3 text-sm leading-6 text-white/72">
-            {mode === "interview"
-              ? "Follow the staged skill path, hover stops for context, and jump into practice when you are ready to defend your evidence."
-              : "A staged skill path from foundations to advanced topics. Hover any stop to preview why it matters and where to start."}
+            A staged skill path from foundations to advanced topics. Hover any
+            stop to preview why it matters and where to start.
           </p>
           <nav aria-label="Roadmap stages" className="mt-5">
             <ol className="flex flex-wrap gap-2">
@@ -485,23 +884,17 @@ function StatTile({ label, value }: { label: string; value: number }) {
       <p className="text-[0.625rem] font-bold uppercase tracking-[0.1em] text-white/55">
         {label}
       </p>
-      <p className="text-xl font-semibold tabular-nums leading-tight">
-        {value}
-      </p>
+      <p className="text-xl font-semibold tabular-nums leading-tight">{value}</p>
     </div>
   );
 }
 
-function RoadmapJourney({
-  mode,
-  onPracticeSkill,
+function GrowthJourney({
   onToggleSkill,
   selected,
   stages,
   stageTotal,
 }: {
-  mode: "growth" | "interview";
-  onPracticeSkill?: (skill: RoadmapSkill) => void;
   onToggleSkill: (name: string) => void;
   selected: ReadonlySet<string>;
   stages: RoleRoadmap["stages"];
@@ -509,10 +902,7 @@ function RoadmapJourney({
 }) {
   const nodes = buildRoadmapPath(stages);
   const prefersHover = usePrefersHover();
-  const nextFocus = findNextFocusSkill(nodes);
-  const [hoveredSkill, setHoveredSkill] = useState<string | undefined>(
-    () => (mode === "interview" ? nextFocus?.skill.name : undefined),
-  );
+  const [hoveredSkill, setHoveredSkill] = useState<string | undefined>();
   const [pinnedSkill, setPinnedSkill] = useState<string | undefined>();
 
   const activeSkill = pinnedSkill ?? hoveredSkill;
@@ -537,16 +927,6 @@ function RoadmapJourney({
 
   return (
     <div>
-      {mode === "interview" && nextFocus ? (
-        <NextFocusSpotlight
-          onPractice={() => onPracticeSkill?.(nextFocus.skill)}
-          onShowOnMap={() => jumpToSkill(nextFocus.globalIndex)}
-          showPracticeAction={Boolean(onPracticeSkill)}
-          skill={nextFocus.skill}
-          step={nextFocus.globalIndex + 1}
-        />
-      ) : null}
-
       <nav
         aria-label="Skill navigator"
         className="mb-8 flex flex-wrap justify-center gap-2"
@@ -600,18 +980,15 @@ function RoadmapJourney({
                 <div className="grid grid-cols-1 gap-3 py-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center sm:gap-5 sm:py-4">
                   {alignLeft ? (
                     <>
-                      <RoadmapSkillCard
+                      <GrowthSkillCard
                         align="left"
                         className="order-2 sm:order-none sm:col-start-1"
                         id={`roadmap-skill-${node.globalIndex}`}
-                        mode={mode}
                         onHide={hideSkill}
                         onReveal={() => revealSkill(node.skill.name)}
                         onTogglePin={() =>
                           setPinnedSkill((current) =>
-                            current === node.skill.name
-                              ? undefined
-                              : node.skill.name,
+                            current === node.skill.name ? undefined : node.skill.name,
                           )
                         }
                         onToggleSkill={() => onToggleSkill(node.skill.name)}
@@ -622,9 +999,6 @@ function RoadmapJourney({
                         skill={node.skill}
                         step={node.globalIndex + 1}
                         theme={theme}
-                        {...(onPracticeSkill
-                          ? { onPractice: () => onPracticeSkill(node.skill) }
-                          : {})}
                       />
                       <div className="order-1 flex justify-center sm:col-start-2 sm:row-start-1">
                         <RoadmapNodeDot
@@ -653,18 +1027,15 @@ function RoadmapJourney({
                           theme={theme}
                         />
                       </div>
-                      <RoadmapSkillCard
+                      <GrowthSkillCard
                         align="right"
                         className="order-2 sm:order-none sm:col-start-3"
                         id={`roadmap-skill-${node.globalIndex}`}
-                        mode={mode}
                         onHide={hideSkill}
                         onReveal={() => revealSkill(node.skill.name)}
                         onTogglePin={() =>
                           setPinnedSkill((current) =>
-                            current === node.skill.name
-                              ? undefined
-                              : node.skill.name,
+                            current === node.skill.name ? undefined : node.skill.name,
                           )
                         }
                         onToggleSkill={() => onToggleSkill(node.skill.name)}
@@ -675,9 +1046,6 @@ function RoadmapJourney({
                         skill={node.skill}
                         step={node.globalIndex + 1}
                         theme={theme}
-                        {...(onPracticeSkill
-                          ? { onPractice: () => onPracticeSkill(node.skill) }
-                          : {})}
                       />
                     </>
                   )}
@@ -685,63 +1053,6 @@ function RoadmapJourney({
               </div>
             );
           })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function NextFocusSpotlight({
-  onPractice,
-  onShowOnMap,
-  showPracticeAction,
-  skill,
-  step,
-}: {
-  onPractice: () => void;
-  onShowOnMap: () => void;
-  showPracticeAction: boolean;
-  skill: RoadmapSkill;
-  step: number;
-}) {
-  return (
-    <div
-      className="mb-8 overflow-hidden rounded-[var(--radius-card)] border border-primary/25 bg-gradient-to-br from-primary-soft via-surface to-surface p-5 shadow-[var(--shadow-md)] sm:p-6"
-    >
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge tone="primary">
-              <Compass aria-hidden="true" className="size-3" />
-              Recommended next
-            </Badge>
-            <span className="text-xs font-bold tabular-nums text-muted">
-              Stop {step}
-            </span>
-          </div>
-          <h4 className="mt-3 font-[family-name:var(--font-family-display)] text-xl font-semibold tracking-[-0.02em] text-foreground">
-            {skill.name}
-          </h4>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-            {skill.why}
-          </p>
-          {skill.howToStart ? (
-            <p className="mt-3 rounded-[var(--radius-control)] border border-line bg-surface-subtle px-3 py-2 text-sm leading-6 text-muted-strong">
-              <strong className="font-semibold text-primary">Start here:</strong>{" "}
-              {skill.howToStart}
-            </p>
-          ) : null}
-        </div>
-        <div className="flex flex-col gap-2 sm:shrink-0">
-          {showPracticeAction ? (
-            <Button onClick={onPractice}>
-              Open practice lab
-              <ArrowRight aria-hidden="true" className="size-4" />
-            </Button>
-          ) : null}
-          <Button onClick={onShowOnMap} variant="secondary">
-            Show on map
-          </Button>
         </div>
       </div>
     </div>
@@ -808,13 +1119,11 @@ function RoadmapNodeDot({
   );
 }
 
-function RoadmapSkillCard({
+function GrowthSkillCard({
   align,
   className,
   id,
-  mode,
   onHide,
-  onPractice,
   onReveal,
   onTogglePin,
   onToggleSkill,
@@ -829,9 +1138,7 @@ function RoadmapSkillCard({
   align: "left" | "right";
   className?: string;
   id: string;
-  mode: "growth" | "interview";
   onHide: () => void;
-  onPractice?: () => void;
   onReveal: () => void;
   onTogglePin: () => void;
   onToggleSkill: () => void;
@@ -912,24 +1219,9 @@ function RoadmapSkillCard({
 
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Badge tone={demonstrated ? "success" : "warning"}>
-                {demonstrated ? (
-                  <>
-                    <CheckCircle2 aria-hidden="true" className="size-3" />
-                    Evidence found
-                  </>
-                ) : (
-                  <>
-                    <Target aria-hidden="true" className="size-3" />
-                    Suggested focus
-                  </>
-                )}
+                {demonstrated ? "Evidence documented" : "Development priority"}
               </Badge>
-              {selected && (
-                <Badge tone="primary">
-                  <Circle aria-hidden="true" className="size-2 fill-current" />
-                  In plan
-                </Badge>
-              )}
+              {selected ? <Badge tone="primary">Selected for plan</Badge> : null}
             </div>
           </div>
         </div>
@@ -948,12 +1240,6 @@ function RoadmapSkillCard({
               ) : null}
             </div>
             <div className="flex flex-wrap gap-2">
-              {mode === "interview" && onPractice ? (
-                <Button className="min-h-9 px-3 text-xs" onClick={onPractice}>
-                  Practice this skill
-                  <ArrowRight aria-hidden="true" className="size-3.5" />
-                </Button>
-              ) : null}
               <Button
                 className="min-h-9 px-3 text-xs"
                 onClick={onTogglePin}

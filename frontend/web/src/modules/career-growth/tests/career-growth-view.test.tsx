@@ -593,11 +593,11 @@ describe("Career Growth view", () => {
     render(<CareerGrowthView />);
 
     expect(
-      await screen.findByRole("heading", { name: "Your path to AI Engineer" }),
+      await screen.findByRole("heading", { name: "Path to AI Engineer" }),
     ).toBeVisible();
-    expect(screen.getAllByText("Evidence found").length).toBeGreaterThanOrEqual(
-      2,
-    );
+    expect(
+      screen.getAllByText("Evidence documented").length,
+    ).toBeGreaterThanOrEqual(1);
 
     fireEvent.click(
       screen.getByRole("button", { name: "Add selected to growth plan" }),
