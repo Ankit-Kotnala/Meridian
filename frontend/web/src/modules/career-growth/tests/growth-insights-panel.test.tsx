@@ -111,6 +111,7 @@ describe("GrowthInsightsPanel", () => {
             {
               alreadyDemonstrated: false,
               howToStart: "Deploy a bounded inference service.",
+              library: { freeCourses: [], notes: [], paidCourses: [] },
               name: "Model serving",
               why: "Production roles require safe inference delivery.",
             },
@@ -118,6 +119,7 @@ describe("GrowthInsightsPanel", () => {
               alreadyDemonstrated: false,
               howToStart:
                 "Explain one evaluated model from your Career Record.",
+              library: { freeCourses: [], notes: [], paidCourses: [] },
               name: "Model evaluation",
               why: "Reliable systems need measurable model quality.",
             },

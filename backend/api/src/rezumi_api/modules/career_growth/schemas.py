@@ -506,11 +506,32 @@ class CareerHealthPageResponse(CareerGrowthSchema):
     page: PageResponse
 
 
+class SkillLibraryResourceResponse(CareerGrowthSchema):
+    title: str = Field(min_length=1, max_length=200)
+    provider: str = Field(min_length=1, max_length=80)
+    url: str = Field(min_length=12, max_length=2_000)
+    kind: str = Field(min_length=1, max_length=40)
+
+
+class SkillLibraryNoteResponse(CareerGrowthSchema):
+    title: str = Field(min_length=1, max_length=200)
+    format: str = Field(min_length=1, max_length=40)
+    file_name: str = Field(min_length=1, max_length=120)
+    content: str = Field(min_length=1, max_length=50_000)
+
+
+class SkillLibraryContentsResponse(CareerGrowthSchema):
+    free_courses: list[SkillLibraryResourceResponse] = Field(max_length=40)
+    paid_courses: list[SkillLibraryResourceResponse] = Field(max_length=20)
+    notes: list[SkillLibraryNoteResponse] = Field(max_length=10)
+
+
 class RoadmapSkillResponse(CareerGrowthSchema):
     name: str
     why: str
     how_to_start: str
     already_demonstrated: bool
+    library: SkillLibraryContentsResponse
 
 
 class RoadmapStageResponse(CareerGrowthSchema):
@@ -521,6 +542,14 @@ class RoadmapStageResponse(CareerGrowthSchema):
 class RoleRoadmapResponse(CareerGrowthSchema):
     role_title: str
     stages: list[RoadmapStageResponse] = Field(max_length=20)
+
+
+class SkillLibraryResponse(CareerGrowthSchema):
+    skill_name: str
+    why: str
+    how_to_start: str
+    library: SkillLibraryContentsResponse
+    disclaimer: str = Field(min_length=1, max_length=500)
 
 
 class ConfirmRoadmapRequest(CareerGrowthSchema):

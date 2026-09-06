@@ -18,7 +18,9 @@ from rezumi.modules.career_growth.application import (
     PagedResult,
     ReviewVersionView,
     RoleRoadmapView,
+    SkillLibraryView,
 )
+from rezumi.modules.career_growth.application.role_roadmap_ports import SkillLibrary
 from rezumi.modules.career_growth.domain import (
     CANONICAL_SCORE_DISCLAIMER,
     PROMOTION_READINESS_DISCLAIMER,
@@ -53,6 +55,10 @@ from .schemas import (
     RoadmapSkillResponse,
     RoadmapStageResponse,
     RoleRoadmapResponse,
+    SkillLibraryContentsResponse,
+    SkillLibraryNoteResponse,
+    SkillLibraryResourceResponse,
+    SkillLibraryResponse,
 )
 
 
@@ -145,6 +151,38 @@ def development_item_response(value: DevelopmentItemView) -> DevelopmentItemResp
     )
 
 
+def skill_library_contents_response(library: SkillLibrary) -> SkillLibraryContentsResponse:
+    return SkillLibraryContentsResponse(
+        free_courses=[
+            SkillLibraryResourceResponse(
+                kind=item.kind,
+                provider=item.provider,
+                title=item.title,
+                url=item.url,
+            )
+            for item in library.free_courses
+        ],
+        notes=[
+            SkillLibraryNoteResponse(
+                content=item.content,
+                file_name=item.file_name,
+                format=item.format,
+                title=item.title,
+            )
+            for item in library.notes
+        ],
+        paid_courses=[
+            SkillLibraryResourceResponse(
+                kind=item.kind,
+                provider=item.provider,
+                title=item.title,
+                url=item.url,
+            )
+            for item in library.paid_courses
+        ],
+    )
+
+
 def role_roadmap_response(value: RoleRoadmapView) -> RoleRoadmapResponse:
     return RoleRoadmapResponse(
         role_title=value.role_title,
@@ -153,16 +191,27 @@ def role_roadmap_response(value: RoleRoadmapView) -> RoleRoadmapResponse:
                 stage=stage.stage,
                 skills=[
                     RoadmapSkillResponse(
+                        already_demonstrated=skill.already_demonstrated,
+                        how_to_start=skill.how_to_start,
+                        library=skill_library_contents_response(skill.library),
                         name=skill.name,
                         why=skill.why,
-                        how_to_start=skill.how_to_start,
-                        already_demonstrated=skill.already_demonstrated,
                     )
                     for skill in stage.skills
                 ],
             )
             for stage in value.stages
         ],
+    )
+
+
+def skill_library_response(value: SkillLibraryView) -> SkillLibraryResponse:
+    return SkillLibraryResponse(
+        disclaimer=value.disclaimer,
+        how_to_start=value.how_to_start,
+        library=skill_library_contents_response(value.library),
+        skill_name=value.skill_name,
+        why=value.why,
     )
 
 

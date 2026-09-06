@@ -32,6 +32,8 @@ from rezumi.modules.career_growth.domain import (
 )
 from rezumi.modules.career_growth.domain.errors import CareerGrowthValidationError
 
+from .role_roadmap_ports import SkillLibrary
+
 MAX_CURSOR_OFFSET = 10_000
 
 
@@ -339,6 +341,7 @@ class RoadmapSkillView:
     why: str
     how_to_start: str
     already_demonstrated: bool
+    library: SkillLibrary
 
 
 @dataclass(frozen=True, slots=True)
@@ -351,6 +354,15 @@ class RoadmapStageView:
 class RoleRoadmapView:
     role_title: str
     stages: tuple[RoadmapStageView, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class SkillLibraryView:
+    skill_name: str
+    why: str
+    how_to_start: str
+    library: SkillLibrary
+    disclaimer: str
 
 
 @dataclass(frozen=True, slots=True)

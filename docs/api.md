@@ -849,6 +849,9 @@ GET    /api/v1/career-growth/career-health/analyses
 POST   /api/v1/career-growth/career-health/analyses
 GET    /api/v1/career-growth/career-health/analyses/{analysis_id}
 DELETE /api/v1/career-growth/career-health/analyses/{analysis_id}
+GET    /api/v1/career-growth/roadmap
+POST   /api/v1/career-growth/roadmap/confirm
+GET    /api/v1/career-growth/skill-library
 
 POST   /api/v1/analytics/refreshes
 GET    /api/v1/analytics/refreshes/{job_id}
@@ -914,6 +917,12 @@ formula/configuration versions, applicable-component trace, and
 `insufficient_data` instead of a deceptive number when its minimum input
 threshold is not met. Snapshot hashes are verified before stored analyses are
 returned.
+`GET /api/v1/career-growth/skill-library` returns the curated free-course,
+paid-course, and readable study-note collection mapped to a stored roadmap skill
+name (up to 40 free resources, 20 paid listings, and 10 notes; each stored skill
+ships three in-app articles). Links are allowlisted HTTPS pages; notes are
+self-authored readable articles with an optional PDF download, not copies of
+paid curricula or Markdown outlines. Completion is not Career Record evidence.
 
 Analytics refreshes are durable owner-scoped jobs with bounded windows,
 IANA timezone validation, idempotency, owner-serialized active/history quotas,

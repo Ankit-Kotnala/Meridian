@@ -75,6 +75,7 @@ from .models import (
     RoadmapSkillView,
     RoadmapStageView,
     RoleRoadmapView,
+    SkillLibraryView,
     UpdateDevelopmentItem,
     UpdateGoal,
     UpdateMilestone,
@@ -90,6 +91,7 @@ from .ports import (
     RoleReadinessGapSource,
 )
 from .role_roadmap_ports import (
+    SKILL_LIBRARY_DISCLAIMER,
     RoleRoadmap,
     RoleRoadmapProvider,
     SkillsProvider,
@@ -678,6 +680,7 @@ class CareerGrowthService:
                     RoadmapSkillView(
                         already_demonstrated=_skill_already_known(skill.name, known),
                         how_to_start=skill.how_to_start,
+                        library=skill.library,
                         name=skill.name,
                         why=skill.why,
                     )
@@ -688,6 +691,29 @@ class CareerGrowthService:
             for stage in roadmap.stages
         )
         return RoleRoadmapView(role_title=roadmap.title, stages=stages)
+
+    async def get_skill_library(
+        self,
+        owner_user_id: UUID,
+        skill_name: str,
+        context: RequestContext,
+    ) -> SkillLibraryView:
+        self._authorize(owner_user_id, context)
+        cleaned = " ".join(skill_name.split())
+        if not cleaned:
+            raise CareerGrowthValidationError("skill name is required")
+        if self._roadmaps is None:
+            raise CareerGrowthNotFound
+        record = await self._roadmaps.find_skill_library(cleaned)
+        if record is None:
+            raise CareerGrowthNotFound
+        return SkillLibraryView(
+            disclaimer=SKILL_LIBRARY_DISCLAIMER,
+            how_to_start=record.how_to_start,
+            library=record.library,
+            skill_name=record.skill_name,
+            why=record.why,
+        )
 
     async def confirm_roadmap_selection(
         self,

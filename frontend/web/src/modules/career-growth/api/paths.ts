@@ -51,6 +51,7 @@ export const careerGrowthPaths = {
     }),
   roadmap: "/api/v1/career-growth/roadmap" satisfies StaticPath,
   roadmapConfirm: "/api/v1/career-growth/roadmap/confirm" satisfies StaticPath,
+  skillLibrary: "/api/v1/career-growth/skill-library" satisfies StaticPath,
 } as const;
 
 export function withCareerGrowthQuery(

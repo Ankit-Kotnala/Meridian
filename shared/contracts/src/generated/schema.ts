@@ -1084,6 +1084,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/career-growth/skill-library": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Skill Library */
+        get: operations["careerGrowthSkillLibraryGet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/career-items": {
         parameters: {
             query?: never;
@@ -10152,6 +10169,7 @@ export interface components {
             alreadyDemonstrated: boolean;
             /** Howtostart */
             howToStart: string;
+            library: components["schemas"]["SkillLibraryContentsResponse"];
             /** Name */
             name: string;
             /** Why */
@@ -10831,6 +10849,49 @@ export interface components {
             name: string;
             /** Proficiency */
             proficiency?: ("learning" | "working" | "advanced" | "expert") | null;
+        };
+        /** SkillLibraryContentsResponse */
+        SkillLibraryContentsResponse: {
+            /** Freecourses */
+            freeCourses: components["schemas"]["SkillLibraryResourceResponse"][];
+            /** Notes */
+            notes: components["schemas"]["SkillLibraryNoteResponse"][];
+            /** Paidcourses */
+            paidCourses: components["schemas"]["SkillLibraryResourceResponse"][];
+        };
+        /** SkillLibraryNoteResponse */
+        SkillLibraryNoteResponse: {
+            /** Content */
+            content: string;
+            /** Filename */
+            fileName: string;
+            /** Format */
+            format: string;
+            /** Title */
+            title: string;
+        };
+        /** SkillLibraryResourceResponse */
+        SkillLibraryResourceResponse: {
+            /** Kind */
+            kind: string;
+            /** Provider */
+            provider: string;
+            /** Title */
+            title: string;
+            /** Url */
+            url: string;
+        };
+        /** SkillLibraryResponse */
+        SkillLibraryResponse: {
+            /** Disclaimer */
+            disclaimer: string;
+            /** Howtostart */
+            howToStart: string;
+            library: components["schemas"]["SkillLibraryContentsResponse"];
+            /** Skillname */
+            skillName: string;
+            /** Why */
+            why: string;
         };
         /** SkillListResponse */
         SkillListResponse: {
@@ -19128,6 +19189,111 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConfirmRoadmapResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemResponse"];
+                };
+            };
+        };
+    };
+    careerGrowthSkillLibraryGet: {
+        parameters: {
+            query: {
+                skillName: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                rezumi_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkillLibraryResponse"];
                 };
             };
             /** @description Bad Request */

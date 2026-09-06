@@ -28,6 +28,7 @@ import {
 } from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
+import { useInterviewPrepWorkspaceMetrics } from "@/shared/workspace/interview-prep-workspace-metrics";
 
 import { confirmRoleRoadmap, getRoleRoadmap } from "../api/career-growth-api";
 import type { RoadmapSkill, RoleRoadmap } from "../api/types";
@@ -120,7 +121,9 @@ function buildRoadmapPath(stages: RoleRoadmap["stages"]): RoadmapPathNode[] {
   );
 }
 
-function findNextFocusSkill(nodes: RoadmapPathNode[]): RoadmapPathNode | undefined {
+function findNextFocusSkill(
+  nodes: RoadmapPathNode[],
+): RoadmapPathNode | undefined {
   return nodes.find((node) => !node.skill.alreadyDemonstrated);
 }
 
@@ -135,11 +138,11 @@ const EVIDENCE_COVERAGE_DISCLAIMER =
 export function RoadmapPanel({
   mode = "growth",
   onConfirmed,
-  onPracticeSkill,
+  onOpenLibrary,
 }: {
   mode?: "growth" | "interview";
   onConfirmed?: () => void;
-  onPracticeSkill?: (skill: RoadmapSkill) => void;
+  onOpenLibrary?: (skill: RoadmapSkill) => void;
 }) {
   const [roadmap, setRoadmap] = useState<RoleRoadmap | null>();
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
@@ -147,6 +150,8 @@ export function RoadmapPanel({
   const [success, setSuccess] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
+  const setLibraryResourceCount =
+    useInterviewPrepWorkspaceMetrics()?.setLibraryResourceCount;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -175,6 +180,13 @@ export function RoadmapPanel({
   useEffect(() => {
     queueMicrotask(() => void load());
   }, [load]);
+
+  useEffect(() => {
+    if (mode !== "interview") return;
+    const count =
+      roadmap?.stages.reduce((sum, stage) => sum + stage.skills.length, 0) ?? 0;
+    setLibraryResourceCount?.(count);
+  }, [mode, roadmap, setLibraryResourceCount]);
 
   function toggle(name: string) {
     setSelected((current) => {
@@ -212,7 +224,9 @@ export function RoadmapPanel({
 
   const summary = useMemo(() => {
     const skills = roadmap?.stages.flatMap((stage) => stage.skills) ?? [];
-    const demonstrated = skills.filter((skill) => skill.alreadyDemonstrated).length;
+    const demonstrated = skills.filter(
+      (skill) => skill.alreadyDemonstrated,
+    ).length;
     return {
       demonstrated,
       focus: skills.filter((skill) => !skill.alreadyDemonstrated).length,
@@ -294,7 +308,7 @@ export function RoadmapPanel({
           selected={selected}
           stages={roadmap.stages}
           stageTotal={summary.stages}
-          {...(onPracticeSkill ? { onPracticeSkill } : {})}
+          {...(onOpenLibrary ? { onOpenLibrary } : {})}
         />
       </div>
     );
@@ -449,13 +463,13 @@ function InterviewPathSummary({
 }
 
 function InterviewJourney({
-  onPracticeSkill,
+  onOpenLibrary,
   onToggleSkill,
   selected,
   stages,
   stageTotal,
 }: {
-  onPracticeSkill?: (skill: RoadmapSkill) => void;
+  onOpenLibrary?: (skill: RoadmapSkill) => void;
   onToggleSkill: (name: string) => void;
   selected: ReadonlySet<string>;
   stages: RoleRoadmap["stages"];
@@ -571,7 +585,13 @@ function InterviewJourney({
               <div className="px-3 pb-5 pt-1" key={`${node.skill.name}-card`}>
                 <InterviewSkillCard
                   active={activeNode?.skill.name === node.skill.name}
-                  onOpen={() => openSkillDetail(node.skill.name)}
+                  onOpen={() => {
+                    if (onOpenLibrary) {
+                      onOpenLibrary(node.skill);
+                      return;
+                    }
+                    openSkillDetail(node.skill.name);
+                  }}
                   onSelect={() => selectSkill(node.skill.name)}
                   onToggleSkill={() => onToggleSkill(node.skill.name)}
                   selected={selected.has(node.skill.name)}
@@ -588,9 +608,9 @@ function InterviewJourney({
         <InterviewSkillDetail
           isPriorityFocus={nextFocus?.skill.name === activeNode.skill.name}
           node={activeNode}
-          onPractice={() => onPracticeSkill?.(activeNode.skill)}
+          onOpenLibrary={() => onOpenLibrary?.(activeNode.skill)}
           onShowOnMap={() => jumpToSkillOnMap(activeNode.globalIndex)}
-          showPracticeAction={Boolean(onPracticeSkill)}
+          showLibraryAction={Boolean(onOpenLibrary)}
           skillTotal={nodes.length}
         />
       ) : null}
@@ -671,16 +691,16 @@ function InterviewSkillCard({
 function InterviewSkillDetail({
   isPriorityFocus,
   node,
-  onPractice,
+  onOpenLibrary,
   onShowOnMap,
-  showPracticeAction,
+  showLibraryAction,
   skillTotal,
 }: {
   isPriorityFocus: boolean;
   node: RoadmapPathNode;
-  onPractice: () => void;
+  onOpenLibrary: () => void;
   onShowOnMap: () => void;
-  showPracticeAction: boolean;
+  showLibraryAction: boolean;
   skillTotal: number;
 }) {
   const { skill, globalIndex, stageName } = node;
@@ -725,9 +745,9 @@ function InterviewSkillDetail({
           ) : null}
         </div>
         <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col">
-          {showPracticeAction ? (
-            <Button onClick={onPractice}>
-              Open practice lab
+          {showLibraryAction ? (
+            <Button onClick={onOpenLibrary}>
+              Open library
               <ArrowRight aria-hidden="true" className="size-4" />
             </Button>
           ) : null}
@@ -875,7 +895,9 @@ function StatTile({ label, value }: { label: string; value: number }) {
       <p className="text-[0.625rem] font-bold uppercase tracking-[0.1em] text-white/55">
         {label}
       </p>
-      <p className="text-xl font-semibold tabular-nums leading-tight">{value}</p>
+      <p className="text-xl font-semibold tabular-nums leading-tight">
+        {value}
+      </p>
     </div>
   );
 }
@@ -979,7 +1001,9 @@ function GrowthJourney({
                         onReveal={() => revealSkill(node.skill.name)}
                         onTogglePin={() =>
                           setPinnedSkill((current) =>
-                            current === node.skill.name ? undefined : node.skill.name,
+                            current === node.skill.name
+                              ? undefined
+                              : node.skill.name,
                           )
                         }
                         onToggleSkill={() => onToggleSkill(node.skill.name)}
@@ -1026,7 +1050,9 @@ function GrowthJourney({
                         onReveal={() => revealSkill(node.skill.name)}
                         onTogglePin={() =>
                           setPinnedSkill((current) =>
-                            current === node.skill.name ? undefined : node.skill.name,
+                            current === node.skill.name
+                              ? undefined
+                              : node.skill.name,
                           )
                         }
                         onToggleSkill={() => onToggleSkill(node.skill.name)}
@@ -1212,7 +1238,9 @@ function GrowthSkillCard({
               <Badge tone={demonstrated ? "success" : "warning"}>
                 {demonstrated ? "Evidence documented" : "Development priority"}
               </Badge>
-              {selected ? <Badge tone="primary">Selected for plan</Badge> : null}
+              {selected ? (
+                <Badge tone="primary">Selected for plan</Badge>
+              ) : null}
             </div>
           </div>
         </div>

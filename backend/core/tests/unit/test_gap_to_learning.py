@@ -24,6 +24,7 @@ from rezumi.modules.career_growth.application.role_roadmap_ports import (
     RoadmapSkillGuidance,
     RoadmapStage,
     RoleRoadmap,
+    SkillLibraryRecord,
 )
 from rezumi.modules.career_growth.domain import CareerGrowthNotFound, DevelopmentKind
 
@@ -45,6 +46,21 @@ class StaticRoadmapProvider:
     async def get_roadmap(self, role_title: str) -> RoleRoadmap | None:
         del role_title
         return self.roadmap
+
+    async def find_skill_library(self, skill_label: str) -> SkillLibraryRecord | None:
+        if self.roadmap is None:
+            return None
+        target = skill_label.strip().casefold()
+        for stage in self.roadmap.stages:
+            for skill in stage.skills:
+                if skill.name.casefold() == target:
+                    return SkillLibraryRecord(
+                        how_to_start=skill.how_to_start,
+                        library=skill.library,
+                        skill_name=skill.name,
+                        why=skill.why,
+                    )
+        return None
 
 
 class StaticTargetRoleResolver:

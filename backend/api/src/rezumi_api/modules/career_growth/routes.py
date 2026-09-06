@@ -49,6 +49,7 @@ from .presenters import (
     goal_response,
     milestone_response,
     role_roadmap_response,
+    skill_library_response,
 )
 from .schemas import (
     CareerGrowthInsightsResponse,
@@ -73,6 +74,7 @@ from .schemas import (
     MilestoneCreateRequest,
     MilestoneUpdateRequest,
     RoleRoadmapResponse,
+    SkillLibraryResponse,
 )
 
 router = APIRouter(prefix="/api/v1/career-growth", tags=["Career Growth"])
@@ -450,6 +452,24 @@ async def get_role_roadmap(
     value = await service.get_role_roadmap(principal.user_id, context)
     _private(response)
     return role_roadmap_response(value) if value is not None else None
+
+
+@router.get(
+    "/skill-library",
+    response_model=SkillLibraryResponse,
+    operation_id="careerGrowthSkillLibraryGet",
+    responses=_PROBLEMS,
+)
+async def get_skill_library(
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(current_principal)],
+    context: Annotated[RequestContext, Depends(career_growth_request_context)],
+    service: Annotated[CareerGrowthService, Depends(career_growth_service)],
+    skill_name: Annotated[str, Query(alias="skillName", min_length=1, max_length=200)],
+) -> SkillLibraryResponse:
+    value = await service.get_skill_library(principal.user_id, skill_name, context)
+    _private(response)
+    return skill_library_response(value)
 
 
 @router.post(

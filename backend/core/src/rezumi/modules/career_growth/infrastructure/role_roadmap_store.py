@@ -23,8 +23,12 @@ from rezumi.modules.career_growth.application.role_roadmap_ports import (
     RoadmapSkillGuidance,
     RoadmapStage,
     RoleRoadmap,
+    SkillLibraryRecord,
 )
 from rezumi.modules.career_growth.domain.errors import CareerGrowthUnavailable
+from rezumi.modules.career_growth.infrastructure.skill_library_catalog import (
+    library_from_document,
+)
 
 _MAX_DOCUMENTS = 500
 
@@ -33,6 +37,10 @@ class DisabledRoleRoadmapProvider:
     """No-op adapter used when MongoDB storage is disabled."""
 
     async def find_skill_guidance(self, skill_label: str) -> RoadmapSkillGuidance | None:
+        del skill_label
+        return None
+
+    async def find_skill_library(self, skill_label: str) -> SkillLibraryRecord | None:
         del skill_label
         return None
 
@@ -88,6 +96,27 @@ class MongoRoleRoadmapProvider:
                         target in normalized_name or normalized_name in target
                     ):
                         substring_match = guidance
+        return substring_match
+
+    async def find_skill_library(self, skill_label: str) -> SkillLibraryRecord | None:
+        documents = await self._run(list, self._collection.find({}).limit(_MAX_DOCUMENTS))
+        target = skill_label.strip().casefold()
+        if not target:
+            return None
+        substring_match: SkillLibraryRecord | None = None
+        for document in documents:
+            for stage in document.get("stages") or []:
+                for skill in stage.get("skills") or []:
+                    record = _skill_library_record(skill)
+                    if record is None:
+                        continue
+                    normalized_name = record.skill_name.casefold()
+                    if normalized_name == target:
+                        return record
+                    if substring_match is None and (
+                        target in normalized_name or normalized_name in target
+                    ):
+                        substring_match = record
         return substring_match
 
     async def get_roadmap(self, role_title: str) -> RoleRoadmap | None:
@@ -195,13 +224,9 @@ def _roadmap(document: dict[str, Any]) -> RoleRoadmap:
     stages = []
     for stage in document.get("stages") or []:
         skills = tuple(
-            RoadmapSkill(
-                how_to_start=str(skill.get("howToStart") or ""),
-                name=str(skill.get("name") or ""),
-                why=str(skill.get("why") or ""),
-            )
-            for skill in stage.get("skills") or []
-            if skill.get("name")
+            skill
+            for skill in (_roadmap_skill(item) for item in stage.get("skills") or [])
+            if skill is not None
         )
         if skills:
             stages.append(RoadmapStage(skills=skills, stage=str(stage.get("stage") or "")))
@@ -209,4 +234,37 @@ def _roadmap(document: dict[str, Any]) -> RoleRoadmap:
         role_slug=str(document.get("roleSlug") or ""),
         stages=tuple(stages),
         title=str(document.get("title") or ""),
+    )
+
+
+def _roadmap_skill(skill: Any) -> RoadmapSkill | None:
+    if not isinstance(skill, dict):
+        return None
+    name = str(skill.get("name") or "")
+    if not name:
+        return None
+    why = str(skill.get("why") or "")
+    how_to_start = str(skill.get("howToStart") or "")
+    return RoadmapSkill(
+        how_to_start=how_to_start,
+        library=library_from_document(
+            skill.get("library"),
+            how_to_start=how_to_start,
+            name=name,
+            why=why,
+        ),
+        name=name,
+        why=why,
+    )
+
+
+def _skill_library_record(skill: Any) -> SkillLibraryRecord | None:
+    parsed = _roadmap_skill(skill)
+    if parsed is None:
+        return None
+    return SkillLibraryRecord(
+        how_to_start=parsed.how_to_start,
+        library=parsed.library,
+        skill_name=parsed.name,
+        why=parsed.why,
     )

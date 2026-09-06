@@ -7,6 +7,7 @@ import {
   FileDiff,
   FileText,
   Home,
+  Library,
   Network,
   NotebookPen,
   Search,
@@ -154,6 +155,8 @@ export function isCurrentWorkspacePath(pathname: string, href: string) {
   if (href === "/dashboard") return pathname === href;
   if (href === "/interview-prep") {
     if (
+      pathname === "/interview-prep/library" ||
+      pathname.startsWith("/interview-prep/library/") ||
       pathname === "/interview-prep/practice-lab" ||
       pathname.startsWith("/interview-prep/practice-lab/")
     ) {
@@ -167,6 +170,7 @@ export function isCurrentWorkspacePath(pathname: string, href: string) {
 export function isInterviewPrepWorkspacePath(pathname: string) {
   return (
     pathname === "/interview-prep" ||
+    pathname === "/interview-prep/library" ||
     pathname === "/interview-prep/practice-lab"
   );
 }
@@ -178,9 +182,9 @@ export const interviewPrepWorkspaceTools: readonly WorkspaceNavigationItem[] = [
     label: "Skill journey",
   },
   {
-    href: "/interview-prep/practice-lab",
-    icon: BookOpenCheck,
-    label: "Practice lab",
+    href: "/interview-prep/library",
+    icon: Library,
+    label: "Skill library",
   },
 ];
 

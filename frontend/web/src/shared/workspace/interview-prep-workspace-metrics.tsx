@@ -9,8 +9,8 @@ import {
 } from "react";
 
 type InterviewPrepWorkspaceMetricsContextValue = {
-  practiceLabCount: number;
-  setPracticeLabCount: (count: number) => void;
+  libraryResourceCount: number;
+  setLibraryResourceCount: (count: number) => void;
 };
 
 const InterviewPrepWorkspaceMetricsContext =
@@ -21,13 +21,13 @@ export function InterviewPrepWorkspaceMetricsProvider({
 }: {
   children: ReactNode;
 }) {
-  const [practiceLabCount, setPracticeLabCount] = useState(0);
+  const [libraryResourceCount, setLibraryResourceCount] = useState(0);
   const value = useMemo(
     () => ({
-      practiceLabCount,
-      setPracticeLabCount,
+      libraryResourceCount,
+      setLibraryResourceCount,
     }),
-    [practiceLabCount],
+    [libraryResourceCount],
   );
 
   return (

@@ -14,6 +14,35 @@ from dataclasses import dataclass
 from typing import Protocol
 from uuid import UUID
 
+SKILL_LIBRARY_DISCLAIMER = (
+    "These are third-party learning resources. Rezumi does not host the courses, "
+    "grade them, or treat completion as Career Record evidence. Study notes are "
+    "self-authored readable articles, not copies of paid course materials."
+)
+
+
+@dataclass(frozen=True, slots=True)
+class SkillLibraryResource:
+    title: str
+    provider: str
+    url: str
+    kind: str
+
+
+@dataclass(frozen=True, slots=True)
+class SkillLibraryNote:
+    title: str
+    format: str
+    file_name: str
+    content: str
+
+
+@dataclass(frozen=True, slots=True)
+class SkillLibrary:
+    free_courses: tuple[SkillLibraryResource, ...] = ()
+    paid_courses: tuple[SkillLibraryResource, ...] = ()
+    notes: tuple[SkillLibraryNote, ...] = ()
+
 
 @dataclass(frozen=True, slots=True)
 class RoadmapSkillGuidance:
@@ -25,10 +54,19 @@ class RoadmapSkillGuidance:
 
 
 @dataclass(frozen=True, slots=True)
+class SkillLibraryRecord:
+    skill_name: str
+    why: str
+    how_to_start: str
+    library: SkillLibrary
+
+
+@dataclass(frozen=True, slots=True)
 class RoadmapSkill:
     name: str
     why: str
     how_to_start: str
+    library: SkillLibrary = SkillLibrary()
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,6 +84,8 @@ class RoleRoadmap:
 
 class RoleRoadmapProvider(Protocol):
     async def find_skill_guidance(self, skill_label: str) -> RoadmapSkillGuidance | None: ...
+
+    async def find_skill_library(self, skill_label: str) -> SkillLibraryRecord | None: ...
 
     async def get_roadmap(self, role_title: str) -> RoleRoadmap | None: ...
 

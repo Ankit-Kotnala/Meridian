@@ -18,10 +18,14 @@ import {
 function labelForTool(
   href: string,
   label: string,
-  practiceLabCount: number | undefined,
+  libraryResourceCount: number | undefined,
 ) {
-  if (href === "/interview-prep/practice-lab" && practiceLabCount !== undefined) {
-    return `Practice lab (${practiceLabCount})`;
+  if (
+    href === "/interview-prep/library" &&
+    libraryResourceCount !== undefined &&
+    libraryResourceCount > 0
+  ) {
+    return `Skill library (${libraryResourceCount})`;
   }
   return label;
 }
@@ -53,7 +57,7 @@ export function WorkspaceSectionNav() {
   if (tools.length < 2) return null;
 
   const current = resolveWorkspaceTool(pathname, section);
-  const practiceLabCount = metrics?.practiceLabCount;
+  const libraryResourceCount = metrics?.libraryResourceCount;
 
   return (
     <div className="border-b border-line bg-surface">
@@ -70,7 +74,7 @@ export function WorkspaceSectionNav() {
               href={href}
               key={href}
             >
-              {labelForTool(href, label, practiceLabCount)}
+              {labelForTool(href, label, libraryResourceCount)}
             </Link>
           );
         })}

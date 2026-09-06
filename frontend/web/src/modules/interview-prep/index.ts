@@ -6,7 +6,7 @@ export {
   StarStoryLoading,
   StarStoryRouteError,
 } from "./components/route-states";
-export type InterviewPrepSection = "journey" | "practice";
+export type InterviewPrepSection = "journey" | "library";
 
 export { InterviewPrepView } from "./views/interview-prep-view";
 export { InterviewSessionDetailView } from "./views/interview-session-detail-view";

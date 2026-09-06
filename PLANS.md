@@ -440,13 +440,24 @@ backend/core/tests/unit/test_job_source_connector.py` â€” passed (2026-08-2
       and open as `career_growth` development items (`POST
 /api/v1/career-growth/development-items/from-gap`).
 - [x] Runtime role-roadmap personalization now resolves the Career Profile target-role preference first, then resume target/current-experience, saved readiness, professional headline, and Career Record experience before matching curated aliases/seniority, and marks skills demonstrated only from confirmed, eligible Career Record evidence. Interview Prep composes the roadmap panel with loading, empty, retry, selection, and Growth-plan handoff states. Mongo was reseeded with 41 curated roadmaps (including AI Engineer, version role-roadmaps/2026-08-31.3); focused Career Growth tests (22) and focused web tests (13) passed. The web TypeScript gate passes; the full npm run lint --workspace=@rezumi/web gate remains blocked outside this surface by two existing react-hooks/set-state-in-effect errors in applications-view.tsx and one unused-variable warning in job-match/layout.tsx.
+- [x] Each stored roadmap skill is mapped to a skill library of free courses
+      (YouTube, docs, OCW, and other public pages), paid courses (Coursera,
+      Udemy, edX), and readable self-authored study articles (PDF download, not
+      Markdown outlines). `GET /api/v1/career-growth/skill-library?skillName=`
+      returns the mapping. Seed version `role-roadmaps/2026-09-06.3`. Each of
+      172 stored skills ships 20–40 free resources, 12–20 paid listings, and
+      three readable study articles stored on the roadmap document.
 - [ ] Completing an item prompts the evidence it produced (Growth UI prompt not
       yet wired end-to-end).
 - [x] Gap titles/descriptions are deterministic; no outcome, ranking, or hiring
       probability claims.
 
-Verification: `uv run pytest backend/core/tests/unit/test_gap_to_learning.py`
-â€” passed (2026-08-23).
+Verification: `uv run pytest backend/core/tests/unit/test_gap_to_learning.py
+backend/core/tests/unit/test_skill_library.py` and `uv run pytest
+backend/api/tests/test_career_growth_routes.py` passed (2026-09-06). Focused web
+tests for roadmap Open → library, skill-library panel, interview-prep view, and
+workspace Skill library tabs passed. Mongo was reseeded with 41 roadmaps
+(version `role-roadmaps/2026-09-06.3`); local API/web images were rebuilt.
 
 ### Open verification and product risks
 

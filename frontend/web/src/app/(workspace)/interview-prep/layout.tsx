@@ -1,23 +1,32 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
+import {
+  RoadmapPanel,
+  SkillLibraryPanel,
+  type RoadmapSkill,
+} from "@/modules/career-growth";
 import {
   InterviewPrepView,
   type InterviewPrepSection,
 } from "@/modules/interview-prep";
 
 function sectionFromPath(pathname: string): InterviewPrepSection | null {
-  if (pathname === "/interview-prep/practice-lab") return "practice";
+  if (
+    pathname === "/interview-prep/library" ||
+    pathname === "/interview-prep/practice-lab"
+  ) {
+    return "library";
+  }
   if (pathname === "/interview-prep") return "journey";
   return null;
 }
 
 /**
- * Keeps InterviewPrepView mounted across Skill journey / Practice lab so
- * application, story, and session state survive sub-navigation. The section
- * chrome lives in WorkspaceSectionNav, same as Job search.
+ * Composes Skill journey and Skill library under Interview Prep chrome.
+ * Nested story and session routes render their own pages.
  */
 export default function InterviewPrepLayout({
   children,
@@ -25,11 +34,29 @@ export default function InterviewPrepLayout({
   children: ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const section = sectionFromPath(pathname);
 
-  if (section) {
+  function openLibrary(skill: RoadmapSkill) {
+    router.push(
+      `/interview-prep/library?skill=${encodeURIComponent(skill.name)}`,
+    );
+  }
+
+  if (section === "library") {
     void children;
-    return <InterviewPrepView section={section} />;
+    return <SkillLibraryPanel />;
+  }
+
+  if (section === "journey") {
+    void children;
+    return (
+      <InterviewPrepView
+        roadmapPanel={
+          <RoadmapPanel mode="interview" onOpenLibrary={openLibrary} />
+        }
+      />
+    );
   }
 
   return children;
