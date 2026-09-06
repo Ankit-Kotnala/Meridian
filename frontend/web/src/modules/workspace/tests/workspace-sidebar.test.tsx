@@ -1,9 +1,16 @@
 import { render, screen } from "@testing-library/react";
+import { useEffect } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import {
+  InterviewPrepWorkspaceMetricsProvider,
+  useInterviewPrepWorkspaceMetrics,
+} from "@/shared/workspace/interview-prep-workspace-metrics";
 
 import { WorkspaceSectionNav } from "../components/workspace-section-nav";
 import { WorkspaceSidebar } from "../components/workspace-sidebar";
 import {
+  interviewPrepWorkspaceTools,
   resolveWorkspaceContext,
   workspaceSections,
 } from "../components/workspace-navigation";
@@ -13,6 +20,14 @@ const navigation = vi.hoisted(() => ({ pathname: "/interview-prep" }));
 vi.mock("next/navigation", () => ({
   usePathname: () => navigation.pathname,
 }));
+
+function SeedLibraryCount({ count }: { count: number }) {
+  const metrics = useInterviewPrepWorkspaceMetrics();
+  useEffect(() => {
+    metrics?.setLibraryResourceCount(count);
+  }, [count, metrics]);
+  return null;
+}
 
 describe("WorkspaceSidebar", () => {
   beforeEach(() => {
@@ -76,8 +91,51 @@ describe("WorkspaceSidebar", () => {
 });
 
 describe("WorkspaceSectionNav", () => {
-  it("exposes the sibling tools a section owns", () => {
+  it("uses the interview prep workspace tools on the main page", () => {
     navigation.pathname = "/interview-prep";
+
+    render(<WorkspaceSectionNav />);
+
+    expect(screen.getByRole("link", { name: "Skill journey" })).toHaveAttribute(
+      "href",
+      "/interview-prep",
+    );
+    expect(
+      screen.getByRole("link", { name: /Skill library/i }),
+    ).toHaveAttribute("href", "/interview-prep/library");
+    expect(screen.getByRole("link", { name: "Skill journey" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
+  it("shows the mapped skill count on Skill library", async () => {
+    navigation.pathname = "/interview-prep";
+
+    render(
+      <InterviewPrepWorkspaceMetricsProvider>
+        <SeedLibraryCount count={5} />
+        <WorkspaceSectionNav />
+      </InterviewPrepWorkspaceMetricsProvider>,
+    );
+
+    expect(
+      await screen.findByRole("link", { name: "Skill library (5)" }),
+    ).toHaveAttribute("href", "/interview-prep/library");
+  });
+
+  it("highlights Skill library on the library route", () => {
+    navigation.pathname = "/interview-prep/library";
+
+    render(<WorkspaceSectionNav />);
+
+    expect(
+      screen.getByRole("link", { name: /Skill library/i }),
+    ).toHaveAttribute("aria-current", "page");
+  });
+
+  it("exposes prepare-section tools from nested interview prep routes", () => {
+    navigation.pathname = "/interview-prep/stories/story-id";
 
     render(<WorkspaceSectionNav />);
 
@@ -148,6 +206,9 @@ describe("workspace navigation model", () => {
       workspaceSections.flatMap((section) => [
         section.href,
         ...section.tools.map(({ href }) => href),
+        ...(section.id === "prepare"
+          ? interviewPrepWorkspaceTools.map(({ href }) => href)
+          : []),
       ]),
     );
 
@@ -167,6 +228,7 @@ describe("workspace navigation model", () => {
       // link on the page rather than the nav's own tools list.
       "/resume-health/account",
       "/interview-prep",
+      "/interview-prep/library",
       "/networking",
       "/career-growth",
       "/analytics",

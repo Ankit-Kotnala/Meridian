@@ -26,8 +26,12 @@ from typing import Any
 from pymongo import MongoClient
 
 from rezumi.foundation.config.mongodb import MongoOptions
+from rezumi.modules.career_growth.infrastructure.skill_library_catalog import (
+    library_document,
+    library_for_skill,
+)
 
-ROADMAP_VERSION = "role-roadmaps/2026-08-31.3"
+ROADMAP_VERSION = "role-roadmaps/2026-09-06.3"
 
 # Each skill entry: name (matched against a role_readiness gap label),
 # why (one sentence on why it matters), howToStart (one concrete first step).
@@ -1672,7 +1676,7 @@ def seed_role_roadmaps(options: MongoOptions | None = None) -> int:
         now = datetime.now(UTC)
         for role in ROLE_ROADMAPS:
             document = {
-                **role,
+                **_with_skill_libraries(role),
                 "version": ROADMAP_VERSION,
                 "sourceNote": "Self-authored starter content, not scraped from any third-party roadmap site.",
                 "updatedAt": now,
@@ -1685,6 +1689,35 @@ def seed_role_roadmaps(options: MongoOptions | None = None) -> int:
         return len(ROLE_ROADMAPS)
     finally:
         client.close()
+
+
+def _with_skill_libraries(role: dict[str, Any]) -> dict[str, Any]:
+    stages = []
+    for stage in role.get("stages") or []:
+        skills = []
+        for skill in stage.get("skills") or []:
+            name = str(skill.get("name") or "")
+            why = str(skill.get("why") or "")
+            how_to_start = str(skill.get("howToStart") or "")
+            library = library_for_skill(name, how_to_start=how_to_start, why=why)
+            skills.append({**skill, "library": library_document(library)})
+        stages.append({**stage, "skills": skills})
+    return {**role, "stages": stages}
+
+
+def unique_roadmap_skills() -> tuple[tuple[str, str, str], ...]:
+    seen: dict[str, tuple[str, str, str]] = {}
+    for role in ROLE_ROADMAPS:
+        for stage in role.get("stages") or []:
+            for skill in stage.get("skills") or []:
+                name = str(skill.get("name") or "").strip()
+                if not name:
+                    continue
+                key = name.casefold()
+                if key in seen:
+                    continue
+                seen[key] = (name, str(skill.get("why") or ""), str(skill.get("howToStart") or ""))
+    return tuple(seen.values())
 
 
 def main() -> int:

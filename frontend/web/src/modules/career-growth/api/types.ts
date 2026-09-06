@@ -133,6 +133,13 @@ export type CareerHealthComponent =
 export type RoleRoadmap = components["schemas"]["RoleRoadmapResponse"];
 export type RoadmapStage = components["schemas"]["RoadmapStageResponse"];
 export type RoadmapSkill = components["schemas"]["RoadmapSkillResponse"];
+export type SkillLibrary = components["schemas"]["SkillLibraryResponse"];
+export type SkillLibraryContents =
+  components["schemas"]["SkillLibraryContentsResponse"];
+export type SkillLibraryResource =
+  components["schemas"]["SkillLibraryResourceResponse"];
+export type SkillLibraryNote =
+  components["schemas"]["SkillLibraryNoteResponse"];
 export type ConfirmRoadmapInput =
   components["schemas"]["ConfirmRoadmapRequest"];
 export type ConfirmRoadmapResult =

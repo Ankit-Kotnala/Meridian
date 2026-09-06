@@ -28,6 +28,7 @@ import {
 } from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
+import { useInterviewPrepWorkspaceMetrics } from "@/shared/workspace/interview-prep-workspace-metrics";
 
 import { confirmRoleRoadmap, getRoleRoadmap } from "../api/career-growth-api";
 import type { RoadmapSkill, RoleRoadmap } from "../api/types";
@@ -38,39 +39,36 @@ const STAGE_THEMES = [
     dot: "bg-primary text-white",
     dotRing: "ring-primary/25",
     stageBar: "border-primary/20 bg-primary-soft/80",
+    band: "border-b-[3px] border-primary bg-primary-soft/55",
+    bandLabel: "text-primary",
     card: "border-primary/12 hover:border-primary/30",
     cardHover:
       "hover:shadow-[0_12px_32px_color-mix(in_srgb,var(--primary)_14%,transparent)]",
     accent: "text-primary",
-    navActive: "border-primary bg-primary-soft text-primary",
-    navIdle:
-      "border-line bg-surface text-muted-strong hover:border-primary/25 hover:text-foreground",
   },
   {
     chip: "bg-success-soft text-success border-success/15",
     dot: "bg-success text-white",
     dotRing: "ring-success/25",
     stageBar: "border-success/20 bg-success-soft/80",
+    band: "border-b-[3px] border-success bg-success-soft/70",
+    bandLabel: "text-success-strong",
     card: "border-success/12 hover:border-success/30",
     cardHover:
       "hover:shadow-[0_12px_32px_color-mix(in_srgb,var(--success)_14%,transparent)]",
     accent: "text-success",
-    navActive: "border-success bg-success-soft text-success",
-    navIdle:
-      "border-line bg-surface text-muted-strong hover:border-success/25 hover:text-foreground",
   },
   {
     chip: "bg-warning-soft text-warning border-warning-visual/15",
     dot: "bg-warning-visual text-white",
     dotRing: "ring-warning-visual/25",
     stageBar: "border-warning-visual/20 bg-warning-soft/80",
+    band: "border-b-[3px] border-warning-visual bg-warning-soft/80",
+    bandLabel: "text-warning-strong",
     card: "border-warning-visual/12 hover:border-warning-visual/35",
     cardHover:
       "hover:shadow-[0_12px_32px_color-mix(in_srgb,var(--warning-visual)_14%,transparent)]",
     accent: "text-warning",
-    navActive: "border-warning-visual bg-warning-soft text-warning",
-    navIdle:
-      "border-line bg-surface text-muted-strong hover:border-warning-visual/25 hover:text-foreground",
   },
 ] as const;
 
@@ -123,7 +121,9 @@ function buildRoadmapPath(stages: RoleRoadmap["stages"]): RoadmapPathNode[] {
   );
 }
 
-function findNextFocusSkill(nodes: RoadmapPathNode[]): RoadmapPathNode | undefined {
+function findNextFocusSkill(
+  nodes: RoadmapPathNode[],
+): RoadmapPathNode | undefined {
   return nodes.find((node) => !node.skill.alreadyDemonstrated);
 }
 
@@ -138,11 +138,11 @@ const EVIDENCE_COVERAGE_DISCLAIMER =
 export function RoadmapPanel({
   mode = "growth",
   onConfirmed,
-  onPracticeSkill,
+  onOpenLibrary,
 }: {
   mode?: "growth" | "interview";
   onConfirmed?: () => void;
-  onPracticeSkill?: (skill: RoadmapSkill) => void;
+  onOpenLibrary?: (skill: RoadmapSkill) => void;
 }) {
   const [roadmap, setRoadmap] = useState<RoleRoadmap | null>();
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
@@ -150,6 +150,8 @@ export function RoadmapPanel({
   const [success, setSuccess] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
+  const setLibraryResourceCount =
+    useInterviewPrepWorkspaceMetrics()?.setLibraryResourceCount;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -178,6 +180,13 @@ export function RoadmapPanel({
   useEffect(() => {
     queueMicrotask(() => void load());
   }, [load]);
+
+  useEffect(() => {
+    if (mode !== "interview") return;
+    const count =
+      roadmap?.stages.reduce((sum, stage) => sum + stage.skills.length, 0) ?? 0;
+    setLibraryResourceCount?.(count);
+  }, [mode, roadmap, setLibraryResourceCount]);
 
   function toggle(name: string) {
     setSelected((current) => {
@@ -215,7 +224,9 @@ export function RoadmapPanel({
 
   const summary = useMemo(() => {
     const skills = roadmap?.stages.flatMap((stage) => stage.skills) ?? [];
-    const demonstrated = skills.filter((skill) => skill.alreadyDemonstrated).length;
+    const demonstrated = skills.filter(
+      (skill) => skill.alreadyDemonstrated,
+    ).length;
     return {
       demonstrated,
       focus: skills.filter((skill) => !skill.alreadyDemonstrated).length,
@@ -297,7 +308,7 @@ export function RoadmapPanel({
           selected={selected}
           stages={roadmap.stages}
           stageTotal={summary.stages}
-          {...(onPracticeSkill ? { onPracticeSkill } : {})}
+          {...(onOpenLibrary ? { onOpenLibrary } : {})}
         />
       </div>
     );
@@ -392,16 +403,14 @@ function InterviewPathSummary({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h3
-            className="font-display text-xl font-semibold tracking-[-0.02em] text-foreground sm:text-[1.375rem]"
+            className="font-display text-xl font-semibold tracking-[-0.03em] text-foreground sm:text-[1.5rem] sm:leading-tight"
             id="interview-path-heading"
           >
             Path to {roleTitle}
           </h3>
           <p className="mt-1 text-sm text-muted">
-            <span className="font-semibold tabular-nums text-foreground">
-              {demonstrated} of {total}
-            </span>{" "}
-            {total === 1 ? "skill" : "skills"} evidenced
+            {demonstrated} of {total} {total === 1 ? "skill" : "skills"}{" "}
+            evidenced
           </p>
         </div>
         <nav aria-label="Roadmap stages">
@@ -415,15 +424,12 @@ function InterviewPathSummary({
                 <li key={stage.stage}>
                   <a
                     className={cn(
-                      "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+                      "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
                       theme.chip,
                     )}
                     href={`#roadmap-stage-${stageIndex}`}
                   >
-                    {stage.stage}
-                    <span className="tabular-nums opacity-80">
-                      {stageDemonstrated}/{stage.skills.length}
-                    </span>
+                    {stage.stage} {stageDemonstrated}/{stage.skills.length}
                   </a>
                 </li>
               );
@@ -432,21 +438,23 @@ function InterviewPathSummary({
         </nav>
       </div>
 
-      <div className="mt-5">
-        <div className="flex items-center justify-between gap-3 text-xs font-semibold text-muted">
-          <span>Evidence coverage</span>
-          <span className="tabular-nums text-foreground">{progress}%</span>
-        </div>
-        <div
-          aria-hidden="true"
-          className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--score-track)]"
-        >
+      <div className="mt-6">
+        <p className="text-xs font-semibold text-muted">Evidence coverage</p>
+        <div className="mt-2 flex items-center gap-3">
           <div
-            className="h-full rounded-full bg-primary transition-[width] duration-500 motion-reduce:transition-none"
-            style={{ width: `${progress}%` }}
-          />
+            aria-hidden="true"
+            className="h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-[var(--score-track)]"
+          >
+            <div
+              className="h-full rounded-full bg-primary transition-[width] duration-500 motion-reduce:transition-none"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
+            {progress}%
+          </span>
         </div>
-        <p className="mt-2 text-xs leading-5 text-muted">
+        <p className="mt-2 text-[0.6875rem] leading-5 text-muted">
           {EVIDENCE_COVERAGE_DISCLAIMER}
         </p>
       </div>
@@ -455,13 +463,13 @@ function InterviewPathSummary({
 }
 
 function InterviewJourney({
-  onPracticeSkill,
+  onOpenLibrary,
   onToggleSkill,
   selected,
   stages,
   stageTotal,
 }: {
-  onPracticeSkill?: (skill: RoadmapSkill) => void;
+  onOpenLibrary?: (skill: RoadmapSkill) => void;
   onToggleSkill: (name: string) => void;
   selected: ReadonlySet<string>;
   stages: RoleRoadmap["stages"];
@@ -499,10 +507,10 @@ function InterviewJourney({
       <div className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface">
         <div className="overflow-x-auto">
           <div
-            className="min-w-[52rem]"
+            className="min-w-[48rem]"
             style={{
               display: "grid",
-              gridTemplateColumns: `repeat(${Math.max(nodes.length, 1)}, minmax(0, 1fr))`,
+              gridTemplateColumns: `repeat(${Math.max(nodes.length, 1)}, minmax(10.5rem, 1fr))`,
             }}
           >
             {stages.map((stage, stageIndex) => {
@@ -510,22 +518,21 @@ function InterviewJourney({
               const count = stage.skills.length;
               return (
                 <div
-                  className={cn(
-                    "border-b border-line px-3 py-2.5 text-center",
-                    theme.stageBar,
-                  )}
+                  className={cn("px-4 py-3", theme.band)}
                   id={`roadmap-stage-${stageIndex}`}
                   key={stage.stage}
                   style={{ gridColumn: `span ${count}` }}
                 >
-                  <p className="text-[0.625rem] font-bold uppercase tracking-[0.14em] text-muted">
+                  <p
+                    className={cn(
+                      "text-[0.6875rem] font-bold uppercase tracking-[0.14em]",
+                      theme.bandLabel,
+                    )}
+                  >
                     <span className="sr-only">
                       Stage {stageIndex + 1} of {stageTotal}:{" "}
                     </span>
-                    {stage.stage}
-                    <span className="ml-1 font-semibold tracking-normal text-muted">
-                      ({count} {count === 1 ? "skill" : "skills"})
-                    </span>
+                    {stage.stage} ({count} {count === 1 ? "skill" : "skills"})
                   </p>
                 </div>
               );
@@ -536,29 +543,27 @@ function InterviewJourney({
               const demonstrated = node.skill.alreadyDemonstrated;
               return (
                 <div
-                  className="relative flex h-16 items-center justify-center"
+                  className="relative flex h-[4.5rem] items-center justify-center"
                   key={`${node.skill.name}-marker`}
                 >
                   {index > 0 ? (
                     <span
                       aria-hidden="true"
-                      className="absolute inset-y-0 left-0 right-1/2 flex items-center pr-4"
-                    >
-                      <span className="h-px w-full bg-line-strong" />
-                    </span>
+                      className="absolute left-0 right-1/2 top-1/2 h-px -translate-y-1/2 bg-foreground/25"
+                    />
                   ) : null}
                   {index < nodes.length - 1 ? (
                     <span
                       aria-hidden="true"
-                      className="absolute inset-y-0 left-1/2 right-0 flex items-center pl-4"
+                      className="absolute left-1/2 right-0 top-1/2 flex -translate-y-1/2 items-center"
                     >
-                      <span className="h-px flex-1 bg-line-strong" />
-                      <ArrowRight className="-mr-1.5 size-3.5 shrink-0 text-muted" />
+                      <span className="h-px flex-1 bg-foreground/25" />
+                      <ArrowRight className="size-3.5 shrink-0 text-foreground/55" />
                     </span>
                   ) : null}
                   <span
                     className={cn(
-                      "relative z-10 flex size-8 items-center justify-center rounded-full border-2 text-xs font-bold tabular-nums",
+                      "relative z-10 flex size-9 items-center justify-center rounded-full border-2 text-sm font-bold tabular-nums",
                       demonstrated
                         ? "border-success bg-success text-white"
                         : isActive
@@ -577,10 +582,16 @@ function InterviewJourney({
             })}
 
             {nodes.map((node) => (
-              <div className="px-2 pb-4 pt-1" key={`${node.skill.name}-card`}>
+              <div className="px-3 pb-5 pt-1" key={`${node.skill.name}-card`}>
                 <InterviewSkillCard
                   active={activeNode?.skill.name === node.skill.name}
-                  onOpen={() => openSkillDetail(node.skill.name)}
+                  onOpen={() => {
+                    if (onOpenLibrary) {
+                      onOpenLibrary(node.skill);
+                      return;
+                    }
+                    openSkillDetail(node.skill.name);
+                  }}
                   onSelect={() => selectSkill(node.skill.name)}
                   onToggleSkill={() => onToggleSkill(node.skill.name)}
                   selected={selected.has(node.skill.name)}
@@ -597,9 +608,9 @@ function InterviewJourney({
         <InterviewSkillDetail
           isPriorityFocus={nextFocus?.skill.name === activeNode.skill.name}
           node={activeNode}
-          onPractice={() => onPracticeSkill?.(activeNode.skill)}
+          onOpenLibrary={() => onOpenLibrary?.(activeNode.skill)}
           onShowOnMap={() => jumpToSkillOnMap(activeNode.globalIndex)}
-          showPracticeAction={Boolean(onPracticeSkill)}
+          showLibraryAction={Boolean(onOpenLibrary)}
           skillTotal={nodes.length}
         />
       ) : null}
@@ -680,16 +691,16 @@ function InterviewSkillCard({
 function InterviewSkillDetail({
   isPriorityFocus,
   node,
-  onPractice,
+  onOpenLibrary,
   onShowOnMap,
-  showPracticeAction,
+  showLibraryAction,
   skillTotal,
 }: {
   isPriorityFocus: boolean;
   node: RoadmapPathNode;
-  onPractice: () => void;
+  onOpenLibrary: () => void;
   onShowOnMap: () => void;
-  showPracticeAction: boolean;
+  showLibraryAction: boolean;
   skillTotal: number;
 }) {
   const { skill, globalIndex, stageName } = node;
@@ -734,9 +745,9 @@ function InterviewSkillDetail({
           ) : null}
         </div>
         <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col">
-          {showPracticeAction ? (
-            <Button onClick={onPractice}>
-              Open practice lab
+          {showLibraryAction ? (
+            <Button onClick={onOpenLibrary}>
+              Open library
               <ArrowRight aria-hidden="true" className="size-4" />
             </Button>
           ) : null}
@@ -884,7 +895,9 @@ function StatTile({ label, value }: { label: string; value: number }) {
       <p className="text-[0.625rem] font-bold uppercase tracking-[0.1em] text-white/55">
         {label}
       </p>
-      <p className="text-xl font-semibold tabular-nums leading-tight">{value}</p>
+      <p className="text-xl font-semibold tabular-nums leading-tight">
+        {value}
+      </p>
     </div>
   );
 }
@@ -988,7 +1001,9 @@ function GrowthJourney({
                         onReveal={() => revealSkill(node.skill.name)}
                         onTogglePin={() =>
                           setPinnedSkill((current) =>
-                            current === node.skill.name ? undefined : node.skill.name,
+                            current === node.skill.name
+                              ? undefined
+                              : node.skill.name,
                           )
                         }
                         onToggleSkill={() => onToggleSkill(node.skill.name)}
@@ -1035,7 +1050,9 @@ function GrowthJourney({
                         onReveal={() => revealSkill(node.skill.name)}
                         onTogglePin={() =>
                           setPinnedSkill((current) =>
-                            current === node.skill.name ? undefined : node.skill.name,
+                            current === node.skill.name
+                              ? undefined
+                              : node.skill.name,
                           )
                         }
                         onToggleSkill={() => onToggleSkill(node.skill.name)}
@@ -1221,7 +1238,9 @@ function GrowthSkillCard({
               <Badge tone={demonstrated ? "success" : "warning"}>
                 {demonstrated ? "Evidence documented" : "Development priority"}
               </Badge>
-              {selected ? <Badge tone="primary">Selected for plan</Badge> : null}
+              {selected ? (
+                <Badge tone="primary">Selected for plan</Badge>
+              ) : null}
             </div>
           </div>
         </div>

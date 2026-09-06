@@ -29,6 +29,7 @@ import type {
   MilestoneCreateInput,
   MilestoneUpdateInput,
   RoleRoadmap,
+  SkillLibrary,
 } from "./types";
 
 function mutationHeaders({
@@ -318,6 +319,17 @@ export async function getRoleRoadmap(
 ): Promise<RoleRoadmap | null> {
   const response = await query(careerGrowthPaths.roadmap, signal);
   return (await response.json()) as RoleRoadmap | null;
+}
+
+export async function getSkillLibrary(
+  skillName: string,
+  signal?: AbortSignal,
+): Promise<SkillLibrary> {
+  const response = await query(
+    withCareerGrowthQuery(careerGrowthPaths.skillLibrary, { skillName }),
+    signal,
+  );
+  return (await response.json()) as SkillLibrary;
 }
 
 export async function confirmRoleRoadmap(

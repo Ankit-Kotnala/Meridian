@@ -7,6 +7,7 @@ import {
   FileDiff,
   FileText,
   Home,
+  Library,
   Network,
   NotebookPen,
   Search,
@@ -152,7 +153,49 @@ export const workspaceUtilityNavigation: readonly WorkspaceNavigationItem[] = [
 
 export function isCurrentWorkspacePath(pathname: string, href: string) {
   if (href === "/dashboard") return pathname === href;
+  if (href === "/interview-prep") {
+    if (
+      pathname === "/interview-prep/library" ||
+      pathname.startsWith("/interview-prep/library/") ||
+      pathname === "/interview-prep/practice-lab" ||
+      pathname.startsWith("/interview-prep/practice-lab/")
+    ) {
+      return false;
+    }
+    return pathname === href || pathname.startsWith(`${href}/`);
+  }
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+export function isInterviewPrepWorkspacePath(pathname: string) {
+  return (
+    pathname === "/interview-prep" ||
+    pathname === "/interview-prep/library" ||
+    pathname === "/interview-prep/practice-lab"
+  );
+}
+
+export const interviewPrepWorkspaceTools: readonly WorkspaceNavigationItem[] = [
+  {
+    href: "/interview-prep",
+    icon: BookOpenCheck,
+    label: "Skill journey",
+  },
+  {
+    href: "/interview-prep/library",
+    icon: Library,
+    label: "Skill library",
+  },
+];
+
+export function resolveWorkspaceSectionTools(
+  pathname: string,
+  section: WorkspaceSection,
+): readonly WorkspaceNavigationItem[] {
+  if (section.id === "prepare" && isInterviewPrepWorkspacePath(pathname)) {
+    return interviewPrepWorkspaceTools;
+  }
+  return section.tools;
 }
 
 function ownsPath(pathname: string, route: string) {
@@ -183,7 +226,7 @@ export function resolveWorkspaceTool(
   pathname: string,
   section: WorkspaceSection,
 ): WorkspaceNavigationItem | undefined {
-  return section.tools
+  return resolveWorkspaceSectionTools(pathname, section)
     .filter(({ href }) => isCurrentWorkspacePath(pathname, href))
     .sort((left, right) => right.href.length - left.href.length)[0];
 }

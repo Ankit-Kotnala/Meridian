@@ -10,6 +10,12 @@ const api = vi.hoisted(() => ({
 
 vi.mock("../api/career-growth-api", () => api);
 
+const emptyLibrary = {
+  freeCourses: [],
+  notes: [],
+  paidCourses: [],
+};
+
 const roadmap = {
   roleTitle: "AI Engineer",
   stages: [
@@ -18,12 +24,14 @@ const roadmap = {
         {
           alreadyDemonstrated: true,
           howToStart: "Explain one evaluated model from your Career Record.",
+          library: emptyLibrary,
           name: "Model evaluation",
           why: "Reliable systems need measurable model quality.",
         },
         {
           alreadyDemonstrated: false,
           howToStart: "Deploy a bounded inference service.",
+          library: emptyLibrary,
           name: "Model serving",
           why: "Production roles require safe inference delivery.",
         },
@@ -152,16 +160,14 @@ describe("RoadmapPanel", () => {
     ).toHaveAttribute("href", "/career-profile");
   });
 
-  it("renders an interview flowchart and opens the next skill in the practice lab", async () => {
-    const onPracticeSkill = vi.fn();
-    render(
-      <RoadmapPanel mode="interview" onPracticeSkill={onPracticeSkill} />,
-    );
+  it("renders an interview flowchart and opens the next skill in the library", async () => {
+    const onOpenLibrary = vi.fn();
+    render(<RoadmapPanel mode="interview" onOpenLibrary={onOpenLibrary} />);
 
     expect(
       await screen.findByRole("heading", { name: "Path to AI Engineer" }),
     ).toBeVisible();
-    expect(screen.getByText(/skills evidenced/)).toBeVisible();
+    expect(screen.getByText("1 of 2 skills evidenced")).toBeVisible();
     expect(
       screen.getByRole("link", { name: /Production foundations/i }),
     ).toHaveAttribute("href", "#roadmap-stage-0");
@@ -172,9 +178,18 @@ describe("RoadmapPanel", () => {
       screen.getByText("Deploy a bounded inference service."),
     ).toBeVisible();
 
-    fireEvent.click(screen.getByRole("button", { name: "Open practice lab" }));
-    expect(onPracticeSkill).toHaveBeenCalledWith(
+    fireEvent.click(screen.getByRole("button", { name: "Open library" }));
+    expect(onOpenLibrary).toHaveBeenCalledWith(
       expect.objectContaining({ name: "Model serving" }),
+    );
+
+    const firstOpen = screen.getAllByRole("button", { name: /^Open$/ })[0];
+    if (!firstOpen) {
+      throw new Error("expected an Open button on the skill card");
+    }
+    fireEvent.click(firstOpen);
+    expect(onOpenLibrary).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "Model evaluation" }),
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Model evaluation" }));

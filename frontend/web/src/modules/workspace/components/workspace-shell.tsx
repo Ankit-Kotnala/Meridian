@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { cn } from "@rezumi/ui";
 import { ProductMotionProvider } from "@/shared/motion/product-motion-provider";
+import { InterviewPrepWorkspaceMetricsProvider } from "@/shared/workspace/interview-prep-workspace-metrics";
 
 import { WorkspaceSectionNav } from "./workspace-section-nav";
 import { WorkspaceSidebar } from "./workspace-sidebar";
@@ -46,7 +47,8 @@ export function WorkspaceShell({
 
   return (
     <ProductMotionProvider>
-      <div className="min-h-screen bg-background">
+      <InterviewPrepWorkspaceMetricsProvider>
+        <div className="min-h-screen bg-background">
         <aside
           className={cn(
             "fixed inset-y-0 left-0 z-40 hidden border-r transition-[width] duration-200 motion-reduce:transition-none lg:block",
@@ -103,7 +105,8 @@ export function WorkspaceShell({
             {children}
           </m.div>
         </div>
-      </div>
+        </div>
+      </InterviewPrepWorkspaceMetricsProvider>
     </ProductMotionProvider>
   );
 }

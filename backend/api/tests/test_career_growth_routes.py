@@ -31,6 +31,11 @@ from rezumi.modules.career_growth.application import (
     RoadmapSkillView,
     RoadmapStageView,
     RoleRoadmapView,
+    SkillLibraryView,
+)
+from rezumi.modules.career_growth.application.role_roadmap_ports import (
+    SKILL_LIBRARY_DISCLAIMER,
+    SkillLibrary,
 )
 from rezumi.modules.career_growth.domain import (
     CANONICAL_SCORE_DISCLAIMER,
@@ -452,12 +457,20 @@ def _services(
                         why="Most ML tooling is Python-first.",
                         how_to_start="Build one small script end to end.",
                         already_demonstrated=True,
+                        library=SkillLibrary(),
                     ),
                 ),
             ),
         ),
     )
     service.confirm_roadmap_selection.return_value = (sample.development,)
+    service.get_skill_library.return_value = SkillLibraryView(
+        disclaimer=SKILL_LIBRARY_DISCLAIMER,
+        how_to_start="Build one small script end to end.",
+        library=SkillLibrary(),
+        skill_name="Python",
+        why="Most ML tooling is Python-first.",
+    )
     return identity, service
 
 
@@ -891,6 +904,7 @@ def test_career_growth_openapi_exposes_complete_bounded_non_predictive_surface(
         "/api/v1/career-growth/career-health/analyses/{analysis_id}",
         "/api/v1/career-growth/roadmap",
         "/api/v1/career-growth/roadmap/confirm",
+        "/api/v1/career-growth/skill-library",
     }
     serialized = str(document["components"]["schemas"])
     assert "ownerUserId" not in serialized
@@ -926,6 +940,25 @@ def test_career_growth_roadmap_get_and_confirm(
         assert confirm.status_code == 201
         assert len(confirm.json()["created"]) == 1
         service.confirm_roadmap_selection.assert_called_once()
+
+
+def test_career_growth_skill_library_get(
+    settings: Settings,
+    fake_database: FakeDatabase,
+) -> None:
+    sample = _sample()
+    identity, service = _services(sample)
+
+    with _client(settings, fake_database, identity, service) as client:
+        response = client.get(
+            "/api/v1/career-growth/skill-library",
+            params={"skillName": "Python"},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["skillName"] == "Python"
+        assert "Career Record evidence" in body["disclaimer"]
+        service.get_skill_library.assert_called_once()
 
 
 def test_career_growth_roadmap_get_returns_null_without_target_role(

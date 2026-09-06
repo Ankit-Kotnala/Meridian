@@ -18299,6 +18299,9 @@
             "title": "Howtostart",
             "type": "string"
           },
+          "library": {
+            "$ref": "#/components/schemas/SkillLibraryContentsResponse"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -18312,7 +18315,8 @@
           "name",
           "why",
           "howToStart",
-          "alreadyDemonstrated"
+          "alreadyDemonstrated",
+          "library"
         ],
         "title": "RoadmapSkillResponse",
         "type": "object"
@@ -20106,6 +20110,151 @@
           "name"
         ],
         "title": "SkillInput",
+        "type": "object"
+      },
+      "SkillLibraryContentsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "freeCourses": {
+            "items": {
+              "$ref": "#/components/schemas/SkillLibraryResourceResponse"
+            },
+            "maxItems": 40,
+            "title": "Freecourses",
+            "type": "array"
+          },
+          "notes": {
+            "items": {
+              "$ref": "#/components/schemas/SkillLibraryNoteResponse"
+            },
+            "maxItems": 10,
+            "title": "Notes",
+            "type": "array"
+          },
+          "paidCourses": {
+            "items": {
+              "$ref": "#/components/schemas/SkillLibraryResourceResponse"
+            },
+            "maxItems": 20,
+            "title": "Paidcourses",
+            "type": "array"
+          }
+        },
+        "required": [
+          "freeCourses",
+          "paidCourses",
+          "notes"
+        ],
+        "title": "SkillLibraryContentsResponse",
+        "type": "object"
+      },
+      "SkillLibraryNoteResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "maxLength": 50000,
+            "minLength": 1,
+            "title": "Content",
+            "type": "string"
+          },
+          "fileName": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Filename",
+            "type": "string"
+          },
+          "format": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Format",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "format",
+          "fileName",
+          "content"
+        ],
+        "title": "SkillLibraryNoteResponse",
+        "type": "object"
+      },
+      "SkillLibraryResourceResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Kind",
+            "type": "string"
+          },
+          "provider": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Provider",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "maxLength": 2000,
+            "minLength": 12,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "provider",
+          "url",
+          "kind"
+        ],
+        "title": "SkillLibraryResourceResponse",
+        "type": "object"
+      },
+      "SkillLibraryResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "disclaimer": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Disclaimer",
+            "type": "string"
+          },
+          "howToStart": {
+            "title": "Howtostart",
+            "type": "string"
+          },
+          "library": {
+            "$ref": "#/components/schemas/SkillLibraryContentsResponse"
+          },
+          "skillName": {
+            "title": "Skillname",
+            "type": "string"
+          },
+          "why": {
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "skillName",
+          "why",
+          "howToStart",
+          "library",
+          "disclaimer"
+        ],
+        "title": "SkillLibraryResponse",
         "type": "object"
       },
       "SkillListResponse": {
@@ -34067,6 +34216,146 @@
           }
         },
         "summary": "Confirm Role Roadmap",
+        "tags": [
+          "Career Growth"
+        ]
+      }
+    },
+    "/api/v1/career-growth/skill-library": {
+      "get": {
+        "operationId": "careerGrowthSkillLibraryGet",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "skillName",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 1,
+              "title": "Skillname",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "rezumi_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rezumi Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillLibraryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Get Skill Library",
         "tags": [
           "Career Growth"
         ]
