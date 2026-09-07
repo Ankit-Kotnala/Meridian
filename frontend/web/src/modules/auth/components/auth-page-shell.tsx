@@ -37,7 +37,7 @@ export function AuthPageShell({
 }) {
   return (
     <main
-      className="grid min-h-screen bg-[#f4f4f0] lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1fr)]"
+      className="grid min-h-screen bg-background lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1fr)]"
       id="main-content"
     >
       <aside className="relative hidden min-h-screen flex-col justify-between bg-[#0f111a] px-10 py-10 text-white lg:flex xl:px-14">
@@ -86,7 +86,7 @@ export function AuthPageShell({
       <section className="flex min-h-screen items-center justify-center px-4 py-10 sm:px-8 lg:px-12">
         <div className="relative w-full max-w-[24.5rem]">
           <RezumiLogo className="mb-8 lg:hidden" href="/" />
-          <div className="rounded-[0.75rem] border border-black/[0.07] bg-white px-6 py-7 shadow-[0_8px_28px_-16px_rgba(15,23,42,0.22)] sm:px-8 sm:py-8">
+          <div className="rounded-[0.75rem] border border-line bg-surface px-6 py-7 shadow-md sm:px-8 sm:py-8">
             <p className="auth-eyebrow">{eyebrow}</p>
             <h1 className="mt-1.5 text-[1.625rem] font-bold tracking-[-0.03em] text-foreground sm:text-[1.75rem]">
               {title}

@@ -164,7 +164,7 @@ export function RegisterView() {
             <span className="h-px flex-1 bg-line" />
           </div>
           <Button
-            className="w-full min-h-11 rounded-lg border-line-strong bg-white text-[0.9375rem] shadow-none hover:border-foreground/25 hover:bg-surface-subtle/60"
+            className="w-full min-h-11 rounded-lg text-[0.9375rem]"
             loading={googleSubmitting}
             loadingLabel="Opening Google..."
             onClick={onGoogle}
