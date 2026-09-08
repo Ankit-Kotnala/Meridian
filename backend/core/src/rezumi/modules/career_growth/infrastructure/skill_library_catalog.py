@@ -28,7 +28,7 @@ from rezumi.modules.career_growth.infrastructure.skill_library_packs import (
     search_paid,
 )
 
-SKILL_LIBRARY_VERSION = "skill-libraries/2026-09-06.3"
+SKILL_LIBRARY_VERSION = "skill-libraries/2026-09-07.1"
 
 _NOTE_CONTENT_MAX = 50_000
 _FREE_CAP = 40

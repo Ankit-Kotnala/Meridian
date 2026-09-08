@@ -79,7 +79,7 @@ def _context(owner):
 
 def test_every_stored_roadmap_skill_has_a_complete_library() -> None:
     skills = unique_roadmap_skills()
-    assert len(skills) >= 40
+    assert len(skills) >= 200
     names = [name.casefold() for name, _, _ in skills]
     assert len(names) == len(set(names))
     for name, why, how_to_start in skills:

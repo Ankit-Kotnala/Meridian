@@ -1,11 +1,11 @@
 """MongoDB-backed reader for the curated role-roadmap library.
 
-The collection is small by design (an initial curated set of common roles,
-see `rezumi.development.seed_role_roadmaps`), so matching is done in-process
-in Python rather than via a Mongo query DSL — simpler to get right, and cheap
-at this scale. Matching is skill-name based, not role based: a gap's label
-(e.g. "Kubernetes") is looked up against every stored role's skills, since a
-skill gap is frequently relevant across more than one role.
+The collection is a versioned, self-authored role catalog
+(see `rezumi.development.seed_role_roadmaps`). Matching is done in-process
+in Python rather than via a Mongo query DSL. Matching is skill-name based,
+not role based: a gap's label (e.g. "Kubernetes") is looked up against
+every stored role's skills, since a skill gap is frequently relevant across
+more than one role.
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ from rezumi.modules.career_growth.infrastructure.skill_library_catalog import (
     library_from_document,
 )
 
-_MAX_DOCUMENTS = 500
+_MAX_DOCUMENTS = 2000
 
 
 class DisabledRoleRoadmapProvider:
