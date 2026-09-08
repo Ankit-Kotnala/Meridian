@@ -196,15 +196,20 @@ class _MemoryJobCatalogStore:
         self.documents[(listing.platform, listing.external_id)] = listing
 
     async def search(self, *, keywords, limit, offset=0):
-        if not keywords:
-            return tuple(self.documents.values())[offset : offset + limit]
-        lowered = {word.casefold() for word in keywords}
-        matches = [
-            listing
-            for listing in self.documents.values()
-            if lowered & set(listing.title.casefold().split())
-        ]
+        matches = self._matches(keywords)
         return tuple(matches[offset : offset + limit])
+
+    async def count(self, *, keywords):
+        return len(self._matches(keywords))
+
+    def _matches(self, keywords):
+        listings = tuple(self.documents.values())
+        if not keywords:
+            return listings
+        lowered = {word.casefold() for word in keywords}
+        return tuple(
+            listing for listing in listings if lowered & set(listing.title.casefold().split())
+        )
 
     async def get_listing(self, platform: str, external_id: str):
         return self.documents.get((platform, external_id))
@@ -282,6 +287,67 @@ def test_job_catalog_search_and_save_is_owner_scoped(
         assert browse_body["listings"][0]["externalId"] == "fake-1"
         assert browse_body["hasMore"] is False
         assert browse_body["nextOffset"] == 1
+        assert browse_body["totalCount"] == 1
+
+
+def test_job_catalog_browse_paginates_and_reports_total_count(
+    settings: Settings, fake_database: FakeDatabase
+) -> None:
+    from rezumi.modules.job_match.application.job_catalog_ports import CatalogJobListing
+    from rezumi.modules.job_match.application.job_catalog_query import JobCatalogQueryService
+
+    owner_id = uuid4()
+    identity, job_match = _services(owner_id)
+    listings = [
+        CatalogJobListing(
+            platform="fake",
+            external_id=f"fake-{index}",
+            title=f"Software Engineer {index}",
+            company="Fixture Co",
+            location="Remote",
+            remote=True,
+            application_url=f"https://example.test/jobs/fake-{index}",
+            source_text="Build backend services.",
+            posted_at=None,
+        )
+        for index in range(3)
+    ]
+    store = _MemoryJobCatalogStore(listings)
+
+    class _EmptyTargetRoles:
+        async def target_role_titles(self, owner_user_id):
+            _ = owner_user_id
+            return ()
+
+    catalog = JobCatalogQueryService(store=store, target_roles=_EmptyTargetRoles())
+
+    with TestClient(
+        create_app(
+            settings,
+            database=fake_database,
+            identity=identity,
+            job_match=job_match,
+            job_catalog_query=catalog,
+        )
+    ) as client:
+        client.cookies.set("rezumi_session", "opaque-session")
+        client.cookies.set("rezumi_csrf", "opaque-csrf")
+
+        first = client.get("/api/v1/job-catalog/search", params={"limit": 2, "offset": 0})
+        assert first.status_code == 200
+        first_body = first.json()
+        assert len(first_body["listings"]) == 2
+        assert first_body["hasMore"] is True
+        assert first_body["nextOffset"] == 2
+        assert first_body["totalCount"] == 3
+
+        second = client.get("/api/v1/job-catalog/search", params={"limit": 2, "offset": 2})
+        assert second.status_code == 200
+        second_body = second.json()
+        assert len(second_body["listings"]) == 1
+        assert second_body["hasMore"] is False
+        assert second_body["nextOffset"] == 3
+        assert second_body["totalCount"] == 3
 
 
 def test_job_catalog_save_accepts_url_external_ids_in_the_request_body(

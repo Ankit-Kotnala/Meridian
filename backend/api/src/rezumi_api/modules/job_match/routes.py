@@ -514,15 +514,13 @@ async def browse_job_catalog(
     principal: Annotated[AuthenticatedPrincipal, Depends(current_principal)],
     catalog: Annotated[JobCatalogQueryService, Depends(job_catalog_query_service)],
     q: Annotated[str, Query(max_length=200)] = "",
-    limit: Annotated[int, Query(ge=1, le=100)] = 25,
-    offset: Annotated[int, Query(ge=0, le=5_000)] = 0,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0, le=100_000)] = 0,
 ) -> JobCatalogBrowseResponse:
     """Free-text search across the whole shared job catalog, independent of role filtering."""
-    listings, has_more = await catalog.browse(query=q, limit=limit, offset=offset)
+    result = await catalog.browse(query=q, limit=limit, offset=offset)
     _private(response)
-    return job_catalog_browse_response(
-        listings, has_more=has_more, next_offset=offset + len(listings)
-    )
+    return job_catalog_browse_response(result)
 
 
 @router.post(

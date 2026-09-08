@@ -91,15 +91,20 @@ class _MemoryJobCatalogStore:
     async def search(
         self, *, keywords: tuple[str, ...], limit: int, offset: int = 0
     ) -> tuple[CatalogJobListing, ...]:
-        if not keywords:
-            return tuple(self.documents.values())[offset : offset + limit]
-        lowered = {word.casefold() for word in keywords}
-        matches = [
-            listing
-            for listing in self.documents.values()
-            if lowered & set(listing.title.casefold().split())
-        ]
+        matches = self._matches(keywords)
         return tuple(matches[offset : offset + limit])
+
+    async def count(self, *, keywords: tuple[str, ...]) -> int:
+        return len(self._matches(keywords))
+
+    def _matches(self, keywords: tuple[str, ...]) -> tuple[CatalogJobListing, ...]:
+        listings = tuple(self.documents.values())
+        if not keywords:
+            return listings
+        lowered = {word.casefold() for word in keywords}
+        return tuple(
+            listing for listing in listings if lowered & set(listing.title.casefold().split())
+        )
 
     async def get_listing(self, platform: str, external_id: str) -> CatalogJobListing | None:
         return self.documents.get((platform, external_id))
@@ -518,13 +523,17 @@ async def test_query_service_browse_paginates_with_has_more() -> None:
 
     query = JobCatalogQueryService(store=store, target_roles=_EmptyTargetRoles())
 
-    first_page, first_has_more = await query.browse(query="", limit=2, offset=0)
-    assert len(first_page) == 2
-    assert first_has_more is True
+    first_page = await query.browse(query="", limit=2, offset=0)
+    assert len(first_page.listings) == 2
+    assert first_page.has_more is True
+    assert first_page.next_offset == 2
+    assert first_page.total_count == 3
 
-    second_page, second_has_more = await query.browse(query="", limit=2, offset=2)
-    assert len(second_page) == 1
-    assert second_has_more is False
+    second_page = await query.browse(query="", limit=2, offset=2)
+    assert len(second_page.listings) == 1
+    assert second_page.has_more is False
+    assert second_page.next_offset == 3
+    assert second_page.total_count == 3
 
 
 # --- Target-role provider -------------------------------------------------------------

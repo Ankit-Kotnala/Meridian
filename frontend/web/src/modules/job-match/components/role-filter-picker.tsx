@@ -6,7 +6,7 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { Badge, Button, Card, Input } from "@rezumi/ui";
 
 /**
- * Lets an owner opt in/out of the roles used to filter "Suggested for you".
+ * Lets an owner opt in/out of the roles used to filter Open jobs.
  * `selected` is empty until the owner makes an explicit choice — until then
  * the auto-suggested roles are shown (and removing one of them makes the
  * remainder an explicit selection, rather than silently reverting later).

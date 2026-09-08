@@ -19,9 +19,10 @@ from rezumi.modules.job_match.application.job_catalog_ports import (
     JobCatalogStore,
 )
 
-_DEFAULT_LIMIT = 25
+_DEFAULT_LIMIT = 50
 _MAX_TARGET_ROLES = 5
 _MAX_BROWSE_LIMIT = 100
+_MAX_BROWSE_OFFSET = 100_000
 _MAX_TRACKED_EXTERNAL_ID = 200
 # Keep in lockstep with JobMatchService idempotency keys: `/` is not allowed.
 _IDEMPOTENCY_KEY = re.compile(r"^[A-Za-z0-9._:-]{8,128}$")
@@ -62,6 +63,14 @@ class JobCatalogSearchResult:
     matched_target_role: bool
     suggested_role_titles: tuple[str, ...] = ()
     selected_role_titles: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class JobCatalogBrowseResult:
+    listings: tuple[CatalogJobListing, ...]
+    has_more: bool
+    next_offset: int
+    total_count: int
 
 
 class JobCatalogQueryService:
@@ -105,18 +114,24 @@ class JobCatalogQueryService:
             selected_role_titles=selected,
         )
 
-    async def browse(
-        self, *, query: str, limit: int, offset: int
-    ) -> tuple[tuple[CatalogJobListing, ...], bool]:
+    async def browse(self, *, query: str, limit: int, offset: int) -> JobCatalogBrowseResult:
         """Free-text search across the whole catalog, independent of role filtering."""
 
         bounded_limit = max(1, min(limit, _MAX_BROWSE_LIMIT))
+        bounded_offset = max(0, min(offset, _MAX_BROWSE_OFFSET))
         keywords = tuple(word for word in query.split() if word)
         listings = await self._store.search(
-            keywords=keywords, limit=bounded_limit + 1, offset=max(0, offset)
+            keywords=keywords, limit=bounded_limit + 1, offset=bounded_offset
         )
+        total_count = await self._store.count(keywords=keywords)
         has_more = len(listings) > bounded_limit
-        return listings[:bounded_limit], has_more
+        page = listings[:bounded_limit]
+        return JobCatalogBrowseResult(
+            listings=page,
+            has_more=has_more,
+            next_offset=bounded_offset + len(page),
+            total_count=total_count,
+        )
 
     async def get_listing(self, platform: str, external_id: str) -> CatalogJobListing | None:
         return await self._store.get_listing(platform, external_id)

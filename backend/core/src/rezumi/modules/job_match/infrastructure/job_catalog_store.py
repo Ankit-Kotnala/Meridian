@@ -33,6 +33,10 @@ class DisabledJobCatalogStore:
         del keywords, limit, offset
         return ()
 
+    async def count(self, *, keywords: tuple[str, ...]) -> int:
+        del keywords
+        return 0
+
     async def get_listing(self, platform: str, external_id: str) -> CatalogJobListing | None:
         del platform, external_id
         return None
@@ -113,6 +117,13 @@ class MongoJobCatalogStore:
             documents = await self._run(list, cursor)
         return tuple(_listing(document) for document in documents)
 
+    async def count(self, *, keywords: tuple[str, ...]) -> int:
+        filter_document = _search_filter(keywords)
+        if filter_document is None:
+            return 0
+        counted = await self._run(self._collection.count_documents, filter_document)
+        return int(counted)
+
     async def get_listing(self, platform: str, external_id: str) -> CatalogJobListing | None:
         document = await self._run(
             self._collection.find_one, {"platform": platform, "externalId": external_id}
@@ -127,6 +138,15 @@ class MongoJobCatalogStore:
             return await asyncio.to_thread(operation, *args, **kwargs)
         except PyMongoError as exc:
             raise JobMatchUnavailable from exc
+
+
+def _search_filter(keywords: tuple[str, ...]) -> dict[str, Any] | None:
+    if not keywords:
+        return {}
+    search_text = " ".join(keyword.strip() for keyword in keywords if keyword.strip())
+    if not search_text:
+        return None
+    return {"$text": {"$search": search_text}}
 
 
 def _listing(document: dict[str, Any]) -> CatalogJobListing:
