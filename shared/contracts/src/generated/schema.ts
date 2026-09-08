@@ -7809,6 +7809,8 @@ export interface components {
             listings: components["schemas"]["JobCatalogListingResponse"][];
             /** Nextoffset */
             nextOffset: number;
+            /** Totalcount */
+            totalCount: number;
         };
         /** JobCatalogListingResponse */
         JobCatalogListingResponse: {

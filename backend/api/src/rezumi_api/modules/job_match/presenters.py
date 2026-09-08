@@ -12,7 +12,10 @@ from rezumi.modules.job_match.application import (
     PagedResult,
 )
 from rezumi.modules.job_match.application.job_catalog_ports import CatalogJobListing
-from rezumi.modules.job_match.application.job_catalog_query import JobCatalogSearchResult
+from rezumi.modules.job_match.application.job_catalog_query import (
+    JobCatalogBrowseResult,
+    JobCatalogSearchResult,
+)
 from rezumi.modules.job_match.domain import RequirementEvidenceLink, RequirementMatch
 
 from rezumi_api.modules.job_match.schemas import (
@@ -195,11 +198,10 @@ def role_preference_response(role_titles: tuple[str, ...]) -> RolePreferenceResp
     return RolePreferenceResponse(role_titles=list(role_titles))
 
 
-def job_catalog_browse_response(
-    listings: tuple[CatalogJobListing, ...], *, has_more: bool, next_offset: int
-) -> JobCatalogBrowseResponse:
+def job_catalog_browse_response(result: JobCatalogBrowseResult) -> JobCatalogBrowseResponse:
     return JobCatalogBrowseResponse(
-        listings=[job_catalog_listing_response(listing) for listing in listings],
-        has_more=has_more,
-        next_offset=next_offset,
+        listings=[job_catalog_listing_response(listing) for listing in result.listings],
+        has_more=result.has_more,
+        next_offset=result.next_offset,
+        total_count=result.total_count,
     )

@@ -159,6 +159,19 @@ const onsiteListing: JobCatalogSearch["listings"][number] = {
 
 const emptyRolePreference: RolePreference = { roleTitles: [] };
 
+function catalogPage(
+  listings: JobCatalogBrowse["listings"],
+  extras: Partial<JobCatalogBrowse> = {},
+): JobCatalogBrowse {
+  return {
+    hasMore: false,
+    listings,
+    nextOffset: listings.length,
+    totalCount: listings.length,
+    ...extras,
+  };
+}
+
 describe("Job search view", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -176,18 +189,14 @@ describe("Job search view", () => {
       targetRoleTitles: [],
     } satisfies JobCatalogSearch);
     api.setJobCatalogRolePreferences.mockResolvedValue(emptyRolePreference);
-    api.browseJobCatalog.mockResolvedValue({
-      hasMore: false,
-      listings: [],
-      nextOffset: 0,
-    } satisfies JobCatalogBrowse);
+    api.browseJobCatalog.mockResolvedValue(catalogPage([]));
   });
 
   it("opens on the job search section with filters, results, and no demo data", async () => {
     render(<JobMatchView section="search" />);
 
     expect(
-      await screen.findByRole("heading", { name: "Suggested for you" }),
+      await screen.findByRole("heading", { name: "Open jobs" }),
     ).toBeVisible();
     expect(screen.getByRole("heading", { name: "Filters" })).toBeVisible();
     expect(
@@ -217,6 +226,7 @@ describe("Job search view", () => {
       suggestedRoleTitles: ["Backend Engineer"],
       targetRoleTitles: ["Backend Engineer"],
     } satisfies JobCatalogSearch);
+    api.browseJobCatalog.mockResolvedValue(catalogPage([catalogListing]));
     const savedJob: Job = { ...job, title: "Backend Engineer" };
     api.saveJobCatalogListing.mockResolvedValue(savedJob);
     api.analyzeJob.mockResolvedValue({
@@ -229,7 +239,7 @@ describe("Job search view", () => {
     const { rerender } = render(<JobMatchView section="search" />);
 
     expect(
-      await screen.findByRole("heading", { name: "Suggested for you" }),
+      await screen.findByRole("heading", { name: "Open jobs" }),
     ).toBeVisible();
     // "Backend Engineer" also appears as a role-filter chip, so assert
     // there's at least one match rather than a single unique node.
@@ -239,7 +249,7 @@ describe("Job search view", () => {
         "Matched toward Backend Engineer from published job boards.",
       ),
     ).toBeVisible();
-    expect(screen.getByText("Showing 1–1 of 1 job")).toBeVisible();
+    expect(await screen.findByText("Showing 1–1 of 1 job")).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "Save to my jobs" }));
 
@@ -279,6 +289,7 @@ describe("Job search view", () => {
       suggestedRoleTitles: [],
       targetRoleTitles: ["Backend Engineer"],
     } satisfies JobCatalogSearch);
+    api.browseJobCatalog.mockResolvedValue(catalogPage([catalogListing]));
     api.saveJobCatalogListing.mockRejectedValue(
       new Error("The requested API path is invalid."),
     );
@@ -295,9 +306,7 @@ describe("Job search view", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "This listing could not be saved.",
     );
-    expect(
-      screen.getByRole("heading", { name: "Suggested for you" }),
-    ).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Open jobs" })).toBeVisible();
   });
 
   it("opens a listing in the detail panel and analyzes it from there", async () => {
@@ -308,6 +317,7 @@ describe("Job search view", () => {
       suggestedRoleTitles: [],
       targetRoleTitles: ["Backend Engineer"],
     } satisfies JobCatalogSearch);
+    api.browseJobCatalog.mockResolvedValue(catalogPage([catalogListing]));
     const savedJob: Job = {
       ...job,
       company: "Fixture Co",
@@ -353,10 +363,15 @@ describe("Job search view", () => {
       suggestedRoleTitles: [],
       targetRoleTitles: ["Engineer"],
     } satisfies JobCatalogSearch);
+    api.browseJobCatalog.mockResolvedValue(
+      catalogPage([catalogListing, onsiteListing]),
+    );
 
     render(<JobMatchView />);
 
     expect(await screen.findByText("Showing 1–2 of 2 jobs")).toBeVisible();
+    const catalogCallsAfterLoad = api.browseJobCatalog.mock.calls.length;
+    expect(catalogCallsAfterLoad).toBeGreaterThan(0);
 
     fireEvent.change(screen.getByLabelText("Work model"), {
       target: { value: "onsite" },
@@ -365,10 +380,11 @@ describe("Job search view", () => {
 
     expect(await screen.findByText("Showing 1–1 of 1 job")).toBeVisible();
     expect(screen.getByText(/Munich GmbH/)).toBeVisible();
-    expect(api.browseJobCatalog).not.toHaveBeenCalled();
+    expect(api.browseJobCatalog).toHaveBeenCalledTimes(catalogCallsAfterLoad);
 
     fireEvent.click(screen.getByRole("button", { name: "Clear all" }));
     expect(await screen.findByText("Showing 1–2 of 2 jobs")).toBeVisible();
+    expect(api.browseJobCatalog).toHaveBeenCalledTimes(catalogCallsAfterLoad);
   });
 
   it("lets an owner opt out of a suggested role, persisting the change", async () => {
@@ -414,11 +430,7 @@ describe("Job search view", () => {
   });
 
   it("searches the whole catalog from the filters panel", async () => {
-    api.browseJobCatalog.mockResolvedValue({
-      hasMore: false,
-      listings: [catalogListing],
-      nextOffset: 1,
-    } satisfies JobCatalogBrowse);
+    api.browseJobCatalog.mockResolvedValue(catalogPage([catalogListing]));
     api.saveJobCatalogListing.mockResolvedValue({
       ...job,
       title: "Backend Engineer",
@@ -433,8 +445,10 @@ describe("Job search view", () => {
     fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
 
     expect(await screen.findByText("Backend Engineer")).toBeVisible();
-    expect(api.browseJobCatalog).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 50, offset: 0, q: "backend" }),
+    await waitFor(() =>
+      expect(api.browseJobCatalog).toHaveBeenCalledWith(
+        expect.objectContaining({ limit: 50, offset: 0, q: "backend" }),
+      ),
     );
     expect(
       screen.getByText("Matching “backend” across every published job board."),
@@ -444,6 +458,37 @@ describe("Job search view", () => {
     expect(
       await screen.findAllByText("Backend Engineer saved for matching."),
     ).not.toHaveLength(0);
+  });
+
+  it("loads additional catalog pages instead of stopping at the first page", async () => {
+    api.browseJobCatalog
+      .mockResolvedValueOnce(
+        catalogPage([catalogListing], {
+          hasMore: true,
+          nextOffset: 50,
+          totalCount: 27_431,
+        }),
+      )
+      .mockResolvedValueOnce(
+        catalogPage([onsiteListing], {
+          hasMore: false,
+          nextOffset: 51,
+          totalCount: 27_431,
+        }),
+      );
+
+    render(<JobMatchView />);
+
+    expect(await screen.findByText("Showing 1–1 of 27431 jobs")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Load more jobs" }));
+
+    expect(await screen.findByText("Showing 1–2 of 27431 jobs")).toBeVisible();
+    expect(screen.getByText(/Munich GmbH/)).toBeVisible();
+    await waitFor(() =>
+      expect(api.browseJobCatalog).toHaveBeenCalledWith(
+        expect.objectContaining({ limit: 50, offset: 50 }),
+      ),
+    );
   });
 
   it("prepares an assisted-apply pack for a saved job", async () => {

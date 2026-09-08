@@ -95,7 +95,19 @@ const tailoringEfforts: Array<{ label: string; value: TailoringEffort }> = [
   { label: "High", value: "high" },
 ];
 
-const CATALOG_SEARCH_LIMIT = 50;
+const CATALOG_PAGE_SIZE = 50;
+
+function catalogSearchQuery(
+  filters: JobSearchFilters,
+  selectedRoleTitles: readonly string[] | undefined,
+  suggestedRoleTitles: readonly string[] | undefined,
+): string {
+  const keyword = filters.keyword.trim();
+  if (keyword) return keyword;
+  const selected = selectedRoleTitles ?? [];
+  if (selected.length > 0) return selected.join(" ").trim();
+  return (suggestedRoleTitles ?? []).join(" ").trim();
+}
 
 function humanize(value: string): string {
   return value
@@ -155,8 +167,16 @@ export function JobMatchView({
   const [appliedFilters, setAppliedFilters] = useState<JobSearchFilters>(
     emptyJobSearchFilters,
   );
-  const [catalogResults, setCatalogResults] = useState<JobCatalogListing[]>();
+  const [catalogListings, setCatalogListings] = useState<JobCatalogListing[]>(
+    [],
+  );
+  const [catalogHasMore, setCatalogHasMore] = useState(false);
+  const [catalogNextOffset, setCatalogNextOffset] = useState(0);
+  const [catalogTotalCount, setCatalogTotalCount] = useState(0);
+  const [catalogEpoch, setCatalogEpoch] = useState(0);
   const [filterBusy, setFilterBusy] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [suggestionsLoaded, setSuggestionsLoaded] = useState(false);
   const [selectedListing, setSelectedListing] = useState<JobCatalogListing>();
 
   const activeJob = useMemo(
@@ -179,9 +199,11 @@ export function JobMatchView({
     try {
       setSuggestions(await getJobCatalogSuggestions());
     } catch {
-      // Suggestions are a supplementary discovery aid; a failure here must
-      // not block the core saved-jobs workflow above.
+      // Role chips are a supplementary discovery aid; a failure here must
+      // not block browsing the shared catalog.
       setSuggestions(undefined);
+    } finally {
+      setSuggestionsLoaded(true);
     }
   }, []);
 
@@ -190,11 +212,54 @@ export function JobMatchView({
     queueMicrotask(() => void loadSuggestions());
   }, [load, loadSuggestions]);
 
-  const serverSearched = catalogResults !== undefined;
-  const sourceListings = useMemo(
-    () => catalogResults ?? suggestions?.listings ?? [],
-    [catalogResults, suggestions?.listings],
+  const catalogQuery = useMemo(
+    () =>
+      catalogSearchQuery(
+        appliedFilters,
+        suggestions?.selectedRoleTitles,
+        suggestions?.suggestedRoleTitles,
+      ),
+    [
+      appliedFilters,
+      suggestions?.selectedRoleTitles,
+      suggestions?.suggestedRoleTitles,
+    ],
   );
+
+  useEffect(() => {
+    if (!suggestionsLoaded) return;
+    let cancelled = false;
+    setFilterBusy(true);
+    void browseJobCatalog({
+      limit: CATALOG_PAGE_SIZE,
+      offset: 0,
+      ...(catalogQuery ? { q: catalogQuery } : {}),
+    })
+      .then((page) => {
+        if (cancelled) return;
+        setCatalogListings(page.listings);
+        setCatalogHasMore(page.hasMore);
+        setCatalogNextOffset(page.nextOffset);
+        setCatalogTotalCount(page.totalCount);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setFailure(requestErrorMessage(error, "Job search failed."));
+        setCatalogListings([]);
+        setCatalogHasMore(false);
+        setCatalogNextOffset(0);
+        setCatalogTotalCount(0);
+      })
+      .finally(() => {
+        if (!cancelled) setFilterBusy(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [catalogEpoch, catalogQuery, suggestionsLoaded]);
+
+  const serverSearched = appliedFilters.keyword.trim().length > 0;
+  const sourceListings = catalogListings;
   // The catalog keyword is answered by the server, so re-testing it in the
   // browser would drop listings matched on their body text rather than title.
   const clientFilters = useMemo(
@@ -230,6 +295,7 @@ export function JobMatchView({
 
   const refreshAll = useCallback(async () => {
     await Promise.all([load(), loadSuggestions()]);
+    setCatalogEpoch((current) => current + 1);
   }, [load, loadSuggestions]);
 
   const selection: JobSelection | undefined = useMemo(
@@ -246,33 +312,40 @@ export function JobMatchView({
       : undefined;
   const panelPriority = panelAnalysis ? priority : undefined;
 
-  async function applyFilters() {
+  function applyFilters() {
     setAppliedFilters(filters);
-    const keyword = filters.keyword.trim();
-    if (!keyword) {
-      setCatalogResults(undefined);
-      return;
-    }
-    setFilterBusy(true);
-    setFailure(undefined);
-    try {
-      const page = await browseJobCatalog({
-        limit: CATALOG_SEARCH_LIMIT,
-        offset: 0,
-        q: keyword,
-      });
-      setCatalogResults(page.listings);
-    } catch (error) {
-      setFailure(requestErrorMessage(error, "Job search failed."));
-    } finally {
-      setFilterBusy(false);
-    }
   }
 
   function clearFilters() {
     setFilters(emptyJobSearchFilters);
     setAppliedFilters(emptyJobSearchFilters);
-    setCatalogResults(undefined);
+  }
+
+  async function loadMoreListings() {
+    if (!catalogHasMore || loadingMore || filterBusy) return;
+    setLoadingMore(true);
+    setFailure(undefined);
+    try {
+      const page = await browseJobCatalog({
+        limit: CATALOG_PAGE_SIZE,
+        offset: catalogNextOffset,
+        ...(catalogQuery ? { q: catalogQuery } : {}),
+      });
+      setCatalogListings((current) => {
+        const seen = new Set(current.map(listingKey));
+        return [
+          ...current,
+          ...page.listings.filter((listing) => !seen.has(listingKey(listing))),
+        ];
+      });
+      setCatalogHasMore(page.hasMore);
+      setCatalogNextOffset(page.nextOffset);
+      setCatalogTotalCount(page.totalCount);
+    } catch (error) {
+      setFailure(requestErrorMessage(error, "Job search failed."));
+    } finally {
+      setLoadingMore(false);
+    }
   }
 
   function openListing(listing: JobCatalogListing) {
@@ -520,13 +593,15 @@ export function JobMatchView({
     );
   }
 
+  const selectedRoles = suggestions?.selectedRoleTitles ?? [];
+  const suggestedRoles = suggestions?.suggestedRoleTitles ?? [];
   const resultsDescription = serverSearched
     ? `Matching “${appliedFilters.keyword.trim()}” across every published job board.`
-    : !suggestions || suggestions.targetRoleTitles.length === 0
-      ? "Recent listings from published job boards. Set a target role in Role matching for closer matches."
-      : suggestions.matchedTargetRole
-        ? `Matched toward ${suggestions.targetRoleTitles.join(", ")} from published job boards.`
-        : `No current listings matched ${suggestions.targetRoleTitles.join(", ")} closely, so here are recent listings instead.`;
+    : selectedRoles.length > 0
+      ? `Matched toward ${selectedRoles.join(", ")} from published job boards.`
+      : suggestedRoles.length > 0
+        ? `Matched toward ${suggestedRoles.join(", ")} from published job boards.`
+        : "Recent listings from published job boards. Use a role filter or keyword to narrow them.";
 
   const searchPanel = (
     <div className="space-y-4">
@@ -548,7 +623,7 @@ export function JobMatchView({
           busy={filterBusy}
           filters={filters}
           locations={filterOptions.locations}
-          onApply={() => void applyFilters()}
+          onApply={applyFilters}
           onChange={setFilters}
           onClear={clearFilters}
           platforms={filterOptions.platforms}
@@ -556,7 +631,10 @@ export function JobMatchView({
 
         <JobListingResults
           description={resultsDescription}
+          hasMore={catalogHasMore}
           listings={visibleListings}
+          loadingMore={loadingMore}
+          onLoadMore={() => void loadMoreListings()}
           onOpen={openListing}
           onSave={(listing) => void saveListing(listing)}
           savedKeys={savedKeys}
@@ -565,7 +643,7 @@ export function JobMatchView({
           totalCount={
             hasActiveFilters(clientFilters)
               ? visibleListings.length
-              : sourceListings.length
+              : catalogTotalCount
           }
         />
 

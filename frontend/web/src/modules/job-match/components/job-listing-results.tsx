@@ -2,7 +2,7 @@
 
 import { Bookmark, BookmarkCheck, ExternalLink } from "lucide-react";
 
-import { Badge, Card, EmptyState, cn } from "@rezumi/ui";
+import { Badge, Button, Card, EmptyState, cn } from "@rezumi/ui";
 
 import type { JobCatalogListing } from "../api/types";
 
@@ -11,7 +11,10 @@ import { listingKey } from "./job-selection";
 /** Middle column of the job search: the result list itself. */
 export function JobListingResults({
   description,
+  hasMore,
   listings,
+  loadingMore,
+  onLoadMore,
   onOpen,
   onSave,
   savedKeys,
@@ -20,7 +23,10 @@ export function JobListingResults({
   totalCount,
 }: {
   description: string;
+  hasMore: boolean;
   listings: readonly JobCatalogListing[];
+  loadingMore: boolean;
+  onLoadMore: () => void;
   onOpen: (listing: JobCatalogListing) => void;
   onSave: (listing: JobCatalogListing) => void;
   savedKeys: ReadonlySet<string>;
@@ -28,6 +34,9 @@ export function JobListingResults({
   selectedKey: string | undefined;
   totalCount: number;
 }) {
+  const rangeEnd = listings.length;
+  const shownTotal = Math.max(totalCount, rangeEnd);
+
   return (
     <Card as="section" aria-labelledby="job-results-heading">
       <div className="px-5 pb-4 pt-5">
@@ -35,7 +44,7 @@ export function JobListingResults({
           className="text-base font-semibold tracking-[-0.01em] text-foreground"
           id="job-results-heading"
         >
-          Suggested for you
+          Open jobs
         </h2>
         <p className="mt-1 text-xs leading-5 text-muted">{description}</p>
       </div>
@@ -43,7 +52,7 @@ export function JobListingResults({
       {listings.length === 0 ? (
         <div className="px-5 pb-5">
           <EmptyState
-            description="No listings matched these filters. Clear them to see every suggestion again."
+            description="No listings matched these filters. Clear them to browse the catalog again."
             title="No results"
           />
         </div>
@@ -122,13 +131,26 @@ export function JobListingResults({
         </ul>
       )}
 
-      <p className="border-t border-line px-5 py-3 text-xs text-muted">
-        {listings.length === 0
-          ? "Showing 0 jobs"
-          : `Showing 1–${listings.length} of ${totalCount} job${
-              totalCount === 1 ? "" : "s"
-            }`}
-      </p>
+      <div className="border-t border-line px-5 py-3">
+        <p className="text-xs text-muted">
+          {listings.length === 0
+            ? "Showing 0 jobs"
+            : `Showing 1–${rangeEnd} of ${shownTotal} job${
+                shownTotal === 1 ? "" : "s"
+              }`}
+        </p>
+        {hasMore ? (
+          <div className="mt-3 flex justify-center">
+            <Button
+              loading={loadingMore}
+              onClick={onLoadMore}
+              variant="secondary"
+            >
+              Load more jobs
+            </Button>
+          </div>
+        ) : null}
+      </div>
     </Card>
   );
 }

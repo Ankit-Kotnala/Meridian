@@ -207,6 +207,7 @@ class JobCatalogBrowseResponse(JobMatchSchema):
     listings: list[JobCatalogListingResponse] = Field(max_length=100)
     has_more: bool
     next_offset: int = Field(ge=0)
+    total_count: int = Field(ge=0)
 
 
 class JobMatchComponentResponse(JobMatchSchema):

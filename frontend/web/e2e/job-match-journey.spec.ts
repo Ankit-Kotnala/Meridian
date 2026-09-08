@@ -145,7 +145,7 @@ test("a user saves a job, analyzes exact requirements, and prioritizes it", asyn
 
     await page.goto("/job-match");
     await expect(
-      page.getByRole("heading", { name: "Suggested for you" }),
+      page.getByRole("heading", { name: "Open jobs" }),
     ).toBeVisible();
     await page.getByRole("tab", { name: "Saved jobs" }).click();
     await expect(

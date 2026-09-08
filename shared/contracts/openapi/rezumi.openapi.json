@@ -11443,12 +11443,18 @@
             "minimum": 0.0,
             "title": "Nextoffset",
             "type": "integer"
+          },
+          "totalCount": {
+            "minimum": 0.0,
+            "title": "Totalcount",
+            "type": "integer"
           }
         },
         "required": [
           "listings",
           "hasMore",
-          "nextOffset"
+          "nextOffset",
+          "totalCount"
         ],
         "title": "JobCatalogBrowseResponse",
         "type": "object"
@@ -49840,7 +49846,7 @@
             "name": "limit",
             "required": false,
             "schema": {
-              "default": 25,
+              "default": 50,
               "maximum": 100,
               "minimum": 1,
               "title": "Limit",
@@ -49853,7 +49859,7 @@
             "required": false,
             "schema": {
               "default": 0,
-              "maximum": 5000,
+              "maximum": 100000,
               "minimum": 0,
               "title": "Offset",
               "type": "integer"

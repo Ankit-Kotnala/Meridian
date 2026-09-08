@@ -1,6 +1,6 @@
 # Rezumi implementation plan
 
-Last updated: 2026-09-01
+Last updated: 2026-09-08
 Plan owner: engineering  
 Current status: **Phase 1/3 observed-onboarding, Settings, and resume-ready Career
 Record closure is locally verified; hosted evidence is pending explicit
@@ -12,7 +12,9 @@ local seed are merged. The product-wide UX redesign is locally implemented and
 visually verified without changing backend phase completion. Commercial,
 tenancy, privacy, administration, security/cost, infrastructure, and final
 release-hardening work remains open. A 2026-09-01 Job catalog save/BFF path
-repair is locally implemented; it does not reopen a phase.**
+repair is locally implemented; it does not reopen a phase. A 2026-09-08 Job
+search catalog pagination repair is locally implemented; it does not reopen a
+phase.**
 
 ## Status legend
 
@@ -32,6 +34,15 @@ save now uses `POST /api/v1/job-catalog/save` with `{ platform, externalId }` in
 the body; the BFF re-encodes decoded slashes in a single segment; catalog URL ids
 are hashed into legal Job Match idempotency / tracked-external-id values. This
 does not change phase completion.
+
+## Job search catalog pagination repair (2026-09-08)
+
+Job search showed only the first 25 shared-catalog listings because
+`GET /api/v1/job-catalog` used a hard 25-item cap and the page never requested
+later offsets. The search list now loads through `GET /api/v1/job-catalog/search`
+in pages of 50, reports `totalCount`, and offers Load more so owners can walk
+the full catalog (tens of thousands of listings) without fetching every row in
+one response. This does not change phase completion.
 
 ## Product-wide UX redesign verification (2026-07-27)
 
