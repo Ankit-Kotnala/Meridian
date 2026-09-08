@@ -183,10 +183,16 @@ async def test_get_roadmap_matches_alias_with_seniority_modifier() -> None:
 def test_curated_seed_contains_versioned_ai_engineer_roadmap() -> None:
     roadmap = next(item for item in ROLE_ROADMAPS if item["roleSlug"] == "ai-engineer")
 
-    assert ROADMAP_VERSION == "role-roadmaps/2026-09-06.3"
+    assert ROADMAP_VERSION == "role-roadmaps/2026-09-07.1"
     assert roadmap["title"] == "AI Engineer"
     assert "Generative AI Engineer" in roadmap["aliases"]
     assert len(roadmap["stages"]) == 3
+    software = next(item for item in ROLE_ROADMAPS if item["roleSlug"] == "software-engineer")
+    software_skills = [skill["name"] for stage in software["stages"] for skill in stage["skills"]]
+    assert len(ROLE_ROADMAPS) >= 50
+    assert len(software_skills) >= 30
+    assert "System design interviews" in software_skills
+    assert "Application packaging" in software_skills
 
 
 @pytest.mark.asyncio

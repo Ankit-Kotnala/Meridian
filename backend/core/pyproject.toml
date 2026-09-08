@@ -82,6 +82,7 @@ select = ["E", "F", "I", "UP", "B", "S", "SIM", "RUF"]
 "tests/**" = ["S101"]
 # Curated natural-language content, not code -- long prose strings are expected.
 "src/rezumi/development/seed_role_roadmaps.py" = ["E501"]
+"src/rezumi/modules/career_growth/infrastructure/role_roadmap_catalog/**" = ["E501"]
 
 [tool.mypy]
 python_version = "3.13"

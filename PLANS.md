@@ -444,9 +444,11 @@ backend/core/tests/unit/test_job_source_connector.py` â€” passed (2026-08-2
       (YouTube, docs, OCW, and other public pages), paid courses (Coursera,
       Udemy, edX), and readable self-authored study articles (PDF download, not
       Markdown outlines). `GET /api/v1/career-growth/skill-library?skillName=`
-      returns the mapping. Seed version `role-roadmaps/2026-09-06.3`. Each of
-      172 stored skills ships 20–40 free resources, 12–20 paid listings, and
-      three readable study articles stored on the roadmap document.
+      returns the mapping. Seed version `role-roadmaps/2026-09-07.1`. Each of
+      345 stored skills ships 20–40 free resources, 12–20 paid listings, and
+      three readable study articles stored on the roadmap document. Software
+      Engineer now has 51 market skills across five stages (foundations through
+      hiring-market application craft). The catalog has 54 self-authored roles.
 - [ ] Completing an item prompts the evidence it produced (Growth UI prompt not
       yet wired end-to-end).
 - [x] Gap titles/descriptions are deterministic; no outcome, ranking, or hiring
@@ -456,8 +458,8 @@ Verification: `uv run pytest backend/core/tests/unit/test_gap_to_learning.py
 backend/core/tests/unit/test_skill_library.py` and `uv run pytest
 backend/api/tests/test_career_growth_routes.py` passed (2026-09-06). Focused web
 tests for roadmap Open → library, skill-library panel, interview-prep view, and
-workspace Skill library tabs passed. Mongo was reseeded with 41 roadmaps
-(version `role-roadmaps/2026-09-06.3`); local API/web images were rebuilt.
+workspace Skill library tabs passed. Mongo was reseeded with 54 roadmaps
+(version `role-roadmaps/2026-09-07.1`); local API/web images were rebuilt.
 
 ### Open verification and product risks
 
