@@ -31,6 +31,7 @@ import {
   Progress,
   ScoreRing,
   Select,
+  Tabs,
 } from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
@@ -2354,12 +2355,14 @@ export function CareerGrowthView() {
     );
   }
 
-  if (!data || loading) return <CareerGrowthLoading />;
+  if (!data && loading) return <CareerGrowthLoading />;
+
+  if (!data) return <CareerGrowthLoading />;
 
   const confirmationCopy = confirmation(confirmAction);
 
   return (
-    <main className="workspace-page space-y-8" id="main-content">
+    <main className="workspace-page space-y-6" id="main-content">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <p className="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-primary">
@@ -2376,6 +2379,8 @@ export function CareerGrowthView() {
         </div>
         <Button
           className="shrink-0"
+          loading={loading}
+          loadingLabel="Refreshing…"
           onClick={() => void load()}
           variant="secondary"
         >
@@ -2419,219 +2424,271 @@ export function CareerGrowthView() {
         </Alert>
       )}
 
-      <GrowthInsightsPanel insights={data.insights} />
+      <Tabs
+        defaultValue="preparation"
+        label="Career Growth sections"
+        tabs={[
+          {
+            id: "preparation",
+            label: "Preparation",
+            panel: <GrowthInsightsPanel insights={data.insights} />,
+          },
+          {
+            id: "roadmap",
+            label: "Roadmap",
+            panel: (
+              <section aria-labelledby="roadmap-heading" className="space-y-3">
+                <SectionIntro
+                  description="A staged skill path for your target role, cross-checked against what you’ve already demonstrated."
+                  id="roadmap-heading"
+                  title="Your roadmap"
+                />
+                <RoadmapPanel onConfirmed={() => void load()} />
+              </section>
+            ),
+          },
+          {
+            id: "health",
+            label: "Career Health",
+            panel: (
+              <div className="space-y-4">
+                <CareerHealthPanel
+                  analyses={data.health}
+                  busyKeys={busyKeys}
+                  onAnalyze={analyzeHealth}
+                  onDelete={(analysis) =>
+                    setConfirmAction({ analysis, kind: "delete-health" })
+                  }
+                  onLoad={loadHealthDetail}
+                />
+                {data.healthCursor && (
+                  <div className="flex justify-center">
+                    <Button
+                      loading={busyKeys.has("more-health")}
+                      loadingLabel="Loading snapshots…"
+                      onClick={() => void loadMore("health")}
+                      variant="secondary"
+                    >
+                      Load more Career Health snapshots
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ),
+          },
+          {
+            id: "plans",
+            label: "Goals & plans",
+            panel: (
+              <div className="space-y-6">
+                <section
+                  aria-labelledby="career-goals-heading"
+                  className="space-y-3"
+                >
+                  <SectionIntro
+                    description="Every update is explicit. Milestones always have a non-drag status control."
+                    id="career-goals-heading"
+                    title="Goals and milestones"
+                  />
+                  <GoalCreateForm
+                    busy={busyKeys.has("goal-new")}
+                    onCreate={addGoal}
+                  />
+                  {data.goals.length === 0 ? (
+                    <EmptyState
+                      description="Add your first outcome and break it into evidence-backed milestones."
+                      title="No career goals yet"
+                    />
+                  ) : (
+                    <div className="grid gap-3">
+                      {data.goals.map((goal) =>
+                        isGoalDetail(goal) ? (
+                          <GoalCard
+                            busyKeys={busyKeys}
+                            goal={goal}
+                            key={goal.id}
+                            onDelete={(item) =>
+                              setConfirmAction({
+                                goal: item,
+                                kind: "delete-goal",
+                              })
+                            }
+                            onDeleteMilestone={(milestone) =>
+                              setConfirmAction({
+                                kind: "delete-milestone",
+                                milestone,
+                              })
+                            }
+                            onMilestoneCreate={addMilestone}
+                            onMilestoneUpdate={saveMilestone}
+                            onUpdate={saveGoal}
+                          />
+                        ) : (
+                          <GoalSummaryCard
+                            busy={busyKeys.has(`goal-detail-${goal.id}`)}
+                            goal={goal}
+                            key={goal.id}
+                            onLoad={loadGoalDetail}
+                          />
+                        ),
+                      )}
+                    </div>
+                  )}
+                  {data.goalCursor && (
+                    <div className="flex justify-center">
+                      <Button
+                        loading={busyKeys.has("more-goals")}
+                        loadingLabel="Loading goals…"
+                        onClick={() => void loadMore("goals")}
+                        variant="secondary"
+                      >
+                        Load more goals
+                      </Button>
+                    </div>
+                  )}
+                </section>
 
-      <section aria-labelledby="roadmap-heading" className="space-y-4">
-        <SectionIntro
-          description="A staged skill path for your target role, cross-checked against what you’ve already demonstrated. Hover or open a stop for the why and a first step."
-          id="roadmap-heading"
-          title="Your roadmap"
-        />
-        <RoadmapPanel onConfirmed={() => void load()} />
-      </section>
+                <section
+                  aria-labelledby="development-heading"
+                  className="space-y-3"
+                >
+                  <SectionIntro
+                    description="Track learning, credentials, reviews, promotion work, and an evidence-backed annual resume refresh."
+                    id="development-heading"
+                    title="Development plan"
+                  />
+                  <DevelopmentCreateForm
+                    busy={busyKeys.has("development-new")}
+                    onCreate={addDevelopment}
+                  />
+                  {data.developmentItems.length === 0 ? (
+                    <EmptyState
+                      description="Add a focused learning or advancement item and link the evidence that demonstrates progress."
+                      title="No development plan items yet"
+                    />
+                  ) : (
+                    <div className="grid gap-3 lg:grid-cols-2">
+                      {data.developmentItems.map((item) => (
+                        <DevelopmentCard
+                          busy={busyKeys.has(`development-${item.id}`)}
+                          item={item}
+                          key={item.id}
+                          onDelete={(entry) =>
+                            setConfirmAction({
+                              item: entry,
+                              kind: "delete-development",
+                            })
+                          }
+                          onUpdate={saveDevelopment}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {data.developmentCursor && (
+                    <div className="flex justify-center">
+                      <Button
+                        loading={busyKeys.has("more-development")}
+                        loadingLabel="Loading plan items…"
+                        onClick={() => void loadMore("development")}
+                        variant="secondary"
+                      >
+                        Load more development items
+                      </Button>
+                    </div>
+                  )}
+                </section>
 
-      <CareerHealthPanel
-        analyses={data.health}
-        busyKeys={busyKeys}
-        onAnalyze={analyzeHealth}
-        onDelete={(analysis) =>
-          setConfirmAction({ analysis, kind: "delete-health" })
-        }
-        onLoad={loadHealthDetail}
+                <section
+                  aria-labelledby="reviews-heading"
+                  className="space-y-3"
+                >
+                  <SectionIntro
+                    description="Finalized versions stay immutable. Revisions explain what changed and keep the full history."
+                    id="reviews-heading"
+                    title="Career reviews"
+                  />
+                  <ReviewCreateForm
+                    busy={busyKeys.has("review-new")}
+                    onCreate={addReview}
+                  />
+                  {data.reviews.length === 0 ? (
+                    <EmptyState
+                      description="Start a quarterly or annual review to preserve achievements, growth areas, and next focus."
+                      title="No career reviews yet"
+                    />
+                  ) : (
+                    <div className="grid gap-3">
+                      {data.reviews.map((review) =>
+                        isReviewDetail(review) ? (
+                          <ReviewCard
+                            busyKeys={busyKeys}
+                            key={review.id}
+                            onDelete={(item) =>
+                              setConfirmAction({
+                                kind: "delete-review",
+                                review: item,
+                              })
+                            }
+                            onFinalize={(item) =>
+                              setConfirmAction({
+                                kind: "finalize-review",
+                                review: item,
+                              })
+                            }
+                            onRevise={(item, input) =>
+                              setConfirmAction({
+                                input,
+                                kind: "revise-review",
+                                review: item,
+                              })
+                            }
+                            review={review}
+                          />
+                        ) : (
+                          <ReviewSummaryCard
+                            busy={busyKeys.has(`review-detail-${review.id}`)}
+                            key={review.id}
+                            onLoad={loadReviewDetail}
+                            review={review}
+                          />
+                        ),
+                      )}
+                    </div>
+                  )}
+                  {data.reviewCursor && (
+                    <div className="flex justify-center">
+                      <Button
+                        loading={busyKeys.has("more-reviews")}
+                        loadingLabel="Loading reviews…"
+                        onClick={() => void loadMore("reviews")}
+                        variant="secondary"
+                      >
+                        Load more reviews
+                      </Button>
+                    </div>
+                  )}
+                </section>
+
+                <aside className="rounded-[var(--radius-card)] border border-line bg-surface p-4 text-sm leading-6 text-muted">
+                  <div className="flex items-start gap-3">
+                    <History
+                      aria-hidden="true"
+                      className="mt-0.5 size-5 shrink-0"
+                    />
+                    <p>
+                      Career records and evidence remain the source of truth.
+                      This workspace records planning and derived maintenance
+                      signals; it never silently rewrites a published career
+                      document.
+                    </p>
+                  </div>
+                </aside>
+              </div>
+            ),
+          },
+        ]}
+        variant="section"
       />
-      {data.healthCursor && (
-        <div className="flex justify-center">
-          <Button
-            loading={busyKeys.has("more-health")}
-            loadingLabel="Loading snapshots…"
-            onClick={() => void loadMore("health")}
-            variant="secondary"
-          >
-            Load more Career Health snapshots
-          </Button>
-        </div>
-      )}
-
-      <section className="space-y-4" aria-labelledby="career-goals-heading">
-        <SectionIntro
-          description="Every update is explicit. Milestones always have a non-drag status control."
-          id="career-goals-heading"
-          title="Goals and milestones"
-        />
-        <GoalCreateForm busy={busyKeys.has("goal-new")} onCreate={addGoal} />
-        {data.goals.length === 0 ? (
-          <EmptyState
-            description="Add your first outcome and break it into evidence-backed milestones."
-            title="No career goals yet"
-          />
-        ) : (
-          <div className="grid gap-4">
-            {data.goals.map((goal) =>
-              isGoalDetail(goal) ? (
-                <GoalCard
-                  busyKeys={busyKeys}
-                  goal={goal}
-                  key={goal.id}
-                  onDelete={(item) =>
-                    setConfirmAction({ goal: item, kind: "delete-goal" })
-                  }
-                  onDeleteMilestone={(milestone) =>
-                    setConfirmAction({
-                      kind: "delete-milestone",
-                      milestone,
-                    })
-                  }
-                  onMilestoneCreate={addMilestone}
-                  onMilestoneUpdate={saveMilestone}
-                  onUpdate={saveGoal}
-                />
-              ) : (
-                <GoalSummaryCard
-                  busy={busyKeys.has(`goal-detail-${goal.id}`)}
-                  goal={goal}
-                  key={goal.id}
-                  onLoad={loadGoalDetail}
-                />
-              ),
-            )}
-          </div>
-        )}
-        {data.goalCursor && (
-          <div className="flex justify-center">
-            <Button
-              loading={busyKeys.has("more-goals")}
-              loadingLabel="Loading goals…"
-              onClick={() => void loadMore("goals")}
-              variant="secondary"
-            >
-              Load more goals
-            </Button>
-          </div>
-        )}
-      </section>
-
-      <section className="space-y-4" aria-labelledby="development-heading">
-        <SectionIntro
-          description="Track learning, credentials, reviews, promotion work, and an evidence-backed annual resume refresh."
-          id="development-heading"
-          title="Development plan"
-        />
-        <DevelopmentCreateForm
-          busy={busyKeys.has("development-new")}
-          onCreate={addDevelopment}
-        />
-        {data.developmentItems.length === 0 ? (
-          <EmptyState
-            description="Add a focused learning or advancement item and link the evidence that demonstrates progress."
-            title="No development plan items yet"
-          />
-        ) : (
-          <div className="grid gap-4 lg:grid-cols-2">
-            {data.developmentItems.map((item) => (
-              <DevelopmentCard
-                busy={busyKeys.has(`development-${item.id}`)}
-                item={item}
-                key={item.id}
-                onDelete={(entry) =>
-                  setConfirmAction({
-                    item: entry,
-                    kind: "delete-development",
-                  })
-                }
-                onUpdate={saveDevelopment}
-              />
-            ))}
-          </div>
-        )}
-        {data.developmentCursor && (
-          <div className="flex justify-center">
-            <Button
-              loading={busyKeys.has("more-development")}
-              loadingLabel="Loading plan items…"
-              onClick={() => void loadMore("development")}
-              variant="secondary"
-            >
-              Load more development items
-            </Button>
-          </div>
-        )}
-      </section>
-
-      <section className="space-y-4" aria-labelledby="reviews-heading">
-        <SectionIntro
-          description="Finalized versions stay immutable. Revisions explain what changed and keep the full history."
-          id="reviews-heading"
-          title="Career reviews"
-        />
-        <ReviewCreateForm
-          busy={busyKeys.has("review-new")}
-          onCreate={addReview}
-        />
-        {data.reviews.length === 0 ? (
-          <EmptyState
-            description="Start a quarterly or annual review to preserve achievements, growth areas, and next focus."
-            title="No career reviews yet"
-          />
-        ) : (
-          <div className="grid gap-4">
-            {data.reviews.map((review) =>
-              isReviewDetail(review) ? (
-                <ReviewCard
-                  busyKeys={busyKeys}
-                  key={review.id}
-                  onDelete={(item) =>
-                    setConfirmAction({ kind: "delete-review", review: item })
-                  }
-                  onFinalize={(item) =>
-                    setConfirmAction({
-                      kind: "finalize-review",
-                      review: item,
-                    })
-                  }
-                  onRevise={(item, input) =>
-                    setConfirmAction({
-                      input,
-                      kind: "revise-review",
-                      review: item,
-                    })
-                  }
-                  review={review}
-                />
-              ) : (
-                <ReviewSummaryCard
-                  busy={busyKeys.has(`review-detail-${review.id}`)}
-                  key={review.id}
-                  onLoad={loadReviewDetail}
-                  review={review}
-                />
-              ),
-            )}
-          </div>
-        )}
-        {data.reviewCursor && (
-          <div className="flex justify-center">
-            <Button
-              loading={busyKeys.has("more-reviews")}
-              loadingLabel="Loading reviews…"
-              onClick={() => void loadMore("reviews")}
-              variant="secondary"
-            >
-              Load more reviews
-            </Button>
-          </div>
-        )}
-      </section>
-
-      <aside className="rounded-[var(--radius-card)] border border-line bg-surface p-4 text-sm leading-6 text-muted">
-        <div className="flex items-start gap-3">
-          <History aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
-          <p>
-            Career records and evidence remain the source of truth. This
-            workspace records planning and derived maintenance signals; it never
-            silently rewrites a published career document.
-          </p>
-        </div>
-      </aside>
 
       <ConfirmDialog
         confirmLabel={confirmationCopy.confirmLabel}

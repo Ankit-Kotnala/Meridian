@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { CareerGrowthInsights } from "../api/types";
@@ -82,6 +82,9 @@ describe("GrowthInsightsPanel", () => {
     ).toHaveTextContent(
       /not an employer decision, hiring probability, promotion guarantee, or assessment of job-market value/i,
     );
+    fireEvent.click(
+      screen.getByText(/View full preparation checklist/i),
+    );
     expect(
       screen.getByRole("table", {
         name: "Promotion preparation checks, evidence state, and next action",
@@ -132,11 +135,14 @@ describe("GrowthInsightsPanel", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "Your evidence vs the AI Engineer path",
+        name: /AI Engineer path · 1 evidenced · 1 gaps/,
       }),
     ).toBeVisible();
     expect(screen.getByText("Evidence found")).toBeVisible();
     expect(screen.getByText("Gap on this path")).toBeVisible();
+    fireEvent.click(
+      screen.getByText(/View full preparation checklist/i),
+    );
     expect(
       screen.getByText("Create a promotion-preparation development item."),
     ).toBeVisible();
