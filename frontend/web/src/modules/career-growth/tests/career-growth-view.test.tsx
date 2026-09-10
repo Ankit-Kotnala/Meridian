@@ -228,6 +228,10 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
+async function openGrowthTab(name: string) {
+  fireEvent.click(await screen.findByRole("tab", { name }));
+}
+
 describe("Career Growth view", () => {
   beforeAll(() => {
     HTMLDialogElement.prototype.showModal = function showModal() {
@@ -260,6 +264,22 @@ describe("Career Growth view", () => {
 
     expect(
       await screen.findByRole("heading", {
+        name: "Evidence-backed preparation checklist",
+      }),
+    ).toBeVisible();
+    expect(screen.getByText("Verified fictional achievement")).toBeVisible();
+    expect(
+      screen.getByRole("table", {
+        name: /Documented skills and their eligible evidence coverage/i,
+      }),
+    ).toBeVisible();
+    expect(
+      screen.queryByText(/likely to be promoted/i),
+    ).not.toBeInTheDocument();
+
+    await openGrowthTab("Career Health");
+    expect(
+      await screen.findByRole("heading", {
         name: "A transparent maintenance signal",
       }),
     ).toBeVisible();
@@ -274,23 +294,11 @@ describe("Career Growth view", () => {
         name: /Career Health component scores/i,
       }),
     ).toBeVisible();
+
+    await openGrowthTab("Goals & plans");
     expect(screen.getByText("Prepare promotion case")).toBeVisible();
     expect(screen.getAllByText("Accessibility systems")).not.toHaveLength(0);
-    expect(
-      screen.getByRole("heading", {
-        name: "Evidence-backed preparation checklist",
-      }),
-    ).toBeVisible();
-    expect(screen.getByText("Verified fictional achievement")).toBeVisible();
-    expect(
-      screen.getByRole("table", {
-        name: /Documented skills and their eligible evidence coverage/i,
-      }),
-    ).toBeVisible();
     expect(screen.getAllByText("Q2 career review")).not.toHaveLength(0);
-    expect(
-      screen.queryByText(/likely to be promoted/i),
-    ).not.toBeInTheDocument();
 
     api.listGoals.mockResolvedValueOnce(page([]));
     api.listDevelopmentItems.mockResolvedValueOnce(page([]));
@@ -298,6 +306,7 @@ describe("Career Growth view", () => {
     api.listCareerHealth.mockResolvedValueOnce(page([]));
     fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
 
+    await openGrowthTab("Goals & plans");
     expect(
       await screen.findByRole("heading", { name: "No career goals yet" }),
     ).toBeVisible();
@@ -309,8 +318,10 @@ describe("Career Growth view", () => {
     expect(
       screen.getByRole("heading", { name: "No career reviews yet" }),
     ).toBeVisible();
+
+    await openGrowthTab("Career Health");
     expect(
-      screen.getByRole("heading", {
+      await screen.findByRole("heading", {
         name: "No Career Health snapshot yet",
       }),
     ).toBeVisible();
@@ -335,6 +346,7 @@ describe("Career Growth view", () => {
 
     render(<CareerGrowthView />);
 
+    await openGrowthTab("Career Health");
     expect(
       await screen.findByRole("heading", { name: "Insufficient data" }),
     ).toBeVisible();
@@ -348,6 +360,7 @@ describe("Career Growth view", () => {
   it("requires confirmation for immutable finalization and authoritative reload after conflicts", async () => {
     api.updateGoal.mockRejectedValue(api.conflict);
     render(<CareerGrowthView />);
+    await openGrowthTab("Goals & plans");
     await screen.findByText("Prepare promotion case");
 
     fireEvent.click(screen.getByText("Edit goal"));
@@ -392,6 +405,7 @@ describe("Career Growth view", () => {
       .mockRejectedValueOnce(new Error("offline"))
       .mockResolvedValueOnce(createdGoal);
     render(<CareerGrowthView />);
+    await openGrowthTab("Goals & plans");
     await screen.findByText("Prepare promotion case");
 
     fireEvent.click(screen.getByText("Add a career goal"));
@@ -446,6 +460,7 @@ describe("Career Growth view", () => {
       });
 
     render(<CareerGrowthView />);
+    await openGrowthTab("Goals & plans");
     await screen.findByText("Prepare promotion case");
 
     const summary = screen.getByText("Add a development plan item", {
@@ -474,6 +489,7 @@ describe("Career Growth view", () => {
         `${annualRefresh.title} added to your development plan.`,
       ),
     ).toBeVisible();
+    await openGrowthTab("Preparation");
     const workflowHeading = screen.getByRole("heading", {
       name: "Annual resume refresh workflow",
     });
@@ -482,7 +498,7 @@ describe("Career Growth view", () => {
     const workflowItem = await within(workflow!).findByRole("listitem");
     expect(within(workflowItem).getByText(annualRefresh.title)).toBeVisible();
     expect(within(workflowItem).getByText("Completed")).toBeVisible();
-    expect(workflowItem).toHaveTextContent("1 eligible evidence link(s)");
+    expect(workflowItem).toHaveTextContent("1 evidence link(s)");
     expect(api.getCareerGrowthInsights).toHaveBeenCalledTimes(2);
     expect(api.listDevelopmentItems).toHaveBeenCalledTimes(1);
   });
@@ -501,6 +517,7 @@ describe("Career Growth view", () => {
       .mockResolvedValueOnce(page([additionalGoal]));
 
     render(<CareerGrowthView />);
+    await openGrowthTab("Goals & plans");
     fireEvent.click(
       await screen.findByRole("button", { name: "Load more goals" }),
     );
@@ -533,6 +550,7 @@ describe("Career Growth view", () => {
       });
 
     render(<CareerGrowthView />);
+    await openGrowthTab("Goals & plans");
     const reload = await screen.findByRole("button", { name: "Refresh" });
 
     act(() => {
@@ -544,6 +562,7 @@ describe("Career Growth view", () => {
     await act(async () => {
       latest.resolve(page([latestGoal]));
     });
+    await openGrowthTab("Goals & plans");
     expect(await screen.findByText("Latest goal")).toBeVisible();
 
     await act(async () => {
@@ -554,7 +573,12 @@ describe("Career Growth view", () => {
   });
 
   it("renders a retryable initial failure", async () => {
-    api.listGoals.mockRejectedValueOnce(new Error("offline"));
+    const offline = new Error("offline");
+    api.listGoals.mockRejectedValueOnce(offline);
+    api.listDevelopmentItems.mockRejectedValueOnce(offline);
+    api.listCareerReviews.mockRejectedValueOnce(offline);
+    api.listCareerHealth.mockRejectedValueOnce(offline);
+    api.getCareerGrowthInsights.mockRejectedValueOnce(offline);
     render(<CareerGrowthView />);
 
     expect(
@@ -593,6 +617,7 @@ describe("Career Growth view", () => {
     api.confirmRoleRoadmap.mockResolvedValue({ created: [developmentItem] });
 
     render(<CareerGrowthView />);
+    await openGrowthTab("Roadmap");
 
     expect(
       await screen.findByRole("heading", { name: "Path to AI Engineer" }),
