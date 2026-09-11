@@ -303,7 +303,9 @@ test("a verified user completes honest onboarding and controls sessions", async 
     await page.goto("/settings/privacy");
     await expect(page.getByText("Export is unavailable")).toBeVisible();
 
-    await page.locator("summary").filter({ hasText: "Account menu" }).click();
+    await page
+      .getByRole("button", { name: /Account menu for/i })
+      .click();
     await page.getByRole("button", { name: "Sign out", exact: true }).click();
     await expect(page).toHaveURL(/\/login$/);
     await page.goto("/dashboard");

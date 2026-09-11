@@ -9,7 +9,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode, RefObject } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 
 import { corpIdFor } from "@/shared/identity/corp-id";
 import { ThemeToggle } from "@/shared/theme/theme-toggle";
@@ -28,6 +35,109 @@ function initials(name: string): string {
     .map((part) => part[0]?.toUpperCase())
     .join("");
   return value || "CO";
+}
+
+function AccountMenu({
+  accountActions,
+  corpId,
+  viewer,
+}: {
+  accountActions: ReactNode;
+  corpId: string | null;
+  viewer: WorkspaceViewer;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuId = useId();
+
+  useEffect(() => {
+    if (!open) return;
+    function handlePointerDown(event: PointerEvent) {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setOpen(false);
+      triggerRef.current?.focus();
+    }
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button
+        aria-controls={menuId}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-label={`Account menu for ${viewer.displayName}`}
+        className="flex min-h-10 items-center gap-2 rounded-[var(--radius-pill)] border border-transparent px-1.5 text-left transition-colors hover:border-line hover:bg-surface-subtle"
+        onClick={() => setOpen((value) => !value)}
+        ref={triggerRef}
+        type="button"
+      >
+        <span className="grid size-9 place-items-center rounded-full bg-primary text-xs font-bold text-white">
+          {initials(viewer.displayName)}
+        </span>
+        <span className="hidden max-w-36 truncate text-sm font-semibold text-foreground md:block">
+          {viewer.displayName}
+        </span>
+        <ChevronDown
+          aria-hidden="true"
+          className={`hidden size-3.5 text-muted transition-transform md:block ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      {open && (
+        <div
+          className="absolute right-0 z-50 mt-2 w-72 overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface shadow-[var(--shadow-lg)]"
+          id={menuId}
+          role="menu"
+        >
+          <div className="flex items-center gap-3 border-b border-line px-4 py-3.5">
+            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-white">
+              {initials(viewer.displayName)}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-foreground">
+                {viewer.displayName}
+              </p>
+              <p className="truncate text-xs text-muted">{viewer.email}</p>
+              {corpId && (
+                <p className="mt-1 flex items-center gap-1 truncate text-[0.6875rem] font-bold tracking-[0.02em] text-primary-strong">
+                  <ShieldCheck aria-hidden="true" className="size-3" />
+                  <span className="sr-only">Meridian Corp ID: </span>
+                  {corpId}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="p-2">
+            <p className="eyebrow px-3 pb-1 pt-1.5 !text-[0.625rem]">Manage</p>
+            {workspaceUtilityNavigation.map(({ href, icon: Icon, label }) => (
+              <Link
+                className="flex min-h-10 items-center gap-2.5 rounded-[var(--radius-control)] px-3 text-sm font-semibold text-foreground transition-colors hover:bg-surface-subtle"
+                href={href}
+                key={href}
+                onClick={() => setOpen(false)}
+                role="menuitem"
+              >
+                <Icon aria-hidden="true" className="size-4 text-muted-strong" />
+                {label}
+              </Link>
+            ))}
+            <div className="mt-1 border-t border-line pt-1">{accountActions}</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function WorkspaceTopBar({
@@ -111,65 +221,11 @@ export function WorkspaceTopBar({
           )}
         </Link>
 
-        <details className="group relative">
-          <summary
-            aria-label={`Account menu for ${viewer.displayName}`}
-            className="flex min-h-10 list-none items-center gap-2 rounded-[var(--radius-pill)] border border-transparent px-1.5 text-left transition-colors hover:border-line hover:bg-surface-subtle [&::-webkit-details-marker]:hidden"
-          >
-            <span className="sr-only">Account menu</span>
-            <span className="grid size-9 place-items-center rounded-full bg-primary text-xs font-bold text-white">
-              {initials(viewer.displayName)}
-            </span>
-            <span className="hidden max-w-36 truncate text-sm font-semibold text-foreground md:block">
-              {viewer.displayName}
-            </span>
-            <ChevronDown
-              aria-hidden="true"
-              className="hidden size-3.5 text-muted transition-transform group-open:rotate-180 md:block"
-            />
-          </summary>
-          <div className="absolute right-0 mt-2 w-72 overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface shadow-[var(--shadow-lg)]">
-            <div className="flex items-center gap-3 border-b border-line px-4 py-3.5">
-              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-white">
-                {initials(viewer.displayName)}
-              </span>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-foreground">
-                  {viewer.displayName}
-                </p>
-                <p className="truncate text-xs text-muted">{viewer.email}</p>
-                {corpId && (
-                  <p className="mt-1 flex items-center gap-1 truncate text-[0.6875rem] font-bold tracking-[0.02em] text-primary-strong">
-                    <ShieldCheck aria-hidden="true" className="size-3" />
-                    <span className="sr-only">Meridian Corp ID: </span>
-                    {corpId}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="p-2">
-              <p className="eyebrow px-3 pb-1 pt-1.5 !text-[0.625rem]">
-                Manage
-              </p>
-              {workspaceUtilityNavigation.map(({ href, icon: Icon, label }) => (
-                <Link
-                  className="flex min-h-10 items-center gap-2.5 rounded-[var(--radius-control)] px-3 text-sm font-semibold text-foreground transition-colors hover:bg-surface-subtle"
-                  href={href}
-                  key={href}
-                >
-                  <Icon
-                    aria-hidden="true"
-                    className="size-4 text-muted-strong"
-                  />
-                  {label}
-                </Link>
-              ))}
-              <div className="mt-1 border-t border-line pt-1">
-                {accountActions}
-              </div>
-            </div>
-          </div>
-        </details>
+        <AccountMenu
+          accountActions={accountActions}
+          corpId={corpId}
+          viewer={viewer}
+        />
       </div>
     </header>
   );
