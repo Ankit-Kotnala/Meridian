@@ -251,14 +251,14 @@ export function SkillLibraryPanel() {
   }, [skillName]);
 
   useEffect(() => {
-    void load();
+    queueMicrotask(() => void load());
     return () => {
       loadEpoch.current += 1;
     };
   }, [load]);
 
   const setLibraryResourceCount = metrics?.setLibraryResourceCount;
-  const stages = roadmap?.stages ?? [];
+  const stages = useMemo(() => roadmap?.stages ?? [], [roadmap]);
   const skills = useMemo(
     () => stages.flatMap((stage) => stage.skills),
     [stages],

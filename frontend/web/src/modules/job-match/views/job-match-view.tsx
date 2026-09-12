@@ -229,30 +229,33 @@ export function JobMatchView({
   useEffect(() => {
     if (!suggestionsLoaded) return;
     let cancelled = false;
-    setFilterBusy(true);
-    void browseJobCatalog({
-      limit: CATALOG_PAGE_SIZE,
-      offset: 0,
-      ...(catalogQuery ? { q: catalogQuery } : {}),
-    })
-      .then((page) => {
-        if (cancelled) return;
-        setCatalogListings(page.listings);
-        setCatalogHasMore(page.hasMore);
-        setCatalogNextOffset(page.nextOffset);
-        setCatalogTotalCount(page.totalCount);
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setFilterBusy(true);
+      void browseJobCatalog({
+        limit: CATALOG_PAGE_SIZE,
+        offset: 0,
+        ...(catalogQuery ? { q: catalogQuery } : {}),
       })
-      .catch((error: unknown) => {
-        if (cancelled) return;
-        setFailure(requestErrorMessage(error, "Job search failed."));
-        setCatalogListings([]);
-        setCatalogHasMore(false);
-        setCatalogNextOffset(0);
-        setCatalogTotalCount(0);
-      })
-      .finally(() => {
-        if (!cancelled) setFilterBusy(false);
-      });
+        .then((page) => {
+          if (cancelled) return;
+          setCatalogListings(page.listings);
+          setCatalogHasMore(page.hasMore);
+          setCatalogNextOffset(page.nextOffset);
+          setCatalogTotalCount(page.totalCount);
+        })
+        .catch((error: unknown) => {
+          if (cancelled) return;
+          setFailure(requestErrorMessage(error, "Job search failed."));
+          setCatalogListings([]);
+          setCatalogHasMore(false);
+          setCatalogNextOffset(0);
+          setCatalogTotalCount(0);
+        })
+        .finally(() => {
+          if (!cancelled) setFilterBusy(false);
+        });
+    });
     return () => {
       cancelled = true;
     };
