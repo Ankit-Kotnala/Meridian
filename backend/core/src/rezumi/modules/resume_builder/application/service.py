@@ -163,31 +163,50 @@ class ResumeBuilderService:
             layout=command.layout,
         )
         record = ResumeRecord(resume=resume, current_version=version)
-        async with self._uow() as uow:
-            await uow.add_resume(record)
-            await uow.add_idempotency(
-                self._idem(
-                    owner_user_id,
-                    idempotency_key,
-                    fingerprint,
-                    "resume",
-                    resume_id,
-                    "resume",
-                    resume_id,
-                    now,
+        try:
+            async with self._uow() as uow:
+                await uow.add_resume(record)
+                await uow.add_idempotency(
+                    self._idem(
+                        owner_user_id,
+                        idempotency_key,
+                        fingerprint,
+                        "resume",
+                        resume_id,
+                        "resume",
+                        resume_id,
+                        now,
+                    )
                 )
-            )
-            await uow.add_audit(
-                self._audit(
-                    owner_user_id,
-                    ResumeAuditAction.RESUME_CREATED,
-                    "resume",
-                    resume_id,
-                    context,
-                    now,
+                await uow.add_audit(
+                    self._audit(
+                        owner_user_id,
+                        ResumeAuditAction.RESUME_CREATED,
+                        "resume",
+                        resume_id,
+                        context,
+                        now,
+                    )
                 )
+                await uow.commit()
+        except ResumeBuilderIdempotencyConflict:
+            replay = await self._resume_replay(
+                owner_user_id,
+                idempotency_key,
+                fingerprint,
             )
-            await uow.commit()
+            if replay is not None:
+                return replay
+            raise
+        except ResumeBuilderConflict as exc:
+            replay = await self._resume_replay(
+                owner_user_id,
+                idempotency_key,
+                fingerprint,
+            )
+            if replay is not None:
+                return replay
+            raise exc
         return record
 
     async def get_resume(self, owner_user_id: UUID, resume_id: UUID) -> ResumeRecord:

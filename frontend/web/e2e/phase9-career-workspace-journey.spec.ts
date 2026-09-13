@@ -8,6 +8,11 @@ import {
   type Page,
 } from "@playwright/test";
 
+import {
+  analyzeFirstSavedJob,
+  createSavedJobThroughApi,
+} from "./helpers/job-match-fixtures";
+
 type MailpitSearchResponse = { messages?: Array<{ ID?: string }> };
 
 const mailpitUrl = process.env.PLAYWRIGHT_MAILPIT_URL;
@@ -281,18 +286,10 @@ async function createGroundedApplication(
     page.getByText("Evidence confirmed.", { exact: false }),
   ).toBeVisible();
 
-  await page.goto("/job-match");
-  await expect(
-    page.getByRole("heading", { name: "Application readiness" }),
-  ).toBeVisible();
-  await fill(page.getByLabel("Job title"), fictional.jobTitle);
-  await fill(page.getByLabel("Company"), fictional.company);
-  await fill(page.getByLabel("Location"), "Remote");
-  await select(page.getByLabel("Work model"), "remote");
-  await select(page.getByLabel("Employment type"), "full_time");
-  await fill(
-    page.getByLabel("Job description"),
-    [
+  await createSavedJobThroughApi(page, {
+    title: fictional.jobTitle,
+    company: fictional.company,
+    description: [
       `Title: ${fictional.jobTitle}`,
       `Company: ${fictional.company}`,
       "Location: Remote",
@@ -301,17 +298,8 @@ async function createGroundedApplication(
       "- Collaborate with engineering and design on product experiments.",
       "- Preferred experience with product analytics.",
     ].join("\n"),
-  );
-  await activate(page.getByRole("button", { name: "Save job" }), keyboard);
-  await expect(page.getByRole("status")).toContainText(
-    `${fictional.jobTitle} saved for matching.`,
-  );
-  await activate(page.getByRole("button", { name: "Analyze match" }), keyboard);
-  await expect(
-    page.getByRole("table", {
-      name: "Requirement-by-requirement job match evidence matrix",
-    }),
-  ).toBeVisible();
+  });
+  await analyzeFirstSavedJob(page);
   await expect(page.getByText(fictional.evidenceTitle).first()).toBeVisible();
 
   await page.goto("/resume-builder");

@@ -17,6 +17,7 @@ from rezumi.modules.resume_builder.application.models import ResumeRecord
 from rezumi.modules.resume_builder.domain import (
     ResumeBuilderAuditEvent,
     ResumeBuilderConflict,
+    ResumeBuilderIdempotencyConflict,
     ResumeBuilderIdempotencyRecord,
     ResumeBuilderUnavailable,
     ResumeBullet,
@@ -503,6 +504,15 @@ class SqlAlchemyResumeBuilderUnitOfWorkFactory:
 
 
 def _raise_integrity(exc: IntegrityError) -> None:
+    orig = getattr(exc, "orig", None)
+    diag = getattr(orig, "diag", None)
+    constraint_name = getattr(diag, "constraint_name", None)
+    if constraint_name in {
+        "uq_resume_builder_idempotency_owner_key",
+        "uq_resume_exports_owner_idempotency",
+        "uq_resume_download_intents_owner_idempotency",
+    }:
+        raise ResumeBuilderIdempotencyConflict from exc
     raise ResumeBuilderConflict("resume builder persistence constraint failed") from exc
 
 

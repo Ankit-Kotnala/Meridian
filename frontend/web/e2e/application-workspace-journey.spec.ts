@@ -8,6 +8,11 @@ import {
   type Page,
 } from "@playwright/test";
 
+import {
+  analyzeFirstSavedJob,
+  createSavedJobThroughApi,
+} from "./helpers/job-match-fixtures";
+
 type MailpitSearchResponse = { messages?: Array<{ ID?: string }> };
 
 const mailpitUrl = process.env.PLAYWRIGHT_MAILPIT_URL;
@@ -258,18 +263,10 @@ test("a user tracks a grounded application and generates a consistent applicatio
     });
 
     await test.step("save and analyze a fictional job", async () => {
-      await page.goto("/job-match");
-      await expect(
-        page.getByRole("heading", { name: "Application readiness" }),
-      ).toBeVisible();
-      await fillWhenReady(page.getByLabel("Job title"), jobTitle);
-      await fillWhenReady(page.getByLabel("Company"), company);
-      await fillWhenReady(page.getByLabel("Location"), "Remote");
-      await selectWhenReady(page.getByLabel("Work model"), "remote");
-      await selectWhenReady(page.getByLabel("Employment type"), "full_time");
-      await fillWhenReady(
-        page.getByLabel("Job description"),
-        [
+      await createSavedJobThroughApi(page, {
+        title: jobTitle,
+        company,
+        description: [
           `Title: ${jobTitle}`,
           `Company: ${company}`,
           "Location: Remote",
@@ -278,18 +275,8 @@ test("a user tracks a grounded application and generates a consistent applicatio
           "- Collaborate with engineering and design on product experiments.",
           "- Preferred experience with product analytics.",
         ].join("\n"),
-      );
-      await clickWhenReady(page.getByRole("button", { name: "Save job" }));
-      await expect(page.getByRole("status")).toContainText(
-        `${jobTitle} saved for matching.`,
-      );
-
-      await clickWhenReady(page.getByRole("button", { name: "Analyze match" }));
-      await expect(
-        page.getByRole("table", {
-          name: "Requirement-by-requirement job match evidence matrix",
-        }),
-      ).toBeVisible();
+      });
+      await analyzeFirstSavedJob(page);
       await expect(page.getByText(evidenceTitle)).toBeVisible();
       await expect(
         page
