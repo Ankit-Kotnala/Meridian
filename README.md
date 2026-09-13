@@ -75,6 +75,18 @@ Then create an account at `/register`, click the verification link captured in
 [Mailpit](http://localhost:8025), and sign in at `/login`. A labeled fictional
 preview is at `/demo/dashboard`. Local `.env` values are development-only.
 
+**Host hot reload** (fastest UI/API iteration):
+
+```powershell
+npm run local:deps    # PostgreSQL, Redis, MinIO, Mailpit, ClamAV only
+npm run dev:web       # Next.js on the host against dependency containers
+npm run dev:api       # FastAPI on the host with reload
+npm run dev:worker    # Celery worker on the host
+```
+
+When you run the web app **inside Docker** instead, rebuild the image after UI
+changes: `npm run local:rebuild:web`.
+
 ### Local services
 
 | Service       | URL                                                        |
@@ -85,24 +97,30 @@ preview is at `/demo/dashboard`. Local `.env` values are development-only.
 | MinIO console | <http://localhost:9001>                                    |
 | Mailpit       | <http://localhost:8025>                                    |
 
-## Features
+## Workspace
 
-All feature routes require an authenticated session unless noted.
+Authenticated product UI is organized into **seven sidebar destinations**. Sections
+with multiple tools also show a sub-navigation bar (for example Job search → Saved
+jobs → Role matching). All routes below require a signed-in session unless noted.
 
-| Area           | Route                                                | What it does                                                                                                          |
-| -------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Career Record  | `/career-profile`, `/evidence`, `/achievement-inbox` | Owner-scoped experience, skills, and evidence with per-field provenance; evidence strength is separate from lifecycle |
-| Resume Health  | `/resume-health/account`, `/resume-health/guest`     | Upload → scan → canonical review → deterministic analysis; guest flow is short-lived and browser-scoped               |
-| Role Explorer  | `/role-explorer`                                     | Evidence-linked readiness analysis and role comparison                                                                |
-| Job Match      | `/job-match`                                         | Extracts job requirements and compares them to eligible evidence                                                      |
-| Change Studio  | `/change-studio`                                     | Grounded, reviewable suggestions with accept/reject/edit                                                              |
-| Resume Builder | `/resume-builder`                                    | Evidence-backed drafts, immutable versions, verified exports                                                          |
-| Applications   | `/applications`                                      | Pins immutable job + resume versions; board/table/calendar tracking                                                   |
-| Interview Prep | `/interview-prep`                                    | Resume Defense Map + grounded STAR stories                                                                            |
-| Networking     | `/networking`                                        | Private, consent-gated relationship CRM (no scraping or outreach)                                                     |
-| Career Growth  | `/career-growth`                                     | Goals, reviews, and promotion-readiness prep                                                                          |
-| Analytics      | `/analytics`                                         | Immutable, small-cohort-suppressed pattern snapshots                                                                  |
-| Settings       | `/settings/*`                                        | Profile, security, sessions, consent, privacy, billing, connections                                                   |
+| Destination     | Routes | What it does |
+| --------------- | ------ | ------------ |
+| **Home**        | `/dashboard` | Workspace overview and activation guidance |
+| **Profile**     | `/career-profile`, `/evidence`, `/achievement-inbox`, `/career-profile/imports` | Career Record source of truth: roles, skills, evidence, imports, and achievement intake |
+| **Resumes**     | `/resume-health/account`, `/resume-builder`, `/change-studio` | Upload and review resume health, build evidence-backed resume versions with verified exports, and apply grounded Change Studio suggestions |
+| **Job search**  | `/job-match`, `/job-match/saved`, `/job-match/roles` | Browse a shared open-job catalog (paginated search with total counts), save listings to your jobs, analyze requirement coverage against eligible evidence, and compare role readiness. Legacy `/role-explorer` redirects to `/job-match/roles`. |
+| **Applications**| `/applications` | Track applications with immutable job + resume version pins; board, table, and calendar views |
+| **Interview prep** | `/interview-prep`, `/interview-prep/library`, `/networking` | Skill journey and curated skill library, grounded STAR stories and session prep, plus consent-gated networking CRM (no scraping or automated outreach) |
+| **Growth**      | `/career-growth`, `/analytics` | Tabbed growth workspace: promotion preparation and skill-path standing, staged role roadmap, Career Health snapshots, goals/development/reviews, and small-cohort-suppressed analytics |
+
+**Guest / utility routes**
+
+| Route | Notes |
+| ----- | ----- |
+| `/resume-health/guest` | Short-lived guest upload and review flow (browser-scoped) |
+| `/onboarding`, `/settings/*` | Setup guide and account settings (profile, security, sessions, privacy, billing, connections) |
+| `/admin` | Admin console (when enabled for the account) |
+| `/demo/*` | Explicitly labeled fictional demo fixtures only |
 
 ## Commands
 
@@ -111,6 +129,7 @@ Run the narrowest check while iterating, then the gates before claiming done.
 ```sh
 npm run dev:web / dev:api / dev:worker   # host hot-reload against containers
 npm run local:up / local:down            # start (health-checked) / stop, keep volumes
+npm run local:rebuild:web / local:rebuild:backend  # after container-mode code changes
 npm run local:logs -- api                # follow one service
 
 make format-check                     # prettier + ruff format
@@ -118,7 +137,7 @@ make lint                             # eslint + boundary checks + ruff
 make typecheck                        # tsc (all) + mypy
 make test                             # unit tests (web, ui, api, worker, backend)
 make test-integration                 # stack up + migrate + probes
-make test-e2e                         # Playwright
+make test-e2e                         # Playwright (requires full stack + Mailpit)
 make contracts-check                  # OpenAPI / TS drift gate
 make verify                           # full gate (all of the above + build)
 
@@ -132,6 +151,14 @@ On native Windows without Make, use the equivalents: `.\scripts\setup.ps1`,
 
 `make reset-db` and `make seed` are **local-only and destructive to dev data** —
 never run against shared or production data.
+
+Focused examples:
+
+```sh
+npm run test --workspace=@rezumi/web -- src/modules/job-match
+npm run test:api
+cd backend/core && uv run pytest tests/unit/test_job_match_service.py
+```
 
 ## Guardrails
 
