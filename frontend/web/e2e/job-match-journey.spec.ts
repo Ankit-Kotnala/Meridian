@@ -2,6 +2,11 @@ import { randomUUID } from "node:crypto";
 
 import { expect, test, type APIRequestContext } from "@playwright/test";
 
+import {
+  analyzeFirstSavedJob,
+  createSavedJobThroughApi,
+} from "./helpers/job-match-fixtures";
+
 type MailpitSearchResponse = { messages?: Array<{ ID?: string }> };
 
 const mailpitUrl = process.env.PLAYWRIGHT_MAILPIT_URL;
@@ -147,44 +152,26 @@ test("a user saves a job, analyzes exact requirements, and prioritizes it", asyn
     await expect(
       page.getByRole("heading", { name: "Open jobs" }),
     ).toBeVisible();
-    await page.getByRole("tab", { name: "Saved jobs" }).click();
+    await page.getByRole("link", { name: "Saved jobs" }).click();
     await expect(
       page.getByRole("heading", { name: "No saved jobs" }),
     ).toBeVisible();
 
-    // KNOWN STALE (pre-dates the job search redesign): the manual job-entry
-    // form asserted below was removed from the product, so this journey has
-    // no way to create the saved job the rest of it analyzes. It needs to be
-    // rewritten around saving a catalog listing instead.
-    await page.getByLabel("Job title").fill("Product Manager");
-    await page.getByLabel("Company").fill("Example Co");
-    await page.getByLabel("Location").fill("Remote");
-    await page.getByLabel("Work model").selectOption("remote");
-    await page.getByLabel("Employment type").selectOption("full_time");
-    await page
-      .getByLabel("Job description")
-      .fill(
-        [
-          "Title: Product Manager",
-          "Company: Example Co",
-          "Location: Remote",
-          "Requirements:",
-          "- Must have experience with user research and customer discovery.",
-          "- Build product experiments with engineering and design.",
-          "- Preferred experience with SaaS analytics.",
-        ].join("\n"),
-      );
-    await page.getByRole("button", { name: "Save job" }).click();
-    await expect(page.getByRole("status")).toContainText(
-      "Product Manager saved for matching.",
-    );
+    await createSavedJobThroughApi(page, {
+      title: "Product Manager",
+      company: "Example Co",
+      description: [
+        "Title: Product Manager",
+        "Company: Example Co",
+        "Location: Remote",
+        "Requirements:",
+        "- Must have experience with user research and customer discovery.",
+        "- Build product experiments with engineering and design.",
+        "- Preferred experience with SaaS analytics.",
+      ].join("\n"),
+    });
 
-    await page.getByRole("button", { name: "Analyze match" }).click();
-    await expect(
-      page.getByRole("table", {
-        name: "Requirement-by-requirement job match evidence matrix",
-      }),
-    ).toBeVisible();
+    await analyzeFirstSavedJob(page);
     await expect(page.getByText("Discovery interview notes")).toBeVisible();
     await expect(
       page.getByText(/Rezumi scores are internal readiness measurements/i),
