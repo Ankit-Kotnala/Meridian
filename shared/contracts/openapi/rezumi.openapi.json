@@ -49843,6 +49843,17 @@
           },
           {
             "in": "query",
+            "name": "platform",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 40,
+              "title": "Platform",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
             "name": "limit",
             "required": false,
             "schema": {

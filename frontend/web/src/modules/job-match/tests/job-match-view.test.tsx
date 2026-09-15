@@ -451,7 +451,7 @@ describe("Job search view", () => {
       ),
     );
     expect(
-      screen.getByText("Matching “backend” across every published job board."),
+      screen.getByText('Matching “backend” across the job catalog.'),
     ).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "Save to my jobs" }));

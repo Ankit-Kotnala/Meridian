@@ -61,9 +61,12 @@ class JobCatalogStore(Protocol):
         keywords: tuple[str, ...],
         limit: int,
         offset: int = 0,
+        platform: str | None = None,
     ) -> tuple[CatalogJobListing, ...]: ...
 
-    async def count(self, *, keywords: tuple[str, ...]) -> int: ...
+    async def count(
+        self, *, keywords: tuple[str, ...], platform: str | None = None
+    ) -> int: ...
 
     async def get_listing(self, platform: str, external_id: str) -> CatalogJobListing | None: ...
 
