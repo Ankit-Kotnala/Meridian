@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from datetime import UTC, datetime
 from typing import Any
 
@@ -66,10 +67,8 @@ class MongoJobCatalogStore:
     def _ensure_indexes(collection: Collection[Any]) -> None:
         collection.create_index([("platform", ASCENDING), ("externalId", ASCENDING)], unique=True)
         collection.create_index([("platform", ASCENDING), ("postedAt", ASCENDING)])
-        try:
+        with contextlib.suppress(PyMongoError):
             collection.drop_index("job_catalog_text_search")
-        except PyMongoError:
-            pass
         collection.create_index(
             [("title", TEXT), ("company", TEXT), ("location", TEXT), ("sourceText", TEXT)],
             name="job_catalog_text_search",
