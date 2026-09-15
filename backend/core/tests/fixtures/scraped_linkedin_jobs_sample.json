@@ -1,0 +1,32 @@
+{
+  "sample export": [
+    {
+      "job_id": "4408961698",
+      "posted_at": "2026-09-11T18:29:35.025Z",
+      "company_name": "Ross Stores, Inc.",
+      "job_title": "Early Morning Stock Associate",
+      "job_url": "https://www.linkedin.com/jobs/view/early-morning-stock-associate-at-ross-stores-inc-4408961698",
+      "job_location": "Baton Rouge, LA",
+      "employment_type": "Full-time",
+      "industries": "Retail",
+      "job_description": "Our values start with our people.",
+      "job_function": "Management and Manufacturing",
+      "seniority_level": "Mid-Senior level",
+      "source": "linkedin"
+    },
+    {
+      "job_id": "4464214422",
+      "posted_at": "2026-09-11T18:29:35.207Z",
+      "company_name": "Jabil",
+      "job_title": "Quality Engineer II",
+      "job_url": "https://www.linkedin.com/jobs/view/quality-engineer-ii-at-jabil-4464214422",
+      "job_location": "Remote",
+      "employment_type": "Full-time",
+      "industries": "Manufacturing",
+      "job_description": "Drive quality controls and CAPA.",
+      "job_function": "Quality Assurance",
+      "seniority_level": "Associate",
+      "source": "linkedin"
+    }
+  ]
+}

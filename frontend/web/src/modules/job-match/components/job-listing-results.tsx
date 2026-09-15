@@ -6,6 +6,7 @@ import { Badge, Button, Card, EmptyState, cn } from "@rezumi/ui";
 
 import type { JobCatalogListing } from "../api/types";
 
+import { humanizePlatform } from "./job-search-filters";
 import { listingKey } from "./job-selection";
 
 /** Middle column of the job search: the result list itself. */
@@ -83,7 +84,7 @@ export function JobListingResults({
                       {listing.title}
                     </span>
                     <Badge className="shrink-0" tone="neutral">
-                      {listing.platform}
+                      {humanizePlatform(listing.platform)}
                     </Badge>
                   </span>
                   <span className="mt-1 flex items-center justify-between gap-3">
@@ -121,7 +122,7 @@ export function JobListingResults({
                       target="_blank"
                     >
                       <ExternalLink aria-hidden="true" className="size-4" />
-                      View on {listing.platform}
+                      View on {humanizePlatform(listing.platform)}
                     </a>
                   )}
                 </div>

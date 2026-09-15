@@ -3,12 +3,8 @@ import type { JobCatalogListing } from "../api/types";
 /**
  * Client-side narrowing for the job search results list.
  *
- * The shared catalog only indexes free text, a `remote` flag, and a location
- * string — there is no seniority field and no work-model enum on a listing. So
- * seniority is read out of the title the way a reader would ("Senior Platform
- * Engineer" is senior), and work model is derived from the flag plus the words
- * the board actually used. Anything inferred here is used only to filter what
- * is already on screen; nothing inferred is ever written to the career record.
+ * Keyword and location are sent to the catalog browse API; seniority and work
+ * model are derived from listing text for the rows already loaded.
  */
 
 export type SeniorityFilter =
@@ -100,8 +96,9 @@ export function listingMatchesFilters(
   if (filters.workModel && listingWorkModel(listing) !== filters.workModel) {
     return false;
   }
-  if (filters.location && (listing.location ?? "") !== filters.location) {
-    return false;
+  if (filters.location) {
+    const needle = filters.location.trim().toLowerCase();
+    if (!(listing.location ?? "").toLowerCase().includes(needle)) return false;
   }
   const keyword = filters.keyword.trim().toLowerCase();
   if (!keyword) return true;
@@ -125,6 +122,14 @@ export function filterOptionsFrom(listings: readonly JobCatalogListing[]): {
     locations: [...locations].sort((a, b) => a.localeCompare(b)),
     platforms: [...platforms].sort((a, b) => a.localeCompare(b)),
   };
+}
+
+export function humanizePlatform(platform: string): string {
+  if (platform === "linkedin") return "LinkedIn";
+  return platform
+    .split(/[-_]/)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 export function hasActiveFilters(filters: JobSearchFilters): boolean {

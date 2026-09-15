@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 from io import BytesIO
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 from uuid import uuid4
@@ -43,6 +44,11 @@ from rezumi.modules.job_match.infrastructure.job_catalog.registry import (
 )
 from rezumi.modules.job_match.infrastructure.job_catalog.remoteok_connector import (
     RemoteOkCatalogConnector,
+)
+from rezumi.modules.job_match.infrastructure.job_catalog.linkedin_scraped import (
+    PLATFORM,
+    listing_from_scraped_record,
+    load_scraped_jobs,
 )
 from rezumi.modules.job_match.infrastructure.job_catalog.remotive_connector import (
     RemotiveCatalogConnector,
@@ -89,21 +95,37 @@ class _MemoryJobCatalogStore:
         self.documents[(listing.platform, listing.external_id)] = listing
 
     async def search(
-        self, *, keywords: tuple[str, ...], limit: int, offset: int = 0
+        self,
+        *,
+        keywords: tuple[str, ...],
+        limit: int,
+        offset: int = 0,
+        platform: str | None = None,
     ) -> tuple[CatalogJobListing, ...]:
-        matches = self._matches(keywords)
+        matches = self._matches(keywords, platform=platform)
         return tuple(matches[offset : offset + limit])
 
-    async def count(self, *, keywords: tuple[str, ...]) -> int:
-        return len(self._matches(keywords))
+    async def count(self, *, keywords: tuple[str, ...], platform: str | None = None) -> int:
+        return len(self._matches(keywords, platform=platform))
 
-    def _matches(self, keywords: tuple[str, ...]) -> tuple[CatalogJobListing, ...]:
+    def _matches(
+        self, keywords: tuple[str, ...], *, platform: str | None = None
+    ) -> tuple[CatalogJobListing, ...]:
         listings = tuple(self.documents.values())
+        if platform:
+            listings = tuple(listing for listing in listings if listing.platform == platform)
         if not keywords:
             return listings
         lowered = {word.casefold() for word in keywords}
         return tuple(
-            listing for listing in listings if lowered & set(listing.title.casefold().split())
+            listing
+            for listing in listings
+            if lowered
+            & {
+                *listing.title.casefold().split(),
+                *(listing.company or "").casefold().split(),
+                *(listing.location or "").casefold().split(),
+            }
         )
 
     async def get_listing(self, platform: str, external_id: str) -> CatalogJobListing | None:
@@ -534,6 +556,62 @@ async def test_query_service_browse_paginates_with_has_more() -> None:
     assert second_page.has_more is False
     assert second_page.next_offset == 3
     assert second_page.total_count == 3
+
+
+@pytest.mark.asyncio
+async def test_query_service_browse_filters_by_platform() -> None:
+    store = _MemoryJobCatalogStore()
+    for platform, external_id, title in (
+        ("linkedin", "1", "Platform Engineer"),
+        ("remotive", "2", "Platform Engineer"),
+    ):
+        await store.upsert_listing(
+            CatalogJobListing(
+                platform=platform,
+                external_id=external_id,
+                title=title,
+                company="Fixture Co",
+                location=None,
+                remote=True,
+                application_url="https://example.com/jobs/1",
+                source_text="Build platforms.",
+                posted_at=None,
+            ),
+            fetched_at=NOW,
+        )
+
+    class _EmptyTargetRoles:
+        async def target_role_titles(self, owner_user_id):
+            _ = owner_user_id
+            return ()
+
+    query = JobCatalogQueryService(store=store, target_roles=_EmptyTargetRoles())
+    result = await query.browse(query="", limit=10, offset=0, platform="linkedin")
+
+    assert len(result.listings) == 1
+    assert result.listings[0].platform == "linkedin"
+    assert result.total_count == 1
+
+
+def test_linkedin_scraped_mapper_loads_and_maps_records() -> None:
+    fixture = (
+        Path(__file__).resolve().parents[1] / "fixtures" / "scraped_linkedin_jobs_sample.json"
+    )
+    records = load_scraped_jobs(fixture)
+    assert len(records) == 2
+
+    onsite = listing_from_scraped_record(records[0])
+    assert onsite is not None
+    assert onsite.platform == PLATFORM
+    assert onsite.external_id == "4408961698"
+    assert onsite.company == "Ross Stores, Inc."
+    assert onsite.location == "Baton Rouge, LA"
+    assert onsite.remote is None
+    assert "Retail" in onsite.source_text
+
+    remote = listing_from_scraped_record(records[1])
+    assert remote is not None
+    assert remote.remote is True
 
 
 # --- Target-role provider -------------------------------------------------------------

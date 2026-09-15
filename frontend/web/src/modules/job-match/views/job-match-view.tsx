@@ -42,6 +42,7 @@ import {
   emptyJobSearchFilters,
   filterOptionsFrom,
   hasActiveFilters,
+  humanizePlatform,
   listingMatchesFilters,
   type JobSearchFilters,
 } from "../components/job-search-filters";
@@ -97,16 +98,29 @@ const tailoringEfforts: Array<{ label: string; value: TailoringEffort }> = [
 
 const CATALOG_PAGE_SIZE = 50;
 
-function catalogSearchQuery(
+function buildCatalogBrowseParams(
   filters: JobSearchFilters,
   selectedRoleTitles: readonly string[] | undefined,
   suggestedRoleTitles: readonly string[] | undefined,
-): string {
+): { platform?: string; q?: string } {
   const keyword = filters.keyword.trim();
-  if (keyword) return keyword;
+  const location = filters.location.trim();
+  const searchParts = [keyword, location].filter(Boolean);
+  if (searchParts.length > 0) {
+    return {
+      q: searchParts.join(" "),
+      ...(filters.platform ? { platform: filters.platform } : {}),
+    };
+  }
+  if (filters.platform) {
+    return { platform: filters.platform };
+  }
   const selected = selectedRoleTitles ?? [];
-  if (selected.length > 0) return selected.join(" ").trim();
-  return (suggestedRoleTitles ?? []).join(" ").trim();
+  if (selected.length > 0) {
+    return { q: selected.join(" ").trim() };
+  }
+  const suggested = (suggestedRoleTitles ?? []).join(" ").trim();
+  return suggested ? { q: suggested } : {};
 }
 
 function humanize(value: string): string {
@@ -212,9 +226,9 @@ export function JobMatchView({
     queueMicrotask(() => void loadSuggestions());
   }, [load, loadSuggestions]);
 
-  const catalogQuery = useMemo(
+  const catalogBrowseParams = useMemo(
     () =>
-      catalogSearchQuery(
+      buildCatalogBrowseParams(
         appliedFilters,
         suggestions?.selectedRoleTitles,
         suggestions?.suggestedRoleTitles,
@@ -235,7 +249,7 @@ export function JobMatchView({
       void browseJobCatalog({
         limit: CATALOG_PAGE_SIZE,
         offset: 0,
-        ...(catalogQuery ? { q: catalogQuery } : {}),
+        ...catalogBrowseParams,
       })
         .then((page) => {
           if (cancelled) return;
@@ -259,15 +273,18 @@ export function JobMatchView({
     return () => {
       cancelled = true;
     };
-  }, [catalogEpoch, catalogQuery, suggestionsLoaded]);
+  }, [catalogBrowseParams, catalogEpoch, suggestionsLoaded]);
 
-  const serverSearched = appliedFilters.keyword.trim().length > 0;
+  const serverSearched =
+    appliedFilters.keyword.trim().length > 0 ||
+    appliedFilters.location.trim().length > 0 ||
+    appliedFilters.platform.trim().length > 0;
   const sourceListings = catalogListings;
-  // The catalog keyword is answered by the server, so re-testing it in the
-  // browser would drop listings matched on their body text rather than title.
   const clientFilters = useMemo(
     () =>
-      serverSearched ? { ...appliedFilters, keyword: "" } : appliedFilters,
+      serverSearched
+        ? { ...appliedFilters, keyword: "", location: "", platform: "" }
+        : appliedFilters,
     [appliedFilters, serverSearched],
   );
   const visibleListings = useMemo(
@@ -332,7 +349,7 @@ export function JobMatchView({
       const page = await browseJobCatalog({
         limit: CATALOG_PAGE_SIZE,
         offset: catalogNextOffset,
-        ...(catalogQuery ? { q: catalogQuery } : {}),
+        ...catalogBrowseParams,
       });
       setCatalogListings((current) => {
         const seen = new Set(current.map(listingKey));
@@ -598,8 +615,14 @@ export function JobMatchView({
 
   const selectedRoles = suggestions?.selectedRoleTitles ?? [];
   const suggestedRoles = suggestions?.suggestedRoleTitles ?? [];
-  const resultsDescription = serverSearched
-    ? `Matching “${appliedFilters.keyword.trim()}” across every published job board.`
+  const searchTerms = [
+    appliedFilters.keyword.trim(),
+    appliedFilters.location.trim(),
+  ].filter(Boolean);
+  const resultsDescription = searchTerms.length > 0
+    ? `Matching “${searchTerms.join(" ")}” across the job catalog.`
+    : appliedFilters.platform
+      ? `Showing ${humanizePlatform(appliedFilters.platform)} listings from the job catalog.`
     : selectedRoles.length > 0
       ? `Matched toward ${selectedRoles.join(", ")} from published job boards.`
       : suggestedRoles.length > 0

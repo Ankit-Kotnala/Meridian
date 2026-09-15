@@ -6,6 +6,7 @@ import type { FormEvent } from "react";
 import { Button, Card, Select } from "@rezumi/ui";
 
 import {
+  humanizePlatform,
   seniorityOptions,
   workModelOptions,
   type JobSearchFilters,
@@ -77,7 +78,7 @@ export function JobFiltersPanel({
               <option value="">Any source</option>
               {platforms.map((platform) => (
                 <option key={platform} value={platform}>
-                  {platform}
+                  {humanizePlatform(platform)}
                 </option>
               ))}
             </Select>

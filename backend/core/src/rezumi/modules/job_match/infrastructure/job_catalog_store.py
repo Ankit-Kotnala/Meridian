@@ -6,7 +6,7 @@ import asyncio
 from datetime import UTC, datetime
 from typing import Any
 
-from pymongo import ASCENDING, TEXT, MongoClient
+from pymongo import ASCENDING, TEXT, MongoClient, UpdateOne
 from pymongo.collection import Collection
 from pymongo.errors import PyMongoError
 
@@ -28,13 +28,18 @@ class DisabledJobCatalogStore:
         return None
 
     async def search(
-        self, *, keywords: tuple[str, ...], limit: int, offset: int = 0
+        self,
+        *,
+        keywords: tuple[str, ...],
+        limit: int,
+        offset: int = 0,
+        platform: str | None = None,
     ) -> tuple[CatalogJobListing, ...]:
-        del keywords, limit, offset
+        del keywords, limit, offset, platform
         return ()
 
-    async def count(self, *, keywords: tuple[str, ...]) -> int:
-        del keywords
+    async def count(self, *, keywords: tuple[str, ...], platform: str | None = None) -> int:
+        del keywords, platform
         return 0
 
     async def get_listing(self, platform: str, external_id: str) -> CatalogJobListing | None:
@@ -60,8 +65,13 @@ class MongoJobCatalogStore:
     @staticmethod
     def _ensure_indexes(collection: Collection[Any]) -> None:
         collection.create_index([("platform", ASCENDING), ("externalId", ASCENDING)], unique=True)
+        collection.create_index([("platform", ASCENDING), ("postedAt", ASCENDING)])
+        try:
+            collection.drop_index("job_catalog_text_search")
+        except PyMongoError:
+            pass
         collection.create_index(
-            [("title", TEXT), ("company", TEXT), ("sourceText", TEXT)],
+            [("title", TEXT), ("company", TEXT), ("location", TEXT), ("sourceText", TEXT)],
             name="job_catalog_text_search",
         )
 
@@ -69,37 +79,59 @@ class MongoJobCatalogStore:
         await self._run(self._client.admin.command, "ping")
 
     async def upsert_listing(self, listing: CatalogJobListing, *, fetched_at: datetime) -> None:
-        document = {
-            "platform": listing.platform,
-            "externalId": listing.external_id,
-            "title": listing.title,
-            "company": listing.company,
-            "location": listing.location,
-            "remote": listing.remote,
-            "applicationUrl": listing.application_url,
-            "sourceText": listing.source_text,
-            "postedAt": listing.posted_at,
-            "fetchedAt": fetched_at,
-        }
         await self._run(
             self._collection.update_one,
             {"platform": listing.platform, "externalId": listing.external_id},
             {
-                "$set": document,
+                "$set": _listing_document(listing, fetched_at=fetched_at),
                 "$setOnInsert": {"createdAt": fetched_at},
             },
             upsert=True,
         )
 
+    async def bulk_upsert_listings(
+        self,
+        listings: tuple[CatalogJobListing, ...],
+        *,
+        fetched_at: datetime,
+    ) -> int:
+        if not listings:
+            return 0
+        operations = [
+            UpdateOne(
+                {"platform": listing.platform, "externalId": listing.external_id},
+                {
+                    "$set": _listing_document(listing, fetched_at=fetched_at),
+                    "$setOnInsert": {"createdAt": fetched_at},
+                },
+                upsert=True,
+            )
+            for listing in listings
+        ]
+        result = await self._run(
+            self._collection.bulk_write,
+            operations,
+            ordered=False,
+        )
+        return int(result.upserted_count + result.modified_count)
+
     async def search(
-        self, *, keywords: tuple[str, ...], limit: int, offset: int = 0
+        self,
+        *,
+        keywords: tuple[str, ...],
+        limit: int,
+        offset: int = 0,
+        platform: str | None = None,
     ) -> tuple[CatalogJobListing, ...]:
         bounded_limit = max(1, min(limit, _MAX_SEARCH_LIMIT))
         bounded_offset = max(0, offset)
+        filter_document = _search_filter(keywords, platform=platform)
+        if filter_document is None:
+            return ()
         if not keywords:
             cursor = (
-                self._collection.find({})
-                .sort("fetchedAt", -1)
+                self._collection.find(filter_document)
+                .sort([("postedAt", -1), ("fetchedAt", -1)])
                 .skip(bounded_offset)
                 .limit(bounded_limit)
             )
@@ -109,16 +141,16 @@ class MongoJobCatalogStore:
             if not search_text:
                 return ()
             cursor = (
-                self._collection.find({"$text": {"$search": search_text}})
-                .sort([("score", {"$meta": "textScore"})])
+                self._collection.find(filter_document)
+                .sort([("score", {"$meta": "textScore"}), ("postedAt", -1)])
                 .skip(bounded_offset)
                 .limit(bounded_limit)
             )
             documents = await self._run(list, cursor)
         return tuple(_listing(document) for document in documents)
 
-    async def count(self, *, keywords: tuple[str, ...]) -> int:
-        filter_document = _search_filter(keywords)
+    async def count(self, *, keywords: tuple[str, ...], platform: str | None = None) -> int:
+        filter_document = _search_filter(keywords, platform=platform)
         if filter_document is None:
             return 0
         counted = await self._run(self._collection.count_documents, filter_document)
@@ -140,13 +172,37 @@ class MongoJobCatalogStore:
             raise JobMatchUnavailable from exc
 
 
-def _search_filter(keywords: tuple[str, ...]) -> dict[str, Any] | None:
-    if not keywords:
+def _listing_document(listing: CatalogJobListing, *, fetched_at: datetime) -> dict[str, Any]:
+    return {
+        "platform": listing.platform,
+        "externalId": listing.external_id,
+        "title": listing.title,
+        "company": listing.company,
+        "location": listing.location,
+        "remote": listing.remote,
+        "applicationUrl": listing.application_url,
+        "sourceText": listing.source_text,
+        "postedAt": listing.posted_at,
+        "fetchedAt": fetched_at,
+    }
+
+
+def _search_filter(
+    keywords: tuple[str, ...], *, platform: str | None = None
+) -> dict[str, Any] | None:
+    clauses: list[dict[str, Any]] = []
+    if platform:
+        clauses.append({"platform": platform.strip()})
+    if keywords:
+        search_text = " ".join(keyword.strip() for keyword in keywords if keyword.strip())
+        if not search_text:
+            return None
+        clauses.append({"$text": {"$search": search_text}})
+    if not clauses:
         return {}
-    search_text = " ".join(keyword.strip() for keyword in keywords if keyword.strip())
-    if not search_text:
-        return None
-    return {"$text": {"$search": search_text}}
+    if len(clauses) == 1:
+        return clauses[0]
+    return {"$and": clauses}
 
 
 def _listing(document: dict[str, Any]) -> CatalogJobListing:
