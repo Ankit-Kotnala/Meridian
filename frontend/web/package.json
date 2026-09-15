@@ -22,7 +22,7 @@
     "@swc/helpers": "0.5.23",
     "lucide-react": "1.31.0",
     "motion": "12.43.0",
-    "next": "16.3.1",
+    "next": "16.3.5",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
@@ -37,12 +37,12 @@
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
     "eslint": "9.39.1",
-    "eslint-config-next": "16.3.1",
+    "eslint-config-next": "16.3.5",
     "jsdom": "30.0.1",
     "prettier": "3.9.6",
     "tailwindcss": "4.3.3",
     "typescript": "7.0.2",
-    "vitest": "4.1.10"
+    "vitest": "4.1.11"
   },
   "engines": {
     "node": ">=24.0.0"
