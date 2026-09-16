@@ -1,6 +1,12 @@
 "use client";
 
-import { Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import {
+  Bookmark,
+  BookmarkCheck,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+} from "lucide-react";
 
 import { Badge, Button, Card, EmptyState, cn } from "@rezumi/ui";
 
@@ -42,7 +48,9 @@ export function JobListingResults({
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const rangeStart = totalCount === 0 ? 0 : page * pageSize + 1;
   const rangeEnd =
-    totalCount === 0 ? 0 : Math.min(totalCount, page * pageSize + listings.length);
+    totalCount === 0
+      ? 0
+      : Math.min(totalCount, page * pageSize + listings.length);
   const canGoPrevious = page > 0;
   const canGoNext = page + 1 < totalPages;
 

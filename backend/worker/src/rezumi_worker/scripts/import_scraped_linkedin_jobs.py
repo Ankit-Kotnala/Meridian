@@ -21,6 +21,7 @@ from rezumi.modules.job_match.infrastructure.job_catalog.linkedin_scraped import
     load_scraped_jobs,
 )
 from rezumi.modules.job_match.infrastructure.job_catalog_store import MongoJobCatalogStore
+
 from rezumi_worker.config import get_settings
 
 
