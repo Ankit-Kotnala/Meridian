@@ -136,7 +136,7 @@ export function ResumeBuilderView() {
   }, [applyListedResumes]);
 
   useEffect(() => {
-    void load();
+    queueMicrotask(() => void load());
   }, [load]);
 
   useEffect(

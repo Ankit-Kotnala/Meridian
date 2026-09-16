@@ -1375,6 +1375,48 @@ def _warning_message(code: str) -> str:
     return messages.get(code, "Review this parser warning before reusing the content.")
 
 
+def _safe_error_message(code: str) -> str:
+    messages = {
+        "upload_too_large": "The uploaded file exceeds the maximum allowed file size.",
+        "unsupported_document_type": (
+            "The document format is not supported. Please upload a PDF or DOCX file."
+        ),
+        "document_signature_mismatch": (
+            "The file header does not match its expected document type."
+        ),
+        "polyglot_document_rejected": (
+            "The file contains conflicting document formats and was rejected for security."
+        ),
+        "active_content_rejected": (
+            "Documents with embedded scripts or active content are rejected for security."
+        ),
+        "malformed_pdf": "The PDF file is corrupted or could not be read safely.",
+        "encrypted_document": "Password-protected or encrypted documents cannot be processed.",
+        "pdf_page_limit_exceeded": "The document exceeds the maximum page limit.",
+        "extracted_text_limit_exceeded": "The document contains too much text to process safely.",
+        "extracted_block_limit_exceeded": (
+            "The document layout contains too many elements to process safely."
+        ),
+        "extracted_artifact_limit_exceeded": (
+            "The extracted document structure exceeded safety limits."
+        ),
+        "macro_document_rejected": "Word documents with macros are rejected for security.",
+        "embedded_object_rejected": (
+            "Word documents with embedded objects are rejected for security."
+        ),
+        "invalid_docx_package": "The DOCX package structure is invalid.",
+        "malformed_docx": "The Word document is corrupted or could not be read safely.",
+        "semantic_parser_invalid_output": (
+            "The document structure could not be mapped to verified career facts."
+        ),
+        "document_processing_timeout": "Document text extraction timed out.",
+        "malware_detected": "The document failed security scanning.",
+        "malware_scanner_error": "The security scanner encountered an error.",
+        "malware_scanner_unavailable": "Security scanner is temporarily unavailable.",
+    }
+    return messages.get(code, "Processing could not be completed safely.")
+
+
 def _job_response(view: ProcessingJobView, *, guest: bool) -> ProcessingJobResponse:
     statuses = {
         JobStatus.QUEUED: "queued",
@@ -1409,7 +1451,7 @@ def _job_response(view: ProcessingJobView, *, guest: bool) -> ProcessingJobRespo
         error = JobErrorResponse(
             code=view.safe_error_code,
             retryable=view.retryable,
-            message="Processing could not be completed safely.",
+            message=_safe_error_message(view.safe_error_code),
         )
     return ProcessingJobResponse(
         id=view.id,

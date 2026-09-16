@@ -48,11 +48,17 @@ def extract_pdf_pages(pages: list[PageObject]) -> tuple[list[str], tuple[str, ..
     collected: list[tuple[list[_Line], bool, float, str]] = []
     for page in pages:
         height = _page_height(page)
-        lines, rotated = _lines_from_visitor(page)
-        fallback = (page.extract_text() or "").replace("\x00", "")
+        try:
+            lines, rotated = _lines_from_visitor(page)
+        except Exception:
+            lines, rotated = [], True
+        try:
+            fallback = (page.extract_text() or "").replace("\x00", "")
+        except Exception:
+            fallback = ""
         try:
             layout_text = page.extract_text(extraction_mode="layout") or ""
-        except (TypeError, ValueError):
+        except Exception:
             layout_text = ""
         if _visitor_too_sparse(lines, fallback) or rotated:
             collected.append((_fallback_lines(fallback), False, height, layout_text))
@@ -129,7 +135,7 @@ def _lines_from_visitor(page: PageObject) -> tuple[list[_Line], bool]:
 
     try:
         page.extract_text(visitor_text=visitor)
-    except (TypeError, ValueError):
+    except Exception:
         return [], True
     return _cluster_lines(runs), rotated
 

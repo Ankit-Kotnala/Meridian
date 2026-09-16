@@ -75,7 +75,7 @@ async def _import_file(path: Path, *, batch_size: int, dry_run: bool) -> int:
     store = MongoJobCatalogStore(
         MongoOptions(
             url=settings.mongodb_url,
-            database_name=settings.mongodb_database,
+            database_name=settings.mongodb_database_name,
             collection_name=settings.mongodb_job_catalog_collection,
         )
     )
