@@ -60,8 +60,7 @@ async def _import_file(path: Path, *, batch_size: int, dry_run: bool) -> int:
         mapped.append(listing)
 
     print(
-        f"Mapped {len(mapped)} {PLATFORM} listings "
-        f"({rejected} rejected as incomplete or invalid)."
+        f"Mapped {len(mapped)} {PLATFORM} listings ({rejected} rejected as incomplete or invalid)."
     )
     if dry_run:
         print("Dry run complete — no database writes performed.")
@@ -100,9 +99,7 @@ def main() -> int:
     if not args.file.is_file():
         print(f"File not found: {args.file}", file=sys.stderr)
         return 1
-    return asyncio.run(
-        _import_file(args.file, batch_size=args.batch_size, dry_run=args.dry_run)
-    )
+    return asyncio.run(_import_file(args.file, batch_size=args.batch_size, dry_run=args.dry_run))
 
 
 if __name__ == "__main__":

@@ -134,9 +134,7 @@ class JobCatalogQueryService:
             offset=bounded_offset,
             platform=normalized_platform,
         )
-        total_count = await self._store.count(
-            keywords=keywords, platform=normalized_platform
-        )
+        total_count = await self._store.count(keywords=keywords, platform=normalized_platform)
         has_more = len(listings) > bounded_limit
         page = listings[:bounded_limit]
         return JobCatalogBrowseResult(

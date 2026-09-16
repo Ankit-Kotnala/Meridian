@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark, BookmarkCheck, ExternalLink } from "lucide-react";
+import { Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 
 import { Badge, Button, Card, EmptyState, cn } from "@rezumi/ui";
 
@@ -12,31 +12,39 @@ import { listingKey } from "./job-selection";
 /** Middle column of the job search: the result list itself. */
 export function JobListingResults({
   description,
-  hasMore,
   listings,
-  loadingMore,
-  onLoadMore,
+  onNextPage,
   onOpen,
+  onPreviousPage,
   onSave,
+  page,
+  pageBusy,
+  pageSize,
   savedKeys,
   savingKey,
   selectedKey,
   totalCount,
 }: {
   description: string;
-  hasMore: boolean;
   listings: readonly JobCatalogListing[];
-  loadingMore: boolean;
-  onLoadMore: () => void;
+  onNextPage: () => void;
   onOpen: (listing: JobCatalogListing) => void;
+  onPreviousPage: () => void;
   onSave: (listing: JobCatalogListing) => void;
+  page: number;
+  pageBusy: boolean;
+  pageSize: number;
   savedKeys: ReadonlySet<string>;
   savingKey: string | undefined;
   selectedKey: string | undefined;
   totalCount: number;
 }) {
-  const rangeEnd = listings.length;
-  const shownTotal = Math.max(totalCount, rangeEnd);
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const rangeStart = totalCount === 0 ? 0 : page * pageSize + 1;
+  const rangeEnd =
+    totalCount === 0 ? 0 : Math.min(totalCount, page * pageSize + listings.length);
+  const canGoPrevious = page > 0;
+  const canGoNext = page + 1 < totalPages;
 
   return (
     <Card as="section" aria-labelledby="job-results-heading">
@@ -133,21 +141,39 @@ export function JobListingResults({
       )}
 
       <div className="border-t border-line px-5 py-3">
-        <p className="text-xs text-muted">
-          {listings.length === 0
-            ? "Showing 0 jobs"
-            : `Showing 1–${rangeEnd} of ${shownTotal} job${
-                shownTotal === 1 ? "" : "s"
-              }`}
-        </p>
-        {hasMore ? (
-          <div className="mt-3 flex justify-center">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs text-muted">
+            {totalCount === 0
+              ? "Showing 0 jobs"
+              : `Showing ${rangeStart}–${rangeEnd} of ${totalCount} job${
+                  totalCount === 1 ? "" : "s"
+                }`}
+          </p>
+          {totalCount > 0 ? (
+            <p className="text-xs text-muted">
+              Page {page + 1} of {totalPages}
+            </p>
+          ) : null}
+        </div>
+        {totalCount > pageSize ? (
+          <div className="mt-3 flex items-center justify-center gap-2">
             <Button
-              loading={loadingMore}
-              onClick={onLoadMore}
+              disabled={!canGoPrevious || pageBusy}
+              loading={pageBusy && canGoPrevious}
+              onClick={onPreviousPage}
               variant="secondary"
             >
-              Load more jobs
+              <ChevronLeft aria-hidden="true" className="size-4" />
+              Previous
+            </Button>
+            <Button
+              disabled={!canGoNext || pageBusy}
+              loading={pageBusy && canGoNext}
+              onClick={onNextPage}
+              variant="secondary"
+            >
+              Next
+              <ChevronRight aria-hidden="true" className="size-4" />
             </Button>
           </div>
         ) : null}

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import re
 from datetime import UTC, datetime
 from typing import Any
 
@@ -127,25 +128,13 @@ class MongoJobCatalogStore:
         filter_document = _search_filter(keywords, platform=platform)
         if filter_document is None:
             return ()
-        if not keywords:
-            cursor = (
-                self._collection.find(filter_document)
-                .sort([("postedAt", -1), ("fetchedAt", -1)])
-                .skip(bounded_offset)
-                .limit(bounded_limit)
-            )
-            documents = await self._run(list, cursor)
-        else:
-            search_text = " ".join(keyword.strip() for keyword in keywords if keyword.strip())
-            if not search_text:
-                return ()
-            cursor = (
-                self._collection.find(filter_document)
-                .sort([("score", {"$meta": "textScore"}), ("postedAt", -1)])
-                .skip(bounded_offset)
-                .limit(bounded_limit)
-            )
-            documents = await self._run(list, cursor)
+        cursor = (
+            self._collection.find(filter_document)
+            .sort([("postedAt", -1), ("fetchedAt", -1)])
+            .skip(bounded_offset)
+            .limit(bounded_limit)
+        )
+        documents = await self._run(list, cursor)
         return tuple(_listing(document) for document in documents)
 
     async def count(self, *, keywords: tuple[str, ...], platform: str | None = None) -> int:
@@ -189,14 +178,29 @@ def _listing_document(listing: CatalogJobListing, *, fetched_at: datetime) -> di
 def _search_filter(
     keywords: tuple[str, ...], *, platform: str | None = None
 ) -> dict[str, Any] | None:
+    """Build a catalog filter.
+
+    Multi-word browse queries require every term to match somewhere in the
+    listing (title, company, location, or body preview). MongoDB ``$text``
+    treats whitespace-separated terms as OR, which is too broad for job
+    title searches such as "AI Engineer".
+    """
     clauses: list[dict[str, Any]] = []
     if platform:
         clauses.append({"platform": platform.strip()})
-    if keywords:
-        search_text = " ".join(keyword.strip() for keyword in keywords if keyword.strip())
-        if not search_text:
-            return None
-        clauses.append({"$text": {"$search": search_text}})
+    terms = tuple(keyword.strip() for keyword in keywords if keyword.strip())
+    for term in terms:
+        pattern = re.escape(term)
+        clauses.append(
+            {
+                "$or": [
+                    {"title": {"$regex": pattern, "$options": "i"}},
+                    {"company": {"$regex": pattern, "$options": "i"}},
+                    {"location": {"$regex": pattern, "$options": "i"}},
+                    {"sourceText": {"$regex": pattern, "$options": "i"}},
+                ]
+            }
+        )
     if not clauses:
         return {}
     if len(clauses) == 1:
