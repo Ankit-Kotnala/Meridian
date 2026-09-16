@@ -43,9 +43,7 @@ export async function createSavedJobThroughApi(
 
 export async function analyzeFirstSavedJob(page: Page): Promise<void> {
   await page.goto("/job-match/saved");
-  await expect(
-    page.getByRole("heading", { name: "Saved jobs" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Saved jobs" })).toBeVisible();
   await page.getByRole("button", { name: "Analyze match" }).click();
   await expect(
     page.getByRole("table", {

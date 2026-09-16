@@ -132,7 +132,9 @@ function AccountMenu({
                 {label}
               </Link>
             ))}
-            <div className="mt-1 border-t border-line pt-1">{accountActions}</div>
+            <div className="mt-1 border-t border-line pt-1">
+              {accountActions}
+            </div>
           </div>
         </div>
       )}

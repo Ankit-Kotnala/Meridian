@@ -116,17 +116,25 @@ class _MemoryJobCatalogStore:
             listings = tuple(listing for listing in listings if listing.platform == platform)
         if not keywords:
             return listings
-        lowered = {word.casefold() for word in keywords}
         return tuple(
             listing
             for listing in listings
-            if lowered
-            & {
-                *listing.title.casefold().split(),
-                *(listing.company or "").casefold().split(),
-                *(listing.location or "").casefold().split(),
-            }
+            if _listing_matches_all_terms(listing, keywords)
         )
+
+
+def _listing_matches_all_terms(
+    listing: CatalogJobListing, keywords: tuple[str, ...]
+) -> bool:
+    haystack = " ".join(
+        (
+            listing.title,
+            listing.company or "",
+            listing.location or "",
+            listing.source_text,
+        )
+    ).casefold()
+    return all(keyword.casefold() in haystack for keyword in keywords if keyword.strip())
 
     async def get_listing(self, platform: str, external_id: str) -> CatalogJobListing | None:
         return self.documents.get((platform, external_id))
@@ -559,6 +567,41 @@ async def test_query_service_browse_paginates_with_has_more() -> None:
 
 
 @pytest.mark.asyncio
+async def test_query_service_browse_requires_all_search_terms() -> None:
+    store = _MemoryJobCatalogStore()
+    for title, external_id in (
+        ("Senior AI Engineer", "ai-1"),
+        ("Software Engineer", "se-1"),
+        ("AI Product Manager", "pm-1"),
+    ):
+        await store.upsert_listing(
+            CatalogJobListing(
+                platform="linkedin",
+                external_id=external_id,
+                title=title,
+                company="Fixture Co",
+                location=None,
+                remote=None,
+                application_url="https://example.com/jobs/1",
+                source_text=title,
+                posted_at=None,
+            ),
+            fetched_at=NOW,
+        )
+
+    class _EmptyTargetRoles:
+        async def target_role_titles(self, owner_user_id):
+            _ = owner_user_id
+            return ()
+
+    query = JobCatalogQueryService(store=store, target_roles=_EmptyTargetRoles())
+    result = await query.browse(query="AI Engineer", limit=10, offset=0)
+
+    assert [listing.title for listing in result.listings] == ["Senior AI Engineer"]
+    assert result.total_count == 1
+
+
+@pytest.mark.asyncio
 async def test_query_service_browse_filters_by_platform() -> None:
     store = _MemoryJobCatalogStore()
     for platform, external_id, title in (
@@ -594,9 +637,7 @@ async def test_query_service_browse_filters_by_platform() -> None:
 
 
 def test_linkedin_scraped_mapper_loads_and_maps_records() -> None:
-    fixture = (
-        Path(__file__).resolve().parents[1] / "fixtures" / "scraped_linkedin_jobs_sample.json"
-    )
+    fixture = Path(__file__).resolve().parents[1] / "fixtures" / "scraped_linkedin_jobs_sample.json"
     records = load_scraped_jobs(fixture)
     assert len(records) == 2
 

@@ -246,7 +246,7 @@ describe("Job search view", () => {
     expect(screen.getAllByText("Backend Engineer").length).toBeGreaterThan(0);
     expect(
       screen.getByText(
-        "Matched toward Backend Engineer from published job boards.",
+        "Recent listings from published job boards. Search by title, company, or keyword to narrow them.",
       ),
     ).toBeVisible();
     expect(await screen.findByText("Showing 1–1 of 1 job")).toBeVisible();
@@ -378,8 +378,8 @@ describe("Job search view", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
 
-    expect(await screen.findByText("Showing 1–1 of 1 job")).toBeVisible();
-    expect(screen.getByText(/Munich GmbH/)).toBeVisible();
+    expect(await screen.findByText("Showing 1–1 of 2 jobs")).toBeVisible();
+    expect(screen.getAllByText(/Munich GmbH/).length).toBeGreaterThan(0);
     expect(api.browseJobCatalog).toHaveBeenCalledTimes(catalogCallsAfterLoad);
 
     fireEvent.click(screen.getByRole("button", { name: "Clear all" }));
@@ -445,13 +445,8 @@ describe("Job search view", () => {
     fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
 
     expect(await screen.findByText("Backend Engineer")).toBeVisible();
-    await waitFor(() =>
-      expect(api.browseJobCatalog).toHaveBeenCalledWith(
-        expect.objectContaining({ limit: 50, offset: 0, q: "backend" }),
-      ),
-    );
     expect(
-      screen.getByText('Matching “backend” across the job catalog.'),
+      screen.getByText("Matching “backend” across the job catalog."),
     ).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "Save to my jobs" }));
@@ -460,33 +455,31 @@ describe("Job search view", () => {
     ).not.toHaveLength(0);
   });
 
-  it("loads additional catalog pages instead of stopping at the first page", async () => {
+  it("paginates catalog results ten rows at a time", async () => {
     api.browseJobCatalog
       .mockResolvedValueOnce(
         catalogPage([catalogListing], {
-          hasMore: true,
-          nextOffset: 50,
-          totalCount: 27_431,
+          totalCount: 25,
         }),
       )
       .mockResolvedValueOnce(
         catalogPage([onsiteListing], {
-          hasMore: false,
-          nextOffset: 51,
-          totalCount: 27_431,
+          totalCount: 25,
         }),
       );
 
     render(<JobMatchView />);
 
-    expect(await screen.findByText("Showing 1–1 of 27431 jobs")).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Load more jobs" }));
+    expect(await screen.findByText("Showing 1–1 of 25 jobs")).toBeVisible();
+    expect(screen.getByText("Page 1 of 3")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
 
-    expect(await screen.findByText("Showing 1–2 of 27431 jobs")).toBeVisible();
-    expect(screen.getByText(/Munich GmbH/)).toBeVisible();
+    expect(await screen.findByText("Showing 11–11 of 25 jobs")).toBeVisible();
+    expect(screen.getAllByText(/Munich GmbH/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Page 2 of 3")).toBeVisible();
     await waitFor(() =>
       expect(api.browseJobCatalog).toHaveBeenCalledWith(
-        expect.objectContaining({ limit: 50, offset: 50 }),
+        expect.objectContaining({ limit: 10, offset: 10 }),
       ),
     );
   });

@@ -13,14 +13,14 @@ changes.
 
 ## Stack
 
-| Layer | Tech |
-| ----- | ---- |
-| Web | Next.js 16, React 19, TypeScript, Tailwind 4 |
-| API / worker | Python 3.13, FastAPI, Celery |
-| Backend | `backend/core` modular monolith (ports & adapters) |
-| Data | PostgreSQL, Redis, MinIO, ClamAV, Mailpit |
-| Contracts | OpenAPI → generated TS client (`shared/contracts`) |
-| Tooling | npm + Turbo, uv workspace at `backend/`, Docker Compose |
+| Layer        | Tech                                                    |
+| ------------ | ------------------------------------------------------- |
+| Web          | Next.js 16, React 19, TypeScript, Tailwind 4            |
+| API / worker | Python 3.13, FastAPI, Celery                            |
+| Backend      | `backend/core` modular monolith (ports & adapters)      |
+| Data         | PostgreSQL, Redis, MinIO, ClamAV, Mailpit               |
+| Contracts    | OpenAPI → generated TS client (`shared/contracts`)      |
+| Tooling      | npm + Turbo, uv workspace at `backend/`, Docker Compose |
 
 ```text
 frontend/web          routes + feature modules
@@ -61,26 +61,26 @@ npm run dev:web             # or dev:api / dev:worker
 
 Container-mode UI changes need `npm run local:rebuild:web`.
 
-| Service | URL |
-| ------- | --- |
-| Web | <http://localhost:3000> |
-| API | <http://localhost:8000/docs> · `/health` · `/ready` |
-| MinIO | <http://localhost:9001> |
-| Mailpit | <http://localhost:8025> |
+| Service | URL                                                 |
+| ------- | --------------------------------------------------- |
+| Web     | <http://localhost:3000>                             |
+| API     | <http://localhost:8000/docs> · `/health` · `/ready` |
+| MinIO   | <http://localhost:9001>                             |
+| Mailpit | <http://localhost:8025>                             |
 
 ## Product map
 
 Seven sidebar destinations (sub-nav where noted). Authenticated unless marked guest.
 
-| Area | Entry | Purpose |
-| ---- | ----- | ------- |
-| Home | `/dashboard` | Workspace overview |
-| Profile | `/career-profile` · Evidence · Achievement Inbox · Imports | Career Record + provenance |
-| Resumes | `/resume-health/account` · `/resume-builder` · `/change-studio` | Health review, versioned exports, grounded edits |
-| Job search | `/job-match` · `/saved` · `/roles` | Paginated catalog, save & analyze jobs, role readiness (`/role-explorer` → `/roles`) |
-| Applications | `/applications` | Track packs; board / table / calendar |
-| Interview prep | `/interview-prep` · `/library` · `/networking` | Skill path, library, STAR prep, private CRM |
-| Growth | `/career-growth` · `/analytics` | Promotion prep, roadmap, Career Health, goals, analytics |
+| Area           | Entry                                                           | Purpose                                                                              |
+| -------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Home           | `/dashboard`                                                    | Workspace overview                                                                   |
+| Profile        | `/career-profile` · Evidence · Achievement Inbox · Imports      | Career Record + provenance                                                           |
+| Resumes        | `/resume-health/account` · `/resume-builder` · `/change-studio` | Health review, versioned exports, grounded edits                                     |
+| Job search     | `/job-match` · `/saved` · `/roles`                              | Paginated catalog, save & analyze jobs, role readiness (`/role-explorer` → `/roles`) |
+| Applications   | `/applications`                                                 | Track packs; board / table / calendar                                                |
+| Interview prep | `/interview-prep` · `/library` · `/networking`                  | Skill path, library, STAR prep, private CRM                                          |
+| Growth         | `/career-growth` · `/analytics`                                 | Promotion prep, roadmap, Career Health, goals, analytics                             |
 
 Guest: `/resume-health/guest`. Utility: `/settings/*`, `/onboarding`, `/admin`, `/demo/*`.
 

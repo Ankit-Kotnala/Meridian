@@ -333,8 +333,8 @@ function SkillPathMatrix({
               : "Your evidence vs a target-role path"}
           </h3>
           <p className="mt-1 max-w-3xl text-xs leading-5 text-muted sm:text-sm sm:leading-6">
-            Each skill shows whether eligible Career Record evidence supports it.
-            Expand a gap to see why it matters and a first step.
+            Each skill shows whether eligible Career Record evidence supports
+            it. Expand a gap to see why it matters and a first step.
           </p>
         </div>
         {comparisons.length > 0 && (
@@ -795,16 +795,16 @@ function SkillEvidenceDashboard({
                 <th className="px-3 py-2 font-semibold" scope="row">
                   <span className="block">{skill.name}</span>
                   <span className="text-xs font-normal text-muted">
-                    {skill.category ? humanize(skill.category) : "Uncategorized"}
+                    {skill.category
+                      ? humanize(skill.category)
+                      : "Uncategorized"}
                   </span>
                 </th>
                 <td className="px-3 py-2">
                   {skill.evidenceCount === 0 ? (
                     <Badge tone="warning">Not demonstrated</Badge>
                   ) : (
-                    <Badge tone="success">
-                      {skill.evidenceCount} eligible
-                    </Badge>
+                    <Badge tone="success">{skill.evidenceCount} eligible</Badge>
                   )}
                 </td>
               </tr>

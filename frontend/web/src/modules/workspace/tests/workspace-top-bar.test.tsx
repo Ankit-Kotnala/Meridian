@@ -38,7 +38,9 @@ describe("WorkspaceTopBar account menu", () => {
     );
     expect(screen.getByRole("menu")).toBeVisible();
 
-    fireEvent.pointerDown(screen.getByRole("button", { name: "Outside target" }));
+    fireEvent.pointerDown(
+      screen.getByRole("button", { name: "Outside target" }),
+    );
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 

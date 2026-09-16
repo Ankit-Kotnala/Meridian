@@ -82,9 +82,7 @@ describe("GrowthInsightsPanel", () => {
     ).toHaveTextContent(
       /not an employer decision, hiring probability, promotion guarantee, or assessment of job-market value/i,
     );
-    fireEvent.click(
-      screen.getByText(/View full preparation checklist/i),
-    );
+    fireEvent.click(screen.getByText(/View full preparation checklist/i));
     expect(
       screen.getByRole("table", {
         name: "Promotion preparation checks, evidence state, and next action",
@@ -140,9 +138,7 @@ describe("GrowthInsightsPanel", () => {
     ).toBeVisible();
     expect(screen.getByText("Evidence found")).toBeVisible();
     expect(screen.getByText("Gap on this path")).toBeVisible();
-    fireEvent.click(
-      screen.getByText(/View full preparation checklist/i),
-    );
+    fireEvent.click(screen.getByText(/View full preparation checklist/i));
     expect(
       screen.getByText("Create a promotion-preparation development item."),
     ).toBeVisible();
