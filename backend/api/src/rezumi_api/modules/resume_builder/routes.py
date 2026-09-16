@@ -93,6 +93,22 @@ async def list_resumes(
     return resume_list_response(value)
 
 
+@router.get(
+    "/resumes/source-options",
+    response_model=ResumeSourceOptionsResponse,
+    operation_id="resumeSourceOptionsPreview",
+    responses=_PROBLEMS,
+)
+async def preview_source_options(
+    response: Response,
+    principal: Annotated[AuthenticatedPrincipal, Depends(current_principal)],
+    service: Annotated[ResumeBuilderService, Depends(resume_builder_service)],
+) -> ResumeSourceOptionsResponse:
+    value = await service.preview_source(principal.user_id)
+    _private(response)
+    return source_options_response(value)
+
+
 @router.post(
     "/resumes",
     response_model=ResumeResponse,

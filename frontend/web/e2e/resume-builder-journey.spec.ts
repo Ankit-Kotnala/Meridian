@@ -164,7 +164,7 @@ test("a user builds a grounded resume and verifies a PDF export", async ({
 
     await page.goto("/resume-builder");
     await expect(
-      page.getByRole("heading", { name: "Verified resume exports" }),
+      page.getByRole("heading", { name: "Resume Builder" }),
     ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "No resumes yet" }),

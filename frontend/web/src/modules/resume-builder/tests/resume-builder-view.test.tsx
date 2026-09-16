@@ -1,7 +1,14 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { Resume, ResumeExportRecord, ResumeVersion } from "../api/types";
+import { ApiRequestError } from "@/shared/api/browser-request";
+
+import type {
+  Resume,
+  ResumeExportRecord,
+  ResumeSourceOptions,
+  ResumeVersion,
+} from "../api/types";
 import { ResumeBuilderView } from "../views/resume-builder-view";
 
 const api = vi.hoisted(() => ({
@@ -9,6 +16,7 @@ const api = vi.hoisted(() => ({
   createResume: vi.fn(),
   createVersion: vi.fn(),
   exportVersion: vi.fn(),
+  getSourceOptions: vi.fn(),
   listResumes: vi.fn(),
   listVersions: vi.fn(),
   restoreVersion: vi.fn(),
@@ -72,6 +80,22 @@ const baseResume: Resume = {
   version: 1,
 };
 
+const readySource: ResumeSourceOptions = {
+  bullets: [],
+  headline: "Product systems lead",
+  skills: ["Product discovery"],
+  sourceEvidenceIds: ["00000000-0000-4000-8000-000000000804"],
+  summary: null,
+};
+
+const emptySource: ResumeSourceOptions = {
+  bullets: [],
+  headline: null,
+  skills: [],
+  sourceEvidenceIds: [],
+  summary: null,
+};
+
 const verifiedExport: ResumeExportRecord = {
   export: {
     completedAt: "2026-07-19T12:00:01Z",
@@ -115,6 +139,7 @@ describe("Resume Builder view", () => {
     vi.clearAllMocks();
     api.listResumes.mockResolvedValue([]);
     api.listVersions.mockResolvedValue([]);
+    api.getSourceOptions.mockResolvedValue(readySource);
     api.createResume.mockResolvedValue(baseResume);
     api.updateResume.mockResolvedValue({ ...baseResume, version: 2 });
     api.createVersion.mockResolvedValue({ ...baseVersion, versionNumber: 2 });
@@ -154,6 +179,72 @@ describe("Resume Builder view", () => {
       template: "standard_professional",
       title: "API Resume",
     });
+  });
+
+  it("keeps the create form visible when Career Profile evidence is missing", async () => {
+    api.getSourceOptions.mockResolvedValue(emptySource);
+    render(<ResumeBuilderView />);
+
+    expect(await screen.findByText("Career evidence required")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Create" })).toBeDisabled();
+    expect(
+      screen.getByRole("link", { name: "Open Career Profile" }),
+    ).toHaveAttribute("href", "/career-profile");
+    expect(
+      screen.queryByRole("heading", { name: "Resume Builder could not load" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows an inline create failure instead of replacing the builder", async () => {
+    api.getSourceOptions.mockRejectedValue(new Error("source preview failed"));
+    api.createResume.mockRejectedValue(
+      new ApiRequestError({
+        code: "resume_builder_validation_error",
+        message:
+          "Add confirmed career evidence in Career Profile before building a resume.",
+        status: 422,
+      }),
+    );
+    render(<ResumeBuilderView />);
+
+    expect(
+      await screen.findByRole("heading", { name: "No resumes yet" }),
+    ).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
+    expect(await screen.findAllByText("Action failed")).not.toHaveLength(0);
+    expect(
+      screen.getAllByText(
+        "Add confirmed career evidence in Career Profile before building a resume.",
+      ).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getByRole("heading", { name: "Create a resume" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("heading", { name: "Resume Builder could not load" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("retries after a list failure", async () => {
+    api.listResumes
+      .mockRejectedValueOnce(
+        new ApiRequestError({
+          message: "Resume Builder services are temporarily unavailable.",
+          status: 503,
+        }),
+      )
+      .mockResolvedValueOnce([]);
+    render(<ResumeBuilderView />);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Resume Builder could not load",
+      }),
+    ).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(
+      await screen.findByRole("heading", { name: "No resumes yet" }),
+    ).toBeVisible();
   });
 
   it("exports a verified resume and creates a download intent", async () => {

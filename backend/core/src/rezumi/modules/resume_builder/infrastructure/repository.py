@@ -148,7 +148,13 @@ class SqlAlchemyResumeBuilderUnitOfWork:
                 .order_by(ResumeVersionModel.version_number, ResumeVersionModel.id)
             )
         ).all()
-        return tuple(_version(model) for model in models)
+        versions: list[ResumeVersion] = []
+        for model in models:
+            try:
+                versions.append(_version(model))
+            except (KeyError, TypeError, ValueError):
+                continue
+        return tuple(versions)
 
     async def get_version(self, owner_user_id: UUID, version_id: UUID) -> ResumeVersion | None:
         model = await self.session.scalar(
@@ -157,7 +163,12 @@ class SqlAlchemyResumeBuilderUnitOfWork:
                 ResumeVersionModel.id == version_id,
             )
         )
-        return _version(model) if model is not None else None
+        if model is None:
+            return None
+        try:
+            return _version(model)
+        except (KeyError, TypeError, ValueError):
+            return None
 
     async def add_version(self, version: ResumeVersion) -> None:
         self.session.add(_version_model(version))
@@ -475,10 +486,13 @@ class SqlAlchemyResumeBuilderUnitOfWork:
     async def _record_from_model(self, model: ResumeModel) -> ResumeRecord | None:
         if model.current_version_id is None:
             return None
-        current = await self.get_version(model.owner_user_id, model.current_version_id)
-        if current is None:
+        try:
+            current = await self.get_version(model.owner_user_id, model.current_version_id)
+            if current is None:
+                return None
+            return ResumeRecord(resume=_resume(model), current_version=current)
+        except (KeyError, TypeError, ValueError):
             return None
-        return ResumeRecord(resume=_resume(model), current_version=current)
 
     async def _execute(self, statement: Any) -> None:
         try:

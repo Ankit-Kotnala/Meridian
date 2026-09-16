@@ -11,17 +11,12 @@ export const metadata: Metadata = { title: "Resumes" };
 
 export default function ResumeStudioPage() {
   return (
-    <main
-      className="mx-auto max-w-7xl space-y-10 p-4 sm:p-6 lg:p-8"
-      id="main-content"
-    >
+    <main className="space-y-8" id="main-content">
       <AccountResumeHealthView />
-      <hr className="border-line" />
       <ResumeBuilderView />
-      <hr className="border-line" />
       <section
         aria-labelledby="change-studio-heading"
-        className="rounded-lg border border-line bg-surface p-4 shadow-sm"
+        className="rounded-card border border-border bg-surface-raised p-4 shadow-sm sm:p-5"
       >
         <div className="flex items-center gap-2">
           <Sparkles aria-hidden="true" className="size-5 text-primary" />

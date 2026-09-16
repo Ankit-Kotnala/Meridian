@@ -48,7 +48,12 @@ def _principal(user_id=None) -> AuthenticatedPrincipal:
     )
 
 
-def _services(owner_id, *, renderer: TextOnlyRenderer | None = None):
+def _services(
+    owner_id,
+    *,
+    renderer: TextOnlyRenderer | None = None,
+    source: StaticResumeSourceProvider | None = None,
+):
     identity = create_autospec(IdentityService, instance=True)
     identity.authenticate.return_value = _principal(owner_id)
     state = MemoryResumeBuilder()
@@ -57,7 +62,7 @@ def _services(owner_id, *, renderer: TextOnlyRenderer | None = None):
         unit_of_work=state,
         clock=FixedClock(),
         identifiers=UuidFactory(),
-        sources=StaticResumeSourceProvider(),
+        sources=source or StaticResumeSourceProvider(),
         storage=storage,
         policy=ResumeBuilderPolicy(),
     )
@@ -233,6 +238,29 @@ def test_resume_builder_blocks_download_when_verification_fails(
         )
         assert blocked.status_code == 409
         assert blocked.json()["code"] == "resume_export_blocked"
+
+
+def test_source_preview_and_create_without_evidence_stay_actionable(
+    settings: Settings, fake_database: FakeDatabase
+) -> None:
+    identity, resume_builder, _processor = _services(
+        OWNER_ID,
+        source=StaticResumeSourceProvider(with_evidence=False),
+    )
+    with _authenticated_client(settings, fake_database, identity, resume_builder) as client:
+        preview = client.get("/api/v1/resumes/source-options")
+        assert preview.status_code == 200
+        assert preview.json()["sourceEvidenceIds"] == []
+        assert preview.json()["bullets"] == []
+
+        created = client.post(
+            "/api/v1/resumes",
+            json={"title": "Empty Resume", "template": "standard_professional"},
+            headers=_write_headers(idempotency="api-resume-empty"),
+        )
+        assert created.status_code == 422
+        assert created.json()["code"] == "resume_builder_validation_error"
+        assert "career evidence" in created.json()["detail"].casefold()
 
 
 def test_resume_builder_mutation_requires_authenticated_session_and_csrf(

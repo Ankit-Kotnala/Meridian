@@ -216,6 +216,11 @@ class ResumeBuilderService:
             raise ResumeBuilderNotFound
         return record
 
+    async def preview_source(self, owner_user_id: UUID) -> ResumeSourceSnapshot:
+        """Return eligible Career Record facts available before creating a resume."""
+
+        return await self._sources.snapshot(owner_user_id)
+
     async def get_source_options(
         self,
         owner_user_id: UUID,
