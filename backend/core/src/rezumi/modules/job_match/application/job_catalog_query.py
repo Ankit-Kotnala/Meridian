@@ -121,6 +121,9 @@ class JobCatalogQueryService:
         limit: int,
         offset: int,
         platform: str | None = None,
+        location: str | None = None,
+        seniority: str | None = None,
+        work_model: str | None = None,
     ) -> JobCatalogBrowseResult:
         """Free-text search across the whole catalog, independent of role filtering."""
 
@@ -128,13 +131,27 @@ class JobCatalogQueryService:
         bounded_offset = max(0, min(offset, _MAX_BROWSE_OFFSET))
         keywords = tuple(word for word in query.split() if word)
         normalized_platform = platform.strip() if platform and platform.strip() else None
+        normalized_location = location.strip() if location and location.strip() else None
+        normalized_seniority = seniority.strip() if seniority and seniority.strip() else None
+        normalized_work_model = (
+            work_model.strip() if work_model and work_model.strip() else None
+        )
         listings = await self._store.search(
             keywords=keywords,
             limit=bounded_limit + 1,
             offset=bounded_offset,
             platform=normalized_platform,
+            location=normalized_location,
+            seniority=normalized_seniority,
+            work_model=normalized_work_model,
         )
-        total_count = await self._store.count(keywords=keywords, platform=normalized_platform)
+        total_count = await self._store.count(
+            keywords=keywords,
+            platform=normalized_platform,
+            location=normalized_location,
+            seniority=normalized_seniority,
+            work_model=normalized_work_model,
+        )
         has_more = len(listings) > bounded_limit
         page = listings[:bounded_limit]
         return JobCatalogBrowseResult(

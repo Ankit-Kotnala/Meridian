@@ -13,6 +13,7 @@ from pymongo.collection import Collection
 from pymongo.errors import PyMongoError
 
 from rezumi.foundation.config.mongodb import MongoOptions
+from rezumi.modules.job_match.application.job_catalog_filters import normalized_terms, term_regex
 from rezumi.modules.job_match.application.job_catalog_ports import CatalogJobListing
 from rezumi.modules.job_match.domain.errors import JobMatchUnavailable
 
@@ -36,12 +37,23 @@ class DisabledJobCatalogStore:
         limit: int,
         offset: int = 0,
         platform: str | None = None,
+        location: str | None = None,
+        seniority: str | None = None,
+        work_model: str | None = None,
     ) -> tuple[CatalogJobListing, ...]:
-        del keywords, limit, offset, platform
+        del keywords, limit, offset, platform, location, seniority, work_model
         return ()
 
-    async def count(self, *, keywords: tuple[str, ...], platform: str | None = None) -> int:
-        del keywords, platform
+    async def count(
+        self,
+        *,
+        keywords: tuple[str, ...],
+        platform: str | None = None,
+        location: str | None = None,
+        seniority: str | None = None,
+        work_model: str | None = None,
+    ) -> int:
+        del keywords, platform, location, seniority, work_model
         return 0
 
     async def get_listing(self, platform: str, external_id: str) -> CatalogJobListing | None:
@@ -122,10 +134,19 @@ class MongoJobCatalogStore:
         limit: int,
         offset: int = 0,
         platform: str | None = None,
+        location: str | None = None,
+        seniority: str | None = None,
+        work_model: str | None = None,
     ) -> tuple[CatalogJobListing, ...]:
         bounded_limit = max(1, min(limit, _MAX_SEARCH_LIMIT))
         bounded_offset = max(0, offset)
-        filter_document = _search_filter(keywords, platform=platform)
+        filter_document = _search_filter(
+            keywords,
+            platform=platform,
+            location=location,
+            seniority=seniority,
+            work_model=work_model,
+        )
         if filter_document is None:
             return ()
         cursor = (
@@ -137,8 +158,22 @@ class MongoJobCatalogStore:
         documents = await self._run(list, cursor)
         return tuple(_listing(document) for document in documents)
 
-    async def count(self, *, keywords: tuple[str, ...], platform: str | None = None) -> int:
-        filter_document = _search_filter(keywords, platform=platform)
+    async def count(
+        self,
+        *,
+        keywords: tuple[str, ...],
+        platform: str | None = None,
+        location: str | None = None,
+        seniority: str | None = None,
+        work_model: str | None = None,
+    ) -> int:
+        filter_document = _search_filter(
+            keywords,
+            platform=platform,
+            location=location,
+            seniority=seniority,
+            work_model=work_model,
+        )
         if filter_document is None:
             return 0
         counted = await self._run(self._collection.count_documents, filter_document)
@@ -175,32 +210,94 @@ def _listing_document(listing: CatalogJobListing, *, fetched_at: datetime) -> di
     }
 
 
-def _search_filter(
-    keywords: tuple[str, ...], *, platform: str | None = None
-) -> dict[str, Any] | None:
-    """Build a catalog filter.
+_SENIORITY_REGEX = {
+    "internship": r"\b(intern|internship|trainee|apprentice)\b",
+    "principal": r"\b(principal|distinguished|fellow|director|head of|vp)\b",
+    "staff": r"\b(staff|architect)\b",
+    "senior": r"\b(senior|sr\.?|lead)\b",
+    "junior": r"\b(junior|jr\.?|graduate|entry[- ]level|associate)\b",
+}
+_REMOTE_REGEX = r"\b(remote|anywhere|worldwide|work from home)\b"
+_HYBRID_REGEX = r"\bhybrid\b"
 
-    Multi-word browse queries require every term to match somewhere in the
-    listing (title, company, location, or body preview). MongoDB ``$text``
-    treats whitespace-separated terms as OR, which is too broad for job
-    title searches such as "AI Engineer".
+
+def _contains_term(term: str) -> dict[str, Any]:
+    pattern = term_regex(term)
+    return {
+        "$or": [
+            {"title": {"$regex": pattern, "$options": "i"}},
+            {"company": {"$regex": pattern, "$options": "i"}},
+        ]
+    }
+
+
+def _seniority_clause(seniority: str) -> dict[str, Any] | None:
+    if seniority == "mid":
+        return {
+            "$nor": [
+                {"title": {"$regex": pattern, "$options": "i"}}
+                for pattern in _SENIORITY_REGEX.values()
+            ]
+        }
+    pattern = _SENIORITY_REGEX.get(seniority)
+    if not pattern:
+        return None
+    return {"title": {"$regex": pattern, "$options": "i"}}
+
+
+def _work_model_clause(work_model: str) -> dict[str, Any] | None:
+    remote = {
+        "$or": [
+            {"remote": True},
+            {"title": {"$regex": _REMOTE_REGEX, "$options": "i"}},
+            {"location": {"$regex": _REMOTE_REGEX, "$options": "i"}},
+        ]
+    }
+    hybrid = {
+        "$or": [
+            {"title": {"$regex": _HYBRID_REGEX, "$options": "i"}},
+            {"location": {"$regex": _HYBRID_REGEX, "$options": "i"}},
+        ]
+    }
+    if work_model == "remote":
+        return remote
+    if work_model == "hybrid":
+        return hybrid
+    if work_model == "onsite":
+        return {"$nor": [remote, hybrid]}
+    return None
+
+
+def _search_filter(
+    keywords: tuple[str, ...],
+    *,
+    platform: str | None = None,
+    location: str | None = None,
+    seniority: str | None = None,
+    work_model: str | None = None,
+) -> dict[str, Any] | None:
+    """AND-match browse filters on short indexed fields only.
+
+    Keyword search is title/company, not the job-body preview: scanning
+    ``sourceText`` across tens of thousands of listings times out, and short
+    tokens such as "AI" otherwise match inside words like "training".
     """
     clauses: list[dict[str, Any]] = []
     if platform:
         clauses.append({"platform": platform.strip()})
-    terms = tuple(keyword.strip() for keyword in keywords if keyword.strip())
-    for term in terms:
-        pattern = re.escape(term)
+    location_needle = (location or "").strip()
+    if location_needle:
         clauses.append(
-            {
-                "$or": [
-                    {"title": {"$regex": pattern, "$options": "i"}},
-                    {"company": {"$regex": pattern, "$options": "i"}},
-                    {"location": {"$regex": pattern, "$options": "i"}},
-                    {"sourceText": {"$regex": pattern, "$options": "i"}},
-                ]
-            }
+            {"location": {"$regex": re.escape(location_needle[:120]), "$options": "i"}}
         )
+    seniority_clause = _seniority_clause((seniority or "").strip())
+    if seniority_clause is not None:
+        clauses.append(seniority_clause)
+    work_model_clause = _work_model_clause((work_model or "").strip())
+    if work_model_clause is not None:
+        clauses.append(work_model_clause)
+    for term in normalized_terms(keywords):
+        clauses.append(_contains_term(term))
     if not clauses:
         return {}
     if len(clauses) == 1:
