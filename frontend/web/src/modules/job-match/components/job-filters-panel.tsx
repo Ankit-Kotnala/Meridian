@@ -126,20 +126,25 @@ export function JobFiltersPanel({
 
           <label className="block text-xs font-semibold text-muted-strong">
             Location
-            <Select
-              className="mt-1.5"
+            <input
+              aria-label="Filter by city, state, or region"
+              className="mt-1.5 min-h-11 w-full rounded-[var(--radius-control)] border border-line-strong bg-surface px-3.5 text-sm text-foreground shadow-sm outline-none placeholder:text-muted hover:border-primary/70 focus:border-primary focus:ring-3 focus:ring-primary-soft"
+              list="job-search-location-suggestions"
+              maxLength={120}
               onChange={(event) =>
                 onChange({ ...filters, location: event.target.value })
               }
+              placeholder="City, state, or region"
+              type="search"
               value={filters.location}
-            >
-              <option value="">Any location</option>
-              {locations.map((location) => (
-                <option key={location} value={location}>
-                  {location}
-                </option>
-              ))}
-            </Select>
+            />
+            {locations.length > 0 ? (
+              <datalist id="job-search-location-suggestions">
+                {locations.map((location) => (
+                  <option key={location} value={location} />
+                ))}
+              </datalist>
+            ) : null}
           </label>
         </div>
 

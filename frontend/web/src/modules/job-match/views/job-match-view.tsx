@@ -239,6 +239,8 @@ export function JobMatchView({
       suggestions?.suggestedRoleTitles,
     ],
   );
+  const catalogBrowseQuery = catalogBrowseParams.q;
+  const catalogBrowsePlatform = catalogBrowseParams.platform;
 
   useEffect(() => {
     if (!suggestionsLoaded) return;
@@ -249,7 +251,8 @@ export function JobMatchView({
       void browseJobCatalog({
         limit: CATALOG_PAGE_SIZE,
         offset: 0,
-        ...catalogBrowseParams,
+        ...(catalogBrowseQuery ? { q: catalogBrowseQuery } : {}),
+        ...(catalogBrowsePlatform ? { platform: catalogBrowsePlatform } : {}),
       })
         .then((page) => {
           if (cancelled) return;
@@ -273,7 +276,7 @@ export function JobMatchView({
     return () => {
       cancelled = true;
     };
-  }, [catalogBrowseParams, catalogEpoch, suggestionsLoaded]);
+  }, [catalogBrowsePlatform, catalogBrowseQuery, catalogEpoch, suggestionsLoaded]);
 
   const serverSearched =
     appliedFilters.keyword.trim().length > 0 ||
@@ -349,7 +352,8 @@ export function JobMatchView({
       const page = await browseJobCatalog({
         limit: CATALOG_PAGE_SIZE,
         offset: catalogNextOffset,
-        ...catalogBrowseParams,
+        ...(catalogBrowseQuery ? { q: catalogBrowseQuery } : {}),
+        ...(catalogBrowsePlatform ? { platform: catalogBrowsePlatform } : {}),
       });
       setCatalogListings((current) => {
         const seen = new Set(current.map(listingKey));
