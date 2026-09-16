@@ -195,11 +195,11 @@ class _MemoryJobCatalogStore:
     async def upsert_listing(self, listing, *, fetched_at) -> None:
         self.documents[(listing.platform, listing.external_id)] = listing
 
-    async def search(self, *, keywords, limit, offset=0):
+    async def search(self, *, keywords, limit, offset=0, **_filters):
         matches = self._matches(keywords)
         return tuple(matches[offset : offset + limit])
 
-    async def count(self, *, keywords):
+    async def count(self, *, keywords, **_filters):
         return len(self._matches(keywords))
 
     def _matches(self, keywords):

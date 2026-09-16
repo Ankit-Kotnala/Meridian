@@ -16,6 +16,7 @@ from career_record_memory import FakeResumeSourceQuery, FixedClock, MemoryCareer
 from rezumi.modules.career_record.application import CareerRecordService, RequestContext
 from rezumi.modules.career_record.application.models import CareerEntityData
 from rezumi.modules.career_record.domain import CareerEntityKind, EmploymentType
+from rezumi.modules.job_match.application.job_catalog_filters import listing_matches_browse
 from rezumi.modules.job_match.application.job_catalog_ports import CatalogJobListing
 from rezumi.modules.job_match.application.job_catalog_query import JobCatalogQueryService
 from rezumi.modules.job_match.application.job_catalog_sync import JobCatalogSyncService
@@ -101,40 +102,59 @@ class _MemoryJobCatalogStore:
         limit: int,
         offset: int = 0,
         platform: str | None = None,
+        location: str | None = None,
+        seniority: str | None = None,
+        work_model: str | None = None,
     ) -> tuple[CatalogJobListing, ...]:
-        matches = self._matches(keywords, platform=platform)
+        matches = self._matches(
+            keywords,
+            platform=platform,
+            location=location,
+            seniority=seniority,
+            work_model=work_model,
+        )
         return tuple(matches[offset : offset + limit])
 
-    async def count(self, *, keywords: tuple[str, ...], platform: str | None = None) -> int:
-        return len(self._matches(keywords, platform=platform))
+    async def count(
+        self,
+        *,
+        keywords: tuple[str, ...],
+        platform: str | None = None,
+        location: str | None = None,
+        seniority: str | None = None,
+        work_model: str | None = None,
+    ) -> int:
+        return len(
+            self._matches(
+                keywords,
+                platform=platform,
+                location=location,
+                seniority=seniority,
+                work_model=work_model,
+            )
+        )
 
     def _matches(
-        self, keywords: tuple[str, ...], *, platform: str | None = None
+        self,
+        keywords: tuple[str, ...],
+        *,
+        platform: str | None = None,
+        location: str | None = None,
+        seniority: str | None = None,
+        work_model: str | None = None,
     ) -> tuple[CatalogJobListing, ...]:
-        listings = tuple(self.documents.values())
-        if platform:
-            listings = tuple(listing for listing in listings if listing.platform == platform)
-        if not keywords:
-            return listings
         return tuple(
             listing
-            for listing in listings
-            if _listing_matches_all_terms(listing, keywords)
+            for listing in self.documents.values()
+            if listing_matches_browse(
+                listing,
+                keywords=keywords,
+                platform=platform,
+                location=location,
+                seniority=seniority,
+                work_model=work_model,
+            )
         )
-
-
-def _listing_matches_all_terms(
-    listing: CatalogJobListing, keywords: tuple[str, ...]
-) -> bool:
-    haystack = " ".join(
-        (
-            listing.title,
-            listing.company or "",
-            listing.location or "",
-            listing.source_text,
-        )
-    ).casefold()
-    return all(keyword.casefold() in haystack for keyword in keywords if keyword.strip())
 
     async def get_listing(self, platform: str, external_id: str) -> CatalogJobListing | None:
         return self.documents.get((platform, external_id))
@@ -599,6 +619,35 @@ async def test_query_service_browse_requires_all_search_terms() -> None:
 
     assert [listing.title for listing in result.listings] == ["Senior AI Engineer"]
     assert result.total_count == 1
+
+
+@pytest.mark.asyncio
+async def test_query_service_browse_does_not_match_ai_inside_other_words() -> None:
+    store = _MemoryJobCatalogStore()
+    await store.upsert_listing(
+        CatalogJobListing(
+            platform="linkedin",
+            external_id="se-1",
+            title="Software Engineer",
+            company="Fixture Co",
+            location=None,
+            remote=None,
+            application_url="https://example.com/jobs/1",
+            source_text="Available training details for this engineer role.",
+            posted_at=None,
+        ),
+        fetched_at=NOW,
+    )
+
+    class _EmptyTargetRoles:
+        async def target_role_titles(self, owner_user_id):
+            _ = owner_user_id
+            return ()
+
+    query = JobCatalogQueryService(store=store, target_roles=_EmptyTargetRoles())
+    result = await query.browse(query="AI Engineer", limit=10, offset=0)
+    assert result.listings == ()
+    assert result.total_count == 0
 
 
 @pytest.mark.asyncio
