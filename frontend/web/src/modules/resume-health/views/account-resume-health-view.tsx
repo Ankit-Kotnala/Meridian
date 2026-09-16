@@ -74,7 +74,7 @@ export function AccountResumeHealthView() {
   }, [load]);
 
   return (
-    <div className="workspace-page space-y-5">
+    <div className="space-y-5">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="font-display text-[clamp(1.5rem,2.5vw,1.875rem)] font-semibold tracking-[-0.03em] text-foreground">

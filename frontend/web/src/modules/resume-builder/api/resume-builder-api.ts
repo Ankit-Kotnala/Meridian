@@ -9,6 +9,7 @@ import type {
   ResumeDownloadIntent,
   ResumeExportInput,
   ResumeExportRecord,
+  ResumeSourceOptions,
   ResumeUpdateInput,
   ResumeVersion,
 } from "./types";
@@ -39,8 +40,13 @@ async function mutate(
 
 export async function listResumes(): Promise<Resume[]> {
   const response = await query(resumeBuilderPaths.resumes);
-  const body = (await response.json()) as { items: Resume[] };
-  return body.items;
+  const body = (await response.json()) as { items?: Resume[] };
+  return Array.isArray(body.items) ? body.items : [];
+}
+
+export async function getSourceOptions(): Promise<ResumeSourceOptions> {
+  const response = await query(resumeBuilderPaths.sourceOptions);
+  return (await response.json()) as ResumeSourceOptions;
 }
 
 export async function createResume(input: ResumeCreateInput): Promise<Resume> {

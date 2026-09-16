@@ -288,7 +288,7 @@ test("a user tracks a grounded application and generates a consistent applicatio
     await test.step("create a grounded immutable resume version", async () => {
       await page.goto("/resume-builder");
       await expect(
-        page.getByRole("heading", { name: "Verified resume exports" }),
+        page.getByRole("heading", { name: "Resume Builder" }),
       ).toBeVisible();
       await fillWhenReady(page.getByLabel("Resume title"), resumeTitle);
       await fillWhenReady(page.getByLabel("Target role"), jobTitle);

@@ -25,6 +25,7 @@ export const resumeBuilderPaths = {
         encodeURIComponent(versionId),
     ),
   resumes: path("/api/v1/resumes"),
+  sourceOptions: path("/api/v1/resumes/source-options"),
   resumeVersion: (versionId: string) =>
     resource("/api/v1/resume-versions", versionId),
   resumeVersionExport: (versionId: string) =>

@@ -118,7 +118,7 @@ async function finishOnboarding(page: Page): Promise<void> {
 async function completeResumeHealth(page: Page): Promise<void> {
   await page.goto("/resume-health/account");
   await expect(
-    page.getByRole("heading", { name: "Resume Health", exact: true }),
+    page.getByRole("heading", { name: "Resumes", exact: true }),
   ).toBeVisible();
   await page.getByLabel("Resume file").setInputFiles(resumeFixture);
   await page.getByRole("button", { name: "Upload and review" }).click();

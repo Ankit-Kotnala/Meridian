@@ -152,7 +152,7 @@ async def test_create_update_version_export_and_download_are_grounded_and_idempo
 @pytest.mark.asyncio
 async def test_creation_requires_eligible_evidence() -> None:
     service = _service(source=StaticResumeSourceProvider(with_evidence=False))
-    with pytest.raises(ResumeBuilderValidationError):
+    with pytest.raises(ResumeBuilderValidationError, match="eligible career evidence"):
         await service.create_resume(
             OWNER_ID,
             CreateResume(
@@ -163,6 +163,14 @@ async def test_creation_requires_eligible_evidence() -> None:
             idempotency_key="resume-no-evidence",
             context=_context(),
         )
+
+
+@pytest.mark.asyncio
+async def test_preview_source_returns_empty_when_career_evidence_is_missing() -> None:
+    service = _service(source=StaticResumeSourceProvider(with_evidence=False))
+    snapshot = await service.preview_source(OWNER_ID)
+    assert snapshot.bullets == ()
+    assert snapshot.source_evidence_ids == ()
 
 
 @pytest.mark.asyncio

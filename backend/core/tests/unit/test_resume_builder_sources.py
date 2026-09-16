@@ -10,12 +10,13 @@ from uuid import UUID
 
 import pytest
 
+from rezumi.modules.career_record.application import CareerRecordNotFound, CareerRecordUnavailable
 from rezumi.modules.change_studio.domain import (
     ChangeClaim,
     ClaimKind,
     ValidationStatus,
 )
-from rezumi.modules.resume_builder.domain import ResumeEvidenceLinkBasis
+from rezumi.modules.resume_builder.domain import ResumeBuilderUnavailable, ResumeEvidenceLinkBasis
 from rezumi.modules.resume_builder.infrastructure.sources import (
     CareerRecordResumeSourceProvider,
 )
@@ -225,3 +226,24 @@ def _claim(
 
 def _sha(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+@pytest.mark.asyncio
+async def test_missing_career_profile_returns_empty_source_snapshot() -> None:
+    career_record = SimpleNamespace(
+        get_profile=AsyncMock(side_effect=CareerRecordNotFound),
+        readiness_snapshot=AsyncMock(),
+    )
+    snapshot = await CareerRecordResumeSourceProvider(career_record).snapshot(OWNER_ID)
+    assert snapshot.bullets == ()
+    assert snapshot.source_evidence_ids == ()
+    career_record.readiness_snapshot.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_unavailable_career_record_does_not_look_like_validation() -> None:
+    career_record = SimpleNamespace(
+        get_profile=AsyncMock(side_effect=CareerRecordUnavailable),
+    )
+    with pytest.raises(ResumeBuilderUnavailable, match="temporarily unavailable"):
+        await CareerRecordResumeSourceProvider(career_record).snapshot(OWNER_ID)

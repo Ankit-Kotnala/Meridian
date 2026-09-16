@@ -969,6 +969,33 @@ def _change_studio_problem_details(exc: ChangeStudioError) -> tuple[int, str, st
     )
 
 
+_RESUME_BUILDER_VALIDATION_DETAILS = {
+    "career record must exist before building a resume": (
+        "Create a Career Profile before building a resume."
+    ),
+    "eligible career evidence is required before building a resume": (
+        "Add confirmed career evidence in Career Profile before building a resume."
+    ),
+    "resume source exceeds the 200-evidence provenance limit": (
+        "This Career Profile has too many evidence items to build a resume in one pass."
+    ),
+    "resume source section kind is invalid": (
+        "Career Profile evidence could not be mapped into resume sections."
+    ),
+    "idempotency key must be 8-128 characters": (
+        "Resume Builder could not confirm this request. Try again."
+    ),
+}
+
+
+def _resume_builder_validation_detail(exc: ResumeBuilderValidationError) -> str:
+    message = str(exc).strip()
+    return _RESUME_BUILDER_VALIDATION_DETAILS.get(
+        message,
+        "Review the submitted resume builder values.",
+    )
+
+
 def _resume_builder_problem_details(exc: ResumeBuilderError) -> tuple[int, str, str, str]:
     if isinstance(exc, ResumeBuilderUnavailable):
         return (
@@ -1010,7 +1037,7 @@ def _resume_builder_problem_details(exc: ResumeBuilderError) -> tuple[int, str, 
             status.HTTP_422_UNPROCESSABLE_CONTENT,
             "resume_builder_validation_error",
             "Request validation failed",
-            "Review the submitted resume builder values.",
+            _resume_builder_validation_detail(exc),
         )
     if isinstance(exc, ResumeBuilderConflict):
         return (

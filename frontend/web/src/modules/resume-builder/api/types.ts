@@ -6,6 +6,8 @@ export type ResumeUpdateInput = components["schemas"]["ResumeUpdateRequest"];
 export type ResumeVersion = components["schemas"]["ResumeVersionResponse"];
 export type ResumeSectionResponse =
   components["schemas"]["ResumeSectionResponse"];
+export type ResumeSourceOptions =
+  components["schemas"]["ResumeSourceOptionsResponse"];
 export type ResumeExportInput = components["schemas"]["ResumeExportRequest"];
 export type ResumeExportRecord =
   components["schemas"]["ResumeExportRecordResponse"];

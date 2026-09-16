@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from rezumi.modules.career_record.application import (
+    CareerRecordError,
+    CareerRecordNotFound,
     CareerRecordService,
     ReadinessSnapshotEntity,
     ReadinessSnapshotEvidence,
@@ -19,6 +21,7 @@ from rezumi.modules.resume_builder.application import (
 )
 from rezumi.modules.resume_builder.application.ports import ResumeSourceProvider
 from rezumi.modules.resume_builder.domain import (
+    ResumeBuilderUnavailable,
     ResumeBuilderValidationError,
     ResumeEntityFact,
     ResumeEvidenceLinkBasis,
@@ -58,11 +61,20 @@ class CareerRecordResumeSourceProvider(ResumeSourceProvider):
     ) -> ResumeSourceSnapshot:
         try:
             profile = await self._career_record.get_profile(owner_user_id)
+        except CareerRecordNotFound:
+            return ResumeSourceSnapshot(
+                headline=None,
+                summary=None,
+                skills=(),
+                bullets=(),
+                source_evidence_ids=(),
+            )
+        except CareerRecordError as exc:
+            raise ResumeBuilderUnavailable("career record is temporarily unavailable") from exc
+        try:
             readiness = await self._career_record.readiness_snapshot(owner_user_id)
-        except Exception as exc:
-            raise ResumeBuilderValidationError(
-                "career record must exist before building a resume"
-            ) from exc
+        except CareerRecordError as exc:
+            raise ResumeBuilderUnavailable("career record is temporarily unavailable") from exc
 
         current_references = {
             item.id: ResumeEvidenceReference(

@@ -12,7 +12,9 @@ import {
   RotateCcw,
   Save,
 } from "lucide-react";
+import Link from "next/link";
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -29,9 +31,9 @@ import {
   ErrorState,
   Input,
   LoadingSkeleton,
-  PageHeader,
   Select,
   SectionHeader,
+  buttonStyles,
   cn,
 } from "@rezumi/ui";
 
@@ -42,6 +44,7 @@ import {
   createResume,
   createVersion,
   exportVersion,
+  getSourceOptions,
   listResumes,
   listVersions,
   restoreVersion,
@@ -79,8 +82,10 @@ export function ResumeBuilderView() {
   const [versions, setVersions] = useState<ResumeVersion[]>([]);
   const [exportRecord, setExportRecord] = useState<ResumeExportRecord>();
   const [downloadUrl, setDownloadUrl] = useState<string>();
+  const [loadError, setLoadError] = useState<string>();
   const [failure, setFailure] = useState<string>();
   const [success, setSuccess] = useState<string>();
+  const [sourceReady, setSourceReady] = useState<boolean>();
   const [busyKey, setBusyKey] = useState("initial");
   const [title, setTitle] = useState("Focused Resume");
   const [targetRole, setTargetRole] = useState("");
@@ -95,37 +100,44 @@ export function ResumeBuilderView() {
     [resumes, selectedId],
   );
 
-  useEffect(() => {
-    let active = true;
-    async function load() {
-      setBusyKey("initial");
-      setFailure(undefined);
-      try {
-        const items = await listResumes();
-        if (!active) return;
-        setResumes(items);
-        const first = items[0];
-        if (first) {
-          setSelectedId(first.id);
-          setTitle(first.title);
-          setTargetRole(first.targetRole ?? "");
-          setTemplate(first.template);
-        }
-      } catch (error) {
-        if (active) {
-          setFailure(
-            requestErrorMessage(error, "Resume Builder could not load."),
-          );
-        }
-      } finally {
-        if (active) setBusyKey("");
-      }
+  const applyListedResumes = useCallback((items: Resume[]) => {
+    setResumes(items);
+    const first = items[0];
+    if (first) {
+      setSelectedId(first.id);
+      setTitle(first.title);
+      setTargetRole(first.targetRole ?? "");
+      setTemplate(first.template);
+    } else {
+      setSelectedId("");
     }
-    void load();
-    return () => {
-      active = false;
-    };
   }, []);
+
+  const load = useCallback(async () => {
+    setBusyKey("initial");
+    setLoadError(undefined);
+    setFailure(undefined);
+    try {
+      const items = await listResumes();
+      applyListedResumes(items);
+      try {
+        const source = await getSourceOptions();
+        setSourceReady(source.sourceEvidenceIds.length > 0);
+      } catch {
+        setSourceReady(undefined);
+      }
+    } catch (error) {
+      setLoadError(
+        requestErrorMessage(error, "Resume Builder could not load."),
+      );
+    } finally {
+      setBusyKey("");
+    }
+  }, [applyListedResumes]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   useEffect(
     () => () => {
@@ -154,6 +166,7 @@ export function ResumeBuilderView() {
 
   async function submitCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (sourceReady === false) return;
     await run("create", async () => {
       const created = await createResume({
         targetRole: targetRole.trim() || null,
@@ -309,27 +322,30 @@ export function ResumeBuilderView() {
   }
 
   if (busyKey === "initial") return <ResumeBuilderLoading />;
-  if (failure && resumes.length === 0) {
+  if (loadError && resumes.length === 0) {
     return (
-      <div className="space-y-6">
+      <section className="space-y-6" id="resume-builder">
         <ErrorState
-          description={failure}
+          description={loadError}
+          onRetry={() => void load()}
           title="Resume Builder could not load"
         />
-      </div>
+      </section>
     );
   }
 
+  const createBlocked = sourceReady === false;
+
   return (
-    <div className="space-y-6">
+    <section className="space-y-6" id="resume-builder">
       <div aria-live="polite" className="sr-only">
         {success || failure || ""}
       </div>
 
-      <PageHeader
+      <SectionHeader
         description="Create evidence-backed resume versions, inspect exactly what each version contains, and verify the final file before downloading it."
-        eyebrow="Resume Builder"
-        title="Verified resume exports"
+        id="resume-builder-heading"
+        title="Resume Builder"
       />
 
       <section
@@ -341,7 +357,31 @@ export function ResumeBuilderView() {
           id="create-resume-heading"
           title="Create a resume"
         />
+        {createBlocked && (
+          <Alert
+            className="mt-4"
+            id="resume-source-required"
+            title="Career evidence required"
+            tone="info"
+          >
+            Add confirmed evidence in Career Profile before creating a resume.
+            Resume Builder will not invent facts to fill a blank draft.
+          </Alert>
+        )}
+        {failure && (
+          <Alert className="mt-4" title="Action failed" tone="danger">
+            {failure}
+          </Alert>
+        )}
+        {success && (
+          <Alert className="mt-4" title="Ready" tone="success">
+            {success}
+          </Alert>
+        )}
         <form
+          aria-describedby={
+            createBlocked ? "resume-source-required" : undefined
+          }
           aria-label="Create a resume"
           className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,12rem)_minmax(0,13rem)_12rem_auto]"
           onSubmit={(event) => void submitCreate(event)}
@@ -383,27 +423,28 @@ export function ResumeBuilderView() {
               </option>
             ))}
           </Select>
-          <Button loading={busyKey === "create"} type="submit">
+          <Button
+            disabled={createBlocked}
+            loading={busyKey === "create"}
+            type="submit"
+          >
             <FileText aria-hidden="true" className="size-4" />
             Create
           </Button>
         </form>
       </section>
 
-      {failure && resumes.length > 0 && (
-        <Alert title="Action failed" tone="danger">
-          {failure}
-        </Alert>
-      )}
-      {success && (
-        <Alert title="Ready" tone="success">
-          {success}
-        </Alert>
-      )}
-
       {resumes.length === 0 ? (
         <EmptyState
-          description="Add confirmed evidence in Career Profile before creating a resume."
+          action={
+            <Link
+              className={cn(buttonStyles.base, buttonStyles.secondary)}
+              href="/career-profile"
+            >
+              Open Career Profile
+            </Link>
+          }
+          description="Add confirmed evidence in Career Profile before creating a resume. Creating a draft does not invent missing facts."
           title="No resumes yet"
         />
       ) : (
@@ -721,7 +762,7 @@ export function ResumeBuilderView() {
           </aside>
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
