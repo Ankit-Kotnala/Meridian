@@ -3,6 +3,7 @@ version: 2
 updates:
   - package-ecosystem: npm
     directory: /
+    target-branch: development
     schedule:
       interval: weekly
       day: monday
@@ -16,7 +17,8 @@ updates:
     open-pull-requests-limit: 5
 
   - package-ecosystem: uv
-    directory: /
+    directory: /backend
+    target-branch: development
     schedule:
       interval: weekly
       day: monday
@@ -30,7 +32,12 @@ updates:
     open-pull-requests-limit: 5
 
   - package-ecosystem: docker
-    directory: /
+    directories:
+      - /backend/api
+      - /backend/worker
+      - /frontend/web
+      - /infra/docker/web-edge
+    target-branch: development
     schedule:
       interval: weekly
       day: monday
@@ -40,6 +47,7 @@ updates:
 
   - package-ecosystem: github-actions
     directory: /
+    target-branch: development
     schedule:
       interval: weekly
       day: monday
