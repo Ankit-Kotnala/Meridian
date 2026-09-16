@@ -99,7 +99,7 @@ def _extract_pdf(path: Path, limits: DocumentLimits) -> ExtractionResult:
         if b"%%EOF" not in source.read():
             raise UnsafeDocument("malformed_pdf")
     try:
-        reader = PdfReader(str(path), strict=True)
+        reader = PdfReader(str(path), strict=False)
         if reader.is_encrypted:
             raise UnsafeDocument("encrypted_document")
         if not 1 <= len(reader.pages) <= limits.max_pdf_pages:

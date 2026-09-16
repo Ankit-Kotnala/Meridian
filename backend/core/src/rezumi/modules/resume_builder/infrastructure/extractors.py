@@ -77,7 +77,7 @@ class ResumeBuilderDocumentExtractor(ResumeDocumentExtractor):
         if b"%%EOF" not in raw[-2048:]:
             raise ResumeExportExtractionError("malformed_resume_export_pdf")
         try:
-            reader = PdfReader(str(path), strict=True)
+            reader = PdfReader(str(path), strict=False)
             if reader.is_encrypted:
                 raise ResumeExportExtractionError("encrypted_resume_export")
             if not 1 <= len(reader.pages) <= self._limits.max_pdf_pages:

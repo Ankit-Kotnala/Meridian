@@ -21,16 +21,21 @@ from rezumi.modules.resume_health.domain.errors import UnsafeDocument
 _RUNNER_MODULE = "rezumi.modules.resume_health.infrastructure.parser_runner"
 _SAFE_PARSER_ERROR_CODES = frozenset(
     {
+        "active_content_rejected",
         "archive_entry_limit_exceeded",
         "archive_expansion_limit_exceeded",
         "archive_path_traversal",
         "archive_ratio_limit_exceeded",
         "archive_symlink_rejected",
-        "active_content_rejected",
         "document_parser_crashed",
+        "document_parser_failed",
+        "document_parser_invalid_output",
+        "document_parser_output_limit_exceeded",
+        "document_processing_timeout",
         "document_signature_mismatch",
         "embedded_object_rejected",
         "encrypted_document",
+        "extracted_artifact_limit_exceeded",
         "extracted_block_limit_exceeded",
         "extracted_text_limit_exceeded",
         "invalid_docx_package",
@@ -39,6 +44,8 @@ _SAFE_PARSER_ERROR_CODES = frozenset(
         "malformed_pdf",
         "pdf_page_limit_exceeded",
         "polyglot_document_rejected",
+        "semantic_parser_invalid_output",
+        "unsafe_parser_source_path",
         "unsupported_document_type",
         "upload_too_large",
     }

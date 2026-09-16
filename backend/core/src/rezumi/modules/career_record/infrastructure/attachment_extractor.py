@@ -65,7 +65,7 @@ def _pdf_summary(path: Path, limits: AttachmentLimits) -> AttachmentExtractionSu
     if b"%%EOF" not in raw[-2_048:]:
         _unsafe()
     try:
-        reader = PdfReader(str(path), strict=True)
+        reader = PdfReader(str(path), strict=False)
         if reader.is_encrypted or not 1 <= len(reader.pages) <= limits.max_pdf_pages:
             _unsafe()
         page_texts = tuple((page.extract_text() or "").replace("\x00", "") for page in reader.pages)
