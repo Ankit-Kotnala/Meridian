@@ -42,7 +42,6 @@ import {
   emptyJobSearchFilters,
   filterOptionsFrom,
   humanizePlatform,
-  listingMatchesFilters,
   type JobSearchFilters,
 } from "../components/job-search-filters";
 import {
@@ -96,28 +95,37 @@ const tailoringEfforts: Array<{ label: string; value: TailoringEffort }> = [
 ];
 
 const CATALOG_PAGE_SIZE = 10;
+const CATALOG_PLATFORMS = [
+  "linkedin",
+  "remotive",
+  "remoteok",
+  "arbeitnow",
+  "himalayas",
+  "jobicy",
+  "greenhouse",
+  "ashby",
+] as const;
 
 function buildCatalogBrowseParams(
   filters: JobSearchFilters,
   selectedRoleTitles: readonly string[] | undefined,
-): { platform?: string; q?: string } {
+): {
+  location?: string;
+  platform?: string;
+  q?: string;
+  seniority?: string;
+  workModel?: string;
+} {
   const keyword = filters.keyword.trim();
   const location = filters.location.trim();
-  const searchParts = [keyword, location].filter(Boolean);
-  if (searchParts.length > 0) {
-    return {
-      q: searchParts.join(" "),
-      ...(filters.platform ? { platform: filters.platform } : {}),
-    };
-  }
-  if (filters.platform) {
-    return { platform: filters.platform };
-  }
-  const selected = selectedRoleTitles ?? [];
-  if (selected.length > 0) {
-    return { q: selected.join(" ").trim() };
-  }
-  return {};
+  const selected = (selectedRoleTitles ?? []).join(" ").trim();
+  return {
+    ...(keyword ? { q: keyword } : selected ? { q: selected } : {}),
+    ...(filters.platform ? { platform: filters.platform } : {}),
+    ...(location ? { location } : {}),
+    ...(filters.seniority ? { seniority: filters.seniority } : {}),
+    ...(filters.workModel ? { workModel: filters.workModel } : {}),
+  };
 }
 
 function humanize(value: string): string {
@@ -221,16 +229,15 @@ export function JobMatchView({
     queueMicrotask(() => void loadSuggestions());
   }, [load, loadSuggestions]);
 
+  const selectedRoleKey = (suggestions?.selectedRoleTitles ?? []).join("\n");
   const catalogBrowseParams = useMemo(
     () =>
       buildCatalogBrowseParams(
         appliedFilters,
-        suggestions?.selectedRoleTitles,
+        selectedRoleKey ? selectedRoleKey.split("\n") : [],
       ),
-    [appliedFilters, suggestions?.selectedRoleTitles],
+    [appliedFilters, selectedRoleKey],
   );
-  const catalogBrowseQuery = catalogBrowseParams.q;
-  const catalogBrowsePlatform = catalogBrowseParams.platform;
   const catalogOffset = catalogPage * CATALOG_PAGE_SIZE;
 
   useEffect(() => {
@@ -239,73 +246,62 @@ export function JobMatchView({
     queueMicrotask(() => {
       if (cancelled) return;
       setFilterBusy(true);
-      void browseJobCatalog({
-        limit: CATALOG_PAGE_SIZE,
-        offset: catalogOffset,
-        ...(catalogBrowseQuery ? { q: catalogBrowseQuery } : {}),
-        ...(catalogBrowsePlatform ? { platform: catalogBrowsePlatform } : {}),
-      })
-        .then((page) => {
-          if (cancelled) return;
-          setCatalogListings(page.listings);
-          setCatalogTotalCount(page.totalCount);
-          setSelectedListing((current) => {
-            if (
-              current &&
-              page.listings.some(
-                (listing) => listingKey(listing) === listingKey(current),
-              )
-            ) {
-              return current;
-            }
-            return undefined;
+      try {
+        void browseJobCatalog({
+          limit: CATALOG_PAGE_SIZE,
+          offset: catalogOffset,
+          ...catalogBrowseParams,
+        })
+          .then((page) => {
+            if (cancelled) return;
+            setCatalogListings(page.listings);
+            setCatalogTotalCount(page.totalCount);
+            setSelectedListing((current) => {
+              if (
+                current &&
+                page.listings.some(
+                  (listing) => listingKey(listing) === listingKey(current),
+                )
+              ) {
+                return current;
+              }
+              return undefined;
+            });
+          })
+          .catch((error: unknown) => {
+            if (cancelled) return;
+            setFailure(requestErrorMessage(error, "Job search failed."));
+            setCatalogListings([]);
+            setCatalogTotalCount(0);
+            setSelectedListing(undefined);
+          })
+          .finally(() => {
+            if (!cancelled) setFilterBusy(false);
           });
-        })
-        .catch((error: unknown) => {
-          if (cancelled) return;
-          setFailure(requestErrorMessage(error, "Job search failed."));
-          setCatalogListings([]);
-          setCatalogTotalCount(0);
-          setSelectedListing(undefined);
-        })
-        .finally(() => {
-          if (!cancelled) setFilterBusy(false);
-        });
+      } catch (error: unknown) {
+        if (cancelled) return;
+        setFilterBusy(false);
+        setFailure(requestErrorMessage(error, "Job search failed."));
+        setCatalogListings([]);
+        setCatalogTotalCount(0);
+        setSelectedListing(undefined);
+      }
     });
     return () => {
       cancelled = true;
     };
-  }, [
-    catalogBrowsePlatform,
-    catalogBrowseQuery,
-    catalogEpoch,
-    catalogOffset,
-    suggestionsLoaded,
-  ]);
+  }, [catalogBrowseParams, catalogEpoch, catalogOffset, suggestionsLoaded]);
 
-  const serverSearched =
-    appliedFilters.keyword.trim().length > 0 ||
-    appliedFilters.location.trim().length > 0 ||
-    appliedFilters.platform.trim().length > 0;
-  const sourceListings = catalogListings;
-  const clientFilters = useMemo(
-    () =>
-      serverSearched
-        ? { ...appliedFilters, keyword: "", location: "", platform: "" }
-        : appliedFilters,
-    [appliedFilters, serverSearched],
-  );
-  const visibleListings = useMemo(
-    () =>
-      sourceListings.filter((listing) =>
-        listingMatchesFilters(listing, clientFilters),
-      ),
-    [clientFilters, sourceListings],
-  );
-  const filterOptions = useMemo(
-    () => filterOptionsFrom(sourceListings),
-    [sourceListings],
-  );
+  const visibleListings = catalogListings;
+  const filterOptions = useMemo(() => {
+    const fromPage = filterOptionsFrom(catalogListings);
+    return {
+      locations: fromPage.locations,
+      platforms: [
+        ...new Set<string>([...CATALOG_PLATFORMS, ...fromPage.platforms]),
+      ].sort((a, b) => a.localeCompare(b)),
+    };
+  }, [catalogListings]);
 
   const savedJobFor = useCallback(
     (listing: JobCatalogListing) =>
@@ -315,11 +311,11 @@ export function JobMatchView({
 
   const savedKeys = useMemo(() => {
     const keys = new Set<string>();
-    for (const listing of sourceListings) {
+    for (const listing of catalogListings) {
       if (savedJobFor(listing)) keys.add(listingKey(listing));
     }
     return keys;
-  }, [savedJobFor, sourceListings]);
+  }, [catalogListings, savedJobFor]);
 
   const refreshAll = useCallback(async () => {
     await Promise.all([load(), loadSuggestions()]);
@@ -357,7 +353,13 @@ export function JobMatchView({
   }
 
   function goToNextCatalogPage() {
-    setCatalogPage((current) => current + 1);
+    setCatalogPage((current) => {
+      const totalPages = Math.max(
+        1,
+        Math.ceil(catalogTotalCount / CATALOG_PAGE_SIZE),
+      );
+      return Math.min(current + 1, totalPages - 1);
+    });
   }
 
   function openListing(listing: JobCatalogListing) {

@@ -40,5 +40,6 @@ export function withQuery(
   base: GeneratedApiPath,
   values: Parameters<typeof buildApiQueryString>[0],
 ): GeneratedApiPath {
-  return path(`${base}${buildApiQueryString(values)}`);
+  const query = buildApiQueryString(values);
+  return (query ? `${base}${query}` : base) as GeneratedApiPath;
 }

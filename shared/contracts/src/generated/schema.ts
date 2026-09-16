@@ -29246,9 +29246,12 @@ export interface operations {
         parameters: {
             query?: {
                 limit?: number;
+                location?: string;
                 offset?: number;
                 platform?: string;
                 q?: string;
+                seniority?: string;
+                workModel?: string;
             };
             header?: never;
             path?: never;

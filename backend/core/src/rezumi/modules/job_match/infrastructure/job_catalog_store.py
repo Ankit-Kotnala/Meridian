@@ -287,9 +287,7 @@ def _search_filter(
         clauses.append({"platform": platform.strip()})
     location_needle = (location or "").strip()
     if location_needle:
-        clauses.append(
-            {"location": {"$regex": re.escape(location_needle[:120]), "$options": "i"}}
-        )
+        clauses.append({"location": {"$regex": re.escape(location_needle[:120]), "$options": "i"}})
     seniority_clause = _seniority_clause((seniority or "").strip())
     if seniority_clause is not None:
         clauses.append(seniority_clause)

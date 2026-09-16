@@ -133,9 +133,7 @@ class JobCatalogQueryService:
         normalized_platform = platform.strip() if platform and platform.strip() else None
         normalized_location = location.strip() if location and location.strip() else None
         normalized_seniority = seniority.strip() if seniority and seniority.strip() else None
-        normalized_work_model = (
-            work_model.strip() if work_model and work_model.strip() else None
-        )
+        normalized_work_model = work_model.strip() if work_model and work_model.strip() else None
         listings = await self._store.search(
             keywords=keywords,
             limit=bounded_limit + 1,

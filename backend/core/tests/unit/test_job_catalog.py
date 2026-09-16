@@ -40,16 +40,16 @@ from rezumi.modules.job_match.infrastructure.job_catalog.himalayas_connector imp
 from rezumi.modules.job_match.infrastructure.job_catalog.jobicy_connector import (
     JobicyCatalogConnector,
 )
+from rezumi.modules.job_match.infrastructure.job_catalog.linkedin_scraped import (
+    PLATFORM,
+    listing_from_scraped_record,
+    load_scraped_jobs,
+)
 from rezumi.modules.job_match.infrastructure.job_catalog.registry import (
     default_job_catalog_connectors,
 )
 from rezumi.modules.job_match.infrastructure.job_catalog.remoteok_connector import (
     RemoteOkCatalogConnector,
-)
-from rezumi.modules.job_match.infrastructure.job_catalog.linkedin_scraped import (
-    PLATFORM,
-    listing_from_scraped_record,
-    load_scraped_jobs,
 )
 from rezumi.modules.job_match.infrastructure.job_catalog.remotive_connector import (
     RemotiveCatalogConnector,

@@ -147,16 +147,22 @@ export async function setJobCatalogRolePreferences(
 
 export async function browseJobCatalog(filters: {
   limit?: number;
+  location?: string;
   offset?: number;
   platform?: string;
   q?: string;
+  seniority?: string;
+  workModel?: string;
 }): Promise<JobCatalogBrowse> {
   const response = await query(
     withQuery(jobMatchPaths.jobCatalogBrowse, {
       limit: filters.limit,
+      location: filters.location || undefined,
       offset: filters.offset,
       platform: filters.platform || undefined,
       q: filters.q || undefined,
+      seniority: filters.seniority || undefined,
+      workModel: filters.workModel || undefined,
     }),
   );
   return (await response.json()) as JobCatalogBrowse;
