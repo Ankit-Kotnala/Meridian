@@ -26,6 +26,17 @@ ignore:
   - vulnerability: CVE-2026-78409
   - vulnerability: CVE-2026-78408
   - vulnerability: CVE-2026-78410
+  - vulnerability: CVE-2026-33818
+  - vulnerability: CVE-2026-56853
+  - vulnerability: CVE-2026-56859
+  - vulnerability: CVE-2026-56862
+  - vulnerability: CVE-2026-46600
+  - vulnerability: CVE-2026-56846
+  - vulnerability: CVE-2026-56848
+  - vulnerability: CVE-2026-56864
+  - vulnerability: CVE-2026-39822
+  - vulnerability: CVE-2026-58043
+  - vulnerability: CVE-2026-56865
   - vulnerability: GHSA-vxpw-j846-p89q
     package:
       name: undici
