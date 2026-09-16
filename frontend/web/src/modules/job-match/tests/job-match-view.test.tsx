@@ -355,36 +355,33 @@ describe("Job search view", () => {
     expect(await screen.findByText("1 requirement")).toBeVisible();
   });
 
-  it("narrows results with the work model filter without refetching", async () => {
-    api.getJobCatalogSuggestions.mockResolvedValue({
-      listings: [catalogListing, onsiteListing],
-      matchedTargetRole: true,
-      selectedRoleTitles: [],
-      suggestedRoleTitles: [],
-      targetRoleTitles: ["Engineer"],
-    } satisfies JobCatalogSearch);
-    api.browseJobCatalog.mockResolvedValue(
-      catalogPage([catalogListing, onsiteListing]),
-    );
+  it("narrows results with the work model filter", async () => {
+    api.browseJobCatalog
+      .mockResolvedValueOnce(
+        catalogPage([catalogListing, onsiteListing], { totalCount: 2 }),
+      )
+      .mockResolvedValueOnce(catalogPage([onsiteListing], { totalCount: 1 }));
 
     render(<JobMatchView />);
 
     expect(await screen.findByText("Showing 1–2 of 2 jobs")).toBeVisible();
-    const catalogCallsAfterLoad = api.browseJobCatalog.mock.calls.length;
-    expect(catalogCallsAfterLoad).toBeGreaterThan(0);
 
     fireEvent.change(screen.getByLabelText("Work model"), {
       target: { value: "onsite" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
 
-    expect(await screen.findByText("Showing 1–1 of 2 jobs")).toBeVisible();
+    expect(await screen.findByText("Showing 1–1 of 1 job")).toBeVisible();
     expect(screen.getAllByText(/Munich GmbH/).length).toBeGreaterThan(0);
-    expect(api.browseJobCatalog).toHaveBeenCalledTimes(catalogCallsAfterLoad);
-
-    fireEvent.click(screen.getByRole("button", { name: "Clear all" }));
-    expect(await screen.findByText("Showing 1–2 of 2 jobs")).toBeVisible();
-    expect(api.browseJobCatalog).toHaveBeenCalledTimes(catalogCallsAfterLoad);
+    await waitFor(() =>
+      expect(api.browseJobCatalog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          limit: 10,
+          offset: 0,
+          workModel: "onsite",
+        }),
+      ),
+    );
   });
 
   it("lets an owner opt out of a suggested role, persisting the change", async () => {
