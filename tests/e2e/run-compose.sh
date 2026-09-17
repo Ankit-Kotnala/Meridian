@@ -361,10 +361,22 @@ if ! docker inspect --format '{{json .HostConfig.Tmpfs}}' "$worker_container" | 
   echo "Document worker requires a bounded private temporary filesystem." >&2
   exit 1
 fi
-if [ "$(docker inspect --format '{{len .NetworkSettings.Networks}}' "$worker_container")" -ne 1 ]; then
-  echo "Document worker must attach only to the internal backend network." >&2
-  exit 1
-fi
+worker_networks=$(docker inspect --format '{{range $name, $_ := .NetworkSettings.Networks}}{{$name}} {{end}}' "$worker_container")
+backend_network="${project_name}-backend"
+edge_network="${project_name}-edge"
+case " $worker_networks " in
+  *" ${backend_network} "*) ;;
+  *)
+    echo "Document worker must attach to the internal backend network ($backend_network)." >&2
+    exit 1
+    ;;
+esac
+case " $worker_networks " in
+  *" ${edge_network} "*)
+    echo "Document worker must not attach to the edge network ($edge_network)." >&2
+    exit 1
+    ;;
+esac
 anonymous_status=$(curl --silent --output /dev/null --write-out '%{http_code}' "http://127.0.0.1:${MINIO_API_PORT}/${S3_BUCKET}")
 if [ "$anonymous_status" != "403" ]; then
   echo "Private document bucket returned HTTP $anonymous_status to an anonymous request." >&2
