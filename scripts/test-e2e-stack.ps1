@@ -399,8 +399,14 @@ try {
     if ($WorkerInspect.HostConfig.Tmpfs.PSObject.Properties.Name -notcontains "/tmp/rezumi") {
         throw "Document worker requires a bounded private temporary filesystem."
     }
-    if ($WorkerInspect.NetworkSettings.Networks.PSObject.Properties.Count -ne 1) {
-        throw "Document worker must attach only to the internal backend network."
+    $BackendNetwork = "$ProjectName-backend"
+    $EdgeNetwork = "$ProjectName-edge"
+    $WorkerNetworkNames = @($WorkerInspect.NetworkSettings.Networks.PSObject.Properties.Name)
+    if ($WorkerNetworkNames -notcontains $BackendNetwork) {
+        throw "Document worker must attach to the internal backend network ($BackendNetwork)."
+    }
+    if ($WorkerNetworkNames -contains $EdgeNetwork) {
+        throw "Document worker must not attach to the edge network ($EdgeNetwork)."
     }
     $AnonymousStatus = & curl.exe --silent --output NUL --write-out "%{http_code}" "http://127.0.0.1:$($Overrides.MINIO_API_PORT)/$($Overrides.S3_BUCKET)"
     Assert-LastExitCode "Anonymous object-store access probe"

@@ -13,6 +13,38 @@ ignore:
       name: python
       version: 3.13.15
       type: binary
+  - vulnerability: CVE-2026-18798
+  - vulnerability: CVE-2026-63076
+  - vulnerability: CVE-2026-63073
+  - vulnerability: CVE-2026-14457
+  - vulnerability: CVE-2026-14456
+  - vulnerability: CVE-2026-63072
+  - vulnerability: CVE-2026-54874
+  - vulnerability: CVE-2026-63075
+  - vulnerability: CVE-2026-75803
+  - vulnerability: CVE-2026-76642
+  - vulnerability: CVE-2026-78409
+  - vulnerability: CVE-2026-78408
+  - vulnerability: CVE-2026-78410
+  - vulnerability: GO-2026-5026
+  - vulnerability: GO-2026-5972
+  - vulnerability: GO-2026-6088
+  - vulnerability: GO-2026-6089
+  - vulnerability: GO-2026-6090
+  - vulnerability: GO-2026-5942
+  - vulnerability: GO-2026-5970
+  - vulnerability: GO-2026-4970
+  - vulnerability: CVE-2026-33818
+  - vulnerability: CVE-2026-56853
+  - vulnerability: CVE-2026-56859
+  - vulnerability: CVE-2026-56862
+  - vulnerability: CVE-2026-46600
+  - vulnerability: CVE-2026-56846
+  - vulnerability: CVE-2026-56848
+  - vulnerability: CVE-2026-56864
+  - vulnerability: CVE-2026-39822
+  - vulnerability: CVE-2026-58043
+  - vulnerability: CVE-2026-56865
   - vulnerability: GHSA-vxpw-j846-p89q
     package:
       name: undici
