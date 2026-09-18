@@ -21,7 +21,7 @@ const actionTimeout = 7_500;
 const workerTimeout = 120_000;
 
 const canonicalScoreDisclaimer =
-  "Rezumi scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.";
+  "Meridian scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.";
 const nonCausalInterpretation =
   "These analytics describe correlations and observed patterns only. They do not establish causation, predict hiring decisions, or promise career outcomes.";
 const promotionReadinessDisclaimer =
@@ -512,7 +512,7 @@ async function exerciseInterviewPrep(page: Page, keyboard: boolean) {
   );
   await expect(
     page.getByText(
-      "A grounded draft was created for your review. Rezumi did not send it.",
+      "A grounded draft was created for your review. Meridian did not send it.",
     ),
   ).toBeVisible();
   await expect(page.getByText("Review required")).toBeVisible();
@@ -581,7 +581,7 @@ async function exerciseNetworking(page: Page, keyboard: boolean) {
   );
   await attest(
     templateForm.getByRole("checkbox", {
-      name: "I reviewed this text and understand Rezumi will not send it",
+      name: "I reviewed this text and understand Meridian will not send it",
     }),
     keyboard,
   );
@@ -692,7 +692,7 @@ async function exerciseNetworking(page: Page, keyboard: boolean) {
   );
   await expect(
     page.getByText(
-      "Interaction recorded as local history only. Rezumi did not send anything.",
+      "Interaction recorded as local history only. Meridian did not send anything.",
     ),
   ).toBeVisible();
   await expect(page.getByText("Recorded Only", { exact: true })).toBeVisible();

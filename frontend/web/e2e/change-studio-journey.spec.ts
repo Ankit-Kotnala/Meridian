@@ -165,7 +165,7 @@ test("a user reviews, accepts, undoes, and answers grounded Change Studio sugges
     await expect(page.getByText("Discovery interview notes")).toBeVisible();
     await expect(
       page
-        .getByText(/Rezumi scores are internal readiness measurements/i)
+        .getByText(/Meridian scores are internal readiness measurements/i)
         .first(),
     ).toBeVisible();
 

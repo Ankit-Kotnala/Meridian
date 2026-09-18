@@ -280,7 +280,7 @@ test("a user tracks a grounded application and generates a consistent applicatio
       await expect(page.getByText(evidenceTitle)).toBeVisible();
       await expect(
         page
-          .getByText(/Rezumi scores are internal readiness measurements/i)
+          .getByText(/Meridian scores are internal readiness measurements/i)
           .first(),
       ).toBeVisible();
     });
@@ -461,7 +461,7 @@ test("a user tracks a grounded application and generates a consistent applicatio
         page.getByRole("tab", { name: /Application packs/ }),
       );
       await expect(
-        page.getByText(/Rezumi does not submit or send them/i),
+        page.getByText(/Meridian does not submit or send them/i),
       ).toBeVisible();
       await expect(page.getByLabel("Tailored Resume")).toBeChecked();
       await uncheckWhenReady(page.getByLabel("Cover Letter"));

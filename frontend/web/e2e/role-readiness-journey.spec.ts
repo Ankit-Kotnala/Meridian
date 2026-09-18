@@ -192,7 +192,7 @@ test("a user saves, analyzes, and compares evidence-linked target roles", async 
     ).toBeVisible();
     await expect(
       page
-        .getByText(/Rezumi scores are internal readiness measurements/i)
+        .getByText(/Meridian scores are internal readiness measurements/i)
         .first(),
     ).toBeVisible();
     await expect(page.getByText("Onboarding study source note")).toBeVisible();

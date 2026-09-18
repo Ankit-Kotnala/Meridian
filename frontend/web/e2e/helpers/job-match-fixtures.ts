@@ -8,13 +8,26 @@ export type SavedJobFixture = {
   title: string;
 };
 
+function requestOrigin(page: Page): string {
+  try {
+    return new URL(page.url()).origin;
+  } catch {
+    const baseUrl = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000";
+    return new URL(baseUrl).origin;
+  }
+}
+
 async function csrfToken(page: Page): Promise<string> {
   const cookies = await page.context().cookies();
   const token = cookies.find((cookie) => cookie.name === "rezumi_csrf")?.value;
   if (!token) {
     throw new Error("Missing rezumi_csrf cookie for authenticated API writes.");
   }
-  return token;
+  try {
+    return decodeURIComponent(token);
+  } catch {
+    return token;
+  }
 }
 
 /** Create a pasted job through the API (the manual entry form was removed from the UI). */
@@ -35,6 +48,7 @@ export async function createSavedJobThroughApi(
     headers: {
       "Content-Type": "application/json",
       "Idempotency-Key": randomUUID(),
+      Origin: requestOrigin(page),
       "X-CSRF-Token": await csrfToken(page),
     },
   });
