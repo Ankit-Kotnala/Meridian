@@ -11,6 +11,7 @@ import {
 import {
   analyzeFirstSavedJob,
   createSavedJobThroughApi,
+  SCORE_DISCLAIMER_PATTERN,
 } from "./helpers/job-match-fixtures";
 
 type MailpitSearchResponse = { messages?: Array<{ ID?: string }> };
@@ -280,7 +281,7 @@ test("a user tracks a grounded application and generates a consistent applicatio
       await expect(page.getByText(evidenceTitle)).toBeVisible();
       await expect(
         page
-          .getByText(/Meridian scores are internal readiness measurements/i)
+          .getByText(SCORE_DISCLAIMER_PATTERN)
           .first(),
       ).toBeVisible();
     });

@@ -9,6 +9,8 @@ import {
   type Page,
 } from "@playwright/test";
 
+import { SCORE_DISCLAIMER_PATTERN } from "./helpers/job-match-fixtures";
+
 type MailpitSearchResponse = {
   messages?: Array<{ ID?: string }>;
 };
@@ -159,11 +161,11 @@ async function completeResumeHealth(page: Page): Promise<void> {
     timeout: 120_000,
   });
   await expect(
-    page.getByRole("heading", { name: "Resume Health report" }),
+    page.getByRole("heading", { name: "Resume Health" }),
   ).toBeVisible();
   await expect(
     page
-      .getByText(/Meridian scores are internal readiness measurements/i)
+      .getByText(SCORE_DISCLAIMER_PATTERN)
       .first(),
   ).toBeVisible();
   await expect(

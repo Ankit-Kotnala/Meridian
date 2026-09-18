@@ -5,6 +5,7 @@ import { expect, test, type APIRequestContext } from "@playwright/test";
 import {
   analyzeFirstSavedJob,
   createSavedJobThroughApi,
+  SCORE_DISCLAIMER_PATTERN,
 } from "./helpers/job-match-fixtures";
 
 type MailpitSearchResponse = { messages?: Array<{ ID?: string }> };
@@ -174,7 +175,7 @@ test("a user saves a job, analyzes exact requirements, and prioritizes it", asyn
     await analyzeFirstSavedJob(page);
     await expect(page.getByText("Discovery interview notes")).toBeVisible();
     await expect(
-      page.getByText(/Meridian scores are internal readiness measurements/i),
+      page.getByText(SCORE_DISCLAIMER_PATTERN),
     ).toBeVisible();
 
     await page.getByLabel("Interest").fill("5");
