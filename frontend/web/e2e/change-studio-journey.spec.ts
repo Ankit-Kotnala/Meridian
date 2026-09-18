@@ -5,6 +5,7 @@ import { expect, test, type APIRequestContext } from "@playwright/test";
 import {
   analyzeFirstSavedJob,
   createSavedJobThroughApi,
+  SCORE_DISCLAIMER_PATTERN,
 } from "./helpers/job-match-fixtures";
 
 type MailpitSearchResponse = { messages?: Array<{ ID?: string }> };
@@ -165,7 +166,7 @@ test("a user reviews, accepts, undoes, and answers grounded Change Studio sugges
     await expect(page.getByText("Discovery interview notes")).toBeVisible();
     await expect(
       page
-        .getByText(/Rezumi scores are internal readiness measurements/i)
+        .getByText(SCORE_DISCLAIMER_PATTERN)
         .first(),
     ).toBeVisible();
 

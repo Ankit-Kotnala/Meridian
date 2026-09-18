@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 
 import { expect, test, type APIRequestContext } from "@playwright/test";
 
+import { SCORE_DISCLAIMER_PATTERN } from "./helpers/job-match-fixtures";
+
 type MailpitSearchResponse = { messages?: Array<{ ID?: string }> };
 
 const mailpitUrl = process.env.PLAYWRIGHT_MAILPIT_URL;
@@ -192,7 +194,7 @@ test("a user saves, analyzes, and compares evidence-linked target roles", async 
     ).toBeVisible();
     await expect(
       page
-        .getByText(/Rezumi scores are internal readiness measurements/i)
+        .getByText(SCORE_DISCLAIMER_PATTERN)
         .first(),
     ).toBeVisible();
     await expect(page.getByText("Onboarding study source note")).toBeVisible();

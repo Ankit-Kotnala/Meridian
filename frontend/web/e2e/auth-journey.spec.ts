@@ -9,6 +9,8 @@ import {
   type Page,
 } from "@playwright/test";
 
+import { SCORE_DISCLAIMER_PATTERN } from "./helpers/job-match-fixtures";
+
 type MailpitSearchResponse = {
   messages?: Array<{ ID?: string }>;
 };
@@ -85,7 +87,7 @@ async function removeMail(
 async function signIn(page: Page, email: string): Promise<void> {
   await page.goto("/login");
   await expect(
-    page.getByRole("heading", { name: "Sign in to Rezumi" }),
+    page.getByRole("heading", { name: "Sign in to Meridian" }),
   ).toBeVisible();
   await page.getByLabel("Email address").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
@@ -96,7 +98,7 @@ async function signIn(page: Page, email: string): Promise<void> {
 async function finishOnboarding(page: Page): Promise<void> {
   await page.goto("/onboarding");
   await expect(
-    page.getByRole("heading", { name: "Set up your Rezumi workspace" }),
+    page.getByRole("heading", { name: "Set up your Meridian workspace" }),
   ).toBeVisible();
 
   const saveProfile = page.getByRole("button", { name: "Save and continue" });
@@ -108,10 +110,9 @@ async function finishOnboarding(page: Page): Promise<void> {
 
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(
-    page.getByRole("heading", { name: /Welcome to your Rezumi workspace,/ }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "No resume data yet" }),
+    page.getByRole("heading", {
+      name: "Start with your resume or build your profile by hand.",
+    }),
   ).toBeVisible();
 }
 
@@ -129,7 +130,7 @@ async function completeResumeHealth(page: Page): Promise<void> {
     timeout: 120_000,
   });
   await expect(
-    page.getByRole("heading", { name: "Review what Rezumi extracted" }),
+    page.getByRole("heading", { name: "Review what Meridian extracted" }),
   ).toBeVisible();
   const reviewedField = page.getByLabel(/^Reviewed /).first();
   const correctedValue = `${await reviewedField.inputValue()} [E2E reviewed fixture]`;
@@ -160,11 +161,11 @@ async function completeResumeHealth(page: Page): Promise<void> {
     timeout: 120_000,
   });
   await expect(
-    page.getByRole("heading", { name: "Resume Health report" }),
+    page.getByRole("heading", { name: "Resume Health" }),
   ).toBeVisible();
   await expect(
     page
-      .getByText(/Rezumi scores are internal readiness measurements/i)
+      .getByText(SCORE_DISCLAIMER_PATTERN)
       .first(),
   ).toBeVisible();
   await expect(
@@ -199,7 +200,7 @@ test("a verified user completes honest onboarding and controls sessions", async 
   try {
     await page.goto("/register");
     await expect(
-      page.getByRole("heading", { name: "Start your Rezumi account" }),
+      page.getByRole("heading", { name: "Start your Meridian account" }),
     ).toBeVisible();
 
     await page.keyboard.press("Tab");

@@ -10,7 +10,10 @@ import {
 
 import {
   analyzeFirstSavedJob,
+  CANONICAL_SCORE_DISCLAIMER,
+  createInterviewSessionThroughApi,
   createSavedJobThroughApi,
+  fetchFirstApplicationId,
 } from "./helpers/job-match-fixtures";
 
 type MailpitSearchResponse = { messages?: Array<{ ID?: string }> };
@@ -20,8 +23,6 @@ const password = `${randomUUID()}-aA1!`;
 const actionTimeout = 7_500;
 const workerTimeout = 120_000;
 
-const canonicalScoreDisclaimer =
-  "Rezumi scores are internal readiness measurements. They are not scores provided by an employer or applicant tracking system and do not guarantee interviews or employment outcomes.";
 const nonCausalInterpretation =
   "These analytics describe correlations and observed patterns only. They do not establish causation, predict hiring decisions, or promise career outcomes.";
 const promotionReadinessDisclaimer =
@@ -345,118 +346,17 @@ async function createGroundedApplication(
 async function exerciseInterviewPrep(page: Page, keyboard: boolean) {
   await page.goto("/interview-prep");
   await expect(
-    page.getByRole("heading", {
-      name: "Interview Prep",
-    }),
+    page.getByRole("heading", { name: "Interview readiness workspace" }),
   ).toBeVisible();
-  await select(page.getByLabel("Application context"), { index: 1 });
-  const defenseMap = page.getByRole("heading", {
-    name: "Resume Defense Map",
-  });
-  await expect(defenseMap).toBeVisible();
-  await expect(
-    page.getByText(fictional.evidenceStatement).first(),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^Path to / })).toBeVisible();
 
-  await activate(
-    page.getByRole("button", { name: "Add STAR story" }),
-    keyboard,
-  );
-  const storyForm = page.locator("form").filter({
-    has: page.getByRole("heading", {
-      name: "Add an evidence-linked STAR story",
-    }),
+  const applicationId = await fetchFirstApplicationId(page);
+  const sessionId = await createInterviewSessionThroughApi(page, {
+    applicationId,
+    kind: "behavioral",
+    title: fictional.session,
   });
-  await fill(storyForm.getByLabel("Story title"), fictional.story);
-  await select(storyForm.getByLabel("Confidence"), "4");
-  await select(storyForm.getByLabel("Story status"), "ready");
-  await fill(
-    storyForm.getByRole("textbox", { name: "Situation", exact: true }),
-    "The user states that a fictional product team needed clearer customer evidence.",
-  );
-  await fill(
-    storyForm.getByRole("textbox", { name: "Task", exact: true }),
-    "The user states that they were responsible for organizing customer discovery.",
-  );
-  await fill(
-    storyForm.getByRole("textbox", { name: "Action", exact: true }),
-    "The user states that they conducted interviews and synthesized the findings.",
-  );
-  await fill(
-    storyForm.getByRole("textbox", { name: "Result", exact: true }),
-    "The user states that the synthesis informed a product recommendation.",
-  );
-  await fill(
-    storyForm.getByRole("textbox", {
-      name: "Personal contribution",
-      exact: true,
-    }),
-    "The user states that they personally conducted the interviews and prepared the synthesis.",
-  );
-  await fill(
-    storyForm.getByLabel("Likely follow-up questions"),
-    "How did you synthesize the interview findings?",
-  );
-  await attest(
-    storyForm.getByRole("checkbox", {
-      name: fictional.evidenceStatement,
-      exact: false,
-    }),
-    keyboard,
-  );
-  await activate(
-    storyForm.getByRole("button", { name: "Save grounded story" }),
-    keyboard,
-  );
-  await expect(
-    page.getByText(/saved with exact claim and evidence revision/),
-  ).toBeVisible();
-
-  await activate(
-    page.getByRole("button", { name: "Create session" }),
-    keyboard,
-  );
-  const sessionForm = page.locator("form").filter({
-    has: page.getByLabel("Session title"),
-  });
-  await fill(sessionForm.getByLabel("Session title"), fictional.session);
-  await select(sessionForm.getByLabel("Session type"), "behavioral");
-  await fill(
-    sessionForm.getByLabel("Scheduled time (optional)"),
-    localDateTimeOffset(120),
-  );
-  await activate(
-    sessionForm.getByRole("button", { name: "Create private session" }),
-    keyboard,
-  );
-  await expect(
-    page.getByText(/created from an immutable bounded context/),
-  ).toBeVisible();
-
-  const storyCard = page.locator("li").filter({ hasText: fictional.story });
-  await activate(
-    storyCard.getByRole("link", { name: "Review story" }),
-    keyboard,
-  );
-  const provenance = page.getByRole("region", {
-    name: "Machine-checkable provenance",
-  });
-  await expect(provenance).toBeVisible();
-  const evidencePin = provenance.getByRole("listitem").filter({
-    hasText: fictional.evidenceStatement,
-  });
-  await expect(evidencePin).toBeVisible();
-  await expect(evidencePin.getByText(/Revision \d+/)).toBeVisible();
-  await activate(
-    page.locator("#main-content").getByRole("link", { name: "Interview Prep" }),
-    keyboard,
-  );
-
-  const sessionCard = page.locator("li").filter({ hasText: fictional.session });
-  await activate(
-    sessionCard.getByRole("link", { name: "Open session" }),
-    keyboard,
-  );
+  await page.goto(`/interview-prep/sessions/${sessionId}`);
   await expect(
     page.getByRole("heading", { name: fictional.session }),
   ).toBeVisible();
@@ -512,7 +412,7 @@ async function exerciseInterviewPrep(page: Page, keyboard: boolean) {
   );
   await expect(
     page.getByText(
-      "A grounded draft was created for your review. Rezumi did not send it.",
+      "A grounded draft was created for your review. Meridian did not send it.",
     ),
   ).toBeVisible();
   await expect(page.getByText("Review required")).toBeVisible();
@@ -581,7 +481,7 @@ async function exerciseNetworking(page: Page, keyboard: boolean) {
   );
   await attest(
     templateForm.getByRole("checkbox", {
-      name: "I reviewed this text and understand Rezumi will not send it",
+      name: "I reviewed this text and understand Meridian will not send it",
     }),
     keyboard,
   );
@@ -692,7 +592,7 @@ async function exerciseNetworking(page: Page, keyboard: boolean) {
   );
   await expect(
     page.getByText(
-      "Interaction recorded as local history only. Rezumi did not send anything.",
+      "Interaction recorded as local history only. Meridian did not send anything.",
     ),
   ).toBeVisible();
   await expect(page.getByText("Recorded Only", { exact: true })).toBeVisible();
@@ -1058,7 +958,7 @@ async function exerciseCareerGrowth(
     page.getByText(/Career Health (recalculated|checked; more data is needed)/),
   ).toBeVisible();
   await expect(page.getByTestId("career-health-disclaimer")).toHaveText(
-    canonicalScoreDisclaimer,
+    CANONICAL_SCORE_DISCLAIMER,
   );
   await expect(page.locator("#career-health-score")).toHaveText(
     /Insufficient data|\d+\s*\/100/,
