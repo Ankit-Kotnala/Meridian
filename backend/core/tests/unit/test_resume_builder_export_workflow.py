@@ -1044,6 +1044,74 @@ async def test_pdf_export_verifies_smart_apostrophe_bullets(tmp_path: Path) -> N
 
 
 @pytest.mark.asyncio
+async def test_executive_pdf_export_verifies_glued_section_headings(tmp_path: Path) -> None:
+    state = MemoryResumeBuilder()
+    storage = MemoryStorage()
+    clock = MutableClock()
+    resume, _unused = await _request_export(state, storage, clock)
+    state.exports.clear()
+    state.export_outbox.clear()
+    section = resume.current_version.sections[0]
+    item = section.items[0]
+    reference = item.evidence_references[0]
+    bullet_text = (
+        "Xmem is a India's First multi-modal, multi-agentic long-term memory "
+        "layer for AI agents. Primary language: Python."
+    )
+    executive_version = replace(
+        resume.current_version,
+        target_role="Software Engineer",
+        template=ResumeTemplate.EXECUTIVE,
+        source_evidence_ids=item.evidence_ids,
+        sections=(
+            replace(
+                section,
+                title="Experience",
+                items=(
+                    replace(
+                        item,
+                        text=bullet_text,
+                        evidence_references=(
+                            replace(
+                                reference,
+                                claim_sha256=hashlib.sha256(
+                                    bullet_text.encode("utf-8")
+                                ).hexdigest(),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    )
+    state.versions[executive_version.id] = executive_version
+    requested = await _export_current_version(
+        state,
+        storage,
+        clock,
+        executive_version.id,
+        fmt=ResumeFormat.PDF,
+        idempotency_key="executive-glued-heading-pdf-export",
+    )
+    processor = ResumeExportProcessor(
+        unit_of_work=state,
+        clock=clock,
+        identifiers=UuidFactory(),
+        renderer=DeterministicResumeRenderer(),
+        extractor=ResumeBuilderDocumentExtractor(_document_limits(tmp_path)),
+        storage=storage,
+        policy=ResumeExportWorkerPolicy(temp_root=tmp_path),
+    )
+
+    outcome = await processor.process(requested.export.id, "executive-glued-heading-pdf-worker")
+
+    assert outcome.status is ResumeExportStatus.VERIFIED
+    report = state.verifications[requested.export.id]
+    assert report.critical_failures == ()
+    assert report.occurrence_mismatches == ()
+
+
+@pytest.mark.asyncio
 async def test_real_pdf_round_trip_blocks_a_page_limit_overflow(tmp_path: Path) -> None:
     state = MemoryResumeBuilder()
     storage = MemoryStorage()

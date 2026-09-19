@@ -40,6 +40,13 @@ _DASH_CHARS = str.maketrans(
     }
 )
 _FIDELITY_CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f-\x9f]")
+_FIDELITY_SENTENCE_PUNCTUATION_SPACING = re.compile(r"([.!?])([A-Z])")
+_FIDELITY_HYPHENATION_BREAKS = re.compile(r"-\s+")
+_FIDELITY_SECTION_HEADING_BOUNDARY = re.compile(
+    r"(?<=[A-Za-z])"
+    r"(?=(EXPERIENCE|EDUCATION|SKILLS|PROJECTS|SUMMARY|AWARDS|CREDENTIALS)\b)",
+    re.IGNORECASE,
+)
 
 
 def normalize_text(value: str) -> str:
@@ -61,6 +68,9 @@ def normalize_fidelity_match_text(value: str) -> str:
     )
     normalized = normalized.replace("\u00ad", "")
     normalized = _FIDELITY_CONTROL_CHARS.sub(" ", normalized)
+    normalized = _FIDELITY_SECTION_HEADING_BOUNDARY.sub(" ", normalized)
+    normalized = _FIDELITY_SENTENCE_PUNCTUATION_SPACING.sub(r"\1 \2", normalized)
+    normalized = _FIDELITY_HYPHENATION_BREAKS.sub("-", normalized)
     return " ".join(normalized.split()).casefold()
 
 
