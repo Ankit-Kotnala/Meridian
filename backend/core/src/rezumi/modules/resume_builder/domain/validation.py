@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import hashlib
+import re
+import unicodedata
 from collections.abc import Iterable
 from uuid import UUID
 
@@ -18,8 +20,48 @@ MAX_SECTIONS = 12
 MAX_ITEMS_PER_SECTION = 24
 
 
+_SMART_APOSTROPHES = str.maketrans(
+    {
+        "\u2018": "'",
+        "\u2019": "'",
+        "\u201a": "'",
+        "\u201b": "'",
+        "`": "'",
+    }
+)
+_DASH_CHARS = str.maketrans(
+    {
+        "\u2010": "-",
+        "\u2011": "-",
+        "\u2012": "-",
+        "\u2013": "-",
+        "\u2014": "-",
+        "\u2212": "-",
+    }
+)
+_FIDELITY_CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f-\x9f]")
+
+
 def normalize_text(value: str) -> str:
     return " ".join(value.strip().split())
+
+
+def normalize_fidelity_match_text(value: str) -> str:
+    """Normalize resume text for export round-trip verification.
+
+    PDF/DOCX re-extraction can rewrite smart quotes, drop control characters, and
+    split words across lines. Collapse those artifacts before comparing manifest
+    entries to extracted bytes.
+    """
+
+    normalized = normalize_text(value)
+    normalized = unicodedata.normalize(
+        "NFKC",
+        normalized.translate(_SMART_APOSTROPHES).translate(_DASH_CHARS),
+    )
+    normalized = normalized.replace("\u00ad", "")
+    normalized = _FIDELITY_CONTROL_CHARS.sub(" ", normalized)
+    return " ".join(normalized.split()).casefold()
 
 
 def validate_title(value: str) -> str:

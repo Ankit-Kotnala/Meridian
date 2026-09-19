@@ -7,6 +7,7 @@ import json
 from io import BytesIO
 from typing import Any
 from unittest.mock import patch
+from urllib.request import Request
 
 import pytest
 
@@ -169,6 +170,62 @@ async def test_github_connector_filters_fork_and_empty_repos_for_profiles() -> N
 
     assert result.achievements[0].statement == "Platform engineer"
     assert [item.title for item in result.achievements[1:]] == ["alex-example/infra-tools"]
+
+
+@pytest.mark.asyncio
+async def test_github_connector_imports_profile_fields_and_skips_role_taglines() -> None:
+    connector = GithubDeclaredProfileConnector()
+    responses = [
+        _FakeJsonResponse(
+            {
+                "name": "Alex Example",
+                "bio": "Software Engineer | Footballer",
+                "location": "Berlin",
+                "company": "Example GmbH",
+                "blog": "https://alex.dev",
+                "html_url": "https://github.com/alex-example",
+            }
+        ),
+        _FakeJsonResponse([]),
+    ]
+
+    with patch(
+        "rezumi.modules.career_record.infrastructure.declared_profile.github_connector.urlopen",
+        side_effect=responses,
+    ):
+        result = await connector.fetch("https://github.com/alex-example")
+
+    statements = [item.statement for item in result.achievements]
+    assert "Software Engineer | Footballer" not in statements
+    assert "Berlin" in statements
+    assert "Example GmbH" in statements
+    assert "https://alex.dev" in statements
+
+
+@pytest.mark.asyncio
+async def test_github_connector_requests_star_sorted_owned_repositories() -> None:
+    connector = GithubDeclaredProfileConnector()
+    requested_urls: list[str] = []
+
+    def _fake_urlopen(request: Request, timeout: float = 0) -> _FakeJsonResponse:
+        requested_urls.append(request.full_url)
+        if request.full_url.endswith("/users/alex-example"):
+            return _FakeJsonResponse(
+                {
+                    "name": "Alex Example",
+                    "bio": "Platform engineer",
+                    "html_url": "https://github.com/alex-example",
+                }
+            )
+        return _FakeJsonResponse([])
+
+    with patch(
+        "rezumi.modules.career_record.infrastructure.declared_profile.github_connector.urlopen",
+        side_effect=_fake_urlopen,
+    ):
+        await connector.fetch("https://github.com/alex-example")
+
+    assert any("sort=stars" in url and "type=owner" in url for url in requested_urls)
 
 
 # --- GitLab -------------------------------------------------------------

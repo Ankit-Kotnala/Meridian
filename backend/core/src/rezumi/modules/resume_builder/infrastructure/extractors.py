@@ -24,6 +24,8 @@ _BIDI_CONTROLS = dict.fromkeys(
         0x061C,
     ]
 )
+# ReportLab bullet glyphs and other layout controls should not survive verification.
+_EXPORT_CONTROL_CHARS = dict.fromkeys([*range(0x20), 0x7F, *range(0x80, 0xA0)])
 
 
 @dataclass(frozen=True, slots=True)
@@ -201,7 +203,7 @@ def _reading_order(page_texts: list[str], *, max_blocks: int) -> tuple[str, ...]
 
 
 def _sanitize(value: str) -> tuple[str, bool]:
-    sanitized = value.translate(_BIDI_CONTROLS)
+    sanitized = value.translate(_BIDI_CONTROLS).translate(_EXPORT_CONTROL_CHARS)
     return sanitized, sanitized != value
 
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import re
+import unicodedata
 from datetime import UTC, datetime
 from typing import Any
 from urllib.error import HTTPError, URLError
@@ -21,6 +22,15 @@ from rezumi.modules.career_record.application.declared_profile_ports import (
 
 _GITHUB_USER = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$")
 _GITHUB_WEB_HOSTS = frozenset({"github.com", "gist.github.com"})
+_SMART_APOSTROPHES = str.maketrans(
+    {
+        "\u2018": "'",
+        "\u2019": "'",
+        "\u201a": "'",
+        "\u201b": "'",
+        "`": "'",
+    }
+)
 # Site routes that look exactly like a username in a URL path. Treating one as
 # a profile produces a confusing "profile was not found" instead of routing the
 # link to the generic fallback.
@@ -84,6 +94,7 @@ _REPO_ROUTE_MARKERS = frozenset(
     }
 )
 _MAX_REPOS = 5
+_MAX_TOPICS = 5
 _TIMEOUT = 8.0
 
 
@@ -112,42 +123,31 @@ class GithubDeclaredProfileConnector:
         achievements: list[DeclaredProfileAchievement] = []
         seen_repo_urls: set[str] = set()
 
-        bio = str(user.get("bio") or "").strip()
-        name = str(user.get("name") or username).strip()
+        name = _normalize_public_text(str(user.get("name") or username))
         profile_html_url = str(user.get("html_url") or f"https://github.com/{username}")
+        profile_achievements = self._profile_achievements(
+            user,
+            name=name,
+            profile_html_url=profile_html_url,
+        )
 
         if repo_name is not None:
             pinned = self._repo_achievement(username, repo_name)
             if pinned is not None:
                 achievements.append(pinned)
                 seen_repo_urls.add(pinned.source_url.casefold())
-            elif bio:
-                achievements.append(
-                    DeclaredProfileAchievement(
-                        title=f"{name} on GitHub",
-                        statement=bio,
-                        source_url=profile_html_url,
-                        excerpt=bio[:500],
-                    )
-                )
+            else:
+                achievements.extend(profile_achievements)
         else:
-            if bio:
-                achievements.append(
-                    DeclaredProfileAchievement(
-                        title=f"{name} on GitHub",
-                        statement=bio,
-                        source_url=profile_html_url,
-                        excerpt=bio[:500],
-                    )
-                )
-
+            achievements.extend(profile_achievements)
             repos = self._get_json(
                 f"https://api.github.com/users/{username}/repos"
-                "?sort=updated&direction=desc&per_page=20&type=owner"
+                "?sort=stars&direction=desc&per_page=30&type=owner"
             )
             if isinstance(repos, list):
+                repo_limit = len(profile_achievements) + _MAX_REPOS
                 for repo in repos:
-                    if len(achievements) >= _MAX_REPOS + (1 if bio else 0):
+                    if len(achievements) >= repo_limit:
                         break
                     achievement = self._achievement_from_repo(repo, seen_repo_urls)
                     if achievement is None:
@@ -164,6 +164,59 @@ class GithubDeclaredProfileConnector:
             fetched_at=now,
             achievements=tuple(achievements),
         )
+
+    def _profile_achievements(
+        self,
+        user: dict[str, Any],
+        *,
+        name: str,
+        profile_html_url: str,
+    ) -> list[DeclaredProfileAchievement]:
+        achievements: list[DeclaredProfileAchievement] = []
+        bio = _normalize_public_text(str(user.get("bio") or ""))
+        if bio and not _is_role_tagline(bio):
+            achievements.append(
+                DeclaredProfileAchievement(
+                    title=f"{name} on GitHub",
+                    statement=bio,
+                    source_url=profile_html_url,
+                    excerpt=bio[:500],
+                )
+            )
+
+        location = _normalize_public_text(str(user.get("location") or ""))
+        if location:
+            achievements.append(
+                DeclaredProfileAchievement(
+                    title=f"{name} — GitHub location",
+                    statement=location,
+                    source_url=profile_html_url,
+                    excerpt=location[:500],
+                )
+            )
+
+        company = _normalize_public_text(str(user.get("company") or ""))
+        if company:
+            achievements.append(
+                DeclaredProfileAchievement(
+                    title=f"{name} — GitHub company",
+                    statement=company,
+                    source_url=profile_html_url,
+                    excerpt=company[:500],
+                )
+            )
+
+        blog = _normalize_public_text(str(user.get("blog") or ""))
+        if blog:
+            achievements.append(
+                DeclaredProfileAchievement(
+                    title=f"{name} — GitHub website",
+                    statement=blog,
+                    source_url=profile_html_url,
+                    excerpt=blog[:500],
+                )
+            )
+        return achievements
 
     def _repo_achievement(
         self,
@@ -193,10 +246,15 @@ class GithubDeclaredProfileConnector:
         html_url = str(repo.get("html_url") or "").strip()
         if html_url and html_url.casefold() in seen_repo_urls:
             return None
-        description = str(repo.get("description") or "").strip()
-        language = str(repo.get("language") or "").strip()
+        description = _normalize_public_text(str(repo.get("description") or ""))
+        language = _normalize_public_text(str(repo.get("language") or ""))
         stars = int(repo.get("stargazers_count") or 0)
         owner_login = str((repo.get("owner") or {}).get("login") or "").strip()
+        topics = [
+            _normalize_public_text(str(topic))
+            for topic in (repo.get("topics") or [])
+            if str(topic).strip()
+        ]
         if not pinned and not description and stars == 0:
             return None
         parts = [description] if description else []
@@ -204,6 +262,8 @@ class GithubDeclaredProfileConnector:
             parts.append(f"Primary language: {language}.")
         if stars > 0:
             parts.append(f"{stars} public stars.")
+        if topics:
+            parts.append(f"Topics: {', '.join(topics[:_MAX_TOPICS])}.")
         statement = " ".join(parts) or f"Public repository {repo_name}."
         title = f"{owner_login}/{repo_name}" if owner_login else repo_name
         return DeclaredProfileAchievement(
@@ -271,6 +331,23 @@ def _github_target(url: str) -> tuple[str, str | None] | None:
 def _is_github_web_host(host: str) -> bool:
     normalized = host.casefold().rstrip(".").removeprefix("www.")
     return normalized in _GITHUB_WEB_HOSTS
+
+
+def _normalize_public_text(value: str) -> str:
+    normalized = " ".join(value.strip().split())
+    return unicodedata.normalize("NFKC", normalized.translate(_SMART_APOSTROPHES))
+
+
+def _is_role_tagline(value: str) -> bool:
+    if "|" not in value:
+        return False
+    segments = [segment.strip() for segment in value.split("|") if segment.strip()]
+    if len(segments) < 2:
+        return False
+    return all(
+        len(segment.split()) <= 5 and not any(char in segment for char in ".!?")
+        for segment in segments
+    )
 
 
 def _username(url: str) -> str | None:

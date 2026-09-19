@@ -30,6 +30,7 @@ from rezumi.modules.resume_builder.domain import (
     fidelity_manifest_payload,
     fidelity_manifest_sha256,
     manifest_grounding_failures,
+    normalize_fidelity_match_text,
     normalize_text,
 )
 
@@ -389,7 +390,7 @@ class ResumeExportProcessor:
         pin_failures: tuple[str, ...],
     ) -> ResumeVerificationReport:
         extracted = await self._extract(rendered, export.format)
-        normalized_text = normalize_text(extracted.plain_text).casefold()
+        normalized_text = normalize_fidelity_match_text(extracted.plain_text)
         expected_counts = Counter(entry.normalized_text for entry in manifest.entries)
         actual_counts = _manifest_occurrence_counts(normalized_text, expected_counts)
         occurrence_mismatches = tuple(
