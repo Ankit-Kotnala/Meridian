@@ -260,7 +260,7 @@ def test_source_preview_and_create_without_evidence_stay_actionable(
         )
         assert created.status_code == 422
         assert created.json()["code"] == "resume_builder_validation_error"
-        assert "career evidence" in created.json()["detail"].casefold()
+        assert "evidence vault" in created.json()["detail"].casefold()
 
 
 def test_resume_builder_mutation_requires_authenticated_session_and_csrf(

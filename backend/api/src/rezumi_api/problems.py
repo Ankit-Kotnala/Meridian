@@ -974,7 +974,7 @@ _RESUME_BUILDER_VALIDATION_DETAILS = {
         "Create a Career Profile before building a resume."
     ),
     "eligible career evidence is required before building a resume": (
-        "Add confirmed career evidence in Career Profile before building a resume."
+        "Add and confirm evidence in Evidence Vault before building a resume."
     ),
     "resume source exceeds the 200-evidence provenance limit": (
         "This Career Profile has too many evidence items to build a resume in one pass."

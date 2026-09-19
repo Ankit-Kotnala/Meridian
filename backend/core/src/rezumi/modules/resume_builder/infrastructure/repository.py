@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime
 from types import TracebackType
 from typing import Any, cast
@@ -105,10 +106,21 @@ class SqlAlchemyResumeBuilderUnitOfWork:
 
     async def add_resume(self, record: ResumeRecord) -> None:
         _validate_record_ownership(record)
-        self.session.add(_resume_model(record.resume))
+        resume = record.resume
+        version = record.current_version
+        resume_without_current = replace(resume, current_version_id=None)
+        self.session.add(_resume_model(resume_without_current))
         await self._flush()
-        self.session.add(_version_model(record.current_version))
+        self.session.add(_version_model(version))
         await self._flush()
+        await self._execute(
+            update(ResumeModel)
+            .where(
+                ResumeModel.owner_user_id == resume.owner_user_id,
+                ResumeModel.id == resume.id,
+            )
+            .values(current_version_id=version.id)
+        )
 
     async def save_resume(self, record: ResumeRecord) -> None:
         _validate_record_ownership(record)
