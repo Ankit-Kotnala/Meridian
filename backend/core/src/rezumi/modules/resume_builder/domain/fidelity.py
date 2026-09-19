@@ -16,7 +16,7 @@ from .entities import (
     ResumeTemplate,
     ResumeVersion,
 )
-from .validation import normalize_text
+from .validation import normalize_fidelity_match_text, normalize_text
 
 FIDELITY_MANIFEST_VERSION = "career-resume-fidelity-v1"
 _NUMERIC_TOKEN = re.compile(r"(?<!\w)[+-]?(?:\d[\d,.]*)(?:%|[kKmMbB])?(?!\w)")
@@ -147,7 +147,7 @@ def build_fidelity_manifest(version: ResumeVersion) -> ResumeFidelityManifest:
                 key=key,
                 kind=kind,
                 text=normalized,
-                normalized_text=normalized.casefold(),
+                normalized_text=normalize_fidelity_match_text(normalized),
                 source_ids=source_ids,
                 factual=factual,
                 numeric=bool(_NUMERIC_TOKEN.search(normalized)),

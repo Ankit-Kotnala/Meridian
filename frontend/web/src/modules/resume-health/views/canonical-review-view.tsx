@@ -1104,6 +1104,10 @@ export function CanonicalReviewView({
     <div className="py-5">
       <Card className="p-5">
         <h2 className="text-sm font-extrabold">Detected reading order</h2>
+        <p className="mt-1 text-xs leading-5 text-muted">
+          Common PDF icon and duplicated-link artifacts are normalized before
+          semantic review. Always confirm contact links and section order here.
+        </p>
         {readingOrder && readingOrder.blocks.length > 0 ? (
           <ol className="mt-4 space-y-3">
             {readingOrder.blocks.map((block) => (

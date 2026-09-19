@@ -980,6 +980,70 @@ async def test_unicode_pdf_and_docx_pass_exact_manifest_verification(
 
 
 @pytest.mark.asyncio
+async def test_pdf_export_verifies_smart_apostrophe_bullets(tmp_path: Path) -> None:
+    state = MemoryResumeBuilder()
+    storage = MemoryStorage()
+    clock = MutableClock()
+    resume, _unused = await _request_export(state, storage, clock)
+    state.exports.clear()
+    state.export_outbox.clear()
+    smart_quote_text = (
+        "Xmem is a India\u2019s First multi-modal, multi-agentic long-term memory layer for AI agents."
+    )
+    section = resume.current_version.sections[0]
+    item = section.items[0]
+    reference = item.evidence_references[0]
+    smart_version = replace(
+        resume.current_version,
+        sections=(
+            replace(
+                section,
+                items=(
+                    replace(
+                        item,
+                        text=smart_quote_text,
+                        evidence_references=(
+                            replace(
+                                reference,
+                                claim_sha256=hashlib.sha256(
+                                    smart_quote_text.encode("utf-8")
+                                ).hexdigest(),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            *resume.current_version.sections[1:],
+        ),
+    )
+    state.versions[smart_version.id] = smart_version
+    requested = await _export_current_version(
+        state,
+        storage,
+        clock,
+        smart_version.id,
+        fmt=ResumeFormat.PDF,
+        idempotency_key="smart-apostrophe-pdf-export",
+    )
+    processor = ResumeExportProcessor(
+        unit_of_work=state,
+        clock=clock,
+        identifiers=UuidFactory(),
+        renderer=DeterministicResumeRenderer(),
+        extractor=ResumeBuilderDocumentExtractor(_document_limits(tmp_path)),
+        storage=storage,
+        policy=ResumeExportWorkerPolicy(temp_root=tmp_path),
+    )
+
+    outcome = await processor.process(requested.export.id, "smart-apostrophe-pdf-worker")
+
+    assert outcome.status is ResumeExportStatus.VERIFIED
+    report = state.verifications[requested.export.id]
+    assert report.critical_failures == ()
+    assert report.occurrence_mismatches == ()
+
+
+@pytest.mark.asyncio
 async def test_real_pdf_round_trip_blocks_a_page_limit_overflow(tmp_path: Path) -> None:
     state = MemoryResumeBuilder()
     storage = MemoryStorage()

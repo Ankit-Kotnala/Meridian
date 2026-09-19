@@ -16,6 +16,7 @@ from rezumi.modules.resume_health.domain.errors import UnsafeDocument
 from rezumi.modules.resume_health.infrastructure.extractors import (
     LocalDocumentExtractor,
     LocalDocumentTextExtractor,
+    normalize_extracted_text,
 )
 from rezumi.modules.resume_health.infrastructure.isolated_extractor import (
     IsolatedDocumentExtractor,
@@ -450,6 +451,18 @@ async def test_repeating_pdf_header_is_excluded_from_career_text(tmp_path: Path)
     assert "BETA BODY" in result.plain_text
     assert "CONFIDENTIAL" not in result.plain_text
     assert "header_footer_excluded" in result.warnings
+
+
+def test_normalize_extracted_text_repairs_pdf_contact_link_artifacts() -> None:
+    raw = (
+        "♂phone+91 88001 45975 | ✉ankit.kotnala12@gmail.com | "
+        "/linkedinlinkedin.com/in/ankit-kotnala- | /githubgithub.com/Ankit-Kotnala"
+    )
+
+    assert normalize_extracted_text(raw) == (
+        "+91 88001 45975 | ankit.kotnala12@gmail.com | "
+        "linkedin.com/in/ankit-kotnala- | github.com/Ankit-Kotnala"
+    )
 
 
 @pytest.mark.asyncio
