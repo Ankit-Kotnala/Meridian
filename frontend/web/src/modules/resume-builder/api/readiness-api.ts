@@ -11,19 +11,31 @@ type ListPayload = {
   data?: unknown[];
 };
 
-async function readList(path: Parameters<typeof apiQuery>[0]): Promise<ListPayload | null> {
+async function readList(
+  path: Parameters<typeof apiQuery>[0],
+  options?: { cacheBust?: number },
+): Promise<ListPayload | null> {
   try {
-    const response = await apiQuery(path, { retryAfterRefresh: true });
+    const requestPath =
+      options?.cacheBust === undefined
+        ? path
+        : (`${path}${path.includes("?") ? "&" : "?"}cacheBust=${options.cacheBust}` as Parameters<
+            typeof apiQuery
+          >[0]);
+    const response = await apiQuery(requestPath, { retryAfterRefresh: true });
     return (await response.json()) as ListPayload;
   } catch {
     return null;
   }
 }
 
-export async function loadResumeBuilderReadiness(): Promise<ResumeBuilderReadinessSnapshot> {
+export async function loadResumeBuilderReadiness(options?: {
+  cacheBust?: boolean;
+}): Promise<ResumeBuilderReadinessSnapshot> {
+  const cacheBust = options?.cacheBust ? Date.now() : undefined;
   const [sourceResult, evidencePayload, experiencesPayload, skillsPayload] =
     await Promise.all([
-      getSourceOptions()
+      getSourceOptions(cacheBust)
         .then((sourceOptions) => ({ sourceOptions }))
         .catch((error: unknown) => ({
           sourceError:
@@ -31,9 +43,9 @@ export async function loadResumeBuilderReadiness(): Promise<ResumeBuilderReadine
               ? error.message
               : "Resume source preview could not load.",
         })),
-      readList(resumeBuilderReadinessPaths.evidence),
-      readList(resumeBuilderReadinessPaths.experiences),
-      readList(resumeBuilderReadinessPaths.skills),
+      readList(resumeBuilderReadinessPaths.evidence, { cacheBust }),
+      readList(resumeBuilderReadinessPaths.experiences, { cacheBust }),
+      readList(resumeBuilderReadinessPaths.skills, { cacheBust }),
     ]);
 
   return buildReadinessSnapshot({
