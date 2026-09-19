@@ -176,7 +176,7 @@ test("a user builds a grounded resume and verifies a PDF export", async ({
     await expect(
       page
         .getByRole("status")
-        .getByText("Resume created from eligible Career Record evidence."),
+        .getByText("Resume created from eligible confirmed evidence."),
     ).toBeVisible();
     await expect(
       page.getByRole("listitem").filter({

@@ -12,7 +12,6 @@ import {
   RotateCcw,
   Save,
 } from "lucide-react";
-import Link from "next/link";
 import {
   useCallback,
   useEffect,
@@ -33,18 +32,17 @@ import {
   LoadingSkeleton,
   Select,
   SectionHeader,
-  buttonStyles,
   cn,
 } from "@rezumi/ui";
 
 import { requestErrorMessage } from "@/shared/api/browser-request";
 
+import { loadResumeBuilderReadiness } from "../api/readiness-api";
 import {
   createDownloadIntent,
   createResume,
   createVersion,
   exportVersion,
-  getSourceOptions,
   listResumes,
   listVersions,
   restoreVersion,
@@ -57,6 +55,11 @@ import type {
   ResumeSectionResponse,
   ResumeVersion,
 } from "../api/types";
+import {
+  ResumeBuilderReadinessPanel,
+  ResumeSourcePreview,
+} from "../components/resume-builder-readiness-panel";
+import type { ResumeBuilderReadinessSnapshot } from "../lib/readiness";
 
 const templates = [
   ["standard_professional", "Standard Professional"],
@@ -76,6 +79,15 @@ const formats = [
 type TemplateValue = (typeof templates)[number][0];
 type FormatValue = (typeof formats)[number][0];
 
+const INITIAL_READINESS: ResumeBuilderReadinessSnapshot = {
+  confirmedEvidenceCount: 0,
+  draftEvidenceCount: 0,
+  experienceCount: 0,
+  skillCount: 0,
+  status: "loading",
+  steps: [],
+};
+
 export function ResumeBuilderView() {
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
@@ -85,7 +97,8 @@ export function ResumeBuilderView() {
   const [loadError, setLoadError] = useState<string>();
   const [failure, setFailure] = useState<string>();
   const [success, setSuccess] = useState<string>();
-  const [sourceReady, setSourceReady] = useState<boolean>();
+  const [readiness, setReadiness] =
+    useState<ResumeBuilderReadinessSnapshot>(INITIAL_READINESS);
   const [busyKey, setBusyKey] = useState("initial");
   const [title, setTitle] = useState("Focused Resume");
   const [targetRole, setTargetRole] = useState("");
@@ -113,19 +126,22 @@ export function ResumeBuilderView() {
     }
   }, []);
 
+  const refreshReadiness = useCallback(async () => {
+    const snapshot = await loadResumeBuilderReadiness();
+    setReadiness(snapshot);
+    return snapshot;
+  }, []);
+
   const load = useCallback(async () => {
     setBusyKey("initial");
     setLoadError(undefined);
     setFailure(undefined);
     try {
-      const items = await listResumes();
+      const [items] = await Promise.all([
+        listResumes(),
+        refreshReadiness(),
+      ]);
       applyListedResumes(items);
-      try {
-        const source = await getSourceOptions();
-        setSourceReady(source.sourceEvidenceIds.length > 0);
-      } catch {
-        setSourceReady(undefined);
-      }
     } catch (error) {
       setLoadError(
         requestErrorMessage(error, "Resume Builder could not load."),
@@ -133,7 +149,7 @@ export function ResumeBuilderView() {
     } finally {
       setBusyKey("");
     }
-  }, [applyListedResumes]);
+  }, [applyListedResumes, refreshReadiness]);
 
   useEffect(() => {
     queueMicrotask(() => void load());
@@ -166,7 +182,7 @@ export function ResumeBuilderView() {
 
   async function submitCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (sourceReady === false) return;
+    if (readiness.status !== "ready") return;
     await run("create", async () => {
       const created = await createResume({
         targetRole: targetRole.trim() || null,
@@ -178,7 +194,8 @@ export function ResumeBuilderView() {
       setVersions([]);
       setExportRecord(undefined);
       setDownloadUrl(undefined);
-      setSuccess("Resume created from eligible Career Record evidence.");
+      setSuccess("Resume created from eligible confirmed evidence.");
+      await refreshReadiness();
     });
   }
 
@@ -315,6 +332,19 @@ export function ResumeBuilderView() {
     }
   }
 
+  async function handleRefreshReadiness() {
+    setBusyKey("readiness");
+    try {
+      await refreshReadiness();
+    } catch (error) {
+      setFailure(
+        requestErrorMessage(error, "Resume readiness could not refresh."),
+      );
+    } finally {
+      setBusyKey("");
+    }
+  }
+
   function replaceResume(next: Resume) {
     setResumes((items) =>
       items.map((item) => (item.id === next.id ? next : item)),
@@ -334,7 +364,9 @@ export function ResumeBuilderView() {
     );
   }
 
-  const createBlocked = sourceReady === false;
+  const createBlocked = readiness.status !== "ready";
+  const sourceOptions = readiness.sourceOptions;
+  const nextIncompleteStep = readiness.steps.find((step) => !step.complete);
 
   return (
     <section className="space-y-6" id="resume-builder">
@@ -353,21 +385,38 @@ export function ResumeBuilderView() {
         className="rounded-card border border-border bg-surface-raised p-4 sm:p-5"
       >
         <SectionHeader
-          description="A resume starts from confirmed Career Profile evidence. Creating one does not publish or export it."
+          description="A resume starts from confirmed evidence in Evidence Vault. Creating one does not publish or export it."
           id="create-resume-heading"
           title="Create a resume"
         />
-        {createBlocked && (
+
+        <ResumeBuilderReadinessPanel
+          onRefresh={() => void handleRefreshReadiness()}
+          readiness={readiness}
+          refreshing={busyKey === "readiness"}
+        />
+
+        {readiness.status === "ready" && sourceOptions && (
+          <ResumeSourcePreview
+            bulletCount={sourceOptions.bullets.length}
+            headline={sourceOptions.headline}
+            skillCount={sourceOptions.skills.length}
+            sourceEvidenceCount={sourceOptions.sourceEvidenceIds.length}
+          />
+        )}
+
+        {createBlocked && nextIncompleteStep && (
           <Alert
             className="mt-4"
             id="resume-source-required"
-            title="Career evidence required"
+            title="Resume source not ready"
             tone="info"
           >
-            Add confirmed evidence in Career Profile before creating a resume.
-            Resume Builder will not invent facts to fill a blank draft.
+            Complete the checklist above before creating a resume. Resume Builder
+            will not invent facts to fill a blank draft.
           </Alert>
         )}
+
         {failure && (
           <Alert className="mt-4" title="Action failed" tone="danger">
             {failure}
@@ -435,18 +484,12 @@ export function ResumeBuilderView() {
       </section>
 
       {resumes.length === 0 ? (
-        <EmptyState
-          action={
-            <Link
-              className={cn(buttonStyles.base, buttonStyles.secondary)}
-              href="/career-profile"
-            >
-              Open Career Profile
-            </Link>
-          }
-          description="Add confirmed evidence in Career Profile before creating a resume. Creating a draft does not invent missing facts."
-          title="No resumes yet"
-        />
+        readiness.status === "ready" ? (
+          <EmptyState
+            description="Your evidence is ready. Use the form above to create your first grounded resume draft."
+            title="No resumes yet"
+          />
+        ) : null
       ) : (
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">
           <section aria-labelledby="editor-heading" className="space-y-4">

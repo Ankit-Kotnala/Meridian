@@ -16,15 +16,30 @@ const api = vi.hoisted(() => ({
   createResume: vi.fn(),
   createVersion: vi.fn(),
   exportVersion: vi.fn(),
-  getSourceOptions: vi.fn(),
   listResumes: vi.fn(),
   listVersions: vi.fn(),
+  loadResumeBuilderReadiness: vi.fn(),
   restoreVersion: vi.fn(),
   updateResume: vi.fn(),
   waitForExportCompletion: vi.fn(),
 }));
 
-vi.mock("../api/resume-builder-api", () => api);
+vi.mock("../api/resume-builder-api", () => ({
+  createDownloadIntent: api.createDownloadIntent,
+  createResume: api.createResume,
+  createVersion: api.createVersion,
+  exportVersion: api.exportVersion,
+  getSourceOptions: vi.fn(),
+  listResumes: api.listResumes,
+  listVersions: api.listVersions,
+  restoreVersion: api.restoreVersion,
+  updateResume: api.updateResume,
+  waitForExportCompletion: api.waitForExportCompletion,
+}));
+
+vi.mock("../api/readiness-api", () => ({
+  loadResumeBuilderReadiness: api.loadResumeBuilderReadiness,
+}));
 
 const baseVersion: ResumeVersion = {
   createdAt: "2026-07-19T12:00:00Z",
@@ -81,19 +96,97 @@ const baseResume: Resume = {
 };
 
 const readySource: ResumeSourceOptions = {
-  bullets: [],
+  bullets: [
+    {
+      evidenceIds: ["00000000-0000-4000-8000-000000000804"],
+      evidenceReferences: [],
+      sectionKind: "experience",
+      source: "career_record",
+      text: "Confirmed product discovery work across customer interviews.",
+    },
+  ],
   headline: "Product systems lead",
   skills: ["Product discovery"],
   sourceEvidenceIds: ["00000000-0000-4000-8000-000000000804"],
   summary: null,
 };
 
-const emptySource: ResumeSourceOptions = {
-  bullets: [],
-  headline: null,
-  skills: [],
-  sourceEvidenceIds: [],
-  summary: null,
+const readyReadiness = {
+  confirmedEvidenceCount: 1,
+  draftEvidenceCount: 0,
+  experienceCount: 1,
+  skillCount: 1,
+  sourceOptions: readySource,
+  status: "ready" as const,
+  steps: [
+    {
+      actionLabel: "Open Career Profile",
+      complete: true,
+      description: "profile",
+      href: "/career-profile",
+      id: "profile" as const,
+      title: "Build your career profile",
+    },
+    {
+      actionLabel: "Open Evidence Vault",
+      complete: true,
+      description: "evidence",
+      href: "/evidence",
+      id: "evidence" as const,
+      title: "Add evidence in Evidence Vault",
+    },
+    {
+      actionLabel: "Review evidence",
+      complete: true,
+      description: "confirm",
+      href: "/evidence",
+      id: "confirm" as const,
+      title: "Confirm evidence for resume use",
+    },
+  ],
+  summary: "1 eligible evidence source ready for resume generation.",
+};
+
+const blockedReadiness = {
+  confirmedEvidenceCount: 0,
+  draftEvidenceCount: 0,
+  experienceCount: 0,
+  skillCount: 0,
+  sourceOptions: {
+    bullets: [],
+    headline: null,
+    skills: [],
+    sourceEvidenceIds: [],
+    summary: null,
+  },
+  status: "blocked" as const,
+  steps: [
+    {
+      actionLabel: "Open Career Profile",
+      complete: false,
+      description: "profile",
+      href: "/career-profile",
+      id: "profile" as const,
+      title: "Build your career profile",
+    },
+    {
+      actionLabel: "Open Evidence Vault",
+      complete: false,
+      description: "evidence",
+      href: "/evidence",
+      id: "evidence" as const,
+      title: "Add evidence in Evidence Vault",
+    },
+    {
+      actionLabel: "Review evidence",
+      complete: false,
+      description: "confirm",
+      href: "/evidence",
+      id: "confirm" as const,
+      title: "Confirm evidence for resume use",
+    },
+  ],
+  summary: "Next step: build your career profile.",
 };
 
 const verifiedExport: ResumeExportRecord = {
@@ -139,7 +232,7 @@ describe("Resume Builder view", () => {
     vi.clearAllMocks();
     api.listResumes.mockResolvedValue([]);
     api.listVersions.mockResolvedValue([]);
-    api.getSourceOptions.mockResolvedValue(readySource);
+    api.loadResumeBuilderReadiness.mockResolvedValue(readyReadiness);
     api.createResume.mockResolvedValue(baseResume);
     api.updateResume.mockResolvedValue({ ...baseResume, version: 2 });
     api.createVersion.mockResolvedValue({ ...baseVersion, versionNumber: 2 });
@@ -166,7 +259,7 @@ describe("Resume Builder view", () => {
 
     expect(
       await screen.findAllByText(
-        "Resume created from eligible Career Record evidence.",
+        "Resume created from eligible confirmed evidence.",
       ),
     ).not.toHaveLength(0);
     expect(
@@ -181,27 +274,41 @@ describe("Resume Builder view", () => {
     });
   });
 
-  it("keeps the create form visible when Career Profile evidence is missing", async () => {
-    api.getSourceOptions.mockResolvedValue(emptySource);
+  it("shows a readiness checklist and disables create when evidence is missing", async () => {
+    api.loadResumeBuilderReadiness.mockResolvedValue(blockedReadiness);
     render(<ResumeBuilderView />);
 
-    expect(await screen.findByText("Career evidence required")).toBeVisible();
+    expect(await screen.findByText("Resume source readiness")).toBeVisible();
     expect(screen.getByRole("button", { name: "Create" })).toBeDisabled();
     expect(
       screen.getByRole("link", { name: "Open Career Profile" }),
     ).toHaveAttribute("href", "/career-profile");
     expect(
+      screen.getByRole("link", { name: "Open Evidence Vault" }),
+    ).toHaveAttribute("href", "/evidence");
+    expect(
       screen.queryByRole("heading", { name: "Resume Builder could not load" }),
     ).not.toBeInTheDocument();
   });
 
+  it("keeps create disabled when readiness preview fails", async () => {
+    api.loadResumeBuilderReadiness.mockResolvedValue({
+      ...blockedReadiness,
+      status: "error",
+      summary: "source preview failed",
+    });
+    render(<ResumeBuilderView />);
+
+    expect(await screen.findByText("Source preview unavailable")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Create" })).toBeDisabled();
+  });
+
   it("shows an inline create failure instead of replacing the builder", async () => {
-    api.getSourceOptions.mockRejectedValue(new Error("source preview failed"));
     api.createResume.mockRejectedValue(
       new ApiRequestError({
         code: "resume_builder_validation_error",
         message:
-          "Add confirmed career evidence in Career Profile before building a resume.",
+          "Add and confirm evidence in Evidence Vault before building a resume.",
         status: 422,
       }),
     );
@@ -214,15 +321,12 @@ describe("Resume Builder view", () => {
     expect(await screen.findAllByText("Action failed")).not.toHaveLength(0);
     expect(
       screen.getAllByText(
-        "Add confirmed career evidence in Career Profile before building a resume.",
+        "Add and confirm evidence in Evidence Vault before building a resume.",
       ).length,
     ).toBeGreaterThan(0);
     expect(
       screen.getByRole("heading", { name: "Create a resume" }),
     ).toBeVisible();
-    expect(
-      screen.queryByRole("heading", { name: "Resume Builder could not load" }),
-    ).not.toBeInTheDocument();
   });
 
   it("retries after a list failure", async () => {
