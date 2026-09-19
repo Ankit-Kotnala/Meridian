@@ -192,6 +192,7 @@ def test_normalize_semantic_url_rejects_embedded_credentials() -> None:
     [
         ("https://github.com/alex", "github"),
         ("https://github.com/alex/rezumi", "github"),
+        ("https://github.com/users/alex", "github"),
         ("https://gist.github.com/alex", "github"),
         ("https://GitHub.com:443/Alex/", "github"),
         ("https://www.gitlab.com/alex/pipeline-kit", "gitlab"),
