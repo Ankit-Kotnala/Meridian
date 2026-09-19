@@ -24,7 +24,7 @@ from rezumi.modules.resume_health.domain.errors import UnsafeDocument
 from rezumi.modules.resume_health.infrastructure.layout import analyze_local_layout
 from rezumi.modules.resume_health.infrastructure.pdf_reading_order import extract_pdf_pages
 
-PARSER_VERSION = "rezumi-local-parser/1.2.0"
+PARSER_VERSION = "rezumi-local-parser/1.2.1"
 _PDF_ACTIVE_CONTENT = (b"/JavaScript", b"/Launch", b"/EmbeddedFile")
 _PDF_JS_NAME = re.compile(rb"/JS(?=[/\s\[\]<>()])")
 _BLOCK_NAMESPACE = UUID("5f80ce6a-096a-44e9-b4d1-335f2da30c32")
@@ -38,6 +38,20 @@ _BIDI_CONTROLS = dict.fromkeys(
     ]
 )
 _BULLET_PREFIX = re.compile(r"^(?:[-*•▪◦·\u2022\uf0b7\uf0a7\u25aa\u25cf]|\d+[.)])\s+")
+# PDF icon fonts and contact glyphs that often precede phone/email/link text.
+_CONTACT_ICON_GLYPHS = re.compile(
+    r"[\u2640\u2642\u260e\u2709\u2706\uf095\uf003\uf0e0\uf0ac\uf099\uf09a\uf099]+"
+)
+# Resume templates sometimes emit "/linkedin" before "linkedin.com/..." in one line.
+_DUPLICATE_PROFILE_HOST = re.compile(
+    r"(?i)(?:/+(?:www\.)?|(?<![\w./])(?:www\.)?)"
+    r"(?P<label>linkedin|github|gitlab|bitbucket)(?P=label)\.com"
+)
+_SLASH_BEFORE_PROFILE_HOST = re.compile(
+    r"/+(?=(?:www\.)?(?:linkedin|github|gitlab|bitbucket)\.com)",
+    re.IGNORECASE,
+)
+_PHONE_LABEL_GLUE = re.compile(r"(?i)\bphone(?=\s*\+?\d)")
 
 
 class LocalDocumentExtractor:
@@ -329,6 +343,19 @@ def stable_block_id(document_id: UUID, block: ExtractedBlock, index: int) -> UUI
     return uuid5(_BLOCK_NAMESPACE, material)
 
 
+def normalize_extracted_text(value: str) -> str:
+    """Repair common PDF/DOCX extraction artifacts in contact and link lines."""
+
+    normalized = _CONTACT_ICON_GLYPHS.sub("", value)
+    normalized = _PHONE_LABEL_GLUE.sub("", normalized)
+    normalized = _DUPLICATE_PROFILE_HOST.sub(r"\1.com", normalized)
+    normalized = _SLASH_BEFORE_PROFILE_HOST.sub("", normalized)
+    normalized = re.sub(r"[ \t]{2,}", " ", normalized)
+    normalized = re.sub(r"\s+\|", " |", normalized)
+    return normalized.strip()
+
+
 def _sanitize_extracted_text(value: str) -> tuple[str, bool]:
-    sanitized = value.translate(_BIDI_CONTROLS)
-    return sanitized, sanitized != value
+    without_bidi = value.translate(_BIDI_CONTROLS)
+    sanitized = normalize_extracted_text(without_bidi)
+    return sanitized, sanitized != value or without_bidi != value
