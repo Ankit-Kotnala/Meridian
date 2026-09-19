@@ -22,6 +22,10 @@ from rezumi.modules.career_record.infrastructure.declared_profile.codeforces_con
 from rezumi.modules.career_record.infrastructure.declared_profile.devto_connector import (
     DevToDeclaredProfileConnector,
 )
+from rezumi.modules.career_record.infrastructure.declared_profile.github_connector import (
+    GithubDeclaredProfileConnector,
+    _github_target,
+)
 from rezumi.modules.career_record.infrastructure.declared_profile.gitlab_connector import (
     GitlabDeclaredProfileConnector,
 )
@@ -51,6 +55,120 @@ class _FakeJsonResponse:
 
     def __exit__(self, *_exc: object) -> None:
         return None
+
+
+# --- GitHub -------------------------------------------------------------
+
+
+def test_github_target_supports_profile_repo_and_users_urls() -> None:
+    assert _github_target("https://github.com/alex-example") == ("alex-example", None)
+    assert _github_target("https://github.com/alex-example/rezumi") == (
+        "alex-example",
+        "rezumi",
+    )
+    assert _github_target("https://github.com/users/alex-example") == (
+        "alex-example",
+        None,
+    )
+    assert _github_target("https://gist.github.com/alex-example") == (
+        "alex-example",
+        None,
+    )
+    assert _github_target("https://api.github.com/users/alex-example") is None
+    assert _github_target("https://raw.githubusercontent.com/alex-example/rezumi/main/README.md") is None
+
+
+def test_github_connector_supports_user_urls() -> None:
+    connector = GithubDeclaredProfileConnector()
+    assert connector.supports("https://github.com/alex-example")
+    assert connector.supports("https://github.com/alex-example/rezumi")
+    assert connector.supports("https://github.com/users/alex-example")
+    assert not connector.supports("https://api.github.com/users/alex-example")
+
+
+@pytest.mark.asyncio
+async def test_github_connector_prioritizes_linked_repository() -> None:
+    connector = GithubDeclaredProfileConnector()
+    responses = [
+        _FakeJsonResponse({"name": "Alex Example", "bio": "", "html_url": "https://github.com/alex-example"}),
+        _FakeJsonResponse(
+            {
+                "name": "rezumi",
+                "description": "Career operating system",
+                "language": "Python",
+                "stargazers_count": 12,
+                "html_url": "https://github.com/alex-example/rezumi",
+                "owner": {"login": "alex-example"},
+                "fork": False,
+                "archived": False,
+            }
+        ),
+    ]
+
+    with patch(
+        "rezumi.modules.career_record.infrastructure.declared_profile.github_connector.urlopen",
+        side_effect=responses,
+    ):
+        result = await connector.fetch("https://github.com/alex-example/rezumi")
+
+    assert result.platform == "github"
+    assert len(result.achievements) == 1
+    assert result.achievements[0].title == "alex-example/rezumi"
+    assert "Career operating system" in result.achievements[0].statement
+
+
+@pytest.mark.asyncio
+async def test_github_connector_filters_fork_and_empty_repos_for_profiles() -> None:
+    connector = GithubDeclaredProfileConnector()
+    responses = [
+        _FakeJsonResponse(
+            {
+                "name": "Alex Example",
+                "bio": "Platform engineer",
+                "html_url": "https://github.com/alex-example",
+            }
+        ),
+        _FakeJsonResponse(
+            [
+                {
+                    "name": "dotfiles",
+                    "description": "",
+                    "stargazers_count": 0,
+                    "html_url": "https://github.com/alex-example/dotfiles",
+                    "owner": {"login": "alex-example"},
+                    "fork": False,
+                    "archived": False,
+                },
+                {
+                    "name": "infra-tools",
+                    "description": "Deployment tooling",
+                    "stargazers_count": 3,
+                    "html_url": "https://github.com/alex-example/infra-tools",
+                    "owner": {"login": "alex-example"},
+                    "fork": False,
+                    "archived": False,
+                },
+                {
+                    "name": "upstream-clone",
+                    "description": "Should be skipped",
+                    "stargazers_count": 99,
+                    "html_url": "https://github.com/alex-example/upstream-clone",
+                    "owner": {"login": "alex-example"},
+                    "fork": True,
+                    "archived": False,
+                },
+            ]
+        ),
+    ]
+
+    with patch(
+        "rezumi.modules.career_record.infrastructure.declared_profile.github_connector.urlopen",
+        side_effect=responses,
+    ):
+        result = await connector.fetch("https://github.com/alex-example")
+
+    assert result.achievements[0].statement == "Platform engineer"
+    assert [item.title for item in result.achievements[1:]] == ["alex-example/infra-tools"]
 
 
 # --- GitLab -------------------------------------------------------------

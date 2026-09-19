@@ -26,10 +26,6 @@ export type ResumeBuilderReadinessSnapshot = {
   summary?: string;
 };
 
-type EvidenceRecord = {
-  state?: string;
-};
-
 type ListPayload = {
   data?: unknown[];
 };
@@ -162,15 +158,4 @@ export function buildReadinessSnapshot(input: {
       ? `Next step: ${nextStep.title.toLowerCase()}.`
       : "Confirm eligible evidence before creating a resume.",
   };
-}
-
-export function evidenceRecordsFromPayload(
-  payload: ListPayload | null,
-): EvidenceRecord[] {
-  return asList(payload?.data)
-    .map((item) => asRecord(item))
-    .filter((record): record is Record<string, unknown> => record !== null)
-    .map((record) => ({
-      state: typeof record.state === "string" ? record.state : undefined,
-    }));
 }
