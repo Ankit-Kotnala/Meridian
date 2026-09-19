@@ -33,6 +33,8 @@ export async function loadResumeBuilderReadiness(options?: {
   cacheBust?: boolean;
 }): Promise<ResumeBuilderReadinessSnapshot> {
   const cacheBust = options?.cacheBust ? Date.now() : undefined;
+  const listOptions =
+    cacheBust === undefined ? undefined : { cacheBust };
   const [sourceResult, evidencePayload, experiencesPayload, skillsPayload] =
     await Promise.all([
       getSourceOptions(cacheBust)
@@ -43,9 +45,9 @@ export async function loadResumeBuilderReadiness(options?: {
               ? error.message
               : "Resume source preview could not load.",
         })),
-      readList(resumeBuilderReadinessPaths.evidence, { cacheBust }),
-      readList(resumeBuilderReadinessPaths.experiences, { cacheBust }),
-      readList(resumeBuilderReadinessPaths.skills, { cacheBust }),
+      readList(resumeBuilderReadinessPaths.evidence, listOptions),
+      readList(resumeBuilderReadinessPaths.experiences, listOptions),
+      readList(resumeBuilderReadinessPaths.skills, listOptions),
     ]);
 
   return buildReadinessSnapshot({
