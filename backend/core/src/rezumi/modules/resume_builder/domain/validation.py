@@ -47,6 +47,7 @@ _FIDELITY_SECTION_HEADING_BOUNDARY = re.compile(
     r"(?=(EXPERIENCE|EDUCATION|SKILLS|PROJECTS|SUMMARY|AWARDS|CREDENTIALS)\b)",
     re.IGNORECASE,
 )
+_FIDELITY_TITLE_CASE_BOUNDARY = re.compile(r"(?<=[a-z])(?=[A-Z])")
 
 
 def normalize_text(value: str) -> str:
@@ -69,9 +70,19 @@ def normalize_fidelity_match_text(value: str) -> str:
     normalized = normalized.replace("\u00ad", "")
     normalized = _FIDELITY_CONTROL_CHARS.sub(" ", normalized)
     normalized = _FIDELITY_SECTION_HEADING_BOUNDARY.sub(" ", normalized)
+    normalized = _FIDELITY_TITLE_CASE_BOUNDARY.sub(" ", normalized)
     normalized = _FIDELITY_SENTENCE_PUNCTUATION_SPACING.sub(r"\1 \2", normalized)
     normalized = _FIDELITY_HYPHENATION_BREAKS.sub("-", normalized)
     return " ".join(normalized.split()).casefold()
+
+
+def fidelity_match_tokens(value: str) -> tuple[str, ...]:
+    """Tokenize normalized resume text for order/occurrence verification."""
+
+    normalized = normalize_fidelity_match_text(value).replace("'", "")
+    normalized = unicodedata.normalize("NFKD", normalized)
+    normalized = "".join(character for character in normalized if not unicodedata.combining(character))
+    return tuple(re.findall(r"\w+", normalized, flags=re.UNICODE))
 
 
 def validate_title(value: str) -> str:
