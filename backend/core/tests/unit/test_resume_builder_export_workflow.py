@@ -1037,8 +1037,8 @@ async def test_pdf_export_verifies_smart_apostrophe_bullets(tmp_path: Path) -> N
 
     outcome = await processor.process(requested.export.id, "smart-apostrophe-pdf-worker")
 
-    assert outcome.status is ResumeExportStatus.VERIFIED
     report = state.verifications[requested.export.id]
+    assert outcome.status is ResumeExportStatus.VERIFIED, report.critical_failures
     assert report.critical_failures == ()
     assert report.occurrence_mismatches == ()
 
@@ -1104,6 +1104,81 @@ async def test_executive_pdf_export_verifies_glued_section_headings(tmp_path: Pa
     )
 
     outcome = await processor.process(requested.export.id, "executive-glued-heading-pdf-worker")
+
+    assert outcome.status is ResumeExportStatus.VERIFIED
+    report = state.verifications[requested.export.id]
+    assert report.critical_failures == ()
+    assert report.occurrence_mismatches == ()
+
+
+@pytest.mark.asyncio
+async def test_executive_pdf_export_verifies_github_style_multi_bullet_resume(
+    tmp_path: Path,
+) -> None:
+    state = MemoryResumeBuilder()
+    storage = MemoryStorage()
+    clock = MutableClock()
+    resume, _unused = await _request_export(state, storage, clock)
+    state.exports.clear()
+    state.export_outbox.clear()
+    section = resume.current_version.sections[0]
+    item = section.items[0]
+    reference = item.evidence_references[0]
+    bullets = (
+        "Primary language: Jupyter Notebook.",
+        "Public repository xmem-landing.",
+        (
+            "Xmem is a India's First multi-modal, multi-agentic long-term memory "
+            "layer for AI agents. Primary language: Python."
+        ),
+        "Software Engineer | Footballer",
+    )
+    executive_version = replace(
+        resume.current_version,
+        target_role="Software Engineer",
+        template=ResumeTemplate.EXECUTIVE,
+        source_evidence_ids=item.evidence_ids,
+        sections=(
+            replace(
+                section,
+                title="Experience",
+                items=tuple(
+                    replace(
+                        item,
+                        id=UUID(f"00000000-0000-4000-8000-00000000072{index}"),
+                        text=text,
+                        evidence_references=(
+                            replace(
+                                reference,
+                                claim_sha256=hashlib.sha256(text.encode("utf-8")).hexdigest(),
+                            ),
+                        ),
+                    )
+                    for index, text in enumerate(bullets)
+                ),
+            ),
+        ),
+    )
+    state.versions[executive_version.id] = executive_version
+    requested = await _export_current_version(
+        state,
+        storage,
+        clock,
+        executive_version.id,
+        fmt=ResumeFormat.PDF,
+        idempotency_key="executive-github-bullets-pdf-export",
+    )
+    processor = ResumeExportProcessor(
+        unit_of_work=state,
+        clock=clock,
+        identifiers=UuidFactory(),
+        renderer=DeterministicResumeRenderer(),
+        extractor=ResumeBuilderDocumentExtractor(_document_limits(tmp_path)),
+        storage=storage,
+        policy=ResumeExportWorkerPolicy(temp_root=tmp_path),
+    )
+
+    outcome = await processor.process(requested.export.id, "executive-github-bullets-pdf-worker")
 
     assert outcome.status is ResumeExportStatus.VERIFIED
     report = state.verifications[requested.export.id]

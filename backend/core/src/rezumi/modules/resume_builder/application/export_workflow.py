@@ -31,6 +31,7 @@ from rezumi.modules.resume_builder.domain import (
     fidelity_manifest_sha256,
     manifest_grounding_failures,
     normalize_fidelity_match_text,
+    fidelity_match_tokens,
     normalize_text,
 )
 
@@ -1246,39 +1247,65 @@ def _background_audit(
 
 
 def _manifest_occurrence_counts(text: str, expected: Counter[str]) -> dict[str, int]:
+    haystack = fidelity_match_tokens(text)
     occupied: list[tuple[int, int]] = []
     counts: dict[str, int] = {}
-    for value in sorted(expected, key=lambda item: (-len(item), item)):
-        start = 0
+    token_lengths = {value: len(fidelity_match_tokens(value)) for value in expected}
+    for value in sorted(expected, key=lambda item: (-token_lengths[item], item)):
+        needle = fidelity_match_tokens(value)
+        if not needle:
+            counts[value] = 0
+            continue
+        needle_len = len(needle)
         available: list[tuple[int, int]] = []
-        while start <= len(text) - len(value):
-            index = text.find(value, start)
-            if index < 0:
-                break
-            match = (index, index + len(value))
-            if not any(
-                match[0] < occupied_end and match[1] > occupied_start
+        for start in range(len(haystack) - needle_len + 1):
+            if list(haystack[start : start + needle_len]) != list(needle):
+                continue
+            span = (start, start + needle_len)
+            if any(
+                span[0] < occupied_end and span[1] > occupied_start
                 for occupied_start, occupied_end in occupied
             ):
-                available.append(match)
-            start = index + 1
+                continue
+            available.append(span)
         counts[value] = len(available)
         occupied.extend(available)
     return counts
 
 
+def _contains_token_subsequence(
+    haystack: tuple[str, ...],
+    needle: tuple[str, ...],
+) -> bool:
+    if not needle:
+        return False
+    needle_len = len(needle)
+    for start in range(len(haystack) - needle_len + 1):
+        if list(haystack[start : start + needle_len]) == list(needle):
+            return True
+    return False
+
+
 def _reading_order_failures(
     normalized_text: str, manifest: ResumeFidelityManifest
 ) -> tuple[str, ...]:
+    haystack = fidelity_match_tokens(normalized_text)
     cursor = 0
     failures: list[str] = []
     for entry in manifest.entries:
-        index = normalized_text.find(entry.normalized_text, cursor)
-        if index < 0:
-            if entry.normalized_text in normalized_text:
-                failures.append(f"reading_order:{entry.key}")
+        needle = fidelity_match_tokens(entry.normalized_text)
+        if not needle:
             continue
-        cursor = index + len(entry.normalized_text)
+        needle_len = len(needle)
+        matched = False
+        for start in range(cursor, len(haystack) - needle_len + 1):
+            if list(haystack[start : start + needle_len]) != list(needle):
+                continue
+            cursor = start + needle_len
+            matched = True
+            break
+        if not matched and _contains_token_subsequence(haystack, needle):
+            failures.append(f"reading_order:{entry.key}")
     return tuple(failures)
 
 
