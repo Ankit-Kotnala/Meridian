@@ -1249,17 +1249,21 @@ def _manifest_occurrence_counts(text: str, expected: Counter[str]) -> dict[str, 
     occupied: list[tuple[int, int]] = []
     counts: dict[str, int] = {}
     for value in sorted(expected, key=lambda item: (-len(item), item)):
-        matches = tuple(re.finditer(rf"(?<!\w){re.escape(value)}(?!\w)", text))
-        available = [
-            match
-            for match in matches
+        start = 0
+        available: list[tuple[int, int]] = []
+        while start <= len(text) - len(value):
+            index = text.find(value, start)
+            if index < 0:
+                break
+            match = (index, index + len(value))
             if not any(
-                match.start() < occupied_end and match.end() > occupied_start
+                match[0] < occupied_end and match[1] > occupied_start
                 for occupied_start, occupied_end in occupied
-            )
-        ]
+            ):
+                available.append(match)
+            start = index + 1
         counts[value] = len(available)
-        occupied.extend((match.start(), match.end()) for match in available)
+        occupied.extend(available)
     return counts
 
 

@@ -396,6 +396,87 @@ describe("Resume Builder view", () => {
     );
   });
 
+  it("reloads readiness and resumes when refresh is clicked", async () => {
+    api.listResumes.mockResolvedValue([baseResume]);
+    api.loadResumeBuilderReadiness
+      .mockResolvedValueOnce(readyReadiness)
+      .mockResolvedValueOnce({
+        ...readyReadiness,
+        sourceOptions: {
+          ...readySource,
+          bullets: [
+            ...readySource.bullets,
+            {
+              ...readySource.bullets[0]!,
+              text: "New confirmed evidence bullet.",
+            },
+          ],
+          sourceEvidenceIds: [
+            "00000000-0000-4000-8000-000000000804",
+            "00000000-0000-4000-8000-000000000808",
+          ],
+        },
+        summary:
+          "2 eligible evidence sources ready for resume generation.",
+      });
+
+    render(<ResumeBuilderView />);
+
+    expect(
+      await screen.findByText(
+        "1 eligible evidence source ready for resume generation.",
+      ),
+    ).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Refresh readiness" }));
+
+    await waitFor(() => {
+      expect(api.loadResumeBuilderReadiness).toHaveBeenCalledTimes(2);
+      expect(api.listResumes).toHaveBeenCalledTimes(2);
+    });
+    expect(
+      await screen.findByText(
+        "2 eligible evidence sources ready for resume generation.",
+      ),
+    ).toBeVisible();
+  });
+
+  it("clears stale export failures when readiness is refreshed", async () => {
+    api.listResumes.mockResolvedValue([baseResume]);
+    api.exportVersion.mockResolvedValue({
+      ...verifiedExport,
+      export: {
+        ...verifiedExport.export,
+        criticalFailures: ["missing:Experience"],
+        status: "blocked",
+        verificationStatus: "failed",
+      },
+      verification: {
+        ...verifiedExport.verification!,
+        criticalFailures: ["missing:Experience"],
+        missingLines: ["Experience"],
+        status: "failed",
+      },
+    });
+    render(<ResumeBuilderView />);
+
+    expect(await screen.findByText("Recruiter preview")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Verify" }));
+    expect(
+      await screen.findAllByText(
+        "Round-trip verification blocked this export.",
+      ),
+    ).not.toHaveLength(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "Refresh readiness" }));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText("Round-trip verification blocked this export."),
+      ).not.toBeInTheDocument();
+    });
+    expect(api.loadResumeBuilderReadiness).toHaveBeenCalledTimes(2);
+  });
+
   it("waits for a pending durable export before enabling download", async () => {
     api.listResumes.mockResolvedValue([baseResume]);
     api.exportVersion.mockResolvedValue({

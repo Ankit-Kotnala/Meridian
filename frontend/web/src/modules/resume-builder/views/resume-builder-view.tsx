@@ -107,6 +107,8 @@ export function ResumeBuilderView() {
   );
   const [format, setFormat] = useState<FormatValue>("pdf");
   const exportController = useRef<AbortController | undefined>(undefined);
+  const selectedIdRef = useRef(selectedId);
+  selectedIdRef.current = selectedId;
 
   const selected = useMemo(
     () => resumes.find((item) => item.id === selectedId),
@@ -127,8 +129,35 @@ export function ResumeBuilderView() {
   }, []);
 
   const refreshReadiness = useCallback(async () => {
-    const snapshot = await loadResumeBuilderReadiness();
+    const snapshot = await loadResumeBuilderReadiness({ cacheBust: true });
     setReadiness(snapshot);
+    return snapshot;
+  }, []);
+
+  const refreshWorkspace = useCallback(async () => {
+    const [items, snapshot] = await Promise.all([
+      listResumes(),
+      loadResumeBuilderReadiness({ cacheBust: true }),
+    ]);
+    setReadiness(snapshot);
+    setResumes(items);
+
+    const preserved =
+      items.find((item) => item.id === selectedIdRef.current) ?? items[0];
+    if (preserved) {
+      setSelectedId(preserved.id);
+      setTitle(preserved.title);
+      setTargetRole(preserved.targetRole ?? "");
+      setTemplate(preserved.template);
+      try {
+        setVersions(await listVersions(preserved.id));
+      } catch {
+        setVersions([]);
+      }
+    } else {
+      setSelectedId("");
+      setVersions([]);
+    }
     return snapshot;
   }, []);
 
@@ -334,8 +363,12 @@ export function ResumeBuilderView() {
 
   async function handleRefreshReadiness() {
     setBusyKey("readiness");
+    setFailure(undefined);
+    setSuccess(undefined);
+    setExportRecord(undefined);
+    setDownloadUrl(undefined);
     try {
-      await refreshReadiness();
+      await refreshWorkspace();
     } catch (error) {
       setFailure(
         requestErrorMessage(error, "Resume readiness could not refresh."),

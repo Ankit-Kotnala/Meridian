@@ -44,8 +44,14 @@ export async function listResumes(): Promise<Resume[]> {
   return Array.isArray(body.items) ? body.items : [];
 }
 
-export async function getSourceOptions(): Promise<ResumeSourceOptions> {
-  const response = await query(resumeBuilderPaths.sourceOptions);
+export async function getSourceOptions(
+  cacheBust?: number,
+): Promise<ResumeSourceOptions> {
+  const path =
+    cacheBust === undefined
+      ? resumeBuilderPaths.sourceOptions
+      : (`${resumeBuilderPaths.sourceOptions}?cacheBust=${cacheBust}` as typeof resumeBuilderPaths.sourceOptions);
+  const response = await query(path);
   return (await response.json()) as ResumeSourceOptions;
 }
 
