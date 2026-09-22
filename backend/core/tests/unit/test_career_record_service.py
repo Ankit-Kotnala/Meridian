@@ -514,6 +514,13 @@ async def test_reviewed_semantic_import_preserves_field_provenance_and_requires_
     assert proposal.status is SemanticImportStatus.PENDING
     assert memory.entities == {}
 
+    repeat = await service.create_semantic_import_proposals(
+        owner,
+        CreateSemanticImportProposals(document_id, snapshot_id),
+        _context(owner),
+    )
+    assert repeat.proposals == batch.proposals
+
     values = {field.semantic_field_id: field.value for field in fields}
     values[fields[4].semantic_field_id] = "Built a reviewed workflow."
     accepted = await service.accept_semantic_import_proposal(

@@ -2026,6 +2026,24 @@ class CareerRecordService:
     ) -> SemanticImportBatch:
         """Create idempotent proposals from reviewed typed semantics only."""
 
+        for attempt in range(2):
+            try:
+                return await self._create_semantic_import_proposals_once(
+                    owner_user_id,
+                    command,
+                    context,
+                )
+            except CareerRecordConflict:
+                if attempt == 1:
+                    raise
+        raise CareerRecordConflict("semantic import proposal creation conflict")
+
+    async def _create_semantic_import_proposals_once(
+        self,
+        owner_user_id: UUID,
+        command: CreateSemanticImportProposals,
+        context: RequestContext,
+    ) -> SemanticImportBatch:
         self._authorize(owner_user_id, context)
         candidates = await self._reviewed_semantic_candidates(
             owner_user_id,
@@ -2061,7 +2079,7 @@ class CareerRecordService:
                     {field.semantic_field_id: field.value for field in candidate.fields},
                 )
             )
-            if len(existing_proposals) + new_candidate_count > (
+            if new_candidate_count > 0 and len(existing_proposals) + new_candidate_count > (
                 self._policy.max_semantic_import_proposals
             ):
                 raise CareerRecordConflict("semantic import proposal limit reached")

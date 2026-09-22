@@ -23,6 +23,7 @@ import {
 import {
   createProfileImportProposals,
   listProfileImportProposals,
+  profileImportProposalsForSnapshot,
 } from "../api/career-vault-api";
 import type { ProfileImportBatch } from "../api/types";
 
@@ -43,17 +44,63 @@ export function ProfileImportStartView({
   const load = useCallback(async () => {
     setFailure(undefined);
     try {
-      setBatch(
-        documentId !== undefined && snapshotId !== undefined
-          ? await createProfileImportProposals(documentId, snapshotId)
-          : {
-              appliedCount: 0,
-              proposals: (await listProfileImportProposals()).filter(
-                (proposal) => proposal.status === "pending",
-              ),
-              questions: [],
-            },
-      );
+      if (documentId !== undefined && snapshotId !== undefined) {
+        const existingPending = profileImportProposalsForSnapshot(
+          await listProfileImportProposals(),
+          documentId,
+          snapshotId,
+        ).filter((proposal) => proposal.status === "pending");
+        if (existingPending.length > 0) {
+          setBatch({
+            appliedCount: 0,
+            proposals: existingPending,
+            questions: [],
+          });
+          return;
+        }
+
+        try {
+          const batch = await createProfileImportProposals(
+            documentId,
+            snapshotId,
+          );
+          setBatch({
+            ...batch,
+            proposals: batch.proposals.filter(
+              (proposal) => proposal.status === "pending",
+            ),
+          });
+          return;
+        } catch (error) {
+          if (
+            error instanceof ApiRequestError &&
+            error.failure.code === "career_record_conflict"
+          ) {
+            const recovered = profileImportProposalsForSnapshot(
+              await listProfileImportProposals(),
+              documentId,
+              snapshotId,
+            ).filter((proposal) => proposal.status === "pending");
+            if (recovered.length > 0) {
+              setBatch({
+                appliedCount: 0,
+                proposals: recovered,
+                questions: [],
+              });
+              return;
+            }
+          }
+          throw error;
+        }
+      }
+
+      setBatch({
+        appliedCount: 0,
+        proposals: (await listProfileImportProposals()).filter(
+          (proposal) => proposal.status === "pending",
+        ),
+        questions: [],
+      });
     } catch (error) {
       if (error instanceof ApiRequestError) {
         if (error.failure.code === "career_record_source_unavailable") {
@@ -64,7 +111,7 @@ export function ProfileImportStartView({
         }
         if (error.failure.code === "career_record_conflict") {
           setFailure(
-            "Import is already running or was just created. Refresh this page in a moment.",
+            "Import proposals could not be refreshed right now. If you already started this import, use Try again or open Resume Imports from the sidebar.",
           );
           return;
         }
