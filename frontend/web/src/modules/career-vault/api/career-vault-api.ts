@@ -374,6 +374,20 @@ export async function listProfileImportProposals(): Promise<
   return data.map(parseProfileImportProposal);
 }
 
+export function profileImportProposalsForSnapshot(
+  proposals: ProfileImportProposal[],
+  documentId: string,
+  snapshotId: string,
+): ProfileImportProposal[] {
+  return proposals.filter((proposal) =>
+    proposal.changes.some(
+      (change) =>
+        change.source.sourceDocumentId === documentId &&
+        change.source.sourceSnapshotId === snapshotId,
+    ),
+  );
+}
+
 export async function createProfileImportProposals(
   documentId: string,
   snapshotId: string,
