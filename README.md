@@ -1,4 +1,4 @@
-# Rezumi
+# Meridian
 
 **Your career. Verified. Elevated.**
 
