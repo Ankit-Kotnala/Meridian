@@ -11,6 +11,10 @@ changes.
 > guarantees. **Technical preview only** — see [PLANS.md](PLANS.md) for what is
 > actually implemented (not just described in architecture docs).
 
+> **Repository note:** `rezumi` remains the internal package, service, and
+> environment-variable namespace while the Meridian rename is rolled out. These
+> identifiers are implementation details, not a second product.
+
 ## Stack
 
 | Layer        | Tech                                                    |
@@ -107,6 +111,14 @@ npm run contracts:check
 ```
 
 Windows without Make: `.\scripts\setup.ps1`, `.\scripts\verify.ps1`, `make help`.
+
+## Continuous integration
+
+GitHub Actions runs the quality, contract, API, worker, browser, container, and
+supply-chain checks for pull requests and pushes to `main` and `development`.
+You can also start the workflow manually from the Actions tab. CI uses Node 24,
+npm 11.8.0, Python 3.13, and uv 0.11.21; run the commands above locally before
+opening a pull request.
 
 ## Guardrails
 

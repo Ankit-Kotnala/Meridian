@@ -2143,3 +2143,12 @@ merged and no production deployment occurs without explicit later approval.
 ## Local stack note
 
 `pnpm local:up` now passes with the web runtime image copying workspace `node_modules` and `@swc/helpers` declared directly in `frontend/web/package.json`. Verified on 2026-08-17 when `web`, `web-edge`, `api`, `worker`, and `worker-scheduler` all reported healthy in `docker compose ps`.
+
+## Maintenance updates
+
+- 2026-09-25: Documented CI coverage for pull requests, pushes to `main` and
+  `development`, and manual dispatch. The README also clarifies that `rezumi`
+  is the retained internal namespace during the Meridian product rename. The
+  workflow YAML and changed-file whitespace check pass locally; the full npm
+  and uv gates require the pinned toolchain, which is not installed on this
+  host.
