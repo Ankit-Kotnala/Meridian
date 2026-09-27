@@ -13,10 +13,12 @@
 html {
   scroll-behavior: smooth;
   background: var(--background);
+  overflow-x: clip;
 }
 
 body {
   min-height: 100vh;
+  min-width: 0;
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-family-sans);
@@ -142,6 +144,7 @@ textarea {
 
 .workspace-canvas {
   isolation: isolate;
+  min-width: 0;
   min-height: calc(100vh - 4rem);
   background:
     radial-gradient(
@@ -154,6 +157,7 @@ textarea {
 
 .workspace-page {
   width: 100%;
+  min-width: 0;
   max-width: var(--content-wide);
   margin-inline: auto;
   padding: var(--space-page-block) var(--space-page-inline) 4.5rem;
@@ -165,6 +169,7 @@ textarea {
 
 .workspace-content > main#main-content {
   width: 100%;
+  min-width: 0;
   max-width: var(--content-wide);
   margin-inline: auto;
   padding: var(--space-page-block) var(--space-page-inline) 4rem;

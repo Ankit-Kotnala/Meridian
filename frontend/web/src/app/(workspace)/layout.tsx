@@ -24,7 +24,7 @@ export default async function ProtectedWorkspaceLayout({
         id: user.id,
       }}
     >
-      <div className="workspace-content">{children}</div>
+      {children}
     </WorkspaceShell>
   );
 }

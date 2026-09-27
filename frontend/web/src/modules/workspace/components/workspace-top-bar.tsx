@@ -72,7 +72,7 @@ function AccountMenu({
   }, [open]);
 
   return (
-    <div className="relative" ref={containerRef}>
+    <div className="relative shrink-0" ref={containerRef}>
       <button
         aria-controls={menuId}
         aria-expanded={open}
@@ -96,7 +96,7 @@ function AccountMenu({
       </button>
       {open && (
         <div
-          className="absolute right-0 z-50 mt-2 w-72 overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface shadow-[var(--shadow-lg)]"
+          className="absolute right-0 z-50 mt-2 w-72 max-w-[calc(100vw-1rem)] overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface shadow-[var(--shadow-lg)]"
           id={menuId}
           role="menu"
         >
@@ -165,10 +165,10 @@ export function WorkspaceTopBar({
   const corpId = corpIdFor(viewer.id);
 
   return (
-    <header className="sticky top-0 z-30 flex min-h-[var(--topbar-height)] items-center gap-3 border-b border-line bg-surface/95 px-4 backdrop-blur-sm sm:gap-4 sm:px-6">
+    <header className="sticky top-0 z-30 flex min-h-[var(--topbar-height)] items-center gap-2 border-b border-line bg-surface/95 px-3 backdrop-blur-sm sm:gap-4 sm:px-6">
       <button
         aria-label="Open application navigation"
-        className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-control)] border border-line text-foreground lg:hidden"
+        className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-control)] border border-line text-foreground xl:hidden"
         onClick={onOpenMenu}
         ref={menuButtonRef}
         type="button"
@@ -176,7 +176,7 @@ export function WorkspaceTopBar({
         <Menu aria-hidden="true" className="size-5" />
       </button>
 
-      <div className="flex min-w-0 items-center gap-3">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
         <span
           aria-hidden="true"
           className="hidden size-9 shrink-0 place-items-center rounded-[var(--radius-control)] text-foreground sm:grid"
@@ -191,16 +191,17 @@ export function WorkspaceTopBar({
         </div>
       </div>
 
-      <div className="ml-auto flex items-center gap-1">
+      <div className="ml-auto flex shrink-0 items-center gap-1">
         <Link
-          className="flex min-h-10 items-center gap-1.5 rounded-[var(--radius-control)] px-2.5 text-[0.8125rem] font-semibold text-muted-strong transition-colors hover:bg-surface-subtle hover:text-foreground"
+          aria-label="Help and onboarding"
+          className="grid size-10 place-items-center rounded-[var(--radius-control)] text-[0.8125rem] font-semibold text-muted-strong transition-colors hover:bg-surface-subtle hover:text-foreground sm:flex sm:w-auto sm:gap-1.5 sm:px-2.5"
           href="/onboarding"
         >
           <CircleQuestionMark aria-hidden="true" className="size-[1.125rem]" />
-          Help
+          <span className="hidden sm:inline">Help</span>
         </Link>
 
-        <span aria-hidden="true" className="mx-1.5 h-6 w-px bg-line" />
+        <span aria-hidden="true" className="mx-1 h-6 w-px bg-line sm:mx-1.5" />
 
         <ThemeToggle />
 

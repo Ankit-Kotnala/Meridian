@@ -21,6 +21,43 @@ import {
 
 /** Skills listed in the hover preview before it defers to the full list. */
 const previewLimit = 8;
+const previewMaxWidth = 344;
+const previewPanelInset = 16;
+const previewSideGap = 24;
+
+export type SkillPreviewPlacement =
+  "bottom-end" | "bottom-start" | "left" | "right";
+
+type HorizontalRect = Pick<DOMRect, "left" | "right" | "width">;
+
+export function resolveSkillPreviewPosition(
+  grid: HorizontalRect,
+  anchor: HorizontalRect,
+): { placement: SkillPreviewPlacement; width: number } {
+  // The preview must fit inside the skills panel, rather than merely outside
+  // the hovered circle. Otherwise the first column can spill underneath the
+  // workspace rail when there is not enough room on either side.
+  const width =
+    grid.width > 0
+      ? Math.min(
+          previewMaxWidth,
+          Math.max(1, grid.width - previewPanelInset * 2),
+        )
+      : previewMaxWidth;
+  const requiredSideRoom = width + previewSideGap;
+  const roomOnRight = grid.right - anchor.right;
+  const roomOnLeft = anchor.left - grid.left;
+
+  if (roomOnRight >= requiredSideRoom) return { placement: "right", width };
+  if (roomOnLeft >= requiredSideRoom) return { placement: "left", width };
+  return {
+    placement:
+      anchor.left + anchor.right <= grid.left + grid.right
+        ? "bottom-start"
+        : "bottom-end",
+    width,
+  };
+}
 
 /**
  * Ring colours are applied inline rather than through `border-*` utilities:
@@ -111,36 +148,41 @@ function DomainPreview({
   domain,
   onShowAll,
   placement,
+  width,
 }: {
   domain: SkillDomain;
   onShowAll: () => void;
-  placement: "left" | "right";
+  placement: SkillPreviewPlacement;
+  width: number;
 }) {
   const shown = domain.skills.slice(0, previewLimit);
   const remaining = domain.skills.length - shown.length;
+  const sidePlacement = placement === "left" || placement === "right";
   return (
     <div
+      data-skill-preview
       className={cn(
-        "absolute top-1/2 z-30 w-[21.5rem] -translate-y-1/2",
-        placement === "right" ? "left-full pl-6" : "right-full pr-6",
+        "absolute z-30 max-w-[calc(100vw-2rem)]",
+        placement === "right" &&
+          "left-[calc(100%+1.5rem)] top-1/2 -translate-y-1/2",
+        placement === "left" &&
+          "right-[calc(100%+1.5rem)] top-1/2 -translate-y-1/2",
+        placement === "bottom-start" && "left-0 top-[calc(100%+0.75rem)]",
+        placement === "bottom-end" && "right-0 top-[calc(100%+0.75rem)]",
       )}
       role="presentation"
+      style={{ width }}
     >
-      <span
-        aria-hidden="true"
-        className={cn(
-          "absolute top-1/2 h-px w-6 -translate-y-1/2 bg-line-strong",
-          placement === "right" ? "left-0" : "right-0",
-        )}
-      />
-      <span
-        aria-hidden="true"
-        className={cn(
-          "absolute top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-line-strong",
-          placement === "right" ? "left-0" : "right-0",
-        )}
-      />
-      <div className="rounded-[var(--radius-card)] border border-line bg-surface p-4 shadow-[var(--shadow-lg)]">
+      {sidePlacement && (
+        <span
+          aria-hidden="true"
+          className={cn(
+            "absolute top-1/2 h-px w-6 -translate-y-1/2 bg-line-strong",
+            placement === "right" ? "right-full" : "left-full",
+          )}
+        />
+      )}
+      <div className="max-h-[min(18rem,calc(100dvh-2rem))] overflow-y-auto rounded-[var(--radius-card)] border border-line bg-surface p-4 shadow-[var(--shadow-lg)]">
         <ul className="grid gap-x-5 gap-y-2.5 sm:grid-cols-2">
           {shown.map((skill) => (
             <li
@@ -203,7 +245,8 @@ export function SkillConstellation({
   const domains = groupSkillsByDomain(skills);
   const [preview, setPreview] = useState<{
     id: string;
-    placement: "left" | "right";
+    placement: SkillPreviewPlacement;
+    width: number;
   }>();
   const [selectedId, setSelectedId] = useState<string>();
   const [expanded, setExpanded] = useState(false);
@@ -221,12 +264,14 @@ export function SkillConstellation({
     );
   }
 
-  /** Flip the preview to whichever side keeps it inside the panel. */
+  /** Keep previews within the skills panel on every available viewport width. */
   function openPreview(id: string, circle: HTMLButtonElement) {
     const bounds = gridRef.current?.getBoundingClientRect();
     const anchor = circle.getBoundingClientRect();
-    const fitsRight = bounds ? anchor.right + 368 <= bounds.right : true;
-    setPreview({ id, placement: fitsRight ? "right" : "left" });
+    const position = bounds
+      ? resolveSkillPreviewPosition(bounds, anchor)
+      : { placement: "bottom-start" as const, width: previewMaxWidth };
+    setPreview({ id, ...position });
   }
 
   function selectDomain(id: string) {
@@ -295,6 +340,7 @@ export function SkillConstellation({
                   domain={domain}
                   onShowAll={() => selectDomain(domain.id)}
                   placement={preview.placement}
+                  width={preview.width}
                 />
               )}
             </li>

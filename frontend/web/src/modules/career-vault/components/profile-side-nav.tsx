@@ -110,7 +110,7 @@ export function ProfileSideNav({
     <Card
       as="aside"
       aria-label="Career profile sections"
-      className="sticky top-[8.5rem] p-4"
+      className="xl:sticky xl:top-[8.5rem] p-4"
     >
       <p className="text-[0.8125rem] font-bold text-foreground">
         {completedCount} of {totalCount}{" "}

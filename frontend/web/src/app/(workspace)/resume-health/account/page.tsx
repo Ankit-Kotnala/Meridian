@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Resumes" };
 
 export default function ResumeStudioPage() {
   return (
-    <main className="space-y-8" id="main-content">
+    <main className="workspace-page space-y-6" id="main-content">
       <AccountResumeHealthView />
       <ResumeBuilderView />
       <section
