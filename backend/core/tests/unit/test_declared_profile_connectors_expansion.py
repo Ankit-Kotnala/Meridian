@@ -3,6 +3,7 @@ Stack Overflow, Codeforces, dev.to, ORCID) and their registry wiring."""
 
 from __future__ import annotations
 
+import base64
 import json
 from io import BytesIO
 from typing import Any
@@ -76,7 +77,10 @@ def test_github_target_supports_profile_repo_and_users_urls() -> None:
         None,
     )
     assert _github_target("https://api.github.com/users/alex-example") is None
-    assert _github_target("https://raw.githubusercontent.com/alex-example/rezumi/main/README.md") is None
+    assert (
+        _github_target("https://raw.githubusercontent.com/alex-example/rezumi/main/README.md")
+        is None
+    )
 
 
 def test_github_connector_supports_user_urls() -> None:
@@ -91,7 +95,9 @@ def test_github_connector_supports_user_urls() -> None:
 async def test_github_connector_prioritizes_linked_repository() -> None:
     connector = GithubDeclaredProfileConnector()
     responses = [
-        _FakeJsonResponse({"name": "Alex Example", "bio": "", "html_url": "https://github.com/alex-example"}),
+        _FakeJsonResponse(
+            {"name": "Alex Example", "bio": "", "html_url": "https://github.com/alex-example"}
+        ),
         _FakeJsonResponse(
             {
                 "name": "rezumi",
@@ -104,6 +110,7 @@ async def test_github_connector_prioritizes_linked_repository() -> None:
                 "archived": False,
             }
         ),
+        _FakeJsonResponse({}),
     ]
 
     with patch(
@@ -129,6 +136,7 @@ async def test_github_connector_filters_fork_and_empty_repos_for_profiles() -> N
                 "html_url": "https://github.com/alex-example",
             }
         ),
+        _FakeJsonResponse({}),
         _FakeJsonResponse(
             [
                 {
@@ -160,6 +168,7 @@ async def test_github_connector_filters_fork_and_empty_repos_for_profiles() -> N
                 },
             ]
         ),
+        _FakeJsonResponse({}),
     ]
 
     with patch(
@@ -186,6 +195,7 @@ async def test_github_connector_imports_profile_fields_and_skips_role_taglines()
                 "html_url": "https://github.com/alex-example",
             }
         ),
+        _FakeJsonResponse({}),
         _FakeJsonResponse([]),
     ]
 
@@ -226,6 +236,161 @@ async def test_github_connector_requests_star_sorted_owned_repositories() -> Non
         await connector.fetch("https://github.com/alex-example")
 
     assert any("sort=stars" in url and "type=owner" in url for url in requested_urls)
+
+
+@pytest.mark.asyncio
+async def test_github_connector_imports_profile_readme_pinned_projects_and_public_activity() -> (
+    None
+):
+    test_token = base64.b64decode(b"dGVzdC10b2tlbg==").decode("ascii")
+    connector = GithubDeclaredProfileConnector(api_token=test_token)
+    requested_urls: list[str] = []
+
+    def _readme(text: str, url: str) -> _FakeJsonResponse:
+        return _FakeJsonResponse(
+            {
+                "content": base64.b64encode(text.encode("utf-8")).decode("ascii"),
+                "encoding": "base64",
+                "html_url": url,
+            }
+        )
+
+    def _fake_urlopen(request: Request, timeout: float = 0) -> _FakeJsonResponse:
+        _ = timeout
+        requested_urls.append(request.full_url)
+        if request.full_url.endswith("/users/alex-example"):
+            return _FakeJsonResponse(
+                {"name": "Alex Example", "bio": "", "html_url": "https://github.com/alex-example"}
+            )
+        if request.full_url.endswith("/repos/alex-example/alex-example/readme"):
+            return _readme(
+                "# Alex\n\nBuilding reliable developer tooling and public projects.",
+                "https://github.com/alex-example/alex-example/blob/main/README.md",
+            )
+        if request.full_url == "https://api.github.com/graphql":
+            assert request.get_method() == "POST"
+            assert request.get_header("Authorization") == f"Bearer {test_token}"
+            payload = json.loads(request.data.decode("utf-8"))
+            assert payload["variables"]["login"] == "alex-example"
+            return _FakeJsonResponse(
+                {
+                    "data": {
+                        "user": {
+                            "pinnedItems": {
+                                "nodes": [
+                                    {
+                                        "name": "profile-project",
+                                        "nameWithOwner": "alex-example/profile-project",
+                                        "description": "A public project",
+                                        "url": "https://github.com/alex-example/profile-project",
+                                        "isFork": False,
+                                        "isArchived": False,
+                                        "stargazerCount": 7,
+                                        "primaryLanguage": {"name": "Python"},
+                                        "repositoryTopics": {
+                                            "nodes": [{"topic": {"name": "automation"}}]
+                                        },
+                                        "owner": {
+                                            "login": "alex-example",
+                                            "url": "https://github.com/alex-example",
+                                        },
+                                    },
+                                    {
+                                        "name": "opensource-tool",
+                                        "nameWithOwner": "open-source-labs/opensource-tool",
+                                        "description": "A community-maintained tool",
+                                        "url": "https://github.com/open-source-labs/opensource-tool",
+                                        "isFork": False,
+                                        "isArchived": False,
+                                        "stargazerCount": 3,
+                                        "primaryLanguage": {"name": "Go"},
+                                        "repositoryTopics": {"nodes": []},
+                                        "owner": {
+                                            "login": "open-source-labs",
+                                            "url": "https://github.com/open-source-labs",
+                                        },
+                                    },
+                                ]
+                            },
+                            "contributionsCollection": {
+                                "contributionCalendar": {"totalContributions": 24},
+                                "totalCommitContributions": 12,
+                                "totalIssueContributions": 2,
+                                "totalPullRequestContributions": 7,
+                                "totalPullRequestReviewContributions": 3,
+                                "commitContributionsByRepository": [
+                                    {
+                                        "repository": {
+                                            "nameWithOwner": "open-source-labs/opensource-tool",
+                                            "url": "https://github.com/open-source-labs/opensource-tool",
+                                            "licenseInfo": {"spdxId": "MIT"},
+                                            "owner": {
+                                                "__typename": "Organization",
+                                                "login": "open-source-labs",
+                                                "url": "https://github.com/open-source-labs",
+                                                "name": "Open Source Labs",
+                                                "description": (
+                                                    "Maintains useful public developer tools."
+                                                ),
+                                            },
+                                        },
+                                        "contributions": {"totalCount": 12},
+                                    }
+                                ],
+                                "pullRequestContributionsByRepository": [
+                                    {
+                                        "repository": {
+                                            "nameWithOwner": "open-source-labs/opensource-tool",
+                                            "url": "https://github.com/open-source-labs/opensource-tool",
+                                            "licenseInfo": {"spdxId": "MIT"},
+                                            "owner": {
+                                                "__typename": "Organization",
+                                                "login": "open-source-labs",
+                                                "url": "https://github.com/open-source-labs",
+                                                "name": "Open Source Labs",
+                                                "description": (
+                                                    "Maintains useful public developer tools."
+                                                ),
+                                            },
+                                        },
+                                        "contributions": {"totalCount": 7},
+                                    }
+                                ],
+                                "pullRequestReviewContributionsByRepository": [],
+                            },
+                        }
+                    }
+                }
+            )
+        if request.full_url.endswith("/repos/alex-example/profile-project/readme"):
+            return _readme(
+                "Automates safe release checks for Python services.",
+                "https://github.com/alex-example/profile-project/blob/main/README.md",
+            )
+        if request.full_url.endswith("/repos/open-source-labs/opensource-tool/readme"):
+            return _readme(
+                "CLI tooling maintained with the open-source community.",
+                "https://github.com/open-source-labs/opensource-tool/blob/main/README.md",
+            )
+        raise AssertionError(f"Unexpected GitHub request: {request.full_url}")
+
+    with patch(
+        "rezumi.modules.career_record.infrastructure.declared_profile.github_connector.urlopen",
+        side_effect=_fake_urlopen,
+    ):
+        result = await connector.fetch("https://github.com/alex-example")
+
+    titles = [achievement.title for achievement in result.achievements]
+    assert "Alex Example — GitHub profile README" in titles
+    assert "alex-example/profile-project" in titles
+    assert "open-source-labs/opensource-tool" in titles
+    assert any("public contribution overview" in title for title in titles)
+    assert "Open-source activity — open-source-labs" in titles
+    assert not any("/users/alex-example/repos" in url for url in requested_urls)
+    open_source = next(item for item in result.achievements if item.title.startswith("Open-source"))
+    assert (
+        "Organization overview: Maintains useful public developer tools." in open_source.statement
+    )
 
 
 # --- GitLab -------------------------------------------------------------

@@ -630,7 +630,7 @@ export function CareerProfileView() {
         const achievements = job.resultAchievementsCreated ?? 0;
         const evidence = job.resultEvidenceCreated ?? 0;
         setSuccess(
-          `Imported ${achievements} achievement${achievements === 1 ? "" : "s"} and ${evidence} evidence item${evidence === 1 ? "" : "s"} from your ${job.resultPlatform ?? "linked"} profile. Review them in Achievement Inbox and Evidence Vault.`,
+          `Imported ${achievements} achievement${achievements === 1 ? "" : "s"} and ${evidence} evidence item${evidence === 1 ? "" : "s"} from your ${job.resultPlatform ?? "linked"} profile. Next: review the candidate overview, projects, and activity drafts in Achievement Inbox, then verify their source evidence in Evidence Vault before using them in applications.`,
         );
       } else {
         reportFailure(
