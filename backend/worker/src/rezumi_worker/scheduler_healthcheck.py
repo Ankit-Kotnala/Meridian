@@ -15,7 +15,20 @@ def scheduler_is_responsive(
     proc_root: Path = DEFAULT_PROC_ROOT,
     signal_process: Callable[[int, int], None] = os.kill,
 ) -> bool:
-    """Return whether the recorded PID is a live Celery beat process."""
+    """Return whether Celery beat is running in this container.
+
+    With Docker's ``init: true`` enabled, Celery's pidfile can contain a PID
+    that is not visible from the healthcheck process namespace. In that case,
+    the container init process (PID 1) is the reliable process marker because
+    it is started with the Celery beat command as its argv.
+    """
+    try:
+        init_command_line = (proc_root / "1" / "cmdline").read_bytes().lower()
+    except OSError:
+        init_command_line = b""
+    if b"celery" in init_command_line and b"beat" in init_command_line:
+        return True
+
     try:
         pid = int(pid_file.read_text(encoding="ascii").strip())
         if pid <= 1:
@@ -24,7 +37,10 @@ def scheduler_is_responsive(
         signal_process(pid, 0)
         command_line = (proc_root / str(pid) / "cmdline").read_bytes().lower()
     except (OSError, ValueError):
-        return False
+        try:
+            command_line = (proc_root / "1" / "cmdline").read_bytes().lower()
+        except OSError:
+            return False
 
     return b"celery" in command_line and b"beat" in command_line
 

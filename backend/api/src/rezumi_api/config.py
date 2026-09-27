@@ -94,6 +94,10 @@ class Settings(BaseSettings):
     # ORCID's Public API terms restrict use to non-commercial purposes;
     # this stays off until Zinnia legal clears a Member API agreement.
     orcid_connector_enabled: bool = False
+    github_api_token: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices("REZUMI_GITHUB_API_TOKEN", "GITHUB_API_TOKEN"),
+    )
     google_oauth_enabled: bool = False
     google_client_id: str | None = Field(default=None, max_length=512)
     google_client_secret: SecretStr | None = None

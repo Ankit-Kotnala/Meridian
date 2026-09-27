@@ -91,11 +91,13 @@ class DeclaredProfileConnectorRegistry:
 
 
 def default_declared_profile_registry(
-    *, orcid_enabled: bool = False
+    *,
+    github_api_token: str | None = None,
+    orcid_enabled: bool = False,
 ) -> DeclaredProfileConnectorRegistry:
     connectors: tuple[DeclaredProfileConnector, ...] = (
         FakeDeclaredProfileConnector(),
-        GithubDeclaredProfileConnector(),
+        GithubDeclaredProfileConnector(api_token=github_api_token),
         GitlabDeclaredProfileConnector(),
         BitbucketDeclaredProfileConnector(),
         StackExchangeDeclaredProfileConnector(),

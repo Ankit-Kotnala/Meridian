@@ -87,6 +87,10 @@ class WorkerSettings(BaseSettings):
     database_max_overflow: int = Field(default=2, ge=0, le=20)
     database_connect_timeout_seconds: float = Field(default=3.0, gt=0, le=30)
     database_command_timeout_seconds: float = Field(default=30.0, gt=0, le=300)
+    github_api_token: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices("REZUMI_GITHUB_API_TOKEN", "GITHUB_API_TOKEN"),
+    )
 
     s3_endpoint_url: str = Field(
         default="http://localhost:9000",

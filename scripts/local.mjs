@@ -17,6 +17,9 @@ const dependencyServices = [
   "mailpit",
   "clamav",
 ];
+const longRunningDependencyServices = dependencyServices.filter(
+  (service) => service !== "minio-init",
+);
 const backendServices = [
   ...dependencyServices,
   "api",
@@ -62,14 +65,23 @@ function run(command, args, options = {}) {
 }
 
 function compose(args) {
-  run(docker, [
-    "compose",
-    "-f",
-    "infra/compose.yaml",
-    "--project-directory",
-    ".",
-    ...args,
-  ]);
+  // Prevent a globally exported application DATABASE_URL from overriding the
+  // self-contained local Compose database configuration.
+  const environment = { ...process.env };
+  delete environment.DATABASE_URL;
+  delete environment.REZUMI_DATABASE_URL;
+  run(
+    docker,
+    [
+      "compose",
+      "-f",
+      "infra/compose.yaml",
+      "--project-directory",
+      ".",
+      ...args,
+    ],
+    { env: environment },
+  );
 }
 
 function readLocalEnvironment() {
@@ -158,6 +170,18 @@ function startServices(services, { build = false } = {}) {
   compose([...args, ...services]);
 }
 
+function buildServices(services = []) {
+  compose(["build", ...services]);
+}
+
+function startDependencies() {
+  // `minio-init` is intentionally a one-shot container. Compose --wait treats
+  // its successful exit as a non-running service, so wait only for daemons and
+  // let dependent services wait for the initializer's completion condition.
+  startServices(longRunningDependencyServices);
+  compose(["up", "--detach", "minio-init"]);
+}
+
 function migrateDatabase() {
   compose([
     "run",
@@ -170,6 +194,16 @@ function migrateDatabase() {
     "upgrade",
     "head",
   ]);
+}
+
+function startApplicationStack(applicationServices, { build = false } = {}) {
+  // Run migrations before application processes start.  Worker processes query
+  // the newest tables at boot, and the API must be able to create a user after
+  // a successful OAuth callback.
+  if (build) buildServices(applicationServices);
+  startDependencies();
+  migrateDatabase();
+  startServices(applicationServices);
 }
 function stopServices(services) {
   compose(["stop", ...services]);
@@ -215,10 +249,16 @@ switch (command) {
     break;
   case "up": {
     const selected = target || "full";
-    if (selected === "full") startServices([], { build: true });
+    if (selected === "full")
+      startApplicationStack(
+        [...backendServices.slice(dependencyServices.length), ...webServices],
+        { build: true },
+      );
     else if (selected === "backend")
-      startServices(backendServices, { build: true });
-    else if (selected === "dependencies") startServices(dependencyServices);
+      startApplicationStack(backendServices.slice(dependencyServices.length), {
+        build: true,
+      });
+    else if (selected === "dependencies") startDependencies();
     else {
       console.error(`Unknown up target: ${selected}`);
       process.exit(2);
@@ -227,9 +267,15 @@ switch (command) {
   }
   case "rebuild": {
     const selected = target || "all";
-    if (selected === "all") startServices([], { build: true });
+    if (selected === "all")
+      startApplicationStack(
+        [...backendServices.slice(dependencyServices.length), ...webServices],
+        { build: true },
+      );
     else if (selected === "backend") {
-      startServices(["api", "worker", "worker-scheduler"], { build: true });
+      startApplicationStack(["api", "worker", "worker-scheduler"], {
+        build: true,
+      });
     } else if (selected === "web") startServices(webServices, { build: true });
     else {
       console.error(`Unknown rebuild target: ${selected}`);
@@ -239,14 +285,15 @@ switch (command) {
   }
   case "dev-web":
     stopServices(webServices);
-    startServices(backendServices);
+    startApplicationStack(backendServices.slice(dependencyServices.length));
     run(npm, ["run", "dev", "--workspace=@rezumi/web"], {
       env: hostEnvironment(),
     });
     break;
   case "dev-api":
     stopServices(["api"]);
-    startServices(dependencyServices);
+    startDependencies();
+    migrateDatabase();
     run(
       uv,
       [
@@ -266,7 +313,8 @@ switch (command) {
     break;
   case "dev-worker":
     stopServices(["worker"]);
-    startServices(dependencyServices);
+    startDependencies();
+    migrateDatabase();
     run(
       uv,
       [

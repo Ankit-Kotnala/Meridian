@@ -956,7 +956,13 @@ async def process_declared_profile_enrichment_job(
             ids=CareerRecordUuidFactory(),
             enrichment=DeclaredProfileEnrichmentService(
                 career_record=_declared_profile_career_record_service(database),
-                connectors=default_declared_profile_registry(),
+                connectors=default_declared_profile_registry(
+                    github_api_token=(
+                        settings.github_api_token.get_secret_value()
+                        if settings.github_api_token is not None
+                        else None
+                    )
+                ),
             ),
         )
         return await processor.process_job(job_id)
@@ -993,7 +999,13 @@ async def reconcile_stale_declared_profile_enrichment_jobs(
             ids=CareerRecordUuidFactory(),
             enrichment=DeclaredProfileEnrichmentService(
                 career_record=_declared_profile_career_record_service(database),
-                connectors=default_declared_profile_registry(),
+                connectors=default_declared_profile_registry(
+                    github_api_token=(
+                        settings.github_api_token.get_secret_value()
+                        if settings.github_api_token is not None
+                        else None
+                    )
+                ),
             ),
         )
         return await processor.reconcile(limit)

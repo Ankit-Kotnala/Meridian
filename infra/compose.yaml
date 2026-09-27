@@ -5,11 +5,11 @@ x-app-environment: &app-environment
   LOG_LEVEL: ${LOG_LEVEL:-INFO}
   REZUMI_ENVIRONMENT: ${ENVIRONMENT:-development}
   REZUMI_LOG_LEVEL: ${LOG_LEVEL:-INFO}
-  REZUMI_DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://rezumi:change-me-local-only@postgres:5432/rezumi}
+  REZUMI_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-rezumi}:${POSTGRES_PASSWORD:-change-me-local-only}@postgres:5432/${POSTGRES_DB:-rezumi}
   REZUMI_DATABASE_POOL_SIZE: ${REZUMI_DATABASE_POOL_SIZE:-5}
   REZUMI_DATABASE_MAX_OVERFLOW: ${REZUMI_DATABASE_MAX_OVERFLOW:-10}
   REZUMI_TRUSTED_HOSTS: '["localhost","127.0.0.1","testserver","api"]'
-  DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://rezumi:change-me-local-only@postgres:5432/rezumi}
+  DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-rezumi}:${POSTGRES_PASSWORD:-change-me-local-only}@postgres:5432/${POSTGRES_DB:-rezumi}
   REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
   REZUMI_REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
   CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
@@ -90,6 +90,7 @@ x-app-environment: &app-environment
   REZUMI_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
   REZUMI_GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
   REZUMI_GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:3000/api/v1/auth/google/callback}
+  REZUMI_GITHUB_API_TOKEN: ${GITHUB_API_TOKEN:-}
   REZUMI_CONSENT_POLICY_VERSION: ${CONSENT_POLICY_VERSION:-2026-07-15}
   REZUMI_MONGODB_ENABLED: ${MONGODB_ENABLED:-false}
   REZUMI_MONGODB_URL: ${MONGODB_URL:-mongodb://mongo:27017}
@@ -150,7 +151,7 @@ services:
     networks: [backend, host-services]
 
   minio:
-    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    image: ghcr.io/coollabsio/minio:RELEASE.2025-04-22T22-12-26Z
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-rezumi-local}
@@ -170,7 +171,7 @@ services:
     networks: [backend, host-services]
 
   minio-init:
-    image: quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z
+    image: ghcr.io/coollabsio/minio:RELEASE.2025-04-22T22-12-26Z
     depends_on:
       minio:
         condition: service_healthy
