@@ -937,7 +937,7 @@ export function CareerProfileView() {
 
   return (
     <main className="workspace-page" id="main-content">
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_17.5rem]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_17.5rem]">
         <div className="min-w-0">
           <nav aria-label="Breadcrumb">
             <ol className="flex items-center gap-1.5 text-xs font-semibold text-muted">
@@ -1003,7 +1003,7 @@ export function CareerProfileView() {
             {announcement}
           </p>
 
-          <div className="mt-5 grid gap-5 lg:grid-cols-[12.75rem_minmax(0,1fr)] lg:items-start">
+          <div className="mt-5 grid gap-5 xl:grid-cols-[12.75rem_minmax(0,1fr)] xl:items-start">
             <ProfileSideNav
               completedCount={completedCount}
               totalCount={sectionsComplete.length}

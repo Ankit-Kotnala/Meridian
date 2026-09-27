@@ -71,7 +71,7 @@ export function ProfileStatusRail({
   return (
     <aside
       aria-labelledby="profile-status-heading"
-      className="border-line lg:sticky lg:top-[8.5rem] lg:border-l lg:pl-6"
+      className="border-line xl:sticky xl:top-[8.5rem] xl:border-l xl:pl-6"
     >
       <h2
         className="text-[0.9375rem] font-bold text-foreground"
