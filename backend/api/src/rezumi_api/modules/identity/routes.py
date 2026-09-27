@@ -3,6 +3,7 @@
 from typing import Annotated, Any, Literal, cast
 from uuid import UUID
 
+import structlog
 from fastapi import APIRouter, Cookie, Depends, Header, Query, Request, Response, status
 from fastapi.responses import RedirectResponse
 from rezumi.modules.identity.application import IdentityService
@@ -73,6 +74,7 @@ from rezumi_api.modules.identity.schemas import (
 )
 
 router = APIRouter(prefix="/api/v1", tags=["Identity"])
+logger = structlog.get_logger(__name__)
 _PROBLEMS: dict[int | str, dict[str, Any]] = {
     status.HTTP_400_BAD_REQUEST: {"model": ProblemResponse},
     status.HTTP_401_UNAUTHORIZED: {"model": ProblemResponse},
@@ -372,7 +374,15 @@ async def google_callback(
     state_value: Annotated[str, Query(alias="state", min_length=20, max_length=256)],
 ) -> RedirectResponse:
     state_cookie = request.cookies.get(OAUTH_STATE_COOKIE)
-    if state_cookie is None or not secrets_equal(state_cookie, state_value):
+    state_matches = state_cookie is not None and secrets_equal(state_cookie, state_value)
+    if not state_matches:
+        logger.warning(
+            "oauth_callback_state_rejected",
+            cookie_present=state_cookie is not None,
+            state_present=bool(state_value),
+            cookie_length=len(state_cookie) if state_cookie is not None else 0,
+            state_length=len(state_value),
+        )
         raise OAuthFlowRejected
     completed = await service.complete_google_oauth(code, state_value, context, principal)
     response = RedirectResponse(completed.return_to, status_code=status.HTTP_302_FOUND)

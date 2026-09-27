@@ -57,3 +57,17 @@ def test_scheduler_probe_rejects_the_wrong_process(tmp_path: Path) -> None:
     )
 
     assert not scheduler_is_responsive(pid_file, proc_root, Mock())
+
+
+def test_scheduler_probe_falls_back_to_container_init_process(tmp_path: Path) -> None:
+    pid_file = tmp_path / "celerybeat.pid"
+    pid_file.write_text("7", encoding="ascii")
+    proc_root = tmp_path / "proc"
+    init_process = proc_root / "1"
+    init_process.mkdir(parents=True)
+    (init_process / "cmdline").write_bytes(
+        b"/sbin/docker-init\0--\0celery\0beat\0"
+    )
+    signal_process = Mock(side_effect=ProcessLookupError)
+
+    assert scheduler_is_responsive(pid_file, proc_root, signal_process)

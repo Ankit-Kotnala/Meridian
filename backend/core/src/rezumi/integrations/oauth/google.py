@@ -6,13 +6,17 @@ from typing import Any
 from uuid import UUID
 
 import httpx
+import structlog
 from authlib.integrations.httpx_client import AsyncOAuth2Client
 from authlib.oidc.core import CodeIDToken
+from joserfc.jwk import KeySet
 from joserfc import jwt
 
 from rezumi.modules.identity.application.models import OAuthIdentity, OAuthStart
 from rezumi.modules.identity.domain.errors import OAuthFlowRejected
 from rezumi.modules.identity.infrastructure.redis_security import RedisSecurityStore
+
+logger = structlog.get_logger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,6 +76,7 @@ class GoogleOAuthProvider:
         return OAuthStart(authorization_url=authorization_url, state=state)
 
     async def complete(self, code: str, state: str) -> OAuthIdentity:
+        stage = "consume_flow"
         try:
             flow = await self._store.consume_oauth_flow(state)
             nonce = self._required_string(flow, "nonce")
@@ -86,6 +91,7 @@ class GoogleOAuthProvider:
                 timeout=self._options.timeout_seconds,
             )
             try:
+                stage = "exchange_code"
                 token = await client.fetch_token(
                     self._options.token_endpoint,
                     code=code,
@@ -98,9 +104,11 @@ class GoogleOAuthProvider:
             if not isinstance(id_token, str):
                 raise OAuthFlowRejected
             async with httpx.AsyncClient(timeout=self._options.timeout_seconds) as http:
+                stage = "fetch_google_keys"
                 response = await http.get(self._options.jwks_uri)
                 response.raise_for_status()
-                keys = response.json()
+                keys = KeySet.import_key_set(response.json())
+            stage = "validate_id_token"
             decoded = jwt.decode(id_token, keys, algorithms=["RS256"])
             claims = CodeIDToken(
                 decoded.claims,
@@ -139,8 +147,15 @@ class GoogleOAuthProvider:
                 link_user_id=link_user_id,
             )
         except OAuthFlowRejected:
+            logger.warning("google_oauth_rejected", stage=stage)
             raise
         except Exception as exc:
+            logger.warning(
+                "google_oauth_failed",
+                stage=stage,
+                error_type=type(exc).__name__,
+                error_message=str(exc),
+            )
             raise OAuthFlowRejected from exc
 
     @staticmethod
