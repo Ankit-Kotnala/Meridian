@@ -14,6 +14,7 @@ from rezumi.modules.resume_health.application.models import DocumentLimits
 from rezumi.modules.resume_health.domain import ResumeMediaType
 from rezumi.modules.resume_health.domain.errors import UnsafeDocument
 from rezumi.modules.resume_health.infrastructure.extractors import (
+    PARSER_VERSION,
     LocalDocumentExtractor,
     LocalDocumentTextExtractor,
     normalize_extracted_text,
@@ -21,7 +22,10 @@ from rezumi.modules.resume_health.infrastructure.extractors import (
 from rezumi.modules.resume_health.infrastructure.isolated_extractor import (
     IsolatedDocumentExtractor,
 )
-from rezumi.modules.resume_health.infrastructure.layout import LocalLayoutAnalyzer
+from rezumi.modules.resume_health.infrastructure.layout import (
+    LAYOUT_ANALYZER_VERSION,
+    LocalLayoutAnalyzer,
+)
 
 FIXTURES = Path(__file__).resolve().parents[4] / "frontend" / "test-fixtures" / "generated"
 
@@ -340,7 +344,7 @@ async def test_isolated_extractor_returns_validated_child_result(tmp_path: Path)
     )
 
     assert "ALEX RIVERA" in result.plain_text
-    assert result.parser_version == ("rezumi-local-parser/1.2.0+rezumi-layout-analyzer/1.1.0")
+    assert result.parser_version == f"{PARSER_VERSION}+{LAYOUT_ANALYZER_VERSION}"
     assert not list(tmp_path.glob("parser-*"))
 
 

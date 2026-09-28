@@ -80,7 +80,11 @@ def _apply_resource_limits(limits: AttachmentLimits) -> None:
     cpu_seconds = max(1, round(limits.processing_timeout_seconds) + 1)
     memory_bytes = max(256 * 1024 * 1024, limits.max_archive_uncompressed_bytes * 4)
     resource.setrlimit(resource.RLIMIT_CPU, (cpu_seconds, cpu_seconds))
-    resource.setrlimit(resource.RLIMIT_AS, (memory_bytes, memory_bytes))
+    # macOS exposes RLIMIT_AS but rejects setting it for this subprocess model.
+    # Linux production containers enforce the address-space cap; macOS retains
+    # the CPU and output-size caps below for safe local development.
+    if platform.system() != "Darwin":
+        resource.setrlimit(resource.RLIMIT_AS, (memory_bytes, memory_bytes))
     resource.setrlimit(resource.RLIMIT_FSIZE, (4 * 1024 * 1024, 4 * 1024 * 1024))
 
 
