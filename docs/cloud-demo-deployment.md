@@ -19,16 +19,16 @@ Python PDF/DOCX parsing and ClamAV work.
 
 ## Required managed services
 
-| Concern | Recommended demo provider | Notes |
-| --- | --- | --- |
-| Frontend | Cloudflare Workers | First run the framework compatibility check; keep current Next deployment as fallback. |
-| API and job runner | Railway or Render | Two separate public HTTPS services. |
-| SQL | Neon or Supabase Postgres | Enable `vector` before applying migrations. |
-| Document/catalog store | MongoDB Atlas | Required when `MONGODB_ENABLED=true`, including the hosted job-catalog source. |
-| Object storage | Cloudflare R2 | S3-compatible; private bucket; exact CORS origin only. |
-| Background delivery | Upstash QStash | Queue messages are UUID-only and QStash-signed. |
-| Email | Resend or another SMTP service | Configure SMTP and a verified sender domain. |
-| Malware scanning | Isolated ClamAV host | Required to allow public file uploads. |
+| Concern                | Recommended demo provider      | Notes                                                                                  |
+| ---------------------- | ------------------------------ | -------------------------------------------------------------------------------------- |
+| Frontend               | Cloudflare Workers             | First run the framework compatibility check; keep current Next deployment as fallback. |
+| API and job runner     | Railway or Render              | Two separate public HTTPS services.                                                    |
+| SQL                    | Neon or Supabase Postgres      | Enable `vector` before applying migrations.                                            |
+| Document/catalog store | MongoDB Atlas                  | Required when `MONGODB_ENABLED=true`, including the hosted job-catalog source.         |
+| Object storage         | Cloudflare R2                  | S3-compatible; private bucket; exact CORS origin only.                                 |
+| Background delivery    | Upstash QStash                 | Queue messages are UUID-only and QStash-signed.                                        |
+| Email                  | Resend or another SMTP service | Configure SMTP and a verified sender domain.                                           |
+| Malware scanning       | Isolated ClamAV host           | Required to allow public file uploads.                                                 |
 
 Do not configure a demo deployment with `MALWARE_SCANNER_PROVIDER=disabled` and
 claim that uploads are safe. It fails closed by design.

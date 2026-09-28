@@ -794,9 +794,7 @@ class WorkerSettings(BaseSettings):
                     "QStash delivery requires token, runner URL, and current/next signing keys"
                 )
             if self.qstash_delivery_timeout_seconds <= self.task_time_limit_seconds:
-                raise ValueError(
-                    "QStash delivery timeout must exceed the worker hard task limit"
-                )
+                raise ValueError("QStash delivery timeout must exceed the worker hard task limit")
         if self.environment == "production":
             violations: list[str] = []
             if self.job_delivery_provider == "celery":

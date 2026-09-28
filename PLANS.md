@@ -40,9 +40,9 @@ profile and adds an opt-in HTTP background-job path for a modest public demo.
 - [x] Added two bounded hosted schedules, a configuration-only rollback path,
       a deployment runbook, ADR 0021, and focused formatter/type/test evidence.
 - [!] A live public deployment still requires account-owned managed-service
-      credentials, exact allowed origins/Google redirect URLs, and an isolated
-      ClamAV endpoint. Public uploads must remain fail-closed; no free-tier
-      deployment may claim upload safety with malware scanning disabled.
+  credentials, exact allowed origins/Google redirect URLs, and an isolated
+  ClamAV endpoint. Public uploads must remain fail-closed; no free-tier
+  deployment may claim upload safety with malware scanning disabled.
 
 ## Job catalog save path repair (2026-09-01)
 

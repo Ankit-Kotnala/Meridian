@@ -166,10 +166,7 @@ export function ResumeBuilderView() {
     setLoadError(undefined);
     setFailure(undefined);
     try {
-      const [items] = await Promise.all([
-        listResumes(),
-        refreshReadiness(),
-      ]);
+      const [items] = await Promise.all([listResumes(), refreshReadiness()]);
       applyListedResumes(items);
     } catch (error) {
       setLoadError(
@@ -445,8 +442,8 @@ export function ResumeBuilderView() {
             title="Resume source not ready"
             tone="info"
           >
-            Complete the checklist above before creating a resume. Resume Builder
-            will not invent facts to fill a blank draft.
+            Complete the checklist above before creating a resume. Resume
+            Builder will not invent facts to fill a blank draft.
           </Alert>
         )}
 

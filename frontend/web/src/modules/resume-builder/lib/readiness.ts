@@ -1,10 +1,7 @@
 import type { ResumeSourceOptions } from "../api/types";
 
 export type ResumeBuilderReadinessStatus =
-  | "loading"
-  | "ready"
-  | "blocked"
-  | "error";
+  "loading" | "ready" | "blocked" | "error";
 
 export type ResumeBuilderReadinessStep = {
   actionLabel: string;

@@ -280,9 +280,7 @@ test("a user tracks a grounded application and generates a consistent applicatio
       await analyzeFirstSavedJob(page);
       await expect(page.getByText(evidenceTitle)).toBeVisible();
       await expect(
-        page
-          .getByText(SCORE_DISCLAIMER_PATTERN)
-          .first(),
+        page.getByText(SCORE_DISCLAIMER_PATTERN).first(),
       ).toBeVisible();
     });
 

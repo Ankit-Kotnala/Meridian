@@ -33,8 +33,7 @@ export async function loadResumeBuilderReadiness(options?: {
   cacheBust?: boolean;
 }): Promise<ResumeBuilderReadinessSnapshot> {
   const cacheBust = options?.cacheBust ? Date.now() : undefined;
-  const listOptions =
-    cacheBust === undefined ? undefined : { cacheBust };
+  const listOptions = cacheBust === undefined ? undefined : { cacheBust };
   const [sourceResult, evidencePayload, experiencesPayload, skillsPayload] =
     await Promise.all([
       getSourceOptions(cacheBust)

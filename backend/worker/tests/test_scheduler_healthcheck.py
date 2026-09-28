@@ -65,9 +65,7 @@ def test_scheduler_probe_falls_back_to_container_init_process(tmp_path: Path) ->
     proc_root = tmp_path / "proc"
     init_process = proc_root / "1"
     init_process.mkdir(parents=True)
-    (init_process / "cmdline").write_bytes(
-        b"/sbin/docker-init\0--\0celery\0beat\0"
-    )
+    (init_process / "cmdline").write_bytes(b"/sbin/docker-init\0--\0celery\0beat\0")
     signal_process = Mock(side_effect=ProcessLookupError)
 
     assert scheduler_is_responsive(pid_file, proc_root, signal_process)

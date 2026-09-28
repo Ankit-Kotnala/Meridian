@@ -81,7 +81,9 @@ def fidelity_match_tokens(value: str) -> tuple[str, ...]:
 
     normalized = normalize_fidelity_match_text(value).replace("'", "")
     normalized = unicodedata.normalize("NFKD", normalized)
-    normalized = "".join(character for character in normalized if not unicodedata.combining(character))
+    normalized = "".join(
+        character for character in normalized if not unicodedata.combining(character)
+    )
     return tuple(re.findall(r"\w+", normalized, flags=re.UNICODE))
 
 

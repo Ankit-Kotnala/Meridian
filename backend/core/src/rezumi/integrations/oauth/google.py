@@ -9,8 +9,8 @@ import httpx
 import structlog
 from authlib.integrations.httpx_client import AsyncOAuth2Client
 from authlib.oidc.core import CodeIDToken
-from joserfc.jwk import KeySet
 from joserfc import jwt
+from joserfc.jwk import KeySet
 
 from rezumi.modules.identity.application.models import OAuthIdentity, OAuthStart
 from rezumi.modules.identity.domain.errors import OAuthFlowRejected

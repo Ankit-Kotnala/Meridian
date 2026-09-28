@@ -193,9 +193,7 @@ test("a user saves, analyzes, and compares evidence-linked target roles", async 
       page.getByText(/Product Manager readiness is based on/),
     ).toBeVisible();
     await expect(
-      page
-        .getByText(SCORE_DISCLAIMER_PATTERN)
-        .first(),
+      page.getByText(SCORE_DISCLAIMER_PATTERN).first(),
     ).toBeVisible();
     await expect(page.getByText("Onboarding study source note")).toBeVisible();
     await expect(page.getByText("Confirmed evidence")).toBeVisible();

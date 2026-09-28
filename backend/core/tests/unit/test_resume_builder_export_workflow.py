@@ -988,7 +988,8 @@ async def test_pdf_export_verifies_smart_apostrophe_bullets(tmp_path: Path) -> N
     state.exports.clear()
     state.export_outbox.clear()
     smart_quote_text = (
-        "Xmem is a India\u2019s First multi-modal, multi-agentic long-term memory layer for AI agents."
+        "Xmem is a India\u2019s First multi-modal, multi-agentic long-term memory layer "
+        "for AI agents."
     )
     section = resume.current_version.sections[0]
     item = section.items[0]

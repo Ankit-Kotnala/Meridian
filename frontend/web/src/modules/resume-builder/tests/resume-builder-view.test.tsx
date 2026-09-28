@@ -416,8 +416,7 @@ describe("Resume Builder view", () => {
             "00000000-0000-4000-8000-000000000808",
           ],
         },
-        summary:
-          "2 eligible evidence sources ready for resume generation.",
+        summary: "2 eligible evidence sources ready for resume generation.",
       });
 
     render(<ResumeBuilderView />);
