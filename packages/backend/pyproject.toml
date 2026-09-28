@@ -15,7 +15,7 @@ dependencies = [
 [project.optional-dependencies]
 database = [
   "asyncpg==0.31.0",
-  "sqlalchemy[asyncio]==2.0.54",
+  "sqlalchemy[asyncio]==2.1.1",
 ]
 identity = [
   "aiosmtplib==5.1.2",
@@ -54,7 +54,7 @@ dev = [
   "python-docx==1.2.0",
   "redis==6.4.0",
   "ruff==0.16.9",
-  "sqlalchemy[asyncio]==2.0.54",
+  "sqlalchemy[asyncio]==2.1.1",
 ]
 
 [tool.hatch.build.targets.wheel]
