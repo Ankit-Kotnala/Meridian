@@ -11,6 +11,7 @@ from rezumi.foundation.config import parse_async_postgresql_url
 Environment = Literal["development", "test", "staging", "production"]
 LogFormat = Literal["json", "console"]
 EmailProvider = Literal["smtp", "disabled"]
+JobDeliveryProvider = Literal["celery", "qstash"]
 MalwareScannerProvider = Literal["clamav", "disabled"]
 AiProvider = Literal["deterministic", "http_json", "disabled"]
 AccountOperationsProvider = Literal["disabled"]
@@ -161,6 +162,43 @@ class Settings(BaseSettings):
         default=SecretStr("redis://localhost:6379/0"),
         validation_alias=AliasChoices("REZUMI_CELERY_BROKER_URL", "CELERY_BROKER_URL"),
     )
+    job_delivery_provider: JobDeliveryProvider = Field(
+        default="celery",
+        validation_alias=AliasChoices(
+            "REZUMI_JOB_DELIVERY_PROVIDER",
+            "JOB_DELIVERY_PROVIDER",
+        ),
+    )
+    qstash_token: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices("REZUMI_QSTASH_TOKEN", "QSTASH_TOKEN"),
+    )
+    qstash_base_url: str = Field(
+        default="https://qstash.upstash.io",
+        validation_alias=AliasChoices("REZUMI_QSTASH_BASE_URL", "QSTASH_BASE_URL"),
+    )
+    qstash_job_runner_url: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "REZUMI_QSTASH_JOB_RUNNER_URL",
+            "QSTASH_JOB_RUNNER_URL",
+        ),
+    )
+    qstash_retries: int = Field(
+        default=3,
+        ge=0,
+        le=10,
+        validation_alias=AliasChoices("REZUMI_QSTASH_RETRIES", "QSTASH_RETRIES"),
+    )
+    qstash_delivery_timeout_seconds: int = Field(
+        default=330,
+        ge=10,
+        le=900,
+        validation_alias=AliasChoices(
+            "REZUMI_QSTASH_DELIVERY_TIMEOUT_SECONDS",
+            "QSTASH_DELIVERY_TIMEOUT_SECONDS",
+        ),
+    )
     analytics_max_attempts: int = Field(
         default=3,
         ge=1,
@@ -309,6 +347,40 @@ class Settings(BaseSettings):
             raise ValueError("S3 endpoints must not contain query or fragment metadata")
         return value.rstrip("/")
 
+    @field_validator("qstash_base_url")
+    @classmethod
+    def validate_qstash_base_url(cls, value: str) -> str:
+        parsed = urlparse(value)
+        if (
+            parsed.scheme != "https"
+            or not parsed.hostname
+            or parsed.username
+            or parsed.password
+            or parsed.path not in {"", "/"}
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise ValueError("qstash_base_url must be a credential-free HTTPS origin")
+        return value.rstrip("/")
+
+    @field_validator("qstash_job_runner_url")
+    @classmethod
+    def validate_qstash_runner_url(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        parsed = urlparse(value)
+        if (
+            parsed.scheme != "https"
+            or not parsed.hostname
+            or parsed.username
+            or parsed.password
+            or not parsed.path
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise ValueError("qstash_job_runner_url must be a credential-free HTTPS endpoint")
+        return value.rstrip("/")
+
     @field_validator(
         "smtp_username",
         "google_client_id",
@@ -387,6 +459,11 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def reject_unsafe_production_configuration(self) -> Self:
         """Fail closed for known unsafe production-only combinations."""
+        if self.job_delivery_provider == "qstash":
+            if self.qstash_token is None or self.qstash_job_runner_url is None:
+                raise ValueError("QStash delivery requires a token and runner URL")
+            if len(self.qstash_token.get_secret_value()) < 16:
+                raise ValueError("QStash delivery requires a non-empty token")
         if self.google_oauth_enabled and (
             not self.google_client_id or self.google_client_secret is None
         ):

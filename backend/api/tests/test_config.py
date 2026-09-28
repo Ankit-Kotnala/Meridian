@@ -55,6 +55,22 @@ def test_production_accepts_explicit_safe_configuration() -> None:
     assert settings.environment == "production"
 
 
+def test_qstash_delivery_requires_a_token_and_runner_url() -> None:
+    with pytest.raises(ValidationError, match="QStash delivery"):
+        Settings.model_validate({"job_delivery_provider": "qstash"})
+
+    settings = Settings.model_validate(
+        {
+            "environment": "test",
+            "job_delivery_provider": "qstash",
+            "qstash_token": "qstash-token-at-least-32-bytes---",
+            "qstash_job_runner_url": "https://jobs.example.com/internal/jobs/qstash",
+        }
+    )
+
+    assert settings.job_delivery_provider == "qstash"
+
+
 @pytest.mark.parametrize(
     "database_url",
     [

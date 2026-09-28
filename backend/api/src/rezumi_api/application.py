@@ -196,11 +196,14 @@ from rezumi.modules.resume_health.application import (
     ResumeHealthPolicy,
     ResumeHealthService,
 )
+from rezumi.modules.resume_health.application.ports import JobPublisher
 from rezumi.modules.resume_health.infrastructure import (
     CeleryJobPublisher,
     CeleryPublisherOptions,
     HmacGuestCapabilityManager,
     LocalResumeParserProvider,
+    QStashJobPublisher,
+    QStashPublisherOptions,
     S3ObjectStorage,
     S3Options,
     SqlAlchemyResumeUnitOfWorkFactory,
@@ -433,14 +436,33 @@ def create_app(
                 semantic_parser=LocalResumeParserProvider(),
             )
             if resolved_resume_dispatcher is None:
-                resolved_resume_dispatcher = OutboxDispatcher(
-                    unit_of_work=resume_uow,
-                    publisher=CeleryJobPublisher(
+                publisher: JobPublisher
+                if resolved_settings.job_delivery_provider == "qstash":
+                    token = resolved_settings.qstash_token
+                    runner_url = resolved_settings.qstash_job_runner_url
+                    if token is None or runner_url is None:
+                        raise RuntimeError("validated QStash configuration is unavailable")
+                    publisher = QStashJobPublisher(
+                        QStashPublisherOptions(
+                            token=token.get_secret_value(),
+                            runner_url=runner_url,
+                            base_url=resolved_settings.qstash_base_url,
+                            retries=resolved_settings.qstash_retries,
+                            delivery_timeout_seconds=(
+                                resolved_settings.qstash_delivery_timeout_seconds
+                            ),
+                        )
+                    )
+                else:
+                    publisher = CeleryJobPublisher(
                         CeleryPublisherOptions(
                             broker_url=(resolved_settings.celery_broker_url.get_secret_value()),
                             queue="resume-health",
                         )
-                    ),
+                    )
+                resolved_resume_dispatcher = OutboxDispatcher(
+                    unit_of_work=resume_uow,
+                    publisher=publisher,
                     clock=resume_clock,
                 )
 

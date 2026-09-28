@@ -121,7 +121,8 @@ Windows without Make: `.\scripts\setup.ps1`, `.\scripts\verify.ps1`, `make help`
 Start with [AGENTS.md](AGENTS.md). Then [architecture](docs/architecture.md),
 [local development](docs/local-development.md), [scoring](docs/scoring-methodology.md),
 [AI grounding](docs/ai-grounding-policy.md), [security](docs/security-threat-model.md),
-[API](docs/api.md), [ADRs](docs/adr/README.md).
+[API](docs/api.md), [cloud-portable demo deployment](docs/cloud-demo-deployment.md),
+[ADRs](docs/adr/README.md).
 
 ## License
 

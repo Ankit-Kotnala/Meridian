@@ -104,6 +104,47 @@ def test_production_accepts_explicit_non_local_redis_urls() -> None:
     assert settings.environment == "production"
 
 
+def test_production_qstash_mode_does_not_require_a_celery_broker() -> None:
+    settings = WorkerSettings.model_validate(
+        {
+            "environment": "production",
+            "job_delivery_provider": "qstash",
+            "qstash_token": "qstash-token-at-least-32-bytes---",
+            "qstash_job_runner_url": "https://jobs.example.com/internal/jobs/qstash",
+            "qstash_current_signing_key": "current-signing-key-at-least-32-bytes",
+            "qstash_next_signing_key": "next-signing-key-at-least-32-bytes---",
+            "database_url": (
+                "postgresql+asyncpg://rezumi:production-credential@"
+                "postgres.internal.example:5432/rezumi"
+            ),
+            "s3_endpoint_url": "https://s3.internal.example",
+            "s3_public_endpoint_url": "https://uploads.example.com",
+            "s3_use_ssl": True,
+            "s3_secret_access_key": "production-storage-secret",
+            "malware_scanner_provider": "clamav",
+            "clamav_host": "scanner.internal.example",
+        }
+    )
+
+    assert settings.job_delivery_provider == "qstash"
+
+
+def test_qstash_timeout_must_outlast_the_worker_hard_limit() -> None:
+    with pytest.raises(ValidationError, match="QStash delivery timeout"):
+        WorkerSettings.model_validate(
+            {
+                "environment": "test",
+                "job_delivery_provider": "qstash",
+                "qstash_token": "qstash-token-at-least-32-bytes---",
+                "qstash_job_runner_url": "https://jobs.example.com/internal/jobs/qstash",
+                "qstash_current_signing_key": "current-signing-key-at-least-32-bytes",
+                "qstash_next_signing_key": "next-signing-key-at-least-32-bytes---",
+                "task_time_limit_seconds": 300,
+                "qstash_delivery_timeout_seconds": 300,
+            }
+        )
+
+
 def test_document_limits_and_scanner_settings_are_bounded() -> None:
     settings = WorkerSettings.model_validate(
         {

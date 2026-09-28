@@ -78,6 +78,57 @@ class WorkerSettings(BaseSettings):
             "REDIS_URL",
         ),
     )
+    job_delivery_provider: Literal["celery", "qstash"] = Field(
+        default="celery",
+        validation_alias=AliasChoices(
+            "REZUMI_JOB_DELIVERY_PROVIDER",
+            "JOB_DELIVERY_PROVIDER",
+        ),
+    )
+    qstash_token: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices("REZUMI_QSTASH_TOKEN", "QSTASH_TOKEN"),
+    )
+    qstash_base_url: str = Field(
+        default="https://qstash.upstash.io",
+        validation_alias=AliasChoices("REZUMI_QSTASH_BASE_URL", "QSTASH_BASE_URL"),
+    )
+    qstash_job_runner_url: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "REZUMI_QSTASH_JOB_RUNNER_URL",
+            "QSTASH_JOB_RUNNER_URL",
+        ),
+    )
+    qstash_current_signing_key: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "REZUMI_QSTASH_CURRENT_SIGNING_KEY",
+            "QSTASH_CURRENT_SIGNING_KEY",
+        ),
+    )
+    qstash_next_signing_key: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "REZUMI_QSTASH_NEXT_SIGNING_KEY",
+            "QSTASH_NEXT_SIGNING_KEY",
+        ),
+    )
+    qstash_retries: int = Field(
+        default=3,
+        ge=0,
+        le=10,
+        validation_alias=AliasChoices("REZUMI_QSTASH_RETRIES", "QSTASH_RETRIES"),
+    )
+    qstash_delivery_timeout_seconds: int = Field(
+        default=330,
+        ge=10,
+        le=900,
+        validation_alias=AliasChoices(
+            "REZUMI_QSTASH_DELIVERY_TIMEOUT_SECONDS",
+            "QSTASH_DELIVERY_TIMEOUT_SECONDS",
+        ),
+    )
 
     database_url: SecretStr = Field(
         default=SecretStr(_LOCAL_DATABASE_URL),
@@ -661,6 +712,40 @@ class WorkerSettings(BaseSettings):
             raise ValueError("S3 endpoints must not contain query or fragment metadata")
         return value.rstrip("/")
 
+    @field_validator("qstash_base_url")
+    @classmethod
+    def validate_qstash_base_url(cls, value: str) -> str:
+        parsed = urlsplit(value)
+        if (
+            parsed.scheme != "https"
+            or not parsed.hostname
+            or parsed.username
+            or parsed.password
+            or parsed.path not in {"", "/"}
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise ValueError("qstash_base_url must be a credential-free HTTPS origin")
+        return value.rstrip("/")
+
+    @field_validator("qstash_job_runner_url")
+    @classmethod
+    def validate_qstash_runner_url(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        parsed = urlsplit(value)
+        if (
+            parsed.scheme != "https"
+            or not parsed.hostname
+            or parsed.username
+            or parsed.password
+            or not parsed.path
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise ValueError("qstash_job_runner_url must be a credential-free HTTPS endpoint")
+        return value.rstrip("/")
+
     @field_validator("clamav_host")
     @classmethod
     def validate_clamav_host(cls, value: str) -> str:
@@ -689,12 +774,36 @@ class WorkerSettings(BaseSettings):
             self.database_url.get_secret_value(),
             self.environment,
         )
+        if self.job_delivery_provider == "qstash":
+            if (
+                self.qstash_token is None
+                or self.qstash_job_runner_url is None
+                or self.qstash_current_signing_key is None
+                or self.qstash_next_signing_key is None
+            ):
+                raise ValueError(
+                    "QStash delivery requires token, runner URL, and current/next signing keys"
+                )
+            signing_keys = (
+                self.qstash_token,
+                self.qstash_current_signing_key,
+                self.qstash_next_signing_key,
+            )
+            if any(len(value.get_secret_value()) < 16 for value in signing_keys):
+                raise ValueError(
+                    "QStash delivery requires token, runner URL, and current/next signing keys"
+                )
+            if self.qstash_delivery_timeout_seconds <= self.task_time_limit_seconds:
+                raise ValueError(
+                    "QStash delivery timeout must exceed the worker hard task limit"
+                )
         if self.environment == "production":
             violations: list[str] = []
-            if _is_development_redis_url(self.broker_url):
-                violations.append("an explicit non-local broker URL is required")
-            if _is_development_redis_url(self.result_backend):
-                violations.append("an explicit non-local result backend is required")
+            if self.job_delivery_provider == "celery":
+                if _is_development_redis_url(self.broker_url):
+                    violations.append("an explicit non-local broker URL is required")
+                if _is_development_redis_url(self.result_backend):
+                    violations.append("an explicit non-local result backend is required")
             internal_storage = urlsplit(self.s3_endpoint_url)
             public_storage = urlsplit(self.s3_public_endpoint_url)
             if internal_storage.scheme != "https" or _is_local_hostname(

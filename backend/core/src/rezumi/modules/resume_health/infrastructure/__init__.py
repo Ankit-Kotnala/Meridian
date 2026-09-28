@@ -15,7 +15,12 @@ from .isolated_extractor import IsolatedDocumentExtractor
 from .layout import LocalLayoutAnalyzer
 from .malware import ClamAvOptions, ClamAvScanner
 from .mongodb_store import DisabledParsedResumeDocumentStore, MongoParsedResumeDocumentStore
-from .queue import CeleryJobPublisher, CeleryPublisherOptions
+from .queue import (
+    CeleryJobPublisher,
+    CeleryPublisherOptions,
+    QStashJobPublisher,
+    QStashPublisherOptions,
+)
 from .repository import SqlAlchemyResumeUnitOfWorkFactory
 from .security import HmacGuestCapabilityManager, SystemClock
 from .semantic_parser import LocalResumeParserProvider
@@ -42,6 +47,8 @@ __all__ = [
     "LocalLayoutAnalyzer",
     "LocalResumeParserProvider",
     "MongoParsedResumeDocumentStore",
+    "QStashJobPublisher",
+    "QStashPublisherOptions",
     "S3ObjectStorage",
     "S3Options",
     "SqlAlchemyResumeUnitOfWorkFactory",
