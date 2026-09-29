@@ -165,9 +165,7 @@ test("a user reviews, accepts, undoes, and answers grounded Change Studio sugges
     await analyzeFirstSavedJob(page);
     await expect(page.getByText("Discovery interview notes")).toBeVisible();
     await expect(
-      page
-        .getByText(SCORE_DISCLAIMER_PATTERN)
-        .first(),
+      page.getByText(SCORE_DISCLAIMER_PATTERN).first(),
     ).toBeVisible();
 
     await page.getByRole("link", { name: "Open Change Studio" }).click();

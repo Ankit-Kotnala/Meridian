@@ -25,6 +25,25 @@ phase.**
 
 No phase is complete until every exit gate passes. A skipped check is not a pass.
 
+## Cloud-portable hosted-demo delivery (2026-09-28)
+
+This is a deployment profile, not a completed product phase or a claim that a
+hosted environment has been approved. It preserves the existing local Compose
+profile and adds an opt-in HTTP background-job path for a modest public demo.
+
+- [x] Added a QStash publisher and signed, allowlisted HTTP job runner. Durable
+      PostgreSQL outboxes, job leases, idempotency, and retries remain the source
+      of truth; only task names and UUIDs leave the application.
+- [x] Preserved the local Redis/Celery worker and scheduler as the default, so
+      existing Compose development is unchanged. The cloud profile uses managed
+      Redis for sessions/rate-limiting, not as a Celery broker.
+- [x] Added two bounded hosted schedules, a configuration-only rollback path,
+      a deployment runbook, ADR 0021, and focused formatter/type/test evidence.
+- [!] A live public deployment still requires account-owned managed-service
+  credentials, exact allowed origins/Google redirect URLs, and an isolated
+  ClamAV endpoint. Public uploads must remain fail-closed; no free-tier
+  deployment may claim upload safety with malware scanning disabled.
+
 ## Job catalog save path repair (2026-09-01)
 
 Saving a Himalayas (or other URL-keyed) catalog listing from Job search returned

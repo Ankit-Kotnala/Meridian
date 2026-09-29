@@ -1389,6 +1389,7 @@ migrations = [
 resume = [
     { name = "boto3" },
     { name = "celery", extra = ["redis"] },
+    { name = "httpx" },
     { name = "pymongo" },
     { name = "pypdf" },
     { name = "python-docx" },
@@ -1430,6 +1431,7 @@ requires-dist = [
     { name = "cryptography", marker = "extra == 'identity'", specifier = ">=50.0.0" },
     { name = "email-validator", marker = "extra == 'identity'", specifier = "==2.3.0" },
     { name = "httpx", marker = "extra == 'identity'", specifier = "==0.28.1" },
+    { name = "httpx", marker = "extra == 'resume'", specifier = "==0.28.1" },
     { name = "pymongo", marker = "extra == 'resume'", specifier = "==4.16.0" },
     { name = "pypdf", marker = "extra == 'resume'", specifier = "==6.16.1" },
     { name = "python-docx", marker = "extra == 'resume'", specifier = "==1.2.0" },
@@ -1469,11 +1471,13 @@ version = "0.1.0"
 source = { editable = "worker" }
 dependencies = [
     { name = "celery", extra = ["redis"] },
+    { name = "fastapi" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "redis" },
     { name = "rezumi-backend", extra = ["database", "resume"] },
     { name = "structlog" },
+    { name = "uvicorn", extra = ["standard"] },
 ]
 
 [package.dev-dependencies]
@@ -1486,11 +1490,13 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "celery", extras = ["redis"], specifier = "==5.6.3" },
+    { name = "fastapi", specifier = "==0.141.1" },
     { name = "pydantic", specifier = "==2.13.4" },
     { name = "pydantic-settings", specifier = "==2.15.0" },
     { name = "redis", specifier = "==6.4.0" },
     { name = "rezumi-backend", extras = ["database", "resume"], editable = "core" },
     { name = "structlog", specifier = "==26.1.0" },
+    { name = "uvicorn", extras = ["standard"], specifier = "==0.52.0" },
 ]
 
 [package.metadata.requires-dev]

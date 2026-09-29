@@ -14,7 +14,8 @@ export function ResumeBuilderReadinessPanel({
   readiness: ResumeBuilderReadinessSnapshot;
   refreshing: boolean;
 }) {
-  const blocked = readiness.status === "blocked" || readiness.status === "error";
+  const blocked =
+    readiness.status === "blocked" || readiness.status === "error";
 
   return (
     <section
@@ -51,7 +52,11 @@ export function ResumeBuilderReadinessPanel({
       </div>
 
       {readiness.status === "error" && (
-        <Alert className="mt-4" title="Source preview unavailable" tone="danger">
+        <Alert
+          className="mt-4"
+          title="Source preview unavailable"
+          tone="danger"
+        >
           {readiness.summary ??
             "Resume Builder could not verify eligible evidence. Try refreshing."}
         </Alert>
@@ -103,8 +108,8 @@ export function ResumeBuilderReadinessPanel({
 
       {blocked && (
         <p className="mt-4 text-xs leading-5 text-muted">
-          Saving facts in Career Profile is not enough on its own. Resume Builder
-          only uses evidence you confirm in Evidence Vault.
+          Saving facts in Career Profile is not enough on its own. Resume
+          Builder only uses evidence you confirm in Evidence Vault.
         </p>
       )}
     </section>

@@ -304,7 +304,7 @@ async def test_github_connector_imports_profile_readme_pinned_projects_and_publi
                                         "isArchived": False,
                                         "stargazerCount": 3,
                                         "primaryLanguage": {"name": "Go"},
-                                        "repositoryTopics": {"nodes": []},
+                                        "repositoryTopics": {"nodes": None},
                                         "owner": {
                                             "login": "open-source-labs",
                                             "url": "https://github.com/open-source-labs",

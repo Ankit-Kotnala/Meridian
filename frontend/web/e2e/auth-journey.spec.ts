@@ -163,11 +163,7 @@ async function completeResumeHealth(page: Page): Promise<void> {
   await expect(
     page.getByRole("heading", { name: "Resume Health" }),
   ).toBeVisible();
-  await expect(
-    page
-      .getByText(SCORE_DISCLAIMER_PATTERN)
-      .first(),
-  ).toBeVisible();
+  await expect(page.getByText(SCORE_DISCLAIMER_PATTERN).first()).toBeVisible();
   await expect(
     page
       .getByRole("img", { name: /Resume Health Score:/ })

@@ -174,9 +174,7 @@ test("a user saves a job, analyzes exact requirements, and prioritizes it", asyn
 
     await analyzeFirstSavedJob(page);
     await expect(page.getByText("Discovery interview notes")).toBeVisible();
-    await expect(
-      page.getByText(SCORE_DISCLAIMER_PATTERN),
-    ).toBeVisible();
+    await expect(page.getByText(SCORE_DISCLAIMER_PATTERN)).toBeVisible();
 
     await page.getByLabel("Interest").fill("5");
     await page.getByLabel("Career direction fit").fill("4");

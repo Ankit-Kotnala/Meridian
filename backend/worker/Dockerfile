@@ -13,7 +13,10 @@ COPY --chown=10001:10001 backend/api/pyproject.toml backend/api/README.md ./back
 COPY --chown=10001:10001 backend/worker/pyproject.toml backend/worker/README.md ./backend/worker/
 COPY --chown=10001:10001 backend/core/pyproject.toml backend/core/README.md ./backend/core/
 COPY --chown=10001:10001 backend/worker/src ./backend/worker/src
+COPY --chown=10001:10001 backend/worker/docker-entrypoint.sh ./backend/worker/docker-entrypoint.sh
 COPY --chown=10001:10001 backend/core/src ./backend/core/src
+
+RUN chmod 0555 ./backend/worker/docker-entrypoint.sh
 
 RUN UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy uv sync \
       --project backend \
@@ -26,7 +29,6 @@ RUN UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy uv sync \
 
 USER 10001:10001
 
-HEALTHCHECK --interval=30s --timeout=8s --start-period=15s --retries=3 \
-  CMD ["python", "-m", "rezumi_worker.healthcheck"]
+EXPOSE 8000
 
-CMD ["celery", "--app", "rezumi_worker.app:celery_app", "worker", "--loglevel=INFO", "--queues=default,resume-health,resume-builder,career-record,maintenance"]
+CMD ["/workspace/backend/worker/docker-entrypoint.sh"]

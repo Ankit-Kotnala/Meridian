@@ -806,7 +806,8 @@ def _rest_repository_from_graphql(node: dict[str, Any]) -> dict[str, Any] | None
         return None
     primary_language = node.get("primaryLanguage")
     topics = node.get("repositoryTopics")
-    topic_nodes = topics.get("nodes") if isinstance(topics, dict) else []
+    raw_topic_nodes = topics.get("nodes") if isinstance(topics, dict) else []
+    topic_nodes = raw_topic_nodes if isinstance(raw_topic_nodes, list) else []
     topic_names = [
         _normalize_public_text(str(item.get("topic", {}).get("name") or ""))
         for item in topic_nodes

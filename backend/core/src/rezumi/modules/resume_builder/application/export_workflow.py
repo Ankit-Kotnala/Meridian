@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 import tempfile
 from collections import Counter
 from dataclasses import dataclass, replace
@@ -29,9 +28,9 @@ from rezumi.modules.resume_builder.domain import (
     build_fidelity_manifest,
     fidelity_manifest_payload,
     fidelity_manifest_sha256,
+    fidelity_match_tokens,
     manifest_grounding_failures,
     normalize_fidelity_match_text,
-    fidelity_match_tokens,
     normalize_text,
 )
 

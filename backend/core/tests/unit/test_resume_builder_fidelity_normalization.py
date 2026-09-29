@@ -15,35 +15,25 @@ from rezumi.modules.resume_builder.domain.validation import (
 
 def test_normalize_fidelity_match_text_unifies_smart_quotes_and_control_chars() -> None:
     manifest = normalize_fidelity_match_text("Xmem is a India\u2019s First multi-modal product.")
-    extracted = normalize_fidelity_match_text(
-        "\x7f Xmem is a India's First multi-\nmodal product."
-    )
+    extracted = normalize_fidelity_match_text("\x7f Xmem is a India's First multi-\nmodal product.")
     assert manifest == extracted
 
 
 def test_normalize_fidelity_match_text_repairs_glued_pdf_section_headings() -> None:
     extracted = normalize_fidelity_match_text("Software EngineerEXPERIENCE Primary language")
-    assert "software engineer experience primary language" == extracted
+    assert extracted == "software engineer experience primary language"
 
 
 def test_normalize_fidelity_match_text_repairs_glued_pdf_title_case_words() -> None:
     extracted = normalize_fidelity_match_text(
         "Taylor MorganProduct LeadExperience Confirmed product discovery work."
     )
-    assert (
-        "taylor morgan product lead experience confirmed product discovery work."
-        == extracted
-    )
+    assert extracted == "taylor morgan product lead experience confirmed product discovery work."
 
 
 def test_normalize_fidelity_match_text_repairs_missing_space_after_sentence_punctuation() -> None:
-    extracted = normalize_fidelity_match_text(
-        "Layer for AI agents.Primary language: Python."
-    )
-    assert (
-        "layer for ai agents. primary language: python."
-        == extracted
-    )
+    extracted = normalize_fidelity_match_text("Layer for AI agents.Primary language: Python.")
+    assert extracted == "layer for ai agents. primary language: python."
     assert "ankit.kotnala12@gmail.com" in normalize_fidelity_match_text(
         "Contact: ankit.kotnala12@gmail.com"
     )

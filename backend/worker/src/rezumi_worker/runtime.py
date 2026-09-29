@@ -17,6 +17,7 @@ from celery import Celery  # type: ignore[import-untyped,unused-ignore]
 from rezumi.foundation.config import DatabaseOptions
 from rezumi.foundation.config.mongodb import MongoOptions
 from rezumi.foundation.database import Database
+from rezumi.integrations.jobs import QStashClient, QStashOptions
 from rezumi.modules.application_workspace.application import (
     ApplicationWorkspaceService,
 )
@@ -231,6 +232,11 @@ from rezumi_worker.publisher import (
     CeleryAnalyticsPublisher,
     CeleryJobPublisher,
     CeleryResumeExportPublisher,
+)
+from rezumi_worker.qstash import (
+    QStashAnalyticsPublisher,
+    QStashResumeExportPublisher,
+    QStashWorkerPublisher,
 )
 
 logger = structlog.get_logger(__name__)
@@ -548,16 +554,17 @@ async def process_resume_export_cleanup(
 
 async def dispatch_resume_export_outbox(
     settings: WorkerSettings,
-    application: Celery,
+    application: Celery | None,
     limit: int,
 ) -> ExportOutboxDispatchResult:
     """Publish a bounded batch of identifier-only resume export jobs."""
 
     database = _database(settings)
     try:
+        publisher = _resume_export_publisher(settings, application)
         dispatcher = ResumeExportOutboxDispatcher(
             unit_of_work=SqlAlchemyResumeBuilderUnitOfWorkFactory(database),
-            publisher=CeleryResumeExportPublisher(application),
+            publisher=publisher,
             clock=ResumeBuilderClock(),
             identifiers=ResumeBuilderUuidFactory(),
             policy=_resume_export_policy(settings),
@@ -643,7 +650,7 @@ async def process_career_analytics_job(
 
 async def dispatch_career_analytics_outbox(
     settings: WorkerSettings,
-    application: Celery,
+    application: Celery | None,
     limit: int,
 ) -> OutboxTaskResult:
     """Publish a bounded batch and durably acknowledge each broker handoff."""
@@ -652,7 +659,7 @@ async def dispatch_career_analytics_outbox(
     try:
         service = _career_analytics_service(database, settings)
         query = SqlAlchemyCareerAnalyticsWorkerQuery(database)
-        publisher = CeleryAnalyticsPublisher(application)
+        publisher = _analytics_publisher(settings, application)
         claimed = await service.claim_outbox(limit=limit)
         published = 0
         failed = 0
@@ -871,14 +878,14 @@ async def record_attachment_failure(
 
 async def dispatch_resume_outbox(
     settings: WorkerSettings,
-    application: Celery,
+    application: Celery | None,
     limit: int,
 ) -> OutboxTaskResult:
     database = _database(settings)
     try:
         dispatcher = OutboxDispatcher(
             unit_of_work=SqlAlchemyResumeUnitOfWorkFactory(database),
-            publisher=CeleryJobPublisher(application),
+            publisher=_identifier_publisher(settings, application),
             clock=SystemClock(),
         )
         result = await dispatcher.dispatch_pending(limit)
@@ -893,14 +900,14 @@ async def dispatch_resume_outbox(
 
 async def dispatch_attachment_outbox(
     settings: WorkerSettings,
-    application: Celery,
+    application: Celery | None,
     limit: int,
 ) -> OutboxTaskResult:
     database = _database(settings)
     try:
         dispatcher = AttachmentOutboxDispatcher(
             unit_of_work=SqlAlchemyAttachmentUnitOfWorkFactory(database),
-            publisher=CeleryJobPublisher(application),
+            publisher=_identifier_publisher(settings, application),
             clock=AttachmentSystemClock(),
             policy=_attachment_policy(settings),
         )
@@ -972,14 +979,14 @@ async def process_declared_profile_enrichment_job(
 
 async def dispatch_declared_profile_enrichment_outbox(
     settings: WorkerSettings,
-    application: Celery,
+    application: Celery | None,
     limit: int,
 ) -> DeclaredProfileEnrichmentOutboxDispatchResult:
     database = _database(settings)
     try:
         dispatcher = DeclaredProfileEnrichmentOutboxDispatcher(
             unit_of_work=SqlAlchemyDeclaredProfileEnrichmentJobUnitOfWorkFactory(database),
-            publisher=CeleryJobPublisher(application),
+            publisher=_identifier_publisher(settings, application),
             clock=AttachmentSystemClock(),
         )
         return await dispatcher.dispatch_pending(limit)
@@ -1054,6 +1061,57 @@ async def cleanup_attachment_objects(
             clock=resources.clock,
         )
         return await processor.process_due(limit)
+
+
+def _qstash_publisher(settings: WorkerSettings) -> QStashWorkerPublisher:
+    token = settings.qstash_token
+    runner_url = settings.qstash_job_runner_url
+    if token is None or runner_url is None:
+        raise RuntimeError("validated QStash configuration is unavailable")
+    return QStashWorkerPublisher(
+        QStashClient(
+            QStashOptions(
+                token=token.get_secret_value(),
+                destination_url=runner_url,
+                base_url=settings.qstash_base_url,
+                retries=settings.qstash_retries,
+                delivery_timeout_seconds=settings.qstash_delivery_timeout_seconds,
+            )
+        )
+    )
+
+
+def _identifier_publisher(
+    settings: WorkerSettings,
+    application: Celery | None,
+) -> CeleryJobPublisher | QStashWorkerPublisher:
+    if settings.job_delivery_provider == "qstash":
+        return _qstash_publisher(settings)
+    if application is None:
+        raise RuntimeError("Celery delivery requires a Celery application")
+    return CeleryJobPublisher(application)
+
+
+def _analytics_publisher(
+    settings: WorkerSettings,
+    application: Celery | None,
+) -> CeleryAnalyticsPublisher | QStashAnalyticsPublisher:
+    if settings.job_delivery_provider == "qstash":
+        return QStashAnalyticsPublisher(_qstash_publisher(settings))
+    if application is None:
+        raise RuntimeError("Celery delivery requires a Celery application")
+    return CeleryAnalyticsPublisher(application)
+
+
+def _resume_export_publisher(
+    settings: WorkerSettings,
+    application: Celery | None,
+) -> CeleryResumeExportPublisher | QStashResumeExportPublisher:
+    if settings.job_delivery_provider == "qstash":
+        return QStashResumeExportPublisher(_qstash_publisher(settings))
+    if application is None:
+        raise RuntimeError("Celery delivery requires a Celery application")
+    return CeleryResumeExportPublisher(application)
 
 
 def _career_analytics_service(

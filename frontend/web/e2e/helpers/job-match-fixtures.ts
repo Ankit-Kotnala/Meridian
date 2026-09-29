@@ -55,7 +55,11 @@ async function authenticatedJsonRequest(
 }
 
 export async function fetchFirstApplicationId(page: Page): Promise<string> {
-  const response = await authenticatedJsonRequest(page, "GET", "/api/v1/applications");
+  const response = await authenticatedJsonRequest(
+    page,
+    "GET",
+    "/api/v1/applications",
+  );
   expect(response.ok(), await response.text()).toBeTruthy();
   const body = (await response.json()) as { data?: Array<{ id?: string }> };
   const applicationId = body.data?.[0]?.id;
@@ -71,7 +75,13 @@ export async function createInterviewSessionThroughApi(
   page: Page,
   input: {
     applicationId: string;
-    kind: "behavioral" | "recruiter_screen" | "technical" | "hiring_manager" | "panel" | "other";
+    kind:
+      | "behavioral"
+      | "recruiter_screen"
+      | "technical"
+      | "hiring_manager"
+      | "panel"
+      | "other";
     title: string;
   },
 ): Promise<string> {
@@ -94,15 +104,20 @@ export async function createSavedJobThroughApi(
   page: Page,
   job: SavedJobFixture,
 ): Promise<void> {
-  const response = await authenticatedJsonRequest(page, "POST", "/api/v1/jobs", {
-    company: job.company,
-    employmentType: "full_time",
-    location: "Remote",
-    sourceKind: "paste",
-    sourceText: job.description,
-    title: job.title,
-    workModel: "remote",
-  });
+  const response = await authenticatedJsonRequest(
+    page,
+    "POST",
+    "/api/v1/jobs",
+    {
+      company: job.company,
+      employmentType: "full_time",
+      location: "Remote",
+      sourceKind: "paste",
+      sourceText: job.description,
+      title: job.title,
+      workModel: "remote",
+    },
+  );
   expect(response.ok(), await response.text()).toBeTruthy();
 }
 
