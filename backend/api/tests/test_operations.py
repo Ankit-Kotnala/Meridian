@@ -98,6 +98,30 @@ def test_request_id_is_echoed_when_safe(client: TestClient) -> None:
     assert response.headers["X-Request-ID"] == "trace_123.safe"
 
 
+def test_api_responses_use_browser_and_cache_hardening_headers(client: TestClient) -> None:
+    response = client.get("/api/v1/meta")
+
+    assert response.headers["Cache-Control"] == "no-store"
+    assert response.headers["Content-Security-Policy"] == (
+        "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+    )
+    assert response.headers["Cross-Origin-Resource-Policy"] == "same-origin"
+    assert response.headers["Referrer-Policy"] == "no-referrer"
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+    assert response.headers["X-Frame-Options"] == "DENY"
+    assert response.headers["X-Permitted-Cross-Domain-Policies"] == "none"
+    assert "Strict-Transport-Security" not in response.headers
+
+
+def test_public_api_enables_hsts(settings: Settings, fake_database: FakeDatabase) -> None:
+    staging = settings.model_copy(update={"environment": "staging"})
+
+    with TestClient(create_app(staging, database=fake_database)) as client:
+        response = client.get("/health")
+
+    assert response.headers["Strict-Transport-Security"] == "max-age=31536000"
+
+
 def test_unsafe_request_id_is_replaced(client: TestClient) -> None:
     response = client.get("/health", headers={"X-Request-ID": "line-one\nline-two"})
 

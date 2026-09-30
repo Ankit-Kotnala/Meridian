@@ -38,6 +38,7 @@ def test_database_url_requires_asyncpg() -> None:
         parse_async_postgresql_url("postgresql://app:secret@database/rezumi")
 
 
+@pytest.mark.parametrize("environment", ["staging", "production"])
 @pytest.mark.parametrize(
     "database_url",
     [
@@ -45,11 +46,13 @@ def test_database_url_requires_asyncpg() -> None:
         "postgresql+asyncpg://app:change-me-local-only@database:5432/rezumi",
     ],
 )
-def test_migration_database_url_rejects_unsafe_production_values(database_url: str) -> None:
-    with pytest.raises(ValueError, match="Unsafe production database configuration"):
+def test_migration_database_url_rejects_unsafe_public_values(
+    environment: str, database_url: str
+) -> None:
+    with pytest.raises(ValueError, match="Unsafe public database configuration"):
         database_url_from_environment(
             {
-                "REZUMI_ENVIRONMENT": "production",
+                "REZUMI_ENVIRONMENT": environment,
                 "REZUMI_DATABASE_URL": database_url,
             }
         )

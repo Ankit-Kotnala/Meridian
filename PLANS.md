@@ -25,6 +25,36 @@ phase.**
 
 No phase is complete until every exit gate passes. A skipped check is not a pass.
 
+## Public-environment security baseline (2026-09-30)
+
+This hardening does not claim a public deployment is approved. It prevents the
+known unsafe local defaults from being used accidentally by the existing public
+demo profile.
+
+- [x] Staging and production fail closed on local/default database, Redis,
+      object-storage, malware-scanner, SMTP, host, cookie, secret, debug, and
+      documentation settings. QStash and local Compose behavior remain separate.
+- [x] API responses receive no-store, anti-framing, MIME, referrer, resource,
+      CSP, and public-environment HSTS headers; the web security-header baseline
+      was extended without changing routes or browser/API contracts.
+- [x] Added focused API/core/worker configuration and response tests, ADR 0022,
+      and a deploy-time validation checklist. Remaining hosting requirements are
+      protected secrets, exact edge/header configuration, private storage, and an
+      isolated reachable ClamAV service.
+- [x] Updated the application runtime to pinned CPython 3.14.7 after the image
+      scanner found a fixable high-severity issue in the prior 3.13 base. The
+      obsolete, exact-version Grype exception was removed rather than carried
+      forward.
+- [x] Updated the web and edge images to pinned Node 24.21.0, removing the
+      fixable medium Node 24.18.0 findings reported by the image scanner.
+- [x] Pruned all development-only Node dependencies from the shipped web image.
+      This removes the bundled TypeScript compiler that carried the previously
+      masked, fixable high-severity Go findings.
+- [x] Removed every legacy Grype exception. The current unfiltered images have
+      no high or critical finding. Grype still reports four unsuppressed
+      CPython 3.14 medium/low findings whose fixes require unreleased CPython
+      3.15 builds; they must be reassessed when a supported fix is released.
+
 ## Cloud-portable hosted-demo delivery (2026-09-28)
 
 This is a deployment profile, not a completed product phase or a claim that a
@@ -2082,7 +2112,7 @@ Residual risks and next step:
 
 - The recommended architecture is treated as required unless an ADR documents a
   reason to differ.
-- pnpm 11.13.0 and Node 24 govern the JavaScript workspace. Python 3.13 API,
+- pnpm 11.13.0 and Node 24 govern the JavaScript workspace. Python 3.14 API,
   worker, and backend packages use one root uv workspace and lock. Lockfiles, not
   broad version ranges in this document, are authoritative.
 - The API owns Phase 1 sessions and rotating hashed refresh tokens; Google OAuth

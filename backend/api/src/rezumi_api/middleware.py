@@ -7,6 +7,7 @@ from uuid import uuid4
 
 import structlog
 from fastapi import FastAPI, Request, Response
+from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from structlog.contextvars import bind_contextvars, clear_contextvars
 
@@ -22,6 +23,43 @@ _TRACEPARENT = re.compile(
     r"(?P<flags>[0-9a-f]{2})$"
 )
 logger = structlog.get_logger(__name__)
+
+_API_SECURITY_HEADERS = {
+    "Cache-Control": "no-store",
+    "Content-Security-Policy": (
+        "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+    ),
+    "Cross-Origin-Resource-Policy": "same-origin",
+    "Referrer-Policy": "no-referrer",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "X-Permitted-Cross-Domain-Policies": "none",
+}
+_HSTS_HEADER = "max-age=31536000"
+
+
+class SecurityResponseHeadersMiddleware:
+    """Apply a conservative browser and cache policy to every API response."""
+
+    def __init__(self, app: ASGIApp, *, enable_hsts: bool) -> None:
+        self._app = app
+        self._enable_hsts = enable_hsts
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self._app(scope, receive, send)
+            return
+
+        async def secure_send(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                headers = MutableHeaders(scope=message)
+                for name, value in _API_SECURITY_HEADERS.items():
+                    headers[name] = value
+                if self._enable_hsts:
+                    headers["Strict-Transport-Security"] = _HSTS_HEADER
+            await send(message)
+
+        await self._app(scope, receive, secure_send)
 
 
 class RequestBodyTooLarge(Exception):

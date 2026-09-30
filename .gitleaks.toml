@@ -4,8 +4,10 @@ title = "Rezumi secret scanning"
 useDefault = true
 
 [[allowlists]]
-description = "Generated dependency, build, cache, and browser-artifact directories"
+description = "Ignored local runtime secrets and generated dependency/build artifacts"
 paths = [
+  # `.env` is gitignored local runtime configuration. Keep `.env.example` scanned.
+  '''(^|/)\.env$''',
   '''(^|/)\.git/''',
   '''(^|/)\.next/''',
   '''(^|/)\.venv/''',

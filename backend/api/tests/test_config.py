@@ -6,6 +6,40 @@ from pydantic import ValidationError
 from rezumi_api.config import Settings
 
 
+def _safe_public_settings(environment: str = "production") -> dict[str, object]:
+    return {
+        "environment": environment,
+        "debug": False,
+        "docs_enabled": False,
+        "log_level": "INFO",
+        "trusted_hosts": ["api.example.com"],
+        "allowed_origins": ["https://app.example.com"],
+        "public_app_url": "https://app.example.com",
+        "cookie_secure": True,
+        "email_provider": "smtp",
+        "smtp_host": "smtp.example.com",
+        "smtp_username": "smtp-user",
+        "smtp_password": "production-smtp-password",
+        "smtp_start_tls": True,
+        "email_from_address": "no-reply@example.com",
+        "auth_token_pepper": "production-test-pepper-is-at-least-32-bytes",
+        "resume_capability_pepper": "production-resume-pepper-is-at-least-32-bytes",
+        "bff_client_signal_secret": "production-bff-signal-secret-is-at-least-32-bytes",
+        "database_url": "postgresql+asyncpg://app:unique-secret@db.example.com:5432/rezumi",
+        "redis_url": "rediss://cache.example.com:6380/0",
+        "s3_endpoint_url": "https://objects.internal.example.com",
+        "s3_public_endpoint_url": "https://uploads.example.com",
+        "s3_access_key_id": "production-test-access-key",
+        "s3_secret_access_key": "production-test-unique-object-secret",
+        "s3_use_ssl": True,
+        "malware_scanner_provider": "clamav",
+        "clamav_host": "scanner.internal.example",
+        "ai_provider": "http_json",
+        "ai_http_endpoint_url": "https://ai-gateway.example.com",
+        "ai_http_api_key": "production-test-ai-key",
+    }
+
+
 def test_secret_is_redacted_in_model_representation() -> None:
     settings = Settings.model_validate({})
 
@@ -13,46 +47,29 @@ def test_secret_is_redacted_in_model_representation() -> None:
     assert settings.database_url.get_secret_value().startswith("postgresql+asyncpg://")
 
 
-@pytest.mark.parametrize("unsafe_values", [{"debug": True}, {"trusted_hosts": ["*"]}, {}])
-def test_production_rejects_unsafe_defaults(unsafe_values: dict[str, object]) -> None:
-    with pytest.raises(ValidationError, match="Unsafe production configuration"):
-        Settings.model_validate(
-            {
-                "environment": "production",
-                "trusted_hosts": ["api.example.com"],
-                **unsafe_values,
-            }
-        )
+@pytest.mark.parametrize("environment", ["staging", "production"])
+@pytest.mark.parametrize(
+    "unsafe_values",
+    [
+        {"debug": True},
+        {"docs_enabled": True},
+        {"trusted_hosts": ["*"]},
+        {"redis_url": "redis://cache.example.com:6379/0"},
+        {"smtp_password": None},
+    ],
+)
+def test_public_environments_reject_unsafe_configuration(
+    environment: str, unsafe_values: dict[str, object]
+) -> None:
+    with pytest.raises(ValidationError, match="Unsafe public configuration"):
+        Settings.model_validate({**_safe_public_settings(environment), **unsafe_values})
 
 
-def test_production_accepts_explicit_safe_configuration() -> None:
-    settings = Settings.model_validate(
-        {
-            "environment": "production",
-            "debug": False,
-            "docs_enabled": False,
-            "trusted_hosts": ["api.example.com"],
-            "allowed_origins": ["https://app.example.com"],
-            "public_app_url": "https://app.example.com",
-            "cookie_secure": True,
-            "smtp_start_tls": True,
-            "auth_token_pepper": "production-test-pepper-is-at-least-32-bytes",
-            "resume_capability_pepper": "production-resume-pepper-is-at-least-32-bytes",
-            "bff_client_signal_secret": "production-bff-signal-secret-is-at-least-32-bytes",
-            "database_url": "postgresql+asyncpg://app:unique-secret@db:5432/rezumi",
-            "s3_endpoint_url": "https://objects.internal.example.com",
-            "s3_public_endpoint_url": "https://uploads.example.com",
-            "s3_access_key_id": "production-test-access-key",
-            "s3_secret_access_key": "production-test-unique-object-secret",
-            "s3_use_ssl": True,
-            "malware_scanner_provider": "clamav",
-            "ai_provider": "http_json",
-            "ai_http_endpoint_url": "https://ai-gateway.example.com",
-            "ai_http_api_key": "production-test-ai-key",
-        }
-    )
+@pytest.mark.parametrize("environment", ["staging", "production"])
+def test_public_environments_accept_explicit_safe_configuration(environment: str) -> None:
+    settings = Settings.model_validate(_safe_public_settings(environment))
 
-    assert settings.environment == "production"
+    assert settings.environment == environment
 
 
 def test_qstash_delivery_requires_a_token_and_runner_url() -> None:
@@ -79,14 +96,8 @@ def test_qstash_delivery_requires_a_token_and_runner_url() -> None:
     ],
 )
 def test_production_rejects_compose_or_loopback_database_urls(database_url: str) -> None:
-    with pytest.raises(ValidationError, match="Unsafe production configuration"):
-        Settings.model_validate(
-            {
-                "environment": "production",
-                "trusted_hosts": ["api.example.com"],
-                "database_url": database_url,
-            }
-        )
+    with pytest.raises(ValidationError, match="Unsafe public configuration"):
+        Settings.model_validate({**_safe_public_settings(), "database_url": database_url})
 
 
 def test_database_requires_async_postgresql_driver() -> None:
@@ -160,6 +171,41 @@ def test_resume_mutation_rate_controls_have_safe_defaults() -> None:
 def test_storage_endpoints_must_be_credential_free_origins(endpoint: str) -> None:
     with pytest.raises(ValidationError, match="S3 endpoints"):
         Settings.model_validate({"s3_public_endpoint_url": endpoint})
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("allowed_origins", ["https://user:secret@app.example.com"]),
+        ("allowed_origins", ["https://app.example.com", "https://app.example.com/"]),
+        ("public_app_url", "https://user:secret@app.example.com"),
+        ("google_redirect_uri", "https://app.example.com/api/v1/auth/google/callback?x=1"),
+    ],
+)
+def test_public_urls_reject_credentials_and_ambiguous_metadata(field: str, value: object) -> None:
+    with pytest.raises(ValidationError):
+        Settings.model_validate({field: value})
+
+
+def test_public_mongodb_requires_tls_when_enabled() -> None:
+    with pytest.raises(ValidationError, match="mongodb_url must use non-local TLS"):
+        Settings.model_validate(
+            {
+                **_safe_public_settings("staging"),
+                "mongodb_enabled": True,
+                "mongodb_url": "mongodb://mongo.example.com:27017",
+            }
+        )
+
+    settings = Settings.model_validate(
+        {
+            **_safe_public_settings("staging"),
+            "mongodb_enabled": True,
+            "mongodb_url": "mongodb+srv://app:secret@cluster.example.com/rezumi",
+        }
+    )
+
+    assert settings.mongodb_enabled is True
 
 
 def test_compose_environment_aliases_are_supported(monkeypatch: pytest.MonkeyPatch) -> None:

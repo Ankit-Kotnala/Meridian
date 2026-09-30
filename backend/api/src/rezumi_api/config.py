@@ -2,7 +2,7 @@
 
 from functools import lru_cache
 from typing import Any, Literal, Self
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 from pydantic import AliasChoices, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -18,6 +18,18 @@ AccountOperationsProvider = Literal["disabled"]
 BillingProvider = Literal["disabled"]
 
 _DEVELOPMENT_DATABASE_URL = "postgresql+asyncpg://rezumi:rezumi@localhost:5432/rezumi"
+_PUBLIC_ENVIRONMENTS = frozenset({"staging", "production"})
+_LOCAL_HOSTNAMES = frozenset(
+    {"localhost", "127.0.0.1", "::1", "api", "postgres", "redis", "minio", "mongo", "clamav"}
+)
+_DEVELOPMENT_PASSWORDS = frozenset(
+    {"", "rezumi", "change-me", "change-me-local-only", "changeme", "password"}
+)
+
+
+def _is_local_hostname(hostname: str | None) -> bool:
+    """Return whether a host is a loopback or a local Compose service name."""
+    return hostname is None or hostname.casefold().rstrip(".") in _LOCAL_HOSTNAMES
 
 
 class Settings(BaseSettings):
@@ -318,21 +330,55 @@ class Settings(BaseSettings):
         normalized: list[str] = []
         for value in values:
             parsed = urlparse(value)
-            if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            if parsed.scheme not in {"http", "https"} or not parsed.hostname:
                 raise ValueError("allowed origins must be absolute HTTP(S) origins")
-            if parsed.path not in {"", "/"} or parsed.query or parsed.fragment or "*" in value:
+            if (
+                parsed.username
+                or parsed.password
+                or parsed.path not in {"", "/"}
+                or parsed.query
+                or parsed.fragment
+                or "*" in value
+            ):
                 raise ValueError(
-                    "allowed origins must not contain paths, queries, fragments, or wildcards"
+                    "allowed origins must not contain credentials, paths, queries, fragments, "
+                    "or wildcards"
                 )
             normalized.append(value.rstrip("/"))
+        if len(set(normalized)) != len(normalized):
+            raise ValueError("allowed origins must be unique")
         return normalized
 
-    @field_validator("public_app_url", "google_redirect_uri")
+    @field_validator("public_app_url")
     @classmethod
-    def validate_http_url(cls, value: str) -> str:
+    def validate_public_app_url(cls, value: str) -> str:
         parsed = urlparse(value)
-        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-            raise ValueError("value must be an absolute HTTP(S) URL")
+        if (
+            parsed.scheme not in {"http", "https"}
+            or not parsed.hostname
+            or parsed.username
+            or parsed.password
+            or parsed.path not in {"", "/"}
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise ValueError("public_app_url must be a credential-free HTTP(S) origin")
+        return value.rstrip("/")
+
+    @field_validator("google_redirect_uri")
+    @classmethod
+    def validate_google_redirect_uri(cls, value: str) -> str:
+        parsed = urlparse(value)
+        if (
+            parsed.scheme not in {"http", "https"}
+            or not parsed.hostname
+            or parsed.username
+            or parsed.password
+            or not parsed.path
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise ValueError("google_redirect_uri must be a credential-free HTTP(S) callback URL")
         return value.rstrip("/")
 
     @field_validator("s3_endpoint_url", "s3_public_endpoint_url")
@@ -457,8 +503,8 @@ class Settings(BaseSettings):
         return value
 
     @model_validator(mode="after")
-    def reject_unsafe_production_configuration(self) -> Self:
-        """Fail closed for known unsafe production-only combinations."""
+    def reject_unsafe_public_configuration(self) -> Self:
+        """Fail closed for known unsafe staging and production combinations."""
         if self.job_delivery_provider == "qstash":
             if self.qstash_token is None or self.qstash_job_runner_url is None:
                 raise ValueError("QStash delivery requires a token and runner URL")
@@ -478,15 +524,23 @@ class Settings(BaseSettings):
                 raise ValueError("AI HTTP provider endpoint must not contain credentials")
             if parsed_ai.fragment:
                 raise ValueError("AI HTTP provider endpoint must not contain a fragment")
-        if self.environment != "production":
+        if self.environment not in _PUBLIC_ENVIRONMENTS:
             return self
 
         violations: list[str] = []
         database_url = parse_async_postgresql_url(self.database_url.get_secret_value())
+        redis_url = urlparse(self.redis_url.get_secret_value())
         if self.debug:
             violations.append("debug must be disabled")
-        if "*" in self.trusted_hosts:
-            violations.append("trusted_hosts must not contain a wildcard")
+        if self.docs_enabled:
+            violations.append("docs_enabled must be disabled")
+        if self.log_level == "DEBUG":
+            violations.append("log_level must not be DEBUG")
+        if not self.trusted_hosts or any(
+            host == "*" or host.casefold().rstrip(".") in _LOCAL_HOSTNAMES
+            for host in self.trusted_hosts
+        ):
+            violations.append("trusted_hosts must contain only explicit non-local hosts")
         if not self.cookie_secure:
             violations.append("cookie_secure must be enabled")
         if any(not origin.startswith("https://") for origin in self.allowed_origins):
@@ -497,18 +551,32 @@ class Settings(BaseSettings):
             violations.append("email_provider must be smtp")
         if self.smtp_start_tls is False:
             violations.append("smtp_start_tls must be enabled")
+        if (
+            _is_local_hostname(self.smtp_host)
+            or self.smtp_username is None
+            or self.smtp_password is None
+        ):
+            violations.append("SMTP must use a non-local authenticated provider")
+        if self.email_from_address.endswith("@rezumi.local"):
+            violations.append("email_from_address must use a verified sender domain")
         if self.auth_token_pepper.get_secret_value() == "change-me-local-only-auth-token-pepper":
             violations.append("the development auth token pepper must be replaced")
         if self.google_oauth_enabled and not self.google_redirect_uri.startswith("https://"):
             violations.append("google_redirect_uri must use HTTPS")
-        if not self.s3_endpoint_url.startswith("https://"):
-            violations.append("s3_endpoint_url must use HTTPS")
-        if not self.s3_public_endpoint_url.startswith("https://"):
-            violations.append("s3_public_endpoint_url must use HTTPS")
+        internal_storage = urlparse(self.s3_endpoint_url)
+        public_storage = urlparse(self.s3_public_endpoint_url)
+        if internal_storage.scheme != "https" or _is_local_hostname(internal_storage.hostname):
+            violations.append("s3_endpoint_url must use non-local HTTPS")
+        if public_storage.scheme != "https" or _is_local_hostname(public_storage.hostname):
+            violations.append("s3_public_endpoint_url must use non-local HTTPS")
         if not self.s3_use_ssl:
             violations.append("s3_use_ssl must be enabled")
+        if self.s3_access_key_id == "rezumi-local":
+            violations.append("the development object-storage access key must be replaced")
         if self.malware_scanner_provider != "clamav":
             violations.append("malware_scanner_provider must be clamav")
+        if _is_local_hostname(self.clamav_host):
+            violations.append("clamav_host must be non-local")
         if self.ai_provider == "deterministic":
             violations.append("ai_provider must not be deterministic")
         if (
@@ -523,21 +591,25 @@ class Settings(BaseSettings):
             violations.append("the development BFF client-signal secret must be replaced")
         if "change-me-local-only" in self.s3_secret_access_key.get_secret_value():
             violations.append("the development object-storage credential must be replaced")
-        if database_url.host in {"localhost", "127.0.0.1", "::1"}:
-            violations.append("database_url must not target a loopback host")
+        if _is_local_hostname(database_url.host):
+            violations.append("database_url must not target a local host")
         password = (database_url.password or "").casefold()
-        development_passwords = {
-            "",
-            "rezumi",
-            "change-me",
-            "change-me-local-only",
-            "changeme",
-            "password",
-        }
-        if password in development_passwords:
+        if password in _DEVELOPMENT_PASSWORDS:
             violations.append("the development database credential must be replaced")
+        if redis_url.scheme != "rediss" or _is_local_hostname(redis_url.hostname):
+            violations.append("redis_url must use non-local rediss:// transport")
+        if self.mongodb_enabled:
+            mongodb_url = urlparse(self.mongodb_url.get_secret_value())
+            mongodb_options = parse_qs(mongodb_url.query)
+            tls_enabled = mongodb_url.scheme == "mongodb+srv" or any(
+                value.casefold() == "true"
+                for name in ("tls", "ssl")
+                for value in mongodb_options.get(name, [])
+            )
+            if _is_local_hostname(mongodb_url.hostname) or not tls_enabled:
+                violations.append("mongodb_url must use non-local TLS transport when enabled")
         if violations:
-            raise ValueError("Unsafe production configuration: " + "; ".join(violations))
+            raise ValueError("Unsafe public configuration: " + "; ".join(violations))
         return self
 
 

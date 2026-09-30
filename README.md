@@ -34,7 +34,7 @@ docs/                 product, architecture, ADRs
 
 ## Prerequisites
 
-Docker Compose v2 · Node 24 + Corepack · Python 3.13 + uv · Make **or** PowerShell (`scripts/*.ps1`)
+Docker Compose v2 · Node 24 + Corepack · Python 3.14 + uv · Make **or** PowerShell (`scripts/*.ps1`)
 
 ## Quickstart
 
