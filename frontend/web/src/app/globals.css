@@ -940,6 +940,31 @@ textarea {
   animation: mobile-nav-enter var(--motion-standard) var(--ease-emphasized) both;
   transform-origin: top;
 }
+
+@keyframes workspace-mobile-nav-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Native dialogs live in the browser's top layer. Explicit positioning keeps
+   the workspace drawer anchored to the viewport rather than centered by user
+   agent dialog styles, while the short entrance animation avoids a hard pop. */
+.workspace-mobile-nav[open] {
+  animation: workspace-mobile-nav-enter var(--motion-standard)
+    var(--ease-emphasized) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-mobile-nav[open] {
+    animation: none;
+  }
+}
 @keyframes preview-float {
   0%,
   100% {
