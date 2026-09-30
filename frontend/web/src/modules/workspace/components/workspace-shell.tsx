@@ -28,10 +28,11 @@ export function WorkspaceShell({
   viewer: WorkspaceViewer;
 }) {
   const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileOpenPath, setMobileOpenPath] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
+  const mobileOpen = mobileOpenPath === pathname;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -40,8 +41,24 @@ export function WorkspaceShell({
     if (!mobileOpen && dialog.open) dialog.close();
   }, [mobileOpen]);
 
+  useEffect(() => {
+    // A native modal remains in the top layer even if its contents become
+    // hidden at the desktop breakpoint. Close it as the layout changes so it
+    // can never leave an invisible backdrop over the workspace.
+    if (typeof window.matchMedia !== "function") return;
+    const desktopViewport = window.matchMedia("(min-width: 1280px)");
+    const closeAtDesktopBreakpoint = () => {
+      if (desktopViewport.matches) setMobileOpenPath(null);
+    };
+    closeAtDesktopBreakpoint();
+    desktopViewport.addEventListener("change", closeAtDesktopBreakpoint);
+    return () => {
+      desktopViewport.removeEventListener("change", closeAtDesktopBreakpoint);
+    };
+  }, []);
+
   function closeMobileNavigation({ restoreFocus = true } = {}) {
-    setMobileOpen(false);
+    setMobileOpenPath(null);
     if (restoreFocus) queueMicrotask(() => menuButtonRef.current?.focus());
   }
 
@@ -50,7 +67,7 @@ export function WorkspaceShell({
       <InterviewPrepWorkspaceMetricsProvider>
         <div
           className={cn(
-            "min-h-screen bg-background xl:grid xl:transition-[grid-template-columns] xl:duration-200 xl:motion-reduce:transition-none",
+            "min-h-screen overflow-x-clip bg-background xl:grid xl:transition-[grid-template-columns] xl:duration-300 xl:ease-[var(--ease-emphasized)] xl:motion-reduce:transition-none",
             collapsed
               ? "xl:grid-cols-[4.25rem_minmax(0,1fr)]"
               : "xl:grid-cols-[var(--sidebar-width)_minmax(0,1fr)]",
@@ -58,8 +75,7 @@ export function WorkspaceShell({
         >
           <aside
             className={cn(
-              "relative z-20 hidden h-dvh border-r transition-[width] duration-200 motion-reduce:transition-none xl:sticky xl:top-0 xl:block",
-              collapsed ? "w-[4.25rem]" : "w-[var(--sidebar-width)]",
+              "relative z-20 hidden h-dvh min-w-0 border-r xl:sticky xl:top-0 xl:block",
             )}
             style={{ borderRightColor: "rgb(255 255 255 / 0.1)" }}
           >
@@ -71,12 +87,12 @@ export function WorkspaceShell({
 
           <dialog
             aria-label="Application navigation"
-            className="m-0 h-dvh max-h-none w-[min(20rem,90vw)] max-w-none bg-transparent p-0 backdrop:bg-foreground/45 xl:hidden"
+            className="workspace-mobile-nav fixed inset-y-0 left-0 z-50 m-0 box-border h-dvh max-h-none w-[min(20rem,90vw)] max-w-none overflow-hidden border-0 bg-navy p-0 text-white shadow-[var(--shadow-lg)] backdrop:bg-foreground/45 xl:hidden"
             onCancel={(event) => {
               event.preventDefault();
               closeMobileNavigation();
             }}
-            onClose={() => setMobileOpen(false)}
+            onClose={() => setMobileOpenPath(null)}
             ref={dialogRef}
           >
             <WorkspaceSidebar
@@ -89,7 +105,7 @@ export function WorkspaceShell({
             <WorkspaceTopBar
               accountActions={accountActions}
               menuButtonRef={menuButtonRef}
-              onOpenMenu={() => setMobileOpen(true)}
+              onOpenMenu={() => setMobileOpenPath(pathname)}
               viewer={viewer}
             />
             <WorkspaceSectionNav />

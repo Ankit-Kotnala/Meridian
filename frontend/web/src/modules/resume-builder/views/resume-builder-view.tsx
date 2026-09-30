@@ -108,7 +108,10 @@ export function ResumeBuilderView() {
   const [format, setFormat] = useState<FormatValue>("pdf");
   const exportController = useRef<AbortController | undefined>(undefined);
   const selectedIdRef = useRef(selectedId);
-  selectedIdRef.current = selectedId;
+
+  useEffect(() => {
+    selectedIdRef.current = selectedId;
+  }, [selectedId]);
 
   const selected = useMemo(
     () => resumes.find((item) => item.id === selectedId),
