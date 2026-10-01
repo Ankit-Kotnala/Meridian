@@ -2,6 +2,9 @@
 
 **Your career. Verified. Elevated.**
 
+Privacy-first career platform that turns verified evidence into tailored
+resumes, job matches, application packs, and interview preparation.
+
 Truth-locked career OS: the **Career Record and evidence graph** are the source
 of truth. Resumes, job-match analyses, application packs, and interview prep are
 derived outputs with reviewable provenance — never invented facts, never silent
@@ -16,7 +19,7 @@ changes.
 | Layer        | Tech                                                    |
 | ------------ | ------------------------------------------------------- |
 | Web          | Next.js 16, React 19, TypeScript, Tailwind 4            |
-| API / worker | Python 3.13, FastAPI, Celery                            |
+| API / worker | Python 3.14, FastAPI, Celery                            |
 | Backend      | `backend/core` modular monolith (ports & adapters)      |
 | Data         | PostgreSQL, Redis, MinIO, ClamAV, Mailpit               |
 | Contracts    | OpenAPI → generated TS client (`shared/contracts`)      |
