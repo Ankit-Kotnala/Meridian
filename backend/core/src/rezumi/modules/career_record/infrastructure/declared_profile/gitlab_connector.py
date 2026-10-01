@@ -19,6 +19,9 @@ from rezumi.modules.career_record.application.declared_profile_ports import (
     normalize_declared_profile_url,
     path_segments,
 )
+from rezumi.modules.career_record.infrastructure.declared_profile.normalization import (
+    positive_public_int,
+)
 
 _GITLAB_USER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,254}$")
 # GitLab site routes that occupy the same path shape as a namespace.
@@ -92,7 +95,7 @@ class GitlabDeclaredProfileConnector:
                 if not project_name:
                     continue
                 description = str(project.get("description") or "").strip()
-                stars = int(project.get("star_count") or 0)
+                stars = positive_public_int(project.get("star_count"))
                 web_url = str(project.get("web_url") or profile_url)
                 parts = [description] if description else []
                 if stars > 0:

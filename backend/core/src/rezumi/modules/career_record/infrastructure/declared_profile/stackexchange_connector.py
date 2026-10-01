@@ -36,6 +36,9 @@ from rezumi.modules.career_record.application.declared_profile_ports import (
     normalize_declared_profile_url,
     path_segments,
 )
+from rezumi.modules.career_record.infrastructure.declared_profile.normalization import (
+    positive_public_int,
+)
 
 # Profile URLs look like <site>/users/12345/some-display-name.
 _USER_ID = re.compile(r"^[0-9]{1,20}$")
@@ -79,11 +82,11 @@ class StackExchangeDeclaredProfileConnector:
         user = items[0]
 
         display_name = str(user.get("display_name") or "Stack Exchange user").strip()
-        reputation = int(user.get("reputation") or 0)
+        reputation = positive_public_int(user.get("reputation"))
         badges = user.get("badge_counts") if isinstance(user.get("badge_counts"), dict) else {}
-        gold = int((badges or {}).get("gold") or 0)
-        silver = int((badges or {}).get("silver") or 0)
-        bronze = int((badges or {}).get("bronze") or 0)
+        gold = positive_public_int((badges or {}).get("gold"))
+        silver = positive_public_int((badges or {}).get("silver"))
+        bronze = positive_public_int((badges or {}).get("bronze"))
 
         site_name = str(user.get("link") or "").strip()
         site_label = hostname(site_name) if site_name else f"{site}.stackexchange.com"

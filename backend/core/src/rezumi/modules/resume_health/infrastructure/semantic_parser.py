@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from hashlib import sha256
+from urllib.parse import urlsplit
 from uuid import UUID, uuid5
 
 from rezumi.modules.resume_health.domain import (
@@ -23,7 +24,7 @@ from rezumi.modules.resume_health.domain import (
 )
 
 SEMANTIC_SCHEMA_VERSION = "canonical-semantics/1.0.0"
-SEMANTIC_PARSER_VERSION = "rezumi-semantic-parser/1.2.0"
+SEMANTIC_PARSER_VERSION = "rezumi-semantic-parser/1.3.0"
 _SEMANTIC_NAMESPACE = UUID("d6f8269c-f55b-4717-bdc7-2b552f564820")
 _SOURCE_VALUE_TRIM = frozenset(" \t\r\n|-,;\u2013\u2014")
 _EMAIL = re.compile(r"(?<![\w.+-])[\w.+-]+@[\w-]+(?:\.[\w-]+)+", re.IGNORECASE)
@@ -209,22 +210,30 @@ _LINK_HOSTS = (
     "streamlit.app",
     "linktr.ee",
     "bio.link",
-    # Social
-    "x.com",
-    "twitter.com",
-    "facebook.com",
-    "instagram.com",
-    "threads.net",
-    "tiktok.com",
-    "youtube.com",
-    "youtu.be",
-    "pinterest.com",
+)
+_NON_CAREER_SOCIAL_HOSTS = frozenset(
+    {
+        "instagram.com",
+        "facebook.com",
+        "fb.com",
+        "x.com",
+        "twitter.com",
+        "youtube.com",
+        "youtu.be",
+        "threads.net",
+        "threads.com",
+        "tiktok.com",
+        "pinterest.com",
+        "snapchat.com",
+        "discord.com",
+        "discord.gg",
+    }
 )
 _URL = re.compile(
     r"(?:https?://|www\.)[^\s|\u2022\u00b7\t]+"
     r"|(?<![\w.@-])(?:[a-z0-9-]+\.)*(?:"
     + "|".join(host.replace(".", r"\.") for host in _LINK_HOSTS)
-    + r")/[^\s|\u2022\u00b7\t]*",
+    + r")(?:/[^\s|\u2022\u00b7\t]*)?",
     re.IGNORECASE,
 )
 # Sentence punctuation and wrapping brackets a resume puts around a link. Left
@@ -635,8 +644,19 @@ def _url_spans(text: str) -> tuple[tuple[str, int, int], ...]:
                 continue
             break
         if end - start >= 4:
-            spans.append((text[start:end], start, end))
+            value = text[start:end]
+            if not _is_non_career_social_link(value):
+                spans.append((value, start, end))
     return tuple(spans)
+
+
+def _is_non_career_social_link(value: str) -> bool:
+    candidate = value if "://" in value else f"https://{value}"
+    try:
+        host = (urlsplit(candidate).hostname or "").casefold().rstrip(".")
+    except ValueError:
+        return False
+    return any(host == domain or host.endswith(f".{domain}") for domain in _NON_CAREER_SOCIAL_HOSTS)
 
 
 def _overlaps(start: int, end: int, spans: tuple[tuple[str, int, int], ...]) -> bool:

@@ -51,15 +51,20 @@ class CredlyDeclaredProfileConnector:
             if not isinstance(badge, dict):
                 continue
             template = badge.get("badge_template")
-            name = str((template or {}).get("name") or "").strip()
+            template = template if isinstance(template, dict) else {}
+            name = str(template.get("name") or "").strip()
             if not name:
                 continue
-            issuer_entities = ((template or {}).get("issuer") or {}).get("entities")
+            issuer_data = template.get("issuer")
+            issuer_data = issuer_data if isinstance(issuer_data, dict) else {}
+            issuer_entities = issuer_data.get("entities")
             issuer = ""
             if isinstance(issuer_entities, list) and issuer_entities:
                 first = issuer_entities[0]
                 if isinstance(first, dict):
-                    issuer = str((first.get("entity") or {}).get("name") or "").strip()
+                    entity = first.get("entity")
+                    entity = entity if isinstance(entity, dict) else {}
+                    issuer = str(entity.get("name") or "").strip()
             issued_at = str(badge.get("issued_at") or "").strip()
             badge_url = str(badge.get("public_url") or profile_url)
             parts = [p for p in (f"Issued by {issuer}." if issuer else "", issued_at) if p]

@@ -19,6 +19,9 @@ from rezumi.modules.career_record.application.declared_profile_ports import (
     normalize_declared_profile_url,
     path_segments,
 )
+from rezumi.modules.career_record.infrastructure.declared_profile.normalization import (
+    positive_public_int,
+)
 
 _DEVTO_USER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{1,63}$")
 _RESERVED_PATHS = frozenset(
@@ -56,7 +59,7 @@ class DevToDeclaredProfileConnector:
         )
         article_list = articles if isinstance(articles, list) else []
         total_reactions = sum(
-            int(article.get("positive_reactions_count") or 0)
+            positive_public_int(article.get("positive_reactions_count"))
             for article in article_list
             if isinstance(article, dict)
         )

@@ -3,15 +3,28 @@
 import hashlib
 import json
 import time
+from io import BytesIO
 from pathlib import Path
+from uuid import uuid4
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import pytest
 from docx import Document
-from pypdf import PdfWriter
+from docx.opc.constants import RELATIONSHIP_TYPE as RT
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+from pypdf import PdfReader, PdfWriter
+from pypdf.generic import (
+    ArrayObject,
+    DictionaryObject,
+    FloatObject,
+    NameObject,
+    TextStringObject,
+)
 
 from rezumi.modules.resume_health.application.models import DocumentLimits
-from rezumi.modules.resume_health.domain import ResumeMediaType
+from rezumi.modules.resume_health.application.service import _canonicalize
+from rezumi.modules.resume_health.domain import ResumeMediaType, SemanticFieldType
 from rezumi.modules.resume_health.domain.errors import UnsafeDocument
 from rezumi.modules.resume_health.infrastructure.extractors import (
     PARSER_VERSION,
@@ -26,6 +39,7 @@ from rezumi.modules.resume_health.infrastructure.layout import (
     LAYOUT_ANALYZER_VERSION,
     LocalLayoutAnalyzer,
 )
+from rezumi.modules.resume_health.infrastructure.semantic_parser import LocalResumeParserProvider
 
 FIXTURES = Path(__file__).resolve().parents[4] / "frontend" / "test-fixtures" / "generated"
 
@@ -109,6 +123,74 @@ async def test_clean_docx_extracts_text_blocks_and_spans(tmp_path: Path) -> None
     )
     assert all(block.spans and block.spans[0].page == 1 for block in result.reading_order)
     assert not result.image_only
+
+
+@pytest.mark.asyncio
+async def test_docx_hyperlink_targets_are_recovered_without_executing_relationships(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "hyperlinked-resume.docx"
+    document = Document()
+    document.add_heading("Contact", level=1)
+    paragraph = document.add_paragraph("Alex Rivera | ")
+    relationship_id = paragraph.part.relate_to(
+        "https://github.com/alex-rivera",
+        RT.HYPERLINK,
+        is_external=True,
+    )
+    hyperlink = OxmlElement("w:hyperlink")
+    hyperlink.set(qn("r:id"), relationship_id)
+    run = OxmlElement("w:r")
+    text = OxmlElement("w:t")
+    text.text = "GitHub"
+    run.append(text)
+    hyperlink.append(run)
+    paragraph._p.append(hyperlink)
+    document.save(path)
+
+    result = await LocalDocumentExtractor().extract(
+        path, ResumeMediaType.DOCX.value, DocumentLimits()
+    )
+
+    assert "https://github.com/alex-rivera" in result.plain_text
+    assert "hyperlinks_recovered" in result.layout_signals
+    assert any("https://github.com/alex-rivera" in block.text for block in result.reading_order)
+    isolated = await IsolatedDocumentExtractor().extract(
+        path,
+        ResumeMediaType.DOCX.value,
+        DocumentLimits(temp_root=tmp_path),
+    )
+    assert "https://github.com/alex-rivera" in isolated.plain_text
+
+    canonical = _canonicalize(uuid4(), result)
+    semantics = await LocalResumeParserProvider().parse(
+        uuid4(), canonical, hashlib.sha256(b"docx").hexdigest()
+    )
+    assert any(
+        field.value == "https://github.com/alex-rivera"
+        and field.field_type is SemanticFieldType.URL
+        for entity in semantics.entities
+        for field in entity.fields
+    )
+
+
+@pytest.mark.asyncio
+async def test_docx_non_web_external_hyperlinks_fail_closed(tmp_path: Path) -> None:
+    path = tmp_path / "unsafe-hyperlink.docx"
+    document = Document()
+    paragraph = document.add_paragraph("Resume")
+    relationship_id = paragraph.part.relate_to(
+        "file:///Users/example/private.txt",
+        RT.HYPERLINK,
+        is_external=True,
+    )
+    hyperlink = OxmlElement("w:hyperlink")
+    hyperlink.set(qn("r:id"), relationship_id)
+    paragraph._p.append(hyperlink)
+    document.save(path)
+
+    with pytest.raises(UnsafeDocument, match="embedded_object_rejected"):
+        await LocalDocumentExtractor().extract(path, ResumeMediaType.DOCX.value, DocumentLimits())
 
 
 @pytest.mark.asyncio
@@ -438,6 +520,46 @@ async def test_row_wise_two_column_pdf_is_read_left_column_then_right(tmp_path: 
 
 
 @pytest.mark.asyncio
+async def test_pdf_uri_annotation_is_recovered_when_visible_text_has_no_url(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "annotated-resume.pdf"
+    reader = PdfReader(BytesIO(_pdf_pages("BT\n/F1 10 Tf\n40 760 Td\n(GitHub) Tj\nET")))
+    writer = PdfWriter()
+    writer.add_page(reader.pages[0])
+    page = writer.pages[0]
+    page[NameObject("/Annots")] = ArrayObject(
+        [
+            DictionaryObject(
+                {
+                    NameObject("/Type"): NameObject("/Annot"),
+                    NameObject("/Subtype"): NameObject("/Link"),
+                    NameObject("/Rect"): ArrayObject(
+                        [FloatObject(40), FloatObject(750), FloatObject(110), FloatObject(770)]
+                    ),
+                    NameObject("/A"): DictionaryObject(
+                        {
+                            NameObject("/S"): NameObject("/URI"),
+                            NameObject("/URI"): TextStringObject("https://github.com/alex-rivera"),
+                        }
+                    ),
+                }
+            )
+        ]
+    )
+    with path.open("wb") as output:
+        writer.write(output)
+
+    result = await LocalDocumentExtractor().extract(
+        path, ResumeMediaType.PDF.value, DocumentLimits()
+    )
+
+    assert result.plain_text == "GitHub https://github.com/alex-rivera"
+    assert "hyperlinks_recovered" in result.layout_signals
+    assert result.reading_order[0].text == result.plain_text
+
+
+@pytest.mark.asyncio
 async def test_repeating_pdf_header_is_excluded_from_career_text(tmp_path: Path) -> None:
     path = tmp_path / "running-header.pdf"
     path.write_bytes(
@@ -466,6 +588,14 @@ def test_normalize_extracted_text_repairs_pdf_contact_link_artifacts() -> None:
     assert normalize_extracted_text(raw) == (
         "+91 88001 45975 | ankit.kotnala12@gmail.com | "
         "linkedin.com/in/ankit-kotnala- | github.com/Ankit-Kotnala"
+    )
+
+
+def test_normalize_extracted_text_preserves_valid_https_profile_urls() -> None:
+    raw = "/linkedinlinkedin.com/in/ankit | /githubgithub.com/ankit | https://www.github.com/ankit"
+
+    assert normalize_extracted_text(raw) == (
+        "linkedin.com/in/ankit | github.com/ankit | https://www.github.com/ankit"
     )
 
 

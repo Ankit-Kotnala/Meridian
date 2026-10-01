@@ -96,7 +96,8 @@ class BitbucketDeclaredProfileConnector:
             language = str(repo.get("language") or "").strip()
             links = repo.get("links") if isinstance(repo.get("links"), dict) else {}
             html_link = links.get("html") if isinstance(links, dict) else None
-            repo_url = str((html_link or {}).get("href") or profile_url)
+            html_link = html_link if isinstance(html_link, dict) else {}
+            repo_url = str(html_link.get("href") or profile_url)
             parts = [description] if description else []
             if language:
                 parts.append(f"Primary language: {language}.")

@@ -1,6 +1,6 @@
 # Rezumi implementation plan
 
-Last updated: 2026-09-08
+Last updated: 2026-10-01
 Plan owner: engineering  
 Current status: **Phase 1/3 observed-onboarding, Settings, and resume-ready Career
 Record closure is locally verified; hosted evidence is pending explicit
@@ -54,6 +54,27 @@ demo profile.
       no high or critical finding. Grype still reports four unsuppressed
       CPython 3.14 medium/low findings whose fixes require unreleased CPython
       3.15 builds; they must be reassessed when a supported fix is released.
+
+## Resume hyperlink recovery and career-link filtering (2026-10-01)
+
+Resume links were being lost when a document stored the destination in a PDF
+URI annotation or a DOCX hyperlink relationship instead of spelling the URL in
+visible text. The parser now recovers those targets, but only career-relevant
+links become declared profile facts; the listed social platforms are ignored
+and are never sent to enrichment.
+
+- [x] Recover bounded HTTP(S) targets from PDF link annotations and DOCX
+      hyperlinks without following or fetching them during parsing.
+- [x] Keep unsafe DOCX external relationships rejected and leave career-link
+      enrichment policy/connector behavior unchanged.
+- [x] Exclude Instagram, Facebook, X/Twitter, YouTube, Threads, TikTok,
+      Pinterest, Snapchat, and Discord from semantic link candidates, including
+      full `https://` URLs that would otherwise match the generic URL detector.
+- [x] Repair code/professional profile extraction artifacts for LinkedIn,
+      GitHub, GitLab, and Bitbucket while preserving valid `https://` URLs.
+- [x] Add extractor, isolated-parser, and semantic-parser regression coverage;
+      focused extraction/link tests pass (68) and the core architecture/unit
+      suite passes (700).
 
 ## Cloud-portable hosted-demo delivery (2026-09-28)
 
@@ -428,6 +449,41 @@ progress" indefinitely and the account was told to add roles by hand.
   left untouched.
 - [!] `make test-integration` and `make test-e2e` not run: no local stack was
   running and Playwright browsers are not installed.
+
+## Declared-profile connector hardening (2026-10-01)
+
+The declared-link enrichment path now stays honest about what each provider
+can expose. GitHub's REST-only path remains useful without a deployment secret;
+when `GITHUB_API_TOKEN` is configured, GraphQL adds the candidate's pinned
+repositories, current-year contribution calendar, and licensed open-source
+organization activity. LinkedIn remains evidence-only for an ordinary public
+URL because its supported profile API requires an approved app and the
+authenticated member's access token.
+
+- [x] Add a clearly labelled recent-public-activity fallback for GitHub when
+      the optional GraphQL token is unavailable; never present it as an annual
+      contribution total.
+- [x] Keep API/worker connector registries aligned for the optional ORCID
+      connector.
+- [x] Add official public API connectors for Hugging Face models/datasets/
+      Spaces and Docker Hub public repositories.
+- [x] Preserve the no-scraping policy for LinkedIn and the previously removed
+      social platforms; their links remain user-owned evidence.
+- [x] Normalize every provider result at the application boundary: remove
+      control characters, bound title/statement/excerpt sizes, reject unusable
+      source URLs with a safe profile-link fallback, and tolerate string-shaped
+      public counters without aborting the import.
+- [x] Extend GitHub's authenticated overview to include issue contributions,
+      sanitize Markdown/HTML README noise, and keep REST activity explicitly
+      labelled as recent rather than annual.
+- [x] Add routing, extraction, connector, and fallback-label regression tests.
+
+Verification on 2026-10-01: core architecture/unit `708 passed`, API `172
+passed`, worker `102 passed`, focused declared-profile tests `36 passed`, Ruff
+format/lint passed, mypy passed across 302 core source files, and `git diff
+--check` passed. The API and worker runs emit only the existing Starlette/httpx
+deprecation warning. Live provider calls remain deployment-dependent and are
+not replaced by test fixtures.
 
 ## Phase 11 - Declared-link evidence enrichment (in progress)
 

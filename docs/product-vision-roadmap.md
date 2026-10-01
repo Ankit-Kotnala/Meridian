@@ -1,7 +1,7 @@
 # Rezumi product vision roadmap
 
 Status: living document aligned with [ADR 0019](adr/0019-activation-first-workspace-and-assisted-application-supply-chain.md)  
-Last updated: 2026-08-23
+Last updated: 2026-10-01
 
 ## What you are building
 
@@ -14,10 +14,11 @@ The emotional goal is real: rejected candidates should see that their experience
 | Your idea                                             | Rezumi approach                                                       | Phase | Status                                       |
 | ----------------------------------------------------- | --------------------------------------------------------------------- | ----- | -------------------------------------------- |
 | Upload resume; check every detail                     | Resume Health parse + field review + health report                    | 2     | **Shipped**                                  |
-| Pull LinkedIn/GitHub/cert links from resume           | Parser stores declared links as personal facts                        | 3     | **Shipped**                                  |
+| Pull LinkedIn/GitHub/cert links from resume          | Parser stores declared links as personal facts                        | 3     | **Shipped**                                  |
 | Visit those links and import achievements as evidence | Declared-link enrichment (`DeclaredProfileConnector`)                 | 11    | **In progress**                              |
-| LinkedIn profile scraping                             | **Out of scope** — LinkedIn prohibits automated collection (ADR 0019) | —     | Rejected                                     |
-| GitHub / public portfolio / cert pages                | Public API or permitted HTTP read → user-reviewed proposals           | 11    | **In progress** (GitHub + portfolio shipped) |
+| LinkedIn public-profile scraping                     | **Out of scope** — use an approved, user-authorized LinkedIn API flow     | —     | Rejected                                     |
+| GitHub / GitLab / Bitbucket / Stack Exchange         | Public APIs → user-reviewed proposals                                  | 11    | **In progress**                              |
+| Hugging Face / Docker Hub / dev.to / Codeforces      | Public APIs → published artefacts as user-reviewed proposals           | 11    | **In progress**                              |
 | Scrape all jobs on the internet                       | Published ATS APIs + licensed feeds + paste/URL import                | 12    | Planned                                      |
 | Filter jobs to user's target role                     | Role Readiness + Job Match prioritizer                                | 4–5   | **Shipped**                                  |
 | Store portal passwords; apply automatically           | **Out of scope** — credential breach class + ToS (ADR 0019)           | —     | Rejected                                     |
@@ -41,9 +42,18 @@ The emotional goal is real: rejected candidates should see that their experience
 Deliverables:
 
 - [x] `DeclaredProfileConnector` port + deterministic fake (local dev, no credentials)
-- [x] GitHub public profile connector (REST API, no login)
+- [x] GitHub public profile connector (REST API, no login); optional token
+      unlocks pinned repositories, current-year contributions, and licensed
+      organization activity through GraphQL
+- [x] GitLab, Bitbucket, Stack Exchange, Codeforces, dev.to, Credly, Hugging
+      Face, and Docker Hub public API connectors
 - [x] Public portfolio HTML connector (SSRF-safe fetch)
-- [ ] Certification / personal-site connectors where terms permit
+- [x] LinkedIn links remain evidence-only unless a future approved,
+      user-authorized LinkedIn integration is configured
+- [x] Provider results are normalized and bounded before they become drafts:
+      malformed counters cannot abort a run, unsafe source links fall back to
+      the declared profile URL, and GitHub README/activity output is labelled
+      by its actual coverage.
 - [ ] Async worker + outbox (mirror attachment workflow)
 - [ ] UI: “Import from this link” on profile links
 - [ ] Corp ID persisted column + API standing

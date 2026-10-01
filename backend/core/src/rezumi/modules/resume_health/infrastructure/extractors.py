@@ -1,6 +1,7 @@
 """Bounded local PDF/DOCX validation and deterministic text extraction."""
 
 import asyncio
+import html
 import re
 import stat
 from collections.abc import Iterable
@@ -10,6 +11,7 @@ from zipfile import BadZipFile, ZipFile
 
 from docx import Document
 from docx.table import Table
+from docx.text.hyperlink import Hyperlink
 from docx.text.paragraph import Paragraph
 from pypdf import PdfReader
 
@@ -21,10 +23,14 @@ from rezumi.modules.resume_health.application.models import (
 )
 from rezumi.modules.resume_health.domain import ResumeMediaType
 from rezumi.modules.resume_health.domain.errors import UnsafeDocument
+from rezumi.modules.resume_health.infrastructure.hyperlinks import (
+    append_hyperlink_targets,
+    safe_http_hyperlink,
+)
 from rezumi.modules.resume_health.infrastructure.layout import analyze_local_layout
 from rezumi.modules.resume_health.infrastructure.pdf_reading_order import extract_pdf_pages
 
-PARSER_VERSION = "rezumi-local-parser/1.2.1"
+PARSER_VERSION = "rezumi-local-parser/1.3.0"
 _PDF_ACTIVE_CONTENT = (b"/JavaScript", b"/Launch", b"/EmbeddedFile")
 _PDF_JS_NAME = re.compile(rb"/JS(?=[/\s\[\]<>()])")
 _BLOCK_NAMESPACE = UUID("5f80ce6a-096a-44e9-b4d1-335f2da30c32")
@@ -43,15 +49,26 @@ _CONTACT_ICON_GLYPHS = re.compile(
     r"[\u2640\u2642\u260e\u2709\u2706\uf095\uf003\uf0e0\uf0ac\uf099\uf09a\uf099]+"
 )
 # Resume templates sometimes emit "/linkedin" before "linkedin.com/..." in one line.
+# The same artifact is produced by code/professional profile icons. Social
+# destinations are intentionally not normalized into declared career links.
+_PROFILE_HOST_LABELS = (
+    "linkedin",
+    "github",
+    "gitlab",
+    "bitbucket",
+)
+_PROFILE_HOST_LABEL_PATTERN = "|".join(_PROFILE_HOST_LABELS)
 _DUPLICATE_PROFILE_HOST = re.compile(
-    r"(?i)(?:/+(?:www\.)?|(?<![\w./])(?:www\.)?)"
-    r"(?P<label>linkedin|github|gitlab|bitbucket)(?P=label)\.com"
+    rf"(?i)(?:/+(?:www\.)?|(?<![\w./])(?:www\.)?)"
+    rf"(?P<label>{_PROFILE_HOST_LABEL_PATTERN})(?P=label)\.com"
 )
 _SLASH_BEFORE_PROFILE_HOST = re.compile(
-    r"/+(?=(?:www\.)?(?:linkedin|github|gitlab|bitbucket)\.com)",
+    rf"(?<![:/])/+(?=(?:www\.)?(?:{_PROFILE_HOST_LABEL_PATTERN})\.com)",
     re.IGNORECASE,
 )
 _PHONE_LABEL_GLUE = re.compile(r"(?i)\bphone(?=\s*\+?\d)")
+_DOCX_RELATIONSHIP_TAG = re.compile(rb"<Relationship\b[^>]*>", re.IGNORECASE)
+_DOCX_XML_ATTRIBUTE = re.compile(rb"\b([A-Za-z][\w.-]*)\s*=\s*(['\"])(.*?)\2", re.DOTALL)
 
 
 class LocalDocumentExtractor:
@@ -190,9 +207,7 @@ def _extract_docx(path: Path, limits: DocumentLimits) -> ExtractionResult:
             for info in infos:
                 if info.filename.casefold().endswith(".rels"):
                     relationships = archive.read(info)
-                    lowered = relationships.lower()
-                    if b'targetmode="external"' in lowered or b"targetmode='external'" in lowered:
-                        raise UnsafeDocument("embedded_object_rejected")
+                    _validate_docx_relationships(relationships)
             if archive.testzip() is not None:
                 raise UnsafeDocument("malformed_docx")
     except UnsafeDocument:
@@ -211,7 +226,8 @@ def _extract_docx(path: Path, limits: DocumentLimits) -> ExtractionResult:
         # represented by a visible bullet character in paragraph.text.
         for item in document.iter_inner_content():
             if isinstance(item, Paragraph):
-                sanitized, bidi_removed = _sanitize_extracted_text(item.text.replace("\x00", ""))
+                value, recovered = _docx_value_with_hyperlinks(item.text, item)
+                sanitized, bidi_removed = _sanitize_extracted_text(value.replace("\x00", ""))
                 values.append(
                     (
                         "bullet" if _is_docx_list_paragraph(item) else "text",
@@ -220,15 +236,26 @@ def _extract_docx(path: Path, limits: DocumentLimits) -> ExtractionResult:
                 )
                 if bidi_removed:
                     layout_signals.append("bidirectional_controls_present")
+                if recovered:
+                    layout_signals.append("hyperlinks_recovered")
                 continue
             if isinstance(item, Table):
                 for row in item.rows:
-                    raw_value = " | ".join(
-                        cell.text.replace("\x00", "").strip() for cell in row.cells
-                    )
+                    raw_values: list[str] = []
+                    recovered = False
+                    for cell in row.cells:
+                        cell_value, cell_recovered = _docx_value_with_hyperlinks(
+                            cell.text,
+                            *cell.paragraphs,
+                        )
+                        raw_values.append(cell_value.replace("\x00", "").strip())
+                        recovered = recovered or cell_recovered
+                    raw_value = " | ".join(raw_values)
                     value, bidi_removed = _sanitize_extracted_text(raw_value)
                     if bidi_removed:
                         layout_signals.append("bidirectional_controls_present")
+                    if recovered:
+                        layout_signals.append("hyperlinks_recovered")
                     if value.strip(" |"):
                         values.append(("table", value))
         if any(
@@ -353,6 +380,38 @@ def normalize_extracted_text(value: str) -> str:
     normalized = re.sub(r"[ \t]{2,}", " ", normalized)
     normalized = re.sub(r"\s+\|", " |", normalized)
     return normalized.strip()
+
+
+def _validate_docx_relationships(value: bytes) -> None:
+    """Allow only safe web hyperlinks among external DOCX relationships."""
+
+    for relationship in _DOCX_RELATIONSHIP_TAG.finditer(value):
+        try:
+            attributes = {
+                name.decode("ascii").casefold(): html.unescape(target.decode("utf-8"))
+                for name, _quote, target in _DOCX_XML_ATTRIBUTE.findall(relationship.group())
+            }
+        except UnicodeDecodeError as exc:
+            raise UnsafeDocument("malformed_docx") from exc
+        if attributes.get("targetmode", "").casefold() != "external":
+            continue
+        relationship_type = attributes.get("type", "")
+        target = attributes.get("target", "")
+        if not relationship_type.casefold().endswith("/hyperlink"):
+            raise UnsafeDocument("embedded_object_rejected")
+        if safe_http_hyperlink(target) is None:
+            raise UnsafeDocument("embedded_object_rejected")
+
+
+def _docx_value_with_hyperlinks(value: str, *paragraphs: Paragraph) -> tuple[str, bool]:
+    targets: list[str] = []
+    for paragraph in paragraphs:
+        for item in paragraph.iter_inner_content():
+            if isinstance(item, Hyperlink):
+                target = safe_http_hyperlink(item.url)
+                if target is not None:
+                    targets.append(target)
+    return append_hyperlink_targets(value, tuple(targets))
 
 
 def _sanitize_extracted_text(value: str) -> tuple[str, bool]:

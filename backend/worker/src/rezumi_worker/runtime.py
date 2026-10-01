@@ -968,7 +968,8 @@ async def process_declared_profile_enrichment_job(
                         settings.github_api_token.get_secret_value()
                         if settings.github_api_token is not None
                         else None
-                    )
+                    ),
+                    orcid_enabled=settings.orcid_connector_enabled,
                 ),
             ),
         )
@@ -1011,7 +1012,8 @@ async def reconcile_stale_declared_profile_enrichment_jobs(
                         settings.github_api_token.get_secret_value()
                         if settings.github_api_token is not None
                         else None
-                    )
+                    ),
+                    orcid_enabled=settings.orcid_connector_enabled,
                 ),
             ),
         )

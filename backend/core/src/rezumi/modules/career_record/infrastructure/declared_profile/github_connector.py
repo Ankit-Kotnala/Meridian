@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import binascii
+import html
 import json
 import re
 import unicodedata
@@ -20,6 +21,10 @@ from rezumi.modules.career_record.application.declared_profile_ports import (
     hostname,
     normalize_declared_profile_url,
     path_segments,
+)
+from rezumi.modules.career_record.infrastructure.declared_profile.normalization import (
+    positive_public_int,
+    safe_source_url,
 )
 
 _GITHUB_USER = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$")
@@ -164,6 +169,20 @@ query RezumiGithubCandidateOverview($login: String!, $from: DateTime!, $to: Date
         }
         contributions { totalCount }
       }
+      issueContributionsByRepository(maxRepositories: 6) {
+        repository {
+          nameWithOwner
+          url
+          licenseInfo { spdxId }
+          owner {
+            __typename
+            login
+            url
+            ... on Organization { name description }
+          }
+        }
+        contributions { totalCount }
+      }
       pullRequestReviewContributionsByRepository(maxRepositories: 6) {
         repository {
           nameWithOwner
@@ -211,6 +230,8 @@ class GithubDeclaredProfileConnector:
         repo_name: str | None,
     ) -> DeclaredProfileFetchResult:
         user = self._get_json(f"https://api.github.com/users/{username}")
+        if not isinstance(user, dict):
+            raise DeclaredProfileFetchFailed("GitHub profile returned an invalid response")
         now = datetime.now(tz=UTC)
         achievements: list[DeclaredProfileAchievement] = []
         seen_repo_urls: set[str] = set()
@@ -265,6 +286,13 @@ class GithubDeclaredProfileConnector:
                     year=now.year,
                 )
             )
+            if overview is None:
+                achievements.extend(
+                    self._recent_public_activity_achievements(
+                        username,
+                        profile_html_url=profile_html_url,
+                    )
+                )
 
         if not achievements:
             raise DeclaredProfileFetchFailed("GitHub profile did not expose public achievements")
@@ -295,39 +323,92 @@ class GithubDeclaredProfileConnector:
                 )
             )
 
+        details: list[str] = []
         location = _normalize_public_text(str(user.get("location") or ""))
         if location:
-            achievements.append(
-                DeclaredProfileAchievement(
-                    title=f"{name} — GitHub location",
-                    statement=location,
-                    source_url=profile_html_url,
-                    excerpt=location[:500],
-                )
-            )
+            details.append(f"Location: {location}.")
 
         company = _normalize_public_text(str(user.get("company") or ""))
         if company:
-            achievements.append(
-                DeclaredProfileAchievement(
-                    title=f"{name} — GitHub company",
-                    statement=company,
-                    source_url=profile_html_url,
-                    excerpt=company[:500],
-                )
-            )
+            details.append(f"Publicly listed company: {company}.")
 
         blog = _normalize_public_text(str(user.get("blog") or ""))
         if blog:
+            details.append(f"Public website: {blog}.")
+
+        if details:
+            statement = " ".join(details)
             achievements.append(
                 DeclaredProfileAchievement(
-                    title=f"{name} — GitHub website",
-                    statement=blog,
+                    title=f"{name} — GitHub profile details",
+                    statement=statement,
                     source_url=profile_html_url,
-                    excerpt=blog[:500],
+                    excerpt=statement[:500],
                 )
             )
         return achievements
+
+    def _recent_public_activity_achievements(
+        self,
+        username: str,
+        *,
+        profile_html_url: str,
+    ) -> list[DeclaredProfileAchievement]:
+        """Use the public-events API when GraphQL is not configured.
+
+        GitHub's public events endpoint is limited to its recent activity
+        window, so this is deliberately labelled recent activity rather than
+        being presented as a current-year contribution total. The annual
+        contribution calendar, pinned repositories, and organization-level
+        contribution breakdown remain available when ``GITHUB_API_TOKEN`` is
+        configured for the worker.
+        """
+
+        payload = self._get_optional_json(
+            f"https://api.github.com/users/{username}/events/public?per_page=100"
+        )
+        if not isinstance(payload, list):
+            return []
+        supported_types = {
+            "CreateEvent",
+            "DeleteEvent",
+            "IssuesEvent",
+            "IssueCommentEvent",
+            "PullRequestEvent",
+            "PullRequestReviewEvent",
+            "PushEvent",
+            "ReleaseEvent",
+        }
+        events = [
+            event
+            for event in payload
+            if isinstance(event, dict) and event.get("type") in supported_types
+        ]
+        if not events:
+            return []
+        repositories: list[str] = []
+        for event in events:
+            repository = event.get("repo")
+            name = str(repository.get("name") or "").strip() if isinstance(repository, dict) else ""
+            if name and name not in repositories:
+                repositories.append(name)
+        event_label = "event" if len(events) == 1 else "events"
+        statement = (
+            f"GitHub reports {len(events)} recent public activity {event_label}"
+            " (the public-events API covers a limited recent window)"
+        )
+        if repositories:
+            statement += f": {', '.join(repositories[:_MAX_ACTIVITY_REPOSITORIES])}."
+        else:
+            statement += "."
+        return [
+            DeclaredProfileAchievement(
+                title="GitHub — recent public activity",
+                statement=statement,
+                source_url=profile_html_url,
+                excerpt=statement[:500],
+            )
+        ]
 
     def _repo_achievement(
         self,
@@ -399,7 +480,9 @@ class GithubDeclaredProfileConnector:
         )
 
     def _repository_readme_excerpt(self, repo: dict[str, Any]) -> str | None:
-        owner_login = str((repo.get("owner") or {}).get("login") or "").strip()
+        owner_value = repo.get("owner")
+        owner: dict[str, Any] = owner_value if isinstance(owner_value, dict) else {}
+        owner_login = str(owner.get("login") or "").strip()
         repo_name = str(repo.get("name") or "").strip()
         if not owner_login or not repo_name:
             return None
@@ -509,6 +592,7 @@ class GithubDeclaredProfileConnector:
         for key in (
             "commitContributionsByRepository",
             "pullRequestContributionsByRepository",
+            "issueContributionsByRepository",
             "pullRequestReviewContributionsByRepository",
         ):
             entries = collection.get(key)
@@ -596,8 +680,10 @@ class GithubDeclaredProfileConnector:
             return None
         description = _normalize_public_text(str(repo.get("description") or ""))
         language = _normalize_public_text(str(repo.get("language") or ""))
-        stars = int(repo.get("stargazers_count") or 0)
-        owner_login = str((repo.get("owner") or {}).get("login") or "").strip()
+        stars = _positive_int(repo.get("stargazers_count"))
+        owner_value = repo.get("owner")
+        owner: dict[str, Any] = owner_value if isinstance(owner_value, dict) else {}
+        owner_login = str(owner.get("login") or "").strip()
         topics = [
             _normalize_public_text(str(topic))
             for topic in (repo.get("topics") or [])
@@ -777,9 +863,13 @@ def _readme_excerpt(payload: Any) -> str | None:
         if line.startswith(("![", "[![", "<img", "<picture", "</picture")):
             continue
         line = re.sub(r"!?\[([^\]]*)\]\([^)]*\)", r"\1", line)
+        line = re.sub(r"<https?://[^>]+>", "", line)
+        line = re.sub(r"</?[A-Za-z][^>]*>", "", line)
         line = re.sub(r"^[#>*\-\d.\s]+", "", line)
         line = re.sub(r"[`_~]", "", line)
-        normalized = _normalize_public_text(line)
+        normalized = _normalize_public_text(html.unescape(line))
+        if not normalized or re.fullmatch(r"[-_=*|:.\s]+", normalized):
+            continue
         if len(normalized) >= 12:
             lines.append(normalized)
         if len(" ".join(lines)) >= _MAX_README_EXCERPT:
@@ -791,8 +881,8 @@ def _readme_excerpt(payload: Any) -> str | None:
 def _readme_source_url(payload: Any, fallback: str) -> str:
     if not isinstance(payload, dict):
         return fallback
-    value = str(payload.get("html_url") or payload.get("download_url") or "").strip()
-    return value or fallback
+    value = payload.get("html_url") or payload.get("download_url") or ""
+    return safe_source_url(value, fallback)
 
 
 def _rest_repository_from_graphql(node: dict[str, Any]) -> dict[str, Any] | None:
@@ -827,7 +917,7 @@ def _rest_repository_from_graphql(node: dict[str, Any]) -> dict[str, Any] | None
 
 
 def _positive_int(value: Any) -> int:
-    return value if isinstance(value, int) and value > 0 else 0
+    return positive_public_int(value)
 
 
 def _contribution_details(collection: dict[str, Any]) -> list[str]:

@@ -143,6 +143,7 @@ class WorkerSettings(BaseSettings):
         default=None,
         validation_alias=AliasChoices("REZUMI_GITHUB_API_TOKEN", "GITHUB_API_TOKEN"),
     )
+    orcid_connector_enabled: bool = False
 
     s3_endpoint_url: str = Field(
         default="http://localhost:9000",

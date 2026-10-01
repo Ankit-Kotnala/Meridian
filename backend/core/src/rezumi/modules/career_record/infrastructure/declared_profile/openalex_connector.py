@@ -35,6 +35,9 @@ from rezumi.modules.career_record.application.declared_profile_ports import (
     normalize_declared_profile_url,
     path_segments,
 )
+from rezumi.modules.career_record.infrastructure.declared_profile.normalization import (
+    positive_public_int,
+)
 
 _ORCID_ID = re.compile(r"^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$")
 _OPENALEX_AUTHOR = re.compile(r"^A\d{1,20}$")
@@ -64,10 +67,10 @@ class OpenAlexDeclaredProfileConnector:
             raise DeclaredProfileFetchFailed("Research profile was not found")
 
         name = str(author.get("display_name") or "Researcher").strip()
-        works_count = int(author.get("works_count") or 0)
-        cited_by = int(author.get("cited_by_count") or 0)
+        works_count = positive_public_int(author.get("works_count"))
+        cited_by = positive_public_int(author.get("cited_by_count"))
         stats = author.get("summary_stats") if isinstance(author.get("summary_stats"), dict) else {}
-        h_index = int((stats or {}).get("h_index") or 0)
+        h_index = positive_public_int((stats or {}).get("h_index"))
         institution = _institution(author)
 
         parts = [f"{works_count} indexed works, {cited_by} citations"]
@@ -123,7 +126,7 @@ class OpenAlexDeclaredProfileConnector:
                 parts.append(f"Published in {venue}.")
             elif isinstance(year, int):
                 parts.append(f"Published {year}.")
-            citations = int(work.get("cited_by_count") or 0)
+            citations = positive_public_int(work.get("cited_by_count"))
             if citations > 0:
                 parts.append(f"{citations} citations.")
             statement = " ".join([*parts, _ATTRIBUTION])
