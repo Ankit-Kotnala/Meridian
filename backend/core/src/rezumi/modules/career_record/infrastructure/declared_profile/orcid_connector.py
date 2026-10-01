@@ -62,15 +62,26 @@ class OrcidDeclaredProfileConnector:
             summary = summaries[0] if isinstance(summaries, list) and summaries else None
             if not isinstance(summary, dict):
                 continue
-            title_block = summary.get("title") if isinstance(summary.get("title"), dict) else {}
-            title = str((title_block or {}).get("title", {}).get("value") or "").strip()
+            title_value = summary.get("title")
+            title_block: dict[str, Any] = title_value if isinstance(title_value, dict) else {}
+            nested_title = title_block.get("title")
+            nested_title = nested_title if isinstance(nested_title, dict) else {}
+            title = str(nested_title.get("value") or "").strip()
             if not title:
                 continue
-            journal = str(summary.get("journal-title", {}).get("value") or "").strip()
-            year = summary.get("publication-date", {}).get("year", {}).get("value")
+            journal_block = summary.get("journal-title")
+            journal_block = journal_block if isinstance(journal_block, dict) else {}
+            journal = str(journal_block.get("value") or "").strip()
+            publication_date = summary.get("publication-date")
+            publication_date = publication_date if isinstance(publication_date, dict) else {}
+            year_block = publication_date.get("year")
+            year_block = year_block if isinstance(year_block, dict) else {}
+            year = year_block.get("value")
             parts = [f"Published in {journal}." if journal else "", str(year) if year else ""]
             statement = " ".join(part for part in parts if part) or "Public ORCID work record."
-            work_url = summary.get("url", {}).get("value") if summary.get("url") else profile_url
+            work_url_block = summary.get("url")
+            work_url_block = work_url_block if isinstance(work_url_block, dict) else {}
+            work_url = work_url_block.get("value") or profile_url
             achievements.append(
                 DeclaredProfileAchievement(
                     title=title[:300],

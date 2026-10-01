@@ -113,6 +113,24 @@ async def test_contact_links_cover_every_supported_platform_without_a_scheme() -
 
 
 @pytest.mark.asyncio
+async def test_non_career_social_links_are_ignored() -> None:
+    contact = (
+        "Alex Rivera | instagram.com/alex-rivera | x.com/alex-rivera | "
+        "youtube.com/@alex-rivera | threads.net/@alex-rivera | facebook.com/alex-rivera | "
+        "fb.com/alex-rivera | discord.gg/alex-rivera"
+    )
+
+    links = await _links(contact)
+
+    assert links["contact"] == []
+
+    scheme_links = await _links(
+        "Alex Rivera | https://www.instagram.com/alex | https://youtube.com/@alex"
+    )
+    assert scheme_links["contact"] == []
+
+
+@pytest.mark.asyncio
 async def test_contact_links_drop_wrapping_and_sentence_punctuation() -> None:
     contact = "Alex Rivera. Portfolio (github.com/alex-rivera). See <https://alex.dev>."
 

@@ -7,7 +7,10 @@ module only routes.
 
 Findings behind the engineering exclusions listed there, re-verify before ever
 revisiting any of them:
-- LinkedIn: the User Agreement forbids automated access to profiles.
+- LinkedIn: anonymous public-profile reads are not the supported API path;
+  LinkedIn's Profile API requires an approved application and the authenticated
+  member's access token. Rezumi keeps a declared LinkedIn URL as evidence
+  rather than scraping it.
 - LeetCode: ToS forbids "crawling," "scraping," "spidering"; robots.txt
   disallows /api/ and /graphql for all crawlers; no documented public API.
 - HackerRank: no documented public API; robots.txt disallows /rest/ and
@@ -48,6 +51,9 @@ from rezumi.modules.career_record.infrastructure.declared_profile.credly_connect
 from rezumi.modules.career_record.infrastructure.declared_profile.devto_connector import (
     DevToDeclaredProfileConnector,
 )
+from rezumi.modules.career_record.infrastructure.declared_profile.dockerhub_connector import (
+    DockerHubDeclaredProfileConnector,
+)
 from rezumi.modules.career_record.infrastructure.declared_profile.fake_connector import (
     FakeDeclaredProfileConnector,
 )
@@ -56,6 +62,9 @@ from rezumi.modules.career_record.infrastructure.declared_profile.github_connect
 )
 from rezumi.modules.career_record.infrastructure.declared_profile.gitlab_connector import (
     GitlabDeclaredProfileConnector,
+)
+from rezumi.modules.career_record.infrastructure.declared_profile.huggingface_connector import (
+    HuggingFaceDeclaredProfileConnector,
 )
 from rezumi.modules.career_record.infrastructure.declared_profile.openalex_connector import (
     OpenAlexDeclaredProfileConnector,
@@ -103,6 +112,8 @@ def default_declared_profile_registry(
         StackExchangeDeclaredProfileConnector(),
         CodeforcesDeclaredProfileConnector(),
         DevToDeclaredProfileConnector(),
+        HuggingFaceDeclaredProfileConnector(),
+        DockerHubDeclaredProfileConnector(),
         CredlyDeclaredProfileConnector(),
     )
     if orcid_enabled:

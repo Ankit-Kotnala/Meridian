@@ -18,6 +18,8 @@ from itertools import pairwise
 
 from pypdf import PageObject
 
+from rezumi.modules.resume_health.infrastructure.hyperlinks import safe_http_hyperlink
+
 _MIN_COLUMN_GAP_POINTS = 60.0
 _MIN_COLUMN_LINES = 2
 _HEADER_BAND = 0.90
@@ -43,10 +45,21 @@ class _Line:
     text: str
 
 
+@dataclass(frozen=True, slots=True)
+class _AnnotationLink:
+    x0: float
+    y0: float
+    x1: float
+    y1: float
+    target: str
+
+
 def extract_pdf_pages(pages: list[PageObject]) -> tuple[list[str], tuple[str, ...]]:
     """Return per-page text in resume reading order plus layout signals."""
     collected: list[tuple[list[_Line], bool, float, str]] = []
+    annotation_links: list[tuple[_AnnotationLink, ...]] = []
     for page in pages:
+        annotation_links.append(_annotation_links(page))
         height = _page_height(page)
         try:
             lines, rotated = _lines_from_visitor(page)
@@ -68,7 +81,8 @@ def extract_pdf_pages(pages: list[PageObject]) -> tuple[list[str], tuple[str, ..
     repeating = _repeating_band_text(collected)
     page_texts: list[str] = []
     signals: list[str] = []
-    for lines, positioned, _height, layout_text in collected:
+    for page_index, (lines, positioned, _height, layout_text) in enumerate(collected):
+        links = annotation_links[page_index]
         kept = [line for line in lines if _normalize_line(line.text) not in repeating]
         if repeating and len(kept) < len(lines):
             signals.append("header_footer_present")
@@ -77,21 +91,110 @@ def extract_pdf_pages(pages: list[PageObject]) -> tuple[list[str], tuple[str, ..
             ordered_lines = [
                 line for column in columns for line in sorted(column, key=lambda item: -item.y)
             ]
-            page_texts.append("\n".join(line.text for line in ordered_lines))
+            page_texts.append(_lines_with_annotation_links(ordered_lines, links, positioned=True))
+            if links:
+                signals.append("hyperlinks_recovered")
             signals.append("multi_column_candidate")
             signals.append("multi_column_reconstructed")
             continue
         layout_columns = _reconstruct_from_layout(layout_text)
         if layout_columns is not None:
-            page_texts.append("\n".join(layout_columns))
+            page_texts.append(_strings_with_annotation_links(layout_columns, links))
+            if links:
+                signals.append("hyperlinks_recovered")
             signals.append("multi_column_candidate")
             signals.append("multi_column_reconstructed")
             continue
         ordered = sorted(kept, key=lambda line: -line.y) if positioned else kept
-        page_texts.append("\n".join(line.text for line in ordered))
+        page_texts.append(_lines_with_annotation_links(ordered, links, positioned=positioned))
+        if links:
+            signals.append("hyperlinks_recovered")
         if (positioned and _looks_multicolumn(kept)) or _LAYOUT_COLUMN_GAP.search(layout_text):
             signals.append("multi_column_candidate")
     return page_texts, tuple(dict.fromkeys(signals))
+
+
+def _annotation_links(page: PageObject) -> tuple[_AnnotationLink, ...]:
+    """Read only URI actions from PDF link annotations; never follow them."""
+
+    try:
+        annotations = page.annotations
+    except Exception:
+        return ()
+    if not annotations:
+        return ()
+    links: list[_AnnotationLink] = []
+    for annotation in annotations:
+        try:
+            item = annotation.get_object()
+            if item.get("/Subtype") != "/Link":
+                continue
+            action = item.get("/A")
+            action = action.get_object() if action is not None else None
+            if action is None or action.get("/S") != "/URI":
+                continue
+            target = safe_http_hyperlink(action.get("/URI"))
+            rectangle = item.get("/Rect")
+            if target is None or rectangle is None or len(rectangle) != 4:
+                continue
+            x0, y0, x1, y1 = (float(value) for value in rectangle)
+        except (AttributeError, TypeError, ValueError, IndexError):
+            continue
+        links.append(
+            _AnnotationLink(
+                x0=min(x0, x1),
+                y0=min(y0, y1),
+                x1=max(x0, x1),
+                y1=max(y0, y1),
+                target=target,
+            )
+        )
+    return tuple(links)
+
+
+def _lines_with_annotation_links(
+    lines: list[_Line], links: tuple[_AnnotationLink, ...], *, positioned: bool
+) -> str:
+    if not links:
+        return "\n".join(line.text for line in lines)
+    values = [line.text for line in lines]
+    for link in links:
+        if not values:
+            values.append(link.target)
+            continue
+        if not positioned:
+            index = 0
+        else:
+            center_x = (link.x0 + link.x1) / 2
+            center_y = (link.y0 + link.y1) / 2
+            index = min(
+                range(len(lines)),
+                key=lambda candidate: (
+                    _line_vertical_distance(lines[candidate].y, center_y, link.y0, link.y1),
+                    abs(lines[candidate].x0 - center_x),
+                ),
+            )
+        if link.target.casefold() not in values[index].casefold():
+            values[index] = f"{values[index]} {link.target}".strip()
+    return "\n".join(values)
+
+
+def _strings_with_annotation_links(values: list[str], links: tuple[_AnnotationLink, ...]) -> str:
+    if not links:
+        return "\n".join(values)
+    if not values:
+        return "\n".join(link.target for link in links)
+    updated = list(values)
+    for link in links:
+        if link.target.casefold() not in updated[0].casefold():
+            updated[0] = f"{updated[0]} {link.target}".strip()
+    return "\n".join(updated)
+
+
+def _line_vertical_distance(y: float, center: float, y0: float, y1: float) -> float:
+    if y0 - 4 <= y <= y1 + 4:
+        return 0.0
+    return abs(y - center)
 
 
 def _page_height(page: PageObject) -> float:

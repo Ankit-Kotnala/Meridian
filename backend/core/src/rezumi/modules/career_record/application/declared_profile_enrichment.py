@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from rezumi.modules.career_record.application.declared_profile_ports import (
+    DeclaredProfileAchievement,
     DeclaredProfileFetchFailed,
     normalize_declared_profile_url,
 )
@@ -21,12 +22,19 @@ from rezumi.modules.career_record.domain import (
     PersonalFactKind,
 )
 from rezumi.modules.career_record.domain.errors import CareerRecordNotFound
+from rezumi.modules.career_record.infrastructure.declared_profile.normalization import (
+    public_text,
+    safe_source_url,
+)
 from rezumi.modules.career_record.infrastructure.declared_profile.registry import (
     DeclaredProfileConnectorRegistry,
 )
 
 _DEDUPE_PAGE_SIZE = 100
 _MAX_DEDUPE_PAGES = 20
+_MAX_IMPORTED_TITLE = 160
+_MAX_IMPORTED_STATEMENT = 2_000
+_MAX_IMPORTED_EXCERPT = 500
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,8 +98,12 @@ class DeclaredProfileEnrichmentService:
         evidence_created = 0
         skipped = 0
 
-        for candidate in fetched.achievements:
-            key = candidate.title.strip().casefold()
+        for raw_candidate in fetched.achievements:
+            candidate = _normalize_candidate(raw_candidate, fallback_url=profile_url)
+            if candidate is None:
+                skipped += 1
+                continue
+            key = candidate.title.casefold()
             if key in existing_titles:
                 skipped += 1
                 continue
@@ -127,3 +139,30 @@ class DeclaredProfileEnrichmentService:
             evidence_created=evidence_created,
             skipped_duplicates=skipped,
         )
+
+
+def _normalize_candidate(
+    candidate: DeclaredProfileAchievement,
+    *,
+    fallback_url: str,
+) -> DeclaredProfileAchievement | None:
+    """Make provider output safe and useful before it reaches the domain.
+
+    Connectors intentionally remain close to their provider APIs.  This final
+    boundary prevents an odd provider response from creating empty cards,
+    oversized evidence, control characters, or an invalid external source URL.
+    Invalid candidates are counted as skipped by the caller rather than
+    breaking the complete profile import.
+    """
+
+    title = public_text(candidate.title, limit=_MAX_IMPORTED_TITLE)
+    statement = public_text(candidate.statement, limit=_MAX_IMPORTED_STATEMENT)
+    if not title or not statement:
+        return None
+    excerpt = public_text(candidate.excerpt, limit=_MAX_IMPORTED_EXCERPT) or statement[:500]
+    return DeclaredProfileAchievement(
+        title=title,
+        statement=statement,
+        source_url=safe_source_url(candidate.source_url, fallback_url),
+        excerpt=excerpt,
+    )

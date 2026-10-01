@@ -46,6 +46,10 @@ _PUBLIC_REGISTER = (
     "{platform} is a public register rather than a machine-readable profile "
     "source. " + _MANUAL_ENTRY_HINT
 )
+_LINKEDIN_AUTHORIZED_ONLY = (
+    "LinkedIn public profile links cannot be read anonymously. LinkedIn's official profile API "
+    "requires an approved application and the member's access token; " + _MANUAL_ENTRY_HINT
+)
 
 
 def _forbidden(*domains: str, platform: str) -> tuple[tuple[str, str], ...]:
@@ -64,13 +68,17 @@ def _register(*domains: str, platform: str) -> tuple[tuple[str, str], ...]:
     return tuple((domain, _PUBLIC_REGISTER.format(platform=platform)) for domain in domains)
 
 
+def _authorized_only(*domains: str, reason: str) -> tuple[tuple[str, str], ...]:
+    return tuple((domain, reason) for domain in domains)
+
+
 # Platforms excluded for cause. Blocking is enforced here rather than left to
 # documentation, because the portfolio fallback would otherwise happily scrape
 # every one of them and present the result as the user's achievements. See
 # `registry.py` for the per-platform findings behind the engineering entries.
 BLOCKED_PLATFORMS: tuple[tuple[str, str], ...] = (
     # --- Professional networks -------------------------------------------
-    *_forbidden("linkedin.com", "lnkd.in", platform="LinkedIn"),
+    *_authorized_only("linkedin.com", "lnkd.in", reason=_LINKEDIN_AUTHORIZED_ONLY),
     *_forbidden("xing.com", platform="XING"),
     *_forbidden("wellfound.com", "angel.co", platform="Wellfound"),
     *_forbidden("glassdoor.com", "glassdoor.co.in", platform="Glassdoor"),
@@ -152,6 +160,8 @@ API_PLATFORM_DOMAINS: tuple[str, ...] = (
     "stackapps.com",
     "codeforces.com",
     "dev.to",
+    "huggingface.co",
+    "hub.docker.com",
     "credly.com",
     "youracclaim.com",
     "orcid.org",
@@ -162,7 +172,7 @@ API_PLATFORM_DOMAINS: tuple[str, ...] = (
 UNSUPPORTED_LINK_MESSAGE = (
     "This link type is not supported for automatic enrichment yet. GitHub, "
     "GitLab, Bitbucket, the Stack Exchange network, Codeforces, dev.to, "
-    "Credly, ORCID/OpenAlex research profiles, and public portfolio or "
+    "Credly, Hugging Face, Docker Hub, ORCID/OpenAlex research profiles, and public portfolio or "
     "personal-site links are supported. The link stays on your record as "
     "evidence either way."
 )

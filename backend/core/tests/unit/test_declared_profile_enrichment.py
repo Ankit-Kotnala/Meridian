@@ -19,6 +19,8 @@ from rezumi.modules.career_record.application.declared_profile_enrichment import
     DeclaredProfileEnrichmentService,
 )
 from rezumi.modules.career_record.application.declared_profile_ports import (
+    DeclaredProfileAchievement,
+    DeclaredProfileFetchResult,
     DeclaredProfileUnsupported,
 )
 from rezumi.modules.career_record.domain import PersonalFactKind
@@ -118,6 +120,68 @@ class _StubFetcher:
                 "Copyright 2026"
             ),
         )
+
+
+class _MalformedProviderConnector:
+    platform = "malformed-provider"
+
+    def supports(self, url: str) -> bool:
+        return url == "https://example.test/profile/alex"
+
+    async def fetch(self, url: str) -> DeclaredProfileFetchResult:
+        return DeclaredProfileFetchResult(
+            platform=self.platform,
+            profile_url=url,
+            fetched_at=NOW,
+            achievements=(
+                DeclaredProfileAchievement(
+                    title="  Valid\x00 project  ",
+                    statement="  A useful public project with\nbounded output.  ",
+                    source_url="javascript:alert(1)",
+                    excerpt="",
+                ),
+                DeclaredProfileAchievement(
+                    title="Valid project",
+                    statement="Duplicate provider record.",
+                    source_url=url,
+                    excerpt="Duplicate provider record.",
+                ),
+                DeclaredProfileAchievement(
+                    title="\x00\x01",
+                    statement="",
+                    source_url=url,
+                    excerpt="",
+                ),
+            ),
+        )
+
+
+@pytest.mark.asyncio
+async def test_enrichment_normalizes_provider_anomalies_and_keeps_safe_provenance() -> None:
+    owner = uuid4()
+    memory = MemoryCareerRecord()
+    career = _service(memory)
+    await career.get_or_create_profile(owner, _context(owner))
+    fact = await career.create_personal_fact(
+        owner,
+        CreatePersonalFact(
+            kind=PersonalFactKind.LINK,
+            value="https://example.test/profile/alex",
+        ),
+        _context(owner),
+    )
+    enrichment = DeclaredProfileEnrichmentService(
+        career_record=career,
+        connectors=DeclaredProfileConnectorRegistry((_MalformedProviderConnector(),)),
+    )
+
+    result = await enrichment.enrich_personal_fact(owner, fact.id, _context(owner))
+
+    assert result.achievements_created == 1
+    assert result.evidence_created == 1
+    assert result.skipped_duplicates == 2
+    evidence = await career.list_evidence(owner, filter_by=EvidenceFilter(), limit=10)
+    assert evidence.items[0].sources[-1].external_url == "https://example.test/profile/alex"
 
 
 @pytest.mark.asyncio

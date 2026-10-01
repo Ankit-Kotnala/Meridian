@@ -56,6 +56,11 @@ Do not mock away the boundary a test is meant to prove.
 - External AI, email, OAuth, billing, OCR, taxonomy, and monitoring use
   deterministic fakes by default. Separate opt-in provider contract tests use
   non-production credentials and never gate ordinary contributor tests on secrets.
+- Declared-profile connector tests use bounded JSON fixtures for GitHub,
+  GitLab, Bitbucket, Stack Exchange, Codeforces, dev.to, Credly, Hugging Face,
+  and Docker Hub. GitHub tests distinguish recent REST activity from the
+  token-enabled annual GraphQL contribution view. LinkedIn is tested as an
+  explicit authorized-only/refused public-scrape route.
 - Time-dependent retention/session/deadline tests inject a clock rather than sleep.
 - Property/fuzz tests record the failing seed and promote regressions to fixtures.
 - Tests never use a real person's resume, contact, email, token, or private job
@@ -185,9 +190,14 @@ isolated containers, networks, volumes, images, and browser artifacts.
   header/footer, table-heavy, date-locale/concurrent-role, unusual-font,
   bidirectional-control, and long-resume fixtures plus test-generated
   wrong-signature, malformed, encrypted, polyglot, macro, traversal,
-  expansion-entry, compression-ratio, and forced-timeout inputs. Tests prove the
-  parser child is terminated/reaped and its temporary workspace removed. The
-  fixtures and manifest are deterministic and contain no user data.
+  expansion-entry, compression-ratio, forced-timeout, PDF URI-annotation, and
+  DOCX hyperlink-relationship inputs. HTTP(S) hyperlink targets are recovered
+  without being fetched; file/script/other external targets remain rejected.
+  Code/profile-icon hostname concatenation and valid `https://` preservation
+  are covered. Explicit non-career social links are ignored as semantic
+  profile candidates. Tests prove the parser child is terminated/reaped and
+  its temporary workspace removed. The fixtures and manifest are deterministic
+  and contain no user data.
 - **Semantic field-extraction accuracy is now measured, not assumed.**
   `rezumi.development.eval_resume_parser` runs the deterministic parser
   against a hand-labeled golden corpus
@@ -834,6 +844,11 @@ name the new version and rationale; blindly updating snapshots is prohibited.
   answers require explicit confirmation.
 - Provider timeout/rate/malformed/partial output, bounded retry, idempotent cost,
   quota/circuit breaker/kill switch, and redacted telemetry.
+- Declared-profile connector fixtures include string-shaped counters, control
+  characters, invalid provider URLs, duplicate records, Markdown badges/HTML,
+  missing optional fields, and partial GitHub contribution buckets. The import
+  boundary must keep valid records and use the declared profile URL as safe
+  provenance when a provider URL is unusable.
 - User accept/reject/edit/regenerate/undo/redo/lock/restore; final edits revalidate
   and prior/exported versions remain immutable.
 - Application consistency detects conflicting dates/titles/metrics/claims.

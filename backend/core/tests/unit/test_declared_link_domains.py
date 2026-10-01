@@ -120,6 +120,8 @@ async def _contact_links(text: str) -> list[str]:
         ("law", "law.stackexchange.com/users/1/alex"),
         ("credentials", "credly.com/users/alex-rivera"),
         ("credentials", "credential.net/1a2b3c4d"),
+        ("ai", "huggingface.co/alex-rivera"),
+        ("platform", "hub.docker.com/u/alex-rivera"),
         ("personal-site", "alexrivera.notion.site/portfolio"),
     ],
 )
@@ -287,7 +289,6 @@ def test_cross_domain_platforms_refuse_with_a_reason_not_scraped_junk(
         "https://alexrivera.substack.com/about",
         "https://speakerdeck.com/alexrivera",
         "https://alexrivera.notion.site/portfolio",
-        "https://huggingface.co/alexrivera",
         "https://pypi.org/user/alexrivera",
         "https://alexrivera.com",
     ],

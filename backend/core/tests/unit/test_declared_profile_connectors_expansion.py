@@ -24,12 +24,19 @@ from rezumi.modules.career_record.infrastructure.declared_profile.codeforces_con
 from rezumi.modules.career_record.infrastructure.declared_profile.devto_connector import (
     DevToDeclaredProfileConnector,
 )
+from rezumi.modules.career_record.infrastructure.declared_profile.dockerhub_connector import (
+    DockerHubDeclaredProfileConnector,
+)
 from rezumi.modules.career_record.infrastructure.declared_profile.github_connector import (
     GithubDeclaredProfileConnector,
     _github_target,
+    _readme_excerpt,
 )
 from rezumi.modules.career_record.infrastructure.declared_profile.gitlab_connector import (
     GitlabDeclaredProfileConnector,
+)
+from rezumi.modules.career_record.infrastructure.declared_profile.huggingface_connector import (
+    HuggingFaceDeclaredProfileConnector,
 )
 from rezumi.modules.career_record.infrastructure.declared_profile.orcid_connector import (
     OrcidDeclaredProfileConnector,
@@ -89,6 +96,21 @@ def test_github_connector_supports_user_urls() -> None:
     assert connector.supports("https://github.com/alex-example/rezumi")
     assert connector.supports("https://github.com/users/alex-example")
     assert not connector.supports("https://api.github.com/users/alex-example")
+
+
+def test_github_readme_excerpt_discards_badges_html_and_decodes_entities() -> None:
+    payload = {
+        "content": base64.b64encode(
+            b"[![build](https://ci.example/badge.svg)](https://ci.example)\n"
+            b"<p>Builds reliable &amp; reviewable developer tooling.</p>\n"
+            b"<img src='tracking.gif'>"
+        ).decode("ascii"),
+        "encoding": "base64",
+    }
+
+    excerpt = _readme_excerpt(payload)
+
+    assert excerpt == "Builds reliable & reviewable developer tooling."
 
 
 @pytest.mark.asyncio
@@ -169,6 +191,7 @@ async def test_github_connector_filters_fork_and_empty_repos_for_profiles() -> N
             ]
         ),
         _FakeJsonResponse({}),
+        _FakeJsonResponse([]),
     ]
 
     with patch(
@@ -197,6 +220,7 @@ async def test_github_connector_imports_profile_fields_and_skips_role_taglines()
         ),
         _FakeJsonResponse({}),
         _FakeJsonResponse([]),
+        _FakeJsonResponse([]),
     ]
 
     with patch(
@@ -207,9 +231,48 @@ async def test_github_connector_imports_profile_fields_and_skips_role_taglines()
 
     statements = [item.statement for item in result.achievements]
     assert "Software Engineer | Footballer" not in statements
-    assert "Berlin" in statements
-    assert "Example GmbH" in statements
-    assert "https://alex.dev" in statements
+    profile_details = next(item for item in result.achievements if "profile details" in item.title)
+    assert "Berlin" in profile_details.statement
+    assert "Example GmbH" in profile_details.statement
+    assert "https://alex.dev" in profile_details.statement
+    assert not any("GitHub location" in item.title for item in result.achievements)
+    assert not any("GitHub company" in item.title for item in result.achievements)
+
+
+@pytest.mark.asyncio
+async def test_github_connector_labels_rest_activity_as_recent_not_annual() -> None:
+    connector = GithubDeclaredProfileConnector()
+    responses = [
+        _FakeJsonResponse(
+            {"name": "Alex Example", "bio": "", "html_url": "https://github.com/alex-example"}
+        ),
+        _FakeJsonResponse({}),
+        _FakeJsonResponse([]),
+        _FakeJsonResponse(
+            [
+                {
+                    "type": "PushEvent",
+                    "repo": {"name": "alex-example/tooling"},
+                },
+                {
+                    "type": "PullRequestEvent",
+                    "repo": {"name": "community/api"},
+                },
+                {"type": "WatchEvent", "repo": {"name": "unrelated/project"}},
+            ]
+        ),
+    ]
+
+    with patch(
+        "rezumi.modules.career_record.infrastructure.declared_profile.github_connector.urlopen",
+        side_effect=responses,
+    ):
+        result = await connector.fetch("https://github.com/alex-example")
+
+    activity = next(item for item in result.achievements if "recent public activity" in item.title)
+    assert "2 recent public activity events" in activity.statement
+    assert "limited recent window" in activity.statement
+    assert "current-year" not in activity.statement
 
 
 @pytest.mark.asyncio
@@ -356,6 +419,25 @@ async def test_github_connector_imports_profile_readme_pinned_projects_and_publi
                                         "contributions": {"totalCount": 7},
                                     }
                                 ],
+                                "issueContributionsByRepository": [
+                                    {
+                                        "repository": {
+                                            "nameWithOwner": "open-source-labs/opensource-tool",
+                                            "url": "https://github.com/open-source-labs/opensource-tool",
+                                            "licenseInfo": {"spdxId": "MIT"},
+                                            "owner": {
+                                                "__typename": "Organization",
+                                                "login": "open-source-labs",
+                                                "url": "https://github.com/open-source-labs",
+                                                "name": "Open Source Labs",
+                                                "description": (
+                                                    "Maintains useful public developer tools."
+                                                ),
+                                            },
+                                        },
+                                        "contributions": {"totalCount": 2},
+                                    }
+                                ],
                                 "pullRequestReviewContributionsByRepository": [],
                             },
                         }
@@ -391,6 +473,7 @@ async def test_github_connector_imports_profile_readme_pinned_projects_and_publi
     assert (
         "Organization overview: Maintains useful public developer tools." in open_source.statement
     )
+    assert "21 recorded public contributions" in open_source.statement
 
 
 # --- GitLab -------------------------------------------------------------
@@ -612,6 +695,89 @@ async def test_devto_connector_extracts_summary_and_reactions() -> None:
     assert "15 total reactions" in result.achievements[0].statement
 
 
+# --- Hugging Face ---------------------------------------------------------
+
+
+def test_huggingface_connector_supports_profile_and_repository_urls() -> None:
+    connector = HuggingFaceDeclaredProfileConnector()
+    assert connector.supports("https://huggingface.co/alex-example")
+    assert connector.supports("https://huggingface.co/alex-example/model-card")
+    assert connector.supports("https://huggingface.co/datasets/alex-example/data")
+    assert connector.supports("https://huggingface.co/spaces/alex-example/demo")
+    assert not connector.supports("https://huggingface.co/models")
+
+
+@pytest.mark.asyncio
+async def test_huggingface_connector_extracts_public_artifacts() -> None:
+    connector = HuggingFaceDeclaredProfileConnector()
+    responses = [
+        _FakeJsonResponse(
+            [
+                {
+                    "id": "alex-example/summarizer",
+                    "pipeline_tag": "summarization",
+                    "library_name": "transformers",
+                    "downloads": 120,
+                    "likes": 4,
+                }
+            ]
+        ),
+        _FakeJsonResponse([]),
+        _FakeJsonResponse([{"id": "alex-example/demo", "likes": 2}]),
+    ]
+
+    with patch(
+        "rezumi.modules.career_record.infrastructure.declared_profile."
+        "huggingface_connector.urlopen",
+        side_effect=responses,
+    ):
+        result = await connector.fetch("https://huggingface.co/alex-example")
+
+    assert result.platform == "huggingface"
+    assert [item.title for item in result.achievements] == [
+        "alex-example/summarizer",
+        "alex-example/demo",
+    ]
+    assert "summarization" in result.achievements[0].statement
+
+
+# --- Docker Hub -----------------------------------------------------------
+
+
+def test_dockerhub_connector_supports_namespace_and_repository_urls() -> None:
+    connector = DockerHubDeclaredProfileConnector()
+    assert connector.supports("https://hub.docker.com/u/alex-example")
+    assert connector.supports("https://hub.docker.com/r/alex-example/api")
+    assert not connector.supports("https://hub.docker.com/search")
+
+
+@pytest.mark.asyncio
+async def test_dockerhub_connector_extracts_public_repositories() -> None:
+    connector = DockerHubDeclaredProfileConnector()
+    response = _FakeJsonResponse(
+        {
+            "results": [
+                {
+                    "name": "api",
+                    "description": "Production API image",
+                    "pull_count": 100,
+                    "star_count": 3,
+                }
+            ]
+        }
+    )
+
+    with patch(
+        "rezumi.modules.career_record.infrastructure.declared_profile.dockerhub_connector.urlopen",
+        return_value=response,
+    ):
+        result = await connector.fetch("https://hub.docker.com/u/alex-example")
+
+    assert result.platform == "dockerhub"
+    assert result.achievements[0].title == "alex-example/api"
+    assert "Production API image" in result.achievements[0].statement
+
+
 # --- ORCID (built but disabled by default) ----------------------------------
 
 
@@ -674,6 +840,8 @@ def test_portfolio_connector_defers_to_known_api_platform_hosts() -> None:
         "stackoverflow.com",
         "codeforces.com",
         "dev.to",
+        "huggingface.co",
+        "hub.docker.com",
         "orcid.org",
     ):
         assert not connector.supports(f"https://{host}/someone")
@@ -689,3 +857,5 @@ def test_default_registry_resolves_every_new_platform() -> None:
     )
     assert registry.resolve("https://codeforces.com/profile/alex").platform == "codeforces"
     assert registry.resolve("https://dev.to/alex").platform == "devto"
+    assert registry.resolve("https://huggingface.co/alex").platform == "huggingface"
+    assert registry.resolve("https://hub.docker.com/u/alex").platform == "dockerhub"
