@@ -12,6 +12,7 @@ from rezumi.foundation.config import validate_database_url_for_environment
 _LOCAL_REDIS_URL = "redis://localhost:6379/0"
 _LOCAL_DATABASE_URL = "postgresql+asyncpg://rezumi:rezumi@localhost:5432/rezumi"
 _LOCAL_STORAGE_SECRET = "change-me-local-only-app-storage-secret"  # noqa: S105 -- local Compose credential
+_PUBLIC_ENVIRONMENTS = frozenset({"staging", "production"})
 
 
 def _is_development_redis_url(value: SecretStr) -> bool:
@@ -795,13 +796,22 @@ class WorkerSettings(BaseSettings):
                 )
             if self.qstash_delivery_timeout_seconds <= self.task_time_limit_seconds:
                 raise ValueError("QStash delivery timeout must exceed the worker hard task limit")
-        if self.environment == "production":
+        if self.environment in _PUBLIC_ENVIRONMENTS:
             violations: list[str] = []
+            if self.log_level == "DEBUG":
+                violations.append("log_level must not be DEBUG")
             if self.job_delivery_provider == "celery":
                 if _is_development_redis_url(self.broker_url):
                     violations.append("an explicit non-local broker URL is required")
                 if _is_development_redis_url(self.result_backend):
                     violations.append("an explicit non-local result backend is required")
+                if urlsplit(self.broker_url.get_secret_value()).scheme not in {"rediss", "amqps"}:
+                    violations.append("broker transport must use TLS")
+                if urlsplit(self.result_backend.get_secret_value()).scheme not in {
+                    "rediss",
+                    "amqps",
+                }:
+                    violations.append("result backend transport must use TLS")
             internal_storage = urlsplit(self.s3_endpoint_url)
             public_storage = urlsplit(self.s3_public_endpoint_url)
             if internal_storage.scheme != "https" or _is_local_hostname(
@@ -819,7 +829,7 @@ class WorkerSettings(BaseSettings):
             if _is_local_hostname(self.clamav_host, "clamav"):
                 violations.append("an explicit non-local ClamAV host is required")
             if violations:
-                raise ValueError("Unsafe production configuration: " + "; ".join(violations))
+                raise ValueError("Unsafe public configuration: " + "; ".join(violations))
         return self
 
 

@@ -49,7 +49,7 @@ select = ["E", "F", "I", "UP", "B", "S", "SIM", "RUF"]
 "tests/**" = ["S101"]
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.14"
 strict = true
 warn_unreachable = true
 pretty = true

@@ -34,6 +34,8 @@ def test_declared_oversize_is_rejected_before_body_or_dependencies_are_read(
 
     assert response.status_code == 413
     assert response.headers["content-type"].startswith("application/problem+json")
+    assert response.headers["Cache-Control"] == "no-store"
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
     assert response.headers["X-Request-ID"] == "oversize-request"
     assert response.json() == {
         "type": "https://rezumi.example/problems/payload-too-large",

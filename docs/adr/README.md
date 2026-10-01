@@ -28,6 +28,7 @@ status; consult `PLANS.md` for current behavior.
 | [0019](0019-activation-first-workspace-and-assisted-application-supply-chain.md) | Activation-first workspace, declared-link evidence, published-API job supply, assisted apply | Accepted                                     |
 | [0020](0020-npm-workspace-package-manager.md)                                    | npm (not pnpm) as the JavaScript workspace package manager                                   | Accepted; amends 0001                        |
 | [0021](0021-cloud-portable-job-delivery.md)                                      | QStash-backed signed HTTP job delivery for hosted staging/demo environments                  | Accepted for staging/demo                    |
+| [0022](0022-fail-closed-public-environment-security-baseline.md)                 | Staging and production share a fail-closed security baseline                                 | Accepted                                     |
 
 ## Lifecycle
 

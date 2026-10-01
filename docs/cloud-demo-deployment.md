@@ -33,6 +33,11 @@ Python PDF/DOCX parsing and ClamAV work.
 Do not configure a demo deployment with `MALWARE_SCANNER_PROVIDER=disabled` and
 claim that uploads are safe. It fails closed by design.
 
+`staging` is a public environment in Rezumi. It has the same secure configuration
+requirements as `production`; it is not a permissive halfway mode. An API or
+worker with a local default, a missing secret, or an unencrypted public-service
+connection refuses to start instead of accepting user data unsafely.
+
 ## API service
 
 Build from the repository root with Dockerfile `backend/api/Dockerfile`.
@@ -41,17 +46,18 @@ Use a public hostname such as `https://api-staging.example.com` and set:
 
 ```dotenv
 REZUMI_ENVIRONMENT=staging
-JOB_DELIVERY_PROVIDER=qstash
-QSTASH_TOKEN=<publish token>
-QSTASH_JOB_RUNNER_URL=https://jobs-staging.example.com/internal/jobs/qstash
-QSTASH_BASE_URL=https://qstash.upstash.io
-QSTASH_RETRIES=3
-QSTASH_DELIVERY_TIMEOUT_SECONDS=330
+REZUMI_DEBUG=false
+REZUMI_DOCS_ENABLED=false
+REZUMI_LOG_LEVEL=INFO
+REZUMI_TRUSTED_HOSTS=["api-staging.example.com"]
+REZUMI_ALLOWED_ORIGINS=["https://app-staging.example.com"]
+REZUMI_PUBLIC_APP_URL=https://app-staging.example.com
+REZUMI_COOKIE_SECURE=true
 
 REZUMI_DATABASE_URL=postgresql+asyncpg://...
-REZUMI_REDIS_URL=rediss://...  # still used for sessions/rate limiting
-MONGODB_ENABLED=true  # required to retain the hosted job-catalog source
-MONGODB_URL=mongodb+srv://...
+REZUMI_REDIS_URL=rediss://...  # sessions and rate limiting; TLS is required
+REZUMI_MONGODB_ENABLED=true  # required to retain the hosted job-catalog source
+REZUMI_MONGODB_URL=mongodb+srv://...
 REZUMI_S3_ENDPOINT_URL=https://<account-id>.r2.cloudflarestorage.com
 REZUMI_S3_PUBLIC_ENDPOINT_URL=https://uploads-staging.example.com
 REZUMI_S3_REGION=auto
@@ -59,14 +65,36 @@ REZUMI_S3_BUCKET=rezumi-documents
 REZUMI_S3_ACCESS_KEY_ID=<R2 access key>
 REZUMI_S3_SECRET_ACCESS_KEY=<R2 secret>
 REZUMI_S3_USE_SSL=true
-REZUMI_ALLOWED_ORIGINS=["https://app-staging.example.com"]
-REZUMI_PUBLIC_APP_URL=https://app-staging.example.com
-REZUMI_COOKIE_SECURE=true
+
+REZUMI_EMAIL_PROVIDER=smtp
+REZUMI_SMTP_HOST=smtp.resend.com
+REZUMI_SMTP_PORT=587
+REZUMI_SMTP_USERNAME=resend
+REZUMI_SMTP_PASSWORD=<SMTP credential>
+REZUMI_SMTP_START_TLS=true
+REZUMI_EMAIL_FROM_ADDRESS=no-reply@example.com
+
+REZUMI_MALWARE_SCANNER_PROVIDER=clamav
+REZUMI_CLAMAV_HOST=clamav.internal.example.com
+REZUMI_CLAMAV_PORT=3310
+
+REZUMI_AUTH_TOKEN_PEPPER=<at-least-32-random-UTF-8-bytes>
+REZUMI_RESUME_CAPABILITY_PEPPER=<at-least-32-random-UTF-8-bytes>
+REZUMI_BFF_CLIENT_SIGNAL_SECRET=<at-least-32-random-UTF-8-bytes>
+
+REZUMI_JOB_DELIVERY_PROVIDER=qstash
+REZUMI_QSTASH_TOKEN=<publish token>
+REZUMI_QSTASH_JOB_RUNNER_URL=https://jobs-staging.example.com/internal/jobs/qstash
+REZUMI_QSTASH_BASE_URL=https://qstash.upstash.io
+REZUMI_QSTASH_RETRIES=3
+REZUMI_QSTASH_DELIVERY_TIMEOUT_SECONDS=330
 ```
 
-Use strong generated values for `AUTH_TOKEN_PEPPER`,
-`RESUME_CAPABILITY_PEPPER`, and `BFF_CLIENT_SIGNAL_SECRET`. Do not copy values
-from `.env.example`.
+Use a secret manager or protected platform environment variables for every
+placeholder above. Do not copy a value from `.env.example`, put secrets in a
+`NEXT_PUBLIC_*` variable, share them in screenshots, or commit them to Git.
+The S3 bucket must remain private; `S3_PUBLIC_ENDPOINT_URL` names the browser
+upload origin and does not make stored objects public.
 
 Configure the same MongoDB values on the runner if it executes catalog sync
 tasks. If no Atlas database is available, set `MONGODB_ENABLED=false`; the
@@ -80,16 +108,68 @@ database/S3/scanner/QStash variables as the API, plus:
 
 ```dotenv
 REZUMI_ENVIRONMENT=staging
-JOB_DELIVERY_PROVIDER=qstash
-QSTASH_TOKEN=<publish token>
-QSTASH_JOB_RUNNER_URL=https://jobs-staging.example.com/internal/jobs/qstash
-QSTASH_CURRENT_SIGNING_KEY=<current receiver key>
-QSTASH_NEXT_SIGNING_KEY=<next receiver key>
+REZUMI_LOG_LEVEL=INFO
+REZUMI_DATABASE_URL=postgresql+asyncpg://...
+REZUMI_S3_ENDPOINT_URL=https://<account-id>.r2.cloudflarestorage.com
+REZUMI_S3_PUBLIC_ENDPOINT_URL=https://uploads-staging.example.com
+REZUMI_S3_REGION=auto
+REZUMI_S3_BUCKET=rezumi-documents
+REZUMI_S3_ACCESS_KEY_ID=<R2 access key>
+REZUMI_S3_SECRET_ACCESS_KEY=<R2 secret>
+REZUMI_S3_USE_SSL=true
+REZUMI_MALWARE_SCANNER_PROVIDER=clamav
+REZUMI_CLAMAV_HOST=clamav.internal.example.com
+REZUMI_CLAMAV_PORT=3310
+
+REZUMI_JOB_DELIVERY_PROVIDER=qstash
+REZUMI_QSTASH_TOKEN=<publish token>
+REZUMI_QSTASH_JOB_RUNNER_URL=https://jobs-staging.example.com/internal/jobs/qstash
+REZUMI_QSTASH_CURRENT_SIGNING_KEY=<current receiver key>
+REZUMI_QSTASH_NEXT_SIGNING_KEY=<next receiver key>
 ```
 
 The image automatically starts the HTTP runner when
 `JOB_DELIVERY_PROVIDER=qstash`. Set the host health-check path to `/health`.
 Never expose ClamAV directly to the public internet.
+
+## Web service
+
+Set these **server-only** values on the Next.js deployment. The BFF secret must
+exactly equal `REZUMI_BFF_CLIENT_SIGNAL_SECRET` on the API, but it must never be
+published with the `NEXT_PUBLIC_` prefix.
+
+```dotenv
+REZUMI_ENVIRONMENT=staging
+API_BASE_URL=https://api-staging.example.com
+API_BFF_CLIENT_SIGNAL_SECRET=<same value as REZUMI_BFF_CLIENT_SIGNAL_SECRET>
+API_TRUSTED_CLIENT_IP_HEADER=cf-connecting-ip
+NEXT_PUBLIC_UPLOAD_ORIGIN=https://uploads-staging.example.com
+```
+
+Use the client-address header set by your chosen edge only. For example,
+Cloudflare sets `CF-Connecting-IP`; a platform that supplies only
+`X-Forwarded-For` must use `x-forwarded-for`. Do not allow a client to select the
+header, and do not forward arbitrary client-supplied forwarding headers.
+
+## Public deployment verification
+
+Before allowing real users, verify the following through the deployed HTTPS
+domains, not only localhost:
+
+1. Both API and runner start with no `Unsafe public configuration` error.
+2. An API response includes `Cache-Control: no-store`, `X-Content-Type-Options:
+nosniff`, anti-framing policy, and HSTS. The web response has its CSP and
+   security headers too.
+3. The API accepts only the exact application origin; a request with a different
+   `Origin` cannot complete a state-changing operation.
+4. Private object URLs deny anonymous reads, and a signed upload/download URL
+   expires when expected.
+5. The malware scanner is reachable only from private application services; an
+   EICAR test file is rejected and never parsed.
+6. Logs, error pages, job messages, browser source, and deployment previews do
+   not contain credentials, tokens, raw resumes, signed URLs, or document text.
+7. Rotate one non-production secret and verify that a stale session/job signature
+   is rejected. Maintain a written, owner-controlled rotation runbook.
 
 ## Create schedules once
 

@@ -1,4 +1,4 @@
-FROM node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd AS base
+FROM node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS base
 RUN corepack enable && corepack prepare npm@11.8.0 --activate
 WORKDIR /workspace
 
@@ -27,7 +27,11 @@ WORKDIR /workspace/frontend/web
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build --workspace=@rezumi/contracts && npm run build --workspace=@rezumi/web
 
-FROM node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd AS runner
+FROM builder AS production-dependencies
+WORKDIR /workspace
+RUN npm prune --omit=dev --workspaces --include-workspace-root=false --package-lock=false
+
+FROM node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -39,7 +43,7 @@ RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack 
         /usr/local/bin/yarnpkg \
     && addgroup --system --gid 1001 nodejs \
     && adduser --system --uid 1001 nextjs
-COPY --from=builder --chown=nextjs:nodejs /workspace/node_modules ./node_modules
+COPY --from=production-dependencies --chown=nextjs:nodejs /workspace/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /workspace/frontend/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /workspace/frontend/web/.next/static ./frontend/web/.next/static
 WORKDIR /app/frontend/web

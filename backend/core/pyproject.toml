@@ -86,7 +86,7 @@ select = ["E", "F", "I", "UP", "B", "S", "SIM", "RUF"]
 "src/rezumi/modules/career_growth/infrastructure/role_roadmap_catalog/**" = ["E501"]
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.14"
 strict = true
 warn_unreachable = true
 pretty = true

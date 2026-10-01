@@ -202,7 +202,7 @@ security-scan:
 	docker run --rm --volume "$(CURDIR):/repo:ro" ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f dir /repo --config /repo/.gitleaks.toml --redact --exit-code 1
 	npm audit --audit-level=high
 	uv sync --project backend --frozen --all-packages --all-groups
-	uv run --project backend --package rezumi-api --with pip-audit==2.10.1 pip-audit
+	uv run --project backend --package rezumi-api --with pip-audit==2.9.0 pip-audit
 	$(COMPOSE) build api worker web web-edge
 	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume rezumi-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d rezumi-api:latest --config /etc/grype.yaml --fail-on high --only-fixed
 	docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock --volume "$(CURDIR)/.grype.yaml:/etc/grype.yaml:ro" --volume rezumi-grype-cache:/root/.cache/grype anchore/grype@sha256:391bfda62888fb4e98ff5c4c81598f7431a3c1eac3f8519d69d1ff00df247c1d rezumi-worker:latest --config /etc/grype.yaml --fail-on high --only-fixed

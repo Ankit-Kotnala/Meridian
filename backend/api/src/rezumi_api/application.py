@@ -223,7 +223,11 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from rezumi_api.config import Settings, get_settings
-from rezumi_api.middleware import RequestBodyLimitMiddleware, install_request_context_middleware
+from rezumi_api.middleware import (
+    RequestBodyLimitMiddleware,
+    SecurityResponseHeadersMiddleware,
+    install_request_context_middleware,
+)
 from rezumi_api.modules.career_growth import install_career_growth_problem_handler
 from rezumi_api.modules.interview_prep import install_interview_prep_problem_handler
 from rezumi_api.problems import install_problem_handlers
@@ -874,6 +878,10 @@ def create_app(
         max_body_bytes=resolved_settings.max_request_body_bytes,
     )
     install_request_context_middleware(application)
+    application.add_middleware(
+        SecurityResponseHeadersMiddleware,
+        enable_hsts=resolved_settings.environment in {"staging", "production"},
+    )
     install_problem_handlers(application)
     install_interview_prep_problem_handler(application)
     install_career_growth_problem_handler(application)

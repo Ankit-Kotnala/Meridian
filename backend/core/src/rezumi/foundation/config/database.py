@@ -8,6 +8,7 @@ from sqlalchemy.engine import URL, make_url
 from sqlalchemy.exc import ArgumentError
 
 _ENVIRONMENTS = frozenset({"development", "test", "staging", "production"})
+_PUBLIC_ENVIRONMENTS = frozenset({"staging", "production"})
 _DEVELOPMENT_PASSWORDS = frozenset(
     {
         "",
@@ -32,22 +33,22 @@ def parse_async_postgresql_url(value: str) -> URL:
 
 
 def validate_database_url_for_environment(value: str, environment: str) -> URL:
-    """Reject known development database settings when running in production."""
+    """Reject known development database settings in every public environment."""
     if environment not in _ENVIRONMENTS:
         choices = ", ".join(sorted(_ENVIRONMENTS))
         raise ValueError(f"environment must be one of: {choices}")
 
     url = parse_async_postgresql_url(value)
-    if environment != "production":
+    if environment not in _PUBLIC_ENVIRONMENTS:
         return url
 
     violations: list[str] = []
-    if url.host in {"localhost", "127.0.0.1", "::1"}:
+    if url.host in {"localhost", "127.0.0.1", "::1", "postgres"}:
         violations.append("database URL must not target a loopback host")
     if (url.password or "").casefold() in _DEVELOPMENT_PASSWORDS:
         violations.append("the development database credential must be replaced")
     if violations:
-        raise ValueError("Unsafe production database configuration: " + "; ".join(violations))
+        raise ValueError("Unsafe public database configuration: " + "; ".join(violations))
     return url
 
 

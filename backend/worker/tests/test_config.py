@@ -66,13 +66,14 @@ def test_soft_time_limit_must_precede_hard_limit() -> None:
         )
 
 
-def test_production_rejects_local_connection_defaults() -> None:
-    with pytest.raises(ValidationError, match=r"production|Production"):
-        WorkerSettings.model_validate({"environment": "production"})
+@pytest.mark.parametrize("environment", ["staging", "production"])
+def test_public_environments_reject_local_connection_defaults(environment: str) -> None:
+    with pytest.raises(ValidationError, match=r"public|Public"):
+        WorkerSettings.model_validate({"environment": environment})
 
 
-def test_production_rejects_compose_redis_service_defaults() -> None:
-    with pytest.raises(ValidationError, match=r"production|Production"):
+def test_public_environment_rejects_compose_redis_service_defaults() -> None:
+    with pytest.raises(ValidationError, match=r"public|Public"):
         WorkerSettings.model_validate(
             {
                 "environment": "production",
@@ -82,10 +83,11 @@ def test_production_rejects_compose_redis_service_defaults() -> None:
         )
 
 
-def test_production_accepts_explicit_non_local_redis_urls() -> None:
+@pytest.mark.parametrize("environment", ["staging", "production"])
+def test_public_environments_accept_explicit_non_local_redis_urls(environment: str) -> None:
     settings = WorkerSettings.model_validate(
         {
-            "environment": "production",
+            "environment": environment,
             "broker_url": "rediss://broker.internal.example:6380/0",
             "result_backend": "rediss://backend.internal.example:6380/1",
             "database_url": (
@@ -101,10 +103,10 @@ def test_production_accepts_explicit_non_local_redis_urls() -> None:
         }
     )
 
-    assert settings.environment == "production"
+    assert settings.environment == environment
 
 
-def test_production_qstash_mode_does_not_require_a_celery_broker() -> None:
+def test_public_qstash_mode_does_not_require_a_celery_broker() -> None:
     settings = WorkerSettings.model_validate(
         {
             "environment": "production",
@@ -241,7 +243,7 @@ def test_unsafe_document_configuration_is_rejected(values: dict[str, object], me
         WorkerSettings.model_validate(values)
 
 
-def test_production_cannot_disable_required_malware_scanning() -> None:
+def test_public_environment_cannot_disable_required_malware_scanning() -> None:
     with pytest.raises(ValidationError, match="ClamAV scanning must be enabled"):
         WorkerSettings.model_validate(
             {

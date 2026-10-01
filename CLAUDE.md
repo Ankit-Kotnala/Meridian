@@ -83,7 +83,7 @@ on drift.
 
 ## Commands
 
-Prereqs: Docker Engine/Desktop + Compose v2, Node.js 24 + Corepack, Python 3.13 +
+Prereqs: Docker Engine/Desktop + Compose v2, Node.js 24 + Corepack, Python 3.14 +
 uv, and either GNU Make or PowerShell (`scripts/*.ps1`). `make setup` / `.\scripts\setup.ps1`
 installs pinned JS + Python deps and creates `.env` from `.env.example`.
 
