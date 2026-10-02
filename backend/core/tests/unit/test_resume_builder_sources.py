@@ -241,6 +241,36 @@ async def test_missing_career_profile_returns_empty_source_snapshot() -> None:
 
 
 @pytest.mark.asyncio
+async def test_identity_display_name_completes_legacy_source_without_name_fact() -> None:
+    career_record = SimpleNamespace(
+        get_profile=AsyncMock(
+            return_value=SimpleNamespace(
+                profile=SimpleNamespace(professional_headline="Software Engineer")
+            )
+        ),
+        readiness_snapshot=AsyncMock(
+            return_value=SimpleNamespace(
+                entities=(),
+                evidence=(),
+                personal_facts=(),
+                skills=(),
+            )
+        ),
+    )
+    identity = SimpleNamespace(get_display_name=AsyncMock(return_value="  Ankit Kotnala  "))
+
+    snapshot = await CareerRecordResumeSourceProvider(
+        career_record,
+        identity=identity,
+    ).snapshot(OWNER_ID)
+
+    assert [(fact.kind, fact.value, fact.label) for fact in snapshot.personal_facts] == [
+        ("name", "Ankit Kotnala", "Account profile")
+    ]
+    identity.get_display_name.assert_awaited_once_with(OWNER_ID)
+
+
+@pytest.mark.asyncio
 async def test_unavailable_career_record_does_not_look_like_validation() -> None:
     career_record = SimpleNamespace(
         get_profile=AsyncMock(side_effect=CareerRecordUnavailable),

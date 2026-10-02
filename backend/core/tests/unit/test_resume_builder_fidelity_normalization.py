@@ -75,3 +75,16 @@ def test_manifest_occurrence_counts_matches_glued_sentence_punctuation() -> None
         "Xmem is a India's First multi-modal, multi-agentic long-term memory layer for "
         "AI agents.primary language: Python."
     )
+
+
+def test_manifest_occurrence_counts_matches_pdf_glued_location_and_date() -> None:
+    expected = Counter(
+        {
+            normalize_fidelity_match_text("Open Source Remote"): 1,
+            normalize_fidelity_match_text("03/2026 - 08/2026"): 1,
+        }
+    )
+    extracted = normalize_fidelity_match_text(
+        "Founding EngineerOpen Source Remote03/2026 - 08/2026 environment templates."
+    )
+    assert _manifest_occurrence_counts(extracted, expected) == dict(expected)

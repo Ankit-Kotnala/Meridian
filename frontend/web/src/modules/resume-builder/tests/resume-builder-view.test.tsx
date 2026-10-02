@@ -365,6 +365,33 @@ describe("Resume Builder view", () => {
     ).toBeVisible();
   });
 
+  it("uses the newly created snapshot for the next verification", async () => {
+    const snapshot = {
+      ...baseVersion,
+      id: "00000000-0000-4000-8000-000000000810",
+      parentVersionId: baseVersion.id,
+      plainText: "Ankit Kotnala\nAPI Resume\nExperience",
+      versionNumber: 2,
+    };
+    api.listResumes.mockResolvedValue([baseResume]);
+    api.listVersions.mockResolvedValue([baseVersion]);
+    api.createVersion.mockResolvedValue(snapshot);
+    render(<ResumeBuilderView />);
+
+    expect(await screen.findByText("Recruiter preview")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Create version" }));
+    expect(
+      (await screen.findAllByText("Version 2 saved.")).length,
+    ).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: "Verify" }));
+
+    await waitFor(() => {
+      expect(api.exportVersion).toHaveBeenCalledWith(snapshot.id, {
+        format: "pdf",
+      });
+    });
+  });
+
   it("shows blocked verification and keeps download disabled", async () => {
     api.listResumes.mockResolvedValue([baseResume]);
     api.exportVersion.mockResolvedValue({
