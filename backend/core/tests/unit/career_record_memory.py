@@ -65,6 +65,11 @@ class FakeResumeSourceQuery:
         self.semantic_candidates: dict[
             tuple[UUID, UUID, UUID], tuple[ValidatedSemanticCandidate, ...]
         ] = {}
+        self.active_resume = True
+
+    async def has_active_resume(self, owner_user_id: UUID) -> bool:
+        del owner_user_id
+        return self.active_resume
 
     def add(self, owner_user_id: UUID, source: ValidatedResumeSource) -> None:
         self.sources[(owner_user_id, source.snapshot_id)] = source
@@ -165,6 +170,58 @@ class MemoryCareerRecord:
 
     async def save_profile(self, profile: CareerProfile) -> None:
         self.profiles[profile.owner_user_id] = profile
+
+    async def clear_profile_content(
+        self, owner_user_id: UUID, profile_id: UUID, *, now: datetime
+    ) -> None:
+        del profile_id, now
+        self.entities = {
+            key: value
+            for key, value in self.entities.items()
+            if value.owner_user_id != owner_user_id
+        }
+        self.entity_confirmations = {
+            key: value
+            for key, value in self.entity_confirmations.items()
+            if value.owner_user_id != owner_user_id
+        }
+        self.personal_facts = {
+            key: value
+            for key, value in self.personal_facts.items()
+            if value.owner_user_id != owner_user_id
+        }
+        self.field_provenance = [
+            value for value in self.field_provenance if value.owner_user_id != owner_user_id
+        ]
+        self.entity_relationships = [
+            value for value in self.entity_relationships if value.owner_user_id != owner_user_id
+        ]
+        self.skills = {
+            key: value for key, value in self.skills.items() if value.owner_user_id != owner_user_id
+        }
+        self.skill_confirmations = {
+            key: value
+            for key, value in self.skill_confirmations.items()
+            if value.owner_user_id != owner_user_id
+        }
+        self.entity_skill_links = [
+            value for value in self.entity_skill_links if value.owner_user_id != owner_user_id
+        ]
+        self.proposals = {
+            key: value
+            for key, value in self.proposals.items()
+            if value.owner_user_id != owner_user_id
+        }
+        self.semantic_proposals = {
+            key: value
+            for key, value in self.semantic_proposals.items()
+            if value.owner_user_id != owner_user_id
+        }
+        self.achievements = {
+            key: value
+            for key, value in self.achievements.items()
+            if value.owner_user_id != owner_user_id
+        }
 
     async def list_entities(
         self, owner_user_id: UUID, profile_id: UUID, *, for_update: bool = False

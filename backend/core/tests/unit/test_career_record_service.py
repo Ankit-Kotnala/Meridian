@@ -212,6 +212,38 @@ async def test_profile_initializes_once_and_enforces_owner_and_versions() -> Non
 
 
 @pytest.mark.asyncio
+async def test_clear_for_no_resumes_removes_resume_derived_profile_content() -> None:
+    owner = uuid4()
+    memory = MemoryCareerRecord()
+    sources = FakeResumeSourceQuery()
+    service = _service(memory, sources)
+    await service.get_or_create_profile(owner, _context(owner))
+    await service.create_entity(owner, _experience(), _context(owner))
+    await service.create_skill(owner, CreateSkill("Python"), _context(owner))
+
+    sources.active_resume = False
+
+    assert await service.clear_for_no_resumes(owner) is True
+    assert await service.list_entities(owner) == ()
+    assert await service.list_skills(owner) == ()
+    assert (await service.readiness_snapshot(owner)).skills == ()
+    assert (await service.readiness_snapshot(owner)).entities == ()
+
+
+@pytest.mark.asyncio
+async def test_clear_for_no_resumes_does_not_clear_while_a_resume_is_active() -> None:
+    owner = uuid4()
+    memory = MemoryCareerRecord()
+    sources = FakeResumeSourceQuery()
+    service = _service(memory, sources)
+    await service.get_or_create_profile(owner, _context(owner))
+    await service.create_skill(owner, CreateSkill("Python"), _context(owner))
+
+    assert await service.clear_for_no_resumes(owner) is False
+    assert len(await service.list_skills(owner)) == 1
+
+
+@pytest.mark.asyncio
 async def test_manual_entity_requires_explicit_confirmation_for_readiness() -> None:
     owner = uuid4()
     memory = MemoryCareerRecord()

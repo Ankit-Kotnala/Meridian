@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Sequence
-from datetime import date
+from datetime import date, datetime
 from types import TracebackType
 from typing import Any, NoReturn
 from uuid import UUID
@@ -162,6 +162,69 @@ class SqlAlchemyCareerRecordUnitOfWork:
                 CareerProfileModel.id == profile.id,
             )
             .values(**_profile_values(profile, include_identity=False))
+        )
+
+    async def clear_profile_content(
+        self, owner_user_id: UUID, profile_id: UUID, *, now: datetime
+    ) -> None:
+        """Clear the owner-scoped resume-derived Career Record aggregate.
+
+        The profile row is intentionally retained.  All dependent collections
+        are removed in foreign-key order so the operation is safe to retry and
+        does not leave stale skills, facts, proposals, or achievements behind.
+        """
+
+        del profile_id, now
+        await self._execute(
+            delete(CareerFieldProvenanceModel).where(
+                CareerFieldProvenanceModel.owner_user_id == owner_user_id
+            )
+        )
+        await self._execute(
+            delete(CareerEntitySkillModel).where(
+                CareerEntitySkillModel.owner_user_id == owner_user_id
+            )
+        )
+        await self._execute(
+            delete(CareerEntityRelationshipModel).where(
+                CareerEntityRelationshipModel.owner_user_id == owner_user_id
+            )
+        )
+        await self._execute(
+            delete(CareerEntityConfirmationModel).where(
+                CareerEntityConfirmationModel.owner_user_id == owner_user_id
+            )
+        )
+        await self._execute(
+            delete(CareerSkillConfirmationModel).where(
+                CareerSkillConfirmationModel.owner_user_id == owner_user_id
+            )
+        )
+        await self._execute(
+            delete(CareerImportProposalModel).where(
+                CareerImportProposalModel.owner_user_id == owner_user_id
+            )
+        )
+        await self._execute(
+            delete(CareerSemanticImportProposalModel).where(
+                CareerSemanticImportProposalModel.owner_user_id == owner_user_id
+            )
+        )
+        await self._execute(
+            delete(AchievementDraftModel).where(
+                AchievementDraftModel.owner_user_id == owner_user_id
+            )
+        )
+        await self._execute(
+            delete(CareerPersonalFactModel).where(
+                CareerPersonalFactModel.owner_user_id == owner_user_id
+            )
+        )
+        await self._execute(
+            delete(CareerEntityModel).where(CareerEntityModel.owner_user_id == owner_user_id)
+        )
+        await self._execute(
+            delete(CareerSkillModel).where(CareerSkillModel.owner_user_id == owner_user_id)
         )
 
     async def list_entities(

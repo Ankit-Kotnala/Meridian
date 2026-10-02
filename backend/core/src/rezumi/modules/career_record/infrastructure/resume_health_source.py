@@ -31,6 +31,12 @@ from ..domain import (
 class ResumeHealthSourceReader(Protocol):
     """The two owner-scoped Resume Health reads required for provenance."""
 
+    async def list_documents(
+        self,
+        scope: OwnerScope,
+        limit: int,
+    ) -> list[DocumentView]: ...
+
     async def get_document(
         self,
         scope: OwnerScope,
@@ -56,6 +62,16 @@ class ResumeHealthSourceQuery:
 
     def __init__(self, reader: ResumeHealthSourceReader) -> None:
         self._reader = reader
+
+    async def has_active_resume(self, owner_user_id: UUID) -> bool:
+        try:
+            documents = await self._reader.list_documents(
+                OwnerScope(user_id=owner_user_id),
+                500,
+            )
+        except ResumeHealthError:
+            return False
+        return any(document.status is DocumentStatus.READY for document in documents)
 
     async def resolve_exact_span(
         self,

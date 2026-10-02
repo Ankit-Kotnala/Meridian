@@ -280,6 +280,11 @@ class ResumeHealthSourceReader:
     def __init__(self, unit_of_work: UnitOfWorkFactory) -> None:
         self._uow = unit_of_work
 
+    async def list_documents(self, scope: OwnerScope, limit: int) -> list[DocumentView]:
+        async with self._uow() as uow:
+            documents = await uow.list_documents(scope, limit)
+        return [_document_view(document, None, None) for document in documents]
+
     async def get_document(self, scope: OwnerScope, document_id: UUID) -> DocumentView:
         async with self._uow() as uow:
             document = await uow.get_document(scope, document_id)
@@ -1788,6 +1793,12 @@ class ResumeHealthProcessor:
                 )
             )
             await uow.commit()
+        # Resume deletion is committed before Career Record cleanup starts.
+        # Keeping these transactions separate avoids nested locks and makes
+        # retries safe when the career reset is temporarily unavailable.
+        if self._career_record is not None and job.owner.user_id is not None:
+            with suppress(CareerRecordError):
+                await self._career_record.clear_for_no_resumes(job.owner.user_id)
         if self._parsed_resume_store is not None:
             with suppress(RetryableProcessingFailure):
                 await self._parsed_resume_store.delete(document.id)
