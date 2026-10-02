@@ -63,6 +63,8 @@ class IdentifierFactory(Protocol):
 class ResumeSourceQuery(Protocol):
     """Owner-checked Phase 2 application query; never a table adapter."""
 
+    async def has_active_resume(self, owner_user_id: UUID) -> bool: ...
+
     async def resolve_exact_span(
         self,
         owner_user_id: UUID,
@@ -121,6 +123,10 @@ class CareerRecordUnitOfWork(Protocol):
     async def add_profile(self, profile: CareerProfile) -> None: ...
 
     async def save_profile(self, profile: CareerProfile) -> None: ...
+
+    async def clear_profile_content(
+        self, owner_user_id: UUID, profile_id: UUID, *, now: datetime
+    ) -> None: ...
 
     async def list_entities(
         self, owner_user_id: UUID, profile_id: UUID, *, for_update: bool = False

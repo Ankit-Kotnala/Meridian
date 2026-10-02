@@ -732,6 +732,26 @@ class CareerRecordService:
                 await self.create_profile(owner_user_id, CreateCareerProfile(), context)
             return await self.get_profile(owner_user_id)
 
+    async def clear_for_no_resumes(self, owner_user_id: UUID) -> bool:
+        """Remove resume-derived career content after the last resume is deleted.
+
+        Resume Health owns the document lifecycle.  This method deliberately
+        re-checks that lifecycle through the source port before changing the
+        Career Record aggregate, so a delete retry cannot erase data after a
+        replacement resume has already become active.
+        """
+
+        if await self._resume_sources.has_active_resume(owner_user_id):
+            return False
+        now = self._clock.now()
+        async with self._uow() as uow:
+            profile = await uow.get_profile(owner_user_id, for_update=True)
+            if profile is None:
+                return False
+            await uow.clear_profile_content(owner_user_id, profile.id, now=now)
+            await uow.commit()
+        return True
+
     async def get_profile(self, owner_user_id: UUID) -> CareerProfileView:
         async with self._uow() as uow:
             profile = await uow.get_profile(owner_user_id)
