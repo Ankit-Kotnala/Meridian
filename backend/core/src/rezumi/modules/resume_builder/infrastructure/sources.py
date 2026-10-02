@@ -5,7 +5,8 @@ from __future__ import annotations
 import hashlib
 from collections.abc import Mapping
 from dataclasses import dataclass
-from uuid import UUID
+from typing import Protocol
+from uuid import NAMESPACE_URL, UUID, uuid5
 
 from rezumi.modules.career_record.application import (
     CareerRecordError,
@@ -40,6 +41,32 @@ class _PinnedChangeClaimSource:
     evidence_statement_sha256: str
 
 
+class ResumeIdentityProfileSource(Protocol):
+    """Read-only account profile data allowed to complete a resume header."""
+
+    async def get_display_name(self, owner_user_id: UUID) -> str | None: ...
+
+
+def _identity_name_fact(owner_user_id: UUID, display_name: str | None) -> ResumePersonalFact | None:
+    """Build a stable fallback fact for legacy records without a confirmed name.
+
+    The identity profile is owner-provided account data, not scraped third-party
+    data.  A stable id keeps the fact grounded in the source snapshot across
+    retries while avoiding a new mutable Career Record row during export.
+    """
+
+    value = " ".join((display_name or "").strip().split())
+    if not value:
+        return None
+    return ResumePersonalFact(
+        id=uuid5(NAMESPACE_URL, f"rezumi:identity-profile-name:{owner_user_id}"),
+        kind="name",
+        value=value,
+        label="Account profile",
+        is_primary=True,
+    )
+
+
 class CareerRecordResumeSourceProvider(ResumeSourceProvider):
     """Build a grounded resume source snapshot from existing application services."""
 
@@ -48,9 +75,11 @@ class CareerRecordResumeSourceProvider(ResumeSourceProvider):
         career_record: CareerRecordService,
         *,
         change_studio: ChangeStudioService | None = None,
+        identity: ResumeIdentityProfileSource | None = None,
     ) -> None:
         self._career_record = career_record
         self._change_studio = change_studio
+        self._identity = identity
 
     async def snapshot(
         self,
@@ -186,22 +215,31 @@ class CareerRecordResumeSourceProvider(ResumeSourceProvider):
                 "resume source exceeds the 200-evidence provenance limit"
             )
 
+        personal_facts = tuple(
+            ResumePersonalFact(
+                id=fact.id,
+                kind=fact.kind,
+                value=fact.value,
+                label=fact.label,
+                is_primary=fact.is_primary,
+            )
+            for fact in readiness.personal_facts
+        )
+        if not any(fact.kind == "name" for fact in personal_facts) and self._identity is not None:
+            identity_name = _identity_name_fact(
+                owner_user_id,
+                await self._identity.get_display_name(owner_user_id),
+            )
+            if identity_name is not None:
+                personal_facts = (*personal_facts, identity_name)
+
         return ResumeSourceSnapshot(
             headline=profile.profile.professional_headline,
             summary=None,
             skills=(),
             bullets=tuple(dict.fromkeys(bullets)),
             source_evidence_ids=evidence_ids,
-            personal_facts=tuple(
-                ResumePersonalFact(
-                    id=fact.id,
-                    kind=fact.kind,
-                    value=fact.value,
-                    label=fact.label,
-                    is_primary=fact.is_primary,
-                )
-                for fact in readiness.personal_facts
-            ),
+            personal_facts=personal_facts,
             entities=tuple(
                 ResumeEntityFact(
                     id=entity.id,

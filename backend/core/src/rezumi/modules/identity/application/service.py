@@ -607,6 +607,13 @@ class IdentityService:
             profile = await uow.get_profile(owner_user_id)
         return profile.target_role if profile is not None else None
 
+    async def get_display_name(self, owner_user_id: UUID) -> str | None:
+        """Return the owner-scoped display name for internal document composition."""
+
+        async with self._uow() as uow:
+            profile = await uow.get_profile(owner_user_id)
+        return profile.display_name if profile is not None else None
+
     async def update_current_user(
         self,
         principal: AuthenticatedPrincipal,

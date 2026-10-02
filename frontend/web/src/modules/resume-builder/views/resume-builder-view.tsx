@@ -289,6 +289,17 @@ export function ResumeBuilderView() {
     await run("version", async () => {
       const version = await createVersion(selected);
       setVersions((items) => [...items, version]);
+      // The API advances the resume's current version while returning only
+      // the immutable snapshot. Keep the editor pointed at that snapshot so
+      // the next Verify action cannot export the legacy draft that was just
+      // repaired on the server.
+      replaceResume({
+        ...selected,
+        currentVersionId: version.id,
+        currentVersion: version,
+        version: selected.version + 1,
+        updatedAt: version.createdAt,
+      });
       setSuccess(`Version ${version.versionNumber} saved.`);
     });
   }

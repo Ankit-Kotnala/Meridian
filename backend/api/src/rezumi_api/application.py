@@ -638,6 +638,7 @@ def create_app(
                     sources=CareerRecordResumeSourceProvider(
                         resolved_career_record,
                         change_studio=resolved_change_studio,
+                        identity=resolved_identity,
                     ),
                     storage=resolved_resume_builder_storage,
                     policy=ResumeBuilderPolicy(),

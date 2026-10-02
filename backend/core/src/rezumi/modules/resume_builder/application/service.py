@@ -16,6 +16,7 @@ from rezumi.modules.resume_builder.domain import (
     ResumeBuilderIdempotencyConflict,
     ResumeBuilderIdempotencyRecord,
     ResumeBuilderNotFound,
+    ResumeBuilderUnavailable,
     ResumeBuilderValidationError,
     ResumeBuilderVersionConflict,
     ResumeBullet,
@@ -408,6 +409,26 @@ class ResumeBuilderService:
         if replay is not None:
             return replay
 
+        # A resume can predate a confirmed name in Career Record. Refresh only
+        # the required header fact from the current source snapshot when making
+        # the next immutable version; user-authored facts and sections remain
+        # untouched. Existing drafts with a name do not acquire a new source
+        # dependency merely because a version is being created.
+        source_record = await self.get_resume(owner_user_id, resume_id)
+        source: ResumeSourceSnapshot | None = None
+        if not any(fact.kind == "name" for fact in source_record.current_version.personal_facts):
+            try:
+                source = await self._sources.snapshot(
+                    owner_user_id,
+                    change_set_id=source_record.resume.source_change_set_id,
+                    change_set_version_id=source_record.resume.source_change_set_version_id,
+                )
+            except ResumeBuilderUnavailable:
+                # Version creation remains available for an already valid draft;
+                # the export verifier will continue to block an actually
+                # incomplete header rather than weakening its checks.
+                source = None
+
         async with self._uow() as uow:
             record = await uow.get_resume(owner_user_id, resume_id, for_update=True)
             if record is None:
@@ -415,6 +436,10 @@ class ResumeBuilderService:
             if record.resume.version != expected_version:
                 raise ResumeBuilderVersionConflict
             sections = self._validated_version_sections(record.current_version)
+            personal_facts = _merge_missing_name_fact(
+                record.current_version.personal_facts,
+                source.personal_facts if source is not None else (),
+            )
             versions = await uow.list_versions(owner_user_id, resume_id)
             next_number = max((item.version_number for item in versions), default=0) + 1
             now = self._clock.now()
@@ -424,6 +449,14 @@ class ResumeBuilderService:
                 version_number=next_number,
                 parent_version_id=record.current_version.id,
                 sections=sections,
+                personal_facts=personal_facts,
+                plain_text=_plain_text(
+                    record.current_version.title,
+                    record.current_version.target_role,
+                    sections,
+                    personal_facts=personal_facts,
+                    entities=record.current_version.entities,
+                ),
                 created_at=now,
             )
             await uow.add_version(version)
@@ -1245,6 +1278,18 @@ def _initial_personal_facts(
             continue
         selected.append(next((fact for fact in candidates if fact.is_primary), candidates[0]))
     return tuple(selected)
+
+
+def _merge_missing_name_fact(
+    current: tuple[ResumePersonalFact, ...],
+    source: tuple[ResumePersonalFact, ...],
+) -> tuple[ResumePersonalFact, ...]:
+    """Repair legacy drafts without overwriting deliberate user selections."""
+
+    if any(fact.kind == "name" for fact in current):
+        return current
+    name = next((fact for fact in source if fact.kind == "name"), None)
+    return (*current, name) if name is not None else current
 
 
 def _bullet_key(

@@ -150,6 +150,41 @@ async def test_create_update_version_export_and_download_are_grounded_and_idempo
 
 
 @pytest.mark.asyncio
+async def test_create_version_repairs_legacy_missing_name_from_current_source() -> None:
+    state = MemoryResumeBuilder()
+    service = _service(state=state)
+    created = await service.create_resume(
+        OWNER_ID,
+        CreateResume(
+            title="Legacy Resume",
+            target_role="Senior Product Manager",
+            template=ResumeTemplate.STANDARD_PROFESSIONAL,
+        ),
+        idempotency_key="legacy-resume-create",
+        context=_context(),
+    )
+
+    legacy = replace(
+        created.current_version,
+        personal_facts=(),
+        plain_text="legacy version without a name",
+    )
+    state.versions[legacy.id] = legacy
+    checkpoint = await service.create_version(
+        OWNER_ID,
+        created.resume.id,
+        expected_version=created.resume.version,
+        idempotency_key="legacy-resume-version",
+        context=_context(),
+    )
+
+    assert [(fact.kind, fact.value) for fact in checkpoint.personal_facts] == [
+        ("name", "Taylor Morgan")
+    ]
+    assert checkpoint.plain_text.startswith("Taylor Morgan\n")
+
+
+@pytest.mark.asyncio
 async def test_creation_requires_eligible_evidence() -> None:
     service = _service(source=StaticResumeSourceProvider(with_evidence=False))
     with pytest.raises(ResumeBuilderValidationError, match="eligible career evidence"):

@@ -48,6 +48,7 @@ _FIDELITY_SECTION_HEADING_BOUNDARY = re.compile(
     re.IGNORECASE,
 )
 _FIDELITY_TITLE_CASE_BOUNDARY = re.compile(r"(?<=[a-z])(?=[A-Z])")
+_FIDELITY_GLUE_BEFORE_NUMERIC_DATE = re.compile(r"(?<=[A-Za-z])(?=\d{1,2}/\d{4}\b)")
 
 
 def normalize_text(value: str) -> str:
@@ -71,6 +72,10 @@ def normalize_fidelity_match_text(value: str) -> str:
     normalized = _FIDELITY_CONTROL_CHARS.sub(" ", normalized)
     normalized = _FIDELITY_SECTION_HEADING_BOUNDARY.sub(" ", normalized)
     normalized = _FIDELITY_TITLE_CASE_BOUNDARY.sub(" ", normalized)
+    # PDF text extraction can remove the line break between a location and a
+    # following month/year, e.g. ``Remote03/2026``. Restore that boundary
+    # before tokenization so valid rendered text is not treated as missing.
+    normalized = _FIDELITY_GLUE_BEFORE_NUMERIC_DATE.sub(" ", normalized)
     normalized = _FIDELITY_SENTENCE_PUNCTUATION_SPACING.sub(r"\1 \2", normalized)
     normalized = _FIDELITY_HYPHENATION_BREAKS.sub("-", normalized)
     return " ".join(normalized.split()).casefold()
