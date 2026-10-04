@@ -11,8 +11,7 @@ integrity, explainability, tenant isolation, secure document processing,
 accessible user control, and replacement of external providers without rewriting
 the domain.
 
-The architecture described here is the target. `PLANS.md` is authoritative for
-what the current working tree actually implements.
+The architecture described here is the target.
 
 ## Implementation alignment status
 
