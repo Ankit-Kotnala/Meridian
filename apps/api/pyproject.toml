@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.13,<3.15"
 dependencies = [
   "rezumi-backend[database,identity,migrations,resume]==0.1.0",
-  "fastapi==0.141.1",
+  "fastapi==0.142.2",
   "pydantic==2.13.5",
   "pydantic-settings==2.15.0",
   "structlog==26.1.0",
