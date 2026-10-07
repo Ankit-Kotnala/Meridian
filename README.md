@@ -27,23 +27,6 @@ factual is invented, and no material change is applied without explicit review.
 | Services  | PostgreSQL (pgvector), Redis, MinIO (S3), ClamAV, Mailpit                |
 | Tooling   | pnpm 11 + Turbo (JS), one root uv workspace (Python), Docker Compose     |
 
-## Repository map
-
-```text
-apps/
-  web/        Next.js UI (src/app routes + src/modules/<feature>)
-  api/        Thin FastAPI delivery; adapters under modules/<context>
-  worker/     Thin Celery delivery; task adapters under tasks/
-packages/
-  backend/    Shared Python monolith (rezumi.foundation + rezumi.modules.*)
-  contracts/  OpenAPI artifact, generated schema, typed client
-  ui/         Accessible React primitives
-  design-tokens/, eslint-config/, typescript-config/, test-fixtures/
-docs/         Product, architecture, security, scoring, ADRs
-infra/        Local container infrastructure
-scripts/      Cross-platform dev + verification scripts
-```
-
 ## Prerequisites
 
 - Docker Engine/Desktop + Compose v2 (enough memory for the full stack; ClamAV
@@ -51,25 +34,6 @@ scripts/      Cross-platform dev + verification scripts
 - Node.js 24 with Corepack
 - Python 3.13 + uv
 - GNU Make + a POSIX shell, **or** PowerShell with the checked-in `scripts/*.ps1`
-
-## Quickstart
-
-```sh
-cp .env.example .env
-make dev              # build + start the full Compose stack (attached)
-```
-
-Cross-platform / PowerShell:
-
-```powershell
-.\scripts\setup.ps1
-pnpm local:up         # detached, health-checked
-pnpm local:smoke      # probe web, API, Mailpit
-```
-
-Then create an account at `/register`, click the verification link captured in
-[Mailpit](http://localhost:8025), and sign in at `/login`. A labeled fictional
-preview is at `/demo/dashboard`. Local `.env` values are development-only.
 
 ### Local services
 
