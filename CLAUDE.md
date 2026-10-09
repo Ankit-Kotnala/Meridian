@@ -70,35 +70,11 @@ lives in `packages/ui`. Feature modules must not deep-import another feature
 module or import route files, and `src/shared` must not import routes or feature
 modules — enforced by `pnpm architecture:check` (part of `pnpm lint`).
 
-### Contracts
-
-FastAPI's OpenAPI output is the authoritative wire contract. The normalized
-artifact lives in `packages/contracts/openapi`; the generated TypeScript schema
-and typed `openapi-fetch` client wrapper are generated from it. Never hand-edit
-generated contract files or add parallel handwritten wire models — regenerate
-instead (`pnpm contracts:generate`) and commit the result in the same change as
-any API schema change. `pnpm contracts:check` / `make contracts-check` fails CI
-on drift.
-
 ## Commands
 
 Prereqs: Docker Engine/Desktop + Compose v2, Node.js 24 + Corepack, Python 3.13 +
 uv, and either GNU Make or PowerShell (`scripts/*.ps1`). `make setup` / `.\scripts\setup.ps1`
 installs pinned JS + Python deps and creates `.env` from `.env.example`.
-
-### Local stack
-
-```sh
-make dev              # attached: build + start full Compose stack
-pnpm local:up         # detached: build + start full stack, health-checked
-pnpm dev:web          # host Next.js w/ hot reload against backend containers
-pnpm dev:api          # host FastAPI w/ hot reload against dependency containers
-pnpm dev:worker       # host Celery worker against dependency containers
-pnpm local:rebuild:web       # rebuild web + web-edge images after a container-mode edit
-pnpm local:rebuild:backend   # rebuild api/worker/scheduler images
-pnpm local:smoke      # HTTP probes for web/API/Mailpit
-pnpm local:down       # stop containers, preserve volumes
-```
 
 Host hot-reload (`dev:web`/`dev:api`/`dev:worker`) reflects source edits
 immediately; a Docker-built service only sees source as of its last image build,
