@@ -213,7 +213,7 @@ seed:
 	$(COMPOSE) up --detach --wait postgres minio minio-init
 	$(COMPOSE) build api
 	$(COMPOSE) run --rm --no-deps api alembic -c backend/core/alembic.ini upgrade head
-	REZUMI_ALLOW_LOCAL_SEED=fictional-rezumi-local-seed-v1 $(COMPOSE) --profile tools run --rm --no-deps local-seed
+	$(COMPOSE) --profile tools run --rm --no-deps -e REZUMI_ALLOW_LOCAL_SEED=fictional-rezumi-local-seed-v1 local-seed
 
 migrate:
 	$(COMPOSE) run --rm api alembic -c backend/core/alembic.ini upgrade head
