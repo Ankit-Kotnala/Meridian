@@ -8,7 +8,7 @@
         "s3:GetBucketLocation",
         "s3:ListBucket"
       ],
-      "Resource": ["arn:aws:s3:::__BUCKET__"]
+      "Resource": ["arn:aws:s3:::rezumi-documents"]
     },
     {
       "Sid": "RezumiDocumentObjects",
@@ -18,7 +18,7 @@
         "s3:GetObject",
         "s3:PutObject"
       ],
-      "Resource": ["arn:aws:s3:::__BUCKET__/*"]
+      "Resource": ["arn:aws:s3:::rezumi-documents/*"]
     }
   ]
 }
