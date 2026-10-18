@@ -144,16 +144,3 @@ apps/worker/src/rezumi_worker/tasks/
 
 Task names and broker payloads are stable; the package split is an ownership and
 navigation boundary, not a new queue topology.
-
-## Troubleshooting
-
-- Run `pnpm local:status` first. A container that is still starting is different
-  from an unhealthy dependency.
-- Run `pnpm local:logs -- <service>` for one service without losing other state.
-- If port 3000 or 8000 is occupied by Compose, use `pnpm dev:web` or
-  `pnpm dev:api`; each stops its conflicting container safely.
-- If generated contracts drift after an API schema change, run
-  `pnpm contracts:generate`, review both generated artifacts, and rerun
-  `pnpm contracts:check`.
-- If a migration changes, verify one Alembic head and run the migration integration
-  gate before browser tests.
