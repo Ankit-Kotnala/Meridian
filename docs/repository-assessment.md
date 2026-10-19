@@ -131,31 +131,3 @@ it is not an implemented feature.
 
 The mitigations and owners are maintained in `PLANS.md` and
 `docs/security-threat-model.md`.
-
-## Required verification
-
-The assessment itself is verified by the inventories above. The following checks
-passed for the earlier foundation baseline and are preserved in `PLANS.md` as
-historical evidence:
-
-```sh
-make setup
-make dev
-docker compose config --quiet
-docker compose ps
-make format-check
-make lint
-make typecheck
-make test
-make verify
-```
-
-Health probes covered the web, API, worker, PostgreSQL, Redis, and MinIO. A missing
-tool, skipped suite, placeholder target, or failed health dependency must reopen
-the affected phase.
-
-The aligned working tree passes those checks together with the root uv workspace,
-forbidden-import architecture tests, normalized OpenAPI/generated-schema drift
-checks, single-head migration verification, and root-context application image
-builds. Hosted CI run `29360385761` verified Phase 0 implementation commit
-`9558f33`, satisfying the prerequisite for Phase 1.
