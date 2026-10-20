@@ -893,24 +893,6 @@ administrator sensitive actions, and deletion/retention failures.
 | 9     | Exact interview claim/evidence/numeric grounding and concurrency; contact consent/redaction, purpose-bound cursors and local-only reminders; Growth provenance/review-chain/snapshot integrity; timezone-isolated, hash/watermark-checked, small-cohort-suppressed non-causal analytics |
 | 10    | Billing webhook, admin matrix/audit, end-to-end export/deletion, backup restore, load/DoS, penetration test, dependency/container/IaC scan                                                                                                                                              |
 
-## Phase 0 security checklist
-
-- [x] `.env.example` contains no real secret and actual `.env` files are ignored.
-- [x] Web/API/worker images run without development servers or embedded secrets.
-- [x] Health endpoints return minimal safe data; readiness fails on required
-      dependency loss without returning credentials or raw stack traces.
-- [x] PostgreSQL, Redis, and MinIO use explicit local-only credentials and are not
-      presented as production configuration.
-- [x] Container services use health checks, bounded restart behavior, and named
-      volumes; unnecessary host ports are avoided or documented.
-- [x] CI installs from committed lockfiles and runs format/lint/type/test/build plus
-      available secret/dependency/container scans.
-- [x] Fictional UI fixtures are labeled and contain no real private data.
-- [x] `make verify` and Compose health are green in the integrated working tree.
-
-These checks are regression gates; a later failure reopens the affected phase in
-`PLANS.md`.
-
 ## Incident and recovery expectations
 
 Phase 10 must document owners and playbooks for credential/session compromise,
