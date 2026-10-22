@@ -893,18 +893,6 @@ administrator sensitive actions, and deletion/retention failures.
 | 9     | Exact interview claim/evidence/numeric grounding and concurrency; contact consent/redaction, purpose-bound cursors and local-only reminders; Growth provenance/review-chain/snapshot integrity; timezone-isolated, hash/watermark-checked, small-cohort-suppressed non-causal analytics |
 | 10    | Billing webhook, admin matrix/audit, end-to-end export/deletion, backup restore, load/DoS, penetration test, dependency/container/IaC scan                                                                                                                                              |
 
-## Incident and recovery expectations
-
-Phase 10 must document owners and playbooks for credential/session compromise,
-tenant data exposure, malicious upload/parser exploit, provider data incident,
-prompt/grounding bypass, queue/cost runaway, admin abuse, object exposure, and
-deletion/backup failure. Immediate capabilities include provider/feature kill
-switches, token/session revocation, object quarantine, queue pause, key rotation,
-audit preservation, affected-user assessment, and legally appropriate notice.
-
-Backup is not complete until a restore into an isolated environment verifies
-integrity, ownership, migrations, object references, and documented RPO/RTO.
-
 ## Open decisions and residual risks
 
 - Production region, data residency, account/backup retention durations, RPO/RTO,
