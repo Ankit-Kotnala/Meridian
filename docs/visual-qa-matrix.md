@@ -177,20 +177,3 @@ For an isolated renderer whose port is not in the backend CSRF allow-list, pass
 edge origin and reuse the resulting localhost session while capturing the
 isolated `--baseUrl`. This preserves the CSRF policy instead of weakening it for
 visual QA.
-
-## Known verification constraints
-
-- Connected interactive-browser and direct local-image inspection remain blocked
-  by a Windows sandbox ACL helper error. Representative captures were reviewed
-  through a sandbox-safe encoded-preview fallback; automated checks and that
-  bounded review are not a substitute for exhaustive aesthetic inspection.
-- Dynamic detail routes do not have stable production-like fixture IDs. Their
-  component and journey coverage is identified explicitly in the matrix.
-- Several full-stack Resume Builder and downstream Application journeys receive
-  the API's existing `409 resume_builder_conflict` response for newly registered
-  users after evidence confirmation. This redesign does not change that backend
-  domain behavior or describe those journeys as passing.
-- The Job Match full-stack expectation conflicts with the deterministic, honest
-  output for a mandatory gap. The UI correctly says to address mandatory gaps
-  before tailoring; the stale assertion is not used to weaken the truthful
-  product rule.
