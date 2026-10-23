@@ -26,21 +26,6 @@ Keep Next.js route files thin, keep API and Celery files as delivery adapters, a
 put domain behavior in `packages/backend`. Do not move persistence or queue access
 into the web application.
 
-## First setup
-
-```powershell
-.\scripts\setup.ps1
-pnpm local:up
-pnpm local:smoke
-```
-
-The same root `pnpm` commands work in PowerShell, Command Prompt, Bash, and WSL.
-GNU Make aliases are listed by `make help`.
-
-`pnpm local:up` builds and starts the complete stack detached. It leaves the
-terminal free for tests and logs. Normal local commands preserve PostgreSQL,
-Redis, MinIO, and ClamAV volumes.
-
 ## Choose the fastest workflow
 
 | Goal                                      | Command                    | What runs                                               |
