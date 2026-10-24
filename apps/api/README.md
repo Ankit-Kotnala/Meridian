@@ -50,13 +50,6 @@ owning phase verifiers. All four Phase 9 route families declare the shared safe
 domain handlers keep quota exhaustion distinct from validation, version, and
 idempotency conflicts.
 
-Operational endpoints:
-
-- `GET /health` is a process liveness check and never calls dependencies.
-- `GET /ready` checks required PostgreSQL, Redis, and SMTP dependencies and returns
-  HTTP 503 with safe diagnostics when one is unavailable.
-- `GET /api/v1/meta` returns non-sensitive service metadata and the required
-  scoring disclaimer.
 
 The implemented FastAPI schemas are authoritative. The normalized OpenAPI
 document under `packages/contracts/openapi` and the generated TypeScript schema
